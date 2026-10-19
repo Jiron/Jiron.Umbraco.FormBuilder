@@ -28,8 +28,9 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 
 - [ ] **Have a lawyer review the licence choice and texts** before the repository becomes public:
   - **`LICENSE.md`:** Perimeter's "competes" clause against your intent. Agencies building and hosting
-    client sites, paid add-ons and starter kits should be fine; selling Jiron Form Builder or offering a
-    competing product or service, even a free one, should not.
+    client sites, paid add-ons and starter kits should be fine; selling Jiron Form Builder, publishing
+    your own version of it (free or paid, open source or not) or offering any other competing product
+    or service should not. Contributions through forks and pull requests should stay possible.
   - **The plain-language summaries:** the one in `README.md` and `docs/license-faq.md` (written in
     ROADMAP 17.2a).
   - **An optional, separately drafted "additional permission"** that states what is allowed (client

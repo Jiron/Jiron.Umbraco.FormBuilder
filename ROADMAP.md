@@ -201,7 +201,7 @@ These come from the owner or from planning. Change one only through an ADR that 
 | # | Decision | Why |
 | --- | --- | --- |
 | D1 | **Name:** NuGet id and namespace root `Jiron.Umbraco.FormBuilder`; display name **Jiron Form Builder**; backoffice section label **Forms**; repo `github.com/Jiron/Jiron.Umbraco.FormBuilder` (private for now). Short identifiers use `jfb` (tables, CSS, URLs, events) and `JironFormBuilder` (settings section, folders, JS global). The owner reserves the NuGet prefix `Jiron.` (OWNER-TODO). | Owner's choice after name research (2026-10-20). A descriptive product name under the owner's own name leaves nothing to clash with, and the reserved prefix marks the packages as his. "Umbraco" appears only as the platform qualifier inside the package id, never in the display name. The product is always a "Form Builder"; no package id ends in `.Forms`. Editors look for "Forms", so that is the section label. |
-| D2 | **First commit = license.** `LICENSE.md` is the PolyForm Perimeter License 1.0.1 with Jiron Form Builder's header and `Required Notice:` line. The owner placed it before the run; step 0.2 checks its SHA-256 and commits it unchanged. GitHub's README-only commit `06f126f` is replaced, once, with `--force-with-lease` (owner approved). | The owner wants everyone to be able to use Jiron Form Builder free of charge, including companies on their own sites and agencies on client sites, and to change it, but nobody to sell it or offer a competing product or service built from it. Perimeter says exactly that in a short, lawyer-drafted text (§3.6). It is **not** OSI "open source", so Jiron Form Builder calls itself "free and source-available", never "open source". A lawyer review is an OWNER-TODO item. |
+| D2 | **First commit = license.** `LICENSE.md` is the PolyForm Perimeter License 1.0.1 with Jiron Form Builder's header and `Required Notice:` line. The owner placed it before the run; step 0.2 checks its SHA-256 and commits it unchanged. GitHub's README-only commit `06f126f` is replaced, once, with `--force-with-lease` (owner approved). | The owner wants everyone to be able to use Jiron Form Builder free of charge, including companies on their own sites and agencies on client sites, and to change it for their own projects, but nobody to sell it, to publish their own version of it (free or paid, open source or not), or to offer any other competing product or service built from it. Contributions go to this repository instead. Perimeter says exactly that in a short, lawyer-drafted text (§3.6). It is **not** OSI "open source", so Jiron Form Builder calls itself "free and source-available", never "open source". A lawyer review is an OWNER-TODO item. |
 | D3 | **Target Umbraco 17 LTS first:** CMS `[17.5.0, 18.0.0)`, developed against the latest 17.x (17.7.1 on 2026-10-19), .NET 10. An Umbraco 18 line comes at the end (Phase 19). | 17 is the LTS that most sites run, supported until 2028-11-27. 17.5 brought the async distributed background jobs Jiron Form Builder relies on *(verify in 1.2c; raise the floor by ADR if a needed API is newer)*. |
 | D4 | **Original work.** Every name, screen, syntax, data model and line of code is Jiron Form Builder's own (CLAUDE.md rule 2). Vocabulary: form, page, group, field, option list, rule, action, entry, theme, merge tag, template. | Legal safety and a coherent product. The owner's private reference material stays in `.private/` and never enters the repository. |
 | D5 | **Form definitions are versioned JSON documents; entries are relational.** A form has one draft and many published versions, each a schema-versioned JSON document upgraded by code. Entries are rows: entry, typed values per field, files, a timeline and notes. Each entry points at the version it was submitted with. | Drafts, history, diff, restore, export and deployment as files fall out naturally. Old entries never change meaning when a form changes. Entries stay filterable and sortable in SQL. Proven in Ligata.Forms (draft and published documents), but entries there were JSON blobs that could not be queried, which is fixed here. |
@@ -400,7 +400,8 @@ Tandem is at `C:\Coding\Umbraco.Community.AI.Tandem`, the owner's chat package f
 - **The licence (D2):** PolyForm Perimeter 1.0.1. Use `SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1` in file headers where headers are used.
   - **What it allows:** any purpose except "providing to others any product that competes with the software". Changes and distribution are allowed, and there is a patent licence and a 32-day cure period for first violations.
   - **What "competes" covers:** a product competes when it is marketed as a substitute for the functionality or value of the software, even if free.
-  - **What is fine:** a client website built with Jiron Form Builder does not compete; neither do hosting it or add-ons that extend it.
+  - **What is fine:** a client website built with Jiron Form Builder does not compete; neither do hosting it, add-ons that extend it, or a GitHub fork made to send a pull request.
+  - **What is not:** publishing a copy or a changed version for others to use as an alternative, even a free, open-source one. That is a competing product. Ideas stay free: anyone may build their own form builder from scratch.
   - **Why not PolyForm Shield:** Shield also forbids competing with any product the licensor or its affiliates provide *using* the software. Because the owner's own studio may build client sites with Jiron Form Builder, Shield could turn every other agency into a "competitor". Perimeter avoids that.
   - **Why not the others:**
     - Commons Clause can catch paid setup and support work;
@@ -1023,7 +1024,7 @@ Servers that Jiron Form Builder starts use only these ports. Ports the OS assign
 - [ ] **0.1 Preflight**
   - **Tools:** check `dotnet --list-sdks` (10.0.401), `node --version` (24.x), `git --version`, and Edge at `C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`.
   - **The remote:** `git ls-remote origin refs/heads/main` must show `06f126f9975eba38663e9f7655043e4825bcffd2`, GitHub's README-only commit.
-    - **Already done:** the remote's `main` is a parentless commit whose tree holds exactly the eight files of 0.2, and whose `LICENSE.md` blob has the expected SHA-256 (the owner may have made the root commit before the run). Then 0.2 is complete: reset the local `main` to it, skip 0.2, and tick 0.1 and 0.2 in 0.3 with that commit's hash.
+    - **Already done:** the remote's `main` has exactly one root commit, that root commit's tree holds exactly the eight files of 0.2, and its `LICENSE.md` blob has the expected SHA-256. The owner may have made the root commit before the run, and owner commits may follow it. Then 0.2 is complete: make sure the local `main` equals the remote's (fast-forward only, never discard local work), skip 0.2, and tick 0.1 and 0.2 in 0.3 with the root commit's hash.
     - **If the remote shows anything else, do not force-push:** add the files from step 0.2 in a normal commit on top of the remote's `main`, mark 0.2 `[~]`, and write OWNER-TODO "the first commit is not the license".
   - **The local state.** It is one of these:
     - **Fresh:** `git rev-parse HEAD` is `06f126f`. Continue with 0.2 from the start.
@@ -1031,7 +1032,7 @@ Servers that Jiron Form Builder starts use only these ports. Ports the OS assign
     - **Leftovers:** a `bootstrap` branch exists from an interrupted run. Delete it (`git branch -D bootstrap`), then continue as above.
   - **The folder** should contain:
     - `.git/`, `.gitignore`, `.gitattributes`;
-    - `LICENSE.md`, `README.md` (GitHub's one-liner, replaced in 0.2), `CLAUDE.md`, `ROADMAP.md`, `GOAL.md`;
+    - `LICENSE.md`, `README.md` (GitHub's one-liner, or Appendix A once 0.2 is done), `CLAUDE.md`, `ROADMAP.md`, `GOAL.md`;
     - `docs/OWNER-TODO.md`;
     - the owner's git-ignored `.private/` folder, and possibly a `.claude/` folder created by Claude Code (also ignored).
 
@@ -2052,7 +2053,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - **Start:** a `README` index, `getting-started.md` (install to first entry in 10 minutes), `installation.md`.
     - **For editors:** `editor-guide.md`, `field-types.md`, `rules-and-validation.md`, `merge-tags.md`, `actions.md`, `entries-and-exports.md`, `insights.md`, `themes.md` (the theme editor).
     - **For site owners:** `spam-protection.md`, `files.md`, `email.md`, `privacy.md`, `permissions.md`, `multi-language.md`, `members.md`, `multi-site.md`.
-    - **Licence:** `license-faq.md`, plain words, clearly marked as not legal advice and pointing to `LICENSE.md` (OWNER-TODO: lawyer review).
+    - **Licence:** `license-faq.md`, plain words, clearly marked as not legal advice and pointing to `LICENSE.md` (OWNER-TODO: lawyer review). It answers at least: using it on client sites, changing it for your own projects, hosting, add-ons, contributing through forks and pull requests, and why publishing your own version (free or paid, open source or not) is not allowed.
   - Each page is checked against the running demo.
   - Done when: a link-check script passes, and a subagent reads these pages as a new editor and its questions are answered.
 - [ ] **17.2b Documentation for developers**
@@ -2077,7 +2078,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **`README.md` (GitHub):**
     - **About:** the pitch, the features, screenshots.
     - **Getting started:** a quick start, the requirements (Umbraco 17.5+), a link to the docs.
-    - **Licence:** "free to use, including commercially; no selling or competing products; source-available" with a link to the licence FAQ, never called "open source".
+    - **Licence:** "free to use and change, including commercially; no selling, no published versions of your own (free or paid, open source or not), no competing products; source-available" with a link to the licence FAQ, never called "open source".
     - **Notices:** the trademark notice and how to contribute.
     - **Credits:** "Made by Manassés Zähnler · Ligata", linking jiron.dev and ligata.ch.
   - **`docs/README.nuget.md`:** shorter, with no relative links.
@@ -2215,8 +2216,10 @@ exports and insights, and privacy built in.
 >
 > **License:** [PolyForm Perimeter License 1.0.1](LICENSE.md). In short: free to use,
 > including commercially on your own sites and on sites you build or host for clients,
-> and free to change. Not allowed: selling it or offering any product or service
-> that competes with it. This summary is not legal advice; the license text governs.
+> and free to change for your own projects. Not allowed: selling it, or publishing your own
+> version of it (free or paid, open source or not) or any other product or service that
+> competes with it. Contributions are welcome instead. This summary is not legal advice; the
+> license text governs.
 > Jiron Form Builder is source-available, not "open source" in the OSI sense.
 
 Made by Manassés Zähnler ([jiron.dev](https://jiron.dev)) · [Ligata](https://ligata.ch)
