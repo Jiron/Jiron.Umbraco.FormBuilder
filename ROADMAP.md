@@ -1,0 +1,2267 @@
+# Jiron Form Builder roadmap: Jiron.Umbraco.FormBuilder
+
+**Calm, capable forms for Umbraco.** Jiron Form Builder is a form builder for Umbraco 17. Editors design forms in a **Forms** section of the backoffice: pages, groups, fields, rules and actions, with drafts, history and a live preview. Visitors fill them in on the website, server-rendered and accessible, or through a headless API. The people who handle the results work with the entries: they review, approve, export and answer privacy requests. It is free to use, including commercially, and maintained in the open.
+
+Written 2026-10-19 from the owner's brief, with research into Umbraco 17 packaging, the Marketplace, licensing, privacy, accessibility and email law, plus an inventory of the owner's earlier work (Ligata.Forms and Tandem). The rules for working on it are in [CLAUDE.md](CLAUDE.md), and they are binding.
+
+## How to use this roadmap
+
+- Work through Phase 0 to Phase 20 **in order, one step at a time**. A step can only start once the steps before it are done. The one exception: when a step is blocked, continue with the next step that doesn't depend on it, and come back later.
+- **There is no deadline.** Take the time each step needs. Read the relevant sections of this roadmap again before you start a step, check the result in a real browser before you call any UI done, and prefer the robust solution over the quick one.
+- Step markers (only steps use them, always at the start of a line):
+  - `[ ]` open
+  - `[x]` done
+  - `[~]` blocked, with the reason written under the step and the item copied to `docs/OWNER-TODO.md`
+- **Finishing a step:**
+  1. Commit the step's work.
+  2. Change its marker to `[x]` and append ` (YYYY-MM-DD, <short hash of the step's last work commit>)` to its title line.
+  3. Add a line to `docs/WORKLOG.md`, commit both as `docs(roadmap): complete X.Y`, and push.
+
+  `node scripts/roadmap-status.mjs` prints the progress line.
+- **The bootstrap exception:** steps 0.1 and 0.2 make no commit except the 0.2 root commit. Their ticks and WORKLOG lines are written in 0.3.
+- **Done when** lists the checks that prove a step is finished. Run them in the current session and show their output. Passing checks are the only evidence that counts.
+- Each phase ends with a **phase review** step. It reviews the phase's work, fixes what it finds, and writes a handover note to `docs/WORKLOG.md`, so that a context compaction at any moment loses nothing.
+- You may improve this roadmap as you learn. Split steps that turn out too big, fix facts that turn out wrong, or add steps that are clearly needed. Record every such change in `docs/WORKLOG.md` with the reason.
+  - **Never weaken or delete** a requirement from §1 or §2, a step, or a "Done when" check.
+  - If a check is impossible as written, replace it with an equal or stronger check, explained in an ADR.
+  - If a requirement turns out impossible, explain why in an ADR and list it in `docs/OWNER-TODO.md`.
+- Facts marked *(verify)* came from research but were not confirmed on this machine. Confirm them in Phase 1 before relying on them.
+- **Splitting a step:** give the parts letters (`9.3a`, `9.3b`), so `roadmap-status.mjs` counts them. Some steps are split already.
+- **`[~]` is only for things outside your control:** an owner-only item (CLAUDE.md rule 8) or an outage of an outside service. An ordering problem (a check that needs something a later step builds) is fixed by moving or splitting work, with the reason in WORKLOG, never by marking a step blocked.
+- **The phase-review gate.** Every phase-review step's "Done when" includes these checks, even where the step only says "pushed":
+  - `scripts/ci-local.ps1` passes (from 3.5 on);
+  - the full Playwright suite passes (from 3.4 on);
+  - `node scripts/secret-scan.mjs --tracked` and `node scripts/term-guard.mjs --tracked` pass;
+  - Core coverage is ≥ 85% (from Phase 4 on);
+  - every `[~]` step has been retried;
+  - the owner's private mapping in `.private/` (if there is one) is re-checked;
+  - the handover note is written.
+- **ADR numbers 0001 to 0018** are reserved for the ADRs this roadmap names. Any other ADR starts at 0019. Tandem's ADRs are always cited as "Tandem ADR-NNNN".
+- **When a feature appears in two steps,** the earlier step builds the part it names, and the later step completes and audits it.
+- **Every step that adds UI or endpoints** adds:
+  - its §4.7 endpoints, with integration tests including the `403` matrix (4.7);
+  - the regenerated API client;
+  - English and German localisation keys for every new string.
+
+## Contents
+
+1. [Product](#1-product)
+2. [Decisions already made](#2-decisions-already-made)
+3. [Reference material](#3-reference-material)
+4. [Target design](#4-target-design)
+5. [Phases and steps](#5-phases-and-steps)
+6. [Definition of done for the first release](#6-definition-of-done-for-the-first-release)
+7. [Later (not in this roadmap)](#7-later-not-in-this-roadmap)
+- [Appendix A: README.md for the first commit](#appendix-a-readmemd-for-the-first-commit)
+- [Appendix B: ADR template](#appendix-b-adr-template)
+- [Appendix C: Worklog format](#appendix-c-worklog-format)
+
+---
+
+## 1. Product
+
+### 1.1 What Jiron Form Builder is
+
+A NuGet package for Umbraco 17 sites. Install it, open the **Forms** section, and build a form in minutes. Put it on a page with a picker, a block, a tag helper or the headless API. The site gets:
+
+- **A form library** in the backoffice:
+  - folders, search, and a gallery of starter templates (contact, callback, newsletter, event registration, job application, feedback, quote request, support request);
+  - duplicate, move, trash (with restore) and delete, with a warning that names the pages still using a form;
+  - import and export of a form as JSON.
+- **A designer that stays calm.** Forms are built from **pages** (steps), **groups** (sections with one to four columns) and **fields**:
+  - a searchable field palette, plus click-to-insert points and drag and drop with a full keyboard alternative;
+  - inline label editing and undo/redo;
+  - an inspector for the selected element, whose settings are sorted from essential to advanced;
+  - per-language texts and a live preview at phone, tablet and desktop widths;
+  - a **form check** that flags problems before visitors find them: a required field that a rule can hide, an email action without an email field, a missing label, a duplicate alias, a rule that points at a deleted field.
+- **Field types** (§4.3): text, long text, email, number, phone, web address, date, time, date and time, dropdown, radio buttons, checkboxes, single checkbox, yes/no, consent, file upload, rating, scale (NPS style), slider, signature, name, address, country, hidden, calculation, repeatable group, heading, text block, divider and image. Plus third-party captcha fields when chosen.
+- **Option lists.** Choice fields take their options from:
+  - the field itself;
+  - a reusable list;
+  - Umbraco content or an Umbraco data type;
+  - a JSON address on an allowed host, or a CSV upload;
+  - the built-in country list;
+  - code.
+
+  Lists can cascade: the second dropdown filters on the first.
+- **Rules** (conditional logic):
+  - show or hide fields, groups and pages, and skip pages;
+  - pick the success message or redirect;
+  - decide whether an action runs.
+
+  Rules combine conditions with "all" or "any", with nested groups and operators for text, numbers, dates, choices and files. An overview lists every rule in the form and warns about conflicts.
+- **Validation:**
+  - required, length, range, pattern (safe, linear-time regular expressions), format, file type and size, date windows ("at least 2 days from today");
+  - "matches another field", and "unique per form" (for example one registration per email address);
+  - custom messages per language.
+
+  The server always decides; the browser gives the same answers instantly.
+- **Drafts, publishing and history.** Edits stay a draft until someone publishes them. Every published version is kept, and can be compared side by side and restored. Entries always remember the version they were submitted with.
+- **Form settings:**
+  - submit and navigation labels;
+  - success message or redirect, both conditional;
+  - store entries or not;
+  - manual approval;
+  - opening and closing dates and an entry limit, with a closed message;
+  - members-only forms and one entry per member;
+  - the required or optional marker style;
+  - autocomplete hints, CSS classes and the theme.
+- **Multi-page forms:**
+  - a progress indicator (steps, bar or none), per-page validation, back without losing answers;
+  - **save and resume later** through an emailed link;
+  - prefill from merge tags (member data, the page, the query string when allowed).
+- **Actions** run after a submission:
+  - **Kinds:**
+    - email the team, or confirm to the submitter (HTML and text, per language, attachments optional);
+    - call a webhook (signed, retried, SSRF-safe), or post to Slack or Microsoft Teams;
+    - create or update Umbraco content;
+    - change the entry's state;
+    - email verification (double opt-in).
+  - **Triggers:** submitted, approved, rejected, verified.
+  - **Behaviour:** each action has an optional rule, an order, a switch, retries with a visible delivery log, and a **test run** against a sample entry.
+- **Entries:**
+  - **Where:** a list per form and an **all forms** inbox, with a **Spam** folder, "new" markers, filters, search, a column chooser and bulk actions.
+  - **One entry:** a side panel shows its values, files, a timeline of everything that happened to it, and internal notes. It is approved or rejected there, and edited with an audit trail.
+  - **Exports:** CSV, Excel, JSON, a printable view, and a ZIP of the uploaded files.
+- **Insights**, without cookies or personal data: views, starts, completions, conversion, drop-off per page and time to complete, per form and over time.
+- **A library:**
+  - reusable option lists;
+  - **themes**, edited visually (colours, type, spacing, corners) with a live preview and contrast checks, no code needed;
+  - email layouts.
+- **Privacy built in:**
+  - retention rules with a dry run;
+  - sensitive fields, masked and kept out of emails, exports and logs unless allowed;
+  - IP handling: none by default, anonymised or full;
+  - find, export and erase one person's entries across all forms;
+  - consent records with the exact wording shown;
+  - an audit log.
+- **Permissions** per user group: design, view entries, edit entries, delete, export, manage settings. Folders and forms can be limited to certain groups.
+- **For visitors:**
+  - **The basics:** fast, accessible (WCAG 2.2 AA), mobile-first forms that work without JavaScript and get better with it:
+    - inline validation, an error summary that links to the fields, focus management;
+    - uploads with progress;
+    - submission without a page reload;
+    - texts in their language.
+  - **Spam protection that respects them:** honeypot, timing and a signed challenge by default, with an optional proof-of-work check and no third parties. reCAPTCHA or hCaptcha only when an editor chooses them, and only per §4.10.
+- **For developers:**
+  - **Razor:**
+    - a tag helper and a view component;
+    - a form picker property editor with a value converter, and a ready-made block element type on request;
+    - theme views that can be overridden, and CSS custom properties.
+  - **Headless:**
+    - the form as JSON, a submission API, and the form picker in the Content Delivery API;
+    - published TypeScript types and a JSON schema;
+    - a framework-free web component that renders any form.
+  - **Extensibility:** custom field types, actions, option sources, export formats, captcha providers, spam checks, merge-tag sources and file scanners. Notifications for every lifecycle event, public services, and compiled samples.
+  - **Deployment:**
+    - optional mirroring of forms to JSON files for source control;
+    - schema-versioned definitions, idempotent migrations and an upgrade test for every release;
+    - load-balanced hosting with no extra infrastructure;
+    - SQLite and SQL Server;
+    - file storage through Umbraco's file system providers.
+- **An optional AI add-on**, `Jiron.Umbraco.FormBuilder.AI`, on Umbraco.AI: it drafts a form from a description, translates a form's texts and suggests help texts. Editors only, and visitor data never reaches an AI.
+
+### 1.2 Who uses it
+
+| Persona | Needs |
+| --- | --- |
+| Visitor | A short, clear form that works on a phone, says exactly what is wrong, never loses their answers, and doesn't track them. |
+| Editor (marketing, communications) | Builds and changes forms without a developer, sees the result as visitors will, can't break a live form by accident, and is warned about mistakes. |
+| Entry handler (sales, HR, support, events) | Finds new entries at once, works through them quickly (approve, reject, note, export), and can trust that every email went out or see why not. |
+| Privacy officer | Retention that runs by itself, one place to find, export or erase a person's data, and proof of consent. |
+| Administrator or developer | Installs in minutes, configures everything without code, deploys forms through source control, extends it through documented interfaces, and upgrades without fear. |
+
+### 1.3 In scope for the first release
+
+Everything in §1.1, plus:
+
+- multi-language sites (texts per culture, dictionary keys, seven built-in visitor languages);
+- multiple sites in one Umbraco installation (per-site sender address, base URL and defaults);
+- Umbraco members (members-only forms, prefill, one entry per member);
+- load-balanced hosting, SQLite and SQL Server;
+- the optional AI add-on;
+- a demo site with realistic seeded forms and content;
+- complete documentation, screenshots, logo, CI, packaging and Marketplace metadata;
+- an Umbraco 18 line (Phase 19).
+
+### 1.4 Jiron Form Builder is not, and never becomes
+
+- **Not a payment processor.** It never touches card or bank data. Payments are a "Later" extension topic (§7).
+- **Not a CRM or a marketing-automation tool.** It connects to them through actions, webhooks and the extension points.
+- **Not a tracker.** No cookies, no fingerprinting, no third-party scripts on a page unless an editor picks a third-party captcha. Insights are anonymous counters.
+- **Not a hosted service.** It runs inside the site that installs it.
+- **Not dependent on community packages**, and **not derived from any other product** (CLAUDE.md rule 2).
+
+---
+
+## 2. Decisions already made
+
+These come from the owner or from planning. Change one only through an ADR that explains why.
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D1 | **Name:** NuGet id and namespace root `Jiron.Umbraco.FormBuilder`; display name **Jiron Form Builder**; backoffice section label **Forms**; repo `github.com/Jiron/Jiron.Umbraco.FormBuilder` (private for now). Short identifiers use `jfb` (tables, CSS, URLs, events) and `JironFormBuilder` (settings section, folders, JS global). The owner reserves the NuGet prefix `Jiron.` (OWNER-TODO). | Owner's choice after name research (2026-10-20). A descriptive product name under the owner's own name leaves nothing to clash with, and the reserved prefix marks the packages as his. "Umbraco" appears only as the platform qualifier inside the package id, never in the display name. The product is always a "Form Builder"; no package id ends in `.Forms`. Editors look for "Forms", so that is the section label. |
+| D2 | **First commit = license.** `LICENSE.md` is the PolyForm Perimeter License 1.0.1 with Jiron Form Builder's header and `Required Notice:` line. The owner placed it before the run; step 0.2 checks its SHA-256 and commits it unchanged. GitHub's README-only commit `06f126f` is replaced, once, with `--force-with-lease` (owner approved). | The owner wants everyone to be able to use Jiron Form Builder free of charge, including companies on their own sites and agencies on client sites, and to change it, but nobody to sell it or offer a competing product or service built from it. Perimeter says exactly that in a short, lawyer-drafted text (§3.6). It is **not** OSI "open source", so Jiron Form Builder calls itself "free and source-available", never "open source". A lawyer review is an OWNER-TODO item. |
+| D3 | **Target Umbraco 17 LTS first:** CMS `[17.5.0, 18.0.0)`, developed against the latest 17.x (17.7.1 on 2026-10-19), .NET 10. An Umbraco 18 line comes at the end (Phase 19). | 17 is the LTS that most sites run, supported until 2028-11-27. 17.5 brought the async distributed background jobs Jiron Form Builder relies on *(verify in 1.2c; raise the floor by ADR if a needed API is newer)*. |
+| D4 | **Original work.** Every name, screen, syntax, data model and line of code is Jiron Form Builder's own (CLAUDE.md rule 2). Vocabulary: form, page, group, field, option list, rule, action, entry, theme, merge tag, template. | Legal safety and a coherent product. The owner's private reference material stays in `.private/` and never enters the repository. |
+| D5 | **Form definitions are versioned JSON documents; entries are relational.** A form has one draft and many published versions, each a schema-versioned JSON document upgraded by code. Entries are rows: entry, typed values per field, files, a timeline and notes. Each entry points at the version it was submitted with. | Drafts, history, diff, restore, export and deployment as files fall out naturally. Old entries never change meaning when a form changes. Entries stay filterable and sortable in SQL. Proven in Ligata.Forms (draft and published documents), but entries there were JSON blobs that could not be queried, which is fixed here. |
+| D6 | **Submissions are transactional and idempotent.** One transaction stores the entry, its values and one queued **action run** per action that applies (an outbox). A client-generated submission id plus a digest makes retries safe. Actions run in the background with leases, retries and a visible log. | No entry is lost when email or a webhook is down, and no double entries come from double clicks or flaky networks. Proven in Ligata.Forms. |
+| D7 | **Persistence:** NPoco DTOs with Umbraco's `PackageMigrationPlan` and `AsyncMigrationBase` steps that are idempotent and use frozen schema snapshots. It works on SQLite and SQL Server. All Jiron Form Builder database access goes through one async gate, and writes start with a write. | This is Umbraco core's own path. `MigrationBase` is obsolete in 17 and gone in 18. The gate is Tandem's proven fix for SQLite's shared-cache locking (§3.3). |
+| D8 | **Background work** runs as `IDistributedBackgroundJob`s: one server in the cluster runs each, coordinated by the database. Jobs cover the action and email outbox, retention, stats roll-ups, abandoned-upload cleanup and file-mirror sync. After a commit, the server also wakes its own processor at once, so emails go out within seconds. | Load-balanced safe, with no extra infrastructure and no per-node state that matters. |
+| D9 | **Rendering:** server-side Razor first, enhanced by a small framework-free TypeScript runtime: no jQuery, ≤ 16 KB gzip, no third-party requests. Without JavaScript, forms still submit and validate on the server. A **headless** path (JSON definition, submission API, web component renderer) uses the same markup contract and the same runtime. | SEO, speed, accessibility and robustness. Headless sites are a large part of Umbraco 14+ projects. |
+| D10 | **One logic, two runtimes.** Rules, validation and merge tags are implemented in C#, which is authoritative, and in TypeScript for instant feedback. Both must pass **one shared set of JSON test vectors** (`tests/vectors/`). | The browser and the server can never disagree about a hidden field or a validation message. This was a lesson from Ligata.Forms, where a condition value was handled differently than intended. |
+| D11 | **Public endpoints** live at `/jfb/api/v1` (configurable), never under `/umbraco`. Razor forms without JavaScript post back to their page through Umbraco's surface routing. | Many sites block `/umbraco` publicly, and no-JS posts must re-render the page with errors. |
+| D12 | **The backoffice** is a top-level section **Forms** (alias `Jiron.FormBuilder.Section`), built with Lit, TypeScript and UUI, using Umbraco's own patterns: trees, workspaces with views, the save bar, modals and sidebars, the sorter, entity actions and toasts. It talks to the server through a generated OpenAPI client. | It must feel native to Umbraco. No foreign design system. |
+| D13 | **Privacy by default:** <ul><li>no cookies, and IP addresses are not stored;</li><li>retention defaults are on;</li><li>sensitive fields are masked;</li><li>consent fields store the exact wording shown;</li><li>logs never contain field values;</li><li>nothing loads from third-party hosts unless an editor chooses a third-party captcha.</li></ul> | GDPR, TDDDG and good practice (§3.7). Site owners get compliance help without configuring anything. |
+| D14 | **Spam protection needs no third party by default:** a honeypot, a minimum fill time, a signed challenge, rate limits and content rules feed a spam score. A proof-of-work challenge is optional. reCAPTCHA v2/v3 and hCaptcha are optional providers that load only per §4.10. Suspicious entries go to **Spam**, where nothing is lost and no action runs, instead of being dropped. | Stops bots without privacy costs, and never silently loses a real lead. |
+| D15 | **Files:** <ul><li>stored outside the public web root, through a Jiron Form Builder `IFileSystem`, which also works with Umbraco's official storage providers;</li><li>names are random, and downloads go only through authorised endpoints;</li><li>extension allowlist, content sniffing, size and count limits;</li><li>a scanner hook (`IFormBuilderFileScanner`), and deletion with the entry.</li></ul> | Uploaded files are personal data and an attack vector. |
+| D16 | **Versioning and branches:** the package major follows the Umbraco major. The first line is `17.0.0-alpha.N`, then `-beta.N`, then `17.0.0`, for CMS 17. `main` is the 17 line and holds every ROADMAP and WORKLOG change; CMS 18 code lives on `v18/main` (Phase 19). `Directory.Build.props` holds `VersionPrefix` 17.0.0 and `VersionSuffix` alpha.0; release builds pass the tag's version; local test packs use `-dev.<yyyyMMddHHmm>`. | Compatibility is obvious at a glance, and stale NuGet caches can never serve old bits. |
+| D17 | **No publishing, no visibility changes.** The release workflow is built and tested, but the NuGet push stays disabled (`vars.JFB_NUGET_PUBLISH != 'true'`). CI runs on pushes only when `vars.JFB_CI == 'true'`. The repo stays private. | Only the owner can do these. |
+| D18 | **UX is a first-class requirement** in the backoffice and on the website (§4.13): <ul><li>progressive disclosure, so no screen is cluttered;</li><li>one primary action per view, with secondary actions in menus;</li><li>every state designed, sensible defaults and plain language;</li><li>a guided first run, live previews and keyboard paths.</li></ul> | The owner: "It's important that we don't have a bunch of buttons and stuff clustered in the same place." |
+| D19 | **Tests:** NUnit 3 for unit and integration tests (`Umbraco.Cms.Tests.Integration` 17.x requires NUnit 3), with NUnit's own constraints (no FluentAssertions) and NSubstitute. Vitest covers the client packages, Playwright the browser (Edge locally, Chromium in CI), and axe-core accessibility. | Official Umbraco test tooling with permissive licenses, the same stack Tandem proved on this machine. |
+| D20 | **Multi-language:** <ul><li>every editor-written text (labels, help, placeholders, options, messages, emails) can be translated per culture, with fallback to the default text;</li><li>`#dictionaryKey` values resolve through Umbraco's dictionary;</li><li>default visitor texts ship in English, German, French, Italian, Dutch, Spanish and Danish;</li><li>the backoffice ships in English and German.</li></ul> | Umbraco's audience is European and multilingual. |
+| D21 | **Upgradability is designed in:** <ul><li>Semantic Versioning;</li><li>idempotent migrations;</li><li>schema versions and upgraders for form definitions and settings;</li><li>a fixture database and an upgrade test for every released schema;</li><li>public API versions (`v1`);</li><li>deprecations that last a full major;</li><li>`docs/upgrading.md`.</li></ul> | The owner: "needs to be easily upgradable for future releases". |
+| D22 | **No real third-party keys during the build.** Captcha providers, webhooks and the AI add-on are tested against local stubs and fakes only. Real-key checks are OWNER-TODO items. | Nothing to leak, nothing to pay for, and tests stay deterministic. |
+| D23 | **AI is optional and separate.** `Jiron.Umbraco.FormBuilder.AI` uses Umbraco.AI for editor-side help only: draft a form, translate texts, suggest help texts. The core packages never reference Umbraco.AI, and no entry data is ever sent to an AI. | Useful for editors, with no new privacy risk for visitors. |
+| D24 | **Merge tags** use Jiron Form Builder's own syntax: `{{ field.email }}`, `{{ member.name }}`, `{{ page.url }}`, `{{ entry.number }}`, `{{ query.ref \| default: "web" }}`. Values are HTML-escaped in HTML contexts, and tags are never evaluated as code. Editors insert them from a picker; nobody has to memorise the syntax. | One small, safe, documented template language for defaults, emails, messages, redirects and webhooks. |
+| D25 | **Forms as files (optional):** with `JironFormBuilder:Definitions:Mirror` on, each published form is also written to `umbraco/JironFormBuilder/forms/<alias>.json`. On startup, changed files are imported as new versions, with conflict detection. Off by default. | Teams that deploy through source control get reviewable form changes without a community dependency. |
+
+---
+
+## 3. Reference material
+
+### 3.1 Ligata.Forms: what to port
+
+Ligata.Forms is at `C:\Coding\Ligata.Forms`, version 0.3.2, commit `8f4b0c5`. It is the owner's earlier, deliberately small forms package for Umbraco 17.6 (about 2,000 lines). It is read-only: copy code into Jiron Form Builder and adapt it (CLAUDE.md rule 5). Read `README.md` and `docs/ARCHITECTURE.md`, `FEATURES.md`, `EDITOR.md`, `OPERATIONS.md`, `CONSENT.md`, `TESTING.md` and `PLAN.md` there first. Abbreviations below: `src` = `src/Ligata.Forms`, `JS` = `src/wwwroot/assets/ligata-forms/ligata-forms.js`, `BO` = `src/wwwroot/App_Plugins/LigataForms`.
+
+**Clean-room note:** its docs name another product in a few places. Never carry those mentions, links or class names (for example a delivery class whose name reads like another product's) into Jiron Form Builder.
+
+| Area | Ligata.Forms source | In Jiron Form Builder |
+| --- | --- | --- |
+| Draft and published documents. The editor's concurrency `Version` is separate from the visitor-facing `Revision`, which changes only when the public projection changes. | `src/Data/FormStore.cs` (`Save`), `src/Models/FormDefinition.cs` (`Public()`, `SamePublicContent()`) | **Port the idea** into D5's draft, versions and public revision. The public projection never contains actions, recipients, secrets or internal notes. |
+| Immutable entry snapshot (definition plus values) | `EntrySnapshot` in `FormStore.cs` | **Replace** with the entry → form version reference plus the field catalogue (D5, §4.4). Keep the guarantee: later edits never change what an old entry means. |
+| Transactional outbox and worker: lease, back-off `2^n` minutes, an "uncertain" state after an expired lease, no retries burnt while SMTP is not configured | `FormStore.Accept/ClaimJob/CompleteJob`, `src/Services/WorkflowWorker.cs` | **Port the logic** into action runs and the email outbox (D6, D8), as distributed jobs instead of a `BackgroundService`. |
+| Idempotent submissions: a client GUID plus a SHA-256 digest; the same digest returns the original receipt, a different one is a 409; a receipt endpoint for uncertain responses | `FormStore.Accept`, `PublicFormsController` | **Port** (§4.4). |
+| The same condition semantics on the server and in the browser; "a rule may only look at earlier fields" prevents cycles | `FormValidation.Matches`, `JS` `matches` | **Grow** into the rules engine with shared test vectors (D10). Keep cycle prevention, as a graph check that also covers pages and groups. |
+| Server validation: unknown fields rejected, hidden fields stripped, NUL and CR/LF guards, `MailAddress` for email, choices only from the allowed list | `src/Models/FormValidation.cs` | **Port and extend** per field type (§4.3). |
+| Definition validation: limits, the alias pattern, reserved aliases, site-relative redirects only | `FormValidation.Definition` | **Port** into the hard limits plus the form check (9.5b). |
+| Anonymous endpoint security: Data Protection-signed challenge, honeypot, origin allowlist, no credentialed CORS, `NoStore` responses, no personal data in logs | `src/Services/RequestGuard.cs`, `src/Controllers/PublicFormsController.cs` | **Port.** Replace the in-memory counters with the ASP.NET Core rate limiter (see §3.2 for the bypass). |
+| reCAPTCHA v3 verification (success, score, action, hostname allowlist, token age, clock skew) | `src/Services/RecaptchaVerifier.cs` | **Port** as one `IFormBuilderCaptchaProvider` (7.2). |
+| Consent-aware, lazy captcha loading; Cookiebot categories and events | `JS`, `docs/CONSENT.md` | **Port** into §4.10. |
+| "The form changed while you were filling it in": fetch the new markup, keep the answers that still fit, reset changed consent texts, refuse when an answered field was removed | `JS` (render refresh) | **Port**, simplified for live sites (6.4a). |
+| CSV export with BOM and the formula-injection guard (`=`, `+`, `-`, `@`, tab, CR) | `FormsManagementController.Export` | **Port** into every export (11.4). |
+| Several forms on one page: deterministic, per-request instance ids | `src/Rendering/LigataFormViewComponent.cs` | **Port** (6.2). |
+| Static web assets in an RCL with `StaticWebAssetBasePath=/`; asset version taken from the assembly | the csproj, `src/Rendering/FormAssets.cs`, `tests/versions.test.mjs` | **Port.** The install test checks the assets after `dotnet publish` too (§3.2). |
+| Editor behaviour: <ul><li>pure editor-model functions tested in Node;</li><li>pointer-capture drag, because native HTML drag and drop failed in testing;</li><li>Alt+Up/Down reordering;</li><li>reorders that would break a rule are refused;</li><li>undo after removing a field;</li><li>email presets ("notify your team", "confirm to the visitor") with a live preview.</li></ul> | `BO/editor-model.js`, `dashboard.js`, `editor-*.js` | **Rewrite** in TypeScript and Lit with UUI, and keep every behaviour. |
+| Offline `mailto:` fallback and static-export resilience | `JS` | **Drop.** Static export is not a Jiron Form Builder goal. |
+| Ligata-specific `?thema=` mapping | `JS` | **Drop.** Generic, opt-in prefill replaces it (6.5). |
+
+### 3.2 Lessons from Ligata.Forms (keep them)
+
+- **Define "empty" explicitly.** The "not checked" condition never matched, because empty values were filtered out before matching. Jiron Form Builder's rules have explicit `isEmpty`/`isNotEmpty` operators and unchecked-checkbox semantics, both covered by test vectors.
+- **Rate limits must not fail open.** Ligata's `MemoryCache` with a size limit stops counting once it is full. Use the ASP.NET Core rate limiter with bounded partitions, and test what happens under a flood of distinct IPs.
+- **No process-wide locks.** A `static object` lock breaks under load balancing. Use the database gate and row-level claims (D7, D8).
+- **Searchable data must be stored as data.** Searching with `LIKE` over JSON text also matched labels and missed non-ASCII text stored as `\uXXXX`. Entries store typed values plus a normalised search column (§4.5).
+- **APIs return DTOs, never rows.** The entries list returned raw rows with whole snapshots.
+- **The UI follows permissions.** A dashboard that every Content user saw answered with errors for most of them. Jiron Form Builder hides what a user may not use and explains disabled actions.
+- **NPoco needs explicit `[Column("Name")]` names**, or the generated table SQL is invalid.
+- **Test static assets under `dotnet run` *and* after `dotnet publish`**; a 0.3.x release broke only in one of them.
+- **Localise every message**, server validation included. Ligata's server messages were English only, even on German sites.
+- **Give sites layout controls** (column spans, widths, choice styles), so they never need CSS that targets a field by alias, as ligata.ch had to.
+- **Good form UX ideas** from the ligata.ch redesign mock (`C:\Coding\ligata\redesign`): an error summary with links plus inline errors, a character counter, well-styled native checkboxes and radios. Adopt them in the default theme (6.3).
+- **Field and action types must be registries, not `switch` statements.**
+
+### 3.3 Tandem: what to reuse, and its lessons
+
+Tandem is at `C:\Coding\Umbraco.Community.AI.Tandem`, the owner's chat package for Umbraco 17. It is read-only; port freely (CLAUDE.md rule 5). Its infrastructure was built and proven **on this machine** in October 2026. Before Phase 1, read its `CLAUDE.md`, the handover notes in `docs/WORKLOG.md`, and ADRs 0001, 0005, 0006, 0008, 0010, 0011, 0014, 0016, 0019, 0020 and 0021.
+
+| Area | Tandem source | In Jiron Form Builder |
+| --- | --- | --- |
+| Progress line, secret scan, hooks, local CI mirror, demo script, coverage merge, npm licence check, third-party notices, workflow check, audit-suppression check | `scripts/*.mjs`, `scripts/ci-local.ps1`, `scripts/demo.ps1`, `scripts/tests/*` | **Port** and rename: the fake marker `JFB_FAKE`, Jiron Form Builder's paths and ports, and no key file. |
+| Build files | `Directory.Build.props`, `Directory.Packages.props`, `NuGetAudit.props`, `.editorconfig`, `global.json`, `NuGet.config`, `src/Directory.Build.*`, `tests/Directory.Build.props` | **Port.** |
+| Database gate, migration plan, frozen snapshots, migration state, `SqlNames` | `src/…Core/Persistence/*`, Tandem ADR-0005 | **Port the patterns.** |
+| Settings framework: typed sections, schema versions, host locks, cache refresher | `src/…Core/Settings/*`, Tandem ADR-0008 | **Port the patterns.** |
+| Captcha verifiers, rate limits, outbound email queue, audit log, daily stats | `Captcha/*`, `Limits/*`, `Email/*`, `Audit/*`, `Stats/*` | **Port and adapt.** |
+| Public API conventions: ProblemDetails codes, CORS, body and time limits, an OpenAPI snapshot test | `src/…Web`, Tandem ADR-0020 | **Port the patterns.** |
+| Backoffice client: workspace, generated client, manifests test, Vite config | `src/…Web/Client/packages/backoffice` | **Port the patterns.** |
+| Test harness: <ul><li>integration setup;</li><li>fake time and test users;</li><li>Playwright global setup and fixtures (`loginAs`, `apiAs`, `waitForMail`, the sign-in lock);</li><li>the E2E host.</li></ul> | `tests/*` | **Port.** |
+| CI (gated), Dependabot, issue and PR templates | `.github/*` | **Port.** |
+
+**Tandem's gotchas on this machine** (details in its WORKLOG):
+
+- **Integration tests:**
+  - need a direct `Microsoft.NET.Test.Sdk` reference, their own `appsettings.Tests.json`, and `Umbraco:CMS:Unattended:PackageMigrationsUnattended=false`; otherwise a pending plan hangs the test host;
+  - `UmbracoTestServerTestBase` needs `Umbraco.Tests.Integration.deps.json` in the output.
+- **The test host itself:** it uses `NoAppCache` and a messenger that delivers nothing, and NUnit reuses fixture instances, so mutable fixtures need `FixtureLifeCycle(InstancePerTestCase)`.
+- **SQLite with Umbraco's default `Cache=Shared`:** concurrent read-then-write transactions fail with "database table is locked" and starve the thread pool. Route everything through one async gate and start writes with a write.
+- **What the database reports back:**
+  - Umbraco 17.7.1 reports SQLite column nullability inverted, and SQL Server's `GetDefinedIndexes` does not order index columns, so schema tests use their own queries;
+  - text compares case-insensitively, so store hashes as lowercase hex;
+  - dates come back `Unspecified`, so mark them UTC when reading.
+- **Cache refreshers** reach other servers after up to about 2× `TimeBetweenSyncOperations` (about 9 s). `InstructionProcessJob` starts 1 minute after boot. Inside a request, the batched messenger writes instructions only at request end unless `SendMessages()` is called.
+- **Parallel backoffice sign-ins hang on SQLite** in 17.7.1. E2E fixtures sign in one at a time (a lock file).
+- **Auth and keys:**
+  - Umbraco 17 keeps backoffice tokens in HTTP-only cookies; API clients send `Authorization: Bearer [redacted]`, and the cookie carries the real token;
+  - Umbraco sets no Data Protection application name, so load-balanced servers must share the key ring and the name.
+- **Playwright** page snapshots and traces record typed values, passwords included. Generate E2E passwords per run, and read only the error section of `error-context.md`.
+- **The demo:** start the demo build only through its script. Otherwise Umbraco writes a generated imaging HMAC key into the tracked `appsettings.json`.
+- **.NET quirks:**
+  - a second solution file in the repository root makes `dotnet format` refuse to run; keep solution filters in `src/`;
+  - `[ApiVersion]` is not inherited: put it on every concrete controller;
+  - `TypeFilterAttribute` needs `Arguments`;
+  - `WriteAsJsonAsync` falls back to `RequestAborted` when given `CancellationToken.None`;
+  - `System.Threading.RateLimiting` ships with ASP.NET Core, so limiter adapters live in the web project;
+  - NPoco's async methods have no `params` overloads;
+  - an `AsyncLocal` set inside an async method does not flow back to the caller;
+  - Umbraco's `IEventAggregator` dispatches on the runtime type;
+  - Umbraco's own section migration writes `umbracoUserGroup2App` directly, because the user-group service may fail inside a migration.
+- **Shell and Windows:**
+  - Bash heredocs with backticks and quotes break, so write edit scripts with the file tool, and replace text with split/join rather than `String.replace` (`$'`);
+  - Windows cannot delete a folder a shell sits in;
+  - MSBuild node reuse locks temp folders;
+  - `node --test` needs a glob;
+  - the system git has `core.autocrlf=true`, which `.gitattributes` overrides.
+- **Licences:** the SchemaStore workflow schemas on npm are GPL-3.0, so the workflow check uses GitHub's MIT parser.
+
+### 3.4 Umbraco 17 package facts (research 2026-10-19; confirm in Phase 1)
+
+- **Templates:** `dotnet new install Umbraco.Templates@17.7.1`.
+  - **Always in a private template hive:** pass `--debug:custom-hive %TEMP%\jfb-templates-<version>` to every `dotnet new install` and every `dotnet new` call. The user-wide template install is shared with the Tandem session and must never change (CLAUDE.md rule 6).
+  - Pin 17.7.1 for the whole run. Only 18.4 (the 17.5 floor) and Phase 19 use other versions, each in its own hive.
+  - `dotnet new umbraco-extension -n <Name> -ex -pm Central` creates an RCL with `Client/` (Vite library mode, Lit, TypeScript, `@umbraco-cms/backoffice`, `@hey-api/openapi-ts`), `StaticWebAssetBasePath=/`, and output to `wwwroot/App_Plugins/<Name>`. It does not run npm during `dotnet build`; run it in scripts and CI.
+  - Test sites: `dotnet new umbraco -n Site --development-database-type SQLite --friendly-name … --email … --password …`.
+- **`umbraco-package.json`:** in `wwwroot/App_Plugins/JironFormBuilder/`, with `id` = NuGet id. Since 17.6, `version` drives cache busting, so stamp it at build time. Register the manifests with a `bundle` extension.
+- **Management API:**
+  - Attributes: `[ApiController]`, `[BackOfficeRoute("jfb/management/api/v{version:apiVersion}")]`, `[MapToApi("jfb")]`, `[JsonOptionsName(Constants.JsonOptionsNames.BackOffice)]`, `[Authorize(Policy = …)]`, `[ApiVersion("1.0")]` on every concrete controller.
+  - Register the OpenAPI document in one composer, because CMS 18 replaces Swashbuckle with Microsoft.AspNetCore.OpenApi.
+  - Clients use `UMB_AUTH_CONTEXT.configureClient(client)`.
+- **Manifest types Jiron Form Builder expects to use** *(verify each in 1.2a to 1.2c)*:
+  - `section`, `sectionSidebarApp` (menu), `menu` and `menuItem`, `tree` and `treeItem` (forms with folders);
+  - `workspace` (routable), `workspaceView`, `workspaceAction`, `workspaceContext`;
+  - `entityAction` (create, rename, move, duplicate, delete), `collection` with `collectionView` and `collectionAction` (entries);
+  - `modal`, `dashboard`, `propertyEditorUi`, `localization`, `searchProvider`, `condition`, `icons`.
+- **Building blocks to reuse rather than rebuild** *(verify)*:
+  - the sorter controller (`@umbraco-cms/backoffice/sorter`), weighed against Ligata's pointer-capture drag in 1.2b;
+  - the Tiptap rich text input (the default RTE since 16);
+  - the document and media pickers (`umb-input-document`, `umb-input-media`);
+  - the data type picker;
+  - the user group picker;
+  - code editor elements;
+  - `UMB_NOTIFICATION_CONTEXT` toasts and `UMB_MODAL_MANAGER_CONTEXT`.
+- **Property editors:** a `propertyEditorSchema`, which is a server `DataEditor`, plus a `propertyEditorUi`. Use a `PropertyValueConverterBase` for Razor, and an `IDeliveryApiPropertyValueConverter` for the Content Delivery API, which must be enabled with `Umbraco:CMS:DeliveryApi:Enabled`.
+- **"Used on" tracking:** `IDataValueReferenceFactory` / `IDataValueReference` can report references from property values. Whether a custom entity type and UDI can appear in Umbraco's references UI is decided in 1.2c. If it can't, Jiron Form Builder keeps its own reference index, refreshed on content save *(verify)*.
+- **No-JavaScript posts:** a `SurfaceController` with `BeginUmbracoForm` posts back to the current page through an encrypted route token. `CurrentUmbracoPage()` re-renders with `ModelState`, and `RedirectToCurrentUmbracoPage()` implements post/redirect/get *(verify in 17)*.
+- **Content creation** (the "create content" action): the async `IContentEditingService` / `IContentPublishingService` of 14+ rather than the legacy `IContentService` *(verify)*.
+- **Members:** `IMemberManager` for the current member, `IMemberService` and `IMemberGroupService`.
+- **Files:** `IFileSystem`, `PhysicalFileSystem`, and `IHostEnvironment` paths. Umbraco's official Azure Blob storage provider targets the media and image cache file systems; how a package registers its own blob-backed file system is decided in 1.6 *(verify)*.
+- **Health checks:** classes with `[HealthCheck]` appear on the Settings › Health Check dashboard.
+- **Database:**
+  - `PackageMigrationPlan` (it auto-runs unattended; `Umbraco:CMS:Unattended:PackageMigrationsUnattended`) with `AsyncMigrationBase` steps;
+  - DTO attributes `[TableName]`, `[PrimaryKey]`, `[ExplicitColumns]`, `[Column]`, `[NullSetting]`, `[Length]`, `[SpecialDbType(NVARCHARMAX)]`, `[Index]`, `[ForeignKey]`;
+  - store dates in UTC;
+  - use `ICoreScopeProvider` and `IScopeAccessor`, and call `Complete()`.
+- **Jobs:**
+  - `IDistributedBackgroundJob` (`Name`, `Period`, `ExecuteAsync(CancellationToken)` from 17.5), registered with `AddSingleton<IDistributedBackgroundJob, T>()`. Settings live in `Umbraco:CMS:DistributedJobs`.
+  - `IRecurringBackgroundJob` runs on every server.
+- **Email:** `IEmailSender.SendAsync(EmailMessage, emailType, …)`. Check `CanSendRequiredEmail()` first. Settings live in `Umbraco:CMS:Global:Smtp`, and `DeliveryMethod=SpecifiedPickupDirectory` suits tests.
+- **Integration tests:** `Umbraco.Cms.Tests.Integration` 17.x (NUnit ≥3.14 <4), `UmbracoIntegrationTest`, `UmbracoTestServerTestBase`, `[UmbracoTest(Database = NewSchemaPerTest)]`.
+- **Release schedule:**
+  - 17 LTS: until 2028-11-27;
+  - 18 STS: 2026-06-25 to 2027-06-25;
+  - 19 STS: planned 2026-12-10;
+  - 21: the next LTS, planned 2027-12.
+- **What 18 breaks:** `MigrationBase`, `UmbracoApiController`, `ILocalizationService`, `IFileService` and some sync overloads are removed. Swagger moves to `/umbraco/openapi` (OpenAPI 3.1).
+- **Output caching:** sites may put pages behind output caching or a CDN. Jiron Form Builder markup therefore contains nothing per visitor: the challenge is fetched when the visitor first interacts, and there is no antiforgery token on anonymous forms (§4.10).
+
+### 3.5 Umbraco Marketplace and NuGet facts (research 2026-10-19)
+
+- **Listing requirements:** the installable package needs the NuGet tag `umbraco-marketplace` (only on the meta package) and must depend on `Umbraco.Cms.*`. Jiron Form Builder's meta package therefore references `Umbraco.Cms.Web.Website` `[17.5.0, 18.0.0)` directly, not only through Web *(verify whether a transitive dependency is enough)*. The AI add-on, which is installed on its own, gets the tag too. Supported versions come from the dependency range (`[17.5.0,18.0.0)` = 17 only). Non-OSI and commercial licences are accepted; the listing is about the package, not its licence type.
+- **Sync:** new packages are picked up daily at 04:00 UTC, and known ones every 2 h.
+- **`umbraco-marketplace.json`:**
+  - It is read from the root that `PackageProjectUrl` points to, so **it cannot be read while the repo is private**.
+  - Schema: `https://marketplace.umbraco.com/umbraco-marketplace-schema.json`; validator: `https://marketplace.umbraco.com/validate`.
+  - Fields:
+    - `Title`, `Description`;
+    - `Category` and `AlternateCategory`. **There is no "Forms" category**: use "Editor Tools", plus "Campaign & Marketing" *(verify the current list)*;
+    - `AuthorDetails`, `DocumentationUrl`, `IssueTrackerUrl`, `DiscussionForumUrl`, `VideoUrl`, `Screenshots`, `Tags`;
+    - `PackageType` (`Package`), `LicenseTypes` (`Free` | `Purchase` | `Subscription`; this is about price, so `["Free"]`);
+    - `RelatedPackages`, `IsSubPackageOf`, `PackagesByAuthor`, `VersionSpecificPackageIds`;
+    - `LookingForContributors`, `LookingForMaintainer`, `AddOnPackagesRequiredForUmbracoCloud`.
+  - `additionalProperties: false`.
+- **Icon:** the NuGet `PackageIcon` (PNG or JPEG, < 1 MB, 128×128 recommended).
+- **NuGet licence rules:**
+  - **Licence expressions must be OSI- or FSF-approved.** PolyForm Perimeter has no SPDX id and is not OSI-approved, so packages use `PackageLicenseFile` with the packed `LICENSE.md`. Set only one licence property.
+  - `PackageRequireLicenseAcceptance` shows a dialog only in Visual Studio; `dotnet add package` does not prompt. Jiron Form Builder sets it to `true` as a visible signal of a non-standard licence.
+- **Other NuGet settings:** `PackageReadmeFile` (.md), `PackageIcon`, `IncludeSymbols` + `snupkg`, `EnablePackageValidation`, and `ContinuousIntegrationBuild` in CI. SourceLink is built in. `PublishRepositoryUrl=false` while the repo is private.
+- **Trusted publishing:** `NuGet/login@v1` OIDC with a 1-hour temporary key, set up on nuget.org per owner, repo and workflow file. Gate the push with a repository variable and keep it off (D17).
+
+### 3.6 Licensing, naming and clean-room facts (research 2026-10-19; not legal advice)
+
+- **The licence (D2):** PolyForm Perimeter 1.0.1. Use `SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1` in file headers where headers are used.
+  - **What it allows:** any purpose except "providing to others any product that competes with the software". Changes and distribution are allowed, and there is a patent licence and a 32-day cure period for first violations.
+  - **What "competes" covers:** a product competes when it is marketed as a substitute for the functionality or value of the software, even if free.
+  - **What is fine:** a client website built with Jiron Form Builder does not compete; neither do hosting it or add-ons that extend it.
+  - **Why not PolyForm Shield:** Shield also forbids competing with any product the licensor or its affiliates provide *using* the software. Because the owner's own studio may build client sites with Jiron Form Builder, Shield could turn every other agency into a "competitor". Perimeter avoids that.
+  - **Why not the others:**
+    - Commons Clause can catch paid setup and support work;
+    - the Elastic License 2.0 allows selling copies and can catch agency hosting;
+    - FSL turns every version into MIT after two years;
+    - PolyForm Noncommercial forbids company use;
+    - BSL needs a custom grant.
+- **Wording:** a licence that forbids competing products is **not** OSI "open source" (OSD criteria 1 and 6). Jiron Form Builder says "free and source-available", never "open source". "No licence" would mean all rights reserved, so nobody could use it.
+- **Contributions:** GitHub's terms make contributions inbound = outbound, which under Perimeter would leave the owner unable to relicense contributed code. Outside contributions therefore wait for a **contributor licence agreement**, an OWNER-TODO item with a lawyer:
+  - under German law it must be a broad, sublicensable licence grant (§§ 29, 31(5), 31a UrhG), not an assignment;
+  - it includes an original-work attestation.
+- **The Cyber Resilience Act** (EU 2024/2847): reporting duties apply from 2026-09-11 and most obligations from 2027-12-11. Non-monetised software is generally outside its scope; any monetisation (paid add-ons, paid support, possibly donations) needs a check first (OWNER-TODO). Jiron Form Builder's `SECURITY.md` and vulnerability handling follow good practice either way.
+- **The Umbraco name:** Umbraco's brand rules forbid "Umbraco" in product names without permission and any suggestion of being part of Umbraco A/S.
+  - The package id uses "Umbraco" only as a platform qualifier after the owner's prefix (`Jiron.Umbraco.FormBuilder`), a common pattern for community packages. The product name "Jiron Form Builder" never contains it.
+  - Never use the Umbraco logo, never use "Umbraco" in paid ads, and always carry the non-affiliation notice (Appendix A).
+- **The name** was decided on 2026-10-20 after name research. Short brand-style names either clashed with existing products or came too close to them, so the product carries a descriptive name under the owner's own name, which leaves nothing to clash with. The NuGet prefix `Jiron.` is reserved by the owner (OWNER-TODO), which also gives the packages the verified mark. The build never renames anything on its own.
+- **Clean room:**
+  - **What may be reimplemented:** functionality, ideas, logic, data formats and programming languages are not protected by copyright (EU Software Directive Art. 1(2), CJEU *SAS v WPL* C-406/10, § 69a(2) UrhG, 17 U.S.C. § 102(b)).
+  - **What is protected:** code (including shipped scripts, styles and views), documentation text (the *SAS* follow-up judgment found infringement by copying manuals), graphics and icons, and possibly a distinctive screen design (CJEU *BSA* C-393/09).
+  - **Unfair competition:** in Germany, close imitations can also be unfair competition (UWG § 4 Nr. 3) even without copyright. Jiron Form Builder therefore designs its own screens and never uses screenshots of other products as design references.
+  - **Licence terms:** commercial licence terms may forbid reverse engineering, and US courts enforce such terms. Hence CLAUDE.md rule 2: never install, run, unpack or decompile another product.
+
+### 3.7 Privacy, accessibility and email facts (research 2026-10-19; not legal advice)
+
+- **GDPR:** the site is the controller. Features that help it:
+  - minimisation (store-nothing mode, no IP by default, sensitive fields);
+  - storage limitation (retention with purge, including files and emails);
+  - data subject rights (find, export, erase across forms);
+  - proof of consent (Art. 7: never pre-ticked, with the exact text stored);
+  - security (Art. 32: permissions, audit, protected uploads).
+- **Consent checkboxes must never be pre-ticked** (CJEU *Planet49*). A consent field's default is always unchecked, and the designer does not offer a "checked" default for it.
+- **Third-party captchas in the EU** load scripts from third parties and transfer data abroad. Under TDDDG § 25 that needs consent unless strictly necessary. Hence the consent modes in §4.10 and no third party by default (D14).
+- **Web fonts from third-party CDNs** have been held unlawful without consent in Germany (LG München I, 2022, about Google Fonts). Jiron Form Builder ships no external fonts (CLAUDE.md rule 4).
+- **Double opt-in:** in Germany, newsletter sign-ups need verified consent for email advertising (UWG § 7). That is why email verification is built in (§4.4).
+- **Accessibility:** the European Accessibility Act has applied since 2025-06-28 to many consumer services, including e-commerce. WCAG 2.2 AA forms help sites meet it (§4.12).
+- **Shipping legal text:** ship a **checklist** plus **clearly labelled templates** (DE and EN) and a factual sheet of what the package does. Never claim that anything is "compliant".
+
+### 3.8 The owner's private folder
+
+`.private/` is git-ignored (CLAUDE.md rule 2). The owner may keep reference material there, the term list for `scripts/term-guard.mjs`, and the private version of the goal.
+
+- Read it only when the goal or step 1.1 says so.
+- Keep any mapping or notes about it inside `.private/`.
+- Never quote it, name what is in it, or derive tracked text from it word for word.
+- The roadmap's own requirements (§1, §2, §4) stand on their own and need nothing from `.private/` to be built.
+
+---
+
+## 4. Target design
+
+Phase 1 turns this design into `docs/architecture.md` and ADRs, and Phase 2 turns §4.13 into concrete screens. Where research on the machine shows a better way, change it there and record why.
+
+### 4.1 Solution layout
+
+```
+Jiron.Umbraco.FormBuilder/
+├─ LICENSE.md  README.md  CLAUDE.md  ROADMAP.md  GOAL.md  CHANGELOG.md  SECURITY.md  SUPPORT.md
+├─ CONTRIBUTING.md  CODE_OF_CONDUCT.md  THIRD-PARTY-NOTICES.md
+├─ umbraco-marketplace.json             # Marketplace metadata (read from the repo root once public)
+├─ Jiron.Umbraco.FormBuilder.slnx
+├─ Directory.Build.props  Directory.Packages.props  NuGetAudit.props  global.json  NuGet.config  .editorconfig
+├─ assets/                              # logo.svg (master), icon-512/256/128/64.png, brand.md
+├─ schemas/                             # jfb-form.v1.schema.json, jfb-actions/..., shipped and tested
+├─ docs/                                # user and developer docs (Phase 17), decisions/, research/, ux/, privacy/, screenshots/
+├─ scripts/                             # roadmap-status, secret-scan, term-guard, install-hooks, ci-local.ps1, demo.ps1, install-test.ps1, screenshots, icons, notices, licences
+├─ src/
+│  ├─ Jiron.Umbraco.FormBuilder.Core/   # domain: definitions, field/action/option registries, rules + validation + merge-tag engines,
+│  │                                       # entries, actions, email outbox, settings, permissions, persistence (NPoco), jobs, notifications
+│  ├─ Jiron.Umbraco.FormBuilder.Web/    # RCL: management API, public API, rendering (view component, tag helper, surface controller),
+│  │  │                                    # themes (Razor views + CSS), property editors, value converters, health checks, static assets
+│  │  └─ Client/                           # npm workspace:
+│  │     ├─ packages/logic/               #   rules, validation, merge tags in TypeScript (shared by runtime, element and backoffice)
+│  │     ├─ packages/runtime/             #   the website runtime that enhances Razor-rendered forms
+│  │     ├─ packages/element/             #   <jfb-form> web component for headless sites
+│  │     └─ packages/backoffice/          #   Lit + TypeScript backoffice extension
+│  ├─ Jiron.Umbraco.FormBuilder/        # meta package (no code): references Core and Web; the one sites install; tagged umbraco-marketplace
+│  └─ Jiron.Umbraco.FormBuilder.AI/     # optional add-on on Umbraco.AI (Phase 15)
+├─ samples/Jiron.Umbraco.FormBuilder.Samples/   # compiled extension samples (Phase 15)
+├─ tests/
+│  ├─ Jiron.Umbraco.FormBuilder.Tests.Unit/
+│  ├─ Jiron.Umbraco.FormBuilder.Tests.Integration/
+│  ├─ Jiron.Umbraco.FormBuilder.Testing/        # stubs (webhook receiver, captcha verifiers, fake AI provider), fake time, fixtures; never packed
+│  ├─ vectors/                                    # shared JSON test vectors: rules, validation, merge tags, calculations (D10)
+│  └─ e2e/                                        # Playwright Test: website, backoffice, email, privacy, a11y, screenshots
+├─ demo/Jiron.Umbraco.FormBuilder.Demo/         # Umbraco 17 demo site with seeded en/de content and forms
+└─ .github/  workflows/ci.yml  workflows/release.yml  dependabot.yml  ISSUE_TEMPLATE/  pull_request_template.md  CODEOWNERS
+```
+
+### 4.2 Modules and dependencies
+
+```
+Jiron.Umbraco.FormBuilder (meta)
+  └─ FormBuilder.Web ──► FormBuilder.Core ──► Umbraco.Cms.Core / Infrastructure [17.5,18)
+         └──────────► Umbraco.Cms.Web.Common, Web.Website, Api.Common, Api.Management, Api.Delivery [17.5,18)
+Jiron.Umbraco.FormBuilder.AI (optional) ──► FormBuilder.Core, Umbraco.AI.Core [17.x]
+```
+
+- **Core** holds every rule of the product and knows nothing about HTTP. Services take and return domain types. Every public service has an interface.
+- **Web** hosts the HTTP surfaces, rendering and static assets. All Umbraco-major-specific glue (OpenAPI registration, auth policies, manifest helpers) lives in clearly named classes, so the 18 port touches as few files as possible.
+- **Client packages:**
+  - `logic` has no DOM and no dependencies, and is tested against `tests/vectors/`;
+  - `runtime` and `element` share `logic` and the markup contract (§4.3);
+  - `backoffice` uses `logic` for the designer's live rule preview and the form check.
+
+### 4.3 The form definition model (schema v1)
+
+A form definition is one JSON document, validated against `schemas/jfb-form.v1.schema.json` and upgraded by code when `schemaVersion` changes. Phase 1 (1.9) fixes the exact shape in an ADR. The design:
+
+```jsonc
+{
+  "schemaVersion": 1,
+  "key": "guid", "alias": "contactUs", "name": "Contact us",
+  "settings": { /* §4.3.4 */ },
+  "pages": [{
+    "key": "guid", "title": { "": "Your details", "de-DE": "Ihre Angaben" }, "description": null,
+    "rule": null,                                   // show/hide (skip) the whole page
+    "groups": [{
+      "key": "guid", "title": null, "description": null, "columns": 2, "style": "plain|card",
+      "rule": null,
+      "fields": [{
+        "key": "guid", "alias": "email", "type": "email", "span": 1,
+        "label": { "": "Email" }, "hideLabel": false, "help": null, "placeholder": null,
+        "required": true, "messages": { "required": null, "invalid": null },
+        "defaultValue": null, "prefill": { "query": null, "member": null, "memberMode": "show|hide" },
+        "sensitive": false, "includeInEmails": true, "autocomplete": "email", "cssClass": null,
+        "validation": [ { "kind": "pattern", "value": "...", "message": { "": "..." } } ],
+        "rule": null,
+        "settings": { /* type-specific, validated by the field type */ }
+      }]
+    }]
+  }],
+  "validationRules": [ /* form-level: rule + target field + message, for cross-field checks */ ],
+  "actions":   [ { "key": "guid", "type": "email", "name": "Notify sales", "enabled": true,
+                   "trigger": "submitted|approved|rejected|verified", "rule": null, "settings": {} } ],
+  "outcomes":  [ { "rule": null, "kind": "message|redirect", "message": { "": "<p>Thanks!</p>" },
+                   "redirect": { "contentKey": null, "url": null, "delaySeconds": 0 } } ]
+}
+```
+
+#### 4.3.1 Conventions
+
+- **Keys and aliases:**
+  - Every element has a stable GUID `key`. Entries, rules and actions refer to fields by key, never by alias or position.
+  - `alias` is unique within the form, matches `^[a-z][a-zA-Z0-9]{0,63}$`, and is not reserved: `form`, `entry`, `page`, `member`, `query`, `context`, `site`, `date` and the honeypot names.
+  - An alias is generated from the label (camelCase). It can be edited until the first published version has entries; after that, changing it asks for confirmation and keeps the old alias as a merge-tag alias.
+- **Localised text:** every editor-written text is a `LocalizedText`, a map from culture (`""` = default) to text.
+  - The visible text resolves as the request culture → its neutral culture → default.
+  - A value of exactly `#key` resolves through the Umbraco dictionary.
+- **Limits** (host-configurable): 30 pages, 100 groups, 300 fields, 1,000 options per field, 50 actions and 200 rules per form. A definition of at most 2 MB.
+- **The public projection** (what the website and the headless API get) never contains:
+  - actions, outcomes' internal settings or recipients;
+  - option-source configuration;
+  - prefill-from-member mappings beyond the field;
+  - anything marked internal.
+
+  The **public revision** changes only when the public projection changes (§3.1).
+
+#### 4.3.2 Field types (built in)
+
+Each type declares: alias, icon, group in the palette, storage kind (`text`, `longText`, `number`, `date`, `bool`, `file`, `json`, `none`), which common properties it supports, a settings schema (rendered by the generic settings editor), server validation and parsing, the Razor partial, and its client behaviour. Types are registered in a collection, so sites and add-ons can add, replace or remove types.
+
+| Palette group | Type (alias) | Type-specific settings |
+| --- | --- | --- |
+| **Text** | Text (`text`) | min/max length (default 255), prefix and suffix text, character counter |
+| | Long text (`textarea`) | rows, auto-grow, min/max length (default 4000), character counter |
+| | Email (`email`) | "ask twice" confirmation input, allowed or blocked domains |
+| | Phone (`phone`) | default country code, lenient international format check |
+| | Web address (`url`) | allowed schemes (`https` default, `http` optional) |
+| **Numbers and dates** | Number (`number`) | min, max, step, decimals, unit (prefix/suffix) |
+| | Date (`date`) | min/max as absolute dates or relative ("today", "+2 days", "+1 year"), weekdays only, default to today; a native date input |
+| | Time (`time`) | min, max, step in minutes |
+| | Date and time (`datetime`) | the date and time settings combined |
+| | Rating (`rating`) | 3 to 10 symbols, symbol (star, heart, circle), labels for both ends |
+| | Scale (`scale`) | from 0 or 1 to 5 to 10 (NPS style), labels for both ends |
+| | Slider (`slider`) | min, max, step, unit, show value |
+| | Calculation (`calculation`) | a safe formula (`+ - * / ( )`, `min`, `max`, `round`, `if`) over number, choice and rating fields; display format; visible or hidden. The server recomputes it and its value wins. |
+| **Choices** | Dropdown (`dropdown`) | prompt text, allow multiple (native list box), option source |
+| | Radio buttons (`radio`) | layout (vertical, horizontal, cards, cards with images), an "Other" option with free text, option source |
+| | Checkboxes (`checkboxes`) | layout as for radio, min/max selections, "Other" option, option source |
+| | Checkbox (`checkbox`) | text beside the box (rich text with links); required means it must be ticked |
+| | Yes/No (`yesno`) | labels, style (two buttons or a switch) |
+| | Consent (`consent`) | consent text (rich text with links to the privacy page), required by default. **The exact text shown is stored** (§4.5 `jfbConsentText`). |
+| | Country (`country`) | allowed countries, countries on top, default; names come from `Intl.DisplayNames` in the browser and the server's culture data, so no country data file is needed |
+| **People** | Name (`name`) | parts (title, first, middle, last), with the right autocomplete tokens |
+| | Address (`address`) | parts (two street lines, postcode, city, region, country), required parts, autocomplete tokens |
+| **Files** | File upload (`file`) | allowed type groups (images, PDF, Office documents, text, archives) plus custom extensions, max size per file, max files, a drag-and-drop zone, image thumbnails |
+| | Signature (`signature`) | pad size; **"type your name instead"** as the keyboard and screen-reader path; stored as a PNG file |
+| **Structure** | Repeatable group (`repeater`) | child fields (no nested repeaters), min/max rows, "add" and "remove" labels; values stored per row |
+| | Hidden (`hidden`) | value from a merge tag (for example `{{ query.utm_source }}`), opt-in query prefill |
+| **Content** (no value) | Heading (`heading`) | level h2 to h4 |
+| | Text block (`paragraph`) | rich text (sanitised) |
+| | Divider (`divider`) | none |
+| | Image (`image`) | media item, required alt text, size |
+| **Protection** | Captcha placement (`captcha`) | marks where the form's chosen captcha renders; without it, it renders before the submit button (§4.10) |
+
+**Settings every input type shares** (shown only when the type supports them):
+
+- label (and "hide label" with a visually-hidden fallback), help text, placeholder;
+- required and its message;
+- default value (merge tags), prefill;
+- sensitive, include in emails;
+- autocomplete token, column span, CSS class;
+- rule, validation.
+
+**Field types are greyed out with a reason** when they need configuration that is missing, for example a captcha provider without keys.
+
+#### 4.3.3 Rules, validation, merge tags and calculations (one logic, two runtimes, D10)
+
+- **Rules:**
+  - A rule is `{ "effect": "show|hide", "match": "all|any", "conditions": [ … ] }`, where a condition is either `{ "field": key, "op": …, "value": … }` or a nested group.
+  - **Operators:**
+    - `equals`, `notEquals`, `contains`, `notContains`, `startsWith`, `endsWith`;
+    - `isEmpty`, `isNotEmpty`, `isOneOf`, `isNoneOf`;
+    - `greaterThan`, `lessThan`, `between` (numbers and dates, and relative dates like "today");
+    - `isChecked`, `isNotChecked`;
+    - `countAtLeast`, `countAtMost` (multi-choice and files);
+    - `matches` (a safe pattern).
+  - **What rules apply to:** fields, groups, pages, actions, outcomes and form-level validation rules.
+  - **Hidden means gone:** a hidden field is never required, never validated and never stored, and the server strips it even if posted. A rule that depends on a hidden field sees it as empty.
+  - **Saving refuses** cycles and rules that point at missing fields.
+- **Validation kinds:**
+  - `required`, `minLength`/`maxLength`, `min`/`max`, `pattern`, `format`;
+  - `dateWindow`, `matchesField`, `uniquePerForm`, `fileTypes`/`fileSize`/`fileCount`, `selections`;
+  - plus form-level validation rules ("show this message on field X when the rule matches").
+  - Patterns run with `RegexOptions.NonBacktracking` and a timeout on the server, and saving refuses patterns that the non-backtracking engine cannot run.
+- **Merge tags:** `{{ source.path | filter: arg }}`.
+  - **Sources:**
+    - `field.<alias>`, `field.<alias>.label`;
+    - `entry.number|date|url|state`, `form.name|alias`;
+    - `page.name|url|<propertyAlias>` (with `page.up.<alias>` to search the ancestors);
+    - `member.name|email|<propertyAlias>`;
+    - `query.<name>` (only where the form allows query values), `context.<key>` (values the developer passes when rendering or submitting);
+    - `site.name|url`, `date.now`, `dictionary.<key>`.
+  - **Filters:** `default`, `upper`, `lower`, `truncate`, `date`, `number`, `currency`, `join`, `html`, `url`, `json`.
+  - **Escaping:** output is HTML-escaped in HTML contexts, URL-encoded in URL contexts and JSON-escaped in JSON contexts. Unknown tags render empty and raise a form-check warning.
+  - Developers add sources and filters through `IFormBuilderMergeTagSource` and `IFormBuilderMergeTagFilter`.
+- **Calculations:** a tiny expression language (numbers, field references, `+ - * / ( )`, `min`, `max`, `round`, `if`), parsed into a tree. It has no evaluation of arbitrary code and no reflection. The server recomputes every calculation, and its result is stored.
+- **Shared test vectors:** `tests/vectors/rules.json`, `validation.json`, `merge-tags.json` and `calculations.json` are run by NUnit against Core and by Vitest against `packages/logic`. A case that passes in one runtime and fails in the other fails CI.
+
+#### 4.3.4 Form settings (grouped as they appear in the UI)
+
+- **Submission:**
+  - labels for submit, next and back;
+  - **a summary page** ("check your answers") before submitting;
+  - progress indicator (steps, bar, none);
+  - store entries (always; never, actions only; or for N days);
+  - manual approval;
+  - **email verification** (double opt-in) before actions run;
+  - save and resume (off by default; link valid for N days).
+- **After submitting:** ordered **outcomes**, each with an optional rule: a message (rich text with merge tags), a redirect (content page or URL with merge tags), or a message and then a redirect after N seconds.
+- **Availability:**
+  - open from and until;
+  - maximum number of entries;
+  - closed message;
+  - members only (any member, or chosen member groups);
+  - one entry per member;
+  - "unique per form" on a chosen field.
+- **Spam protection:** inherit the site default, or choose: standard, standard + proof of work, reCAPTCHA v2, reCAPTCHA v3 (threshold), hCaptcha. Plus strictness for the content rules.
+- **Privacy:**
+  - retention per state (submitted, approved, rejected, spam), in days;
+  - IP handling (inherit, none, anonymised, full);
+  - whether entries count in insights.
+- **Appearance:**
+  - theme;
+  - required marker (mark required with `*`, mark optional with "(optional)", or none);
+  - validation summary on or off;
+  - choice layout defaults;
+  - CSS class.
+- **Developer:**
+  - headless access (allow the public definition endpoint for this form);
+  - allowed query values for prefill;
+  - context values to store.
+
+### 4.4 Entries, the submission pipeline and actions
+
+- **Entry states:**
+  - `Draft` (save and resume) → `Submitted`;
+  - `Unverified` (waiting for email verification) → `Submitted`;
+  - `Submitted` → `Approved` or `Rejected` (manual approval; without it, entries are approved automatically and the `approved` trigger fires);
+  - any state ↔ `Spam` (marking an entry "not spam" moves it to `Submitted` and runs its `submitted` actions then).
+
+  Every change is a timeline event. Deleting is permanent: the entry, its values, files, notes, events, action runs and queued emails go together, and the audit log records that it happened. A test entry (`IsTest`, from preview) is kept out of exports, insights and actions unless the editor asks.
+- **Entry numbers:** each form numbers its entries 1, 2, 3, … (`#1042`). The number appears in the backoffice and in emails (`{{ entry.number }}`), and it is unique per form.
+- **The pipeline** for a submission (JavaScript, no-JS post or API):
+  1. Resolve the form and its published version. If the posted public revision is older but compatible, accept it; otherwise answer `form_changed` (the runtime refreshes the form, §3.1).
+  2. Check availability: dates, limits, members, uniqueness.
+  3. Check protection: rate limits, challenge, honeypot, time, captcha, content rules. The result is a spam score with reasons. A failed challenge or captcha is rejected. A high score is **accepted silently into `Spam`**, so bots learn nothing.
+  4. Parse and validate per field type, after applying rules. Hidden fields are stripped, and calculations recomputed.
+  5. Idempotency: the same `submissionId` with the same digest returns the original receipt; with a different digest it returns `409 duplicate_submission`.
+  6. **One transaction:** the entry, values, file links, consent texts, the timeline event, one `ActionRun` per action whose trigger and rule match (none for spam or test entries), and the stats increment.
+  7. After the commit, wake this server's action processor, then return the outcome.
+- **Actions:**
+  - **Built-in types:**
+    - email (to fixed addresses, a field value, the member, or the creator; CC/BCC; reply-to a field; attachments of uploaded files within size caps; HTML with a layout plus generated text; per-culture subject and body; or a Razor view chosen by a developer);
+    - webhook (JSON, form-encoded or XML; field mapping or "everything"; standard metadata; HMAC-SHA256 signature header; secrets as `$JironFormBuilder:Secrets:<Name>` references; SSRF protection);
+    - Slack and Microsoft Teams messages (webhook presets with formatted text);
+    - create or update content (document type, parent from a picker or a dynamic rule, mapping fields and fixed values to properties, publish or save only);
+    - set state (approve, reject or mark as spam, under a rule);
+    - send verification (double opt-in).
+  - **Running them:**
+    - Actions run in the background in the order shown, each in its own `ActionRun`, with retries (5 attempts, exponential back-off from 1 minute) and an `Uncertain` state when a lease expires mid-send.
+    - A failed action never blocks the others unless it is marked "stop the rest if this fails".
+    - Every run shows on the entry's timeline and in the **deliveries** log, which can retry it.
+  - **Umbraco webhooks:** Jiron Form Builder also registers entry events (submitted, approved, rejected, deleted, action failed) with Umbraco's own webhook system, so sites can subscribe in Settings › Webhooks *(verify the 17 API in 1.2c)*.
+
+### 4.5 Database schema v1 (table prefix `jfb`; all times UTC; GUID keys for anything exposed)
+
+| Table | Columns (main) | Indexes and notes |
+| --- | --- | --- |
+| `jfbFolder` | Id PK, Key (unique), ParentId FK null, Name, SortOrder, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (ParentId). Trash keeps the tree; restore returns to the parent or the root. |
+| `jfbForm` | Id PK, Key (unique), FolderId FK null, Alias (unique), Name, DraftVersionId FK null, PublishedVersionId FK null, PublicRevision, ConcurrencyVersion, LastEntryNumber, ThemeKey null, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (FolderId), (TrashedUtc). `ConcurrencyVersion` makes stale saves fail with `409 concurrency_conflict`. |
+| `jfbFormVersion` | Id PK, FormId FK (cascade), Number, Kind (Draft, Published), SchemaVersion, Definition (NVARCHARMAX), DefinitionHash, PublicHash, Comment, IsPinned, CreatedUtc, CreatedByUserKey, PublishedUtc null, PublishedByUserKey null | Unique (FormId, Number). Every save adds a row. Published versions are never pruned. Draft saves are pruned by the cleanup job (keep the last 50 and the last 90 days, never pinned ones). |
+| `jfbFormField` | Id PK, FormId FK (cascade), FieldKey, Alias, Label (default culture), Type, StorageKind, IsSensitive, SortOrder, FirstVersionNumber, LastVersionNumber null (null = in the live version), ParentFieldKey null (repeaters) | Unique (FormId, FieldKey). The **field catalogue**: every field ever published, for entry columns, exports and search. |
+| `jfbEntry` | Id PK (bigint), Key (unique), FormId FK, FormVersionId FK, Number, State, IsTest, SubmissionId, Digest, Culture, ContentKey null, PageUrl (path only), MemberKey null, IpAddress null, SpamScore, SpamReasons, SearchText (NVARCHARMAX, normalised, no sensitive values), Context (JSON), DurationSeconds null, SubmittedUtc, UpdatedUtc, StateChangedUtc, StateChangedByUserKey null, FirstSeenUtc null, VerifiedUtc null, ResumeTokenHash null, ResumeExpiresUtc null, CurrentPageKey null, ChallengeId null, HoldUntilUtc null, HoldReason null, PurgeAfterUtc null | Unique (FormId, Number) and (FormId, SubmissionId). `SubmissionId` is always set; the server generates one for no-JS, server-key and programmatic entries. **Filtered** unique indexes `WHERE … IS NOT NULL` on (FormId, ChallengeId) and on ResumeTokenHash, created with custom SQL in the migration (SQLite and SQL Server both support them; a test inserts two NULL rows). Also (FormId, State, SubmittedUtc), (MemberKey), (PurgeAfterUtc). |
+| `jfbEntryValue` | Id PK (bigint), EntryId FK (cascade), FieldKey, RowIndex, ValueIndex, Text (NVARCHARMAX) null, TextKey (nvarchar 256, lowercased, for sort and filter) null, Number (decimal 38,10) null, Date null, Bool null, FileId FK null | (EntryId), (FieldKey, TextKey), (FieldKey, Number), (FieldKey, Date). Multi-value and repeater rows use ValueIndex and RowIndex. |
+| `jfbEntryFile` | Id PK, Key (unique), EntryId FK (cascade) null, FormId, FieldKey, OriginalName, StoredName, ContentType, SizeBytes, Sha256, ScanState, CreatedUtc | (EntryId), (CreatedUtc). Files without an entry after 24 h are orphans and get cleaned up. |
+| `jfbConsentText` | Hash PK (SHA-256 of culture and text), Culture, Text (NVARCHARMAX), FirstSeenUtc | A consent value stores `true` plus this hash: proof of the exact wording, stored once. |
+| `jfbEntryEvent` | Id PK (bigint), EntryId FK (cascade), OccurredUtc, Kind, UserKey null, Details (JSON) | (EntryId, OccurredUtc). Edits record old and new values only for non-sensitive fields, and they are deleted with the entry. |
+| `jfbEntryNote` | Id PK, EntryId FK (cascade), UserKey, Body, CreatedUtc, UpdatedUtc | Internal notes, never sent anywhere. |
+| `jfbActionRun` | Id PK (bigint), EntryId FK (cascade), FormVersionId, ActionKey, ActionType, Trigger, State (Pending, Running, Succeeded, Failed, Skipped, Uncertain), Attempts, NextAttemptUtc, LockedUntilUtc, LockedBy, LastErrorCode, LastErrorMessage (sanitised, ≤ 1000), CreatedUtc, StartedUtc, FinishedUtc | (State, NextAttemptUtc), (EntryId). |
+| `jfbEmail` | Id PK (bigint), Kind (Action, Resume, Verification, Test, Report), EntryId FK null (set null), ActionRunId null, To, Cc, Bcc, ReplyTo, From, Subject, HtmlBody, TextBody, Attachments (JSON of file keys), Culture, State (Queued, Sending, Sent, Failed), Attempts, NextAttemptUtc, LockedUntilUtc, LastError, CreatedUtc, SentUtc, PurgeAfterUtc | (State, NextAttemptUtc), (PurgeAfterUtc). Sent mail is purged after N days (default 30). |
+| `jfbOptionList` | Id PK, Key (unique), Alias (unique), Name, Kind (Manual, Content, DataType, Url, File, Countries, Code), Config (JSON), Items (JSON), CacheSeconds, ConcurrencyVersion, CreatedUtc, UpdatedUtc | |
+| `jfbTheme` | Id PK, Key (unique), Alias (unique), Name, BaseTheme, Tokens (JSON), CustomCss, IsDefault, ConcurrencyVersion, CreatedUtc, UpdatedUtc | |
+| `jfbEmailLayout` | Id PK, Key (unique), Alias (unique), Name, Layout (JSON: logo, colours, header and footer per culture), IsDefault, CreatedUtc, UpdatedUtc | |
+| `jfbFormTemplate` | Id PK, Key (unique), Name, Description, Category, Definition (NVARCHARMAX), CreatedUtc, CreatedByUserKey | Templates saved by users. The built-in ones ship as embedded JSON. |
+| `jfbPermission` | Id PK, UserGroupKey, TargetType (Global, Folder, Form), TargetKey null, Permissions (flags) | Unique (UserGroupKey, TargetType, TargetKey). |
+| `jfbSetting` | Id PK, Scope (`global` or a site root key), Section, SchemaVersion, Version, Json (NVARCHARMAX), UpdatedUtc, UpdatedByUserKey | Unique (Scope, Section). |
+| `jfbReference` | FormId, ContentKey, PropertyAlias, Culture, UpdatedUtc | PK (FormId, ContentKey, PropertyAlias, Culture). Only if Umbraco's own reference tracking cannot serve "used on" (1.2c). |
+| `jfbAuditEntry` | Id PK (bigint), OccurredUtc, UserKey, Action, EntityType, EntityKey, Details (JSON) | Never field values. (OccurredUtc), (EntityKey). |
+| `jfbDailyStat` | Day, FormId, Metric, Dimension, Value | PK (Day, FormId, Metric, Dimension). Metrics: views, starts, pageReached:{pageKey}, submissions, spam, completionSeconds, origin:{contentKey}, hour:{0-23}. Unique members are counted from entries at query time, so stats never hold personal data. New metrics need no migration. |
+| `jfbKeyValue` | Key PK, Value, UpdatedUtc | One-time flags (section granted, setup done, file-mirror hashes). |
+
+- **The migration plan** `Jiron.Umbraco.FormBuilder` has step 1 `CreateSchemaV1`, then one class per later change. Every step is idempotent (`TableExists`, `ColumnExists`, `IndexExists`) and has a frozen schema-snapshot DTO.
+- **Every release gets an upgrade test** (16.5), and `docs/database.md` holds an ER diagram (Mermaid) that a test keeps in sync with the DTOs.
+
+### 4.6 Public API v1 (`/jfb/api/v1`, anonymous, CORS allowlist, rate limited, ProblemDetails errors, OpenAPI document `jfb-public`)
+
+| Route | Purpose |
+| --- | --- |
+| `GET forms/{keyOrAlias}?culture=&contentKey=` | The public projection for headless rendering, when the form allows it. `ETag` from the public revision and culture. |
+| `POST forms/{key}/challenge` | A signed challenge (form, time, and optionally a proof-of-work puzzle). Fetched on first interaction, so cached pages stay cacheable. |
+| `POST forms/{key}/uploads` | Upload one file before submitting (progress per file). Returns a signed upload token. Limits per form, file and IP. |
+| `POST forms/{key}/validate` | Validate one page's values on the server (multi-page, `422` with errors by alias). |
+| `POST forms/{key}/entries` | Submit: `{submissionId, revision, culture, contentKey, values, uploads, context, challenge, captchaToken}` → `{receipt, outcome:{kind, html \| url, delaySeconds}}`. |
+| `POST forms/{key}/receipt` | Check an uncertain submission by `{submissionId, receipt}`. |
+| `POST forms/{key}/drafts` | Save and resume: `{values, pageKey, email}` → the resume link is emailed; the response never contains it. |
+| `POST drafts/resume` | `{token}` → values and page. The token comes from the URL fragment (`#jfb-resume=…`), so it never reaches server logs. |
+| `GET verify?t=` and `POST verify` | Email verification. The GET only shows a confirm button, because mail scanners follow links; the POST confirms. |
+| `GET forms/{key}/options/{fieldKey}?parent=&culture=` | Cascading option lists. |
+| `POST forms/{key}/events` | Insights beacon (`view`, `start`, `page`) with no identifiers, counted per day only. |
+
+**Rules:**
+
+- Tokens always travel in the body or the URL fragment, never in query strings that get logged (except the verify link, which is single-use and short-lived).
+- Same-origin requests are always accepted; others only from `JironFormBuilder:PublicApi:AllowedOrigins`.
+- Client IPs come only from `HttpContext.Connection.RemoteIpAddress`. Sites behind proxies configure ASP.NET Core `ForwardedHeaders` (documented).
+- **Server-to-server headless submissions** may send `Authorization: Jfb-Key <key>`, with keys in host configuration compared by hash. They skip the browser challenge and captcha, never validation.
+- **Stable error codes:** `form_not_found`, `form_closed`, `form_changed`, `validation_failed` (`422`, errors by alias), `challenge_required`, `captcha_failed`, `rate_limited`, `payload_too_large`, `unsupported_media_type`, `member_required`, `duplicate_submission`, `entry_limit_reached`, `already_submitted`.
+
+### 4.7 Management API (`/umbraco/jfb/management/api/v1`, OpenAPI document `jfb`, generated TS client)
+
+- **Forms and folders:** tree, search, create (blank, template, import), get, save draft (with concurrency), publish, unpublish, duplicate (with or without actions), copy actions to another form, move, trash, restore, delete permanently, empty trash, references ("used on").
+- **Versions:** list, get, diff (two versions, field by field), restore, pin, comment.
+- **Designer support:**
+  - the registries: field types, action types, option-source kinds, captcha providers, merge-tag catalogue and themes;
+  - form check results;
+  - a preview render of the draft;
+  - test an action against a sample entry.
+- **Entries:**
+  - list (filters, search, sort, paging, column set), get, mark seen, change state (single and bulk), edit, delete (single and bulk);
+  - notes, timeline, file download;
+  - action runs and retry;
+  - counts for badges;
+  - the all-forms inbox and spam.
+- **Exports:** start (format, filter, fields), status, download (time-limited and authorised), and immediate streaming for small sets.
+- **Library:** option lists (CRUD, preview, CSV/TXT upload), themes (CRUD, preview CSS), email layouts (CRUD, preview, test send), templates.
+- **Settings** per section and scope; **permissions**; **audit log**; **deliveries** (emails and webhook runs, retry); **insights**.
+- **Privacy:** find a person by email or member, export everything about them (ZIP of JSON and files), erase or anonymise, retention dry run.
+- **Setup and health:** checklist status, health results, "create a form block type for me".
+
+### 4.8 Settings model
+
+**Host configuration** (`appsettings.json` → `JironFormBuilder`). It is for developers and for locks, and it wins over the backoffice:
+
+```json
+"JironFormBuilder": {
+  "PublicApi": { "BasePath": "/jfb/api", "AllowedOrigins": [], "ServerKeys": [] },
+  "Rendering": { "DefaultTheme": "default", "IncludeAssetsAutomatically": true },
+  "Files": { "Root": "~/umbraco/Data/JironFormBuilder/Uploads", "MaxRequestBytes": 52428800, "BlockedExtensions": ["exe", "dll", "js", "bat", "cmd", "ps1", "sh", "msi", "html", "svg"] },
+  "Privacy": { "AllowFullIp": false, "AllowRetentionOff": false, "ThirdPartyCaptchaConsent": "explicit" },
+  "Captcha": { "RecaptchaV2": { "SiteKey": null, "SecretKey": null }, "RecaptchaV3": { "...": "..." }, "HCaptcha": { "...": "..." } },
+  "Webhooks": { "AllowedHosts": [], "AllowHttp": false },
+  "Secrets": { "CrmToken": null },
+  "Definitions": { "Mirror": false, "Folder": "~/umbraco/JironFormBuilder/forms" },
+  "Limits": { "...": "hard caps the backoffice cannot exceed" },
+  "Designer": { "SettingLocks": [ { "type": "email", "setting": "from", "value": "noreply@example.com", "hidden": true } ] },
+  "LockedSections": []
+}
+```
+
+**Backoffice settings** (typed sections in `jfbSetting`; `global` scope, plus per-site overrides where marked):
+
+- **General:**
+  - default theme, the required-marker style, default labels;
+  - new-form defaults (consent field, notify-the-creator action);
+  - per site: the base URL and the **time zone** (an IANA id, used for "today", opening dates and relative dates).
+- **Email** (per site):
+  - sender name and address;
+  - default layout;
+  - team recipients for system notices (failed deliveries);
+  - test email.
+- **Spam protection:**
+  - default level;
+  - content rules (blocked words, blocked email domains, maximum links);
+  - spam retention;
+  - provider keys status (keys themselves only in host configuration).
+- **Files:** allowed type groups, maximum sizes, scanner status.
+- **Privacy:**
+  - default retention per state;
+  - IP handling;
+  - sensitive-field defaults;
+  - third-party captcha consent mode (explicit, Cookiebot category, CMP through the JS API);
+  - the insights switch.
+- **Access:** which user groups get which Jiron Form Builder permissions, globally and per folder or form (when the host doesn't lock them).
+- **Integrations:** webhook signing secret reference, Slack and Teams defaults, Umbraco webhook events on or off.
+
+Every setting has:
+
+- a default, validation (server and client), help text, a docs entry and a test;
+- a "locked by configuration" display when the host locks it.
+
+A settings change raises a notification and a cache refresher, so every server sees it at once.
+
+### 4.9 Extension points (documented, with samples)
+
+- **C# types** (each registered through `builder.JironFormBuilder()…`):
+  - `IFormBuilderFieldType` (or the `FormBuilderFieldTypeBase<TSettings>` helper): a custom field with a settings schema, parsing, validation, storage kind, Razor partial and client behaviour name;
+  - `IFormBuilderActionType` (`FormBuilderActionTypeBase<TSettings>`): a custom action with settings, a test run and retry semantics;
+  - `IFormBuilderOptionSource`: options from code, with optional parent filtering for cascades;
+  - `IFormBuilderExportFormat`: a custom export;
+  - `IFormBuilderCaptchaProvider`: a captcha;
+  - `IFormBuilderSpamCheck`: an extra spam signal with a score and a reason;
+  - `IFormBuilderMergeTagSource` and `IFormBuilderMergeTagFilter`;
+  - `IFormBuilderFileScanner`: malware scanning, for example ClamAV, in a sample;
+  - `IFormBuilderFileStore`: other storage, for example blob storage.
+- **Settings schemas:** C# attributes on a settings class (`[FormBuilderSetting(Label, Description, Editor, Order, Group, SupportsMergeTags)]`) give every custom type a backoffice editor without any JavaScript. A custom Lit element can replace the editor for a setting through a `jfbSettingEditor` manifest.
+- **Notifications:**
+  - forms: `FormSaving`/`Saved`, `FormPublishing`/`Published`, `FormTrashing`/`Deleted`;
+  - entries: `EntrySubmitting` (cancelable, can add field errors), `EntrySubmitted`, `EntryStateChanged`, `EntryDeleting`;
+  - actions: `ActionRunning`/`ActionRunCompleted`/`ActionRunFailed`;
+  - `ExportCompleted`.
+- **Services:**
+  - `IFormBuilderFormService`, `IFormBuilderEntryService` (query, create programmatically, change state);
+  - `IFormBuilderEntryReader` (read approved entries on the website, for example a guestbook);
+  - `IFormBuilderRenderer`;
+  - `IFormBuilderMergeTagService`.
+- **Rendering:**
+  - the `<jfb-render form="alias|key" theme="…" context-…="…">` tag helper, `@await Component.InvokeAsync("FormBuilderForm", …)` and `<jfb-assets>`. The custom element `<jfb-form>` belongs to the headless renderer;
+  - theme views in Jiron Form Builder's own layout, fixed in ADR-0015 without mirroring any other product's conventions. The proposal: `Views/JironFormBuilder/<theme>/` holds `Form.cshtml`, `Page.cshtml`, `Group.cshtml`, `Summary.cshtml`, `Outcome.cshtml` and `fields/<type>.cshtml`;
+  - per-form overrides in `Views/JironFormBuilder/<theme>/_forms/<alias>/`, with the same file names.
+- **Website JS API:**
+  - `window.JironFormBuilder.init(root)` for forms injected later;
+  - `get(formEl)` → `{ validate(), next(), back(), submit(), values() }`;
+  - `consent.grant('captcha')`/`withdraw()`.
+- **DOM events:** `jfb:ready`, `jfb:page`, `jfb:invalid`, `jfb:submitting`, `jfb:submitted`, `jfb:error`. They are for the site's own analytics; Jiron Form Builder tracks nothing itself.
+- **Headless:** the TypeScript types and JSON schema of the public projection, and `<jfb-form>` with `api`, `form` and `culture` attributes.
+
+### 4.10 Security and privacy by design
+
+- **Escaping and rendering:**
+  - Escape all visitor input everywhere: Razor, emails, the backoffice and exports.
+  - Rich text from editors is sanitised server-side, before rendering and before emails, by an established allowlist sanitiser (HtmlSanitizer, MIT; licence and dependencies checked in 3.5), never a home-made one.
+  - Theme custom CSS goes through the sanitiser's CSS parser, which removes `@import`, `url()` to other hosts, `expression()` and `behavior`.
+  - No `innerHTML` with untrusted data, and no `unsafeHTML` in Lit, except for sanitised editor HTML through one audited helper.
+  - Exports guard against formula injection.
+- **Anonymous endpoints:**
+  - signed challenges (Data Protection, form-bound, time-bound), honeypot, minimum fill time;
+  - the ASP.NET Core rate limiter per IP, per form and site-wide, with bounded partitions that fail closed;
+  - request size and time limits, and cancellation everywhere;
+  - `Cache-Control: no-store`;
+  - origin checks.
+  - **Antiforgery:** anonymous forms carry no antiforgery token, so they work on cached pages; their endpoints are not authenticated, and SameSite plus origin checks cover them. **Members-only forms** use antiforgery, because they act for a signed-in member.
+- **Third-party captchas** (reCAPTCHA, hCaptcha):
+  - Their scripts load only on forms that use them, and only after consent.
+  - **Consent modes:**
+    - `explicit` (default): a short notice and a "Load the check" button, or the consent field, before anything loads;
+    - `cookiebot` (a chosen category);
+    - `cmp`: `JironFormBuilder.consent.grant('captcha')` from any consent manager;
+    - `implicit`: only if the host allows it.
+  - reCAPTCHA can use `recaptcha.net`. Verification checks hostname, action, score and token age (ported from Ligata.Forms).
+- **Files:**
+  - an extension allowlist per field plus a global blocklist, checked against the bytes' magic numbers;
+  - random stored names, never served from a public path, sizes enforced while streaming;
+  - downloads only through the management API, with permission checks, `Content-Disposition: attachment` and `X-Content-Type-Options: nosniff`;
+  - images are never rendered inline from untrusted SVG;
+  - the scanner hook can quarantine a file, which marks the entry.
+- **Webhooks and URL option lists:**
+  - `https` only (`http` only when the host allows it);
+  - hosts only from `JironFormBuilder:Webhooks:AllowedHosts` (host configuration, so editors cannot add hosts);
+  - private, loopback and link-local addresses blocked after DNS resolution (SSRF), with no redirects to other hosts;
+  - timeouts and response caps;
+  - secrets only as `$JironFormBuilder:Secrets:<Name>` references, never stored in the database or shown in the UI.
+  - **Testing without weakening production:** an `IFormBuilderHttpTransport` lets only the `Testing` assembly reach the stub on `127.0.0.1:5560`. A test proves that production refuses loopback.
+- **Backoffice:**
+  - every management endpoint is authorised by Jiron Form Builder permissions, with tests that call each endpoint as a user without the permission and expect `403`;
+  - sensitive values are masked unless the user has "view sensitive data", and exports leave them out unless chosen and permitted;
+  - the audit log records views of entries with sensitive data, exports, deletions, state changes, settings and permission changes.
+- **Logging:** logs never contain field values, emails, tokens or file names. Tests capture the logs and check.
+- **Email:**
+  - headers are stripped of CR/LF, and the sender always comes from configuration, never from a visitor;
+  - links in emails come only from the configured base URL, never from the request's Host header;
+  - attachments are capped.
+- **Privacy defaults:**
+  - no IP stored;
+  - retention on (submitted 365 days, approved 365, rejected 90, spam 30; editable);
+  - sent emails purged after 30 days;
+  - no cookies, and no browser storage unless the visitor uses "save and resume";
+  - insights are counters only.
+- **CSP-friendly website runtime:** no inline scripts or event handlers, a nonce option for the script tag, and no `eval`.
+
+### 4.11 Ports, folders and local files
+
+| Port | Use |
+| --- | --- |
+| 5500 | Demo site (`scripts/demo.ps1 start`) |
+| 5501 | Second demo instance on the same database (load-balancing smoke test, SQL Server in CI only) |
+| 5510 | Research sandbox (Phase 1) |
+| 5520 | E2E test host (fresh database per run) |
+| 5521 | Static page server for headless and cross-origin tests |
+| 5530 | Install-test site (packages from the local feed) |
+| 5540 | Umbraco 18 sandbox (Phase 19) |
+| 5541 | Umbraco 18 demo (Phase 19) |
+| 5550 | Vite dev server for the client packages (`--port 5550 --strictPort`) |
+| 5551 | Playwright HTML report server |
+| 5560 | Local HTTP stub for webhooks, URL option lists and captcha verification (test hosts only; see §4.10) |
+
+Servers that Jiron Form Builder starts use only these ports. Ports the OS assigns automatically are fine. Never touch 1210, 1211 or 5400 to 5499, and never connect to `MSSQL$UMBRACO` (CLAUDE.md rule 6).
+
+`.local/` is git-ignored. It holds:
+
+- `credentials.json`: generated users for every test role (admin, designer, entry handler, viewer, privacy officer, no access) and two members, per site;
+- `sandbox/`, `install-test/`, `e2e/`;
+- databases;
+- `mail-pickup/`;
+- Playwright traces and raw screenshots;
+- `nuget-feed/`.
+
+### 4.12 Quality budgets
+
+- **Website runtime:** ≤ 16 KB gzip for the core, with features loaded on demand (uploads, signature, repeater, calculations, captchas): ≤ 40 KB gzip with everything. The default theme CSS is ≤ 10 KB gzip. Nothing loads from third parties (§4.10).
+- **Server speed (demo machine, SQLite):**
+  - rendering a 50-field form takes ≤ 20 ms from the cached definition;
+  - a submission (store plus outbox) takes ≤ 150 ms at p95;
+  - the first page of entries for a form with 100,000 entries loads in ≤ 300 ms, and a 10,000-entry CSV export streams in ≤ 5 s;
+  - the first email leaves ≤ 10 s after a submission.
+- **Backoffice:** a 300-field form keeps designer interactions under 100 ms, and the form tree with 1,000 forms opens in under 1 s.
+- **Accessibility:** WCAG 2.2 AA for every theme and every backoffice screen: axe clean, keyboard only, screen-reader names, visible focus, target sizes, reduced motion. Every theme preset passes contrast, and custom theme colours get a live contrast warning.
+- **Coverage:** ≥ 85% line coverage on Core, every public and management endpoint covered by integration tests, and every shared vector passing in both runtimes.
+- **Builds:** zero warnings (warnings as errors), analyzers on, `dotnet format --verify-no-changes` clean, ESLint and Prettier clean.
+
+### 4.13 UX principles (backoffice and website)
+
+- **Calm, uncluttered screens** (the owner's explicit requirement), with measurable rules:
+  - **One primary action per view**, placed where Umbraco puts it (the workspace footer and save bar).
+  - **At most three visible secondary actions** in any toolbar or header. Everything else lives in a "…" menu.
+  - **Contextual actions appear in context:** on the selected element, on hover *and* keyboard focus, never as permanent rows of icons.
+  - **Progressive disclosure.** The inspector shows "Essentials" open, and "Validation", "Rules", "Appearance" and "Advanced" collapsed, remembered per user. A settings group shows at most seven settings before "More options".
+  - **Defaults that are right for most people,** so most editors never open "Advanced".
+- **It feels native to Umbraco.** Use the backoffice's UUI components, spacing, typography, icons and patterns: trees, workspaces with views, the save bar, sidebars, modals, confirm dialogs and toasts. No foreign design system.
+- **Every screen has every state:**
+  - empty states that say what to do next ("No entries yet. Share the form, or preview it and send a test entry");
+  - loading skeletons;
+  - errors with a way out;
+  - success feedback.
+- **A guided first run.** The Forms dashboard starts as a checklist with deep links, and each item turns green by itself when done:
+  1. Check email sending.
+  2. Create a form from a template.
+  3. Preview and send a test entry.
+  4. Put the form on a page (with "create a form block type for me").
+  5. Choose who sees entries.
+- **The designer is the hero.**
+  - **Layout:** the canvas shows the form as visitors will see it. The palette and the inspector are side panels that can be collapsed, and the canvas width switches between phone, tablet and desktop.
+  - **Editing:** insert points between fields, drag and drop *and* "Move to…" for keyboard users, inline label editing, undo/redo (Ctrl+Z / Ctrl+Y) for every designer change, and duplicate with Ctrl+D.
+  - **Feedback:** the form check is a single badge that opens a list of issues with "fix it" links. Rules show as small chips on the elements they affect.
+- **Plain language and one vocabulary** (CLAUDE.md conventions). Labels say what happens ("Delete approved entries after 365 days"), not internal names. Help text sits under each setting, and a "Learn more" link goes to the docs page.
+- **Safe by design:**
+  - Reversible actions use **undo** instead of confirm dialogs.
+  - Destructive ones confirm and name what will be lost ("Delete 23 entries and 4 uploaded files").
+  - Publishing shows what changed since the live version.
+  - Host-locked settings say which configuration key locks them.
+- **Fast for entry handlers:**
+  - keyboard shortcuts in entries (`j`/`k` move, `Enter` opens, `a` approves, `r` rejects, `s` marks spam, `/` searches, `Esc` closes), listed in a `?` overlay;
+  - the detail panel opens beside the list, without losing the place;
+  - optimistic updates, and no full reloads.
+- **Live preview** wherever looks or texts change, and a **test** button wherever something talks to the outside: email, webhook, action.
+- **The visitor's side is calm too:**
+  - one column on phones, large targets (≥ 44 px), labels above fields, help before the input;
+  - errors that say how to fix them;
+  - never losing answers (back, errors, refresh with save and resume);
+  - progress shown on long forms;
+  - no captcha puzzles by default.
+- **Checked, not assumed.** Each UI phase ends with a review of every screen as every role, at 375, 768 and 1440 px, in light and dark, in English and German, with screenshots. The installed design skills (for example `impeccable` for critique and polish) may be used for that review.
+
+### 4.14 Upgrade and compatibility policy
+
+- **Semantic Versioning** within each Umbraco major line. A patch never needs a migration, and a minor may add migrations but never breaks public C#, HTTP or JS APIs.
+- **The public surface** is listed in `docs/extending.md`: public C# types, `/jfb/api/v1`, the definition schema, the JS API and DOM events, theme view names and CSS custom properties.
+  - Breaking changes there need a new major or a new API version.
+  - Deprecations carry `[Obsolete]` with the replacement and last for the whole major.
+- **Data:** migrations are idempotent and forward-only. Definition and settings JSON carry `schemaVersion`, and code upgraders are tested with stored fixtures of every released version.
+- **Theme views are versioned.** Each one starts with a comment naming its contract version. The upgrade notes list every view whose contract changed, so sites with overrides know what to check.
+- **`docs/upgrading.md`** has one section per release, written in the release step.
+
+---
+
+## 5. Phases and steps
+
+### Phase 0: Repository bootstrap (license first)
+
+- [ ] **0.1 Preflight**
+  - **Tools:** check `dotnet --list-sdks` (10.0.401), `node --version` (24.x), `git --version`, and Edge at `C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`.
+  - **The remote:** `git ls-remote origin refs/heads/main` must show `06f126f9975eba38663e9f7655043e4825bcffd2`, GitHub's README-only commit.
+    - **Already done:** the remote's `main` is a parentless commit whose tree holds exactly the eight files of 0.2, and whose `LICENSE.md` blob has the expected SHA-256 (the owner may have made the root commit before the run). Then 0.2 is complete: reset the local `main` to it, skip 0.2, and tick 0.1 and 0.2 in 0.3 with that commit's hash.
+    - **If the remote shows anything else, do not force-push:** add the files from step 0.2 in a normal commit on top of the remote's `main`, mark 0.2 `[~]`, and write OWNER-TODO "the first commit is not the license".
+  - **The local state.** It is one of these:
+    - **Fresh:** `git rev-parse HEAD` is `06f126f`. Continue with 0.2 from the start.
+    - **Interrupted 0.2:** `HEAD` is a parentless commit whose tree holds exactly the eight files of 0.2, and whose `LICENSE.md` blob has the expected SHA-256, while the remote still shows `06f126f`. Continue with 0.2's "Before pushing" checks and the push.
+    - **Leftovers:** a `bootstrap` branch exists from an interrupted run. Delete it (`git branch -D bootstrap`), then continue as above.
+  - **The folder** should contain:
+    - `.git/`, `.gitignore`, `.gitattributes`;
+    - `LICENSE.md`, `README.md` (GitHub's one-liner, replaced in 0.2), `CLAUDE.md`, `ROADMAP.md`, `GOAL.md`;
+    - `docs/OWNER-TODO.md`;
+    - the owner's git-ignored `.private/` folder, and possibly a `.claude/` folder created by Claude Code (also ignored).
+
+    Anything else stays out of the root commit (0.2 stages files by name). List it in 0.3's WORKLOG line.
+  - **The private folder:** `git check-ignore -v .private/GOAL.md` must name the `.gitignore` rule.
+  - **The license:** print the SHA-256 of `LICENSE.md` (a Node one-liner over the raw bytes). It must equal the value in step 0.2.
+  - Make **no commit** in this step (the bootstrap exception).
+  - Done when: the outputs above are shown, and the plan for 0.2 is stated.
+- [ ] **0.2 First commit: the license**
+  - **The license is verified, never written:** the SHA-256 of `LICENSE.md` must be `1fab54a90ec00024a95f27efd3145eb1437747454d17291bb027836e4fa21466`. If it differs, commit nothing at all: mark 0.2 `[~]` and write OWNER-TODO "LICENSE.md differs from the planned text" (both locally only), then stop working, because every later step builds on the license commit. Never "fix" the file.
+  - **Replace `README.md`** with Appendix A, UTF-8 without BOM.
+  - **Commit, on a fresh root, naming the files explicitly:**
+    - `git config user.name "Jiron"` and `git config user.email "59139789+Jiron@users.noreply.github.com"` (repo-local; GitHub's own address for the owner's account).
+    - `git checkout --orphan bootstrap`, then `git read-tree --empty` to empty the index inherited from `06f126f`; the working files stay as they are. (Don't use `git rm --cached` here: it refuses to run because `README.md` has changed.)
+    - **Before staging,** `git check-ignore -v .private/` must name the rule, and `git status --porcelain` must not list anything under `.private/`.
+    - `git add LICENSE.md README.md .gitignore .gitattributes CLAUDE.md ROADMAP.md GOAL.md docs/OWNER-TODO.md`. Never use `git add -A` or `git add .` here.
+    - `git commit -m "chore: initial commit under the PolyForm Perimeter License 1.0.1"`.
+    - `git branch -M main`, which renames `bootstrap` over the old local `main`.
+  - **Before pushing:**
+    - `git show --stat HEAD` lists exactly those eight files;
+    - `git rev-list --max-parents=0 HEAD` prints one commit, which is `HEAD`;
+    - the SHA-256 of `git cat-file blob HEAD:LICENSE.md` equals the value above, so line-ending rules changed nothing;
+    - `git ls-files` lists nothing under `.private/`;
+    - **the term check:** a Node one-liner reads every pattern in `.private/terms.txt` and checks the committed files and the commit message. It prints only counts.
+      - With no list file, it reports 0 patterns and you continue.
+      - With any match, do not push: mark 0.2 `[~]` with OWNER-TODO "a private term is in the root commit".
+  - **Push:** `git push --force-with-lease=main:06f126f9975eba38663e9f7655043e4825bcffd2 -u origin main`. This is the single force-push the owner approved, and it works only while the remote still points at `06f126f`.
+  - Done when:
+    - `git rev-list --max-parents=0 HEAD` prints one commit;
+    - `git show --name-only --format= <that commit>` lists `LICENSE.md` and nothing from `.private/`;
+    - `git ls-remote origin refs/heads/main` equals `git rev-parse HEAD`.
+- [ ] **0.3 Repository hygiene and working files**
+  - **Build files** (port from Tandem, §3.3):
+    - `global.json` (SDK 10.0.401, rollForward latestPatch);
+    - `.editorconfig`;
+    - `Directory.Build.props`:
+      - `net10.0`, nullable, implicit usings, warnings as errors, `latest-recommended` analysis, code style in build, deterministic, XML docs;
+      - package identity: `Authors` and `Copyright` as in `LICENSE.md` (Manassés Zähnler);
+      - `PublishRepositoryUrl=false` while private;
+      - version 17.0.0-alpha.0;
+    - `Directory.Packages.props` (central package management);
+    - `NuGetAudit.props`;
+    - `NuGet.config` (nuget.org plus the local feed `.local/nuget-feed`, with package source mapping so that `Jiron.Umbraco.FormBuilder*` comes only from the local feed).
+  - **Scripts:**
+    - `scripts/package.json` (dev-only, versions pinned): `@playwright/test`, `axe-core` and `@axe-core/playwright`, used from Phase 1 on by the spikes, wireframes and checks (Edge through `channel: 'msedge'`), plus whatever the checks below need.
+    - `scripts/roadmap-status.mjs` (port):
+      - **Output:** one line the `/goal` evaluator can read: `ROADMAP done=N/T open=N blocked=N blocked_missing_in_owner_todo=N next=<id> <title> head=<sha> origin_main=<sha> clean=yes|no`.
+      - **Step ids** may carry a letter when a step is split (`9.3a`, `9.3b`), so the parser accepts `\d+\.\d+[a-z]?`.
+      - **No silent misses:** it fails on any line starting with `- [ ]`, `- [x]` or `- [~]` that it cannot parse, so a split step can never vanish from the count.
+    - `scripts/secret-scan.mjs` (port, without the key-file logic):
+      - modes: staged files (default), `--tracked` and `--history`;
+      - shape-based patterns;
+      - forbidden paths (`.private/`, `.local/`, `*-key.txt`, `*.Local.json`, `.env*`);
+      - the fake marker `JFB_FAKE`;
+      - a short fingerprint allowlist.
+    - `scripts/term-guard.mjs` (new):
+      - **The list:** reads `.private/terms.txt` (one case-insensitive JavaScript regular expression per line, `#` for comments). `--terms <file>` names another list (used by the self-test).
+      - **Modes:**
+        - staged files (default);
+        - `--message <file>` (the commit-msg hook);
+        - `--tracked`;
+        - `--history` (every added line on every ref, plus every commit message, tag message and tag name).
+      - **Output:** hits name the file and line (or the commit) and the **pattern number**, never the term or the matched text.
+      - **Without the list file** (other clones, CI), it prints "term list not present, skipped" and exits 0.
+    - `scripts/install-hooks.mjs`: `core.hooksPath .githooks`. The `pre-commit` hook runs the secret scan and the term guard on staged files; the `commit-msg` hook runs the term guard on the message.
+  - **Bootstrap bookkeeping:** tick 0.1 and 0.2, both with the root commit's hash (0.1 has no commit of its own), and write their WORKLOG lines in this step.
+  - **Docs and templates:**
+    - `SECURITY.md`: report privately (GitHub private vulnerability reporting once the repo is public, until then `info@ligata.ch`), what is in scope, response times as goals not promises;
+    - `CONTRIBUTING.md`: how to work in the repo; outside contributions open once the contributor agreement exists (OWNER-TODO);
+    - `CODE_OF_CONDUCT.md`: Contributor Covenant 2.1 with its attribution, contact `info@ligata.ch`;
+    - `SUPPORT.md`: where to ask, what to include, no guaranteed support;
+    - `THIRD-PARTY-NOTICES.md`;
+    - `CHANGELOG.md` (Keep a Changelog, `Unreleased`);
+    - `docs/WORKLOG.md` (Appendix C);
+    - `docs/OWNER-TODO.md`: extended with anything new;
+    - `docs/decisions/0000-template.md` (Appendix B);
+    - `.github/ISSUE_TEMPLATE/` (issue forms: bug report with versions, feature request, `config.yml` pointing questions to discussions and security reports to `SECURITY.md`);
+    - `pull_request_template.md`, with an original-work checkbox ("I wrote this myself and did not copy, decompile or derive it from proprietary software");
+    - `CODEOWNERS` (`* @Jiron`).
+  - Done when:
+    - `node scripts/secret-scan.mjs --tracked` and `--history` exit 0;
+    - `node scripts/term-guard.mjs --tracked` and `--history` exit 0 and report how many patterns were loaded, which is more than 0 while `.private/terms.txt` exists;
+    - `node scripts/roadmap-status.mjs` prints the line, and its tests cover a split step (`1.2a`) and an unparseable checkbox line;
+    - `git config core.hooksPath` prints `.githooks`;
+    - **the hooks work,** tested in a throwaway clone under `%TEMP%\jfb-hooktest-<timestamp>` with a **synthetic** term list (one pattern, `jfb-canary-<random>`). These three are all rejected:
+      - a staged file containing a key-shaped string generated at runtime;
+      - a staged file containing the canary;
+      - a commit message containing the canary;
+    - unit tests for the scripts pass (`node --test "scripts/tests/*.test.mjs"`);
+    - the work is committed and pushed.
+- [ ] **0.4 Phase review**
+  - Re-read Phase 0. Check that the license is the root commit and that nothing from `.private/` was ever committed (`git log --all --name-only` contains no `.private/` path).
+  - Write the handover note.
+  - Done when: the note is in WORKLOG, pushed.
+
+### Phase 1: Research spikes and decisions (no product code)
+
+All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `docs/research/*.md` and decisions to `docs/decisions/NNNN-*.md`. Copy any useful spike code into the product later, cleaned up.
+
+- [ ] **1.1 Reference inventory**
+  - Read Ligata.Forms (§3.1) and Tandem (§3.3) as listed.
+  - Write `docs/research/ligata-forms-port.md`. For each source file it says port, rewrite or drop, the target in Jiron Form Builder, and the lessons that apply. Write `docs/research/tandem-reuse.md` for each script, pattern and gotcha.
+  - **The owner's private reference:** if the goal or `.private/README.md` asks for it, map the private material in `.private/` to this roadmap in a file **inside `.private/`**. Add roadmap steps for real gaps that fit §1, with the WORKLOG reason "added from the owner's reference material" and no other detail.
+  - Done when: every row of §3.1 and §3.3 is covered, both docs are committed, and the term guard passes.
+- [ ] **1.2a Umbraco 17 sandbox: navigation and workspaces**
+  - `dotnet new install Umbraco.Templates@17.7.1` in the private template hive (§3.4), and every `dotnet new` there too. Sites are created by a script, so no password appears in a command line.
+  - Create `.local/sandbox/Sandbox` on port 5510 with SQLite and unattended install. Generate an admin user and store it in `.local/credentials.json`.
+  - **In a throwaway extension, build:**
+    - a section with a sidebar menu;
+    - a **tree with folders** (children, entity actions create, rename, move, delete, and a trash);
+    - a **routable workspace** with four views, the save bar and workspace actions;
+    - a **collection** (table view) with bulk actions;
+    - a modal and a sidebar;
+    - the backoffice's light and dark themes.
+  - Start `docs/research/umbraco-backoffice.md` with the exact manifest shapes, element names and signatures, and keep screenshots in `.local/`.
+  - Done when: the sandbox runs, every piece above works (Playwright screenshots), and the doc section is committed.
+- [ ] **1.2b Umbraco 17 sandbox: building blocks**
+  - **Drag and drop:** the **sorter** across nested containers (pages → groups → fields) next to Ligata's pointer-capture drag. Measure keyboard support, nesting, scrolling and screen-reader names.
+  - **Inputs:** a **Tiptap** rich text input, document and media pickers, a user group picker and a member picker inside custom elements.
+  - **A property editor** (schema + UI) with a value converter and a Content Delivery API converter.
+  - Done when: every piece works in the sandbox, its section of the doc is committed, and the drag-and-drop choice is written as ADR-0016 "Designer interaction".
+- [ ] **1.2c Umbraco 17 sandbox: integration points**
+  - A `searchProvider`, `localization` en/de, a dashboard and a health check.
+  - Umbraco webhook event registration.
+  - `IDataValueReferenceFactory` with a custom entity type for "used on".
+  - A workspace view on the **member** workspace.
+  - A UFM component for block labels.
+  - **The version floor:** build the throwaway extension against `Umbraco.Cms` 17.5.0 too (its own template hive), to confirm the APIs D3 relies on exist there.
+  - Fix §3.4 where it is wrong.
+  - Done when:
+    - every piece works in the sandbox;
+    - the doc is complete;
+    - every *(verify)* about the backoffice in §3.4 and §4 is resolved; the rest names the Phase 1 step that resolves it;
+    - the "used on" choice is written as ADR-0017 "References".
+- [ ] **1.3 Spike: persistence, migrations and entries at scale**
+  - Create the entry tables of §4.5 with a `PackageMigrationPlan` and `AsyncMigrationBase`, both idempotent. Add a second step and confirm the upgrade behaviour. Decide `IgnoreCurrentState`.
+  - **The load:** seed 100,000 entries with 12 values each on SQLite.
+  - **Measure,** with and without the planned indexes:
+    - the first page of a form sorted by date;
+    - a filter on a text value, on a number range and on a date range;
+    - full-text search on `SearchText`;
+    - counts by state;
+    - streaming 10,000 entries to CSV;
+    - inserting 50 parallel submissions with unique entry numbers.
+  - Note the SQL Server differences to test. Steps 4.1 and 4.3 own the CI tests, because test projects arrive in 3.4.
+  - Write `docs/research/spike-entries.md` and ADR-0003 "Entry storage". If the relational values miss the §4.12 budgets, the ADR picks a design that meets them (for example extra computed columns), with numbers.
+  - Done when:
+    - a fresh install and an upgrade both pass on SQLite;
+    - number and date range filters and sorts are **correct** for negative, decimal and multi-digit values and for dates across years (SQLite must not compare them as text);
+    - the ADR has measured numbers that meet §4.12.
+- [ ] **1.4 Spike: rendering and posting**
+  - In the sandbox:
+    - a view component and a tag helper rendering a three-field form;
+    - a **no-JS post** through a `SurfaceController` with `BeginUmbracoForm`, re-rendering errors and doing post/redirect/get on success;
+    - a JS `fetch` post to a public controller outside `/umbraco`;
+    - two forms on one page;
+    - a page behind ASP.NET Core output caching, with the challenge fetched lazily;
+    - RCL static web assets under `dotnet run` **and** after `dotnet publish`;
+    - a CSP with a script nonce.
+  - Write ADR-0004 "Rendering and submission paths".
+  - Done when: Playwright shows a no-JS submission (JavaScript disabled) and a JS submission, both with errors and success, plus published-mode assets loading.
+- [ ] **1.5 Spike: one logic, two runtimes**
+  - Write a minimal rules evaluator in C# and TypeScript, with 40 vectors in one JSON file run by NUnit and by Vitest.
+  - **Decide:**
+    - the vector format;
+    - wire formats (invariant culture, ISO dates, decimal strings);
+    - time zones and "today" (the per-site `TimeZone` setting of §4.8, with injected time, and vectors across a daylight-saving change);
+    - number semantics (C# `decimal` against JS numbers) and the rounding rules for calculations.
+  - Write ADR-0005 "Shared logic and test vectors".
+  - Done when: `dotnet test` and `npx vitest run` in the sandbox run the same vector file, and a deliberately broken TypeScript operator makes the TypeScript suite fail (shown, then reverted).
+- [ ] **1.6 Spike: files and storage**
+  - **Uploads:** a streamed multipart upload with size limits enforced while reading, stored through an `IFileSystem` in a folder that is not web-accessible, with a magic-number check.
+  - **Downloads:** a protected download through the management API.
+  - **Blob storage:** read the docs and source of Umbraco's official Azure Blob storage provider and decide how an `IFormBuilderFileStore` can use it (a sample, not a dependency).
+  - Write ADR-0006 "File storage and uploads".
+  - Done when: an integration test shows that a 60 MB upload to a 50 MB limit is cut off without buffering, that a renamed `.exe` is refused, and that the stored file cannot be fetched by URL.
+- [ ] **1.7 Spike: background work and email**
+  - Write a distributed job with leases, and an in-process "kick" after commit through a bounded channel.
+  - Simulate two servers on one database: SQLite cannot be shared reliably, so simulate the second processor in-process, and note the real two-host check, which 8.1 adds to CI.
+  - Send through `IEmailSender` to a pickup folder, gated by `CanSendRequiredEmail()`.
+  - Measure the time from submission to email.
+  - Write ADR-0007 "Background work, outbox and email".
+  - Done when: the latency numbers are in the ADR, and no action ran twice in 1,000 simulated runs with two processors.
+- [ ] **1.8 Feature study (no code)**
+  - Study public feature pages and documentation of form builders in general (CMS plugins and hosted form tools) for ideas beyond §1.1. Keep notes that name products **only** in `.private/research/` (git-ignored).
+  - Write the tracked `docs/research/feature-catalogue.md`: every Jiron Form Builder feature and every candidate idea, **without naming any product** (CLAUDE.md rule 2), each marked "in roadmap (step)", "added (step)" or "later (§7)". Add roadmap steps for strong, in-scope ideas, with the reason in WORKLOG.
+  - Done when: the catalogue is committed and the term guard passes.
+- [ ] **1.9 Architecture and the remaining ADRs**
+  - Write `docs/architecture.md`, the contract for later phases:
+    - modules, the dependency diagram, the definition model and its JSON schema outline, the data model with an ER diagram;
+    - the public and management APIs, settings, extension points;
+    - a threat model (STRIDE table), quality budgets and the glossary.
+  - ADRs:
+    - 0001 solution structure and packages;
+    - 0002 the form definition model, versions and the public projection;
+    - 0008 the settings model (typed sections, schema versions, scopes, locks);
+    - 0009 privacy defaults;
+    - 0010 versioning, branching and the upgrade policy (§4.14);
+    - 0011 testing strategy;
+    - 0012 anonymous endpoints, spam protection and challenges;
+    - 0013 permissions;
+    - 0014 the merge-tag language;
+    - 0015 themes and the markup contract.
+  - Done when: all of them are committed, and §4 of this roadmap is updated where the ADRs changed it.
+- [ ] **1.10 Phase review**
+  - A subagent reviews the ADRs for contradictions with §1, §2 and §4. Fix what it finds.
+  - Check that no *(verify)* is left in §3 and §4.
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 2: Experience design (no product code)
+
+The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This phase designs every screen before any of it is built, so later phases implement a design instead of improvising one.
+
+- [ ] **2.1 Information architecture and words**
+  - Write `docs/ux/information-architecture.md`:
+    - the Forms section's menus, trees, workspaces and views;
+    - every screen with its one primary action and its secondary actions (visible or in "…");
+    - a role matrix (designer, entry handler, viewer, administrator, privacy officer, no access): who sees what.
+  - Write `docs/ux/copy.md`: the glossary (CLAUDE.md vocabulary), tone (plain, friendly, direct; sentence case; verbs on buttons), message patterns for errors, empty states and confirmations, with en and de examples.
+  - List the top 15 tasks per role with their click paths.
+  - Done when: committed, and a subagent playing a first-time editor finds every top task in ≤ 3 clicks from the section (each path written down).
+- [ ] **2.2 Backoffice wireframes**
+  - As static HTML pages in `docs/ux/wireframes/` (UUI-like styling, no build step), one per screen:
+    - setup dashboard, form library, template gallery;
+    - designer (canvas, palette, inspector open and closed, phone width);
+    - rules builder, form check, settings, actions (list and email editor), preview, publish dialog, history and diff;
+    - entries list, entry panel, all-entries inbox, spam;
+    - insights;
+    - option list, theme editor, email layout;
+    - global settings, permissions, deliveries, audit log;
+    - privacy tools.
+
+    Each shows its empty, loading and error states where they differ.
+  - Render them to PNG with Playwright (`scripts/wireframes.mjs`).
+  - Write `docs/ux/review-2.2.md` with a checklist per screen against the measurable rules of §4.13.
+  - Done when: the PNGs and the review are committed, and every screen passes its checklist.
+- [ ] **2.3 Website form design**
+  - **Design the default theme:**
+    - field anatomy (label, help, input, error);
+    - the required and optional marks, the error summary and inline errors;
+    - focus styles, choice cards, uploads, signature, repeater rows;
+    - progress (steps and bar), the summary page, success and closed states;
+    - a phone layout.
+  - Build it as mock HTML and CSS in `docs/ux/website/`, with PNGs at 375 and 1440 px in light and dark site contexts.
+  - Done when: axe is clean on the mocks, every text and control passes WCAG 2.2 AA contrast (checked by a script), and the work is committed.
+- [ ] **2.4 Design critique**
+  - Run a design critique on 2.2 and 2.3: the installed `impeccable` skill, or a subagent with the §4.13 checklist. Fix every finding that is not purely taste, and re-render.
+  - Done when: `docs/ux/critique-2.md` lists the findings, the decisions and before/after images.
+- [ ] **2.5 Phase review**
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 3: Skeleton, tooling, demo site, CI
+
+- [ ] **3.1 Solution and projects**
+  - Create the `.slnx` and the projects of §4.1 (the AI add-on and samples come in Phase 15). Base `FormBuilder.Web` on `dotnet new umbraco-extension -ex -pm Central`, then restructure. Keep the packages solution filter in `src/` (§3.3).
+  - Reference packages through central management, with Umbraco as `[17.5.0, 18.0.0)` (D3).
+  - Add an empty composer per project. The meta package has no code.
+  - Done when: `dotnet build -c Release` has zero warnings, and `dotnet pack` produces three nupkgs (Core, Web, meta) into `.local/nuget-feed`.
+- [ ] **3.2 Client workspace**
+  - Create `src/Jiron.Umbraco.FormBuilder.Web/Client` as an npm workspace with `packages/logic`, `runtime`, `element` and `backoffice`: TypeScript strict, Vite library builds, ESLint, Prettier and Vitest.
+  - **The backoffice package:** Lit, `@umbraco-cms/backoffice` pinned to the minimum supported 17.x, and `@hey-api/openapi-ts` client generation.
+  - **The runtime and element packages:** no runtime dependencies, output to `wwwroot/jfb/assets/`, and code split per feature.
+  - **Checks:**
+    - `scripts/size-check.mjs` measures gzip sizes against §4.12;
+    - an MSBuild target fails `dotnet pack` when the assets are missing, stale, for another version, or contain source maps;
+    - `umbraco-package.json` gets its `version` stamped at build;
+    - **the licence notice:** every emitted JS and CSS file keeps a `/*! Jiron Form Builder … Required Notice: … */` banner (the bundler's legal-comments setting), as PolyForm requires for every copy. The size check counts it, and the MSBuild target checks it is there.
+  - **Ignored output:** the built assets are git-ignored (`.gitignore` already lists both output folders).
+  - Done when: `npm ci && npm run lint && npm test && npm run build` passes, the size check prints the budgets, and the pack check fails on an asset without the notice (tested).
+- [ ] **3.3 Demo site**
+  - Create `demo/Jiron.Umbraco.FormBuilder.Demo` (Umbraco 17.7.1, created in the private template hive, §3.4) on port 5500 with SQLite and unattended install. Admin credentials are generated on first start into `.local/credentials.json` by the script, never on a command line.
+  - Reference the Jiron Form Builder projects.
+  - **Seeder** (C#, idempotent):
+    - document types, templates and a block list;
+    - English and German pages: home, contact, events, careers, feedback, a members area with login, privacy, imprint;
+    - a footer newsletter slot;
+    - mail delivered to `.local/mail-pickup/demo`.
+
+    Demo forms are added by the feature steps as features arrive. Each feature step updates the seeder.
+  - **`scripts/demo.ps1 start|stop|reset|login`:**
+    - processes are tracked by PID files;
+    - the demo is never started any other way (the imaging-key lesson, §3.3);
+    - `login` prints the URL and the credentials file path, never the password.
+  - Done when: `scripts/demo.ps1 reset; scripts/demo.ps1 start` serves the home page in both languages, and Playwright logs into the backoffice with the generated credentials.
+- [ ] **3.4 Test projects and harness**
+  - **Unit:** NUnit 3 and NSubstitute.
+  - **Integration:** `Umbraco.Cms.Tests.Integration` 17.x, set up per Tandem's lessons (§3.3), with a sample test that boots Umbraco with Jiron Form Builder's composers.
+  - **Testing project:**
+    - a local HTTP stub on 5560 that records webhook calls and plays captcha verification answers;
+    - fake time;
+    - users and members factories;
+    - a mail pickup reader.
+  - **Vectors:** a runner that turns `tests/vectors/*.json` into NUnit cases and Vitest cases.
+  - **E2E:** Playwright Test, with Edge locally and Chromium in CI.
+    - **Global setup:** starts a fresh host on 5520 with its own database and mail folder, and creates the users admin, designer, entry handler, viewer, privacy officer and no-access, plus two members. Step 4.6 adds their Jiron Form Builder permissions.
+    - **Fixtures:** `loginAs`, `apiAs`, `waitForMail`, `fillForm`, `submitForm`, and the sign-in lock.
+  - Done when: `dotnet test` and `npx playwright test --project=smoke` pass.
+- [ ] **3.5 CI and the local CI mirror**
+  - **`.github/workflows/ci.yml`** (ubuntu-latest):
+    - checkout, setup-dotnet 10 and node 24 with caches;
+    - client lint, tests and build;
+    - Release build with `dotnet format` check;
+    - unit and integration tests on SQLite;
+    - a **SQL Server** job (service container `mcr.microsoft.com/mssql/server:2022-latest`);
+    - a Playwright smoke job;
+    - a **load-balancing** job (two demo instances on 5500 and 5501 sharing one SQL Server database), filled in by step 8.1;
+    - uploaded test results, and concurrency cancel.
+  - **Gating:** pushes run the jobs only when `vars.JFB_CI == 'true'`; `workflow_dispatch` and version tags always run.
+  - **`dependabot.yml`:** nuget, npm and github-actions, with `open-pull-requests-limit: 0` until the owner turns it on.
+  - **Checks:**
+    - `scripts/check-workflows.mjs` (GitHub's MIT parser);
+    - `scripts/check-npm-licences.mjs`;
+    - `scripts/check-nuget-licences.mjs` (new: reads each restored package's nuspec license and fails on anything outside CLAUDE.md rule 4);
+    - `scripts/third-party-notices.mjs` (generates and checks `THIRD-PARTY-NOTICES.md`).
+  - **`scripts/ci-local.ps1`** runs everything except SQL Server and load balancing: the gate.
+  - Done when: `scripts/ci-local.ps1` passes, and the workflow check passes. Add "set `JFB_CI`, raise the Dependabot limit, and check the first CI run (including the SQL Server and load-balancing jobs)" to OWNER-TODO.
+- [ ] **3.6 Phase review**
+  - Review the build files for duplication, and check that the pack contents look right (`dotnet pack` + unzip listing).
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 4: Core domain and persistence
+
+- [ ] **4.1 Schema v1 and migrations**
+  - Create the DTOs and frozen snapshots for every table in §4.5, plus the `PackageMigrationPlan` (per ADR-0003 and the 1.3 spike). The filtered unique indexes use custom SQL for both databases.
+  - The plan grants the Forms section to the administrators group once (a `jfbKeyValue` flag), the way Umbraco's own migrations do it (§3.3), and writes the default settings rows.
+  - **SQL Server without a server:** a test renders the schema DDL through Umbraco's SQL Server syntax provider, with no connection, and compares it with a reviewed snapshot. That catches type, cascade-path and index problems before CI does *(verify feasibility in this step; otherwise an ADR picks the strongest offline check)*.
+  - Done when:
+    - integration tests prove that a fresh install on SQLite creates every table, index (including the filtered ones) and foreign key, checked with Jiron Form Builder's own schema queries;
+    - a second run is a no-op;
+    - two entries with a NULL `ChallengeId` can be stored;
+    - the SQL Server DDL snapshot test passes;
+    - the same tests are part of the SQL Server job in `ci.yml` (show the job definition; the owner checks the CI result).
+- [ ] **4.2 The definition model**
+  - **The model:** C# records for §4.3, System.Text.Json with source generation, and `LocalizedText`.
+  - **The schema:** `schemas/jfb-form.v1.schema.json`, with a test that validates serialised definitions against it (a JSON-schema library is allowed as a test-only dependency if MIT or Apache-2.0).
+  - **Upgraders:** the definition upgrader framework, tested with a synthetic older version.
+  - **Structural validation**, with stable error codes:
+    - limits, alias rules and reserved aliases;
+    - unique keys, existing references and cycles;
+    - pattern safety.
+  - **The public projection** and its hash.
+  - Done when: unit tests cover every structural rule, round trips are lossless, and a property-style test over generated definitions shows that the public projection never contains action settings, recipients or option-source configuration.
+- [ ] **4.3 Repositories and the file store**
+  - One repository per aggregate (forms with versions and the field catalogue, folders, entries with values and files, events and notes, action runs, emails, option lists, themes, layouts, templates, settings, permissions, audit, stats, key-value).
+  - All async, inside Umbraco scopes, through the database gate (D7). Paging, filtering and sorting happen in the database.
+  - **The entries query builder** turns typed field filters into SQL against `jfbEntryValue`.
+  - **The file store:** the physical `IFormBuilderFileStore` per ADR-0006, in a folder that is not web-accessible. Uploads arrive in 6.1, hardening in 7.4.
+  - Done when: integration tests cover CRUD for each repository, concurrency conflicts on forms and settings, **unique entry numbers under 50 parallel inserts**, every filter kind (with the correctness cases of 1.3), and storing, reading and deleting files.
+- [ ] **4.4 The settings framework** (port the pattern, §3.3)
+  - **Model:** typed sections (§4.8) with defaults, validators and JSON schema versions with migrations, plus global and per-site scope.
+  - **Host options:** bound and validated at start (`ValidateOnStart`); locks win over the backoffice, including `Designer:SettingLocks`.
+  - **Runtime:** a cached reader invalidated by a cache refresher, and a `SettingsSaved` notification. Ship a JSON schema for `appsettings` IntelliSense (with a `!` exception in `.gitignore`).
+  - Done when: unit tests cover every validator and default; migrating an old payload works; a lock overrides the backoffice value; an invalid host config fails start-up with a clear message.
+- [ ] **4.5 The form service**
+  - **Create:**
+    - from blank, with the configured new-form defaults;
+    - from a template: ship the built-in "Contact" template now, as embedded JSON (12.4 adds the others);
+    - by import.
+  - **Save and publish:**
+    - save draft with a concurrency check;
+    - publish: run the structural validation (4.2), update the field catalogue, and bump the public revision only when the public projection changed. Publishing is a pipeline that later steps extend: the form check joins in 9.5b, the mirror file in 12.6;
+    - unpublish.
+  - **Versions:** list, diff, restore (as a new version), pin and comment, plus the draft-version cleanup job.
+  - **Copies and moves:**
+    - duplicate, with or without actions, remapping every key and every rule, action and outcome reference;
+    - copy actions to another form, remapping fields by alias and reporting the unmapped ones;
+    - move.
+  - **Trash and delete:** trash, restore, delete permanently (cascading entries, files, versions, permissions and references), empty trash.
+  - **Folders**, and notifications for every lifecycle event.
+  - Done when: unit and integration tests cover each operation, including:
+    - "restore creates a new version";
+    - "duplicate remaps rule references";
+    - "delete removes the files from the file store";
+    - "a stale save returns `concurrency_conflict`".
+- [ ] **4.6 Permissions**
+  - **The model** (ADR-0013):
+    - permissions: design forms, manage actions, view entries, view sensitive data, edit entries, delete entries, export, manage library, manage settings, manage permissions, use privacy tools;
+    - granted per user group globally, per folder or per form, combined as a union.
+  - Authorization handlers for the management API, plus the "who may see this form" filter for trees, search and the inbox.
+  - The E2E global setup (3.4) grants each test role its Jiron Form Builder permissions.
+  - Done when: unit tests cover the evaluation, and the E2E users have their grants.
+- [ ] **4.7 The management API foundation**
+  - **The base:** a base controller, `[MapToApi("jfb")]`, the auth policies from 4.6, ProblemDetails with stable codes, the OpenAPI document `jfb` with a snapshot test, and the generated TypeScript client in the backoffice package.
+  - **The first endpoints** (§4.7): forms and folders (tree, search, CRUD, publish, versions, trash) over the 4.5 services.
+  - **The permission matrix test:** it enumerates **every** management endpoint by reflection, asserts there is more than zero, asserts each one declares a Jiron Form Builder permission, and calls each as a user without that permission, expecting `403`. Every later step that adds endpoints is covered by it automatically.
+  - Done when: the integration tests for the endpoints and the matrix test pass, and the client is generated and committed.
+- [ ] **4.8 Audit log and stats** (port the pattern)
+  - Done when: tests prove there are no field values in audit details, and that counters are correct under parallel increments.
+- [ ] **4.9 Phase review**
+  - A subagent reviews the Core diff for SOLID, naming, async and load-balancing safety (no static mutable state). Fix what it finds.
+  - Check the coverage report (≥ 85% on Core).
+  - Tag the end of the phase as `baseline/schema-v1` and push the tag. Step 16.5 packs this tag as the "old version" for the upgrade test.
+  - **The schema is frozen from here:** `CreateSchemaV1` is never edited again, and every change is a new migration step. A test pins the hash of the v1 snapshot DTOs.
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 5: Field types, option lists and the logic engines
+
+- [ ] **5.1 The field type framework**
+  - **The registry:** a collection builder with `FormBuilderFieldTypeBase<TSettings>`, and settings schemas from attributes (exposed to the backoffice as JSON).
+  - **Field values:**
+    - mapping from storage kinds to `jfbEntryValue` columns;
+    - the parse and validate contract;
+    - an availability check ("not configured: …").
+  - **Changing types:** a "change type" compatibility map, and `Designer:SettingLocks` applied.
+  - Done when: unit tests pass, including a custom type registered by a test composer and a type removed from the collection.
+- [ ] **5.2 Rules and validation engines** (C# and `packages/logic`)
+  - Implement §4.3.3 in both runtimes, with form-level validation rules and the "hidden means gone" propagation (a field hidden because its group or page is hidden).
+  - **Vectors (≥ 300 cases):**
+    - every operator against every storage kind;
+    - empty and unchecked values, and multi-values;
+    - relative dates with an injected "today" in two time zones;
+    - nested groups and hidden propagation.
+  - Done when: both runtimes pass every vector, and a scripted mutation check flips each TypeScript operator in turn and shows at least one failing vector for each.
+- [ ] **5.3 Merge tags and calculations** (C# and `packages/logic`)
+  - Implement the sources, filters and escaping contexts of §4.3.3, plus unknown-tag handling and the calculation parser and evaluator, with no `eval`, no reflection and documented rounding.
+  - Done when:
+    - the vectors pass in both runtimes;
+    - a fuzz test of 10,000 random templates and formulas never throws an unhandled exception and never takes longer than 50 ms per input;
+    - an injection test shows that merge tags cannot produce HTML, URL or JSON breakouts.
+- [ ] **5.4 Input and choice fields** (server side)
+  - Implement the types of §4.3.2 from Text to Country: parsing, validation, storage, "Other" options, consent text hashing into `jfbConsentText`, and country names from .NET culture data.
+  - Done when: unit tests per type cover valid, invalid and edge values, and an integration test stores every type and reads it back typed.
+- [ ] **5.5 Advanced fields** (server side)
+  - **Files and signatures:** file (linking upload tokens) and signature (PNG checks on size, dimensions and magic number).
+  - **Composite:** name, address, and repeater (rows, limits, per-row validation).
+  - **Computed and hidden:** calculation (server recompute), hidden.
+  - **Content types** and captcha placement.
+  - Done when: tests per type pass.
+- [ ] **5.6 Option lists**
+  - **Kinds:**
+    - manual;
+    - content: root from a picker or "the current page", document type filter, value and label fields, descendants, order, published only, member-protected pages excluded;
+    - data type;
+    - URL JSON (allowed hosts, a JSON path mapping);
+    - file (CSV or TXT, `value|label`);
+    - countries;
+    - code (`IFormBuilderOptionSource`).
+  - **Behaviour:** per-culture labels, caching with invalidation on content publish, and cascading parents.
+  - Done when: tests per kind pass, including SSRF refusal for URL lists and cache invalidation on publish.
+- [ ] **5.7 Phase review**
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 6: Rendering, the website runtime and headless
+
+- [ ] **6.1 The public API and the submission pipeline**
+  - Set up §4.6 at a configurable base path, with CORS, ProblemDetails codes, request limits and the OpenAPI document `jfb-public` (with a snapshot test).
+  - **Endpoints built here:** the form definition, `validate`, `entries`, `receipt`, `options` and `uploads` (basic limits, using the 4.3 file store; hardening in 7.4). The others are built and tested by the steps that need them: `challenge` (7.1), `drafts` and `resume` (8.7), `verify` (8.5), `events` (11.5).
+  - Implement the pipeline of §4.4 end to end (spam layers come in Phase 7): availability, validation, idempotency (the server generates a `submissionId` when none is posted), the single transaction, outcomes.
+  - Done when: integration tests cover each endpoint built here for success; validation errors by alias; a replayed submission returning the same receipt and a changed one returning `409`; `form_changed`, `form_closed` and the entry limit; CORS allowed and denied; oversize bodies.
+- [ ] **6.2 Razor rendering**
+  - **Rendering:**
+    - the view component and tag helpers (`<jfb-render>`, `<jfb-assets>`, included once per page automatically unless turned off);
+    - the form picker model `FormBuilderFormReference`;
+    - the markup contract (`data-jfb-*` attributes, deterministic per-request instance ids);
+    - member gating messages and culture.
+  - **The no-JS post:** through the surface controller, with post/redirect/get and re-rendered errors, server-side paging for multi-page forms, and the outcomes (message, redirect, message then redirect).
+  - Done when: TestServer tests pass, and Playwright with JavaScript **disabled** submits a valid form, an invalid one and a three-page one, with two forms on one page.
+- [ ] **6.3 Themes**
+  - **`default`:**
+    - CSS custom properties and an opt-in dark scheme;
+    - the error summary plus inline errors, character counters;
+    - styled native controls and choice cards;
+    - the design from 2.3.
+  - **`unstyled`:** semantic markup and classes only.
+  - **`bootstrap5`:** Bootstrap 5 classes. Bootstrap itself is not shipped; the demo and tests load it (MIT, dev-only) to check the theme.
+  - **Mechanics:**
+    - a theme registry (`IFormBuilderTheme`);
+    - view resolution in the order per form → theme → default, in the layout of ADR-0015;
+    - versioned view-contract headers.
+  - Done when: Playwright screenshots of a kitchen-sink form (every field type) per theme at 375 and 1440 px are reviewed in `docs/ux/review-6.3.md`; axe is clean; the CSS is within budget.
+- [ ] **6.4a The website runtime: core**
+  - **Validation and rules:** progressive enhancement, plus client validation and rules from `packages/logic`.
+    - **Messages:** English and German now; 14.2 adds the other five languages.
+    - **Delivery:** one small file per language, loaded for the page's culture only, to keep the §4.12 budget.
+  - **Live calculations.**
+  - **Submitting:**
+    - fetch submission with an in-flight lock and a stable `submissionId`;
+    - the error summary with focus management, and `aria-live` announcements;
+    - `form_changed` handling with answer restore (§3.1).
+  - **The developer surface and constraints:** the JS API and DOM events (§4.9), the CSP nonce, no cookies.
+  - Done when:
+    - Vitest covers the runtime;
+    - Playwright on the demo covers validation, rules, calculations, submission and `form_changed`;
+    - axe is clean;
+    - the size check passes.
+- [ ] **6.4b The website runtime: field behaviours**
+  - Loaded on demand: uploads with progress (against `uploads`), the repeater, the signature pad (with the typed alternative), character counters, choice cards and the "Other" input.
+  - Done when:
+    - Playwright on the demo covers every field type's interaction;
+    - a **keyboard-only** run completes the kitchen-sink form;
+    - axe is clean;
+    - the size check passes with every chunk.
+- [ ] **6.5 Multi-page, summary and prefill**
+  - **Moving through pages:**
+    - per-page server validation (`validate`), back without losing answers;
+    - progress styles;
+    - the summary page with "change" links.
+  - **Prefill:**
+    - from members, with "show" and the tamper-proof "hide" mode;
+    - from allowed query values;
+    - from context values.
+  - Save and resume needs the email outbox, so it comes in 8.7.
+  - Done when: Playwright journeys pass for multi-page forms and the summary page, and a tamper test proves that a posted value for a hidden member-prefilled field is ignored.
+- [ ] **6.6 Headless**
+  - **The definition:** the endpoint with `ETag`, and TypeScript types for the public projection (generated from C# or the JSON schema and tested for drift), shipped in the package and in `schemas/`.
+  - **The renderer:** `<jfb-form>` (packages/element) renders the default theme's markup from JSON with the same runtime.
+  - **The Content Delivery API:** the form picker returns `{key, alias, name}`, and with expansion, the projection.
+  - **Server-key submissions.**
+  - Done when: a static page on 5521 (cross-origin, allowlisted) renders and submits a multi-page form through the element; the Delivery API test passes; server-key tests pass.
+- [ ] **6.7 The form picker, blocks and "used on"**
+  - **The data type "Jiron Form Builder form picker":** single or multiple, allowed folders or forms, optional theme override and redirect override. Plus the value converters and the UFM block-label component.
+  - **"Create a form block for me":** an idempotent service that creates a "Form" element type and data type, and never changes existing types.
+  - **"Used on":** reference tracking per ADR-0017, with the references endpoint of §4.7, so that trash and delete can name the pages that use a form (9.2).
+  - Done when: integration tests pass (including "a page that picks the form is listed as a reference, and stops being listed after the pick is removed"), and Playwright shows an editor picking a form in a block on the demo and the page rendering it.
+- [ ] **6.8 Phase review**
+  - An accessibility pass over the themes (axe, keyboard, screen-reader names), and a security pass over the public API.
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 7: Spam protection and file security
+
+- [ ] **7.1 Standard protection**
+  - **Signals:**
+    - a honeypot whose name varies per public revision;
+    - a minimum fill time from the signed challenge;
+    - the `challenge` endpoint (§4.6) and its use by the runtime for JS posts;
+    - no time signal on no-JS posts, because the markup is cache-safe (§3.4). They are scored on the honeypot, rate limits and content rules (ADR-0012), and a test covers that case;
+    - the challenge id stored on the entry (unique per form), so a solved challenge can't be replayed.
+  - **Limits:** the ASP.NET Core rate limiter per IP, form and site, with bounded partitions; origin checks; antiforgery on members-only forms.
+  - **Scoring:** the spam score with reasons, and silent acceptance into `Spam` (§4.4).
+  - Done when: integration tests cover each signal, and a flood from 20,000 distinct IPs neither bypasses the site-wide limit nor grows memory without bound.
+- [ ] **7.2 Proof of work and captcha providers**
+  - **Proof of work:** a SHA-256 puzzle with difficulty per level, a signed and expiring nonce, solved in a Web Worker with a progress hint for slow devices.
+  - **Third-party providers:** reCAPTCHA v2 and v3 (ported from Ligata.Forms) and hCaptcha. Providers are greyed out without keys. The consent modes of §4.10 apply.
+  - Done when:
+    - unit tests pass against the HTTP stub;
+    - Playwright, with the provider hosts routed to a local stub (`page.route`, so no real third-party request ever happens, D22), shows **zero requests to them before consent** and the script loading after;
+    - proof of work completes in under 2 s at the default level on the demo machine.
+- [ ] **7.3 Content rules and the spam folder**
+  - Blocked words, blocked email domains, maximum links, per-form strictness, and `IFormBuilderSpamCheck`.
+  - The `Spam` state. "Not spam" runs the submitted actions then.
+  - Done when: tests pass.
+- [ ] **7.4 File security**
+  - **Upload checks:**
+    - streaming limits;
+    - the allowlist, the global blocklist and magic-number checks;
+    - SVG and HTML never served inline;
+    - random names.
+  - **Cleanup and scanning:** the orphan-cleanup job, and the scanner hook with quarantine.
+  - **Downloads:** protected and permission-checked; ZIP exports safe against path traversal.
+  - Done when: tests cover a polyglot file, a double extension, an oversize stream aborted early, a zip-slip name, and a quarantined file.
+- [ ] **7.5 Phase review**
+  - A security review of Phases 6 and 7 (STRIDE for the public surface). Fix what it finds, with a test per fix.
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 8: Actions and email
+
+- [ ] **8.1 The action framework**
+  - **The model:** a registry with `FormBuilderActionTypeBase<TSettings>`, triggers, rules, order and "stop the rest if this fails".
+  - **The processor:** a distributed job plus the in-process kick, with leases, back-off and the `Uncertain` state.
+  - **The retry API.**
+  - **Test runs:**
+    - email goes to the current user only;
+    - webhooks send to the configured URL with `X-Jfb-Test: true` after a confirmation;
+    - content actions create nothing (a dry run that shows what would be created).
+  - Fill in the CI load-balancing job.
+  - Done when: tests cover ordering, retries with fake time, lease expiry turning into `Uncertain`, and **no double execution** with two processors on one database. The `loadbalancing` job definition is shown.
+- [ ] **8.2 Email infrastructure**
+  - **Sending:** the outbox and sender job through `IEmailSender`, with `CanSendRequiredEmail()` gating so no retries are burnt while email is not configured.
+  - **Content:** responsive HTML layouts that work in dark mode, a generated text part, header sanitising, attachment caps, the per-site sender, a test email, and retention purge.
+  - Done when: tests pass with the pickup folder, HTML snapshot tests pass, and every email is well-formed with inlined CSS (checked by a test).
+- [ ] **8.3 The email action**
+  - **Addressing:** the recipient kinds, CC/BCC, reply-to a field.
+  - **Content:**
+    - subject and body per culture with merge tags;
+    - `{{ entry.table }}` (all answers as a table);
+    - "include sensitive data" (off by default);
+    - attachments;
+    - a Razor view option (`Views/JironFormBuilder/Emails/*.cshtml`).
+  - **Presets** ("Notify the team", "Confirm to the sender").
+  - Done when: tests pass, and an E2E run submits the demo contact form and finds two emails in the pickup folder with the right content, escaping and language.
+- [ ] **8.4 Webhook, Slack and Teams**
+  - **The webhook:**
+    - JSON, form-encoded or XML;
+    - field mapping, metadata;
+    - the HMAC signature (`X-Jfb-Signature: t=…, v1=…`, verification documented with code in C#, Node and PHP);
+    - secret references, the SSRF guard, timeouts and retries.
+  - **Slack and Teams:** presets with formatted text.
+  - **Umbraco webhook events:** registration (§4.4).
+  - Done when: tests pass against the stub on 5560, the SSRF refusal tests pass, and the signature verification samples are tested.
+- [ ] **8.5 Content, state and verification actions**
+  - **Create or update content:**
+    - document type, dynamic or picked parent, field-to-property mapping with type compatibility, publish or save;
+    - uploaded files are not copied to media unless a mapping says so, and then into a chosen folder with the same file checks.
+  - **Set state** under a rule.
+  - **Email verification (double opt-in):**
+    - the `Unverified` state and the email with its link;
+    - the GET confirm page and the POST confirm (§4.6);
+    - expiry and resend;
+    - actions run after verification.
+  - Done when: tests pass, and E2E double opt-in works from the pickup email, including a simulated link-scanner GET that verifies nothing.
+- [ ] **8.6 Manual approval**
+  - The approved and rejected triggers, with bulk and single changes.
+  - Done when: tests pass.
+- [ ] **8.7 Save and resume**
+  - **The flow:**
+    - the `drafts` and `resume` endpoints (§4.6), with the `Draft` state and the resume email through the outbox;
+    - the token in the URL fragment, never sent to the server in a query string;
+    - expiry, and the page restored;
+    - the runtime's "Save and continue later" control (the only use of browser storage, §4.10);
+    - drafts purged when they expire.
+  - Done when: Playwright resumes a three-page form from the link in the pickup email, and tests cover expiry, a second resume and the submit that turns the draft into an entry.
+- [ ] **8.8 Phase review**
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 9: The backoffice I: section, form library and designer
+
+Build from the Phase 2 designs. Every screen in this phase and the next must pass the measurable rules of §4.13 before its step is done.
+
+- [ ] **9.1 Section, shell and setup**
+  - **The section:** `Jiron.FormBuilder.Section` ("Forms") with its sidebar:
+    - the **Forms** tree;
+    - **Entries:** all entries, spam;
+    - **Library:** option lists, themes, email layouts, templates;
+    - **Settings:** general, email, spam, files, privacy, access, deliveries, audit log, privacy tools.
+
+    Menu items appear only for users with the matching permission. Items whose screens come in later phases appear with those phases.
+  - **The dashboard:**
+    - the setup checklist of §4.13, each item with a detector on the server that knows when it is done;
+    - recent entries;
+    - health warnings.
+  - **Health checks** (also on Umbraco's Health Check dashboard): email can be sent, the uploads folder is not web-accessible, the Data Protection key ring is persisted (needed for challenges across restarts and servers), jobs are running, deliveries are failing, the mirror has conflicts.
+  - **Plumbing:** en/de localisation infrastructure, the generated API client, and the global search provider.
+  - Done when:
+    - Playwright shows that each role sees exactly its menus;
+    - each checklist detector has unit tests (the full green run on the demo is checked in 12.7, once every linked screen exists);
+    - screenshots are reviewed in `docs/ux/review-9.1.md` against §4.13.
+- [ ] **9.2 The form library**
+  - **The tree:** folders, and create from blank or from the template gallery (a modal with previews; it shows the templates that exist, which are "Contact" from 4.5 until 12.4 adds the rest).
+  - **Entity actions:**
+    - rename, move;
+    - duplicate (with or without actions), copy actions to another form;
+    - import as a new copy, export JSON (12.6 adds "replace" and the mirror).
+  - **Trash:** trash, restore, empty trash. The delete confirmation names the pages that use the form (6.7).
+  - **Search.**
+  - Done when: Playwright journeys for each action pass, and the client stores have unit tests.
+- [ ] **9.3a The designer: workspace and editor model**
+  - **The workspace:** the form workspace with the views Design, Settings, Actions, Entries, Insights and History (views without content yet show a short "coming with …" empty state, replaced by their steps). The name and status are in the header; Save draft and Publish in the footer.
+  - **The editor model** is pure TypeScript with unit tests (the Ligata.Forms lesson, §3.1):
+    - selection;
+    - insert, move, duplicate and remove;
+    - undo/redo;
+    - the rule-safety checks that refuse moves breaking a rule.
+  - Done when: Vitest covers every editor-model operation, and the workspace loads and saves a form through the API.
+- [ ] **9.3b The designer: canvas and palette**
+  - **The canvas:** pages as steps, groups with columns, fields rendered by small Lit preview elements per type, insert points, and canvas widths for phone, tablet and desktop.
+  - **The palette:** search, groups, recently used.
+  - **Inline label editing.**
+  - Done when: Playwright builds a three-page form with the mouse, and screenshots are reviewed in `docs/ux/review-9.3.md`.
+- [ ] **9.3c The designer: drag and drop and keyboard**
+  - **Moving:**
+    - drag and drop per ADR-0016, across groups and pages;
+    - "Move to…" for keyboard users;
+    - refused moves explained in place.
+  - **Keyboard:** arrows, Alt+arrows, Delete with an undo toast, Ctrl+D, Ctrl+Z/Y, and the `?` overlay.
+  - Done when: Playwright builds a three-page form **with the keyboard only**, and a 300-field form stays within the §4.12 budget.
+- [ ] **9.4 The inspector**
+  - **A generic settings renderer** from type schemas, with these editors:
+    - text, number, switch, select;
+    - rich text (Tiptap), merge-tag-aware text with a tag picker;
+    - content and media pickers;
+    - an option editor (drag to reorder, paste many lines at once, images and descriptions for card layouts);
+    - a pattern editor with a live tester.
+  - **Sections:** Essentials, Validation, Rules, Appearance, Advanced (§4.13).
+  - **Per-culture texts** with a culture switcher and "missing translation" marks.
+  - **Fields:** alias editing with its lock rules, and change field type (compatible types only, with a preview of what is lost).
+  - **Locks:** host-locked settings are shown as locked.
+  - Done when: Playwright configures every built-in type through the UI, and axe is clean on the inspector.
+- [ ] **9.5a The rules builder**
+  - **The builder:** rule rows in plain language ("Show this field when **Country** **is** **Germany**"), any/all groups, operators per field type, and value pickers (options, dates including relative ones, numbers).
+  - **Seeing rules:** chips on the canvas, and a **rules overview** listing every rule in the form with links.
+  - **Form-level validation rules** in the same builder.
+  - Done when: Playwright builds nested rules of every operator kind, and the designer's live rule preview agrees with the shared vectors (D10).
+- [ ] **9.5b The form check**
+  - **The check runs on the server and joins the publish pipeline:** errors block publishing, warnings don't. Every issue has a "fix it" link in the designer. The checks:
+    - a required field that a rule can hide;
+    - an email action with no email field to reply to;
+    - missing labels or alt texts;
+    - duplicate aliases, unknown merge tags;
+    - unreachable pages, rules on removed fields;
+    - personal data collected without a consent field (a hint);
+    - a captcha provider that isn't configured;
+    - an outcome redirecting to an unpublished page;
+    - a file field without limits;
+    - and anything Phase 1 adds.
+  - Done when: each check has unit tests, publishing with an error is refused through the API, and Playwright covers the badge, the list and the "fix it" links.
+- [ ] **9.6 Phase review**
+  - **UX review:** every screen of the phase at 375, 768 and 1440 px, in light and dark, in en and de, each checked against the measurable rules of §4.13, plus an `impeccable` critique (or a subagent with the checklist). Fix the findings.
+  - Write the handover note.
+  - Done when: `docs/ux/review-9.md` with screenshots is committed and pushed, with the phase-review gate.
+
+### Phase 10: The backoffice II: settings, actions, preview and publishing
+
+- [ ] **10.1 The form settings view**
+  - The groups of §4.3.4 with help text. The outcomes editor (an ordered list with rules), plus availability, spam, privacy, appearance and developer settings.
+  - Done when: Playwright covers each group, including validation messages.
+- [ ] **10.2a The actions view and the email editor**
+  - **The list:** action cards per trigger (Submitted, Approved, Rejected, Verified), with order (drag and keyboard), an on/off switch, a rule chip and the last-run status.
+  - **Adding:** an "add action" modal with presets.
+  - **The email editor:** a recipient builder, the merge-tag picker, and a live preview with a sample entry.
+  - **Test run.**
+  - Done when: Playwright configures an email action from a preset, and a test-run email lands in the pickup folder.
+- [ ] **10.2b The other action editors**
+  - **Webhook:** a mapping table, a signature help text and a test.
+  - **Slack and Teams.**
+  - **Content:** document type and property mapping.
+  - **Set state.**
+  - **Verification.**
+  - Done when: Playwright configures and test-runs each type (webhooks against the stub on 5560).
+- [ ] **10.3 Preview, drafts and publishing**
+  - **Preview:** a modal with the draft rendered by the chosen theme in an iframe (from a preview endpoint), device widths, light and dark, and a culture switch. Test submissions are marked `IsTest`.
+  - **Publish:** a summary of the changes against the live version, and draft and unpublished badges.
+  - **Conflicts:** when someone else saved first, show both versions and let the user choose; never overwrite silently.
+  - **A guard** against leaving with unsaved changes.
+  - Done when: Playwright covers preview, a test entry, publishing, and a two-browser concurrency conflict.
+- [ ] **10.4 History**
+  - **The list:** versions (draft saves and published), with pins and comments.
+  - **The diff:** a side-by-side comparison in plain language (fields added, removed and changed; settings, actions and rules).
+  - **Restore** as a new version, and the version-cleanup settings.
+  - Done when: tests and Playwright pass.
+- [ ] **10.5 Phase review**
+  - UX review as in 9.6, plus the handover note.
+  - Done when: `docs/ux/review-10.md` is committed and pushed, with the phase-review gate.
+
+### Phase 11: Entries, exports and insights
+
+- [ ] **11.1 The entries list**
+  - **The table:** a collection table per form, a column chooser (saved per user), server-side paging, "new" markers and mark-as-seen, and an action status ("3/3 delivered").
+  - **Finding entries:** filters as chips (date presets and ranges, state, typed field filters), search and sort.
+  - **Working on many:** bulk actions (approve, reject, spam, not spam, delete, export selected, re-run actions) and the keyboard shortcuts of §4.13.
+  - Done when: Playwright passes with 1,000 seeded entries, and the 100,000-entry budget of §4.12 is measured and met.
+- [ ] **11.2 The entry panel**
+  - **Values:** grouped by page and group, with fields from older versions marked as such, plus files and the consent proof (the exact text).
+  - **Metadata:** time, page, culture, member link, IP if stored, duration, spam reasons.
+  - **The timeline:** events, action runs with retry, and emails.
+  - **Notes:** add and edit your own.
+  - **State actions.**
+  - **Edit mode:** validation per type, audited.
+  - **Sensitive values:** masked, with an audited "reveal".
+  - Done when: Playwright passes, and the audit entries are asserted.
+- [ ] **11.3 The all-entries inbox and spam**
+  - **The inbox:** a cross-form list with a form column and a form filter, unseen entries first.
+  - **Spam:** the spam folder with "not spam".
+  - **Badges:** unseen counts on the menu items, from a light count endpoint.
+  - Done when: Playwright passes.
+- [ ] **11.4 Exports**
+  - **Formats:**
+    - **CSV:** delimiter, BOM, formula guard, headers as labels or aliases;
+    - **Excel:** per ADR, either a small own XLSX writer or an MIT library; repeaters on their own sheet;
+    - **JSON**, and a **printable view** of one entry and of a list;
+    - **ZIP** of the files: a folder per entry, safe names.
+  - **Large exports:** a background job, a notification, and a time-limited download.
+  - **Rules:** every export respects the filters, the permissions and the sensitive-data rules, and is audited.
+  - Done when: tests open the produced files (the XLSX with a test-only reader, CSV round trip, ZIP listing), and the 10,000-entry budget is met.
+- [ ] **11.5 Insights**
+  - **Collection:**
+    - the runtime sends `view`, `start` and `page` beacons (`navigator.sendBeacon`) to `events`, unless insights are off;
+    - the server rolls them up into daily stats;
+    - unique members are counted from entries at query time.
+  - **What it shows:**
+    - views, starts, submissions and conversion;
+    - drop-off per page (funnel), median time to complete;
+    - top origin pages, hour of day, unique members;
+    - a comparison period, grouped by day, week or month;
+    - a site-wide overview table.
+  - **Charts** are small, accessible SVG components with a table view (no chart library).
+  - **Opt-out** per site and per form.
+  - Done when: unit tests cover the aggregation, Playwright shows the beacons arriving and the charts filling on the demo (screenshots reviewed in `docs/ux/review-11.5.md`), and a test proves the stats hold no personal data.
+- [ ] **11.6 Entries on the member**
+  - A workspace view on the member editor lists that member's entries, with permissions applied.
+  - Done when: Playwright passes.
+- [ ] **11.7 Phase review**
+  - UX review as in 9.6 for the entries screens, plus the handover note.
+  - Done when: `docs/ux/review-11.md` is committed and pushed, with the phase-review gate.
+
+### Phase 12: Library, global settings and deployment
+
+- [ ] **12.1 Option lists**
+  - A list, an editor per kind with a live preview of the options, CSV/TXT upload, the cache setting, and "used by".
+  - Done when: Playwright passes.
+- [ ] **12.2 Themes**
+  - **The editor:** a theme list, and a visual token editor:
+    - light and dark colours;
+    - the font family (system stacks or "use the site's font");
+    - type scale, spacing, corners, borders, the focus ring, button style.
+  - **The preview:** a live kitchen-sink form, with WCAG contrast checks shown in place.
+  - **Custom CSS**, scoped to the form root and sanitised.
+  - **Exchange and use:** import and export as JSON, the theme picker per form, and the default theme.
+  - Done when: Playwright and contrast unit tests pass.
+- [ ] **12.3 Email layouts**
+  - Logo (media picker), colours, header and footer per culture, preview with a sample entry in light and dark, and a test send.
+  - Done when: Playwright passes and the test email arrives in the pickup folder.
+- [ ] **12.4 Templates**
+  - **Built-in templates,** in en and de:
+    - contact, callback;
+    - newsletter (with verification);
+    - event registration (multi-page, entry limit);
+    - job application (uploads, approval);
+    - feedback with NPS;
+    - quote request (calculations);
+    - support request.
+  - "Save as template", and the gallery with previews.
+  - Done when: a test creates and publishes a form from every template without form-check errors, and the gallery screenshots are reviewed in `docs/ux/review-12.4.md`.
+- [ ] **12.5a Global settings and access**
+  - **Settings:** the sections of §4.8 with host locks.
+  - **Access:** a permissions editor (a matrix of groups and permissions, with folder and form overrides).
+  - Done when: Playwright passes per section, and the `403` matrix covers the new endpoints.
+- [ ] **12.5b Deliveries and the audit log**
+  - **Deliveries:** emails and webhook runs, with filters and retry.
+  - **The audit log viewer,** with filters and export.
+  - Done when: Playwright passes for both screens, and the `403` matrix covers the new endpoints.
+- [ ] **12.6 Forms as files, import and export**
+  - **Import and export:** the JSON import UI, with "new copy" or "replace".
+  - **Mirror mode (D25):** write on publish, import on start-up, and detect conflicts (both file and database changed: keep the database, warn in the health check). Documented.
+  - Done when: integration tests cover the mirror round trip and the conflict case.
+- [ ] **12.7 Phase review**
+  - UX review as in 9.6 for the library and settings screens, plus the handover note.
+  - **The setup checklist end to end:** on a freshly reset demo, Playwright follows the dashboard checklist (9.1) through every item and sees each one turn green.
+  - Done when: `docs/ux/review-12.md` is committed, the checklist run passes, and everything is pushed, with the phase-review gate.
+
+### Phase 13: Privacy, retention and compliance
+
+- [ ] **13.1 Retention**
+  - **Rules:** days per state per form, with global defaults. `PurgeAfterUtc` is computed on every state change.
+  - **A legal hold:** an entry can be kept with a reason and an end date.
+  - **The job** deletes in batches, files and emails included, and offers a dry-run preview (counts per form). Everything is audited.
+  - Done when: tests with fake time pass, including holds.
+- [ ] **13.2 Data subject tools**
+  - **Find:** by email (email-type fields and member email) or by member, across all forms.
+  - **Export:** everything as a ZIP (JSON per entry, files, consent texts).
+  - **Erase:** delete, or anonymise (values replaced, files removed, stats kept), with a preview first. Audited.
+    - **Every copy is in scope:**
+      - entry values and files;
+      - `SearchText`, `IpAddress`, `Context` and consent links;
+      - the entry's events (old and new values) and notes;
+      - queued and sent emails (addresses and bodies);
+      - action-run error messages;
+      - drafts.
+  - Done when: tests and Playwright pass, including a test that searches **every Jiron Form Builder table** for the person's email address after an erase and finds nothing.
+- [ ] **13.3 Sensitive data and IP addresses**
+  - **Masking** in the UI, emails, exports and logs; the "view sensitive data" permission; audited reveals.
+  - **IP modes:** none, anonymised (IPv4 /24, IPv6 /48) and full (only when the host allows it).
+  - Done when: tests pass, including captured logs.
+- [ ] **13.4 Consent and the privacy documentation**
+  - Write `docs/privacy/`:
+    - **a facts sheet:** what Jiron Form Builder stores, where and for how long; that it sets no cookies; the browser storage key used only by "save and resume"; third parties only when a captcha provider is chosen;
+    - a checklist for site owners;
+    - privacy-policy section templates in en and de. **Each starts with "TEMPLATE, not legal advice; adapt with your data protection adviser".**
+  - Done when: committed, and a test compares the storage keys and requests the runtime makes with the facts sheet.
+- [ ] **13.5 Phase review**
+  - A subagent acts as a privacy reviewer (GDPR, TDDDG, revDSG, UWG §7 double opt-in, the European Accessibility Act) against the running demo and the docs. Fix what it finds, and record open legal judgements in OWNER-TODO.
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 14: Languages, members and multi-site
+
+- [ ] **14.1 Culture variants everywhere**
+  - **Texts:** every `LocalizedText` in the designer, settings, emails and outcomes, with the culture switcher, "missing translation" marks, `#dictionary` keys (with a picker) and fallback.
+  - **Entries** keep their culture, and exports format dates and numbers by it.
+  - Done when: Playwright runs a form end to end in en and de, including the emails.
+- [ ] **14.2 Visitor texts in seven languages**
+  - Add French, Italian, Dutch, Spanish and Danish to the runtime and server messages (English and German came with 6.4a). All seven are overridable per site and per form.
+  - Done when:
+    - a test fails when any key is missing in any language;
+    - a review subagent per language reads the texts in context (screenshots) and its fixes are applied.
+- [ ] **14.3 Backoffice localisation**
+  - Audit that every backoffice string in en and de goes through localisation keys (each UI step added its keys, see "How to use").
+  - Done when: a lint rule that fails on hard-coded UI strings passes, and the German screenshots are reviewed in `docs/ux/review-14.3.md`.
+- [ ] **14.4 Members**
+  - **Access:** members-only forms and member groups, one entry per member.
+  - **Prefill** (show and tamper-proof hide), and the member link on entries.
+  - **Member deletion:** a handler deletes or anonymises the deleted member's entries, per a setting.
+  - Done when: tests and Playwright pass with the seeded members.
+- [ ] **14.5 Multi-site**
+  - **Per-site settings:** sender, base URL, defaults and theme, resolved by the request's root or host. Links in emails follow the site.
+  - Done when: integration and Playwright tests pass with two roots on `site-a.localhost` and `site-b.localhost` (loopback by themselves in Edge and Chromium, with Umbraco domains on each root; never edit the system hosts file).
+- [ ] **14.6 Phase review**
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 15: Extensibility, samples and the AI add-on
+
+- [ ] **15.1 The public C# surface**
+  - Complete the services and notifications of §4.9, including `IFormBuilderEntryReader`. Write `docs/extending.md`.
+  - Done when: a public-API snapshot test lists every public type and member and fails on unreviewed changes.
+- [ ] **15.2 Backoffice extension points**
+  - **Manifests:** `jfbSettingEditor` (a custom editor for one setting) and `jfbFieldPreview` (the designer preview of a custom field type).
+  - **Slots:** extra workspace views on the form workspace.
+  - **Types:** TypeScript declarations for extension authors.
+  - Done when: a sample extension registers a custom setting editor and a preview, and Playwright shows both working.
+- [ ] **15.3 Samples**
+  - `samples/Jiron.Umbraco.FormBuilder.Samples`:
+    - a custom field type (a colour choice with swatches);
+    - a custom action (a CRM stub);
+    - an option source (a fake product API);
+    - an export format (iCalendar for event registrations);
+    - a captcha provider (a simple arithmetic check);
+    - a spam check (link density);
+    - a merge-tag source (values from a site-settings node);
+    - a file scanner (a stub that quarantines files named "eicar");
+    - a file store sketch for blob storage;
+    - a notification handler that adds a field error.
+
+    Each is compiled and tested in CI and documented in `docs/extending.md`.
+  - Done when: the samples build and their tests pass.
+- [ ] **15.4 Spike: the AI add-on on Umbraco.AI**
+  - Confirm the Umbraco.AI 17.x chat API (`IAIChatService`) and structured output.
+  - Port Tandem's fake provider (`tests/…Testing/FakeAI`) for tests. **No real key, ever (D22).**
+  - Write ADR-0018 "The AI add-on".
+  - Done when: the ADR is committed and a spike test drafts a form definition through the fake provider.
+- [ ] **15.5 The AI add-on**
+  - **The package** `Jiron.Umbraco.FormBuilder.AI`:
+    - **Draft with AI:** a description becomes a draft definition, validated by the structural validator, never published automatically, and marked "drafted by AI, please review".
+    - **Translate:** a form's texts into another culture, with a preview and apply.
+    - **Suggest:** help texts and accessibility improvements.
+  - **Plumbing:** a profile picker and a health check. Editors only.
+  - **No entry data ever reaches the AI;** a test asserts the prompts contain no entry values.
+  - Docs. OWNER-TODO: try it with a real provider.
+  - Done when: tests with the fake provider pass, and Playwright shows the three features in the designer.
+- [ ] **15.6 Phase review**
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 16: Hardening
+
+- [ ] **16.1 Security review**
+  - A STRIDE pass over the architecture, and an OWASP ASVS-style checklist on the code:
+    - XSS, injection, authorisation on every endpoint, CSRF posture;
+    - SSRF in webhooks and option lists, open redirects in outcomes;
+    - uploads, DoS and limits, secrets.
+  - Run `dotnet list package --vulnerable --include-transitive` and `npm audit --omit=dev`.
+  - Fix the findings, with a test for each. An advisory in an upstream package that Jiron Form Builder cannot fix gets an ADR and a reviewed suppression in `NuGetAudit.props` (the Tandem ADR-0014 pattern), never a silent ignore.
+  - Done when: `docs/security-review.md` exists and no high or critical findings are open.
+- [ ] **16.2 Performance and load**
+  - A Node load script (no copyleft tools) covers:
+    - 200 submissions per minute with uploads;
+    - lists, filters and exports over 100,000 entries;
+    - render throughput;
+    - the designer with 300 fields.
+  - Check the query plans.
+  - Done when: `docs/performance.md` has the numbers and §4.12 is met (or an ADR explains why not).
+- [ ] **16.3 Accessibility audit**
+  - **Tools:** axe on every theme × every field type, and on every backoffice screen.
+  - **Automated checks** for what a person would otherwise check by hand:
+    - Playwright accessibility snapshots for names, roles and states;
+    - keyboard-only journeys;
+    - `emulateMedia({ forcedColors: 'active' })` for Windows forced-colours mode;
+    - 640 and 320 CSS-pixel viewports for reflow at 200% and 400% zoom;
+    - reduced motion.
+  - **For site owners:** an accessibility-statement template, labelled as a template.
+  - Done when: there are zero serious or critical findings, and `docs/accessibility.md` exists. A real screen-reader test (NVDA, VoiceOver) goes to OWNER-TODO.
+- [ ] **16.4 Resilience**
+  - Cover:
+    - SMTP down (no retries burnt), webhook timeouts;
+    - transient database errors (retry where safe);
+    - a host restart in the middle of an action run (`Uncertain`, visible and retryable);
+    - a late cache refresher, double processing under load balancing;
+    - the network dropping during a submission (the receipt check);
+    - blocked browser storage;
+    - one broken form on a page not breaking the others.
+  - Done when: each case has a test.
+- [ ] **16.5 Upgrade and migration tests** (this step builds the install harness that 18.4 reuses)
+  - **`scripts/install-test.ps1`:**
+    - creates a fresh Umbraco 17 site (SQLite, unattended, generated credentials, the private template hive) under `%TEMP%\jfb-install-<timestamp>` on port 5530;
+    - takes Jiron Form Builder packages only from the local feed (package source mapping), with a fresh package cache in `%TEMP%\jfb-nuget-<timestamp>`;
+    - installs the given Jiron Form Builder version.
+  - **The upgrade path:**
+    1. With `git worktree add`, check out `baseline/schema-v1` (4.9) into `%TEMP%\jfb-baseline-<timestamp>`, and pack it as `17.0.0-alpha.0.baseline`.
+    2. Install it, and create the data the baseline supports: forms with versions, folders, settings, and entries with values and files. Seed it through a small console built against the baseline's Core services (the baseline has no submission pipeline yet), or as SQL through Node's built-in `node:sqlite`.
+    3. Upgrade to the current build packed as `17.0.0-dev.<yyyyMMddHHmm>`, start it again, and run smoke checks.
+  - **Fixtures:** a fixture database per released schema version, plus definition-upgrader fixtures.
+  - Done when: the upgrade test passes, the temp folders and worktree are removed, and the process is documented in `docs/upgrading.md`.
+- [ ] **16.6 Code quality pass**
+  - Analyzers clean, no dead code. Everything not meant for extension is `internal`. XML docs on every public type. Consistent naming.
+  - Done when: `dotnet format --verify-no-changes` and the builds are clean, and the public API snapshot is reviewed.
+- [ ] **16.7 UX polish pass** (D18, §4.13)
+  - **Walk the full journeys** with screenshots at 375, 768 and 1440 px, light and dark, en and de:
+    - an editor builds and publishes a multi-page form with rules and actions;
+    - an entry handler works through the inbox;
+    - an admin sets permissions and retention;
+    - a visitor fills in a form on a phone;
+    - a privacy officer erases a person's data.
+  - **Critique and simplify:** run a design critique (`impeccable`, or a subagent with the §4.13 checklist) and fix every finding that is not purely taste. Count the clicks for the top five tasks per role and remove the unnecessary ones.
+  - Done when: `docs/ux/review-16.7.md` lists the findings and fixes with before and after screenshots, and the E2E suites are still green.
+- [ ] **16.8 Phase review**
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 17: Branding, documentation, screenshots
+
+- [ ] **17.1 Logo and icon**
+  - **Design `assets/logo.svg`:**
+    - **Concept:** a minimal form card (stacked field lines) whose submit button is a small check mark, drawn to sit next to the "Jiron" wordmark and to work alone as a 32 px section icon.
+    - **Shapes and colours:** simple geometric shapes, legible at 32 px, with two brand colours and a neutral defined in `assets/brand.md`.
+    - **No Umbraco logo, no "U" mark, and no resemblance to any other product's mark.**
+  - Also design a monochrome variant and the section icon (registered through the `icons` manifest).
+  - `scripts/icons.mjs` renders PNGs with Playwright (no new dependency): 512, 256, 128, 64.
+  - Done when: the PNGs exist, the 128 px icon is checked visually (show the screenshot), and the brand doc is committed.
+- [ ] **17.2a Documentation for editors and site owners**
+  - Under `docs/`:
+    - **Start:** a `README` index, `getting-started.md` (install to first entry in 10 minutes), `installation.md`.
+    - **For editors:** `editor-guide.md`, `field-types.md`, `rules-and-validation.md`, `merge-tags.md`, `actions.md`, `entries-and-exports.md`, `insights.md`, `themes.md` (the theme editor).
+    - **For site owners:** `spam-protection.md`, `files.md`, `email.md`, `privacy.md`, `permissions.md`, `multi-language.md`, `members.md`, `multi-site.md`.
+    - **Licence:** `license-faq.md`, plain words, clearly marked as not legal advice and pointing to `LICENSE.md` (OWNER-TODO: lawyer review).
+  - Each page is checked against the running demo.
+  - Done when: a link-check script passes, and a subagent reads these pages as a new editor and its questions are answered.
+- [ ] **17.2b Documentation for developers**
+  - Under `docs/`:
+    - **Placement:** `rendering.md` (Razor, tag helpers, blocks, overriding theme views, CSS custom properties).
+    - **Headless:** `headless.md` (API, element, types, the Delivery API).
+    - **Integration:** webhook signature verification in C#, Node and PHP (in `actions.md`), and `deployment.md` (the mirror).
+    - **Reference:** `configuration.md`, generated from the settings types, with a test that fails when the docs are stale.
+    - **Internals:** `extending.md`, `upgrading.md`, `troubleshooting.md`, `faq.md`, `security.md`, `database.md`, `architecture.md` (updated).
+  - Done when: the link check and the configuration reference test pass, and a subagent reads these pages as a new developer and its questions are answered.
+- [ ] **17.3 Screenshots**
+  - `scripts/screenshots.mjs` (Playwright on the demo, with seeded data) takes desktop and phone shots:
+    - **the backoffice:**
+      - the setup dashboard, the designer with the inspector, the rules builder;
+      - actions with the email preview, preview, the history diff;
+      - the entries list and panel, the inbox, insights;
+      - the theme editor, settings, privacy tools;
+    - **the website:** forms in each theme, on a phone, the error summary, the success state.
+  - Output goes to `docs/screenshots/` as optimised PNGs (16:9 for the Marketplace).
+  - Done when: the images are committed and referenced in the docs and the README.
+- [ ] **17.4 README and NuGet readme**
+  - **`README.md` (GitHub):**
+    - **About:** the pitch, the features, screenshots.
+    - **Getting started:** a quick start, the requirements (Umbraco 17.5+), a link to the docs.
+    - **Licence:** "free to use, including commercially; no selling or competing products; source-available" with a link to the licence FAQ, never called "open source".
+    - **Notices:** the trademark notice and how to contribute.
+    - **Credits:** "Made by Manassés Zähnler · Ligata", linking jiron.dev and ligata.ch.
+  - **`docs/README.nuget.md`:** shorter, with no relative links.
+  - Done when: both are committed and render correctly, checked in Edge through a local GitHub-flavoured Markdown renderer (dev-only, MIT), because the private repository can't be viewed from here. The owner checks them on GitHub once public (OWNER-TODO).
+- [ ] **17.5 Phase review**
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 18: Packaging, CI/CD, Marketplace readiness
+
+- [ ] **18.1 NuGet metadata**
+  - **On every package:**
+    - `PackageId`, `Title`, `Description`, `Authors`, `Copyright`, `PackageProjectUrl`, `RepositoryUrl`;
+    - `PackageLicenseFile LICENSE.md` (non-OSI licences cannot use an expression, §3.5), `PackageRequireLicenseAcceptance true`;
+    - `PackageReadmeFile`, `PackageIcon` (icon-128.png);
+    - `PackageTags`: the meta package and the AI add-on (both installed by sites) get `umbraco umbraco-marketplace forms form-builder contact-form`; Core and Web get `umbraco` only;
+    - the meta package references `Umbraco.Cms.Web.Website` `[17.5.0, 18.0.0)` directly (§3.5);
+    - SourceLink, `snupkg`, `EnablePackageValidation`, `ContinuousIntegrationBuild` in CI.
+  - The appsettings JSON schema is shipped the way Umbraco merges package schemas *(verify)*.
+  - Done when: `dotnet pack` produces packages whose unzip listings are correct, and package validation passes.
+- [ ] **18.2 `umbraco-marketplace.json`**
+  - **Fill it in from the schema:**
+    - `Title` "Jiron Form Builder", `Description`;
+    - `Category` "Editor Tools" and `AlternateCategory` "Campaign & Marketing" (there is no forms category; §3.5);
+    - `AuthorDetails` (Name "Jiron"; the description names Manassés Zähnler and Ligata, with links to jiron.dev and ligata.ch);
+    - `DocumentationUrl` (docs.jiron.dev/form-builder once the owner publishes it, until then the repository's `docs/`), `IssueTrackerUrl`;
+    - `Screenshots` with raw GitHub URLs (they work once public), `Tags`;
+    - `PackageType` "Package", `LicenseTypes` `["Free"]`;
+    - `RelatedPackages` (the AI add-on).
+  - Validate it against the downloaded schema in a script (copy in `.local/`).
+  - Done when: validation passes, and the owner steps (make the repo public, run marketplace.umbraco.com/validate) are in OWNER-TODO.
+- [ ] **18.3 Release workflow**
+  - `.github/workflows/release.yml`, on tags `v*.*.*` and `workflow_dispatch`:
+    - build and test (the same as CI), then the npm build;
+    - `dotnet pack -p:Version=${tag#v}`;
+    - attach the nupkgs and snupkgs to a **draft** GitHub Release with changelog notes;
+    - a `publish` job with `if: vars.JFB_NUGET_PUBLISH == 'true'`, `permissions: id-token: write`, `NuGet/login@v1` and `dotnet nuget push --skip-duplicate`.
+  - The publish job stays disabled; no nuget.org policy exists.
+  - Document the owner's steps to turn it on in `docs/releasing.md`.
+  - Done when: the workflow check passes, and a dry run of the pack steps in `scripts/ci-local.ps1` produces the same files.
+- [ ] **18.4 Install test from packages**
+  - With `scripts/install-test.ps1` (16.5), create a fresh Umbraco 17.7.1 site on 5530 that installs `Jiron.Umbraco.FormBuilder` (Jiron Form Builder packages only from the local feed).
+  - **Smoke:** the section is visible to the admin; a form is created through the management API and placed on a page; it renders, submits and emails (pickup); the entry shows in the backoffice.
+  - Run the same smoke after `dotnet publish` of that site (static assets, §3.2).
+  - **The supported floor:** run the same smoke on a fresh **Umbraco 17.5.x** site (its own template hive), because D3 promises `[17.5.0, 18.0.0)`.
+  - Done when: the smoke runs pass on 17.7.1 (run and published) and on 17.5.x against the installed packages.
+- [ ] **18.5 First prerelease**
+  - Set the version to `17.0.0-alpha.1`. Update CHANGELOG and `docs/upgrading.md`.
+  - Tag `v17.0.0-alpha.1` and push the tag. The release workflow builds a draft release; nothing is published.
+  - Done when: the tag is pushed and the local pack of the same version passes 18.4. You can't watch Actions, so add "check the draft release" to OWNER-TODO.
+- [ ] **18.6 Phase review**
+  - Write the handover note.
+  - Done when: pushed, with the phase-review gate.
+
+### Phase 19: The Umbraco 18 line (forward compatibility)
+
+- [ ] **19.1 Branch strategy and an 18 build**
+  - As decided in D16: `main` stays the 17 line and holds every ROADMAP and WORKLOG change. The 18 code lives only on `v18/main`, branched from `main`.
+  - Tick Phase 19 steps on `main` only, after pushing `v18/main`, with the `v18/main` commit hash.
+  - Work on `v18/main` through `git worktree` in `%TEMP%\jfb-v18`, so `main`'s working folder never switches branches mid-run.
+  - On `v18/main`, set CMS `[18.0.0, 19.0.0)` and `@umbraco-cms/backoffice` 18.x. Port the OpenAPI registration (Swashbuckle → Microsoft.AspNetCore.OpenApi, `/umbraco/openapi`), regenerate the client, and replace the removed APIs.
+  - Done when: the solution builds on CMS 18 with zero warnings.
+- [ ] **19.2 Run everything on 18**
+  - Create an 18 sandbox on 5540 and an 18 demo on 5541, with Umbraco.Templates 18.x in its own template hive. Run the unit, integration and E2E suites. Fix what breaks behind the adapters. Document the differences in `docs/upgrading.md`.
+  - Done when: all suites pass on 18, and `main` is untouched by 18 code and still green.
+- [ ] **19.3 Phase review**
+  - Write the handover note on `main`.
+  - Done when: `v18/main` and `main` are both pushed, and `git ls-remote origin` shows both.
+
+### Phase 20: Final verification and handover
+
+- [ ] **20.1 Clean-clone verification**
+  - Clone `origin/main` into `%TEMP%\jfb-verify-<timestamp>`, outside the repo, so no parent `NuGet.config` or `node_modules` can leak in. Use a fresh `NUGET_PACKAGES` cache in `%TEMP%\jfb-nuget-<timestamp>`.
+  - Run, in order:
+    - `scripts/ci-local.ps1`: restore, build, all unit and integration tests, vectors in both runtimes, and the client lint, tests and build;
+    - the full Playwright suite;
+    - a pack with a unique `-dev.<timestamp>` version;
+    - the install test (18.4);
+    - **an upgrade** from the `v17.0.0-alpha.1` pack (18.5) to this build, with data, through the 16.5 harness;
+    - `node scripts/secret-scan.mjs --history`.
+  - Run `node scripts/term-guard.mjs --history` **from the working repo**, because the clone has no `.private/`.
+  - Show the summary output. If this session did not run 20.1 itself (for example after a restart), run it again before claiming the goal.
+  - Done when: everything passes from the clean clone, the term guard passes on the full history, and the temp folders are removed.
+- [ ] **20.2 Status report**
+  - Write `docs/STATUS.md`:
+    - what was built (features against §1);
+    - test counts and coverage;
+    - budgets measured;
+    - known limitations;
+    - the final OWNER-TODO list, with clear instructions for each item.
+  - Update CHANGELOG. Every roadmap step is `[x]`, or `[~]` with its reason in OWNER-TODO.
+  - If the owner's private reference exists, update the private mapping in `.private/` one last time (never committed).
+  - Done when: committed and pushed, and the final output of `node scripts/roadmap-status.mjs` shows `open=0 blocked_missing_in_owner_todo=0 clean=yes` with `head` equal to `origin_main`.
+
+---
+
+## 6. Definition of done for the first release
+
+- Every feature in §1.1 and §1.3 works on the demo site and is covered by automated tests (unit, integration, vectors, E2E).
+- Zero warnings, clean analyzers, ≥ 85% coverage on Core, and the budgets in §4.12 met.
+- SQLite locally and SQL Server in CI. Load-balancing-sensitive code is tested with simulated second servers, and the CI load-balancing job exists.
+- No secrets and no private terms in the history (both scans clean). The license is the root commit. No community packages are used. Jiron Form Builder is original work (CLAUDE.md rule 2).
+- Every backoffice screen and every theme passes WCAG 2.2 AA and the §4.13 rules, checked with screenshots.
+- Docs complete and checked against the running product. Screenshots, logo, NuGet metadata and `umbraco-marketplace.json` are ready. The release workflow is ready but disabled.
+- `docs/STATUS.md` and `docs/OWNER-TODO.md` tell the owner exactly what is left for them.
+
+## 7. Later (not in this roadmap)
+
+- **Payments:** payment fields with providers' hosted checkouts (never card data in Jiron Form Builder), and an "on payment" trigger.
+- **Conversational mode:** one question at a time, keyboard-first.
+- **Quizzes and polls:** scoring, correct answers, a results page, public poll results.
+- **Entry collaboration:** assignees, custom statuses beyond approve and reject, tags, a board view.
+- **More data in and out:**
+  - entry import from CSV/Excel;
+  - scheduled exports (a nightly CSV by email or SFTP);
+  - PDF generation of entries.
+- **Front-end editing** of one's own entry through a signed link, and member registration and profile forms.
+- **Field-level encryption at rest** for sensitive fields (needs careful key management, D13).
+- **Partial-entry capture** for abandoned forms. It needs a privacy design of its own, so insights cover drop-off anonymously for now.
+- **More captcha providers** (enterprise variants) and more backoffice languages (community translations).
+- **Importers** from other systems, as separate optional packages, only after the owner decides (OWNER-TODO).
+
+---
+
+## Appendix A: README.md for the first commit
+
+```markdown
+# Jiron Form Builder (Jiron.Umbraco.FormBuilder)
+
+Calm, capable forms for Umbraco: a form builder for Umbraco 17 with a drag-and-drop
+designer, rules, multi-page forms, actions after every submission, an entries inbox with
+exports and insights, and privacy built in.
+
+> **Status:** in development, not released.
+>
+> **License:** [PolyForm Perimeter License 1.0.1](LICENSE.md). In short: free to use,
+> including commercially on your own sites and on sites you build or host for clients,
+> and free to change. Not allowed: selling it or offering any product or service
+> that competes with it. This summary is not legal advice; the license text governs.
+> Jiron Form Builder is source-available, not "open source" in the OSI sense.
+
+Made by Manassés Zähnler ([jiron.dev](https://jiron.dev)) · [Ligata](https://ligata.ch)
+
+Umbraco is a trademark of Umbraco A/S. Jiron Form Builder is an independent community project and
+is not affiliated with or endorsed by Umbraco A/S.
+```
+
+## Appendix B: ADR template
+
+```markdown
+# NNNN. Title
+
+- Status: accepted | superseded by NNNN
+- Date: YYYY-MM-DD
+- Roadmap step: X.Y
+
+## Context
+What problem, which constraints (link §1/§2 decisions, research docs).
+
+## Options
+1. Option A: pros, cons (measured where possible)
+2. Option B: …
+
+## Decision
+What we do, in one paragraph.
+
+## Consequences
+What becomes easier or harder; follow-up steps; what would make us revisit it.
+```
+
+## Appendix C: Worklog format
+
+`docs/WORKLOG.md` is append-only and newest last. One line per finished step:
+
+```
+- 2026-10-20 · 3.3 Demo site · a1b2c3d · demo on :5500, seeded en/de, Playwright login OK (8 tests)
+```
+
+The phase review adds a handover block:
+
+```
+### Handover after Phase N (2026-10-21)
+- State: what works, what is half-done (should be nothing)
+- Next: first step of Phase N+1 and anything it needs to know
+- Gotchas: things learned the hard way
+- Open owner items added: …
+```

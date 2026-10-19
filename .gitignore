@@ -1,0 +1,69 @@
+# =====================================================================
+# Owner-only material: never staged, never committed (CLAUDE.md rule 2).
+# =====================================================================
+.private/
+
+# =====================================================================
+# Secrets: these must never reach git (CLAUDE.md rule 3).
+# =====================================================================
+*-key.txt
+*.key
+*.pem
+*.pfx
+.env*
+
+# =====================================================================
+# Local and tool state
+# =====================================================================
+.local/
+.claude/
+**/appsettings.Local.json
+**/appsettings.*.Local.json
+
+# =====================================================================
+# Umbraco runtime folders
+# =====================================================================
+**/umbraco/Data/
+**/umbraco/Logs/
+**/umbraco/mediacache/
+**/wwwroot/media/
+
+# =====================================================================
+# Build and test output
+# =====================================================================
+*.user
+*.suo
+*.userprefs
+*.DotSettings.user
+bin/
+obj/
+node_modules/
+artifacts/
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+playwright-report/
+test-results/
+blob-report/
+# Built client assets (built by npm in scripts, CI and pack; never committed)
+src/Jiron.Umbraco.FormBuilder.Web/wwwroot/App_Plugins/JironFormBuilder/
+src/Jiron.Umbraco.FormBuilder.Web/wwwroot/jfb/
+*.log
+npm-debug.log*
+
+# =====================================================================
+# Generated schemas (Jiron Form Builder's own shipped schemas get a ! exception)
+# =====================================================================
+**/appsettings-schema*.json
+**/umbraco-package-schema.json
+
+# =====================================================================
+# Editors and operating systems
+# =====================================================================
+.vs/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
