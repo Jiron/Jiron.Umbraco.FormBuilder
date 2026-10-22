@@ -91,7 +91,7 @@ describe('git modes (temporary repository)', () => {
   test('without the default list the guard skips and exits 0', async () => {
     const result = await run({ mode: 'tracked', cwd: repo });
     assert.equal(result.exitCode, 0);
-    assert.match(result.output[0], /term list not present, skipped/);
+    assert.ok(result.output[0].includes('term list not present, skipped (tracked, 0 patterns loaded)'), result.output[0]);
   });
 
   test('a --terms file that does not exist is an error', async () => {

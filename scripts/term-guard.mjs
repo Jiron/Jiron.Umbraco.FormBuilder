@@ -127,7 +127,7 @@ export async function run({ mode = 'staged', cwd = process.cwd(), termsFile, mes
   const listFile = termsFile ? resolve(cwd, termsFile) : join(root, DEFAULT_TERMS_FILE);
   if (!existsSync(listFile)) {
     if (termsFile) return { exitCode: 2, output: ['term-guard: the --terms file does not exist'] };
-    return { exitCode: 0, output: [`term-guard: term list not present, skipped (${mode})`] };
+    return { exitCode: 0, output: [`term-guard: term list not present, skipped (${mode}, 0 patterns loaded)`] };
   }
   const { patterns, error } = parseTerms(readFileSync(listFile, 'utf8'));
   if (error) return { exitCode: 2, output: [`term-guard: ${error}`] };
