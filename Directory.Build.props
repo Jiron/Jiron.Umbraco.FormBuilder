@@ -1,0 +1,66 @@
+<Project>
+
+  <!-- Shared build settings for every project in this repository (ROADMAP 0.2, CLAUDE.md quality bar). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Deterministic>true</Deterministic>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- Package identity. The licence is the packed LICENSE.md (PolyForm Perimeter 1.0.1, ROADMAP D2 and §3.5). -->
+  <PropertyGroup>
+    <!-- Published as Jiron; made by Manassés Zähnler, who holds the copyright (LICENSE.md). -->
+    <Authors>Jiron</Authors>
+    <Company>Jiron</Company>
+    <Product>Jiron Form Builder</Product>
+    <Copyright>Copyright (c) 2026 Manassés Zähnler</Copyright>
+    <RepositoryUrl>https://github.com/Jiron/Jiron.Umbraco.FormBuilder</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <!--
+      PublishRepositoryUrl only lets Source Link fill RepositoryUrl from git. It stays false while the repository is
+      private (§3.5). It does not keep the RepositoryUrl set above out of a package; nothing is published while the
+      repository is private (D17), so that is harmless.
+    -->
+    <PublishRepositoryUrl>false</PublishRepositoryUrl>
+  </PropertyGroup>
+
+  <!--
+    Versioning (ROADMAP D16): the package major follows the Umbraco major. Release builds pass the tag's version;
+    local test packs pass a -dev.<yyyyMMddHHmm> suffix. Tests and scripts read these two values from this file.
+  -->
+  <PropertyGroup>
+    <VersionPrefix>17.0.0</VersionPrefix>
+    <VersionSuffix>alpha.0</VersionSuffix>
+  </PropertyGroup>
+
+  <!--
+    Projects directly under src/ ship to sites, so every public type needs XML docs. Every other project generates
+    the file too, because the compiler enforces IDE0005 (unnecessary usings) only then, but missing comments
+    (CS1591) are not errors there.
+  -->
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($(MSBuildProjectDirectory)))))' != 'src'">
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <!-- NuGet audit stays on for every package; only reviewed transitive advisories are suppressed (NuGetAudit.props). -->
+  <PropertyGroup>
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+  </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)NuGetAudit.props" />
+
+</Project>

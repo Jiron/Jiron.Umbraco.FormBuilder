@@ -1,0 +1,15 @@
+<Project>
+
+  <!--
+    NuGet audit suppressions (the pattern of Tandem ADR-0014). NuGet audit runs on every restore, and its
+    warnings are errors. An advisory may be suppressed only when it comes transitively through a package whose
+    version the host site controls (Umbraco CMS), never for a package Jiron Form Builder references directly.
+    Each entry names exactly one reviewed advisory URL and its package, with a comment saying where it comes
+    from and when it was reviewed. Any advisory not listed here fails the build.
+
+    Empty until step 3.1 adds the first packages; review the list at every phase review and in 16.1.
+  -->
+  <ItemGroup>
+  </ItemGroup>
+
+</Project>

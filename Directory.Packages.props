@@ -1,0 +1,17 @@
+<Project>
+
+  <!--
+    Central package management (ROADMAP 0.2). Every package version lives here; projects reference packages
+    without a version. Licences are checked before a package is added (CLAUDE.md rule 4), and runtime
+    dependencies are listed in THIRD-PARTY-NOTICES.md.
+
+    Umbraco is a range, not a pin: it becomes the packages' dependency range [17.5.0, 18.0.0) (D3). NuGet
+    resolves the lowest version of a range, so Jiron Form Builder compiles against its minimum supported
+    version; the demo and test hosts reference the latest 17.x exactly. Tools and test packages are pinned
+    exactly. Step 3.1 adds the first packages.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+</Project>

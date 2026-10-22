@@ -1,0 +1,4 @@
+#!/bin/sh
+# Refuses a commit message that holds a term from the private list (CLAUDE.md rule 2).
+# Installed by: node scripts/install-hooks.mjs
+exec node scripts/term-guard.mjs --message "$1"

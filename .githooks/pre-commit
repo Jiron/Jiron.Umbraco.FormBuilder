@@ -1,0 +1,4 @@
+#!/bin/sh
+# Refuses commits made with another identity, or with secrets, private terms or damaged text in the staged
+# files (CLAUDE.md rules 2, 3 and 9). Installed by: node scripts/install-hooks.mjs
+exec node scripts/pre-commit.mjs
