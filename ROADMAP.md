@@ -1254,7 +1254,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
   - Done when:
     - the sandbox runs, every piece above works (Playwright screenshots), and the doc section is committed;
     - every piece works in the sandbox, its section of the doc is committed, and the drag-and-drop choice is written as ADR-0016 "Designer interaction".
-- [ ] **1.2b Umbraco 17 sandbox: integration points**
+- [x] **1.2b Umbraco 17 sandbox: integration points** (2026-10-22, 3dfea08)
   - A `searchProvider`, `localization` en/de, a dashboard and a health check.
   - Umbraco webhook event registration.
   - `IDataValueReferenceFactory` with a custom entity type for "used on".
