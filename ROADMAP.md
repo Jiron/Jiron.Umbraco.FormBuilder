@@ -1111,7 +1111,7 @@ Servers that Jiron Form Builder starts use only these ports. Ports the OS assign
   - **The reference folders** exist and can be read: `C:\Code\Ligata.Forms` (with `8f4b0c5` present, §3.1), `C:\Code\Umbraco.Community.AI.Tandem` and `C:\Code\ligata`. If one has moved, find it, fix the paths in CLAUDE.md and §3, and say so in WORKLOG.
   - Make **no commit** in this step (the bootstrap exception).
   - Done when: the outputs above are shown, the local identity is set, and `git ls-remote origin refs/heads/main` equals `git rev-parse HEAD`.
-- [ ] **0.2 Repository hygiene, working files and phase review**
+- [x] **0.2 Repository hygiene, working files and phase review** (2026-10-22, a9f633b)
   - **Build files** (port from Tandem, §3.3):
     - `global.json` (SDK 10.0.401, rollForward latestPatch);
     - `.editorconfig`;
