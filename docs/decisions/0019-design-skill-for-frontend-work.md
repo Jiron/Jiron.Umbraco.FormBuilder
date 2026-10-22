@@ -1,6 +1,6 @@
 # 0019. Frontend work uses the design-taste-frontend skill
 
-- Status: accepted
+- Status: accepted, extended by ADR-0020 (three design skills)
 - Date: 2026-10-22
 - Roadmap step: 0.2 (recorded here); applies to every later step that designs, builds or reviews UI
 
