@@ -1,14 +1,15 @@
 # Umbraco 17 backoffice: what the sandbox showed
 
-Step 1.2a built a throwaway extension in a sandbox site and drove every piece with Playwright in Edge. This
-file records what works, the exact shapes that worked, and the traps. Step 1.2b adds the integration points
-(search, localization, dashboards, health checks, webhooks, references, member views, UFM, the 17.5 floor).
+Steps 1.2a and 1.2b built a throwaway extension in a sandbox site and drove every piece with Playwright in Edge.
+This file records what works, the exact shapes that worked, and the traps. Sections 1 to 12 come from 1.2a
+(navigation, workspaces, building blocks); sections 13 to 22 from 1.2b (search, localization, dashboards, health
+checks, webhooks, references, member views, UFM, background jobs and the 17.5 floor).
 
 - **Versions:** Umbraco 17.7.1, `@umbraco-cms/backoffice` 17.7.1 (MIT), `@hey-api/openapi-ts` 0.99.0, .NET 10.
 - **The sandbox:** `node scripts/sandbox.mjs create|start|stop|status|reset|delete|login`. It builds
   `.local/sandbox/Sandbox` (the site, SQLite, unattended install, port 5510) and `.local/sandbox/Spike` (the
   extension). The admin login is generated into `.local/credentials.json` and never printed.
-- **Evidence:** the Playwright probes and about 60 screenshots live in `.local/sandbox/checks/` (git-ignored).
+- **Evidence:** the Playwright probes and about 90 screenshots live in `.local/sandbox/checks/` (git-ignored).
   Each claim below was seen in the browser unless it says "read in the source".
 - **Reading Umbraco's own code:** the npm package ships the compiled backoffice (`dist-cms/`) and official
   samples (`examples/`), and the NuGet cache holds the XML docs. Both are Umbraco's MIT-licensed code; they
@@ -34,8 +35,8 @@ Fix these before anything else:
 More build facts:
 
 - `hey-api.ts` takes its configuration from `umbHttpClient.getConfig()` in `@umbraco-cms/backoffice/http-client`,
-  which brings the base URL and the backoffice token. §3.4 says `UMB_AUTH_CONTEXT.configureClient(client)`; to be
-  corrected in 1.2b.
+  which brings the base URL and the credentials (section 3). §3.4 said `UMB_AUTH_CONTEXT.configureClient(client)`;
+  1.2b corrected it.
 - Umbraco 17.7.1 pulls transitive packages with advisories (NU1902/NU1903): `MessagePack` 3.1.8,
   `System.Security.Cryptography.Pkcs` 10.0.10 and `System.Security.Cryptography.Xml` 10.0.10. Step 3.1 decides how
   the audit is handled (pin patched versions centrally, or record the exception).
@@ -84,6 +85,11 @@ public sealed class SpikeFormsController(SpikeFormStore store) : SpikeApiControl
   `.then(r => r.data)` loses the wrapper, and the tree silently renders nothing.
 - Tree requests carry `args.paging` (offset `{ skip, take }` or target-based); the older `skip`/`take`
   arguments were deprecated in 16.3 and go away in 18. Accept both until then.
+- **The token never reaches scripts.** Every request from the backoffice carried `Authorization: Bearer [redacted]`,
+  a fixed placeholder; the server takes the real token from an HttpOnly cookie, and `localStorage`,
+  `sessionStorage` and `document.cookie` held no token. A `fetch` without that header got 401, and with it 200.
+  The product always calls through the generated client; tests that call the API from a signed-in page send the
+  placeholder the same way.
 
 ## 4. A section with a sidebar menu
 
@@ -122,7 +128,7 @@ public sealed class SpikeFormsController(SpikeFormStore store) : SpikeApiControl
 | Delete for good | kind `delete`, `meta: { itemRepositoryAlias, detailRepositoryAlias }`, condition `Umb.Condition.EntityIsTrashed` |
 | Empty the bin | kind `emptyRecycleBin` on the bin root, `meta: { recycleBinRepositoryAlias }`, condition `Umb.Condition.EntityHasChildren` |
 | Recycle bin | `UmbRecycleBinRepositoryBase` over a data source with `trash`, `restore`, `empty` and `getOriginalParent` (`null` = the root, `{ unique }` = the parent, an error = ask with the picker); the bin is its own tree with `treeItem` kind `recycleBin` and `meta.supportedEntityTypes`; its items map to the normal entity type plus `isTrashed: true` |
-| Workspaces | root and bin: kind `default`; folders: kind `routable` with `<umb-folder-workspace-editor>` and a Save action; a `workspaceView` kind `tree` (`meta.treeAlias`, 17.6+) lists children in the root, folder and bin workspaces |
+| Workspaces | root and bin: kind `default`; folders: kind `routable` with `<umb-folder-workspace-editor>` and a Save action; a `workspaceView` kind `tree` (`meta.treeAlias`) lists children in the root, folder and bin workspaces, but it arrives in 17.6.0: section 22 has the view that works on 17.5 too |
 
 ### Behaviour seen
 
@@ -248,7 +254,8 @@ const value = await umbOpenModal(this, NOTE_MODAL, { modal: { type: 'sidebar', s
 ## 9. Inputs inside our own elements
 
 All of these rendered and worked inside a custom element once their packages were imported
-(`import '@umbraco-cms/backoffice/document'`, `/media`, `/member`, `/tiptap`, `/user-group`):
+(`import '@umbraco-cms/backoffice/document'`, `/media`, `/member`, `/tiptap`, `/user-group`, and in 1.2b
+`/code-editor`, `/data-type`, `/member-group`):
 
 | Element | Notes |
 | --- | --- |
@@ -257,6 +264,9 @@ All of these rendered and worked inside a custom element once their packages wer
 | `<umb-input-media>` | a large dashed "+ Choose" tile |
 | `<umb-user-group-input>` | a "Choose" button |
 | `<umb-input-member>` | a "Choose" button |
+| `<umb-input-member-group>` | a "Choose" button |
+| `<umb-data-type-input>` | a "Choose" button; `value` is a comma-separated string, `selection` the ids |
+| `<umb-code-editor>` | `.code` (not `value`) and `.language` (`'css'` coloured a theme's CSS); the `input` event carries `target.code`; it needs a height (`autoHeight` arrives in 17.6) |
 
 `<umb-property-layout label description>` with the input in `slot="editor"` gives the standard label column.
 
@@ -316,7 +326,247 @@ Measured side by side on the same nested model; the decision is [ADR-0016](../de
   and a workspace has about 620 px. So Jiron Form Builder's screens are designed to work in a 620 px workspace;
   phones are not a backoffice target (the website forms are).
 
-## 13. What this means for Jiron Form Builder
+## 13. Search
+
+```ts
+{ type: 'searchProvider', alias: PROVIDER, name, api },             // api implements UmbSearchProvider
+{ type: 'globalSearch', alias, name,
+  meta: { label: 'Forms (spike)', searchProviderAlias: PROVIDER, sectionAlias: SECTION },
+  conditions: [{ alias: 'Umb.Condition.SectionUserPermission', match: SECTION }] },
+{ type: 'searchResultItem', alias, name, forEntityTypes: [FORM] },  // optional: the default shows icon and name
+```
+
+- The provider's `search({ query, paging })` returns `{ data: { items, total } }`, each item
+  `{ entityType, unique, name, icon, href }` with a relative `href`
+  (`section/<pathname>/workspace/<entityType>/edit/<id>`). A result is only a link.
+- The header's search dialog shows one tab per `globalSearch`; a `searchProvider` alone appears nowhere. Opened
+  inside our section, our tab was preselected, and "contact" listed "Contact us (Contact)" (name and folder) with
+  the package icon.
+- **The tab label is shown as written** (`meta.label`, read in the source): there is no `#key` lookup, and
+  Umbraco's own tabs ("Documents") are English in every language too.
+- There is no server-side search registry. The provider calls our own endpoint (`GET search/form?query&skip&take`),
+  and the server decides what matches.
+
+## 14. Localization
+
+```ts
+{ type: 'localization', alias, name, meta: { culture: 'en' }, js: () => import('./localization/en.js') },
+{ type: 'localization', alias, name, meta: { culture: 'de' }, js: () => import('./localization/de.js') },
+// en.js: export default { jfbSpike: { section: 'Spike forms',
+//   dashboardIntro: (forms: number, entries: number) => `There are ${forms} forms and ${entries} entries.` } };
+```
+
+- Keys become `<area>_<key>` (`jfbSpike_section`). Elements call `this.localize.term('jfbSpike_dashboardIntro',
+  forms, entries)`; manifests use `'#jfbSpike_section'` as a label (section, dashboard and workspace view labels
+  all worked).
+- Setting the admin's "UI Culture" to `de-de` on the user workspace turned the section, the dashboard, the member
+  view's tab and our texts German ("Spike-Formulare", "Es gibt 4 Formulare und 57 Einträge."); `de-de` fell back
+  to our `de` file. The lookup goes regional culture, then language, then `en` (read in the source).
+- Function values receive the arguments, so each language handles its own plural forms and word order.
+- Umbraco's own field labels follow the culture too: probes that find fields by label must not depend on English
+  ("UI Culture" became "Sprache").
+
+## 15. Dashboards, icons and conditions
+
+- **Dashboard:** `{ type: 'dashboard', element, meta: { label: '#jfbSpike_dashboardTitle', pathname: 'overview' },
+  conditions: [{ alias: 'Umb.Condition.SectionAlias', match: SECTION }, { alias: <own condition> }] }`, at
+  `section/<section>/dashboard/<pathname>`. A section with a single dashboard shows no tab bar; the dashboard is the
+  section's start page. Without a `SectionAlias` condition a dashboard appears in every section (read in the source).
+- **Icons:** `{ type: 'icons', js }`, where the module's default export is
+  `[{ name: 'jfb-spike-icon-form', path: () => import('./icon-form.js') }]` and `icon-form.js` default-exports
+  the SVG text. The name then works in `<umb-icon name>` and in every manifest `icon`: the dashboard, search
+  results and the member view's tab showed it. Drawn with `stroke="currentColor"`, it followed the theme.
+  `<umb-icon>` placed in a paragraph took a line of its own; give it an explicit layout when it sits in text.
+- **Condition:** a class extending `UmbConditionBase<Config>` that sets `this.permitted`, registered as
+  `{ type: 'condition', alias, api }` and declared in `UmbExtensionConditionConfigMap`. Ours observed
+  `UMB_CURRENT_USER_CONTEXT`'s `isAdmin` and kept the dashboard for administrators; the admin saw it. A refusal
+  for other users is for Phase 9's permission tests, which use more than one user.
+
+## 16. Workspace contexts and duplicate
+
+- **Workspace context:** `{ type: 'workspaceContext', api, conditions: [{ alias: 'Umb.Condition.WorkspaceAlias',
+  match: WS }] }`, where `api` extends `UmbContextBase` with its own `UmbContextToken('UmbWorkspaceContext', alias)`.
+  Ours consumed the form workspace's context, observed its pages and counted fields; the Info view showed
+  "Fields 4" for a form with four fields in three groups on two pages, and 0 for an empty one.
+- **Duplicate:** `entityAction` kind `duplicate`, `meta: { duplicateRepositoryAlias, treeRepositoryAlias }`, and a
+  repository with `requestDuplicate({ unique })`. "Duplicate…" created "Newsletter (copy)" through
+  `POST form/{id}/duplicate` (201 with `Umb-Generated-Resource`). The repository reloads the parent itself with
+  `UmbRequestReloadChildrenOfEntityEvent`. Kind `duplicateTo` adds a destination picker
+  (`requestDuplicateTo({ unique, destination })`, read in the source).
+
+## 17. Health checks
+
+```csharp
+[HealthCheck("2f7d1c9e-…", "Spike form storage",
+    Description = "Checks the spike's form store and its recycle bin.", Group = "Jiron Form Builder (spike)")]
+public sealed class SpikeHealthCheck(SpikeFormStore store) : HealthCheck
+{
+    public override Task<IEnumerable<HealthCheckStatus>> GetStatusAsync() => …;   // one status per finding
+    public override HealthCheckStatus ExecuteAction(HealthCheckAction action) => …;
+}
+// a warning with an action:
+new HealthCheckStatus($"{trashed} forms are in the recycle bin.") { ResultType = StatusResultType.Warning,
+    Actions = [new HealthCheckAction("empty-bin", Id) { Name = "Empty the recycle bin", Description = "…" }] }
+```
+
+- Found without registration. Settings › Health Check showed a "Jiron Form Builder (spike)" card among Umbraco's
+  groups; its page (the group name in the URL) lists each check with its description and one line per status,
+  a tick for Success and a warning sign for Warning.
+- An action renders as a box with its description and a green button named after it. **Clicking it ran
+  `ExecuteAction` at once, with no confirmation,** and the check ran again ("The recycle bin is empty.").
+- The texts are server strings shown as written, so the product translates them on the server and handles plurals
+  itself (the spike's "1 forms are in the recycle bin." shows why).
+
+## 18. Webhooks
+
+```csharp
+public sealed record SpikeEntriesApprovedNotification(IReadOnlyList<Guid> EntryIds, DateTime ApprovedUtc) : INotification;
+
+[WebhookEvent("Spike entries approved", Constants.WebhookEvents.Types.Other)]
+public sealed class SpikeEntriesApprovedWebhookEvent(IWebhookFiringService firing, IWebhookService webhooks,
+    IOptionsMonitor<WebhookSettings> settings, IServerRoleAccessor roles)
+    : WebhookEventBase<SpikeEntriesApprovedNotification>(firing, webhooks, settings, roles)
+{
+    public override string Alias => "jfbSpikeEntriesApproved";
+    public override object? ConvertNotificationToRequestPayload(SpikeEntriesApprovedNotification n) =>
+        new { entryIds = n.EntryIds, approvedUtc = n.ApprovedUtc };
+}
+// composer: builder.AddWebhookEvent<SpikeEntriesApprovedWebhookEvent>();
+// on approve: await eventAggregator.PublishAsync(new SpikeEntriesApprovedNotification(ids, now), cancellationToken);
+```
+
+- Settings › Webhooks › Create listed "Spike entries approved" in the event picker after Umbraco's content and
+  media events. A webhook to a local listener (port 5520) saved with the URL, the event and Enabled.
+- Bulk-approving two entries in the collection published the notification. About nine seconds later the
+  listener received one `POST` with the headers `Umb-Webhook-Event: jfbSpikeEntriesApproved`,
+  `Umb-Webhook-RetryCount: 0` and `User-Agent: Umbraco-Cms/17.7.1`, and the body
+  `{"entryIds":["…","…"],"approvedUtc":"…"}`. Delivery is a distributed job (every 10 s by default, with retries;
+  settings under `Umbraco:CMS:Webhook`, read in the source).
+- The body is exactly our payload; Umbraco adds no envelope. The event name in the picker is a server string,
+  shown as written.
+
+## 19. References ("used on")
+
+```csharp
+UdiParser.RegisterUdiType("jfb-spike-form", UdiType.GuidUdi);                 // once, in a composer
+builder.DataValueReferenceFactories().Append<SpikeFormReferenceFactory>();
+
+public sealed class SpikeFormReferenceFactory : IDataValueReferenceFactory, IDataValueReference
+{
+    public bool IsForEditor(IDataEditor? dataEditor) => dataEditor?.Alias == SpikeFormPicker.EditorAlias;
+    public IDataValueReference GetDataValueReference() => this;
+    public IEnumerable<UmbracoEntityReference> GetReferences(object? value) =>
+        value is string text && Guid.TryParse(text, out var id)
+            ? [new UmbracoEntityReference(new GuidUdi("jfb-spike-form", id), Constants.Conventions.RelationTypes.RelatedDocumentAlias)]
+            : [];
+}
+```
+
+- **Umbraco calls the factory on every save but keeps only references to nodes.** It stores references as
+  relations between `umbracoNode` rows; for our form it logged at Debug level that the reference to
+  `umb://jfb-spike-form/…` has no node id and cannot be saved as a relation. The relation service takes integer
+  node ids, and the management API's "referenced by" endpoints cover only documents, media, members and data types.
+- **The walk covers blocks.** `DataValueReferenceFactoryCollection.GetAllReferences(content.Properties, editors)`
+  found the form both in a page's picker property and inside a Block List item. Called per property,
+  `GetReferences(editor, values)` found the same and tells which property (`form`, `blocks`) and culture. Both
+  exist in 17.5.0; `GetAllReferences` with a third argument is newer.
+- **Our index, Umbraco's UI.** Handlers on content saved, published, moved to the recycle bin and deleted, plus a
+  pass over all content at start-up, filled an in-memory index. The info app
+
+  ```ts
+  { type: 'workspaceInfoApp', kind: 'entityReferences', alias, name,
+    meta: { referenceRepositoryAlias: REFERENCES }, conditions: [{ alias: 'Umb.Condition.WorkspaceAlias', match: WS }] }
+  ```
+
+  takes a repository implementing `UmbEntityReferenceRepository` (`requestReferencedBy(unique, skip, take)` and
+  `requestAreReferenced`). Our endpoint returned items shaped like Umbraco's document reference
+  (`$type: "DocumentReferenceResponseModel"`, `id`, `name`, `published`, `documentType { id, icon, alias, name }`,
+  `variants`), mapped with `UmbManagementApiDataMapper` by `$type`. The form's Info view then showed Umbraco's own
+  "Referenced by" box: "Spike blocks page" with a Draft badge and "Spike contact page", each with its
+  document type's icon.
+- An info app appears only where a view renders `<umb-extension-slot type="workspaceInfoApp">`. Umbraco's Info views
+  do; a package's own Info view must include the slot.
+- The decision is [ADR-0017](../decisions/0017-references.md).
+
+## 20. A view on the member workspace
+
+```ts
+{ type: 'workspaceView', alias, name, element, weight: 50,
+  meta: { label: '#jfbSpike_memberEntries', pathname: 'jfb-entries', icon: 'jfb-spike-icon-form' },
+  conditions: [{ alias: 'Umb.Condition.WorkspaceAlias', match: 'Umb.Workspace.Member' },
+               { alias: 'Umb.Condition.WorkspaceEntityIsNew', match: false }] }
+```
+
+- The member workspace gained a third tab, "Form entries" with the package icon, after Details and Info, at
+  `…/member/edit/<key>/invariant/view/jfb-entries` (members are routed with a variant segment). The view read
+  `UMB_MEMBER_WORKSPACE_CONTEXT` (`unique`, and `data.email`) and showed the member's email. In German the tab read
+  "Formulareinträge".
+- `WorkspaceEntityIsNew` with `match: false` keeps the tab off the create screen, where no member exists yet.
+- The Members section opens on an empty page; members are listed under its "Members" menu item.
+
+## 21. UFM components in block labels
+
+```ts
+{ type: 'ufmComponent', alias, name, api, meta: { alias: 'jfbFormName' } }
+// the block's label in the Block List configuration: "Form: {jfbFormName: form}"
+
+export class FormNameUfmComponent extends UmbUfmComponentBase {
+  render(token: UfmToken) {
+    return token.text ? `<ufm-jfb-spike-form-name ${super.getAttributes(token.text)}></ufm-jfb-spike-form-name>` : undefined;
+  }
+}
+@customElement('ufm-jfb-spike-form-name')
+export class FormNameUfmElement extends UmbUfmElementBase { /* consume UMB_UFM_RENDER_CONTEXT, look up the name, set this.value */ }
+```
+
+- The block in the content editor read "Form: Contact us" instead of the form's id; the element looked the name
+  up through the item endpoint.
+- **`render` is called unbound (17.7.1).** Umbraco hands `render` to the markdown parser without its instance, so
+  `this.getAttributes(…)` threw "this.getAttributes is not a function" and the label stayed empty. `super` is
+  bound at definition time and works; Umbraco's own components use it.
+- **The tag must start with `ufm-`, `umb-` or `uui-`:** the label's HTML is sanitised, and other custom elements are
+  removed (read in the source).
+- `UMB_UFM_RENDER_CONTEXT.value` is the block's content (its properties plus `$settings` and `$index`); the element
+  picks its property by the alias in the token.
+
+## 22. Background jobs and the 17.5 floor
+
+- **A distributed job:**
+
+  ```csharp
+  public sealed class SpikeStatisticsJob(IRuntimeState runtime, SpikeFormStore store, ILogger<SpikeStatisticsJob> logger)
+      : IDistributedBackgroundJob
+  {
+      public string Name => "Jfb.Spike.Statistics";
+      public TimeSpan Period => TimeSpan.FromMinutes(1);
+      public Task ExecuteAsync() => ExecuteAsync(CancellationToken.None);   // still abstract in 17.5 to 17.7
+      public Task ExecuteAsync(CancellationToken cancellationToken) { … }    // 17.5.0+
+  }
+  // builder.Services.AddSingleton<IDistributedBackgroundJob, SpikeStatisticsJob>();
+  ```
+
+  It logged once a minute on the sandbox. `AlignToClock` (17.6.2) is not used.
+- **The floor build:** the whole spike, server and client, was built against Umbraco 17.5.0: the template from a
+  17.5.0 hive, `Umbraco.Cms.*` 17.5.0 (confirmed in `project.assets.json`), `@umbraco-cms/backoffice` 17.5.0 and
+  `@hey-api/openapi-ts` 0.99.0, with the throwaway-build settings, in `%TEMP%\jfb-floor-17.5.0`.
+
+| Piece | On 17.5.0 | What to do |
+| --- | --- | --- |
+| Server code: management API, schema ids, section grant, property editor and converters, seeding, health check, webhook event, reference factory and walk, distributed job | builds, 0 errors | nothing |
+| Client: every manifest and import of 1.2a and 1.2b | `tsc` clean after one change | nothing else |
+| `workspaceView` kind `tree` (and its `meta.treeAlias`) | missing until 17.6.0 | own element hosting `<umb-tree alias .props=${{ hideTreeRoot, startNode, selectionConfiguration }}>`, with the tree alias in the element; it listed a folder's forms on 17.7.1 and compiles on 17.5.0. 17.5's tree has no toolbar or tree-action props |
+| Manifest kinds `entityReferences`, `duplicate`, the menu item kind `tree` | present (read in its package) | nothing |
+| `IDistributedBackgroundJob.AlignToClock` | missing until 17.6.2 | not used |
+| UUI | 1.x (UUI 2 from 17.6) | the host supplies UUI at run time; the 18.3 smoke on a 17.5 site checks the screens |
+| Cache busting of package files | none (from 17.6) | 18.3 checks an upgrade on a 17.5 site |
+| `@hey-api/openapi-ts` peer range | `>=0.85.2` (17.7: `>=0.99.0`) | pin 0.99.x, which satisfies both |
+| NuGet audit | `MessagePack` 3.1.7, `Microsoft.OpenApi` 2.4.1 (high), `System.Security.Cryptography.Pkcs` and `.Xml` 10.0.6 | more than on 17.7.1; step 3.1 handles both sets |
+
+- **So D3's floor holds:** nothing Jiron Form Builder needs is newer than 17.5.0. Step 3.2 already pins
+  `@umbraco-cms/backoffice` to the minimum supported 17.x, and NuGet resolves a range such as `[17.5.0, 18.0.0)`
+  to its lowest version, so the library compiles against 17.5.0's APIs while the demo site runs the latest 17.x.
+
+## 23. What this means for Jiron Form Builder
 
 - **Security:** the API uses its own section policy, never the template's Content placeholder; confirm and
   toast texts are Lit templates only (section 8); refusals are complete sentences (section 2).
@@ -331,6 +581,19 @@ Measured side by side on the same nested model; the decision is [ADR-0016](../de
 - **Designer:** ADR-0016.
 - **Property editors:** `PropertyCacheLevel.None` for anything that points at a form.
 - **Width:** design every screen for a 620 px workspace.
-- **For 1.2b to fix in §3.4:** the client is configured from `umbHttpClient.getConfig()`, not
-  `UMB_AUTH_CONTEXT.configureClient`; the template's `@hey-api/openapi-ts` range is wrong for 17.7.1; content
-  creation through the async services is confirmed; the minimum backoffice width is 920 px.
+- **Search:** one `globalSearch` tab whose results link to the form and name its folder. Its label stays as
+  written in every language, like Umbraco's own tabs.
+- **Localization:** en and de `localization` manifests, every manifest label a `#key`, plurals inside function
+  values. Server strings (health checks, webhook event names, problem titles) are translated on the server.
+- **Health checks:** only safe, repeatable actions, because an action runs without a confirmation.
+- **Webhooks:** one `WebhookEventBase` per entry event; Umbraco sends our payload as it is, so the payloads are
+  documented and kept stable.
+- **"Used on":** our own index, shown with Umbraco's references info app (ADR-0017).
+- **Members:** a "Form entries" view on the member workspace, hidden on the create screen.
+- **UFM:** components call `super.getAttributes`, and their elements' tags start with `ufm-`.
+- **The 17.5 floor:** no `tree` workspace-view kind (our own view hosts `<umb-tree>`), both `ExecuteAsync`
+  overloads implemented, no `AlignToClock`; an upgrade on a 17.5 site is checked in 18.3.
+- **API calls in tests:** from a signed-in page with the backoffice's placeholder bearer header; no test reads a
+  token.
+- **§3.4** was corrected in 1.2b: the client configuration, the template's `@hey-api/openapi-ts` range, test-site
+  creation, the manifest types and building blocks, "used on", webhooks, localization, health checks and jobs.

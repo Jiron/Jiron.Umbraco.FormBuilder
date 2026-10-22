@@ -230,7 +230,7 @@ These come from the owner or from planning. Change one only through an ADR that 
 | --- | --- | --- |
 | D1 | **Name:** NuGet id and namespace root `Jiron.Umbraco.FormBuilder`; display name **Jiron Form Builder**; backoffice section label **Forms**; repo `github.com/Jiron/Jiron.Umbraco.FormBuilder` (private for now). Short identifiers use `jfb` (tables, CSS, URLs, events) and `JironFormBuilder` (settings section, folders, JS global). The owner reserves the NuGet prefix `Jiron.` (OWNER-TODO). | Owner's choice after name research (2026-10-20). A descriptive product name under the owner's own name leaves nothing to clash with, and the reserved prefix marks the packages as his. "Umbraco" appears only as the platform qualifier inside the package id, never in the display name. The product is always a "Form Builder"; no package id ends in `.Forms`. Editors look for "Forms", so that is the section label. |
 | D2 | **First commit = license.** `LICENSE.md` is the PolyForm Perimeter License 1.0.1 with Jiron Form Builder's header and `Required Notice:` line. The owner placed it and made the root commit `781401e` on 2026-10-20, replacing GitHub's README-only commit `06f126f`; step 0.1 checks its SHA-256. No force-push remains approved. | The owner wants everyone to be able to use Jiron Form Builder free of charge, including companies on their own sites and agencies on client sites, and to change it for their own projects, but nobody to sell it, to publish their own version of it (free or paid, open source or not), or to offer any other competing product or service built from it. Contributions go to this repository instead. Perimeter says exactly that in a short, lawyer-drafted text (§3.6). It is **not** OSI "open source", so Jiron Form Builder calls itself "free and source-available", never "open source". A lawyer review is an OWNER-TODO item. |
-| D3 | **Target Umbraco 17 LTS first:** CMS `[17.5.0, 18.0.0)`, developed against the latest 17.x (17.7.1 on 2026-10-19), .NET 10. An Umbraco 18 line comes at the end (Phase 19). **17 is the most important version** (the owner, 2026-10-22): the 18 line never costs `main` a feature, a fix, a delay or a compromise, and nothing is designed for 18 at 17's expense. | 17 is the LTS that most sites run, supported until 2028-11-27. 17.5 brought the async distributed background jobs Jiron Form Builder relies on *(verify in 1.2b; raise the floor by ADR if a needed API is newer)*. |
+| D3 | **Target Umbraco 17 LTS first:** CMS `[17.5.0, 18.0.0)`, developed against the latest 17.x (17.7.1 on 2026-10-19), .NET 10. An Umbraco 18 line comes at the end (Phase 19). **17 is the most important version** (the owner, 2026-10-22): the 18 line never costs `main` a feature, a fix, a delay or a compromise, and nothing is designed for 18 at 17's expense. | 17 is the LTS that most sites run, supported until 2028-11-27. 17.5 brought the async distributed background jobs Jiron Form Builder relies on. Confirmed in 1.2b: the whole spike builds against 17.5.0, and only the `tree` workspace-view kind (17.6.0) and `AlignToClock` (17.6.2) are newer; Jiron Form Builder uses neither. |
 | D4 | **Original work.** Every name, screen, syntax, data model and line of code is Jiron Form Builder's own (CLAUDE.md rule 2). Vocabulary: form, page, group, field, option list, rule, action, entry, theme, merge tag, template. | Legal safety and a coherent product. The owner's private reference material stays in `.private/` and never enters the repository. |
 | D5 | **Form definitions are versioned JSON documents; entries are relational.** A form has one draft and many published versions, each a schema-versioned JSON document upgraded by code. Entries are rows: entry, typed values per field, files, a timeline and notes. Each entry points at the version it was submitted with. | Drafts, history, diff, restore, export and deployment as files fall out naturally. Old entries never change meaning when a form changes. Entries stay filterable and sortable in SQL. Proven in Ligata.Forms (draft and published documents), but entries there were JSON blobs that could not be queried, which is fixed here. |
 | D6 | **Submissions are transactional and idempotent.** One transaction stores the entry, its values and one queued **action run** per action that applies (an outbox). A client-generated submission id plus a digest makes retries safe. Actions run in the background with leases, retries and a visible log. | No entry is lost when email or a webhook is down, and no double entries come from double clicks or flaky networks. Proven in Ligata.Forms. |
@@ -352,40 +352,42 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
 - **Templates:** `dotnet new install Umbraco.Templates@17.7.1`.
   - **Always in a private template hive:** pass `--debug:custom-hive %TEMP%\jfb-templates-<version>` to every `dotnet new install` and every `dotnet new` call. The user-wide template install is shared with the Tandem session and must never change (CLAUDE.md rule 6).
   - Pin 17.7.1 for the whole run. Only 18.3 (the 17.5 floor) and Phase 19 use other versions, each in its own hive.
-  - `dotnet new umbraco-extension -n <Name> -ex -pm Central` creates an RCL with `Client/` (Vite library mode, Lit, TypeScript, `@umbraco-cms/backoffice`, `@hey-api/openapi-ts`), `StaticWebAssetBasePath=/`, and output to `wwwroot/App_Plugins/<Name>`. It does not run npm during `dotnet build`; run it in scripts and CI.
-  - Test sites: `dotnet new umbraco -n Site --development-database-type SQLite --friendly-name … --email … --password …`.
-- **`umbraco-package.json`:** in `wwwroot/App_Plugins/JironFormBuilder/`, with `id` = NuGet id. Since 17.6, `version` drives cache busting, so stamp it at build time. Register the manifests with a `bundle` extension.
+  - `dotnet new umbraco-extension -n <Name> -ex -pm Central` creates an RCL with `Client/` (Vite library mode, Lit, TypeScript, `@umbraco-cms/backoffice`, `@hey-api/openapi-ts`), `StaticWebAssetBasePath=/`, and output to `wwwroot/App_Plugins/<Name>`. It does not run npm during `dotnet build`; run it in scripts and CI. Its `@hey-api/openapi-ts ^0.85.2` fails `npm install` against 17.7.1: pin 0.99.x, which also satisfies 17.5 (1.2a, 1.2b).
+  - Test sites: `dotnet new umbraco -n Site --development-database-type SQLite`, then the admin through the unattended-install settings (`Umbraco__CMS__Unattended__InstallUnattended` and the `UnattendedUser*` values) in the start-up environment, so the password never appears on a command line (`scripts/sandbox.mjs`, 1.2a).
+- **`umbraco-package.json`:** in `wwwroot/App_Plugins/JironFormBuilder/`, with `id` = NuGet id. Since 17.6, `version` drives cache busting, so stamp it at build time. 17.5 has no cache busting for package files, so 18.3 checks an upgrade on the 17.5 floor. Register the manifests with a `bundle` extension.
 - **Management API:**
   - Attributes: `[ApiController]`, `[BackOfficeRoute("jfb/management/api/v{version:apiVersion}")]`, `[MapToApi("jfb")]`, `[JsonOptionsName(Constants.JsonOptionsNames.BackOffice)]`, `[Authorize(Policy = …)]`, `[ApiVersion("1.0")]` on every concrete controller.
   - Register the OpenAPI document in one composer, because CMS 18 replaces Swashbuckle with Microsoft.AspNetCore.OpenApi.
-  - Clients use `UMB_AUTH_CONTEXT.configureClient(client)`.
-- **Manifest types Jiron Form Builder expects to use** *(verify each in 1.2a to 1.2b)*:
+  - The generated client takes its configuration from `umbHttpClient.getConfig()` (`@umbraco-cms/backoffice/http-client`), which brings the base URL and the credentials. The backoffice sends a placeholder bearer token and the server reads the real one from an HttpOnly cookie, so no script can read the token (1.2a, 1.2b).
+- **Manifest types Jiron Form Builder uses** (all confirmed in 1.2a and 1.2b; shapes and traps in the research doc):
   - `section`, `sectionSidebarApp` (menu), `menu` and `menuItem`, `tree` and `treeItem` (forms with folders);
-  - `workspace` (routable), `workspaceView`, `workspaceAction`, `workspaceContext`;
-  - `entityAction` (create, rename, move, duplicate, delete), `collection` with `collectionView` and `collectionAction` (entries);
-  - `modal`, `dashboard`, `propertyEditorUi`, `localization`, `searchProvider`, `condition`, `icons`.
-- **Building blocks to reuse rather than rebuild** *(verify)*:
-  - the sorter controller (`@umbraco-cms/backoffice/sorter`), weighed against Ligata's pointer-capture drag in 1.2a;
-  - the Tiptap rich text input (the default RTE since 16);
-  - the document and media pickers (`umb-input-document`, `umb-input-media`);
-  - the data type picker;
-  - the user group picker;
-  - code editor elements;
-  - `UMB_NOTIFICATION_CONTEXT` toasts and `UMB_MODAL_MANAGER_CONTEXT`.
+  - `workspace` (routable), `workspaceView`, `workspaceAction`, `workspaceActionMenuItem`, `workspaceContext`, `workspaceInfoApp`;
+  - `entityAction` (create, rename, move, duplicate, trash, restore, delete), `entityCreateOptionAction`, `entityBulkAction`, `collection` with `collectionView` and `collectionAction` (entries);
+  - `modal`, `dashboard`, `propertyEditorSchema` and `propertyEditorUi`, `localization`, `searchProvider` with `globalSearch`, `condition`, `icons`, `ufmComponent`.
+  - The `tree` kind of `workspaceView` arrives in 17.6.0, so folder views host `<umb-tree>` in their own element (1.2b).
+- **Building blocks to reuse rather than rebuild** (confirmed in 1.2a and 1.2b):
+  - not the sorter controller: ADR-0016 chose our own pointer drag for the designer;
+  - the Tiptap rich text input (`umb-input-tiptap`, the default RTE since 16);
+  - the document, media and member pickers (`umb-input-document`, `umb-input-media`, `umb-input-member`);
+  - the data type picker (`umb-data-type-input`), the user group picker (`umb-user-group-input`) and the member group picker (`umb-input-member-group`);
+  - the code editor (`umb-code-editor`: `.code` and `.language`, and it needs a height);
+  - `UMB_NOTIFICATION_CONTEXT` toasts and modals through `umbOpenModal`.
 - **Property editors:** a `propertyEditorSchema`, which is a server `DataEditor`, plus a `propertyEditorUi`. Use a `PropertyValueConverterBase` for Razor, and an `IDeliveryApiPropertyValueConverter` for the Content Delivery API, which must be enabled with `Umbraco:CMS:DeliveryApi:Enabled`.
-- **"Used on" tracking:** `IDataValueReferenceFactory` / `IDataValueReference` can report references from property values. Whether a custom entity type and UDI can appear in Umbraco's references UI is decided in 1.2b. If it can't, Jiron Form Builder keeps its own reference index, refreshed on content save *(verify)*.
-- **No-JavaScript posts:** a `SurfaceController` with `BeginUmbracoForm` posts back to the current page through an encrypted route token. `CurrentUmbracoPage()` re-renders with `ModelState`, and `RedirectToCurrentUmbracoPage()` implements post/redirect/get *(verify in 17)*.
-- **Content creation** (the "create content" action): the async `IContentEditingService` / `IContentPublishingService` of 14+ rather than the legacy `IContentService` *(verify)*.
+- **"Used on" tracking:** `IDataValueReferenceFactory` / `IDataValueReference` report references from property values, and Umbraco's walk covers blocks. Umbraco stores references only between `umbracoNode` rows and drops a form's, so Jiron Form Builder keeps its own index, refreshed on content save, and shows it with Umbraco's `entityReferences` info app (1.2b, ADR-0017).
+- **No-JavaScript posts:** a `SurfaceController` with `BeginUmbracoForm` posts back to the current page through an encrypted route token. `CurrentUmbracoPage()` re-renders with `ModelState`, and `RedirectToCurrentUmbracoPage()` implements post/redirect/get *(verify in 1.4)*.
+- **Content creation** (the "create content" action): the async `IContentEditingService` / `IContentPublishingService` of 14+ rather than the legacy `IContentService` (confirmed in 1.2a).
 - **Members:** `IMemberManager` for the current member, `IMemberService` and `IMemberGroupService`.
-- **Files:** `IFileSystem`, `PhysicalFileSystem`, and `IHostEnvironment` paths. Umbraco's official Azure Blob storage provider targets the media and image cache file systems; how a package registers its own blob-backed file system is decided in 1.4 *(verify)*.
-- **Health checks:** classes with `[HealthCheck]` appear on the Settings › Health Check dashboard.
+- **Files:** `IFileSystem`, `PhysicalFileSystem`, and `IHostEnvironment` paths. Umbraco's official Azure Blob storage provider targets the media and image cache file systems; how a package registers its own blob-backed file system is decided in 1.4 *(verify in 1.4)*.
+- **Health checks:** classes with `[HealthCheck]` appear on the Settings › Health Check dashboard, grouped by `Group` (confirmed in 1.2b). A status's action runs at once, without a confirmation, so only safe, repeatable actions go there. Messages are server strings that Umbraco shows as written.
+- **Webhooks** (confirmed in 1.2b): an event class derives from `WebhookEventBase<TNotification>` with `[WebhookEvent(name, Constants.WebhookEvents.Types.Other)]` and is registered with `builder.AddWebhookEvent<T>()`; publishing the notification queues the request. A distributed job sends it (every 10 s by default) with the header `Umb-Webhook-Event: <alias>` and our payload as the body.
+- **Localization** (confirmed in 1.2b): one `localization` manifest per culture (`en`, `de`); a regional culture such as `de-de` falls back to the language file. The global search tab label and server strings (health checks, webhook event names) are shown as written.
 - **Database:**
   - `PackageMigrationPlan` (it auto-runs unattended; `Umbraco:CMS:Unattended:PackageMigrationsUnattended`) with `AsyncMigrationBase` steps;
   - DTO attributes `[TableName]`, `[PrimaryKey]`, `[ExplicitColumns]`, `[Column]`, `[NullSetting]`, `[Length]`, `[SpecialDbType(NVARCHARMAX)]`, `[Index]`, `[ForeignKey]`;
   - store dates in UTC;
   - use `ICoreScopeProvider` and `IScopeAccessor`, and call `Complete()`.
 - **Jobs:**
-  - `IDistributedBackgroundJob` (`Name`, `Period`, `ExecuteAsync(CancellationToken)` from 17.5), registered with `AddSingleton<IDistributedBackgroundJob, T>()`. Settings live in `Umbraco:CMS:DistributedJobs`.
+  - `IDistributedBackgroundJob` (`Name`, `Period`, `ExecuteAsync(CancellationToken)` from 17.5), registered with `AddSingleton<IDistributedBackgroundJob, T>()`. Settings live in `Umbraco:CMS:DistributedJobs`. Confirmed on 17.5.0 and 17.7.1 in 1.2b: the parameterless `ExecuteAsync()` is still abstract, so implement both; `AlignToClock` (17.6.2) is not used.
   - The runner starts one due job per 5-second tick, in table order, with Umbraco's own jobs first, so a package job may wait (D8, Tandem ADR-0076).
   - `IRecurringBackgroundJob` runs on every server.
 - **Email:** `IEmailSender.SendAsync(EmailMessage, emailType, …)`. Check `CanSendRequiredEmail()` first: without SMTP settings Umbraco drops mail silently. Settings live in `Umbraco:CMS:Global:Smtp`, and `DeliveryMethod=SpecifiedPickupDirectory` suits tests. `EmailMessage` carries one body (HTML or text), so a multipart message with both is not possible through it; 1.6 decides how Jiron Form Builder handles that, and sites that replace `IEmailSender` (for example with a mail service) must keep working.
@@ -755,7 +757,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
     - Every run shows on the entry's timeline and in the **deliveries** log, which can retry it.
     - **Retrying an `Uncertain` run asks first,** because its first attempt may already have been delivered: the screen says so, and the management API refuses the retry without an explicit confirmation.
     - **Sending can be paused:** with the host switch `JironFormBuilder:Actions:Paused` on, no action run and no email is sent, and none is lost. Entries are still stored, runs and emails stay queued, and they go out once the switch is off. It is meant for a copy of a live database restored onto a test server, and for incidents. The deliveries log, the dashboard and a health check say that sending is paused.
-  - **Umbraco webhooks:** Jiron Form Builder also registers entry events (submitted, approved, rejected, deleted, action failed) with Umbraco's own webhook system, so sites can subscribe in Settings › Webhooks *(verify the 17 API in 1.2b)*.
+  - **Umbraco webhooks:** Jiron Form Builder also registers entry events (submitted, approved, rejected, deleted, action failed) with Umbraco's own webhook system, so sites can subscribe in Settings › Webhooks. Confirmed in 1.2b: our event appeared in Umbraco's event picker, and a webhook on it delivered our payload (§3.4, "Webhooks").
 
 ### 4.5 Database schema v1 (table prefix `jfb`; all times UTC; GUID keys for anything exposed)
 
@@ -781,7 +783,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | `jfbUserSetting` | UserKey, Name, Json (NVARCHARMAX), UpdatedUtc | PK (UserKey, Name). A backoffice user's own choices, the same on every device: column sets, saved filters, export choices, the digest. |
 | `jfbPermission` | Id PK, UserGroupKey, TargetType (Global, Folder, Form), TargetKey (`Guid.Empty` for Global), Permissions (flags) | Unique (UserGroupKey, TargetType, TargetKey). |
 | `jfbSetting` | Id PK, Scope (`global` or a site root key), Section, SchemaVersion, Version, Json (NVARCHARMAX), UpdatedUtc, UpdatedByUserKey | Unique (Scope, Section). |
-| `jfbReference` | FormId, ContentKey, PropertyAlias, Culture, UpdatedUtc | PK (FormId, ContentKey, PropertyAlias, Culture). Only if Umbraco's own reference tracking cannot serve "used on" (1.2b). |
+| `jfbReference` | FormId, ContentKey, PropertyAlias, Culture, UpdatedUtc | PK (FormId, ContentKey, PropertyAlias, Culture). Needed: Umbraco's relations link only `umbracoNode` rows (1.2b, ADR-0017). |
 | `jfbAuditEntry` | Id PK (bigint), OccurredUtc, UserKey, Action, EntityType, EntityKey, Details (JSON) | Never field values. (OccurredUtc), (EntityKey). |
 | `jfbDailyStat` | Day, FormId, Metric, Dimension, Value | PK (Day, FormId, Metric, Dimension). Metrics: views, starts, pageReached:{pageKey}, submissions, spam, completionSeconds, origin:{contentKey}, hour:{0-23}, invalid:{fieldKey}:{errorKind}. Unique members are counted from entries at query time, so stats never hold personal data. New metrics need no migration. |
 | `jfbKeyValue` | Key PK, Value, UpdatedUtc | One-time flags (section granted, setup done, file-mirror hashes). |
@@ -2333,7 +2335,8 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Smoke:** the section is visible to the admin; a form is created through the management API and placed on a page; it renders, submits and emails (pickup); the entry shows in the backoffice.
   - Run the same smoke after `dotnet publish` of that site (static assets, §3.2).
   - **The supported floor:** run the same smoke on a fresh **Umbraco 17.5.x** site (its own template hive), because D3 promises `[17.5.0, 18.0.0)`.
-  - Done when: the smoke runs pass on 17.7.1 (run and published) and on 17.5.x against the installed packages.
+  - **An upgrade on the floor:** on that 17.5.x site, update the packages to a second build with a higher version, restart, and check in a signed-in browser that keeps its cache that the backoffice runs the new code without a hard refresh. 17.5 adds no cache busting to package files (1.2b), and §3.4 says Umbraco sends package files without caching headers.
+  - Done when: the smoke runs pass on 17.7.1 (run and published) and on 17.5.x against the installed packages, and the 17.5.x upgrade check passes.
 - [ ] **18.4 First prerelease and phase review**
   - Set the version to `17.0.0-alpha.1`. Update CHANGELOG and `docs/upgrading.md`.
   - Tag `v17.0.0-alpha.1` and push the tag. The release workflow builds a draft release; nothing is published.
