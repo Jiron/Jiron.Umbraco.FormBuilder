@@ -1222,7 +1222,7 @@ Servers that Jiron Form Builder starts use only these ports. Ports the OS assign
 
 All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `docs/research/*.md` and decisions to `docs/decisions/NNNN-*.md`. Copy any useful spike code into the product later, cleaned up.
 
-- [ ] **1.1 Reference inventory and feature study**
+- [x] **1.1 Reference inventory and feature study** (2026-10-22, c9f9be4)
   - Read Ligata.Forms 0.3.2 (§3.1, from `8f4b0c5`, not the checked-out 0.2.1) and Tandem (§3.3 and `docs/research/tandem-lessons.md`) as listed.
   - Write `docs/research/ligata-forms-port.md`. For each source file it says port, rewrite or drop, the target in Jiron Form Builder, and the lessons that apply. Write `docs/research/tandem-reuse.md` for each script, pattern and gotcha.
   - **The owner's private reference:** if the goal or `.private/README.md` asks for it, map the private material in `.private/` to this roadmap in a file **inside `.private/`**. Add roadmap steps for real gaps that fit §1, with the WORKLOG reason "added from the owner's reference material" and no other detail.
