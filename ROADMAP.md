@@ -346,6 +346,7 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
 
 ### 3.4 Umbraco 17 package facts (research 2026-10-19; confirm in Phase 1)
 
+- **What the sandbox showed:** [docs/research/umbraco-backoffice.md](docs/research/umbraco-backoffice.md) has the confirmed shapes, signatures and traps from 1.2a and 1.2b. Its last section lists what they mean for Jiron Form Builder; every backoffice step reads it before it starts.
 - **Templates:** `dotnet new install Umbraco.Templates@17.7.1`.
   - **Always in a private template hive:** pass `--debug:custom-hive %TEMP%\jfb-templates-<version>` to every `dotnet new install` and every `dotnet new` call. The user-wide template install is shared with the Tandem session and must never change (CLAUDE.md rule 6).
   - Pin 17.7.1 for the whole run. Only 18.3 (the 17.5 floor) and Phase 19 use other versions, each in its own hive.
@@ -1231,7 +1232,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
     - Write the tracked `docs/research/feature-catalogue.md`: every Jiron Form Builder feature and every candidate idea, **without naming any product** (CLAUDE.md rule 2), each marked "in roadmap (step)", "added (step)" or "later (§7)". Add roadmap steps for strong, in-scope ideas, with the reason in WORKLOG.
   - Done when:
     - every row of §3.1 and §3.3 is covered, both docs and the feature catalogue are committed, and the term guard passes.
-- [ ] **1.2a Umbraco 17 sandbox: navigation, workspaces and building blocks**
+- [x] **1.2a Umbraco 17 sandbox: navigation, workspaces and building blocks** (2026-10-22, 3424359)
   - `dotnet new install Umbraco.Templates@17.7.1` in the private template hive (§3.4), and every `dotnet new` there too. Sites are created by a script, so no password appears in a command line.
   - Create `.local/sandbox/Sandbox` on port 5510 with SQLite and unattended install. Generate an admin user and store it in `.local/credentials.json`.
   - **In a throwaway extension, build:**
