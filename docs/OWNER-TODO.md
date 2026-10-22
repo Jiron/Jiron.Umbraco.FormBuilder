@@ -6,9 +6,10 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 
 ## Before the first run
 
-- [ ] **Read `LICENSE.md`.** It is the PolyForm Perimeter License 1.0.1 with Jiron Form Builder's header and
-  `Required Notice:` line (ROADMAP D2, §3.6). ROADMAP 0.2 commits it unchanged; if you change it, update
-  the SHA-256 there (the command is in `GOAL.md`).
+- [x] **The license is committed (2026-10-20).** Your root commit `781401e` holds `LICENSE.md`, the PolyForm
+  Perimeter License 1.0.1 with Jiron Form Builder's header and `Required Notice:` line (ROADMAP D2, §3.6).
+  ROADMAP 0.1 checks its SHA-256.
+
 ## Licensing and naming
 
 - [x] **The name is decided (2026-10-20): Jiron Form Builder (`Jiron.Umbraco.FormBuilder`).** A
@@ -21,10 +22,8 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
      is you (github.com/Jiron, jiron.dev).
 
   No published package is needed to apply.
-- [ ] **Optionally rename the local folder** to `C:\Coding\Jiron.Umbraco.FormBuilder` (before or after the
-  run). The plan never depends on the folder's name.
 - [ ] **Publish the docs** under docs.jiron.dev/form-builder when you want a docs site; until then the
-  Marketplace points to the repository's `docs/` (ROADMAP 18.2).
+  Marketplace points to the repository's `docs/` (ROADMAP 18.1).
 
 - [ ] **Have a lawyer review the licence choice and texts** before the repository becomes public:
   - **`LICENSE.md`:** Perimeter's "competes" clause against your intent. Agencies building and hosting
@@ -54,6 +53,9 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 - [ ] **Check the Cyber Resilience Act before monetising anything** (paid add-ons, paid support,
   possibly donations). Non-monetised software is generally out of scope (ROADMAP §3.6).
 - [ ] **Decide later whether to offer an importer** from other form systems as a separate package.
+- [ ] **Decide whether paid add-ons will exist** before the first stable release. It affects the CLA, the
+  CRA check above and how the add-on packages are shaped. The open-core suggestions written for Tandem
+  (`docs/research/open-core-plan.md` in that repository) apply here too. The build adds no paid features.
 
 ## Repository, CI and dependencies
 
@@ -89,5 +91,5 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   accessibility names and keyboard paths automatically, but no real screen reader runs here.
 - [ ] **GitHub rendering:** once the repository is public, check that the README, docs and issue forms
   render as intended on GitHub.
-- [ ] **The first release run:** pushing the `v17.0.0-alpha.1` tag (ROADMAP 18.5) starts the release
+- [ ] **The first release run:** pushing the `v17.0.0-alpha.1` tag (ROADMAP 18.4) starts the release
   workflow once, even before CI is enabled; check its draft release.
