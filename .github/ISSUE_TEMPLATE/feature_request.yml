@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest something Jiron Form Builder should do, or do better.
+title: "Idea: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome. Describe the problem you want solved in your own words; the best solution is often
+        found together. Questions are better asked in Discussions.
+  - type: dropdown
+    id: role
+    attributes:
+      label: Who would use it?
+      options:
+        - Visitors filling in forms
+        - Editors building forms
+        - People handling entries
+        - Privacy officers
+        - Administrators or developers
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would it solve?
+      description: What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+      description: How you imagine it working. Sketches and examples are welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What do you do today instead?
+    validations:
+      required: false

@@ -45,6 +45,14 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
     not an assignment.
   - Add an original-work attestation ("I wrote this myself and did not copy, decompile or derive it
     from proprietary software").
+  - **Then open the commit identity check** (added 2026-10-22, ROADMAP 0.2): during the build the
+    `pre-commit` hook accepts only your noreply identity (`scripts/lib/identity.mjs`). Before outside
+    pull requests are accepted, change it so contributors can commit under their own names, for example
+    by keeping the check only for commits to `main` made in your own clone. `CONTRIBUTING.md` says this.
+- [ ] **Optionally put the full code of conduct text in the repository** (added 2026-10-22, ROADMAP 0.2).
+  `CODE_OF_CONDUCT.md` adopts the Contributor Covenant 2.1 by reference: a link to the official text, a
+  short summary in the project's own words, the contact address and the required attribution. If you
+  prefer the whole text in the file, replace the summary with the official Markdown (CC BY 4.0).
 - [ ] **Optionally ask Umbraco HQ** (accounts@umbraco.com) whether they're fine with "Umbraco" as a
   platform qualifier in the package id `Jiron.Umbraco.FormBuilder`. Their brand rules forbid "Umbraco" in
   product names; the display name "Jiron Form Builder" doesn't use it.

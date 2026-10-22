@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/Jiron/Jiron.Umbraco.FormBuilder/discussions
+    about: Questions, ideas and help with Jiron Form Builder go to Discussions.
+  - name: Report a security problem
+    url: https://github.com/Jiron/Jiron.Umbraco.FormBuilder/security/policy
+    about: Please report vulnerabilities privately, as SECURITY.md describes, never in an issue.

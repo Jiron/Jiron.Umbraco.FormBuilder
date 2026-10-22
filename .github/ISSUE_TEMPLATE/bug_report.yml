@@ -1,0 +1,96 @@
+name: Bug report
+description: Something in Jiron Form Builder does not work as it should.
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report this. **Security problems** go privately to the address in
+        SECURITY.md, never into an issue. **Never paste personal data**: no real entries, uploaded files, email
+        addresses or IP addresses; replace them with made-up values.
+  - type: input
+    id: version
+    attributes:
+      label: Jiron Form Builder version
+      placeholder: "17.0.0-alpha.1"
+    validations:
+      required: true
+  - type: input
+    id: umbraco
+    attributes:
+      label: Umbraco version
+      placeholder: "17.7.1"
+    validations:
+      required: true
+  - type: input
+    id: dotnet
+    attributes:
+      label: .NET version
+      placeholder: "10.0.4"
+    validations:
+      required: false
+  - type: dropdown
+    id: database
+    attributes:
+      label: Database
+      options:
+        - SQLite
+        - SQL Server
+        - Azure SQL
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where does it happen?
+      options:
+        - On the website (a visitor fills in a form)
+        - Headless (the public API or the form element)
+        - In the backoffice (designer, settings, library)
+        - In the backoffice (entries, exports, insights)
+        - Actions and email
+        - Installing or upgrading
+        - Somewhere else
+    validations:
+      required: true
+  - type: input
+    id: hosting
+    attributes:
+      label: Hosting
+      description: One server or several, Windows or Linux, any proxy or CDN in front, and the browser if it is a website problem.
+      placeholder: "One server on Windows, IIS, Edge 141"
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What did you do, step by step? A form exported as JSON helps when the problem is with one form.
+      placeholder: |
+        1. Create a form with ...
+        2. Publish it and open the page ...
+        3. Submit ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log lines and console messages
+      description: Remove personal data first. This is formatted as code automatically.
+      render: text
+    validations:
+      required: false

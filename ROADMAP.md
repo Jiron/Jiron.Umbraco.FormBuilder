@@ -56,6 +56,10 @@ Written 2026-10-19 from the owner's brief, with research into Umbraco 17 packagi
   - carry on.
 
   Tandem's owner added "Umbraco 17 first", a design pass and "say it once" mid-run, and each became steps and checks.
+- **Frontend work uses the `design-taste-frontend` skill** (the owner, 2026-10-22; ADR-0019):
+  - every step that designs or builds UI loads the skill before it starts;
+  - every full design pass and UX review runs it again, and its review document records the skill's design read, its findings and what changed;
+  - where the skill and this roadmap disagree, D12, D13, D18, §4.13, WCAG 2.2 AA, the §4.12 budgets, the Phase 2 tokens and CLAUDE.md rules 2 and 4 win, and the review document says so.
 - **ADR numbers 0001 to 0018** are reserved for the ADRs this roadmap names. Any other ADR starts at 0019. Tandem's ADRs are always cited as "Tandem ADR-NNNN".
 - **When a feature appears in two steps,** the earlier step builds the part it names, and the later step completes and audits it.
 - **Every step that adds UI or endpoints** adds:
@@ -1061,7 +1065,7 @@ Servers that Jiron Form Builder starts use only these ports. Ports the OS assign
 - **Checked, not assumed.** Each UI phase ends with a review of every screen as every role, in light and dark, in English and German, with screenshots:
   - **Widths:** website screens at 375, 768 and 1440 px; backoffice screens at 1024, 1440 and 1920 px. Umbraco's own backoffice needs about 920 px (Tandem 7.9), so at narrower widths the review only checks that Jiron Form Builder's screens break no worse than Umbraco's.
   - **Making the pictures:** a UX-walk script (ported from Tandem's `ux` project) takes all of them in one run, so a review never skips a variant for time.
-  - **Critique:** the installed design skills (for example `impeccable` for critique and polish) may be used for that review.
+  - **Critique:** the `design-taste-frontend` skill runs in every review (the owner, 2026-10-22; ADR-0019), and the other installed design skills (for example `impeccable` for critique and polish) may be used as well.
 
 ### 4.14 Upgrade and compatibility policy
 
@@ -1079,7 +1083,7 @@ Servers that Jiron Form Builder starts use only these ports. Ports the OS assign
 
 ### Phase 0: Repository bootstrap (license first)
 
-- [ ] **0.1 Preflight and the license root commit**
+- [x] **0.1 Preflight and the license root commit** (2026-10-22, 781401e)
   - **Tools:** check `dotnet --list-sdks` (10.0.401), `node --version` (24.x), `git --version`, and Edge at `C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`.
   - **The commit identity, before anything else:** the machine's global git identity is the owner's personal one.
     - Set the repo-local identity: `git config user.name "Jiron"` and `git config user.email "59139789+Jiron@users.noreply.github.com"` (GitHub's own address for the owner's account).
@@ -1321,9 +1325,10 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - privacy tools.
 
     Each shows its empty, loading and error states where they differ.
+  - **Design skill:** load `design-taste-frontend` before the first wireframe (ADR-0019).
   - Render them to PNG with Playwright (`scripts/wireframes.mjs`).
   - Write `docs/ux/review-2.2.md` with a checklist per screen against the measurable rules of §4.13, including the "said twice?" line and the token rules.
-  - Done when: the PNGs and the review are committed, and every screen passes its checklist.
+  - Done when: the PNGs and the review are committed, every screen passes its checklist, and the review records the skill's design read and findings.
 - [ ] **2.3 Website form design**
   - **Design the default theme:**
     - field anatomy (label, help, input, error);
@@ -1333,12 +1338,13 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a phone layout.
   - **Fix the design tokens** (§4.13, "One visual system") for the website and the backoffice in `docs/ux/tokens.md`: the corner scale, the shade, the spacing grid and the type scale. For the website they are CSS custom properties that 6.3 uses as they are.
   - Build it as mock HTML and CSS in `docs/ux/website/`, with PNGs at 375 and 1440 px in light and dark site contexts.
-  - Done when: axe is clean on the mocks, every text and control passes WCAG 2.2 AA contrast (checked by a script), the token file is committed, and the work is committed.
+  - **Design skill:** load `design-taste-frontend` before the design starts (ADR-0019).
+  - Done when: axe is clean on the mocks, every text and control passes WCAG 2.2 AA contrast (checked by a script), the token file is committed with the skill's design read, and the work is committed.
 - [ ] **2.4 Design critique and phase review**
-  - Run a design critique on 2.2 and 2.3: the installed `impeccable` skill, or a subagent with the §4.13 checklist. Fix every finding that is not purely taste, and re-render.
+  - Run a design critique on 2.2 and 2.3: rerun `design-taste-frontend` (ADR-0019), plus the installed `impeccable` skill or a subagent with the §4.13 checklist. Fix every finding that is not purely taste, and re-render.
   - **Phase review:** write the handover note.
   - Done when:
-    - `docs/ux/critique-2.md` lists the findings, the decisions and before/after images;
+    - `docs/ux/critique-2.md` lists the findings (the `design-taste-frontend` pass included), the decisions and before/after images;
     - pushed, with the phase-review gate.
 
 ### Phase 3: Skeleton, tooling, demo site, CI
@@ -1588,7 +1594,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a theme registry (`IFormBuilderTheme`);
     - view resolution in the order per form → theme → default, in the layout of ADR-0015;
     - versioned view-contract headers.
-  - Done when: Playwright screenshots of a kitchen-sink form (every field type) per theme at 375 and 1440 px are reviewed in `docs/ux/review-6.3.md`; axe is clean; the CSS is within budget.
+  - **Design skill:** load `design-taste-frontend` before styling the themes (ADR-0019).
+  - Done when: Playwright screenshots of a kitchen-sink form (every field type) per theme at 375 and 1440 px are reviewed in `docs/ux/review-6.3.md`, which records the skill's design read and findings; axe is clean; the CSS is within budget.
 - [ ] **6.4 The website runtime**
   - **Validation and rules:** progressive enhancement, plus client validation and rules from `packages/logic`.
     - **Messages:** English and German now; 14.2 adds the other five languages.
@@ -1830,9 +1837,9 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - and anything Phase 1 adds.
   - Done when: each check has unit tests, publishing with an error is refused through the API, and Playwright covers the badge, the list and the "fix it" links.
 - [ ] **9.6 Phase review**
-  - **UX review:** every screen of the phase at 375, 768 and 1440 px, in light and dark, in en and de, each checked against the measurable rules of §4.13, plus an `impeccable` critique (or a subagent with the checklist). Fix the findings.
+  - **UX review:** every screen of the phase at 375, 768 and 1440 px, in light and dark, in en and de, each checked against the measurable rules of §4.13, plus a `design-taste-frontend` pass (ADR-0019) and an `impeccable` critique (or a subagent with the checklist). Fix the findings.
   - Write the handover note.
-  - Done when: `docs/ux/review-9.md` with screenshots is committed and pushed, with the phase-review gate.
+  - Done when: `docs/ux/review-9.md` with screenshots, recording the skill pass, is committed and pushed, with the phase-review gate.
 
 ### Phase 10: The backoffice II: settings, actions, preview and publishing
 
@@ -1930,6 +1937,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **The preview:** a live kitchen-sink form, with WCAG contrast checks shown in place.
   - **Custom CSS**, scoped to the form root and sanitised.
   - **Exchange and use:** import and export as JSON, the theme picker per form, and the default theme.
+  - **Design skill:** load `design-taste-frontend` before building the editors (ADR-0019).
   - **Email layouts:**
     - Logo (media picker), colours, header and footer per culture, preview with a sample entry in light and dark, and a test send.
   - Done when:
@@ -2132,8 +2140,8 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - an admin sets permissions and retention;
     - a visitor fills in a form on a phone;
     - a privacy officer erases a person's data.
-  - **Critique and simplify:** run a design critique (`impeccable`, or a subagent with the §4.13 checklist) and fix every finding that is not purely taste. Count the clicks for the top five tasks per role and remove the unnecessary ones.
-  - Done when: `docs/ux/review-16.6.md` lists the findings and fixes with before and after screenshots, and the E2E suites are still green.
+  - **Critique and simplify:** rerun `design-taste-frontend` (ADR-0019) and run a design critique (`impeccable`, or a subagent with the §4.13 checklist), and fix every finding that is not purely taste. Count the clicks for the top five tasks per role and remove the unnecessary ones.
+  - Done when: `docs/ux/review-16.6.md` lists the findings and fixes (the skill pass included) with before and after screenshots, and the E2E suites are still green.
 - [ ] **16.7 Code quality and phase review**
   - **Code quality pass:**
     - Analyzers clean, no dead code. Everything not meant for extension is `internal`. XML docs on every public type. Consistent naming.
@@ -2150,6 +2158,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - **Shapes and colours:** simple geometric shapes, legible at 32 px, with two brand colours and a neutral defined in `assets/brand.md`.
     - **No Umbraco logo, no "U" mark, and no resemblance to any other product's mark.**
   - Also design a monochrome variant and the section icon (registered through the `icons` manifest).
+  - **Design skill:** load `design-taste-frontend` before the logo work starts (ADR-0019).
   - `scripts/icons.mjs` renders PNGs with Playwright (no new dependency): 512, 256, 128, 64.
   - Done when: the PNGs exist, the 128 px icon is checked visually (show the screenshot), and the brand doc is committed.
 - [ ] **17.2a Documentation for editors and site owners, and the READMEs**
