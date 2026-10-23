@@ -65,6 +65,13 @@ npm run size
 `.local/nuget-feed`. A plain `dotnet pack` refuses client assets that are missing, stale or built for
 another version (`JFB001`).
 
+**The tests** ([tests/README.md](tests/README.md)): the unit and integration tests run on SQLite and need nothing
+installed.
+
+```
+dotnet test Jiron.Umbraco.FormBuilder.slnx --blame-hang-timeout 10m
+```
+
 **Before you push**, format and check everything:
 
 ```
