@@ -1317,7 +1317,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
     - with two forms on one page, each keeps its own errors and values;
     - a page served from the output cache is byte-identical for two visitors who share no cookies, and contains no per-visitor value (no antiforgery token, no challenge, no nonce);
     - the CSP pages log no violation in the browser.
-- [ ] **1.4b Spike: uploads and file storage**
+- [x] **1.4b Spike: uploads and file storage** (2026-10-23, c7a9c65)
   - **Uploads:** a streamed multipart upload with size limits enforced while reading, stored through an `IFileSystem` in a folder that is not web-accessible, with a magic-number check. *(Done through an asynchronous store instead, because `IFileSystem` writes synchronously; ADR-0006.)*
   - **Downloads:** a protected download through the management API.
   - **Blob storage:** read the docs and source of Umbraco's official Azure Blob storage provider and decide how an `IFormBuilderFileStore` can use it (a sample, not a dependency). Resolve the open files note of §3.4.
