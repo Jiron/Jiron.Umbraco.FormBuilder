@@ -1566,7 +1566,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - serialised definitions validate against the schema, and a test shows that the schema and the model name the same properties, with the same required ones, for every object;
     - every save-time refusal has a unit test that checks its code and its JSON path;
     - the upgrader test reads a synthetic older version through the real reader.
-- [ ] **4.2b Structural validation and the public projection**
+- [x] **4.2b Structural validation and the public projection** (2026-10-23, 54debdd)
   - **Structural validation**, with stable error codes:
     - limits, alias rules and reserved aliases;
     - aliases unique without regard to case, and the option values of a field unique once folded as rules compare text (ADR-0005), because SQL Server ignores case where SQLite does not, and entry filters compare folded text (ADR-0033);
