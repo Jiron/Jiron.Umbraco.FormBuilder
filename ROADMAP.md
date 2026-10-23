@@ -1411,7 +1411,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Write `docs/ux/copy.md`: the glossary (CLAUDE.md vocabulary), tone (plain, friendly, direct; sentence case; verbs on buttons), message patterns for errors, empty states and confirmations, with en and de examples.
   - List the top 15 tasks per role with their click paths.
   - Done when: committed, and a subagent playing a first-time editor finds every top task in ≤ 3 clicks from the section (each path written down).
-- [ ] **2.2 Backoffice wireframes**
+- [x] **2.2 Backoffice wireframes** (2026-10-23, 129db8d)
   - As static HTML pages in `docs/ux/wireframes/` (UUI-like styling, no build step), one per screen:
     - setup dashboard, form library, template gallery;
     - designer (canvas, palette, inspector open and closed, phone width);
