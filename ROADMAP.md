@@ -1393,7 +1393,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
     - it is committed with every part above;
     - a check shows that its ER diagram names every table of §4.5, and its API sections every route of §4.6;
     - all ten ADRs of 1.7a and 1.7b are committed, and §4 of this roadmap is updated where they changed it.
-- [ ] **1.8 Phase review**
+- [x] **1.8 Phase review** (2026-10-23, b1314ea)
   - A subagent reviews the ADRs for contradictions with §1, §2 and §4. Fix what it finds.
   - Check that no *(verify)* is left in §3 and §4.
   - Write the handover note.

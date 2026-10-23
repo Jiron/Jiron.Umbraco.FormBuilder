@@ -37,3 +37,100 @@ its reason, and a handover block at the end of every phase.
 - 2026-10-23 · roadmap change · from the 1.7b ADRs: §4.3.3 gains `field.<alias>.value`, `entry.answers`, the seven escaping contexts, malformed tags rendering as text, and cache-safe visitor texts with culture patterns from the server (ADR-0014); §4.4 sends an unavailable captcha and a no-JS post on a form that needs JavaScript into Spam instead of refusing them, §4.6 lets the receipt route take the challenge and answer `404 not_found` for every miss, stores server keys as hashes, adds `origin_denied`, `timeout`, `not_found` and `server_error`, and makes every endpoint declare its limits, and §4.10 names the rate limiter's own middleware and the overflow partition (ADR-0012); §4.5 gives `jfbFolder` and `jfbForm` an `IsRestricted` flag, and §4.8 adds restricted folders and forms and host grants (`JironFormBuilder:Access:Grants`) to Access (ADR-0013); §4.9 lists the shared theme views, their resolution and contract header, the markup contract and `IFormBuilderTheme` (ADR-0015); §4.10 points to the full table of privacy defaults (ADR-0009). ADR-0008 is amended so that a request without content finds its site by the root whose Umbraco domain matches its host, as 14.4 asks, and §4.8 says so.
 - 2026-10-23 · 1.7b The other remaining ADRs · 5abc382 · ADR-0009 (no IP, no cookies, one `sessionStorage` key for save and resume, retention per state and for every copy around an entry, sensitive fields kept out of mail, exports, search text, titles and logs, members anonymised on deletion, the erase test), ADR-0012 (internal MVC controllers with our own CORS, body and time limits; partitioned limiters on `TimeProvider` in our own middleware with an overflow partition, so a flood of addresses fails closed; mail caps counted atomically in the queue; the Data Protection challenge with renewal and single use; the spam-score table, with an unavailable captcha and no-JS posts on JavaScript-only protection going to Spam; proof of work; captcha verification without the visitor's address; server keys as hashes; the token table; the receipt by challenge), ADR-0013 (eleven permissions with dependencies, union within restricted folders and forms, administrators unrestricted, `404` for what a user cannot see, the picker without permissions, privacy tools across every form, the test personas), ADR-0014 (a dozen-rule grammar, sources, filters, seven escaping contexts, where each source may be used, culture patterns from the server) and ADR-0015 (one set of views themed by class maps, stylesheets and tokens, the view list and resolution, the contract header, the markup contract, scoped logical CSS); committed in 5abc382 with §4 updated where each changes it, and ADR-0008 amended for 14.4.
 - 2026-10-23 · 1.7c The architecture document · e14ff19 · `docs/architecture.md`: modules with the dependency diagram and Core's and Web's areas, the definition model in outline, the data model with an ER diagram of all 24 tables (keys and links; `docs/database.md` gets every column in 4.1), the submission flow as a sequence, the public API with each route's purpose, rate-limit policy and needs, the management API by permission, settings, extension points, background work, a STRIDE table of 37 threats with mitigation, deciding ADR and testing step, the quality budgets with the spikes' measurements, and a glossary; it links to the ADRs rather than repeating them. A one-off check found every table of §4.5 in the ER diagram (each with an entity block, none extra), every one of the 13 routes of §4.6 in the public API section, every part the step lists and all ADR links resolving, and it failed on a copy with a table and a route removed; all three Mermaid diagrams parsed and rendered in Edge with mermaid 11.4.1 (the module diagram was redrawn after the first render showed it tangled). All ten ADRs of 1.7a and 1.7b are committed, with §4 updated where they change it.
+- 2026-10-23 · roadmap change · from the Phase 1 review (1.8). **Facts confirmed:**
+  - §3.5's Marketplace categories, from the schema read on 2026-10-23: eleven categories, none for forms, so "Editor Tools" plus "Campaign & Marketing" stands. The field list gains `VersionDependencyMode`, the `PackageType` values and the two deprecated fields.
+  - 18.1's appsettings schema is merged by Umbraco.Cms.Targets' `UmbracoJsonSchemaFiles` (17.6.2, 17.7.1 and 18.2.1), so 18.3's smoke test checks the site's reference.
+  - §3.4 names the step that confirmed each fact.
+
+  **Conflicts fixed:** two subagent reviews of the ADRs against §1, §2 and §4 found 37 conflicts (four found by both), a check of those fixes found 18 more, a check of that round found 13 more, two further checks found 5 each, and a last one found 2. Each was verified, then fixed where it lives:
+  - D12 drops Umbraco's sorter (ADR-0016).
+  - D14: rate limits refuse with `429` and `Retry-After` rather than score (ADR-0012 refines it).
+  - D21's full-major deprecation now binds ADR-0010 and §4.14: removal at the major after the next.
+  - D13's "no cookies" holds. Members-only forms bind posts to the member through their challenge instead of an antiforgery cookie, with same-origin credentials, framing refused, and defined no-JS posts (ADR-0004, ADR-0012).
+  - Double opt-in is a form setting, not an action. An unverified entry runs no action.
+  - §1.1 describes file storage as ADR-0006 built it, and D8 names the draft-version cleanup.
+  - Consent:
+    - consent texts recall no answers;
+    - the form posts the hash of the wording it showed;
+    - a consent whose wording changed is never re-ticked.
+  - Sensitive fields and `includeInEmails` get one rule per output.
+  - The privacy section is global. Logs hold no IP addresses either. The server key's name is a reserved context value.
+  - The honeypot is hidden by base rules that every theme and the headless element ship, and its name cannot be an alias.
+  - The permission matrix:
+    - `403` for a missing permission;
+    - `404` where the user holds nothing on the resource;
+    - the section requirement tested with a user who lacks the section;
+    - the form picker as its one exception.
+  - Public API:
+    - `no-store` except the definition;
+    - `invalid_request` for `400`;
+    - `422 validation_failed` everywhere;
+    - full `validate` and `drafts` bodies, and drafts keep no files;
+    - a rate-limited no-JS post keeps its answers.
+  - Mail and settings:
+    - the final `Limited` mail state, with its purge;
+    - the `+tag` rule for recipient keys;
+    - grants below a restricted folder use ADR-0013's wording;
+    - no host defaults for backoffice settings (`AllowImplicitCaptchaConsent` replaces the consent-mode key, and `DefaultTheme` goes).
+  - Schema and themes:
+    - themes are linked by alias, with one home each for the default theme and the default email layout;
+    - `TextKey` is folded as rules compare;
+    - draft-only catalogue rows have no `FirstVersionNumber`.
+  - Logic:
+    - unsafe patterns are refused at publish;
+    - all three `form_changed` conditions are named;
+    - the rounded calculation result is the value everywhere;
+    - the error kinds of ADR-0002 are listed;
+    - consent is required by default, and cards show option images;
+    - a run waits while an earlier one is running.
+  - The submission pipeline (§4.4, now nine steps):
+    - the gate (on a members-only form the origin first, then rate limits, the challenge and its member) comes first, then idempotency, before the revision, availability and the challenge's single use, so a retry after a lost answer gets its receipt;
+    - a known `submissionId` is answered from its entry only for that entry's challenge or server key; a retry whose challenge has expired asks the receipt route, which accepts the challenge for 24 hours past its expiry, and past that grace the fresh post is shown as already sent;
+    - the members-only surface action checks the origin before any re-render;
+    - values kept "until the actions have run" survive while a trigger can still fire (`Unverified`, `Spam`, waiting for approval), and every deletion rule says so;
+    - "not spam" sends an unverified entry of a verification form back to `Unverified`;
+    - at confirmation, the runs keep the order shown.
+  - One consent hash (`jfbConsentText`) in the markup, the projection and every submission; drafts keep no consent answers.
+  - "Create a form block type" needs `manageSettings` and Umbraco's Settings section, and an outsider persona tests the section requirement.
+  - `ufprt` is a reserved alias, and the markup contract lists the members-only challenge input.
+
+  **Checks added:** 5.3, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7, 7.1, 8.2, 8.5, 8.6, 9.5b, 14.3 and 18.3. None was weakened. Two cases moved, unchanged, to the step that builds what they test: 5.3's storage case to 6.1, and 7.1's "not spam" to `Unverified` to 8.5. Step 8.5 is renamed "Content and state actions, email verification and approval", and the ADRs cite the new pipeline step numbers.
+- 2026-10-23 · 1.8 Phase review · b1314ea · **Commits:** a8c2b49 (the confirmed facts), 5fe7423 (the 37 review fixes), 996103f (the 18 follow-ups), f920b3d (13 more), 0102acc and 11ae244 (5 each), b1314ea (the last 2). **Reviews:** two subagents compared ADRs 0001–0008 and 0009–0020 with §1, §2 and §4, and further subagents checked each round of fixes (37, 18, 13, 5, 5 and 2 findings). The last two fixes are the checker's own wording, checked by hand against the text around them. **Gate:**
+  - the secret scan is clean on tracked files;
+  - the term guard passes with 0 patterns (no term list here);
+  - the text check is clean;
+  - the product-name scan of 45 tracked docs against the private notes finds 0 hits;
+  - a table check of 125 tables passes, and the architecture check still passes;
+  - there are no `[~]` steps;
+  - `.private/` holds only the feature study, and nothing asks for a mapping.
+
+### Handover after Phase 1 (2026-10-23)
+- **State:** Phase 1 is complete, and nothing is half-done.
+  - **Research:** the reference inventories and the feature catalogue (1.1).
+  - **The six spikes** (1.2a to 1.6), in the git-ignored `.local/sandbox/`. Their code is throwaway; what they proved is in `docs/research/`.
+  - **ADRs** 0001–0017, 0019 and 0020. ADR-0018 (the AI add-on) belongs to 15.x.
+  - **`docs/architecture.md`.**
+  - **§3 and §4** hold no *(verify)*. 4.1's offline SQL Server check is that step's own feasibility question.
+  - **The phase review** changed several ADRs (each status line says what), and §1 and §2 only where an ADR now says so.
+- **Wiring sweep:** Phase 1 added no product code, so there is no setting, endpoint, notification, extension point or menu item to wire yet. Its one script, `scripts/sandbox.mjs` (18 tests), served every spike, and 3.3's demo script takes over its pattern. What the spikes proved, and the step that builds it:
+  - the backoffice shapes: 9.x (`docs/research/umbraco-backoffice.md`);
+  - migrations and the entry query shapes: 4.1, 4.3;
+  - rendering, the no-JS post and the output cache: 6.1, 6.2, 6.4;
+  - uploads and the file store: 4.3, 6.1, 7.3, 15.2;
+  - the vectors and the pattern matcher: 3.4, 5.2, 5.3;
+  - the outbox and the kick after commit: 8.1, 8.2.
+- **Next:** 2.1, information architecture and words. No product code in Phase 2. What it needs:
+  - the role matrix follows ADR-0013's eleven permissions and its personas (designer, entry handler, viewer, administrator, privacy officer, no access, and the outsider without the section);
+  - the section's menus follow 9.1 and §4.13 (D18: one primary action per view, say it once);
+  - the vocabulary of CLAUDE.md;
+  - the last section of `docs/research/umbraco-backoffice.md`;
+  - a subagent that plays a first-time editor checks the click paths;
+  - the three design skills apply from 2.2 on (ADR-0019, ADR-0020).
+- **Gotchas:**
+  - `cd` into a reference folder moves this session's working directory; it happened twice. Use `git -C` and absolute paths.
+  - Bash once failed to parse a long heredoc full of quotes. Write longer edit scripts with the file tool (no `\u` escapes there) and apply them through a helper that requires each replacement to match exactly once.
+  - Most review findings were drift. An ADR refined a decision, but other passages kept the old wording. After any decision change, grep every doc for the old wording.
+  - GitHub tables split on a pipe even inside a code span, so escape it (`\|`).
+  - The reviews found more each round, so a check of the fixes themselves was worth it: six rounds, from 37 findings down to 2. Fixes drift too (one round dropped "the same body" from a check), so give every round of fixes its own narrow check.
+  - The PC crashed once during the review. `git fsck` was clean and all commits were there. A background subagent cut off by a crash must be started again.
+- **Open owner items added:** none.
