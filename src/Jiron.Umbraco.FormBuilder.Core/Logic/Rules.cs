@@ -1,0 +1,383 @@
+using System.Globalization;
+
+namespace Jiron.Umbraco.FormBuilder.Logic;
+
+/// <summary>
+/// Conditions and rules (ADR-0005), the same in TypeScript: checked as a whole first (unknown fields and operators,
+/// operands, patterns), then evaluated. Checking first means both runtimes report the same error whatever order they
+/// evaluate in. Step 5.2 builds the rules engine on these.
+/// </summary>
+internal static class Rules
+{
+    private static readonly FieldKind[] All = Enum.GetValues<FieldKind>();
+    private static readonly FieldKind[] TextKinds = [FieldKind.Text];
+    private static readonly FieldKind[] Ordered = [FieldKind.Number, FieldKind.Date, FieldKind.Time, FieldKind.DateTime];
+    private static readonly FieldKind[] Checkable = [FieldKind.Checkbox, FieldKind.Choice, FieldKind.Choices];
+
+    private static readonly Dictionary<string, (FieldKind[] Kinds, OperandShape Operand)> Operators = new(StringComparer.Ordinal)
+    {
+        ["equals"] = (All, OperandShape.One),
+        ["notEquals"] = (All, OperandShape.One),
+        ["isOneOf"] = (All, OperandShape.List),
+        ["isNoneOf"] = (All, OperandShape.List),
+        ["isEmpty"] = (All, OperandShape.None),
+        ["isNotEmpty"] = (All, OperandShape.None),
+        ["countAtLeast"] = (All, OperandShape.Count),
+        ["countAtMost"] = (All, OperandShape.Count),
+        ["contains"] = (TextKinds, OperandShape.One),
+        ["notContains"] = (TextKinds, OperandShape.One),
+        ["startsWith"] = (TextKinds, OperandShape.One),
+        ["endsWith"] = (TextKinds, OperandShape.One),
+        ["matches"] = (TextKinds, OperandShape.Pattern),
+        ["greaterThan"] = (Ordered, OperandShape.One),
+        ["lessThan"] = (Ordered, OperandShape.One),
+        ["between"] = (Ordered, OperandShape.Pair),
+        ["isChecked"] = (Checkable, OperandShape.Checked),
+        ["isNotChecked"] = (Checkable, OperandShape.Checked),
+    };
+
+    private enum OperandShape
+    {
+        None,
+        One,
+        List,
+        Pair,
+        Count,
+        Pattern,
+        Checked,
+    }
+
+    /// <summary>Checks the condition, then evaluates it.</summary>
+    public static bool EvaluateCondition(Condition condition, Subject subject)
+    {
+        CheckCondition(condition, subject);
+        return Evaluate(condition, subject);
+    }
+
+    /// <summary>Checks the whole rule, then evaluates it: null when the rule is switched off.</summary>
+    public static bool? EvaluateRule(Rule rule, Subject subject)
+    {
+        var group = new Group(rule.Match, rule.Conditions);
+        CheckGroup(group, subject);
+        return rule.Enabled ? EvaluateGroup(group, subject) : null;
+    }
+
+    /// <summary>Context subjects: what a condition can look at besides answers, each with the kind it compares as.</summary>
+    private static FieldKind ContextKind(string name) => name switch
+    {
+        "culture" => FieldKind.Text,
+        "memberSignedIn" => FieldKind.Checkbox,
+        "memberGroup" => FieldKind.Choices,
+        "today" => FieldKind.Date,
+        _ when name.StartsWith("query.", StringComparison.Ordinal) => FieldKind.Text,
+        _ => throw new LogicException(LogicErrors.UnknownField),
+    };
+
+    private static FieldKind SubjectKind(Condition condition, Subject subject)
+    {
+        if ((condition.Field is null) == (condition.Context is null))
+        {
+            throw new LogicException(LogicErrors.InvalidCondition);
+        }
+
+        if (condition.Context is { } context)
+        {
+            return ContextKind(context);
+        }
+
+        return subject.Fields.TryGetValue(condition.Field!, out var kind)
+            ? kind
+            : throw new LogicException(LogicErrors.UnknownField);
+    }
+
+    /// <summary>A single operand: text, another answer, or a date relative to today.</summary>
+    private static void CheckOne(Operand? operand, Subject subject)
+    {
+        switch (operand)
+        {
+            case TextOperand:
+                return;
+            case FieldOperand field:
+                if (!subject.Fields.ContainsKey(field.Field))
+                {
+                    throw new LogicException(LogicErrors.UnknownField);
+                }
+
+                return;
+            case TodayOperand today when CalendarValues.ParseRelative(today.Expression) is not null:
+                return;
+            default:
+                throw new LogicException(LogicErrors.InvalidOperand);
+        }
+    }
+
+    private static void CheckCondition(Condition condition, Subject subject)
+    {
+        var kind = SubjectKind(condition, subject);
+        if (!Operators.TryGetValue(condition.Op, out var op))
+        {
+            throw new LogicException(LogicErrors.UnknownOperator);
+        }
+
+        if (!op.Kinds.Contains(kind))
+        {
+            throw new LogicException(LogicErrors.OperatorNotForKind);
+        }
+
+        var value = condition.Value;
+        switch (op.Operand)
+        {
+            case OperandShape.None:
+                if (value is not null)
+                {
+                    throw new LogicException(LogicErrors.InvalidOperand);
+                }
+
+                return;
+            case OperandShape.One:
+                CheckOne(value, subject);
+                return;
+            case OperandShape.List:
+                if (value is ListOperand list)
+                {
+                    foreach (var item in list.Items)
+                    {
+                        CheckOne(item, subject);
+                    }
+                }
+                else if (value is FieldOperand)
+                {
+                    CheckOne(value, subject);
+                }
+                else
+                {
+                    throw new LogicException(LogicErrors.InvalidOperand);
+                }
+
+                return;
+            case OperandShape.Pair:
+                if (value is not ListOperand { Items.Count: 2 } pair)
+                {
+                    throw new LogicException(LogicErrors.InvalidOperand);
+                }
+
+                foreach (var item in pair.Items)
+                {
+                    CheckOne(item, subject);
+                }
+
+                return;
+            case OperandShape.Count:
+                if (value is not TextOperand { Value: var count } || !IsCount(count))
+                {
+                    throw new LogicException(LogicErrors.InvalidOperand);
+                }
+
+                return;
+            case OperandShape.Pattern:
+                if (value is not TextOperand { Value: var pattern })
+                {
+                    throw new LogicException(LogicErrors.InvalidOperand);
+                }
+
+                SafePattern.Compile(pattern);
+                return;
+            case OperandShape.Checked:
+                // A checkbox is checked or not; a choice field names the option.
+                if (kind == FieldKind.Checkbox ? value is not null : value is not TextOperand)
+                {
+                    throw new LogicException(LogicErrors.InvalidOperand);
+                }
+
+                return;
+        }
+    }
+
+    /// <summary><c>0</c>, or 1 to 6 digits without a leading zero.</summary>
+    private static bool IsCount(string text) =>
+        text.Length is >= 1 and <= 6 && text.All(char.IsAsciiDigit) && (text.Length == 1 || text[0] != '0');
+
+    private static void CheckGroup(Group group, Subject subject)
+    {
+        if (group.Match is not ("all" or "any"))
+        {
+            throw new LogicException(LogicErrors.InvalidCondition);
+        }
+
+        foreach (var item in group.Conditions)
+        {
+            if (item is Group nested)
+            {
+                CheckGroup(nested, subject);
+            }
+            else
+            {
+                CheckCondition((Condition)item, subject);
+            }
+        }
+    }
+
+    /// <summary>Cleaned answers that are not empty. A hidden field has none.</summary>
+    private static List<string> Answers(string alias, Subject subject)
+    {
+        if (subject.Context.Hidden.Contains(alias, StringComparer.Ordinal))
+        {
+            return [];
+        }
+
+        return subject.Values.TryGetValue(alias, out var values) ? NonEmpty(values) : [];
+    }
+
+    private static List<string> NonEmpty(IEnumerable<string> values) =>
+        values.Select(TextSemantics.Clean).Where(value => value.Length > 0).ToList();
+
+    private static List<string> ContextValues(string name, EvaluationContext context)
+    {
+        IEnumerable<string> raw = name switch
+        {
+            "culture" => [context.Culture],
+            "memberSignedIn" => context.Member.SignedIn ? ["true"] : [],
+            "memberGroup" => context.Member.Groups,
+            "today" => [CalendarValues.FormatDate(CalendarValues.Today(context.Now, context.TimeZone))],
+            _ => context.Query.TryGetValue(name["query.".Length..], out var values) ? values : [],
+        };
+        return NonEmpty(raw);
+    }
+
+    private static List<string> SubjectValues(Condition condition, Subject subject) =>
+        condition.Context is { } context ? ContextValues(context, subject.Context) : Answers(condition.Field!, subject);
+
+    /// <summary>An operand's values, cleaned. A relative date outside years 1 to 9999 has none.</summary>
+    private static List<string> Resolve(Operand operand, Subject subject)
+    {
+        switch (operand)
+        {
+            case TextOperand text:
+                return [TextSemantics.Clean(text.Value)];
+            case ListOperand list:
+                return list.Items.SelectMany(item => Resolve(item, subject)).ToList();
+            case FieldOperand field:
+                return Answers(field.Field, subject);
+            case TodayOperand today:
+                var day = CalendarValues.ApplyRelative(
+                    CalendarValues.Today(subject.Context.Now, subject.Context.TimeZone),
+                    CalendarValues.ParseRelative(today.Expression)!);
+                return day is { } d ? [CalendarValues.FormatDate(d)] : [];
+            default:
+                throw new LogicException(LogicErrors.InvalidOperand);
+        }
+    }
+
+    /// <summary>The key two values are equal by: folded text, an exact option key, or the parsed value; null when invalid.</summary>
+    private static string? Key(FieldKind kind, string value) => kind switch
+    {
+        FieldKind.Text => TextSemantics.Fold(value),
+        FieldKind.Number => ExactDecimal.Parse(value)?.ToString(),
+        FieldKind.Date => CalendarValues.ParseDate(value)?.ToString(CultureInfo.InvariantCulture),
+        FieldKind.Time => CalendarValues.ParseTime(value)?.ToString(CultureInfo.InvariantCulture),
+        FieldKind.DateTime => CalendarValues.ParseDateTime(value)?.ToString(CultureInfo.InvariantCulture),
+        _ => value,
+    };
+
+    private static bool Same(FieldKind kind, string a, string b)
+    {
+        var x = Key(kind, a);
+        return x is not null && string.Equals(x, Key(kind, b), StringComparison.Ordinal);
+    }
+
+    /// <summary>Orders two values of an ordered kind; null when either is not a valid value of that kind.</summary>
+    private static int? Order(FieldKind kind, string a, string b)
+    {
+        if (kind == FieldKind.Number)
+        {
+            return ExactDecimal.Parse(a) is { } x && ExactDecimal.Parse(b) is { } y ? ExactDecimal.Compare(x, y) : null;
+        }
+
+        Func<string, long?> read = kind switch
+        {
+            FieldKind.Date => text => CalendarValues.ParseDate(text),
+            FieldKind.Time => text => CalendarValues.ParseTime(text),
+            _ => CalendarValues.ParseDateTime,
+        };
+        return read(a) is { } p && read(b) is { } q ? Math.Sign(p - q) : null;
+    }
+
+    private static bool CompareFirst(FieldKind kind, List<string> values, List<string> operands, Func<int, bool> test) =>
+        values.Count > 0 && operands.Count > 0 && Order(kind, values[0], operands[0]) is { } result && test(result);
+
+    private static bool IsChecked(Condition condition, FieldKind kind, List<string> values)
+    {
+        var expected = kind == FieldKind.Checkbox ? "true" : TextSemantics.Clean(((TextOperand)condition.Value!).Value);
+        return values.Contains(expected, StringComparer.Ordinal);
+    }
+
+    private static bool Evaluate(Condition condition, Subject subject)
+    {
+        var kind = SubjectKind(condition, subject);
+        var values = SubjectValues(condition, subject);
+        var value = condition.Value;
+        List<string> Operands() => Resolve(value!, subject);
+
+        bool AnyEqual()
+        {
+            var list = Operands();
+            return values.Exists(v => list.Exists(o => Same(kind, v, o)));
+        }
+
+        bool AnyText(Func<string, string, bool> test)
+        {
+            var list = Operands().ConvertAll(TextSemantics.Fold);
+            return values.Exists(v => list.Exists(o => test(TextSemantics.Fold(v), o)));
+        }
+
+        switch (condition.Op)
+        {
+            case "equals" or "isOneOf":
+                return AnyEqual();
+            case "notEquals" or "isNoneOf":
+                return !AnyEqual();
+            case "isEmpty":
+                return values.Count == 0;
+            case "isNotEmpty":
+                return values.Count > 0;
+            case "countAtLeast":
+                return values.Count >= Count(value);
+            case "countAtMost":
+                return values.Count <= Count(value);
+            case "contains":
+                return AnyText((v, o) => v.Contains(o, StringComparison.Ordinal));
+            case "notContains":
+                return !AnyText((v, o) => v.Contains(o, StringComparison.Ordinal));
+            case "startsWith":
+                return AnyText((v, o) => v.StartsWith(o, StringComparison.Ordinal));
+            case "endsWith":
+                return AnyText((v, o) => v.EndsWith(o, StringComparison.Ordinal));
+            case "matches":
+                var pattern = SafePattern.Compile(((TextOperand)value!).Value);
+                return values.Exists(pattern.IsMatch);
+            case "greaterThan":
+                return CompareFirst(kind, values, Operands(), n => n > 0);
+            case "lessThan":
+                return CompareFirst(kind, values, Operands(), n => n < 0);
+            case "between":
+                var pair = ((ListOperand)value!).Items;
+                return CompareFirst(kind, values, Resolve(pair[0], subject), n => n >= 0)
+                    && CompareFirst(kind, values, Resolve(pair[1], subject), n => n <= 0);
+            case "isChecked":
+                return IsChecked(condition, kind, values);
+            case "isNotChecked":
+                return !IsChecked(condition, kind, values);
+            default:
+                throw new LogicException(LogicErrors.UnknownOperator);
+        }
+    }
+
+    private static int Count(Operand? value) =>
+        int.Parse(((TextOperand)value!).Value, NumberStyles.None, CultureInfo.InvariantCulture);
+
+    private static bool EvaluateGroup(Group group, Subject subject)
+    {
+        bool Test(RuleItem item) => item is Group nested ? EvaluateGroup(nested, subject) : Evaluate((Condition)item, subject);
+        return group.Match == "all" ? group.Conditions.All(Test) : group.Conditions.Any(Test);
+    }
+}

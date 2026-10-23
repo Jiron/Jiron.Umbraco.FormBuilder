@@ -18,6 +18,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Web" />
+    <!-- The shared logic (Logic/) is internal until its engines get public interfaces; the vector runners test it. -->
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.Unit" />
   </ItemGroup>
 
 </Project>
