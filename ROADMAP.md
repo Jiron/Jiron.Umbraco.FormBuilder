@@ -1452,7 +1452,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Reference packages through central management, with Umbraco as `[17.5.0, 18.0.0)` (D3).
   - Add an empty composer per project. The meta package has no code.
   - Done when: `dotnet build -c Release` has zero warnings, and `dotnet pack` produces three nupkgs (Core, Web, meta) into `.local/nuget-feed`.
-- [ ] **3.2 Client workspace**
+- [x] **3.2 Client workspace** (2026-10-23, 521131c)
   - Create `src/Jiron.Umbraco.FormBuilder.Web/Client` as an npm workspace with `packages/logic`, `runtime`, `element` and `backoffice`: TypeScript strict, Vite library builds, ESLint, Prettier and Vitest.
   - **The backoffice package:** Lit, `@umbraco-cms/backoffice` pinned to the minimum supported 17.x, and `@hey-api/openapi-ts` client generation.
   - **The runtime and element packages:** no runtime dependencies, output to `WebsiteAssets/` and embedded in the Web assembly as `jfb/assets/<path>` (ADR-0026: packed as static web assets under `wwwroot/jfb/assets/`, the compressed copies broke the build of every site that installs the package), and code split per feature. The build also writes Brotli and gzip copies of every file, which 6.2 serves (§3.4, "Static files").
