@@ -719,7 +719,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - save and resume (off by default; link valid for N days);
   - **the entry title:** a merge-tag line that names each entry in the lists (for example `{{ field.name }}, {{ field.company }}`), with sensitive fields left out;
   - **the entry reference:** a format of prefix, year and padded number (for example `REQ-2026-00042`), shown to the visitor as `{{ entry.reference }}`.
-- **After submitting:** ordered **outcomes**, each with an optional rule: a message (rich text with merge tags), a redirect (content page or URL with merge tags), or a message and then a redirect after N seconds. A message can also show **a copy of the answers** with a print button and a "fill in again" link (6.5).
+- **After sending:** ordered **outcomes**, each with an optional rule: a message (rich text with merge tags), a redirect (content page or URL with merge tags), or a message and then a redirect after N seconds. A message can also show **a copy of the answers** with a print button and a "fill in again" link (6.5).
 - **Availability:**
   - open from and until;
   - maximum number of entries;
@@ -905,6 +905,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 - **General** (each field can be set per site):
   - default theme, the required-marker style, default labels;
   - new-form defaults (consent field, notify-the-creator action);
+  - how long draft saves stay in a form's History, for every site at once (the version cleanup of 10.3; by default the last 50 and those of the last 90 days, §4.5);
   - per site: the base URL (by default the site's first `https` domain in Umbraco, otherwise Umbraco's application URL, never the request's Host header) and the **time zone** (an IANA id, used for "today", opening dates and relative dates; saving refuses an id the server cannot resolve, ADR-0005).
 - **Email** (each field can be set per site):
   - sender name and address;
@@ -916,11 +917,10 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - default level;
   - content rules (blocked words, blocked email domains, maximum links);
   - blocked address ranges (CIDR; matched against the request, never stored);
-  - spam retention;
   - provider keys status (keys themselves only in host configuration).
 - **Files:** allowed type groups, maximum sizes, scanner status.
 - **Privacy:**
-  - default retention per state;
+  - default retention per state, Spam included (the one home of the retention defaults, ADR-0021);
   - IP handling;
   - sensitive-field defaults;
   - third-party captcha consent mode (explicit, Cookiebot category, CMP through the JS API, and `implicit` only when the host allows it);
@@ -1894,9 +1894,13 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 - [ ] **9.1 Section, shell and setup**
   - **The section:** `Jiron.FormBuilder.Section` ("Forms") with its sidebar:
     - the **Forms** tree;
-    - **Entries:** all entries, spam;
+    - **Entries:** Inbox (the entries of every form), Spam;
     - **Library:** option lists, themes, email layouts, templates;
-    - **Settings:** general, email, spam, files, privacy, access, deliveries, audit log, privacy tools.
+    - **Settings:** General, Email, Spam protection, Files, Access, Integrations;
+    - **Privacy:** People (the privacy tools), Retention, Data collection;
+    - **Activity:** Deliveries, Audit log.
+
+    The labels, the permission each item needs and the screens behind them are in `docs/ux/information-architecture.md` (ADR-0021).
 
     Menu items appear only for users with the matching permission. Items whose screens come in later phases appear with those phases.
   - **The dashboard:**
@@ -1908,7 +1912,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - en/de localisation infrastructure, the generated API client, and the global search provider;
     - the safe confirm helper (§4.10), with the source test that bans direct use of Umbraco's confirm modal.
   - Done when:
-    - Playwright shows that each role sees exactly its menus;
+    - Playwright shows that each role sees exactly its menus, including that the privacy officer sees Privacy's People and Retention without Data collection;
     - a confirm that names a form called `<img src=x onerror=alert(1)>` shows that text literally (Playwright);
     - each checklist detector has unit tests (the full green run on the demo is checked in 12.6, once every linked screen exists);
     - screenshots are reviewed in `docs/ux/review-9.1.md` against §4.13.

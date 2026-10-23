@@ -574,7 +574,8 @@ export class FormNameUfmElement extends UmbUfmElementBase { /* consume UMB_UFM_R
   open; the model keeps one key order for the unsaved-changes check.
 - **Tree:** offer actions only when they can work (a non-empty folder), get the bin's `hasChildren` from the
   server, reload the move destination ourselves, show the picker root once.
-- **Sidebar:** do not repeat the section label as the sidebar heading.
+- **Sidebar:** do not repeat the section label as the sidebar heading. ADR-0021 later kept Umbraco's own header,
+  because it carries the root's "+" and "…"; the name appears there and in the top bar, never a third time.
 - **Collections:** name each row's selection box, format dates through localization, and read paging from the
   collection rather than the URL.
 - **Modals:** focus the first field on open.
