@@ -1447,7 +1447,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 
 ### Phase 3: Skeleton, tooling, demo site, CI
 
-- [ ] **3.1 Solution and projects**
+- [x] **3.1 Solution and projects** (2026-10-23, a245195)
   - Create the `.slnx` and the projects of §4.1 (the AI add-on and samples come in Phase 15). Base `FormBuilder.Web` on `dotnet new umbraco-extension -ex -pm Central`, then restructure. Keep the packages solution filter in `src/` (§3.3).
   - Reference packages through central management, with Umbraco as `[17.5.0, 18.0.0)` (D3).
   - Add an empty composer per project. The meta package has no code.
