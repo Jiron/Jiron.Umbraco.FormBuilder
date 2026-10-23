@@ -62,6 +62,10 @@ Every read and write goes through `FormBuilderDatabase` and the repositories in 
 - **Refusals write nothing.** A stale version throws `FormBuilderConcurrencyException`. A taken alias or key, a
   missing folder, a folder moved below itself or deeper than 32 levels, a folder with contents and a row still in use
   throw `FormBuilderConflictException`, which names the reason.
+- **The library and the grants** work the same way ([ADR-0037](decisions/0037-library-and-permission-repositories.md)).
+  Option lists, themes and email layouts are changed and deleted against their concurrency version, and a theme stays
+  while a form's published version names it. A grant changes only from the permissions the editor saw, and a grant
+  of nothing is no row.
 - **Reruns.** A unit that meets a lock conflict runs again, up to three attempts in all; a read also after a lost
   connection or a timeout.
 - **No connections of its own.** Core never opens a connection or creates a database. A unit test reads Core's IL to
@@ -530,7 +534,8 @@ Shared option lists: typed in by editors, or read from content, a data type, a U
 
 Themes for the rendered forms: a base theme, design tokens and optional custom CSS. The default theme is a setting.
 
-- `IX_jfbTheme_key`, `IX_jfbTheme_alias`: unique; the alias without regard to case, and fixed once created.
+- `IX_jfbTheme_key`, `IX_jfbTheme_alias`: unique; the alias without regard to case, and fixed once created. A
+  theme cannot be deleted while a form's `themeAlias` names it.
 
 ### `jfbEmailLayout`
 
@@ -554,7 +559,8 @@ besides the primary key on the user and the setting's name.
 
 What a user group may do, globally (`targetKey` is `Guid.Empty`), in a folder or on a form, as flags (ADR-0013).
 
-- `IX_jfbPermission_userGroupKey_targetType_targetKey`: unique; one row per group and target.
+- `IX_jfbPermission_userGroupKey_targetType_targetKey`: unique; one row per group and target. No row holds 0, and
+  a change names the permissions the row holds now, which work as its version (ADR-0037).
 
 ### `jfbSetting`
 

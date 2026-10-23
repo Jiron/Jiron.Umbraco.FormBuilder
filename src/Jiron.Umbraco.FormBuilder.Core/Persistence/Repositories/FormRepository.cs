@@ -33,19 +33,30 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                 var table = n.T(FormBuilderTables.Form);
                 var now = database.UtcNow;
                 var folder = form.FolderId is null ? string.Empty : $" AND EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Folder)} WHERE {n.C("id")} = @1)";
-                var inserted = await TranslateDuplicatesAsync(() => db.ExecAsync(
-                    $"""
-                    INSERT INTO {table} ({n.C("key")}, {n.C("folderId")}, {n.C("alias")}, {n.C("name")}, {n.C("publicRevision")}, {n.C("concurrencyVersion")}, {n.C("lastEntryNumber")}, {n.C("isRestricted")}, {n.C("createdUtc")}, {n.C("updatedUtc")}, {n.C("createdByUserKey")}, {n.C("updatedByUserKey")})
-                    SELECT @0, @1, @2, @3, 0, 1, 0, @4, @5, @5, @6, @6
-                    WHERE NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {n.C("alias")} = @2 OR {n.C("key")} = @0){folder}
-                    """,
-                    form.Key,
-                    form.FolderId,
-                    form.Alias,
-                    form.Name,
-                    form.IsRestricted,
-                    now,
-                    form.UserKey));
+                int inserted;
+                try
+                {
+                    inserted = await db.ExecAsync(
+                        $"""
+                        INSERT INTO {table} ({n.C("key")}, {n.C("folderId")}, {n.C("alias")}, {n.C("name")}, {n.C("publicRevision")}, {n.C("concurrencyVersion")}, {n.C("lastEntryNumber")}, {n.C("isRestricted")}, {n.C("createdUtc")}, {n.C("updatedUtc")}, {n.C("createdByUserKey")}, {n.C("updatedByUserKey")})
+                        SELECT @0, @1, @2, @3, 0, 1, 0, @4, @5, @5, @6, @6
+                        WHERE NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {n.C("alias")} = @2 OR {n.C("key")} = @0){folder}
+                        """,
+                        form.Key,
+                        form.FolderId,
+                        form.Alias,
+                        form.Name,
+                        form.IsRestricted,
+                        now,
+                        form.UserKey);
+                }
+                catch (Exception exception) when (FormBuilderDatabaseErrors.IsUniqueViolation(exception))
+                {
+                    // The backstop for a writer the database let through at the same moment (ADR-0036): say which.
+                    var refused = await RefusedCreateAsync(db, n, form);
+                    throw new FormBuilderConflictException(refused.Conflict, refused.Message, exception);
+                }
+
                 if (inserted == 0)
                 {
                     throw await RefusedCreateAsync(db, n, form);
@@ -347,8 +358,9 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
     }
 
     /// <summary>
-    /// A unique index that refuses a row is a conflict, not a failure: the conditions of the statement keep it from
-    /// happening, so this is the backstop for a writer the database let through at the same moment.
+    /// A unique index that refuses an update's alias is a conflict, not a failure: the conditions of the statement keep it
+    /// from happening, so this is the backstop for a writer the database let through at the same moment. An update never
+    /// changes the key.
     /// </summary>
     private static async Task<int> TranslateDuplicatesAsync(Func<Task<int>> write)
     {
@@ -358,7 +370,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
         }
         catch (Exception exception) when (FormBuilderDatabaseErrors.IsUniqueViolation(exception))
         {
-            throw new FormBuilderConflictException(FormBuilderConflict.DuplicateAlias, "Another form already has this alias or key.", exception);
+            throw new FormBuilderConflictException(FormBuilderConflict.DuplicateAlias, "Another form already has this alias.", exception);
         }
     }
 
