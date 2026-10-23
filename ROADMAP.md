@@ -1512,7 +1512,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - `dotnet test` and `npx playwright test --project=smoke` pass;
     - a test of `support/host-health.ts` shows that a hung database writes the marker, and that the start-up wait ends with the Delivery API on and with it off.
-- [ ] **3.5 CI, the local CI mirror and phase review**
+- [x] **3.5 CI, the local CI mirror and phase review** (2026-10-23, 14d3f5a)
   - **`.github/workflows/ci.yml`** (ubuntu-latest):
     - checkout, setup-dotnet 10 and node 24 with caches;
     - client lint, tests and build;
@@ -2426,7 +2426,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 - [ ] **18.2 Release workflow**
   - `.github/workflows/release.yml`, on tags `v*.*.*` and `workflow_dispatch`, in Tandem's final shape (Tandem ADR-0077):
     - a `prepare` job checks the version against the branch's Umbraco major and its `CHANGELOG.md` section, so a missing section fails in a minute;
-    - build and test by calling `ci.yml` through `workflow_call` (copied CI steps drift), then the npm build;
+    - build and test by calling `ci.yml` through `workflow_call` (copied CI steps drift), then the npm build. `ci.yml` gains the `workflow_call` trigger and drops its own `v*` tag trigger, which 3.5 set until this workflow exists, so a tag runs CI once (ADR-0032);
     - `dotnet pack -p:Version=${tag#v}` through the one `scripts/pack.mjs` that the gate and CI use too;
     - attach the nupkgs and snupkgs to a **draft** GitHub Release with changelog notes;
     - a `publish` job with `if: vars.JFB_NUGET_PUBLISH == 'true'`, `permissions: id-token: write`, `NuGet/login@v1` and `dotnet nuget push --skip-duplicate`.
