@@ -39,7 +39,7 @@ search text, events) shorter or out altogether.
 
 | Data | Default | Can change | Lock |
 | --- | --- | --- | --- |
-| The entry and its values | stored, with retention per state | per form: `never` (kept only until its action runs are final, then deleted) or a number of days | – |
+| The entry and its values | stored, with retention per state | per form: `never` (kept only until no action trigger can still fire for it and every run is final, then deleted) or a number of days | – |
 | IP address | **not stored**; rate limits and blocked ranges see it in memory only | `anonymised` (IPv4 /24, IPv6 /48), as the global default or per form | `full` only with `AllowFullIp` |
 | The page | the path only, never the query or the referrer | – | – |
 | User agent, screen, location | never | – | – |
@@ -60,7 +60,7 @@ search text, events) shorter or out altogether.
 | Test entries (from the preview) | 7 days |
 | Drafts (save and resume) | when the resume link expires (30 days by default) |
 | Entries waiting for email verification | when the verification link expires (7 days by default) |
-| Values kept only until the actions have run | as soon as every action run of the entry is final (§4.4) |
+| Values kept only until the actions have run | once no trigger can still fire for the entry and every run is final (§4.4) |
 | Uploaded files without an entry | 24 hours |
 | Mail (addresses and bodies) | sent mail 30 days; failed, uncertain and limited mail 30 days after the last attempt or the limit |
 | Action-run error messages | with their entry; sanitised and at most 1,000 characters (§4.5) |

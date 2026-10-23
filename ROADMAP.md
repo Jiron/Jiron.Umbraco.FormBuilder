@@ -755,8 +755,8 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 - **Entry numbers:** each form numbers its entries 1, 2, 3, … (`#1042`). The number appears in the backoffice and in emails (`{{ entry.number }}`), and it is unique per form.
 - **The pipeline** for a submission (JavaScript, no-JS post or API):
   1. Resolve the form and its published version.
-  2. **The gate:** rate limits first (a refusal, `429 rate_limited` with `Retry-After`; the runtime and the no-JS page keep every answer and say when to send again, ADR-0012), then the challenge's signature and expiry (`401 challenge_required`), and on a members-only form its member and the post's origin (ADR-0004, ADR-0012).
-  3. **Idempotency, before anything that could refuse a retry:** a `submissionId` this form already has, sent with the same digest (and, on a browser post, the challenge of that entry), returns the original receipt and outcome; with a different digest it returns `409 duplicate_submission`, and the no-JS path shows the first entry's outcome. Nothing below runs for it, so a retry after a lost answer never meets `already_submitted`, its own `uniquePerForm` value, a full option or a closed form. The unique index on (FormId, SubmissionId) settles races.
+  2. **The gate:** on a members-only form, the post's origin first, so nothing is rendered for another site (ADR-0004, ADR-0012); then rate limits (a refusal, `429 rate_limited` with `Retry-After`; the runtime and the no-JS page keep every answer and say when to send again, ADR-0012); then the challenge's signature and expiry (`401 challenge_required`) and, on a members-only form, its member.
+  3. **Idempotency, before anything that could refuse a retry:** a `submissionId` this form already has is answered from its entry only when the post carries that entry's challenge or comes from the server key that made it: the same digest returns the original receipt and outcome, a different one `409 duplicate_submission`, and the no-JS path shows the first entry's outcome. Any other post with that `submissionId` gets `409 duplicate_submission` with no receipt and no outcome. Nothing below runs for these, so a retry after a lost answer never meets `already_submitted`, its own `uniquePerForm` value, a full option or a closed form. The unique index on (FormId, SubmissionId) settles races.
   4. **Compatibility:** if the posted public revision is older but compatible, accept it; otherwise answer `form_changed` (the runtime refreshes the form, §3.1). The posted hash of every consent wording is compared with the current one on every submission, whatever the revision (ADR-0009).
   5. Check availability: dates, limits, members, uniqueness, and the places left on chosen options.
   6. Check protection: the challenge's single use, honeypot, time, captcha, content rules. The result is a spam score with reasons. A failed captcha is rejected. A high score is **accepted silently into `Spam`**, so bots learn nothing. An unavailable captcha provider, and a no-JS post on a form whose protection needs JavaScript, score into `Spam` too, so no lead is lost and none runs actions unchecked (ADR-0012).
@@ -766,7 +766,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 - **Places on options:**
   - The submission takes a place on each chosen option with a limit through one atomic statement on `jfbOptionCapacity` (§4.5), so two servers can never overbook. When none is left, the field fails validation with its own message, and the visitor can choose another option.
   - Spam and test entries take no places. Rejecting, marking as spam, deleting and erasing an entry give its places back. Moving an entry back takes them again, and when an option is full by then, the backoffice asks before overbooking it.
-- **Values kept only until the actions have run:** a field set to "only until the actions have run" is stored with the entry, used by its action runs, and deleted once every one of them is final (succeeded, failed for good or skipped). An entry event records it, and the entry shows the field as "not kept". A run applies when one exists, or when the form has an action whose trigger can still fire for the entry (`verified` while it is `Unverified`, `approved` or `rejected` while it waits for approval); the value is kept until no such trigger can fire any more and every run is final, or until the entry expires unverified. When no run applies, the value is never stored.
+- **Values kept only until the actions have run:** a field set to "only until the actions have run" is stored with the entry, used by its action runs, and deleted once every one of them is final (succeeded, failed for good or skipped) and no trigger can still fire for the entry (below). An entry event records it, and the entry shows the field as "not kept". A run applies when one exists, or when the form has an action whose trigger can still fire for the entry (`submitted` or `verified` while it is `Unverified`, `submitted` while it is in `Spam` until it is purged, `approved` or `rejected` while it waits for approval); the value is kept until no such trigger can fire any more and every run is final, or until the entry expires unverified. When no run applies, the value is never stored.
 - **Actions:**
   - **Built-in types:**
     - email (to fixed addresses, a field value, the member, or the creator; CC/BCC; reply-to a field; attachments of uploaded files within size caps; HTML with a layout, or plain text, with the text version always generated (one body per mail, ADR-0007); per-culture subject and body; or a Razor view chosen by a developer);
@@ -839,7 +839,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | `POST forms/{key}/uploads` | Upload one file before submitting (progress per file): `multipart/form-data` with the `challenge` part first, then the `file` part, streamed and checked on its first bytes (ADR-0006). Returns a signed upload token. Limits per form, file and IP; `413 payload_too_large` and `415 unsupported_media_type` close the connection. |
 | `POST forms/{key}/validate` | Validate one page's values on the server: `{revision, culture, contentKey, pageKey, values, uploads, context, challenge}`; `422` with errors by alias (multi-page). |
 | `POST forms/{key}/entries` | Submit: `{submissionId, revision, culture, contentKey, values, consents, uploads, context, challenge, captchaToken}` (`consents` holds, per consent alias, the `jfbConsentText` hash of the wording shown, ADR-0009) → `{receipt, outcome:{kind, html \| url, delaySeconds}}`. |
-| `POST forms/{key}/receipt` | Check an uncertain submission by `{submissionId, challenge}`: the receipt and the outcome when an entry with that submission id was made with that challenge, otherwise `404 not_found` for every miss (ADR-0012). |
+| `POST forms/{key}/receipt` | Check an uncertain submission by `{submissionId, challenge}`: the receipt and the outcome when an entry with that submission id was made with that challenge (its signature counts even after it expired) or server key, otherwise `404 not_found` for every miss (ADR-0012). |
 | `POST forms/{key}/drafts` | Save and resume: `{revision, culture, contentKey, pageKey, values, email, challenge}` → the resume link is emailed; the response never contains it. Files and consent answers are not kept with a draft (an upload without an entry is removed after 24 hours, ADR-0009, and a consent counts only for the wording shown when it is given), so the resumed form asks for the files again and shows every consent unticked. |
 | `POST drafts/resume` | `{token}` → values and page. The token comes from the URL fragment (`#jfb-resume=…`), so it never reaches server logs. |
 | `GET verify?t=` and `POST verify` | Email verification. The GET only shows a confirm button, because mail scanners follow links; the POST confirms. |
@@ -1763,7 +1763,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **"Create a form block for me":** an idempotent service that creates a "Form" element type and data type, and never changes existing types.
   - **"Used on":** reference tracking per ADR-0017, with the references endpoint of §4.7, so that trash and delete can name the pages that use a form (9.2).
   - **Eviction:** an `IWebsiteOutputCacheTagProvider` tags the pages that use a form with `jfb-form-<key>` from the "used on" index, and publishing a form evicts that tag (ADR-0004).
-  - Done when: integration tests pass (including "a page that picks the form is listed as a reference, and stops being listed after the pick is removed", and, with output caching on, "publishing the form re-renders a cached page that picks it at once"), and Playwright shows an editor picking a form in a block on the demo and the page rendering it.
+  - Done when: integration tests pass (including "a page that picks the form is listed as a reference, and stops being listed after the pick is removed", and, with output caching on, "publishing the form re-renders a cached page that picks it at once", and "creating a form block type is refused with `403` for a user who has `manageSettings` and the Forms section but not Umbraco's Settings section", a user seeded in that test), and Playwright shows an editor picking a form in a block on the demo and the page rendering it.
 - [ ] **6.8 Phase review**
   - An accessibility pass over the themes (axe, keyboard, screen-reader names), and a security pass over the public API.
   - Write the handover note.
@@ -1783,12 +1783,13 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Scoring:** the spam score with reasons, and silent acceptance into `Spam` (§4.4).
   - **Content rules and the spam folder:**
     - Blocked words, blocked email domains, maximum links, per-form strictness, and `IFormBuilderSpamCheck`.
-    - The `Spam` state. "Not spam" runs the submitted actions then (on a form with email verification, an unverified entry goes to `Unverified` and gets the verification mail).
+    - The `Spam` state. "Not spam" runs the submitted actions then; on a form with email verification, 8.5 sends an unverified entry to `Unverified` instead.
   - Done when:
     - integration tests cover each signal, and a flood from 20,000 distinct IPs neither bypasses the site-wide limit nor grows memory without bound;
     - a `429` keeps the visitor's answers and says when to send again, in the runtime and on the no-JS page (Playwright);
+    - a known `submissionId` sent with the same body and another challenge or server key gets `409` with neither receipt nor outcome, and `receipt` finds an entry by its challenge after that challenge has expired;
     - tests cover a blocked IPv4 and IPv6 range, and Playwright shows the places left changing on a cached page after another visitor's submission, and a member condition applied for a signed-in member;
-    - tests cover each content rule, a custom `IFormBuilderSpamCheck`, and "not spam" running the submitted actions, or sending an unverified entry of a verification form to `Unverified` with its mail.
+    - tests cover each content rule, a custom `IFormBuilderSpamCheck`, and "not spam" running the submitted actions.
 - [ ] **7.2 Proof of work and captcha providers**
   - **Proof of work:** a SHA-256 puzzle with difficulty per level, a signed and expiring nonce, solved in a Web Worker with a progress hint for slow devices.
   - **Third-party providers:** reCAPTCHA v2 and v3 (ported from Ligata.Forms) and hCaptcha. Providers are greyed out without keys. The consent modes of §4.10 apply.
@@ -1816,14 +1817,14 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The model:** a registry with `FormBuilderActionTypeBase<TSettings>`, triggers, rules, order and "stop the rest if this fails".
   - **The processor** (ADR-0007): one worker per server, woken after each commit through a scoped notification and a bounded channel of one, with claims by token, leases, back-off, the late finisher and the `Uncertain` state. The distributed job only wakes its server's worker and returns.
   - **The pause switch** (§4.4): while `JironFormBuilder:Actions:Paused` is on, the processor claims nothing, and the kick does nothing.
-  - **Values kept only until the actions have run** (§4.4): deleted, with the entry event, once the entry's last action run is final.
+  - **Values kept only until the actions have run** (§4.4): deleted, with the entry event, once no trigger can still fire for the entry and every run is final.
   - **The retry API,** which refuses to retry an `Uncertain` run without an explicit confirmation (§4.4).
   - **Test runs:**
     - email goes to the current user only;
     - webhooks send to the configured URL with `X-Jfb-Test: true` after a confirmation;
     - content actions create nothing (a dry run that shows what would be created).
   - Fill in the CI load-balancing job.
-  - Done when: tests cover ordering, retries with fake time, lease expiry turning into `Uncertain`, the late finisher, and **no double execution** with two processors on one database. The two-processor test injects the faults of 1.6 and fails against a claim without its state condition (a mutant), so it is known to catch doubles. A test shows that every Jiron Form Builder job returns within 10 s. The `loadbalancing` job definition is shown. Tests also show that nothing runs while sending is paused and every queued run goes out once it is not, that a retry of an `Uncertain` run without the confirmation is refused, and that a value kept only until the actions have run is still there while a run is retrying and gone after the last one is final.
+  - Done when: tests cover ordering, retries with fake time, lease expiry turning into `Uncertain`, the late finisher, and **no double execution** with two processors on one database. The two-processor test injects the faults of 1.6 and fails against a claim without its state condition (a mutant), so it is known to catch doubles. A test shows that every Jiron Form Builder job returns within 10 s. The `loadbalancing` job definition is shown. Tests also show that nothing runs while sending is paused and every queued run goes out once it is not, that a retry of an `Uncertain` run without the confirmation is refused, and that a value kept only until the actions have run is still there while a run is retrying and gone once no trigger can still fire for the entry and every run is final.
 - [ ] **8.2 Email infrastructure**
   - **Sending:** the outbox and sender job through `IEmailSender`, with `CanSendRequiredEmail()` gating so no retries are burnt while email is not configured (Umbraco would drop the mail silently). Queuing wakes the sender at once (D8). The sender also honours the pause switch (§4.4).
   - **Content:** responsive HTML layouts that work in dark mode, one body per mail as ADR-0007 decided (HTML, or plain text when the action chooses it, with the text version always generated), header sanitising, attachment caps, the per-site sender, a test email, and retention purge. The layouts follow the client rules of §3.3: inline styles on table cells, `<!--[if mso]>` tables for Outlook, and no styles on `<body>`.
@@ -1865,12 +1866,14 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the `Unverified` state and the email with its link;
     - the GET confirm page and the POST confirm (§4.6);
     - expiry and resend;
-    - actions run after verification.
+    - actions run after verification;
+    - "not spam" on such a form sends an entry without `VerifiedUtc` to `Unverified` with the verification mail (§4.4).
   - **Manual approval:**
     - The approved and rejected triggers, with bulk and single changes.
   - Done when:
     - tests pass, and E2E double opt-in works from the pickup email, including a simulated link-scanner GET that verifies nothing; no action runs before the confirmation, and after it the submitted and verified actions run together in the order shown. A test shows that verification mail obeys the visitor-address limits (§4.10);
-    - tests cover the approved and rejected triggers, for single and bulk changes.
+    - tests cover the approved and rejected triggers, for single and bulk changes;
+    - tests show "not spam" on a verification form sending an entry without `VerifiedUtc` to `Unverified` with its mail, and a value kept only until the actions have run surviving while its entry is `Unverified`, in `Spam` or waiting for approval (also when the form has only `submitted` actions), used by the runs that follow, and gone after the last one.
 - [ ] **8.6 Save and resume, and phase review**
   - **The flow:**
     - the `drafts` and `resume` endpoints (§4.6), with the `Draft` state and the resume email through the outbox;
@@ -2164,7 +2167,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Masking** in the UI, emails, exports and logs; the "view sensitive data" permission; audited reveals.
   - **IP modes:** none, anonymised (IPv4 /24, IPv6 /48) and full (only when the host allows it), with their settings screen.
   - **Values kept only until the actions have run** (§4.4, built in 6.1 and 8.1): audited end to end. The entry panel, exports and the privacy export show such a field as "not kept", and the designer explains the setting next to "sensitive".
-  - Done when: tests pass, including captured logs, and a test searches every Jiron Form Builder table for a value kept only until the actions have run, after its last action run, and finds nothing.
+  - Done when: tests pass, including captured logs, and a test searches every Jiron Form Builder table for a value kept only until the actions have run, once no trigger can still fire for its entry and every run is final, and finds nothing.
 - [ ] **13.4 Privacy documentation and phase review**
   - Write `docs/privacy/`:
     - **a facts sheet:** what Jiron Form Builder stores, where and for how long; that it sets no cookies; the browser storage key used only by "save and resume"; third parties only when a captcha provider is chosen;
@@ -2200,7 +2203,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - A workspace view on the member editor lists that member's entries, with permissions applied.
   - Done when:
     - tests and Playwright pass with the seeded members, including the entries view on the member;
-    - a members-only post with another member's challenge, without a challenge, with a challenge fetched without the member's cookie, or from a page on another origin is refused on both paths; a members-only page refuses to be framed by another origin; a repeated no-JS post leads to the first entry's outcome without a second entry, and an expired challenge renders the form again with its answers; a cross-origin or `Origin: null` post with a bad challenge is refused without its answers; a server-key submission to a members-only form answers `member_required`; a no-JS post faster than the minimum fill time is accepted; no Jiron Form Builder response sets a cookie.
+    - a members-only post with another member's challenge, without a challenge, with a challenge fetched without the member's cookie, or from a page on another origin is refused on both paths; a members-only page refuses to be framed by another origin; a repeated no-JS post leads to the first entry's outcome without a second entry, and an expired challenge renders the form again with its answers; a cross-origin or `Origin: null` post with a bad challenge, over the per-address limit, or with validation errors is refused without its answers; a server-key submission to a members-only form answers `member_required`; a no-JS post faster than the minimum fill time is accepted; no Jiron Form Builder response sets a cookie.
 - [ ] **14.4 Multi-site and phase review**
   - **Per-site settings:** sender, base URL, defaults and theme, resolved by the request's root or host. Links in emails follow the site.
   - **Phase review:** write the handover note.

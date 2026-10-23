@@ -319,8 +319,8 @@ sequenceDiagram
   P-->>V: signed challenge, places, member values
   V->>P: entries {submissionId, revision, values, consents, challenge}
   P->>S: limits, origin, body checked
-  S->>S: the gate: rate limits, the challenge (and its member)
-  S->>D: a known submissionId? then the original receipt
+  S->>S: the gate: the origin (members-only), rate limits, the challenge (and its member)
+  S->>D: a known submissionId with its own challenge? then the original receipt
   S->>S: revision and consent hashes, availability, protection and spam score
   S->>S: rules, then parse and validate each field
   S->>D: one transaction: entry, values, files, consent, event, action runs, places, stats

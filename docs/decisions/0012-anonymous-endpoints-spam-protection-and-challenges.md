@@ -158,8 +158,9 @@ statement each, ADR-0003, ADR-0007):
   expired one is `401 challenge_required`, and the runtime fetches a new one and retries once.
 - **Single use:** the challenge id is stored on the entry (`jfbEntry.ChallengeId`, unique per form), so a solved
   challenge cannot make a second entry. A used challenge is accepted only together with the `submissionId` of its
-  entry, and then the same digest returns the original receipt and a different one `409 duplicate_submission`
-  (§4.4, step 3); with any other `submissionId` it is `401 challenge_required`.
+  entry, and then the same digest returns the original receipt and a different one `409 duplicate_submission` (§4.4,
+  step 3); with another entry's `submissionId` it gets `409` with no receipt and no outcome, and with an unknown one
+  `401 challenge_required`.
 - **The member part** is filled only for a signed-in member, and only with what rules and prefill on this form need.
 
 ### Signals and the spam score
@@ -268,9 +269,11 @@ health check warns when a token from another server cannot be read.
 
 The answer to a submission carries a receipt: the submission id, the entry's reference (or number) and the time. When
 a response was lost, the runtime repeats the same `POST` with the same `submissionId` and body, which returns the
-original receipt and outcome. `POST forms/{key}/receipt` takes `{ submissionId, challenge }` (or the server key that
-submitted the entry) and returns the receipt and the outcome only when an entry with that submission id was made with
-that challenge or key; any miss is the same `404 not_found`, so submission ids cannot be probed.
+original receipt and outcome. If its challenge has expired by then, the post meets `401 challenge_required`, and the
+runtime asks the receipt route instead, which checks the challenge's signature but not its expiry; only a `404` there
+makes it post again with a fresh challenge. `POST forms/{key}/receipt` takes `{ submissionId, challenge }` (or the
+server key that submitted the entry) and returns the receipt and the outcome only when an entry with that submission
+id was made with that challenge or key; any miss is the same `404 not_found`, so submission ids cannot be probed.
 
 ### What the validate endpoint does not check
 
