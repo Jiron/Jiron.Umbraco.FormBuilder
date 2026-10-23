@@ -1269,7 +1269,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
     - the doc is complete;
     - every *(verify)* about the backoffice in §3.4 and §4 is resolved; the rest names the Phase 1 step that resolves it;
     - the "used on" choice is written as ADR-0017 "References".
-- [ ] **1.3 Spike: persistence, migrations and entries at scale**
+- [x] **1.3 Spike: persistence, migrations and entries at scale** (2026-10-23, f07fdc0)
   - Create the entry tables of §4.5 with a `PackageMigrationPlan` and `AsyncMigrationBase`, both idempotent. Add a second step and confirm the upgrade behaviour. Decide `IgnoreCurrentState`.
   - **The load:** seed 100,000 entries with 12 values each on SQLite.
   - **Measure,** with and without the planned indexes:
