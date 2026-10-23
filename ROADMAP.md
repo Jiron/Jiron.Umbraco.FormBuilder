@@ -1368,7 +1368,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
     - 0010 versioning, branching and the upgrade policy (§4.14);
     - 0011 testing strategy.
   - Done when: all of them are committed, and §4 of this roadmap is updated where the ADRs changed it.
-- [ ] **1.7b The other remaining ADRs**
+- [x] **1.7b The other remaining ADRs** (2026-10-23, 5abc382)
   - ADRs:
     - 0009 privacy defaults;
     - 0012 anonymous endpoints, spam protection and challenges;
