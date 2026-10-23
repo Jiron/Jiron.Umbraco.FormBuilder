@@ -7,7 +7,8 @@
  *   data-role       designer | handler | viewer | admin | privacy | none   (the personas of ADR-0013)
  *   data-active     the sidebar item that is open: an item id (inbox, spam, option-lists, ...), form:<id>,
  *                   folder:<id> or bin
- *   data-role-<state>, data-active-<state>   the same, for one state only
+ *   data-tree       full (default) | empty (a fresh install: no forms, no entries) | seen (no unseen entries)
+ *   data-role-<state>, data-active-<state>, data-tree-<state>   the same, for one state only
  * Parts with data-state="a b" show only in those states; ?state=<name> picks the state (default: "default").
  * <i data-i="name"></i> becomes that icon from icons.js. A workspace header that runs out of room folds its view tabs
  * into "…", as Umbraco does, and then its links into the header's "…". The script sets <html data-wf-ready="true">
@@ -18,6 +19,7 @@
   const body = document.body;
   const role = body.getAttribute(`data-role-${state}`) || body.dataset.role || 'admin';
   const active = body.getAttribute(`data-active-${state}`) ?? body.dataset.active ?? '';
+  const treeMode = body.getAttribute(`data-tree-${state}`) || body.dataset.tree || 'full';
 
   // Roles: which sidebar groups and items each persona sees (docs/ux/information-architecture.md, section 11).
   const ROLES = {
@@ -37,7 +39,7 @@
     activity: ['Activity', [['deliveries', 'send', 'Deliveries'], ['audit-log', 'activity', 'Audit log']]],
   };
   // The forms tree every page shares: folders first, then forms, each by name; the Recycle Bin last.
-  const TREE = [
+  const FULL_TREE = [
     { id: 'campaigns', type: 'folder', name: 'Campaigns', children: [] },
     { id: 'events', type: 'folder', name: 'Events', children: [
       { id: 'summer-fair', name: 'Summer fair sign-up', unseen: true },
@@ -49,6 +51,8 @@
     { id: 'newsletter', name: 'Newsletter sign-up' },
     { id: 'quote', name: 'Quote request', unpublished: true },
   ];
+  const TREE = treeMode === 'empty' ? [] : FULL_TREE;
+  const unseenShown = treeMode === 'full';
 
   const r = ROLES[role] || ROLES.admin;
   const icon = (name, cls = '') => `<svg class="wf-i ${cls}" aria-hidden="true" focusable="false"><use href="#${name}"></use></svg>`;
@@ -63,7 +67,7 @@
       : icon('chevron-right', 'wf-item__chevron wf-item__chevron--none');
     const marks = [];
     if (node.locked) marks.push(`${icon('lock')}<span class="wf-sr">restricted</span>`);
-    if (node.unseen && r.entries) marks.push('<span class="wf-dot"></span><span class="wf-sr">unseen entries</span>');
+    if (node.unseen && unseenShown && r.entries) marks.push('<span class="wf-dot"></span><span class="wf-sr">unseen entries</span>');
     const muted = node.unpublished ? ' wf-item--muted' : '';
     const sr = node.unpublished ? '<span class="wf-sr"> (not published)</span>' : '';
     let html = `<a class="wf-item wf-item--tree${muted}" style="--depth:${depth}" href="#"${current ? ' aria-current="page"' : ''}>${chevron}${icon(node.type === 'folder' ? 'folder' : 'form')}<span>${esc(node.name)}${sr}</span>${marks.length ? `<span class="wf-item__end">${marks.join('')}</span>` : ''}</a>`;
@@ -81,7 +85,7 @@
     const groups = r.groups.map((g) => {
       const [title, items] = GROUPS[g];
       const links = items.map(([id, ic, label, badge]) => {
-        const b = badge && r.entries ? `<span class="wf-item__end"><span class="wf-badge">${badge}</span><span class="wf-sr">unseen</span></span>` : '';
+        const b = badge && unseenShown && r.entries ? `<span class="wf-item__end"><span class="wf-badge">${badge}</span><span class="wf-sr">unseen</span></span>` : '';
         return `<a class="wf-item" href="#"${active === id ? ' aria-current="page"' : ''}>${icon(ic)}<span>${label}</span>${b}</a>`;
       }).join('');
       return `<div class="wf-side__group">${title}</div>${links}`;
@@ -122,8 +126,16 @@
     app.querySelector('.wf-body').append(main);
   }
 
+  // Umbraco 17.7.1 folds its sections into "…" in a 920 px window, keeping the open one (research section 12).
+  const sectionsNav = document.querySelector('.wf-top nav');
+  if (sectionsNav && window.innerWidth < 960) {
+    for (const a of sectionsNav.querySelectorAll('.wf-top__section:not([aria-current])')) a.remove();
+    sectionsNav.insertAdjacentHTML('beforeend', `<a class="wf-top__section" href="#" aria-label="More sections">${icon('more', 'wf-i--20')}</a>`);
+  }
+
   // Umbraco folds a workspace's view tabs into "…" when the header runs out of room: the last views first, never
-  // the open one. If that isn't enough, header links ("Used on 3 pages") move into the header's own "…" menu.
+  // the open one. If that isn't enough, header links ("Used on 3 pages") move into the header's own "…" menu. A
+  // header that already has its own "…" takes the views into it, so it never shows two (IA 5.1).
   for (const head of document.querySelectorAll('.wf-head')) {
     const main = head.querySelector('.wf-head__main');
     if (!main || !head.offsetParent) continue;
@@ -131,7 +143,9 @@
     if (fits()) continue;
     const tabs = [...head.querySelectorAll('.wf-tabs')].find((n) => n.offsetParent);
     if (tabs) {
-      tabs.insertAdjacentHTML('beforeend', `<a class="wf-tab" href="#" aria-label="More views" data-wf-more>${icon('more', 'wf-i--20')}</a>`);
+      if (!main.querySelector('[data-wf-more]')) {
+        tabs.insertAdjacentHTML('beforeend', `<a class="wf-tab" href="#" aria-label="More views" data-wf-more>${icon('more', 'wf-i--20')}</a>`);
+      }
       for (const tab of [...tabs.querySelectorAll('.wf-tab:not([data-wf-more])')].reverse()) {
         if (fits()) break;
         if (tab.getAttribute('aria-current') !== 'page') tab.style.display = 'none';
@@ -142,5 +156,21 @@
       link.style.display = 'none';
     }
   }
+  // The kit draws checkboxes, switches and radios as spans; give them the place in the tab order that UUI's own
+  // controls have. Radios take one stop per group: the chosen one, or the first.
+  const drawn = (el) => !el.matches('input, button, select, textarea, a[href], [tabindex], [aria-disabled="true"]');
+  for (const el of document.querySelectorAll('[role="checkbox"], [role="switch"]')) if (drawn(el)) el.tabIndex = 0;
+  const groups = new Map();
+  for (const radio of document.querySelectorAll('[role="radio"]')) {
+    if (!drawn(radio)) continue;
+    const group = radio.closest('[role="radiogroup"]') || radio.parentElement;
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group).push(radio);
+  }
+  for (const radios of groups.values()) {
+    const chosen = radios.find((r) => r.getAttribute('aria-checked') === 'true') || radios[0];
+    for (const r of radios) r.tabIndex = r === chosen ? 0 : -1;
+  }
+
   document.documentElement.dataset.wfReady = 'true';
 })();

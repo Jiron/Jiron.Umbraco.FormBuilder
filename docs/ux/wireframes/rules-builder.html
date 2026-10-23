@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Rules builder · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 new@1440x900 groups@1440x900 overview@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 new@1440x900 groups@1440x900 deleted@1440x900 overview@1440x900 overview-empty@1440x900 default@920x900 overview@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .rb-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-3); }
@@ -12,7 +12,12 @@
     .rb-group + .rb-join { margin: var(--wf-space-3) 0; }
     .rb-cond { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.3fr) 30px; gap: var(--wf-space-3); align-items: center; }
     .rb-cond + .rb-cond { margin-top: var(--wf-space-3); }
-    .rb-row-link { display: flex; align-items: center; gap: var(--wf-space-3); padding: var(--wf-space-4); border-top: 1px solid var(--uui-color-divider-standalone); }
+    .rb-row-link { display: flex; align-items: flex-start; gap: var(--wf-space-3); padding: var(--wf-space-4); border-top: 1px solid var(--uui-color-divider-standalone); color: inherit; text-decoration: none; }
+    .rb-row-link > .wf-i:first-child { margin-top: var(--wf-space-1); }
+    .rb-row-link .wf-strong { color: var(--uui-color-interactive); }
+    .rb-row-link:is(:hover, :focus-visible) .wf-strong { text-decoration: underline; }
+    .rb-conflict { display: flex; align-items: flex-start; gap: var(--wf-space-2); margin-top: var(--wf-space-2); }
+    .rb-conflict > .wf-i { margin-top: var(--wf-space-1); color: var(--uui-color-text); }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
@@ -21,6 +26,13 @@
   <!--
     IA 5.1: the rules builder (a sidebar from the inspector's "Add a rule", a rule chip, or the rules overview) and the
     rules overview (from the toolbar's "…" and from the form check). Behind it: the designer, as designer.html draws it.
+
+    States: default (an existing rule: its sidebar's action bar holds Delete rule at the start, as a sidebar's own
+    actions sit in its action bar); new (no Delete: Cancel discards it); groups (two groups joined by "any"); deleted
+    (deleting is a designer change, so it acts at once and the toast offers Undo); overview (every rule by page, with a
+    conflict warned on the row it concerns: hidden fields are never required, so "hidden and required" under the same
+    answer is a conflict); overview-empty. The switch names the setting ("Use this rule") and leaves its state to the
+    switch itself.
   -->
   <main class="wf-main">
     <header class="wf-head">
@@ -55,7 +67,7 @@
     </footer>
   </main>
 
-  <div class="wf-backdrop"></div>
+  <div class="wf-backdrop" data-state="default new groups overview overview-empty"></div>
 
   <!-- The rules builder -->
   <aside class="wf-sidebar wf-sidebar--medium" data-state="default new groups" role="dialog" aria-labelledby="rb-title">
@@ -141,12 +153,13 @@
         </div>
 
         <div class="wf-field" data-state="default groups">
-          <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="rb-on"></span><span class="wf-label" id="rb-on">Rule is on</span></span>
+          <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="rb-on"></span><span class="wf-label" id="rb-on">Use this rule</span></span>
           <span class="wf-help">Turn it off to keep the rule without using it. The field then always shows.</span>
         </div>
       </div>
     </div>
     <footer class="wf-sidebar__foot">
+      <div class="wf-sidebar__foot-start" data-state="default groups"><button class="wf-btn">Delete rule</button></div>
       <button class="wf-btn">Cancel</button>
       <button class="wf-btn wf-btn--primary" data-state="default groups">Update</button>
       <button class="wf-btn wf-btn--primary" data-state="new">Add</button>
@@ -154,13 +167,13 @@
   </aside>
 
   <!-- The rules overview -->
-  <aside class="wf-sidebar" data-state="overview" role="dialog" aria-labelledby="ro-title">
+  <aside class="wf-sidebar" data-state="overview overview-empty" role="dialog" aria-labelledby="ro-title">
     <header class="wf-sidebar__head">
       <h2 class="wf-title" id="ro-title">Rules</h2>
       <button class="wf-btn" style="margin-left: auto"><i data-i="plus"></i>Add rule</button>
     </header>
     <div class="wf-sidebar__body">
-      <div class="wf-stack wf-stack--lg">
+      <div class="wf-stack wf-stack--lg" data-state="overview">
         <section class="wf-box" aria-labelledby="ro-p1">
           <div class="wf-box__head"><h3 class="wf-box__title" id="ro-p1">1 Your details</h3></div>
           <a class="rb-row-link" href="#" style="border-top: 0"><i data-i="split"></i><span><span class="wf-strong">Which country?</span><br><span class="wf-muted">Shown when Country is Other</span></span></a>
@@ -168,15 +181,32 @@
         <section class="wf-box" aria-labelledby="ro-p2">
           <div class="wf-box__head"><h3 class="wf-box__title" id="ro-p2">2 Your message</h3></div>
           <a class="rb-row-link" href="#" style="border-top: 0"><i data-i="split"></i><span><span class="wf-strong">Order number</span><br><span class="wf-muted">Required when Topic is Delivery</span></span></a>
-          <a class="rb-row-link" href="#"><i data-i="split"></i><span><span class="wf-strong">Attachment</span><br><span class="wf-muted">Hidden when Topic is Press</span></span></a>
+          <a class="rb-row-link" href="#">
+            <i data-i="split"></i>
+            <span>
+              <span class="wf-strong">Attachment</span><br>
+              <span class="wf-muted">Hidden when Topic is Press</span><br>
+              <span class="wf-muted">Required when Topic is Shipping or Press</span>
+              <span class="rb-conflict"><i data-i="alert"></i><span>Conflict: when Topic is Press, one rule hides it and the other requires it. A hidden field is never required, so visitors can send without it.</span></span>
+            </span>
+          </a>
         </section>
         <section class="wf-box" aria-labelledby="ro-after">
           <div class="wf-box__head"><h3 class="wf-box__title" id="ro-after">After sending</h3></div>
           <a class="rb-row-link" href="#" style="border-top: 0"><i data-i="split"></i><span><span class="wf-strong">Redirect to /press/thanks</span><br><span class="wf-muted">Used when Topic is Press</span></span></a>
         </section>
       </div>
+      <div class="wf-empty" data-state="overview-empty">
+        <p class="wf-empty__text">No rules yet. Most rules show a question only when another answer calls for it, and Add rule starts by asking which question.</p>
+      </div>
     </div>
     <footer class="wf-sidebar__foot"><button class="wf-btn">Close</button></footer>
   </aside>
+
+  <!-- Deleting a rule is a designer change: it acts at once, and Undo (or Ctrl+Z) brings it back -->
+  <div class="wf-toast" data-state="deleted" role="status">
+    <span>Rule deleted.</span>
+    <button class="wf-btn wf-btn--small">Undo</button>
+  </div>
 </body>
 </html>

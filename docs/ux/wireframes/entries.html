@@ -4,21 +4,49 @@
   <meta charset="utf-8">
   <title>A form's entries · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 filtered@1440x900 bulk@1440x900 export@1440x900 empty@1440x900 no-results@1440x900 loading@1440x900 error@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 filtered@1440x900 bulk@1440x900 bulk-done@1440x900 delete@1440x900 export@1440x900 empty@1440x900 no-results@1440x900 loading@1440x900 error@1440x900 default@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .en-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-3); margin: calc(0px - var(--wf-space-2)) 0 var(--wf-space-5); }
     .en-col-choose { width: 44px; }
-    @container workspace (max-width: 899px) { .en-wide { display: none; } }
+    /* A failed delivery shows in the Actions column, or with the state, under its chip, once that column gives way */
+    .en-state { display: flex; align-items: center; gap: var(--wf-space-3); }
+    .en-mark { display: none; }
+    @container workspace (max-width: 899px) {
+      .en-wide { display: none; }
+      .en-state { flex-direction: column; align-items: flex-start; gap: var(--wf-space-1); }
+      .en-mark { display: inline-flex; align-items: center; gap: var(--wf-space-1); }
+    }
+    /* Say it once: a column whose value a filter fixes to one value is hidden while that filter is on */
+    html[data-wf-state='filtered'] .en-col-state,
+    html[data-wf-state='filtered'] .en-col-position,
+    html[data-wf-state='delete'] .en-col-state { display: none; }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
-<body data-role="handler" data-active="form:job-application">
+<body data-role="handler" data-active="form:job-application" data-role-delete="privacy" data-tree-empty="seen">
   <!--
     IA 5.4 and 6.1: a form's Entries view, the Inbox's list for one form, without the form column and with the form's
     fields as filters and columns. The entry handler sees the views Entries and Insights, and no footer: the footer's
     buttons are about designing the form (IA 11). Job application uses manual approval, so entries wait for a decision.
+
+    States:
+    - filtered: two filters, each fixing its column to one value, so State and Position are hidden while they are on
+      (say it once: the chips already say it). A filter that leaves more than one value (a date range) keeps its column.
+    - bulk: two rows ticked, Umbraco's bulk bar.
+    - bulk-done: the page was ticked and approved. The selection clears, the rows change in place, and the toast says
+      how many were left out, with Undo.
+    - delete: the privacy officer (Delete entries, no Export, no state changes) deletes the rejected applications. Her
+      bulk bar holds Delete… alone; the confirm names what is lost, with Cancel focused.
+    - export: the export sidebar.
+    - empty: the form has no entries yet, so the tree shows no unseen dot. The handler can't share or preview a form,
+      so the sentence says when entries appear and offers the summary email; a user with design gets copy.md's "Share
+      the form, or preview it and send a test entry".
+    - no-results: the chip row's Clear filters is the only one; the sentence points to the filters above.
+    - loading, error.
+    At 920 px the Actions and Position columns give way, and a failed delivery shows in the State column,
+    under the chip, so the names keep their width.
   -->
   <main class="wf-main">
     <header class="wf-head">
@@ -35,16 +63,17 @@
     </header>
 
     <div class="wf-content">
-      <div class="wf-toolbar" data-state="default filtered bulk export no-results loading error">
+      <div class="wf-toolbar" data-state="default filtered bulk bulk-done delete export no-results loading error">
         <span class="wf-input wf-input--search" style="width: 280px"><i data-i="search"></i><span class="wf-placeholder">Search entries</span></span>
         <button class="wf-btn"><i data-i="filter"></i>Filter</button>
-        <button class="wf-btn"><i data-i="download"></i>Export…</button>
+        <button class="wf-btn" data-state="default filtered bulk bulk-done export no-results loading error"><i data-i="download"></i>Export…</button>
         <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for these entries"><i data-i="more"></i></button>
       </div>
 
       <!-- Active filters: a row of their own under the toolbar -->
-      <div class="en-filters" data-state="filtered no-results" aria-label="Active filters">
-        <span class="wf-chip wf-chip--outline">State: waiting for approval <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove the filter State: waiting for approval"><i data-i="x"></i></button></span>
+      <div class="en-filters" data-state="filtered no-results delete" aria-label="Active filters">
+        <span class="wf-chip wf-chip--outline" data-state="filtered no-results">State: waiting for approval <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove the filter State: waiting for approval"><i data-i="x"></i></button></span>
+        <span class="wf-chip wf-chip--outline" data-state="delete">State: rejected <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove the filter State: rejected"><i data-i="x"></i></button></span>
         <span class="wf-chip wf-chip--outline" data-state="filtered">Position: Frontend developer <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove the filter Position: Frontend developer"><i data-i="x"></i></button></span>
         <span class="wf-chip wf-chip--outline" data-state="no-results">Position: Accountant <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove the filter Position: Accountant"><i data-i="x"></i></button></span>
         <button class="wf-btn wf-btn--text wf-btn--small">Save as…</button>
@@ -52,65 +81,99 @@
       </div>
 
       <!-- The list -->
-      <section class="wf-box" data-state="default filtered bulk export" aria-label="Entries">
+      <section class="wf-box" data-state="default filtered bulk bulk-done delete export" aria-label="Entries">
         <table class="wf-table" style="border: 0">
           <thead>
             <tr>
-              <th class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select all entries on this page" data-state="default filtered export"></span><span class="wf-box-check" role="checkbox" aria-checked="mixed" aria-label="Select all entries on this page" data-state="bulk"><i data-i="check"></i></span></th>
-              <th>Entry</th><th>State</th><th>Received</th><th class="en-wide">Actions</th><th class="en-wide">Position</th>
+              <th class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select all entries on this page" data-state="default filtered bulk-done export"></span><span class="wf-box-check" role="checkbox" aria-checked="mixed" aria-label="Select all entries on this page" data-state="bulk"><i data-i="check"></i></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select all entries on this page" data-state="delete"><i data-i="check"></i></span></th>
+              <th>Entry</th><th class="en-col-state">State</th><th>Received</th><th class="en-wide">Actions</th><th class="en-wide en-col-position">Position</th>
               <th class="en-col-choose wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Choose columns"><i data-i="columns"></i></button></th>
             </tr>
           </thead>
           <tbody>
-            <tr class="wf-unseen">
-              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 214" data-state="default filtered export"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 214" data-state="bulk"><i data-i="check"></i></span></td>
+            <tr class="wf-unseen" data-state="default filtered bulk bulk-done export">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 214" data-state="default filtered bulk-done export"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 214" data-state="bulk"><i data-i="check"></i></span></td>
               <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Jakob Lindqvist</a><span class="wf-sr">, unseen</span></span></td>
-              <td><span class="wf-chip wf-chip--warning">Waiting for approval</span></td>
-              <td class="wf-muted">3 h ago</td><td class="wf-muted en-wide">2/2 delivered</td><td class="en-wide">Frontend developer</td><td></td>
+              <td class="en-col-state"><span class="wf-chip wf-chip--warning" data-state="default filtered bulk export">Waiting for approval</span><span class="wf-chip wf-chip--positive" data-state="bulk-done">Approved</span></td>
+              <td class="wf-muted">3 h ago</td><td class="wf-muted en-wide">2/2 delivered</td><td class="en-wide en-col-position">Frontend developer</td><td></td>
             </tr>
-            <tr class="wf-unseen">
-              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 213" data-state="default filtered export"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 213" data-state="bulk"><i data-i="check"></i></span></td>
+            <tr class="wf-unseen" data-state="default filtered bulk bulk-done export">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 213" data-state="default filtered bulk-done export"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 213" data-state="bulk"><i data-i="check"></i></span></td>
               <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Amira Haddad</a><span class="wf-sr">, unseen</span></span></td>
-              <td><span class="wf-chip wf-chip--warning">Waiting for approval</span></td>
-              <td class="wf-muted">Today, 07:48</td><td class="wf-muted en-wide">2/2 delivered</td><td class="en-wide">Frontend developer</td><td></td>
+              <td class="en-col-state"><span class="wf-chip wf-chip--warning" data-state="default filtered bulk export">Waiting for approval</span><span class="wf-chip wf-chip--positive" data-state="bulk-done">Approved</span></td>
+              <td class="wf-muted">Today, 07:48</td><td class="wf-muted en-wide">2/2 delivered</td><td class="en-wide en-col-position">Frontend developer</td><td></td>
             </tr>
-            <tr data-state="default bulk export">
+            <tr data-state="default bulk bulk-done export">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 212"></span></td>
               <td><a href="#">Sofie Vermeulen</a></td>
-              <td><span class="wf-chip wf-chip--positive">Approved</span></td>
-              <td class="wf-muted">Yesterday, 18:02</td><td class="wf-muted en-wide">3/3 delivered</td><td class="en-wide">Office manager</td><td></td>
+              <td class="en-col-state"><span class="wf-chip wf-chip--positive">Approved</span></td>
+              <td class="wf-muted">Yesterday, 18:02</td><td class="wf-muted en-wide">3/3 delivered</td><td class="en-wide en-col-position">Office manager</td><td></td>
             </tr>
-            <tr data-state="default bulk export">
+            <tr data-state="default bulk bulk-done export">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 211"></span></td>
               <td><a href="#">Ruben Castillo</a></td>
-              <td><span class="wf-chip">Rejected</span></td>
-              <td class="wf-muted">Yesterday, 11:15</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide">Backend developer</td><td></td>
+              <td class="en-col-state"><span class="wf-chip">Rejected</span></td>
+              <td class="wf-muted">Yesterday, 11:15</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Backend developer</td><td></td>
             </tr>
-            <tr data-state="default bulk export">
+            <tr data-state="default bulk bulk-done export">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 210"></span></td>
               <td><a href="#">Hanna Nieminen</a></td>
-              <td><span class="wf-chip wf-chip--warning">Waiting for approval</span></td>
-              <td class="wf-muted">20 Oct, 09:30</td><td class="en-wide"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--danger"></span>1 failed</span></td><td class="en-wide">Office manager</td><td></td>
+              <td class="en-col-state"><span class="en-state"><span class="wf-chip wf-chip--warning" data-state="default bulk export">Waiting for approval</span><span class="wf-chip wf-chip--positive" data-state="bulk-done">Approved</span><span class="en-mark"><span class="wf-dot wf-dot--danger"></span>1 failed</span></span></td>
+              <td class="wf-muted">20 Oct, 09:30</td><td class="en-wide"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--danger"></span>1 failed</span></td><td class="en-wide en-col-position">Office manager</td><td></td>
             </tr>
-            <tr data-state="default bulk export">
+            <tr data-state="default bulk bulk-done export">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 209"></span></td>
               <td><a href="#">Oskar Brandt</a></td>
-              <td><span class="wf-chip wf-chip--positive">Approved</span></td>
-              <td class="wf-muted">19 Oct, 16:44</td><td class="wf-muted en-wide">3/3 delivered</td><td class="en-wide">Backend developer</td><td></td>
+              <td class="en-col-state"><span class="wf-chip wf-chip--positive">Approved</span></td>
+              <td class="wf-muted">19 Oct, 16:44</td><td class="wf-muted en-wide">3/3 delivered</td><td class="en-wide en-col-position">Backend developer</td><td></td>
+            </tr>
+
+            <!-- The rejected applications, every one ticked, for the privacy officer's delete -->
+            <tr data-state="delete">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 211"><i data-i="check"></i></span></td>
+              <td><a href="#">Ruben Castillo</a></td><td class="en-col-state"><span class="wf-chip">Rejected</span></td>
+              <td class="wf-muted">Yesterday, 11:15</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Backend developer</td><td></td>
+            </tr>
+            <tr data-state="delete">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 205"><i data-i="check"></i></span></td>
+              <td><a href="#">Elif Demir</a></td><td class="en-col-state"><span class="wf-chip">Rejected</span></td>
+              <td class="wf-muted">16 Oct, 09:12</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Office manager</td><td></td>
+            </tr>
+            <tr data-state="delete">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 198"><i data-i="check"></i></span></td>
+              <td><a href="#">Mateo Rossi</a></td><td class="en-col-state"><span class="wf-chip">Rejected</span></td>
+              <td class="wf-muted">9 Oct, 14:30</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Frontend developer</td><td></td>
+            </tr>
+            <tr data-state="delete">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 190"><i data-i="check"></i></span></td>
+              <td><a href="#">Sara Nilsson</a></td><td class="en-col-state"><span class="wf-chip">Rejected</span></td>
+              <td class="wf-muted">2 Oct, 10:05</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Backend developer</td><td></td>
+            </tr>
+            <tr data-state="delete">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 183"><i data-i="check"></i></span></td>
+              <td><a href="#">Noah Fischer</a></td><td class="en-col-state"><span class="wf-chip">Rejected</span></td>
+              <td class="wf-muted">25 Sep, 16:21</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Office manager</td><td></td>
+            </tr>
+            <tr data-state="delete">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 47"><i data-i="check"></i></span></td>
+              <td><a href="#">Lena Weber</a></td><td class="en-col-state"><span class="wf-chip">Rejected</span></td>
+              <td class="wf-muted">3 Jun, 08:47</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide en-col-position">Marketing manager</td><td></td>
             </tr>
           </tbody>
         </table>
       </section>
-      <div class="wf-pager" data-state="default bulk export"><span>1 to 6 of 214</span><span class="wf-row"><button class="wf-btn wf-btn--small">Next</button></span></div>
+      <div class="wf-pager" data-state="default bulk bulk-done export"><span>1 to 6 of 214</span><span class="wf-row"><button class="wf-btn wf-btn--small">Next</button></span></div>
+      <div class="wf-pager" data-state="filtered"><span>1 to 2 of 2</span></div>
+      <div class="wf-pager" data-state="delete"><span>1 to 6 of 6</span></div>
 
-      <!-- First use -->
+      <!-- First use, for the entry handler -->
       <div class="wf-empty" data-state="empty">
-        <p class="wf-empty__text">No entries yet. Share the form, or preview it and send a test entry.</p>
+        <p class="wf-empty__text">No entries yet. They appear here as soon as visitors send the form.</p>
+        <button class="wf-btn"><i data-i="mail"></i>Email me a summary…</button>
       </div>
-      <!-- Filters match nothing -->
+      <!-- Filters match nothing: the chip row above holds Clear filters -->
       <div class="wf-empty" data-state="no-results">
-        <p class="wf-empty__text">No entries match these filters.</p>
-        <button class="wf-btn">Clear filters</button>
+        <p class="wf-empty__text">No entries match these filters. Remove one above, or clear them all.</p>
       </div>
       <!-- Loading: a skeleton of rows -->
       <section class="wf-box" data-state="loading" aria-busy="true">
@@ -126,18 +189,39 @@
       </div>
     </div>
 
-    <!-- Umbraco's bulk bar, once a row is selected -->
-    <div class="wf-bulk" data-state="bulk" role="region" aria-label="Selected entries">
-      <span class="wf-strong">2 selected</span>
-      <div class="wf-row" data-wf-actions="bulk bar">
+    <!-- Umbraco's bulk bar, once a row is selected: the first three actions the user may use -->
+    <div class="wf-bulk" data-state="bulk delete" role="region" aria-label="Selected entries">
+      <span class="wf-strong" data-state="bulk">2 selected</span>
+      <span class="wf-strong" data-state="delete">6 selected</span>
+      <div class="wf-row" data-wf-actions="bulk bar" data-state="bulk">
         <button class="wf-btn">Approve</button>
         <button class="wf-btn">Reject</button>
         <button class="wf-btn">Mark as spam</button>
         <button class="wf-btn wf-btn--icon" data-wf-more aria-label="More actions for the selected entries"><i data-i="more"></i></button>
       </div>
+      <div class="wf-row" data-wf-actions="bulk bar" data-state="delete">
+        <button class="wf-btn">Delete…</button>
+      </div>
       <button class="wf-btn wf-btn--icon" data-wf-frame style="margin-left: auto" aria-label="Clear the selection"><i data-i="x"></i></button>
     </div>
   </main>
+
+  <!-- After Approve on a ticked page: the rows changed in place; the toast says what the rows can't (IA 6.1) -->
+  <div class="wf-toast" data-state="bulk-done" role="status">
+    <span>3 entries approved. 3 weren't waiting for approval.</span>
+    <button class="wf-btn wf-btn--small">Undo</button>
+  </div>
+
+  <!-- Delete… asks first and names what is lost (copy.md, confirmations); Cancel has the focus -->
+  <div class="wf-backdrop" data-state="delete"></div>
+  <div class="wf-dialog" data-state="delete" role="alertdialog" aria-labelledby="dl-title" aria-describedby="dl-text">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="dl-title">Delete 6 entries?</h2></div>
+    <p class="wf-dialog__body" id="dl-text">This also deletes their 9 uploaded files and their timelines. You can't undo this.</p>
+    <div class="wf-dialog__foot">
+      <button class="wf-btn" style="box-shadow: var(--wf-focus)">Cancel</button>
+      <button class="wf-btn wf-btn--danger">Delete 6 entries</button>
+    </div>
+  </div>
 
   <!-- Export (IA 6.4) -->
   <div class="wf-backdrop" data-state="export"></div>
@@ -163,7 +247,7 @@
     </div>
     <footer class="wf-sidebar__foot">
       <button class="wf-btn">Cancel</button>
-      <button class="wf-btn wf-btn--primary">Export 214 entries</button>
+      <button class="wf-btn wf-btn--primary">Export</button>
     </footer>
   </aside>
 </body>

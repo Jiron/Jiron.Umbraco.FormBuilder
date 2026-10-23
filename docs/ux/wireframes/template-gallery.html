@@ -4,17 +4,42 @@
   <meta charset="utf-8">
   <title>Template gallery · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 loading@1440x900 library@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 loading@1440x900 library@1440x900 list@920x900 default@920x900">
   <link rel="stylesheet" href="assets/kit.css">
+  <link rel="stylesheet" href="../website/assets/base.css">
+  <link rel="stylesheet" href="../website/assets/theme.css">
   <style>
     .tg { display: grid; grid-template-columns: minmax(0, 1fr) 420px; height: 100%; }
     .tg__list { overflow: auto; padding: var(--wf-space-6); }
     .tg__preview { overflow: auto; border-left: 1px solid var(--uui-color-border); background: var(--uui-color-surface); }
-    .wf-card { text-align: left; font: inherit; color: inherit; padding: 0; }
-    /* At 920 px the preview covers the gallery, as the designer's inspector does (IA 5.1). */
+
+    /* The cards are a radio group: one template is chosen, and its preview shows beside the gallery */
+    .tg__set { margin: 0; padding: 0; border: 0; }
+    .tg__set + .tg__set { margin-top: var(--wf-space-6); }
+    .tg__set > legend { margin-bottom: var(--wf-space-4); padding: 0; }
+    .tg__card { position: relative; cursor: pointer; }
+    .tg__card > input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; color: inherit; font: inherit; pointer-events: none; }
+    .tg__card > .wf-card__body { padding-right: var(--wf-space-7); }
+    .tg__card:has(> input:checked) { border-color: var(--uui-color-selected); outline: 1px solid var(--uui-color-selected); }
+    .tg__card:has(> input:focus-visible) { box-shadow: var(--wf-focus); }
+    .tg__tick { position: absolute; top: var(--wf-space-4); right: var(--wf-space-4); color: var(--uui-color-selected); }
+    .tg__card:not(:has(> input:checked)) > .tg__tick { display: none; }
+
+    /* The preview: what the template holds, then the form as the website's theme renders it */
+    .tg__body { padding: var(--wf-space-5); }
+    .tg__name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .tg__about { display: grid; gap: var(--wf-space-1); margin-bottom: var(--wf-space-5); }
+    .tg__sheet { --jfb-font-size: 16px; padding: var(--wf-space-5); border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); }
+    .tg__back, .tg__open { display: none; }
+
+    /* Below a 1000 px window the gallery takes the width. The footer's Preview opens the chosen template's preview over
+       it, and "All templates" goes back; choosing a card never moves the focus away from the cards. */
     @media (max-width: 1000px) {
       .tg { grid-template-columns: minmax(0, 1fr); position: relative; }
       .tg__preview { position: absolute; inset: 0; border-left: 0; }
+      .tg__back { display: flex; }
+      .tg__name { position: static; width: auto; height: auto; margin-bottom: var(--wf-space-2); overflow: visible; clip-path: none; white-space: normal; }
+      .tg__open { display: inline-flex; }
     }
   </style>
   <script src="assets/icons.js" defer></script>
@@ -23,15 +48,24 @@
 <body data-role="admin" data-active="folder:events" data-role-library="designer" data-active-library="templates">
   <!--
     IA section 4 (the template gallery, from Create › Form from a template…) and section 7 (Library › Templates, the
-    same gallery in a workspace, with no create button: templates come from "Save as template").
+    same templates in a workspace, with no create button: templates come from "Save as template").
+
+    The gallery's cards are one radio group across both sets: the chosen card is the template that Use template starts
+    from, and its preview shows beside the gallery, so its name shows once, on the card. The preview renders the form
+    with the website's default theme (step 2.3, ADR-0022) on the website's markup. Below a 1000 px window the preview
+    no longer fits beside the cards: the footer's Preview opens it over them, with "All templates" to go back and the
+    template's name, which the cards no longer show beside it.
+
+    States: default (Contact chosen); loading; library (Library › Templates); list (920 px: the cards, with Contact
+    chosen); default at 920 px (the preview over the cards).
   -->
   <main class="wf-main">
     <!-- What lies behind the modal: the Events folder -->
-    <header class="wf-head" data-state="default loading">
+    <header class="wf-head" data-state="default loading list">
       <div class="wf-head__main"><span class="wf-head__name">Events</span></div>
     </header>
-    <div class="wf-content" data-state="default loading"></div>
-    <footer class="wf-foot" data-state="default loading"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary" tabindex="-1">Create form</button></div></footer>
+    <div class="wf-content" data-state="default loading list"></div>
+    <footer class="wf-foot" data-state="default loading list"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary" tabindex="-1">Create form</button></div></footer>
 
     <!-- Library › Templates -->
     <header class="wf-head" data-state="library">
@@ -46,6 +80,11 @@
             <div class="wf-card"><div class="wf-card__body"><a href="#" class="wf-strong">Callback</a><span class="wf-muted">A phone number and a good time to call</span></div></div>
             <div class="wf-card"><div class="wf-card__body"><a href="#" class="wf-strong">Newsletter</a><span class="wf-muted">An email address, confirmed by the visitor</span></div></div>
             <div class="wf-card"><div class="wf-card__body"><a href="#" class="wf-strong">Event registration</a><span class="wf-muted">Places with a limit, and a waiting list</span></div></div>
+            <div class="wf-card"><div class="wf-card__body"><a href="#" class="wf-strong">Job application</a><span class="wf-muted">Three pages, with a CV upload</span></div></div>
+            <div class="wf-card"><div class="wf-card__body"><a href="#" class="wf-strong">Feedback</a><span class="wf-muted">A rating and an optional comment</span></div></div>
+            <div class="wf-card"><div class="wf-card__body"><a href="#" class="wf-strong">Quote request</a><span class="wf-muted">What is needed, by when, and a budget</span></div></div>
+            <div class="wf-card"><div class="wf-card__body"><a href="#" class="wf-strong">Support request</a><span class="wf-muted">A topic, a description and attachments</span></div></div>
+            <div class="wf-card"><div class="wf-card__body"><a href="#" class="wf-strong">Privacy request</a><span class="wf-muted">Access, correction or erasure of data</span></div></div>
           </div>
         </section>
         <section aria-labelledby="lib-saved">
@@ -70,8 +109,8 @@
   </main>
 
   <!-- The gallery, as a large sidebar over the folder -->
-  <div class="wf-backdrop" data-state="default loading"></div>
-  <aside class="wf-sidebar" style="--wf-sidebar-size: calc(100vw - 120px)" data-state="default loading" role="dialog" aria-labelledby="tg-title">
+  <div class="wf-backdrop" data-state="default loading list"></div>
+  <aside class="wf-sidebar" style="--wf-sidebar-size: calc(100vw - 120px)" data-state="default loading list" role="dialog" aria-labelledby="tg-title">
     <header class="wf-sidebar__head">
       <h2 class="wf-title" id="tg-title">Choose a template</h2>
       <span class="wf-input wf-input--search" style="width: 280px; margin-left: auto"><i data-i="search"></i><span class="wf-placeholder">Search templates</span></span>
@@ -87,51 +126,82 @@
             <span class="wf-sr">Loading templates</span>
           </div>
 
-          <div class="wf-stack wf-stack--lg" data-state="default">
-            <section aria-labelledby="tg-built-in">
-              <h3 class="wf-strong" id="tg-built-in" style="margin-bottom: var(--wf-space-4)">Built in</h3>
+          <div data-state="default list">
+            <fieldset class="tg__set">
+              <legend class="wf-strong">Built in</legend>
               <div class="wf-cards">
-                <button class="wf-card" aria-current="true"><div class="wf-card__body"><span class="wf-strong">Contact</span><span class="wf-muted">Name, email and a message</span></div></button>
-                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Callback</span><span class="wf-muted">A phone number and a good time to call</span></div></button>
-                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Newsletter</span><span class="wf-muted">An email address, confirmed by the visitor</span></div></button>
-                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Event registration</span><span class="wf-muted">Places with a limit, and a waiting list</span></div></button>
-                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Job application</span><span class="wf-muted">Three pages, with a CV upload</span></div></button>
-                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Feedback</span><span class="wf-muted">A rating and an optional comment</span></div></button>
-                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Quote request</span><span class="wf-muted">What is needed, by when, and a budget</span></div></button>
-                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Support request</span><span class="wf-muted">A topic, a description and attachments</span></div></button>
-                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Privacy request</span><span class="wf-muted">Access, correction or erasure of data</span></div></button>
+                <label class="wf-card tg__card"><input type="radio" name="tg-template" checked><span class="wf-card__body"><span class="wf-strong">Contact</span><span class="wf-muted">Name, email and a message</span></span><i data-i="check" class="tg__tick"></i></label>
+                <label class="wf-card tg__card"><input type="radio" name="tg-template"><span class="wf-card__body"><span class="wf-strong">Callback</span><span class="wf-muted">A phone number and a good time to call</span></span><i data-i="check" class="tg__tick"></i></label>
+                <label class="wf-card tg__card"><input type="radio" name="tg-template"><span class="wf-card__body"><span class="wf-strong">Newsletter</span><span class="wf-muted">An email address, confirmed by the visitor</span></span><i data-i="check" class="tg__tick"></i></label>
+                <label class="wf-card tg__card"><input type="radio" name="tg-template"><span class="wf-card__body"><span class="wf-strong">Event registration</span><span class="wf-muted">Places with a limit, and a waiting list</span></span><i data-i="check" class="tg__tick"></i></label>
+                <label class="wf-card tg__card"><input type="radio" name="tg-template"><span class="wf-card__body"><span class="wf-strong">Job application</span><span class="wf-muted">Three pages, with a CV upload</span></span><i data-i="check" class="tg__tick"></i></label>
+                <label class="wf-card tg__card"><input type="radio" name="tg-template"><span class="wf-card__body"><span class="wf-strong">Feedback</span><span class="wf-muted">A rating and an optional comment</span></span><i data-i="check" class="tg__tick"></i></label>
+                <label class="wf-card tg__card"><input type="radio" name="tg-template"><span class="wf-card__body"><span class="wf-strong">Quote request</span><span class="wf-muted">What is needed, by when, and a budget</span></span><i data-i="check" class="tg__tick"></i></label>
+                <label class="wf-card tg__card"><input type="radio" name="tg-template"><span class="wf-card__body"><span class="wf-strong">Support request</span><span class="wf-muted">A topic, a description and attachments</span></span><i data-i="check" class="tg__tick"></i></label>
+                <label class="wf-card tg__card"><input type="radio" name="tg-template"><span class="wf-card__body"><span class="wf-strong">Privacy request</span><span class="wf-muted">Access, correction or erasure of data</span></span><i data-i="check" class="tg__tick"></i></label>
               </div>
-            </section>
-            <section aria-labelledby="tg-saved">
-              <h3 class="wf-strong" id="tg-saved" style="margin-bottom: var(--wf-space-4)">Saved on this site</h3>
+            </fieldset>
+            <fieldset class="tg__set">
+              <legend class="wf-strong">Saved on this site</legend>
               <div class="wf-cards">
-                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Partner enquiry</span><span class="wf-muted">Saved by Lea Hoffmann from Contact us</span></div></button>
+                <label class="wf-card tg__card"><input type="radio" name="tg-template"><span class="wf-card__body"><span class="wf-strong">Partner enquiry</span><span class="wf-muted">Saved by Lea Hoffmann from Contact us</span></span><i data-i="check" class="tg__tick"></i></label>
               </div>
-            </section>
+            </fieldset>
           </div>
         </div>
 
-        <!-- The preview of the chosen card -->
-        <section class="tg__preview" data-state="default" aria-labelledby="tg-preview-title">
-          <div class="wf-panel__head">
-            <h3 class="wf-title" id="tg-preview-title">Contact</h3>
-            <span class="wf-muted" style="margin-left: auto">1 page · 5 fields</span>
+        <!-- The chosen template's preview -->
+        <section class="tg__preview" data-state="default" aria-labelledby="tg-preview-name" tabindex="0">
+          <div class="wf-panel__head tg__back">
+            <button class="wf-btn wf-btn--small wf-btn--text"><i data-i="arrow-left"></i>All templates</button>
           </div>
-          <div class="wf-stack" style="padding: var(--wf-space-5)">
-            <p class="wf-muted">Emails the team when an entry comes in, and thanks the visitor on the page.</p>
-            <div class="wf-vf"><span class="wf-vf__label">Name</span><span class="wf-vf__control"></span></div>
-            <div class="wf-vf"><span class="wf-vf__label">Email address</span><span class="wf-vf__control"></span></div>
-            <div class="wf-vf"><span class="wf-vf__label">Phone <span class="wf-vf__optional">(optional)</span></span><span class="wf-vf__control"></span></div>
-            <div class="wf-vf"><span class="wf-vf__label">Your message</span><span class="wf-vf__control wf-vf__control--tall"></span></div>
-            <span class="wf-check"><span class="wf-box-check" aria-hidden="true"></span><span>I agree that my details are stored to answer me.</span></span>
-            <span class="wf-vf__submit">Send</span>
+          <div class="tg__body">
+            <h3 class="wf-title tg__name" id="tg-preview-name">Contact</h3>
+            <div class="tg__about">
+              <p class="wf-small wf-muted">1 page · 5 fields</p>
+              <p>Emails the team when an entry comes in, and thanks the visitor on the page.</p>
+            </div>
+            <div class="tg__sheet">
+              <div class="jfb-form jfb-theme-default" data-wf-sample lang="en" inert>
+                <div class="jfb-page">
+                  <div class="jfb-group">
+                    <div class="jfb-fields">
+                      <div class="jfb-field jfb-field-text">
+                        <label class="jfb-label" for="tg-name">Name</label>
+                        <input class="jfb-control" id="tg-name">
+                      </div>
+                      <div class="jfb-field jfb-field-email">
+                        <label class="jfb-label" for="tg-email">Email address</label>
+                        <input class="jfb-control" type="email" id="tg-email">
+                      </div>
+                      <div class="jfb-field jfb-field-phone">
+                        <label class="jfb-label" for="tg-phone">Phone <span class="jfb-mark">(optional)</span></label>
+                        <input class="jfb-control" type="tel" id="tg-phone">
+                      </div>
+                      <div class="jfb-field jfb-field-textarea">
+                        <label class="jfb-label" for="tg-message">Your message</label>
+                        <textarea class="jfb-control" id="tg-message" rows="4"></textarea>
+                      </div>
+                      <div class="jfb-field jfb-field-consent">
+                        <div class="jfb-choice">
+                          <input type="checkbox" id="tg-consent">
+                          <label for="tg-consent">I agree that my details are stored to answer me.</label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="jfb-navigation"><button type="button" class="jfb-button jfb-button-primary">Send</button></div>
+              </div>
+            </div>
           </div>
         </section>
       </div>
     </div>
     <footer class="wf-sidebar__foot">
       <button class="wf-btn">Cancel</button>
-      <button class="wf-btn wf-btn--primary" data-state="default">Use template</button>
+      <button class="wf-btn tg__open" data-state="list">Preview</button>
+      <button class="wf-btn wf-btn--primary" data-state="default list">Use template</button>
       <button class="wf-btn wf-btn--primary" data-state="loading" aria-disabled="true">Use template</button>
     </footer>
   </aside>

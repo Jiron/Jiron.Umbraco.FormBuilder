@@ -139,3 +139,13 @@ the restriction holds.
 - Administrators see everything, which is honest about what they can do anyway.
 - §4.5 gains `IsRestricted` on `jfbFolder` and `jfbForm`; §4.8's Access names restrictions and host grants (WORKLOG).
 - **Revisit** if sites need a permission per action type (for example webhooks only), or per entry state.
+
+## Amendment (2026-10-23, step 2.4)
+
+**Who can retry a delivery.** The table gives "retry deliveries" to `manageActions`, while the information
+architecture (`docs/ux/information-architecture.md`, §11) says the designer persona cannot retry. Both hold: a retry
+needs `manageActions` for the run's form, and a screen that shows the run. Those are the entry's timeline, which
+needs `viewEntries` for that form, and Activity › Deliveries, which needs `manageSettings`. The designer persona
+holds `manageActions` but neither of the others, so it tries an action with **Test** instead, and the failed run's
+details in the Actions view say who can retry it. The management API checks `manageActions` on every retry, whichever
+screen asked.

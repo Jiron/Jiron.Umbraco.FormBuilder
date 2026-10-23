@@ -7,8 +7,10 @@
   <meta name="wf-shots" content="default@1440x900 bulk@1440x900 empty@1440x900 confirm@1440x900 default@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
-    /* In a narrow workspace the reasons keep their room and the form column gives way */
-    @container workspace (max-width: 899px) { .sp-wide { display: none; } }
+    /* In a narrow workspace the reasons keep their room and the form column gives way: the form's name moves under the
+       entry's name, as in the Inbox */
+    .sp-sub { display: none; color: var(--wf-color-text-muted); }
+    @container workspace (max-width: 899px) { .sp-wide { display: none; } .sp-sub { display: block; } }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
@@ -16,7 +18,8 @@
 <body data-role="admin" data-active="spam">
   <!--
     IA 6.2: the list without the state column, since everything here is in Spam. "Why" is a detail every entry has,
-    chosen in the column chooser. Spam has no badge in the sidebar, so it never draws attention to itself.
+    chosen in the column chooser. Spam has no badge in the sidebar, so it never draws attention to itself. At 920 px
+    the Form column gives way and the form's name moves under the entry's name, as in the Inbox.
   -->
   <main class="wf-main">
     <header class="wf-head">
@@ -36,19 +39,19 @@
           <tbody>
             <tr>
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 1051" data-state="default confirm"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 1051" data-state="bulk"><i data-i="check"></i></span></td>
-              <td><a href="#">Entry #1051</a></td><td class="wf-muted sp-wide">Contact us</td><td class="wf-muted">1 h ago</td><td class="wf-muted wf-cell-wrap">Blocked word, sent too fast</td><td></td>
+              <td><span class="wf-row"><a href="#">Entry #1051</a></span><span class="sp-sub">Contact us</span></td><td class="wf-muted sp-wide">Contact us</td><td class="wf-muted">1 h ago</td><td class="wf-muted wf-cell-wrap">Blocked word, sent too fast</td><td></td>
             </tr>
             <tr>
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 1049" data-state="default confirm"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 1049" data-state="bulk"><i data-i="check"></i></span></td>
-              <td><a href="#">Best Prices Online</a></td><td class="wf-muted sp-wide">Contact us</td><td class="wf-muted">2 h ago</td><td class="wf-muted wf-cell-wrap">Blocked email domain</td><td></td>
+              <td><span class="wf-row"><a href="#">Best Prices Online</a></span><span class="sp-sub">Contact us</span></td><td class="wf-muted sp-wide">Contact us</td><td class="wf-muted">2 h ago</td><td class="wf-muted wf-cell-wrap">Blocked email domain</td><td></td>
             </tr>
             <tr>
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 63"></span></td>
-              <td><a href="#">Marta Kowalska</a></td><td class="wf-muted sp-wide">Callback request</td><td class="wf-muted">Yesterday, 22:10</td><td class="wf-muted wf-cell-wrap">Captcha unavailable</td><td></td>
+              <td><span class="wf-row"><a href="#">Marta Kowalska</a></span><span class="sp-sub">Callback request</span></td><td class="wf-muted sp-wide">Callback request</td><td class="wf-muted">Yesterday, 22:10</td><td class="wf-muted wf-cell-wrap">Captcha unavailable</td><td></td>
             </tr>
             <tr>
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 1047"></span></td>
-              <td><a href="#">Entry #1047</a></td><td class="wf-muted sp-wide">Contact us</td><td class="wf-muted">Yesterday, 03:41</td><td class="wf-muted wf-cell-wrap">12 links</td><td></td>
+              <td><span class="wf-row"><a href="#">Entry #1047</a></span><span class="sp-sub">Contact us</span></td><td class="wf-muted sp-wide">Contact us</td><td class="wf-muted">Yesterday, 03:41</td><td class="wf-muted wf-cell-wrap">12 links</td><td></td>
             </tr>
           </tbody>
         </table>

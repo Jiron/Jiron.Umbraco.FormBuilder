@@ -21,9 +21,9 @@ paths in [top-tasks.md](top-tasks.md), and the reasons for the section's shape i
 - **Say it once** (§4.13): the section's name, a form's name, a count or a state appears once per screen. The tree's
   highlighted item and the workspace header both name the open form, and an unpublished form is muted in the tree
   while its header shows the state chip, as for every item in Umbraco (D12); nothing adds a third.
-- **A detail panel beside a list** shows what the row doesn't. While one is open, the list narrows to each row's name
-  and time, and the selected row is highlighted. Where the panel covers the list (at 620 px), its heading adds the
-  name.
+- **A detail panel beside a list** shows what the row doesn't. While one is open, the list narrows to each row's name,
+  state and time, and the selected row is highlighted. Where the panel covers the list (at 620 px), its heading adds
+  the name and the state.
 - **Actions are offered only when they can work:** a menu never lists what the item's state or the user's permissions
   rule out.
 - **One width to design for:** every screen works in a 620 px workspace, the space Umbraco leaves at its 920 px
@@ -74,7 +74,7 @@ editor, a **Form entries** view on the member workspace, and the health checks o
 | Settings | Files | allowed type groups, the largest sizes, scanner status | `manageSettings` | Dateien |
 | Settings | Access | who gets which permissions, globally, and the folders and forms with their own access | `managePermissions` | Zugriff |
 | Settings | Integrations | webhook signing secret reference, Slack and Teams defaults, Umbraco webhook events | `manageSettings` | Integrationen |
-| Privacy | People | find, export or erase one person's data across every form | `privacyTools` | Personen |
+| Privacy | People | find, export, hold or erase one person's data across every form | `privacyTools` | Personen |
 | Privacy | Retention | how long entries are kept per state, and what will be deleted soon | `privacyTools` or `manageSettings` (changing it: `manageSettings`) | Aufbewahrung |
 | Privacy | Data collection | IP handling, sensitive-field defaults, captcha consent mode, the insights switch | `manageSettings` | Datenerfassung |
 | Activity | Deliveries | every email and webhook run, with retry | `manageSettings` | Zustellungen |
@@ -95,7 +95,7 @@ second item creates the first form. Its top row holds its "…" on the right.
 
 | Block | Shown | Content |
 | --- | --- | --- |
-| Setup checklist | to everyone in the section, until all five items are done | the five steps of §4.13, each turning green by itself: **Check email sending** (opens Settings › Email, where Send test email sits); **Create a form from a template** (opens the template gallery); **Preview and send a test entry** (opens the newest form's Preview); **Put the form on a page** (its button is Create a form block type…, and it says how to allow the block on a page); **Choose who sees entries** (opens Settings › Access). An item the user can't do says who can ("needs an administrator") instead of linking. |
+| Setup checklist | to everyone in the section, until all five items are done | the five steps of §4.13, each turning green by itself, with "1 of 5 done" in the box's header: **Check email sending** (opens Settings › Email, where Send test email sits); **Create a form from a template** (opens the template gallery); **Preview and send a test entry** (opens the newest form's Preview); **Put the form on a page** (its button is Create a form block type…, and it says how to allow the block on a page); **Choose who sees entries** (opens Settings › Access). The next open item carries its action as a button (Choose a template… on a fresh install); later ones link, so items can be done in any order, unless they can't work yet (there is no form to preview) or the user can't do them, in which case they say who can ("needs an administrator"). A done item shows its check and its name, and says "done" once, to screen readers. |
 | Health | to everyone in the section | "All checks pass" in one line, or one line per warning: what is wrong, what to do, and who can fix it when the user can't. While the checklist shows an open item, Health leaves out the warning that item already covers (email sending). |
 | Recent entries | to users with `viewEntries` | the latest ten entries of the forms they may view; a row opens the entry panel (6.3) |
 | Forms at a glance | to users with `viewEntries` | the site-wide table of 11.5: per form, views, starts, entries and conversion, each with its change from the period before. Its period menu (last 30 days, the default; last 7 days; this month; last month; this year) compares periods as Insights does (5.5). A row opens the form's Insights view. |
@@ -119,7 +119,7 @@ expanders.
   changed. Their state shows in the tree's marks, not again in the list. Its header has the editable name (that is the
   rename) and the tree's "…" without Rename…; its primary action is **Create form** in this folder.
 - **Clicking the Recycle Bin** opens the list of trashed forms, with when and by whom; its primary action is **Empty
-  recycle bin…**.
+  recycle bin…**. An empty Recycle Bin says so in one sentence and has no footer, since there is nothing to empty.
 
 | Item | "+" (create) | "…" |
 | --- | --- | --- |
@@ -133,8 +133,12 @@ expanders.
   starts with its most common action.
 - **Trash** asks first only when the form is still picked on a page, and then names the pages. Otherwise it moves the
   form at once and offers **Undo** in the toast (§4.13: reversible actions use undo).
+- **Restore…** opens Umbraco's restore sidebar, which puts the form back in the folder it came from, with its entries
+  and its published state, so the pages that pick it show it again. When that folder no longer exists, Umbraco's
+  folder picker asks where it goes.
 - **Permissions…** opens a sidebar (`managePermissions`, ADR-0013): the user groups with their permissions on this
-  folder or form, as a small matrix; "Add user group"; the switch **Only these groups**; primary **Save**.
+  folder or form, as a small matrix; "Add user group"; the switch **Only these groups**; primary **Save**. It offers
+  only the Forms and Entries permissions: the library, settings and privacy tools are granted for the whole section.
   - **The switch** restricts the folder or form. While it is on, only the grants in this matrix, and those on the
     folders and forms inside, count here; global grants and grants on parent folders stop reaching it. Administrators
     keep access, because they could grant it to themselves anyway (ADR-0013).
@@ -145,8 +149,8 @@ expanders.
 | Screen | Content | Primary | Secondary |
 | --- | --- | --- | --- |
 | Create dialog | Umbraco's create dialog: Form ("a new, empty form"), Form from a template…, Import a form…, Folder…, and Draft a form with AI… with the add-on | – (choosing an option is the action) | – |
-| Template gallery (modal) | the built-in templates (contact, callback, newsletter, event registration, job application, feedback, quote request, support request, privacy request; 12.3) and the site's saved templates, as cards: name and one line on what it is for. A card opens its preview beside the gallery; the preview shows the form, so the cards carry no picture of it. | **Use template** | – |
-| Import a form (sidebar) | choose a JSON file; the dialog says what it holds (pages, fields, actions) and what it cannot import | **Import as a new copy** | Cancel |
+| Template gallery (modal) | the built-in templates (contact, callback, newsletter, event registration, job application, feedback, quote request, support request, privacy request; 12.3) and the site's saved templates, as cards: name and one line on what it is for. The cards are one radio group; choosing one shows its preview beside the gallery, and the preview shows the form, so the cards carry no picture of it. Below a 1000 px window the preview no longer fits beside the cards: Preview opens it over them, with "All templates" to go back. | **Use template** | Cancel · Preview (below a 1000 px window) |
+| Import a form (sidebar) | choose a JSON file; the sidebar says what it holds (pages and fields, rules, outcomes, actions; never entries or permissions) and what it can't import: a theme the site lacks gives way to the default theme, a page the site lacks must be chosen before publishing, and an action whose address the site lacks arrives switched off. The form arrives as a new draft in the chosen folder. | **Import as a new copy** | Cancel |
 | Draft a form with AI (sidebar, add-on) | a description, or the pasted text of an existing questionnaire | **Draft form** | Cancel |
 
 A new form opens in the designer with its name selected, ready to change. A drafted form opens marked "Drafted by AI,
@@ -155,11 +159,12 @@ please review" until its first save.
 ## 5. The form workspace
 
 **Header:** the back arrow, the name (editable with `design`), the state chip (Draft, Published, Published (pending
-changes) or Unpublished, Umbraco's own words), the link "Used on 3 pages", and "…".
+changes) or Unpublished, Umbraco's own words), the link "Used on 3 pages", and "…". "(pending changes)" shows only to users
+with `design`, who can act on it; to others the chip says what visitors get, "Published".
 
-- **"Used on":** opens a sidebar listing the pages and blocks that pick the form, each linking to the content editor.
-  With none, it reads "Not used on any page", and its sidebar says how to put a form on a page, with "Create a form
-  block type…" for users who may.
+- **"Used on":** opens a sidebar listing the pages that pick the form and where on each page ("Form block in Main
+  content"), each linking to the content editor. With none, it reads "Not used on any page", and its sidebar says how
+  to put a form on a page, with "Create a form block type…" for users who may.
 - **"…"** starts with Restore an earlier version… (users with `design`, 5.6), then holds the tree's form actions,
   Unpublish… and, for users with `manageSettings`, "Audit log for this form" (the Audit log, filtered to it).
 
@@ -172,31 +177,34 @@ their permissions allow (section 11). A form opens on Design for users with `des
 ### 5.1 Design
 
 **Layout:** the palette on the left, the canvas in the middle, the inspector on the right. The canvas shows the form
-as visitors will see it.
+as visitors will see it, in its theme. The chosen width is the form's own width: Desktop 960 px, Tablet 768 px,
+Phone 375 px. The canvas leaves out the visitor's step progress, since the steps across its top stand in for it.
 
-- **At 1024 px and wider,** the palette stays open beside the canvas, and both panels can be collapsed.
+- **At 1024 px and wider,** the palette stays open beside the canvas, and both panels can be collapsed to rails.
 - **Between 620 and 1024 px,** the palette stays open until an element is selected. Then it folds to a rail (its
-  search and "+", which open it over the canvas), so the canvas keeps its width beside the inspector; clearing the
-  selection opens the palette again. The wireframes of step 2.2 found that both panels open leave the canvas about
-  150 px at a 1024 px window.
+  expand button and its search, which open it over the canvas), so the canvas keeps its width beside the inspector;
+  clearing the selection opens the palette again. The wireframes of step 2.2 found that both panels open leave the
+  canvas about 150 px at a 1024 px window.
 - **When the canvas has less room than the chosen width,** it shows the form as it reflows in that room, as a
   visitor's narrow window would (columns stack), and "Narrowed to fit" beside the width switch says so. It never
-  scales the form down: text stays readable, and closing the inspector gives the canvas its width back.
+  scales the form down: text stays readable, and collapsing the inspector gives the canvas its width back.
 - **At 620 px,** the canvas takes the width. The palette opens over it from an insert point or a page's "Add field",
   and the inspector opens over it when an element is selected; Esc closes either.
-- **The header** keeps its name, state chip and link on one line; when room runs out, the views fold into "…" from
-  the last one, as Umbraco folds them, never the open view. If that isn't enough, the link ("Used on 3 pages") moves
-  into the form's "…".
+- **The header** keeps its name, state chip and link on one line; when room runs out, the views fold, from the last
+  one and never the open view, into the form's own "…" ("Views and more actions for Contact us"), so the header always
+  has one "…". If that isn't enough, the link ("Used on 3 pages") moves into the same "…".
+- **While the form loads,** the canvas is a skeleton, the toolbar and the steps are hidden, and the footer's buttons
+  can't be used yet.
 
 | Part | Content | Actions |
 | --- | --- | --- |
 | Toolbar | the canvas width (Phone · Tablet · Desktop), the language (only on sites with more than one), and the form check badge | "…": Undo · Redo · Rules overview · Keyboard shortcuts · Translate with AI… (add-on) |
-| The steps | the pages as numbered steps across the top of the canvas, then "Add page" (an empty page at the end, whose empty state says that the palette's Layout › New page splits a page instead), then **After sending** | Clicking a step shows that page. After sending shows the outcome as visitors will see it, read-only, with "Change", which opens that outcome's editor in the Settings view. |
-| Canvas | groups with their columns, and fields as visitors see them. An insert point ("+") appears between elements on hover and on keyboard focus, and every page ends with a visible "Add field", which opens the palette for the end of that page, or moves the focus to its search where it is already open. Rules show as small chips on the elements they affect, except on the selected element, whose rules are in the inspector. | An insert point opens a small menu: Add a field here (opens the palette for that point) · Start a new page here (splits the page at that point). On the selected element: Move to… · Duplicate · Delete · "…" (Change type… · Start a new page after this · Save group as template… for groups · Copy alias). At 620 px they sit in the header of the inspector, which then covers the canvas. |
+| The steps | the pages by name across the top of the canvas (an unnamed page reads "Page 1"), then "Add page" (an empty page at the end, whose empty state says that the palette's Layout › New page splits a page instead), then **After sending** | Clicking a step shows that page. After sending shows the outcome as visitors will see it, read-only, with "Change", which opens that outcome's editor in the Settings view. |
+| Canvas | groups with their columns, and fields as visitors see them. An insert point, a button "Add a field here" in the gap above each element and below a group's last one, appears on hover and on keyboard focus, and every page ends with a visible "Add field", which opens the palette for the end of that page, or moves the focus to its search where it is already open. Rules show as small chips on the elements they affect, except on the selected element, whose rules are in the inspector. | An insert point opens the palette for that point, whose Layout › New page starts a page there. On the selected element: its handle ("Move Email address") and Move to… · Duplicate · Delete · "…" (Change type… · Start a new page after this · Save group as template… for groups · Copy alias). At 620 px they sit in the header of the inspector, which then covers the canvas. |
 | Palette | search, "Recently used", then **Layout** (Group: a set of fields, with optional columns; New page: starts a page at that point and moves what follows onto it), the field types in groups, the site's saved groups, and "Paste questions…" at the end | A click inserts at the chosen point, or after the selected element, or at the end of the current page; dragging places it. |
 | Inspector | opens when an element is selected: the element's type at the top ("Email field"), then the sections; the label is the first field of Essentials | see below |
 
-**The inspector's sections:**
+**The inspector's sections,** each under a header that is a button opening or closing it (`aria-expanded`):
 
 - **Essentials** (open): label, help text, **Required**, placeholder.
   - **File fields** add the allowed types and the largest file. Its help names the site's limit; for users with
@@ -208,16 +216,35 @@ as visitors will see it.
   - a closed section shows a one-line summary of what is set ("Up to 200 characters");
   - a section shows at most seven settings before "More options".
 - **Rules:**
-  - the closed section's line holds its action directly: "Always shown · Add a rule", whose link opens the rules
-    builder without opening the section first;
+  - the closed section's line holds its action directly: "Always shown · Add a rule", whose link sits beside the
+    header's button, not inside it, and opens the rules builder without opening the section first;
   - the section's help says that a rule sits on the element it shows, hides or requires.
 - **The AI add-on:** "Suggest help text" sits beside the help text.
+
+**The keyboard** (ADR-0016) reaches everything on the canvas, in the visual order:
+
+- **"Skip to the form"** is the workspace's first stop, so the canvas doesn't wait behind Umbraco's header, the tree
+  and the palette;
+- each field is a button that selects it (Enter or Space), and each page step is a button; Esc clears the
+  selection, closes the palette or cancels a drag;
+- **F2** or a double click edits the selected field's label in place: Enter keeps it, Esc puts the old one back;
+- **Ctrl+D** duplicates, **Delete** deletes, **Alt+Up** and **Alt+Down** move the field one place, and **?** lists
+  every shortcut in a dialog with only Close;
+- **Move to…** lists the groups by page and puts the field at the end of the chosen group;
+- after a delete, the focus moves to the field that took its place.
 
 **Undo and redo** have no buttons of their own:
 
 - every designer change can be undone with Ctrl+Z and redone with Ctrl+Y;
 - deleting or moving something shows a toast with **Undo**;
 - both are in "…" with their shortcuts.
+
+**Paste questions…** opens a dialog: one question per line, then the fields it will add with the type guessed for
+each, which can be changed afterwards; primary **Add 5 fields**.
+
+**Translating** (on sites with more than one language): choosing another language in the toolbar shows that
+language's texts on the canvas and in the inspector, which says that visitors see the default language's text where
+one is empty. A field without a text in the chosen language carries the chip "No German text yet".
 
 **The form check badge** shows the number of problems ("2 problems"), or "No problems".
 
@@ -233,16 +260,21 @@ as visitors will see it.
   last row;
 - "all" and "any" groups: each group starts with "when all of these are true", where "all" can be changed to "any",
   and "Add group" sits beside "Add condition";
-- a switch that turns the rule off;
-- primary **Update**, or **Add** for a new rule.
+- the switch **Use this rule**, which keeps the rule without using it;
+- the action bar: Delete rule at its start (an existing rule only; it acts at once, as every designer change does, and
+  the toast offers Undo), Cancel, and primary **Update**, or **Add** for a new rule.
 
 **The rules overview** (sidebar, from "…" and from the form check):
 
-- every rule in the form, each linking to its element;
-- **Add rule**, which first asks what the rule affects.
+- every rule in the form, by page, each linking to its element, then the outcomes' rules under After sending;
+- a conflict, a hide rule and a require rule that hold for the same answer, is warned on the row it concerns;
+- **Add rule**, which first asks what the rule affects;
+- empty, one sentence on what most rules do.
 
 **A new blank form** shows one empty page with its "Add field" and a single sentence pointing to it and to "Paste
-questions…".
+questions…". The form check counts its one error ("Add at least one field", whose Fix it opens the
+palette for the end of the page), so an empty form never reads "No problems"; Publish… stays usable, and the publish
+dialog blocks it with Fix it.
 
 ### 5.2 Settings
 
@@ -251,15 +283,22 @@ Appearance, Developer.
 
 - **Open or closed:** Submission and After sending are open. The others are closed, each with a summary line ("Open
   until 30 November · 120 entries at most").
+- **Submission** shows five settings: the send button's label, Store entries, Manual approval, Email verification and
+  the entry title (with its merge-tag picker). Its "More options" holds the settings of forms with several pages (the
+  labels of Next and Back, Summary page, Progress, Save and continue later) and the entry reference prefix.
 - **Help:** each setting has its help text below it and, where useful, "Learn more".
-- **The outcomes** (After sending) are an ordered list, each with an optional rule.
+- **The outcomes** (After sending) are an ordered list, each with an optional rule; visitors get the first one whose
+  rule matches. A row's move handle ("Move Redirect to /press/thanks") shows on hover and on focus (ADR-0016).
   - A row opens the outcome's editor in a sidebar: a message (rich text with merge tags, optionally with a copy of the
-    answers) or a redirect (a page or an address), and its rule. Primary **Update**.
+    answers), a redirect (a page or an address), or a message and then a redirect, and its rule, beside a live preview
+    with a sample entry. The action bar: Delete outcome at its start (it acts at once and the toast offers Undo),
+    Cancel, primary **Update**.
   - "Add outcome" sits under the list.
-  - A new form has one outcome: the default thank-you message (copy.md).
+  - A new form has one outcome: the default thank-you message (copy.md). Without any outcome, visitors get that
+    message, and the list says so.
 - **Settings, outcomes and actions belong to the draft:** a sidebar's **Add** or **Update** changes the draft like any
   designer change, Save draft keeps it, and Publish puts it live. On a published form, the toast after Add or Update
-  says so, with Publish… (copy.md, success).
+  says that it applies once the form is published (copy.md, success); Publish… stays in the footer only.
 
 ### 5.3 Actions
 
@@ -274,19 +313,28 @@ The actions grouped by trigger: **Submitted**, **Approved**, **Rejected** and **
     below it.
   - **Then** the trigger (Submitted unless chosen otherwise), then the type's own settings.
   - **Footer:** Test · Cancel · **Add**.
+  - **After Add,** the sidebar closes, the new card is scrolled into view and takes the focus, and on a published form
+    the toast says when it starts to run.
 - **A card:**
   - the type icon, the name, a one-line summary ("To sales@example.com"), the rule chip, and the last run ("Delivered
     2 hours ago");
-  - visible: the on/off switch and **Test**; "…": Duplicate · Move to another trigger… · Delete;
-  - cards reorder by drag and by keyboard (ADR-0016);
-  - clicking a card opens its editor (footer: Test · Cancel · **Update**).
+  - visible: the on/off switch, named for what it turns on ("Use Email the team"), and **Test**; "…": Duplicate ·
+    Move to another trigger… · Delete;
+  - cards reorder by drag and by keyboard (ADR-0016), through a move handle that shows on hover and on focus;
+  - clicking a card opens its editor (footer: Test · Cancel · **Update**);
+  - a failed or uncertain last run ("Failed at 14:02. Next try at 14:30.") links to **Details**, a sidebar with what
+    the server answered and the tries, never the entry. It says who can retry the run (ADR-0013, amendment) and
+    offers Test, which sends a sample entry to see whether the server answers again.
 - **The email editor:** the recipient builder, the subject and body with the merge-tag picker, the layout and
   attachments, and a live preview with a sample entry.
 - **Test** runs the action against a sample entry made from the form's fields (8.1):
   - an email goes only to the user who tests, and its first line names the recipients the real one would go to;
   - a webhook asks first, then sends with `X-Jfb-Test: true`;
   - content actions show what they would create, and create nothing.
-- **Without `manageActions`,** the view is read-only, and one line at the top says which permission changes it.
+- **Without `manageActions`,** the view is read-only, and one line at the top says which permission changes it, and
+  for which folder. It has no Add action, move handles, switches, Test or "…"; a card still opens its settings,
+  read-only. Designers meet it where a restricted folder's own grant gives them `design` without `manageActions`
+  (section 11).
 - **Empty:** one sentence on what actions do, pointing to Add action in the toolbar, which stays the view's only button.
 
 ### 5.4 Entries
@@ -302,15 +350,19 @@ Inbox uses them too while it is filtered to this form.
 - **the date range:** last 7 days, last 30 days (the default), this month, last month, this year, or a range; its
   popover also holds "Group by" (day, week or month);
 - **the switch** "Compare with the previous period": a calendar period compares with the same days of the one before
-  (this month so far with the same days of last month), a rolling one with the span just before it;
+  (this month so far with the same days of last month), a rolling one with the span just before it. It applies to the
+  numbers and to the chart of entries per day;
 - **the segmented switch** Overview · Answers.
 
-**Overview:** views, starts, entries and conversion; drop-off per page; the median time to complete; the fields that
-stop visitors most, with the kind of error; top pages; hour of day; unique members.
+**Overview:** views, starts, entries and conversion, each with its change in words ("up 6% from 4,540"); entries per
+day (or per week or month, as grouped); who reaches each page, with the median time to complete; the fields that stop
+visitors most, with the kind of error; the top website pages; entries by hour of day, in the site's time zone; and,
+on sites with members, how many members sent entries.
 
-**Answers** (11.5b): a summary per field.
+**Answers** (11.5b): a summary per field. Choice fields show their options as bars; free-text answers are listed,
+newest first, each linking to its entry, and never summarised; other fields say how often they were answered.
 
-- **Every chart** has a table view.
+- **Every chart** has "Show as table", which swaps it for its table in place; each box remembers the choice per user.
 - **Empty:** "No data yet", with when numbers appear.
 - **Insights off:** one line naming where to turn them on, and nothing else.
 
@@ -328,7 +380,9 @@ with entries.
   **Restore as a new draft**; secondary "Restore and publish…", which opens the publish dialog for the restored draft.
 - **Comparing:** ticking the boxes of two versions shows Compare, the view's main action, in the toolbar. The
   comparison lists fields added, removed and changed, then settings, actions and rules.
-- **A row's "…":** Pin · Add comment….
+- **A row's "…":** Restore as a new draft · Pin · Add comment…. Restoring is reversible, so it acts at once (§4.13):
+  the toast names what changed, since the menu skips the comparison, and Undo puts the draft before it back, which
+  also stays in History.
 - **Restore an earlier version…,** first in the form's "…", offers the same from every view: a sidebar listing the
   versions by date, with the same "Show draft saves" switch, where choosing one shows the same comparison and the same
   two buttons.
@@ -337,9 +391,9 @@ with entries.
 
 | Screen | Content | Primary | Secondary |
 | --- | --- | --- | --- |
-| Preview (full-screen modal) | the draft rendered by its theme in a frame. Submissions there are test entries, which run no actions unless "Run actions for test entries" is on. | – (sending the form is the action) | the canvas width · Fill with sample answers · "…" (Light or dark · Language · Run actions for test entries) |
-| Publish dialog | what changed since the live version, grouped (fields, settings, actions, rules); the form check's result, where errors block with **Fix it**; an optional comment for the version | **Publish** | Cancel |
-| Save conflict | who saved, and when, after this user opened the form | **Review both versions** | Cancel |
+| Preview (full-screen modal) | the draft rendered by its theme in a frame, at the form's width as in the designer (Desktop 960 px, Tablet 768 px, Phone 375 px), with "Narrowed to fit" when the window has less room. Submissions there are test entries, which run no actions unless "Run actions for test entries" is on. After sending, the note offers **Run actions…** for that one test entry, which asks first and lists the actions, because their emails and messages then really go out. | – (sending the form is the action) | the canvas width · Fill with sample answers (Start again, after sending) · "…" (Light or dark · Language · Run actions for test entries) |
+| Publish dialog | what changed since the live version, grouped (fields, settings, actions, rules), or, on a first publish, what the first version holds; the form check's result, where errors block with **Fix it** and warnings are listed too, with Fix it, without blocking; an optional comment for the version. After a first publish, while no page shows the form, the toast offers Show how, which opens the "Used on" sidebar. | **Publish** | Cancel |
+| Save conflict | that the draft wasn't saved, who saved, and when, after this user opened the form, and that the user's changes are still here | **Review both versions** | Cancel |
 | Review both versions | the two versions side by side; each difference can be taken from either side | **Save** | Cancel |
 
 ## 6. Entries
@@ -352,16 +406,21 @@ then the newest. A form's Entries view shows that form only.
 - **Columns:** the selection box (named "Select entry 1042"), with a box in the header that selects the page; the
   entry title, or its number when the form has none; the form (Inbox only); the state chip; the time received; the
   action status ("3/3 delivered"); and the columns the user adds.
+- **A column whose value a filter fixes** to one value is hidden while that filter is on, since its chip already says
+  it; a filter that leaves several values (a date range) keeps its column.
 - **The column chooser** sits at the end of the header row. It opens a sidebar of checkboxes: the details every entry
   has, and the form's fields on a form's Entries view or while the Inbox is filtered to one form. Otherwise one line
   says that filtering by a form offers its fields.
+- **At 620 px** the form's name moves under the entry's title, and a failed delivery shows in the state column, under
+  the chip, so the names keep their width.
 - **Unseen entries** are bold with a dot. Opening one marks it seen.
 - **Toolbar:** the search field · Filter · Export…; "…": Email me a summary… · Keyboard shortcuts.
 - **Search** matches the entry title, number and reference, and the answers of fields that are not sensitive. When it
   finds nothing and sensitive fields exist, the empty state says that they aren't searched.
 - **Filter** opens a menu:
-  - Form (Inbox only), State, Received (today, this week, last 7 days, this month, last month, or a range), and the
-    form's fields by type;
+  - Form (Inbox only), State, Received (today, this week, last 7 days, this month, last month, or a range), Actions
+    (failed, uncertain, all delivered: where entries whose emails or webhooks failed are found), and the form's fields
+    by type;
   - under "Saved", the user's own filter sets: on the Inbox all of them, each naming its form when it has one
     (choosing such a set filters the Inbox to that form); on a form's Entries view, the sets for that form and those
     without one.
@@ -369,13 +428,25 @@ then the newest. A form's Entries view shows that form only.
 - **Bulk bar** (Umbraco's, at the bottom, once a row is selected): visible, the first three actions the user may use,
   in this order: Approve · Reject · Mark as spam · Delete… · Export selected… · Re-run actions. The rest are in "…".
   - **An action is offered** when it applies to at least one selected entry. It acts on those, and says how many it
-    left out ("8 entries approved. 2 weren't waiting for approval.").
+    left out ("3 entries approved. 3 weren't waiting for approval.").
+  - **After a state change** (approve, reject, mark as spam, not spam) the selection clears, the rows change in place,
+    and the toast offers **Undo** for 10 seconds. The actions the change starts wait until then, so Undo also cancels
+    them (ADR-0023). Delete… asks first instead, because deleting can't be undone.
   - **On a form's Entries view** the bulk bar sits directly above the workspace footer. The two never merge: the
     footer's buttons are about the form, the bulk bar's about the selected entries.
 - **Keyboard:** `j`/`k` move, `Enter` opens, `a` approves, `r` rejects, `s` marks as spam, `/` searches, `Esc` closes,
-  `?` lists them (§4.13).
-- **States:** first use (no entries yet: share the form, or preview it and send a test entry); no results (with "Clear
-  filters"); loading as a skeleton of rows; an error with "Try again".
+  `?` lists them in a dialog with only Close (§4.13).
+  - **The keyboard cursor** is a focus ring around the row, without a fill, so it never looks like a ticked row or the
+    open entry. `a`, `r` and `s` act on the cursor's row in the list, and on the open entry in the panel.
+  - **Nothing animates:** these keys are pressed hundreds of times a day (ADR-0016, amendment).
+- **States:**
+  - **first use,** which depends on what the user may do: users who may design the form get "share the form, or
+    preview it and send a test entry"; everyone else is told that entries appear as soon as visitors send the form,
+    and is offered Email me a summary…. The Inbox's own first use says that entries arrive from every form the user
+    may view, offers the same, and shows no toolbar, since there is nothing to search, filter or export;
+  - **no results:** one sentence that points to the chip row above, whose Clear filters is the only one;
+  - **a search that finds nothing,** with Clear search;
+  - loading as a skeleton of rows; an error with "Try again".
 
 ### 6.2 Spam
 
@@ -391,9 +462,10 @@ entry panel's header repeat it.
 A sidebar beside the list; the list keeps its place, its selection and its scroll position. It opens on Answers.
 
 - **Header:** what the narrowed row beside it doesn't show (see "Rules" at the top): on the Inbox, the form's name;
-  the number ("Entry #1042"), left out when the row already shows it because the form has no entry title; and the
-  state chip, except in Spam. Opened without a list beside it (from Recent entries, People or a member's Form entries
-  view), the header also shows the entry title and the form's name.
+  and the number ("Entry #1042"), left out when the row already shows it because the form has no entry title. The
+  state chip joins them only where no row shows the state: at 620 px, where the panel covers the list, and when the
+  panel opens without a list. In Spam it never shows. Opened without a list beside it (from Recent entries, People
+  or a member's Form entries view), the header also shows the entry title and the form's name.
 - **The actions** sit in the sidebar's action bar at the bottom, as in every Umbraco sidebar: the primary on the
   right, the visible ones beside it, then "…".
 - **Actions, by state:**
@@ -407,21 +479,30 @@ A sidebar beside the list; the list keeps its place, its selection and its scrol
   A user who may use fewer actions sees fewer: a privacy officer, who may delete but not change states, sees Delete…
   as the panel's visible action. Approve and Reject appear only on forms with manual approval, while the entry waits;
   on other forms entries are approved automatically, so there is nothing to decide.
+- **After a state change** (Approve, Reject, Mark as spam, Not spam, or their keys), the panel stays on the entry, so
+  `j` moves on. The row's chip changes in place, the bar shows the actions of the new state, and the toast offers
+  **Undo** ("Entry #214 approved. [Undo]") for 10 seconds, while the actions the change starts wait (ADR-0023). Once
+  the window has passed, the toast loses its Undo and says that the state can be changed back by hand. Nothing
+  animates.
 - **Tabs:** Answers · Timeline · Notes.
 - **Answers:**
   - **A line of details** comes first: the website page it was sent from ("Sent from /contact"), the language and the
     time to complete. "More details" adds the member, the IP address if stored, and the spam reasons; in Spam, the
     reasons come first.
   - **The answers** follow, grouped by page and group, with fields from older versions of the form marked as such.
-  - **Files:** images (PNG, JPEG, GIF, WebP) open in a viewer through the authorised download; every other file
-    downloads, and SVG and HTML are never shown inline (7.3).
+  - **Files:** images (PNG, JPEG, GIF, WebP) open in a viewer dialog through the authorised download, with Download;
+    every other file downloads, and SVG and HTML are never shown inline (7.3).
   - **Consents** show the exact text the visitor saw.
   - **Fields kept only until the actions have run** show as "not kept".
-  - **Sensitive values** are masked, with **Reveal** for users with `viewSensitive` (audited).
-  - **"Edit answers"** in the tab's header (`editEntries`) turns the answers into fields, with **Save** and Cancel
-    (audited).
+  - **Sensitive values** are masked, with **Reveal** for users with `viewSensitive`: one value at a time, at once and
+    without asking, with Hide to mask it again, and a line under it saying that it is recorded in the audit log.
+  - **"Edit answers"** in the tab's header (`editEntries`) turns the answers into fields, and the action bar holds
+    Cancel and **Save** alone. Files, consent texts and the sensitive values the user can't see stay as they are: a
+    file is the visitor's upload, and a consent is proof of what they agreed to. One line says that the changes are
+    recorded with the old values (audited).
 - **Timeline:** every event, the action runs (with **Retry** for users with `manageActions`) and the emails.
-- **Notes:** a box for a new note with **Add note**, then the notes, newest first. Users edit their own.
+- **Notes:** a box for a new note, whose help says that visitors never see notes and everyone who may open the entry
+  can read them, with **Add note**; then the notes, newest first. Users edit their own.
 - **Forward… opens a sidebar:**
   - choose a backoffice user, or one of the team addresses of Settings › Email;
   - an optional message;
@@ -435,7 +516,7 @@ A sidebar beside the list; the list keeps its place, its selection and its scrol
 | Screen | Content | Primary | Secondary |
 | --- | --- | --- | --- |
 | Export (sidebar) | the format (CSV, Excel, JSON, printable view, ZIP of the uploaded files), the fields, and the current filters with the number of entries they match; under "More options" the delimiter, labels or aliases as headers, and the byte-order mark. It opens with the user's last choices for this form. | **Export** | Cancel |
-| Email me a summary (sidebar) | Off, daily or weekly, in the site's time zone; it holds counts and links, never answers | **Save** | Cancel |
+| Email me a summary (sidebar) | Off, daily, or weekly on Mondays; it goes out at 07:00 in the site's time zone and covers the day or week before. It holds counts and links, never answers, only for the forms the user may view, and goes to the user's own address. Below the choice, what it looks like. | **Save** | Send test email · Cancel |
 
 A large export continues in the background; a notification links to the file when it is ready (11.4).
 
@@ -445,12 +526,15 @@ Each item opens a list. A row opens the item's own workspace, with its name in t
 
 | Item | The list | The item's workspace | Header and "…" |
 | --- | --- | --- | --- |
-| Option lists | name, kind, number of forms that use it; primary **Create option list**, which asks for the kind first (fixed options, content, a data type, a JSON address, or an upload) | the editor for its kind with a live preview of the options, CSV or TXT upload, and the cache setting | "Used by 2 forms" · "…": Duplicate · Delete… |
-| Themes | name, a swatch, and "Default" on the default theme; primary **Create theme**; "…": Import a theme… | colours (light and dark), type, spacing and corners, buttons and the focus ring, custom CSS under "More options", beside a live kitchen-sink form with the contrast checks in place | "Used by 5 forms" · "…": Duplicate · Export · Delete… |
+| Option lists | name, kind, number of forms that use it; primary **Create option list**, which asks for the kind first (fixed options, content, a data type, a JSON address, or an upload) | the editor for its kind with a live preview of the options, CSV or TXT upload, and, for a JSON address, how long fetched options are kept, with Fetch now | "Used by 2 forms" · "…": Duplicate · Delete… |
+| Themes | name, a swatch, and "Default" on the default theme, unless its name already says so (Site default); primary **Create theme**; "…": Import a theme… | colours (light and dark), type, spacing and corners, buttons and the focus ring, custom CSS under "More options", beside a live kitchen-sink form, with each colour's contrast check under it | "Used by 5 forms" · "…": Duplicate · Export · Delete… |
 | Email layouts | name, a thumbnail, and "Default" on the default layout; primary **Create email layout** | logo, colours, header and footer per language, beside a preview with a sample entry in light and dark; Send test email sits with the preview, because it sends what the preview shows | "Used by 3 actions" · "…": Duplicate · Delete… |
 | Templates | the gallery of built-in and saved templates; no create button, because templates come from "Save as template" on a form or a group | none: a card opens its preview, with **Use template** | saved templates' "…": Rename… · Delete… |
 
 - **A field uses an option list** through "Options from" in the inspector's Essentials (5.1).
+- **Settings beside a preview** (a theme, an email layout, and the action sidebar of 5.3) show one side at a time
+  where both don't fit (a workspace under 900 px, or a window under 1000 px for the action sidebar): the header ends
+  with the switch Settings · Preview.
 - **The default theme and email layout** are chosen in Settings › General and Settings › Email, the one place that
   decides them. The "Default" mark in the lists says which they are, and links there.
 
@@ -467,25 +551,31 @@ with its own value for the chosen site says so, and offers to use the value for 
 
 | Item | What it holds | Primary | Visible secondary |
 | --- | --- | --- | --- |
-| General | default theme, required-marker style, default labels, new-form defaults, how long a form's History keeps draft saves; per site the base URL and the time zone; the form block type, with Create a form block type… while there is none (section 10) | **Save** | site switch |
-| Email | sender name and address, default layout, team recipients for system notices, team addresses that entries may be forwarded to | **Save** | site switch · Send test email (to the user who sends it) |
-| Spam protection | default level; content checks (blocked words, blocked email domains, the most links an entry may hold); blocked address ranges; provider keys status. At the default strictness, a blocked word or a blocked email domain is enough to send an entry to Spam; entries are never refused for what they say (D14). A form sets only how strict its checks are, and its Spam protection group says where the words are kept. | **Save** | – |
-| Files | allowed type groups; the largest size any file field may allow; scanner status. Each file field sets its own limit, up to this one, in its Essentials, whose help names this limit and, for users who may change it, opens it in a sidebar. | **Save** | – |
-| Access | a matrix of every user group and its permissions, globally; when the groups don't fit, it scrolls sideways inside its box with the permission column fixed, because a site can have any number of groups. A group that can't open the Forms section yet is named once, in a line above the matrix, with a link to Umbraco's user groups, where the section is added. Below it, the folders and forms with their own access or a restriction, each opening the tree's Permissions sidebar. | **Save** | Add folder or form… |
-| Integrations | webhook signing secret reference, Slack and Teams defaults, Umbraco webhook events on or off | **Save** | – |
+| General | default theme, which fields get a mark (the optional or the required ones), default labels, new-form defaults, how long a form's History keeps draft saves; per site the base URL and the time zone; the form block type, with Create a form block type… while there is none (section 10) | **Save** | site switch |
+| Email | sender name and address, default layout, team recipients for system notices, team addresses that entries may be forwarded to | **Save** | site switch · Send test email (to the user who sends it), offered only while Umbraco can send mail; until then one line at the top says so and names the key that sets up sending |
+| Spam protection | default level, each choice with its provider's key status (a captcha without keys can't be chosen, and names the key that adds them); content checks (blocked words, blocked email domains, the most links an entry may hold); blocked address ranges, compared when an entry arrives and never stored. A blocked email domain is enough to send an entry to Spam; blocked words and extra links add up (at the default strictness, three blocked words, or two with too many links). Entries are never refused for what they say (D14). A form sets only how strict its checks are, and its Spam protection group says where the words are kept. | **Save** | – |
+| Files | allowed type groups; the largest size any file field may allow; the scanner and storage status. Each file field sets its own limit, up to this one, in its Essentials, whose help names this limit and, for users who may change it, opens it in a sidebar. | **Save** | – |
+| Access | a matrix of every user group and its permissions, globally, in three groups (forms, entries, and the library, settings and privacy tools); when the groups don't fit, it scrolls sideways inside its box with the permission column fixed, because a site can have any number of groups. The Administrators column is ticked and can't be changed, and one line above the matrix says why. A group that can't open the Forms section yet is named once, in a line above the matrix, with a link to Umbraco's user groups, where the section is added. Below it, the folders and forms with their own access or a restriction, each with one sentence on what is special about it, and each opening the tree's Permissions sidebar. | **Save** | Add folder or form… |
+| Integrations | webhook signing secret reference; the hosts webhooks may call (read-only, from host configuration); Slack and Teams defaults, whose addresses are references to host configuration too; Umbraco webhook events on or off | **Save** | – |
 
 ## 9. Privacy and Activity
 
 | Item | What it holds | Primary | Visible secondary |
 | --- | --- | --- | --- |
-| People | an email address, or a member chosen with Umbraco's member picker. After **Find**: that person's entries in every form, restricted ones included (ADR-0013), with their files and emails. A row opens the entry panel (6.3). | **Find** | after a search: Export everything (a ZIP of JSON and files) · Erase… |
-| Retention | how long entries are kept, per state (Submitted, Approved, Rejected, Spam); the forms with their own retention; and "What will be deleted", per form, for the next 7, 30 or 90 days, without a button to press | **Save** (`manageSettings`; read-only otherwise) | the span of "What will be deleted" |
+| People | an email address, or a member chosen with Umbraco's member picker. After **Find**: that person's entries in every form, restricted ones included (ADR-0013), with their files and emails. A row opens the entry panel (6.3). | **Find** | after a search: Export everything (a ZIP of JSON and files) · Set legal hold… · Erase… |
+| Retention | how long entries are kept, per state (Submitted, Approved, Rejected, Spam); the forms with their own retention; and "What will be deleted", per form, for the next 7, 30 or 90 days, without a button to press. While the days are being changed, it counts with the values not yet saved. | **Save** (`manageSettings`; read-only otherwise) | the span of "What will be deleted" |
 | Data collection | IP handling, sensitive-field defaults, captcha consent mode, the insights switch | **Save** | – |
 | Deliveries | every email and webhook run, problems first (failed, uncertain, limited), then the newest; state, recipient, form and time. A row opens its details. | in the details: **Retry** for a failed or uncertain run | search · Filter |
 | Audit log | who did what, when, on which form or setting. A row opens its details, with the values before and after; a form's save or publish links to that version in the form's History, where the changes are listed. | – | search · Filter · Export |
 
+- **Export everything** prepares the ZIP in the background: the results box shows how far it is, the button can't be
+  used meanwhile, the user can carry on, and a toast and a notification link to the file.
+- **Set legal hold…** (a sidebar, ADR-0009): which of the person's entries, the reason, and the end date, at most a
+  year ahead; primary **Set legal hold on 1 entry**. A held entry shows the hold and its end date in its row, and
+  Erase… leaves it out until the hold ends.
 - **Erase…** always shows its preview first: what will be deleted or anonymised, in which forms, and how many files
-  and emails (13.2).
+  and emails (13.2). Afterwards, one line in the list's place gives the counts and, for users with `manageSettings`,
+  links to the audit record; others read that it is recorded in the audit log.
 - **Retention** is set in this one place for the whole site. A form's own values sit in its Settings view (Privacy
   group), and this screen lists those forms.
 - **Deliveries:**
@@ -499,8 +589,8 @@ with its own value for the chosen site says so, and offers to use the value for 
 | --- | --- |
 | Header search | a **Forms** tab: forms by name and alias (with their folder), and fields across all forms by label or alias ("Email, in Contact us"). A result opens the form, or the form with that field selected. For users with `viewEntries`, the tab ends with "Search entries for '…'", which opens the Inbox with that search. |
 | Content editor | the "Jiron Form Builder form picker" property editor (one or more forms; optional theme and redirect override), and a block labelled with the form's name ("Form: Contact us") |
-| Overview (checklist item 4), later Settings › General | Create a form block type…, for users with `manageSettings` and Umbraco's Settings section. It creates a "Form" element type and data type and never changes existing ones (6.7); its dialog then says how to allow the block on a document type. |
-| Member workspace | a **Form entries** view listing that member's entries, with permissions applied; a row opens the entry panel (14.3) |
+| Overview (checklist item 4), later Settings › General | Create a form block type…, for users with `manageSettings` and Umbraco's Settings section. Its dialog says what it creates, a "Form" element type and data type, and that it never changes existing ones (6.7); its primary is **Create**. Then the same dialog says the one step left, allowing the block on a document type, with **Open document types**. |
+| Member workspace | a **Form entries** view after Details and Info (not on the create screen, where no member exists yet), listing the entries the member sent while signed in, newest first, with permissions applied: forms the user may not view are left out without a trace. A row names the entry by its number, since its title would mostly repeat the member's name, and opens the entry panel (14.3). The view adds nothing to the footer. |
 | Umbraco's Health Check dashboard | the same health checks as the Overview (9.1) |
 
 ## 11. Who sees what
@@ -515,7 +605,7 @@ or widen this per form. "–" means the screen or action is not shown.
 | The forms tree | all forms | all forms | all forms | all forms | all forms | empty, with one sentence |
 | Create, duplicate, move, trash and import forms; folders | yes | – | – | yes | – | – |
 | Form views Design, Settings and History; Preview, Save draft, Publish | yes | – | – | yes | – | – |
-| Form view Actions | change and test | – | – | change and test | – | – |
+| Form view Actions | change and test² | – | – | change and test | – | – |
 | Form views Entries and Insights; Inbox; Spam | – | yes | yes | yes | yes | – |
 | Email me a summary | – | yes | yes | yes | yes | – |
 | Approve, reject, spam, not spam, notes, edit answers, forward | – | yes | – | yes | – | – |
@@ -527,14 +617,18 @@ or widen this per form. "–" means the screen or action is not shown.
 | Library | yes | – | – | yes | – | – |
 | Settings: General, Email, Spam protection, Files, Integrations; Privacy › Data collection; Activity | – | – | – | yes | – | – |
 | Settings › Access; Permissions… on folders and forms | – | – | – | yes | – | – |
-| Privacy › People, with its export of one person's data and Erase…; Privacy › Retention (read) | – | – | – | yes | yes | – |
+| Privacy › People, with its export of one person's data, legal holds and Erase…; Privacy › Retention (read) | – | – | – | yes | yes | – |
 | Privacy › Retention (change) | – | – | – | yes | – | – |
 | Header search, Forms tab | all forms | all forms | all forms | all forms | all forms | the tab, finding nothing |
 | Member workspace: Form entries | – | yes | yes | yes | yes | – |
 | Content editor: the form picker | yes | yes | yes | yes | yes | yes |
 
-¹ The designer holds `manageActions`, but re-running and retrying happen in the entry panel and in Deliveries, which
-need `viewEntries` or `manageSettings`. A designer tries actions with **Test** instead.
+¹ A retry needs `manageActions` for the run's form and a screen that shows the run: the entry's timeline, which needs
+`viewEntries`, or Activity › Deliveries, which needs `manageSettings` (ADR-0013, amendment). The designer holds
+`manageActions` but neither of the others, so it tries actions with **Test** instead, and a failed run's Details in
+the Actions view say who can retry it (5.3).
+
+² Read-only where a restricted folder's own grant gives the designer `design` without `manageActions` (5.3).
 
 **The outsider,** a backoffice user without the Forms section, sees no Forms section, no Forms search tab and no Form
 entries view. Every management endpoint refuses them (ADR-0013), and the form picker in the content editor still works
@@ -564,6 +658,8 @@ not the look, so each skill contributed what applies to structure.
   - **The product context file** `PRODUCT.md` is written in 2.2, as the roadmap orders.
 - **`emil-design-eng`:**
   - **How often decides motion:** list navigation, approving and designer edits happen hundreds of times a day, so
-    they get no added animation.
-  - **Feedback** comes from UUI's own states, optimistic updates, and an **Undo** toast after a delete or a move.
+    they get no added animation; only a field dropped by the pointer settles, over 150 ms, so the eye can follow it
+    (ADR-0016, amendment).
+  - **Feedback** comes from UUI's own states, optimistic updates, and an **Undo** toast after a delete, a move or an
+    entry's change of state (ADR-0023).
   - Motion choices proper belong to the wireframes and the review of 2.2.

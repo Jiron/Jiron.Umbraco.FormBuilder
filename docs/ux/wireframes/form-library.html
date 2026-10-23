@@ -4,35 +4,84 @@
   <meta charset="utf-8">
   <title>Form library (folders and the Recycle Bin) · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 create@1440x900 empty@1440x900 loading@1440x900 error@1440x900 bin@1440x900 bin-confirm@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 create@1440x900 empty@1440x900 loading@1440x900 error@1440x900 trash-in-use@1440x900 trashed@1440x900 unpublish@1440x900 import@1440x900 block-type@1440x900 block-type-done@1440x900 bin@1440x900 bin-confirm@1440x900 delete-forever@1440x900 restore@1440x900 restore-pick@1440x900 bin-empty@1440x900 default@920x900 import@920x900">
   <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .lb-file { display: flex; align-items: center; gap: var(--wf-space-3); }
+    .lb-file > span { flex: 1; min-width: 0; }
+    .lb-list { display: flex; flex-direction: column; gap: var(--wf-space-2); margin-top: var(--wf-space-3); }
+    .lb-list > li { display: flex; align-items: flex-start; gap: var(--wf-space-3); }
+    .lb-steps { display: flex; flex-direction: column; gap: var(--wf-space-2); margin-top: var(--wf-space-3); padding-left: var(--wf-space-6); list-style: decimal; }
+    .lb-pick { display: flex; align-items: center; gap: var(--wf-space-2); height: 36px; padding: 0 var(--wf-space-4) 0 calc(var(--wf-space-4) + var(--depth, 0) * var(--wf-space-5)); }
+    .lb-pick[aria-checked='true'] { background: var(--uui-color-current); font-weight: 700; }
+    .lb-pick .lb-end { margin-left: auto; }
+    /* After a form moves to the Recycle Bin, the tree no longer shows it (the kit's tree always draws Volunteer sign-up) */
+    html[data-wf-state='trashed'] .wf-side .wf-item--muted[style*='--depth:1'] { display: none; }
+    /* An empty Recycle Bin has no expander in Umbraco's tree (research section 5) */
+    html[data-wf-state='bin-empty'] .wf-side .wf-item[aria-current='page'] > .wf-item__chevron { visibility: hidden; }
+  </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
-<body data-role="admin" data-active="folder:events" data-active-empty="folder:campaigns" data-active-bin="bin" data-active-bin-confirm="bin">
+<body data-role="admin" data-active="folder:events" data-active-empty="folder:campaigns" data-active-unpublish="form:contact"
+      data-active-bin="bin" data-active-bin-confirm="bin" data-active-delete-forever="bin" data-active-restore="bin" data-active-restore-pick="bin" data-active-bin-empty="bin">
   <!--
-    IA section 3 (the forms tree: a folder's list and the Recycle Bin) and section 4 (Umbraco's create dialog).
+    IA section 3 (the forms tree: a folder's list and the Recycle Bin), section 4 (Umbraco's create dialog and Import a
+    form), 5 (Unpublish… in the form's "…") and 10 (Create a form block type…).
     A folder's list shows entries and changes only: the forms' states are the tree's marks, so the list doesn't repeat them.
+
+    States:
+    - default, create (Umbraco's create dialog), empty (an empty folder, whose empty state offers the gallery), loading, error;
+    - trash-in-use: Trash on Contact us, which is picked on pages, asks first and names the pages;
+    - trashed: Trash on a form no page uses acts at once; the toast offers Undo;
+    - unpublish: Unpublish… from the form's "…" in its workspace, which names the pages that then show the closed message;
+    - import: Import a form… (from "+"), after choosing the file: what the file holds and what can't come along;
+    - block-type, block-type-done: Create a form block type… (from the Overview's checklist, Settings › General, and the
+      "Used on" sidebar of a form that no page uses; drawn here over a folder), then how to allow the block;
+    - bin, bin-confirm (Empty recycle bin…), delete-forever (a trashed form's Delete…), restore (Umbraco's restore
+      sidebar, back to the original folder), restore-pick (its folder is gone, so Umbraco's picker asks where),
+      bin-empty (no footer: there is nothing to empty).
+    The Recycle Bin's numbers add up: Spring raffle 286 entries, Old contact form 118 entries and 9 files, Press
+    accreditation 2025 8 entries and 3 files; 412 entries and 12 files in all.
   -->
   <main class="wf-main">
 
     <!-- A folder -->
-    <header class="wf-head" data-state="default create empty loading error">
+    <header class="wf-head" data-state="default create empty loading error trash-in-use trashed import block-type block-type-done">
       <div class="wf-head__main">
-        <span class="wf-head__name" data-state="default create loading error">Events</span>
+        <span class="wf-head__name" data-state="default create loading error trash-in-use trashed import block-type block-type-done">Events</span>
         <span class="wf-head__name" data-state="empty">Campaigns</span>
         <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for this folder"><i data-i="more"></i></button>
       </div>
     </header>
 
+    <!-- A form's workspace (unpublish) -->
+    <header class="wf-head" data-state="unpublish">
+      <div class="wf-head__main">
+        <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms" tabindex="-1"><i data-i="arrow-left"></i></button>
+        <span class="wf-head__name">Contact us</span>
+        <span class="wf-chip wf-chip--warning">Published (pending changes)</span>
+        <a href="#" tabindex="-1">Used on 3 pages</a>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Contact us" tabindex="-1"><i data-i="more"></i></button>
+      </div>
+      <nav class="wf-tabs" aria-label="Views">
+        <a class="wf-tab" href="#" aria-current="page" tabindex="-1"><i data-i="pencil" class="wf-i--20"></i>Design</a>
+        <a class="wf-tab" href="#" tabindex="-1"><i data-i="settings" class="wf-i--20"></i>Settings</a>
+        <a class="wf-tab" href="#" tabindex="-1"><i data-i="send" class="wf-i--20"></i>Actions</a>
+        <a class="wf-tab" href="#" tabindex="-1"><i data-i="inbox" class="wf-i--20"></i>Entries</a>
+        <a class="wf-tab" href="#" tabindex="-1"><i data-i="chart" class="wf-i--20"></i>Insights</a>
+        <a class="wf-tab" href="#" tabindex="-1"><i data-i="history" class="wf-i--20"></i>History</a>
+      </nav>
+    </header>
+
     <!-- The Recycle Bin -->
-    <header class="wf-head" data-state="bin bin-confirm">
+    <header class="wf-head" data-state="bin bin-confirm delete-forever restore restore-pick bin-empty">
       <div class="wf-head__main"><h1 class="wf-head__title">Recycle Bin</h1></div>
     </header>
 
     <div class="wf-content">
       <!-- The folder's list -->
-      <section class="wf-box" data-state="default create" aria-label="Forms in Events">
+      <section class="wf-box" data-state="default create trash-in-use import block-type block-type-done" aria-label="Forms in Events">
         <table class="wf-table" style="border: 0">
           <thead><tr><th>Name</th><th class="wf-num">Entries, last 30 days</th><th class="wf-col-end">Last changed</th></tr></thead>
           <tbody>
@@ -42,9 +91,20 @@
         </table>
       </section>
 
-      <!-- An empty folder -->
+      <!-- The folder's list after Volunteer sign-up moved to the Recycle Bin -->
+      <section class="wf-box" data-state="trashed" aria-label="Forms in Events">
+        <table class="wf-table" style="border: 0">
+          <thead><tr><th>Name</th><th class="wf-num">Entries, last 30 days</th><th class="wf-col-end">Last changed</th></tr></thead>
+          <tbody>
+            <tr><td><span class="wf-row"><i data-i="form"></i><a href="#">Summer fair sign-up</a></span></td><td class="wf-num">512</td><td class="wf-col-end wf-muted">Yesterday, by Lea Hoffmann</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- An empty folder: Create form is the footer's primary; a template is the quicker start -->
       <div class="wf-empty" data-state="empty">
-        <p class="wf-empty__text">No forms here yet. Start from a template; it takes a minute.</p>
+        <p class="wf-empty__text">No forms here yet. A template gives you a working form in a minute.</p>
+        <button class="wf-btn">Choose a template…</button>
       </div>
 
       <!-- Loading -->
@@ -62,29 +122,54 @@
         <button class="wf-btn wf-btn--small" style="margin-left: auto">Try again</button>
       </div>
 
-      <!-- The Recycle Bin's list -->
-      <section class="wf-box" data-state="bin bin-confirm" aria-label="Trashed forms">
+      <!-- The form's Design view, behind the Unpublish confirm -->
+      <div class="wf-canvas" data-state="unpublish">
+        <div class="wf-group">
+          <h2 class="wf-group__title">Your details</h2>
+          <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">First name</span><span class="wf-vf__control"></span></div></div>
+          <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">Email address</span><span class="wf-vf__control"></span></div></div>
+        </div>
+      </div>
+
+      <!-- The Recycle Bin's list; the row a dialog or sidebar is about stays highlighted -->
+      <section class="wf-box" data-state="bin bin-confirm delete-forever restore restore-pick" aria-label="Trashed forms">
         <table class="wf-table" style="border: 0">
           <thead><tr><th>Name</th><th>Trashed</th><th class="wf-col-end"><span class="wf-sr">Actions</span></th></tr></thead>
           <tbody>
-            <tr><td><span class="wf-row"><i data-i="form"></i>Spring raffle</span></td><td class="wf-muted">3 Oct, by Ana Novak</td><td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Spring raffle"><i data-i="more"></i></button></td></tr>
-            <tr><td><span class="wf-row"><i data-i="form"></i>Old contact form</span></td><td class="wf-muted">21 Sep, by Lea Hoffmann</td><td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Old contact form"><i data-i="more"></i></button></td></tr>
-            <tr><td><span class="wf-row"><i data-i="form"></i>Press accreditation 2025</span></td><td class="wf-muted">2 Sep, by Ana Novak</td><td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Press accreditation 2025"><i data-i="more"></i></button></td></tr>
+            <tr data-state="bin bin-confirm delete-forever restore-pick"><td><span class="wf-row"><i data-i="form"></i>Spring raffle</span></td><td class="wf-muted">3 Oct, by Ana Novak</td><td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Spring raffle"><i data-i="more"></i></button></td></tr>
+            <tr data-state="restore" aria-current="true"><td><span class="wf-row"><i data-i="form"></i>Spring raffle</span></td><td class="wf-muted">3 Oct, by Ana Novak</td><td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Spring raffle"><i data-i="more"></i></button></td></tr>
+            <tr data-state="bin bin-confirm restore restore-pick"><td><span class="wf-row"><i data-i="form"></i>Old contact form</span></td><td class="wf-muted">21 Sep, by Lea Hoffmann</td><td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Old contact form"><i data-i="more"></i></button></td></tr>
+            <tr data-state="delete-forever" aria-current="true"><td><span class="wf-row"><i data-i="form"></i>Old contact form</span></td><td class="wf-muted">21 Sep, by Lea Hoffmann</td><td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Old contact form"><i data-i="more"></i></button></td></tr>
+            <tr data-state="bin bin-confirm delete-forever restore"><td><span class="wf-row"><i data-i="form"></i>Press accreditation 2025</span></td><td class="wf-muted">2 Sep, by Ana Novak</td><td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Press accreditation 2025"><i data-i="more"></i></button></td></tr>
+            <tr data-state="restore-pick" aria-current="true"><td><span class="wf-row"><i data-i="form"></i>Press accreditation 2025</span></td><td class="wf-muted">2 Sep, by Ana Novak</td><td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Press accreditation 2025"><i data-i="more"></i></button></td></tr>
           </tbody>
         </table>
       </section>
+
+      <!-- An empty Recycle Bin: nothing to empty, so no footer -->
+      <div class="wf-empty" data-state="bin-empty">
+        <p class="wf-empty__text">The Recycle Bin is empty. Trashed forms wait here with their entries until someone restores them or deletes them for good.</p>
+      </div>
     </div>
 
-    <footer class="wf-foot" data-state="default create empty loading error">
+    <footer class="wf-foot" data-state="default create empty loading error trash-in-use trashed import block-type block-type-done">
       <div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Create form</button></div>
     </footer>
-    <footer class="wf-foot" data-state="bin bin-confirm">
+    <footer class="wf-foot" data-state="unpublish">
+      <div class="wf-foot__end">
+        <button class="wf-btn" tabindex="-1">Preview</button>
+        <button class="wf-btn" tabindex="-1">Save draft</button>
+        <button class="wf-btn wf-btn--primary" tabindex="-1">Publish…</button>
+      </div>
+    </footer>
+    <footer class="wf-foot" data-state="bin bin-confirm delete-forever restore restore-pick">
       <div class="wf-foot__end"><button class="wf-btn wf-btn--danger">Empty recycle bin…</button></div>
     </footer>
   </main>
 
+  <div class="wf-backdrop" data-state="create import restore restore-pick bin-confirm trash-in-use unpublish delete-forever block-type block-type-done"></div>
+
   <!-- Umbraco's create dialog, from the sidebar header's "+" or a folder's "+" -->
-  <div class="wf-backdrop" data-state="create"></div>
   <aside class="wf-sidebar" data-state="create" aria-labelledby="create-title" role="dialog">
     <header class="wf-sidebar__head"><h2 class="wf-title" id="create-title">Create in Events</h2></header>
     <div class="wf-sidebar__body">
@@ -98,14 +183,160 @@
     <footer class="wf-sidebar__foot"><button class="wf-btn">Close</button></footer>
   </aside>
 
-  <!-- Emptying the Recycle Bin asks first (copy.md, confirmations); Cancel has the focus -->
-  <div class="wf-backdrop" data-state="bin-confirm"></div>
+  <!-- Import a form (IA 4): what the file holds, and what can't come along -->
+  <aside class="wf-sidebar" data-state="import" aria-labelledby="im-title" role="dialog">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="im-title">Import a form</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-stack wf-stack--lg">
+        <div class="wf-box"><div class="wf-box__body lb-file">
+          <i data-i="code" class="wf-i--20"></i>
+          <span><span class="wf-strong">contact-us.json</span><br><span class="wf-small wf-muted">18 KB, exported on 12 Oct 2026</span></span>
+          <button class="wf-btn wf-btn--small">Choose another file</button>
+        </div></div>
+
+        <section aria-labelledby="im-holds">
+          <h3 class="wf-strong" id="im-holds" style="margin-bottom: var(--wf-space-3)">What it holds</h3>
+          <div class="wf-box"><div class="wf-box__body">
+            <dl class="wf-dl">
+              <dt>Form</dt><dd>Contact us</dd>
+              <dt>Pages</dt><dd>2, with 9 fields</dd>
+              <dt>Rules</dt><dd>3</dd>
+              <dt>After sending</dt><dd>2 outcomes</dd>
+              <dt>Actions</dt><dd>4</dd>
+            </dl>
+            <p class="wf-small wf-muted" style="margin-top: var(--wf-space-4)">Exports never hold entries or permissions.</p>
+          </div></div>
+        </section>
+
+        <section aria-labelledby="im-cant">
+          <h3 class="wf-strong" id="im-cant">What it can't import</h3>
+          <ul class="lb-list">
+            <li><i data-i="info" style="margin-top: var(--wf-space-1)"></i><span>The theme Spring campaign isn't on this site, so the form uses the default theme.</span></li>
+            <li><i data-i="info" style="margin-top: var(--wf-space-1)"></i><span>The outcome "Redirect to /press/thanks" points at a page this site doesn't have. Choose a page before you publish.</span></li>
+            <li><i data-i="info" style="margin-top: var(--wf-space-1)"></i><span>Post in #leads needs a Slack address this site doesn't have, so the action arrives switched off.</span></li>
+          </ul>
+        </section>
+
+        <p class="wf-muted">It arrives in Events as a new draft form. Nothing goes live until you publish it.</p>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary">Import as a new copy</button>
+    </footer>
+  </aside>
+
+  <!-- Restore: Umbraco's restore sidebar, with the original folder from the server -->
+  <aside class="wf-sidebar" data-state="restore" aria-labelledby="rs-title" role="dialog">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="rs-title">Restore</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-box"><div class="wf-box__body">
+        <p>Restore <span class="wf-strong">Spring raffle</span> to <span class="wf-strong">Campaigns</span>, where it was.</p>
+        <p class="wf-muted" style="margin-top: var(--wf-space-3)">Its 286 entries come back with it, and pages that pick it show it again.</p>
+      </div></div>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <button class="wf-btn">Close</button>
+      <button class="wf-btn wf-btn--primary">Restore</button>
+    </footer>
+  </aside>
+
+  <!-- Restore when the original folder no longer exists: Umbraco's folder picker asks where -->
+  <aside class="wf-sidebar" data-state="restore-pick" aria-labelledby="rp-title" role="dialog">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="rp-title">Restore</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-stack">
+        <p><span class="wf-strong">Press accreditation 2025</span> was in a folder that no longer exists. Choose where to restore it.</p>
+        <div class="wf-box" role="radiogroup" aria-label="Restore to">
+          <span class="lb-pick" role="radio" aria-checked="false" tabindex="-1"><i data-i="folder"></i>Forms</span>
+          <span class="lb-pick" style="--depth: 1" role="radio" aria-checked="false" tabindex="-1"><i data-i="folder"></i>Campaigns</span>
+          <span class="lb-pick" style="--depth: 1" role="radio" aria-checked="true" tabindex="0"><i data-i="folder"></i>Events</span>
+          <span class="lb-pick" style="--depth: 1" role="radio" aria-checked="false" tabindex="-1"><i data-i="folder"></i>HR<i data-i="lock" class="lb-end"></i><span class="wf-sr">, restricted</span></span>
+        </div>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <button class="wf-btn">Close</button>
+      <button class="wf-btn wf-btn--primary">Restore</button>
+    </footer>
+  </aside>
+
+  <!-- Trash on a form that pages still pick asks first and names the pages (copy.md, confirmations) -->
+  <div class="wf-dialog" data-state="trash-in-use" role="alertdialog" aria-labelledby="ti-title" aria-describedby="ti-text">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="ti-title">Move Contact us to the Recycle Bin?</h2></div>
+    <p class="wf-dialog__body" id="ti-text">It's picked on 3 pages: Home, Contact, Events. They show nothing in its place until you restore it.</p>
+    <div class="wf-dialog__foot">
+      <button class="wf-btn" style="box-shadow: var(--wf-focus)">Cancel</button>
+      <button class="wf-btn wf-btn--danger">Move to Recycle Bin</button>
+    </div>
+  </div>
+
+  <!-- Trash on a form no page uses acts at once (reversible, so undo instead of a confirm) -->
+  <div class="wf-toast" data-state="trashed" role="status">
+    <span>Volunteer sign-up moved to the Recycle Bin.</span>
+    <button class="wf-btn wf-btn--small">Undo</button>
+  </div>
+
+  <!-- Unpublish… (the form's "…"): the pages that pick it show its closed message -->
+  <div class="wf-dialog" data-state="unpublish" role="alertdialog" aria-labelledby="up-title" aria-describedby="up-text">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="up-title">Unpublish Contact us?</h2></div>
+    <p class="wf-dialog__body" id="up-text">It's picked on 3 pages: Home, Contact, Events. Visitors there see its closed message until you publish it again. Its draft, entries and settings stay.</p>
+    <div class="wf-dialog__foot">
+      <button class="wf-btn" style="box-shadow: var(--wf-focus)">Cancel</button>
+      <button class="wf-btn wf-btn--danger">Unpublish</button>
+    </div>
+  </div>
+
+  <!-- Emptying the Recycle Bin asks first and names what is lost (copy.md, confirmations); Cancel has the focus -->
   <div class="wf-dialog" data-state="bin-confirm" role="alertdialog" aria-labelledby="empty-title" aria-describedby="empty-text">
     <div class="wf-dialog__head"><h2 class="wf-title" id="empty-title">Empty the Recycle Bin?</h2></div>
-    <p class="wf-dialog__body" id="empty-text">3 forms and their 412 entries are deleted for good.</p>
+    <p class="wf-dialog__body" id="empty-text">This deletes 3 forms for good, with their 412 entries and 12 uploaded files. You can't undo this.</p>
     <div class="wf-dialog__foot">
       <button class="wf-btn" style="box-shadow: var(--wf-focus)">Cancel</button>
       <button class="wf-btn wf-btn--danger">Empty recycle bin</button>
+    </div>
+  </div>
+
+  <!-- Delete… on a trashed form deletes it for good -->
+  <div class="wf-dialog" data-state="delete-forever" role="alertdialog" aria-labelledby="df-title" aria-describedby="df-text">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="df-title">Delete Old contact form for good?</h2></div>
+    <p class="wf-dialog__body" id="df-text">This deletes the form with its 118 entries and 9 uploaded files. You can't undo this.</p>
+    <div class="wf-dialog__foot">
+      <button class="wf-btn" style="box-shadow: var(--wf-focus)">Cancel</button>
+      <button class="wf-btn wf-btn--danger">Delete form and entries</button>
+    </div>
+  </div>
+
+  <!-- Create a form block type… (IA 10): what it creates, and that it changes nothing that exists -->
+  <div class="wf-dialog" data-state="block-type" role="dialog" aria-labelledby="bt-title" aria-describedby="bt-text">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="bt-title">Create a form block type</h2></div>
+    <div class="wf-dialog__body">
+      <p id="bt-text">Editors put forms on pages with a block. This creates what the block needs, and changes nothing that already exists:</p>
+      <ul class="lb-list">
+        <li><i data-i="layers" style="margin-top: var(--wf-space-1)"></i><span>the element type <span class="wf-strong">Form</span>, with one property: the form to show</span></li>
+        <li><i data-i="list" style="margin-top: var(--wf-space-1)"></i><span>the data type <span class="wf-strong">Jiron Form Builder form picker</span></span></li>
+      </ul>
+    </div>
+    <div class="wf-dialog__foot">
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary">Create</button>
+    </div>
+  </div>
+
+  <!-- After creating it, the same dialog says how to allow the block on a document type -->
+  <div class="wf-dialog" data-state="block-type-done" role="dialog" aria-labelledby="bd-title" aria-describedby="bd-text">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="bd-title">Form block type created</h2></div>
+    <div class="wf-dialog__body">
+      <p id="bd-text">One step is left: allow the block where editors may add forms.</p>
+      <ol class="lb-steps">
+        <li>Open Settings › Document types, and the document type of those pages.</li>
+        <li>In its block property, add Form to the available blocks.</li>
+        <li>Save the document type.</li>
+      </ol>
+    </div>
+    <div class="wf-dialog__foot">
+      <button class="wf-btn">Close</button>
+      <button class="wf-btn wf-btn--primary">Open document types</button>
     </div>
   </div>
 </body>

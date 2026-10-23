@@ -4,23 +4,36 @@
   <meta charset="utf-8">
   <title>Form check · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 none@1440x900">
+  <meta name="wf-shots" content="default@1440x900 none@1440x900 empty-form@1440x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .fc-item { display: grid; grid-template-columns: 20px minmax(0, 1fr) max-content; gap: var(--wf-space-4); align-items: start; padding: var(--wf-space-4); }
     .fc-item + .fc-item { border-top: 1px solid var(--uui-color-divider-standalone); }
+    .fc-error { color: var(--uui-color-danger-standalone); }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
-<body data-role="designer" data-active="form:contact">
-  <!-- IA 5.1, "The form check badge": a sidebar listing errors first, then warnings, each with Fix it. -->
+<body data-role="designer" data-active="form:contact" data-active-empty-form="">
+  <!--
+    IA 5.1, "The form check badge": a sidebar listing errors first, then warnings, each with Fix it. Errors block
+    publishing.
+    States: default (1 error and 1 warning: the badge's "2 problems"); none (no problems); empty-form (a new form
+    without fields: "Add at least one field" is an error, so an empty form never reads "No problems" and can't be
+    published; its Fix it opens the palette for the end of the page, as the page's "Add field" does).
+  -->
   <main class="wf-main">
     <header class="wf-head">
       <div class="wf-head__main">
         <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms" tabindex="-1"><i data-i="arrow-left"></i></button>
-        <span class="wf-head__name">Contact us</span>
-        <span class="wf-chip wf-chip--warning">Published (pending changes)</span>
+        <span class="wf-head__name" data-state="default none">Contact us</span>
+        <span class="wf-head__name" data-state="empty-form">Untitled form</span>
+        <span class="wf-chip wf-chip--warning" data-state="default none">Published (pending changes)</span>
+        <span class="wf-chip" data-state="empty-form">Draft</span>
+        <a href="#" data-state="default none" tabindex="-1">Used on 3 pages</a>
+        <a href="#" data-state="empty-form" tabindex="-1">Not used on any page</a>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Contact us" data-state="default none" tabindex="-1"><i data-i="more"></i></button>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Untitled form" data-state="empty-form" tabindex="-1"><i data-i="more"></i></button>
       </div>
       <nav class="wf-tabs" aria-label="Views">
         <a class="wf-tab" href="#" aria-current="page" tabindex="-1"><i data-i="pencil" class="wf-i--20"></i>Design</a>
@@ -30,12 +43,19 @@
       </nav>
     </header>
     <div class="wf-content">
-      <div class="wf-canvas">
+      <div class="wf-canvas" data-state="default none">
         <div class="wf-group">
           <h3 class="wf-group__title">Your details</h3>
           <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">First name</span><span class="wf-vf__control"></span></div></div>
           <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">Email address <span class="wf-vf__optional">(optional)</span></span><span class="wf-vf__control"></span></div></div>
         </div>
+      </div>
+      <!-- A new, blank form, as designer.html draws it -->
+      <div class="wf-canvas" data-state="empty-form">
+        <div class="wf-empty" style="padding: var(--wf-space-7) 0">
+          <p class="wf-empty__text">Add your first field: pick a type on the left, or paste your questions.</p>
+        </div>
+        <div class="wf-add-field"><i data-i="plus"></i>Add field</div>
       </div>
     </div>
     <footer class="wf-foot">
@@ -58,7 +78,7 @@
             <span class="wf-box__end wf-muted">Blocks publishing</span>
           </div>
           <div class="fc-item">
-            <i data-i="alert" class="wf-i--20" style="color: var(--uui-color-danger-standalone)"></i>
+            <i data-i="alert" class="wf-i--20 fc-error"></i>
             <div><p class="wf-strong">Order number</p><p class="wf-muted">Its rule uses the option "Delivery" of Topic, which no longer exists.</p></div>
             <button class="wf-btn wf-btn--small">Fix it</button>
           </div>
@@ -74,6 +94,20 @@
           </div>
         </section>
       </div>
+
+      <!-- A form without fields: an error, never "No problems" -->
+      <section class="wf-box" data-state="empty-form" aria-labelledby="fc-empty">
+        <div class="wf-box__head">
+          <h3 class="wf-box__title" id="fc-empty">1 error</h3>
+          <span class="wf-box__end wf-muted">Blocks publishing</span>
+        </div>
+        <div class="fc-item">
+          <i data-i="alert" class="wf-i--20 fc-error"></i>
+          <div><p class="wf-strong">Add at least one field</p><p class="wf-muted">The form has no fields yet, so visitors would have nothing to fill in.</p></div>
+          <button class="wf-btn wf-btn--small">Fix it</button>
+        </div>
+      </section>
+
       <div class="wf-empty" data-state="none">
         <i data-i="check" class="wf-i--20" style="color: var(--uui-color-positive)"></i>
         <p class="wf-empty__text">No problems. The form can be published.</p>

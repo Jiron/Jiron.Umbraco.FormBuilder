@@ -18,7 +18,7 @@
   <!--
     IA section 9: who did what, when, on which form or setting. A screen for reading, so it has no primary action. A row
     opens its details with the values before and after; a form's save or publish links to that version in History,
-    where the changes are listed.
+    where the changes are listed. With no results, the chip row's Clear filters is the way out, said once.
   -->
   <main class="wf-main">
     <header class="wf-head"><div class="wf-head__main"><h1 class="wf-head__title">Audit log</h1></div></header>
@@ -50,9 +50,9 @@
         </table>
       </section>
 
+      <!-- Clear filters sits once, in the chip row above; the empty state points there instead of repeating it -->
       <div class="wf-empty" data-state="no-results">
-        <p class="wf-empty__text">No events match these filters.</p>
-        <button class="wf-btn">Clear filters</button>
+        <p class="wf-empty__text">No events match the search and the filter above.</p>
       </div>
       <section class="wf-box" data-state="loading" aria-busy="true">
         <div class="wf-box__body wf-stack"><span class="wf-skel" style="width: 90%"></span><span class="wf-skel" style="width: 86%"></span><span class="wf-skel" style="width: 88%"></span><span class="wf-sr">Loading the audit log</span></div>

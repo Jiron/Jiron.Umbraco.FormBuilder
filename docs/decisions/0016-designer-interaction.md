@@ -80,3 +80,26 @@ to use: the measurements above are the reason, and D12 now names this controller
 - We own the autoscroll and the drop-target maths; the spike's versions are the starting point.
 - Revisit if a later Umbraco version gives the sorter keyboard support, accessible names and touch, and moves
   its model only on drop; then compare again with a spike like 1.2a's.
+
+## Amendment (2026-10-23, step 2.4)
+
+The design critique of step 2.4 (`docs/ux/critique-2.md`) drew the designer's keyboard layer and its motion, which
+this ADR left open.
+
+- **Everything on the canvas is reachable by keyboard.** Each field is a button that selects it (Enter or Space;
+  Escape clears the selection), each page step is a button, an insert point is a button "Add a field here" in the
+  gap above each element and below a group's last one (it opens the palette for that point), and "Add field" is a
+  button. The selected field shows its handle "Move <label>" and a bar with Move to…, Duplicate, Delete and "…".
+  DOM order follows the visual order.
+- **"Skip to the form"** is the workspace's first stop, since the canvas otherwise comes after about forty stops of
+  Umbraco's header, the tree and the palette.
+- **Shortcuts,** listed by "?": Ctrl+Z and Ctrl+Y (Cmd on a Mac), Ctrl+D duplicates, Delete deletes, Alt+Up/Down
+  moves, F2 or a double click edits a label in place (Enter keeps it, Escape puts the old one back), and Escape also
+  closes the palette or cancels a drag. After a delete, the focus moves to the field that took its place, and a toast
+  offers Undo. "Move to…" lists the groups by page and puts the field at the end of the chosen group.
+- **Motion:** a pointer drop settles over 150 ms with an ease-out, so the eye can follow where the field landed. The
+  insertion line jumps from gap to gap without easing, since it follows the pointer. Keyboard moves, "Move to…",
+  undo and redo never animate: they are repeated many times in a row, and the field must be at its new place the
+  moment the announcement says so. Nothing moves with reduced motion.
+- **The same rules hold for the other lists** this ADR names (options, the order of actions, a ranking), and for the
+  entries list, where j and k move a keyboard cursor and opening the entry panel never animates.

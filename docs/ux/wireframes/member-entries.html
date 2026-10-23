@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>A member's form entries · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 empty@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-frame="none" data-role="admin">
+  <!--
+    IA 10 and 11: the "Form entries" view that Jiron Form Builder adds to Umbraco's member workspace, after Details and
+    Info (research section 20). It is hidden on the create screen, where no member exists yet. kit.js draws the Forms
+    section only, so this page draws Umbraco's Members section around the workspace with the kit's own classes.
+
+    - It lists the entries this member sent while signed in, newest first, with permissions applied: forms the user
+      may not view are left out without a trace (ADR-0013). Users who see it: entry handlers, viewers, administrators
+      and privacy officers, when they can also open the Members section.
+    - A row names the entry by its number, not its title: here the title would mostly repeat the member's name, which
+      the header already shows (say it once). The form, state and time say the rest.
+    - A row opens the entry panel as a sidebar; with no list beside it, its header adds the entry's title and the
+      form's name (IA 6.3).
+    - The view adds nothing to the footer: Save belongs to the member workspace.
+    States: default, empty (a member with no entries).
+  -->
+  <div class="wf-app">
+    <header class="wf-top">
+      <span class="wf-top__logo" aria-hidden="true"></span>
+      <nav class="wf-row" aria-label="Sections">
+        <a class="wf-top__section" href="#">Content</a><a class="wf-top__section" href="#">Media</a><a class="wf-top__section" href="#">Settings</a><a class="wf-top__section" href="#">Packages</a><a class="wf-top__section" href="#">Users</a><a class="wf-top__section" href="#" aria-current="page">Members</a><a class="wf-top__section" href="#">Translation</a><a class="wf-top__section" href="#">Forms</a>
+      </nav>
+      <div class="wf-top__tools"><i data-i="search" class="wf-i--20"></i><i data-i="help" class="wf-i--20"></i><span class="wf-top__avatar" title="Ana Novak">AN</span></div>
+    </header>
+    <div class="wf-body">
+      <aside class="wf-side">
+        <div class="wf-side__head"><span>Members</span></div>
+        <nav aria-label="Members">
+          <a class="wf-item" href="#" aria-current="page"><i data-i="user"></i><span>Members</span></a>
+          <a class="wf-item" href="#"><i data-i="users"></i><span>Member Groups</span></a>
+        </nav>
+      </aside>
+
+      <main class="wf-main">
+        <header class="wf-head">
+          <div class="wf-head__main">
+            <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Members"><i data-i="arrow-left"></i></button>
+            <span class="wf-head__name" data-state="default">Lena Weber</span>
+            <span class="wf-head__name" data-state="empty">Erik Johansson</span>
+          </div>
+          <nav class="wf-tabs" aria-label="Views">
+            <a class="wf-tab" href="#"><i data-i="user" class="wf-i--20"></i>Details</a>
+            <a class="wf-tab" href="#"><i data-i="info" class="wf-i--20"></i>Info</a>
+            <a class="wf-tab" href="#" aria-current="page"><i data-i="form" class="wf-i--20"></i>Form entries</a>
+          </nav>
+        </header>
+
+        <div class="wf-content">
+          <section class="wf-box" data-state="default" aria-label="Form entries">
+            <table class="wf-table" style="border: 0">
+              <thead><tr><th>Entry</th><th>Form</th><th>State</th><th>Received</th></tr></thead>
+              <tbody>
+                <tr><td><span class="wf-row"><a href="#">Entry #771</a></span></td><td class="wf-muted">Contact us</td><td><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">2 Oct</td></tr>
+                <tr><td><span class="wf-row"><a href="#">Entry #142</a></span></td><td class="wf-muted">Contact us</td><td><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">14 Aug</td></tr>
+                <tr><td><span class="wf-row"><a href="#">Entry #47</a></span></td><td class="wf-muted">Job application</td><td><span class="wf-chip">Rejected</span></td><td class="wf-muted">3 Jun</td></tr>
+                <tr><td><span class="wf-row"><a href="#">Entry #431</a></span></td><td class="wf-muted">Newsletter sign-up</td><td><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">20 Jan</td></tr>
+                <tr><td><span class="wf-row"><a href="#">Entry #398</a></span></td><td class="wf-muted">Newsletter sign-up</td><td><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">5 Jan</td></tr>
+                <tr><td><span class="wf-row"><a href="#">Entry #377</a></span></td><td class="wf-muted">Newsletter sign-up</td><td><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">29 Dec 2025</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <!-- A member who hasn't sent anything while signed in -->
+          <div class="wf-empty" data-state="empty">
+            <p class="wf-empty__text">No entries yet. Entries this member sends while signed in appear here.</p>
+          </div>
+        </div>
+
+        <footer class="wf-foot"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Save</button></div></footer>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

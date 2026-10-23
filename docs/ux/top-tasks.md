@@ -22,7 +22,7 @@ counted as its "Rules" section says, from the section's start page.
 | 4 | Change the wording of a question. | the form → the question → (its label) | 2 |
 | 5 | Make a question compulsory. | the form → the question → (Required) | 2 |
 | 6 | Show a question only when a visitor picked "Other" in another question. | the form → the question to show → "Add a rule" → (Country is Other, Add) | 3 |
-| 7 | Split a form into two steps. | the form → the insert point "+" → Start a new page here | 3 |
+| 7 | Split a form into two steps. | the form → the insert point "Add a field here" → Layout › New page in the palette | 3 |
 | 8 | See the form as a visitor will, before it goes live. | the form → Preview | 2 |
 | 9 | Put your changes live. | the form → Publish… → (Publish) | 2 |
 | 10 | Change what visitors read after they send the form. | the form → Settings → the outcome's row → (the message, Update) | 3 |
@@ -32,8 +32,8 @@ counted as its "Rules" section says, from the section's start page.
 | 14 | Go back to how a form was last week. | the form → History → last week's row → (Restore as a new draft) | 3 |
 | 15 | Make a list of the company's offices that several forms can reuse. | Library › Option lists → Create option list → (the kind, the offices, Save) | 2 |
 
-At 620 px, where the palette doesn't stay open, task 3 is the form → "Add field" → Email (3). Task 7 also works
-through the palette's Layout › New page after selecting the field the new page follows (3).
+At 620 px, where the palette doesn't stay open, task 3 is the form → "Add field" → Email (3). Task 7 also works by
+selecting the field the new page follows, then the palette's Layout › New page (3).
 
 ## Entry handler
 
@@ -89,7 +89,7 @@ Tasks 3 to 6 take 2 clicks for several entries at once: tick their boxes, then u
 | 6 | Find emails that failed to send. | Activity › Deliveries | 1 |
 | 7 | Send a failed email again. | Deliveries → the failed row → Retry | 3 |
 | 8 | Find out who changed a form's settings. | the form → History | 2 |
-| 9 | Send entries that mention a certain word to Spam. | Settings › Spam protection → (the blocked words, Save) | 1 |
+| 9 | Send entries from throwaway email addresses to Spam. | Settings › Spam protection → (the blocked email domains, Save) | 1 |
 | 10 | Allow larger files in a form's upload field. | the form → the upload field → (the largest file) | 2 |
 | 11 | Choose the look that forms get by default. | Settings › General → (the default theme, Save) | 1 |
 | 12 | Give the second site its own sender address. | Settings › Email → (the site switch, the sender, Save) | 1 |
@@ -98,7 +98,9 @@ Tasks 3 to 6 take 2 clicks for several entries at once: tick their boxes, then u
 | 15 | Bring in a form exported from another site. | "+" → Import a form… → (the file, Import as a new copy) | 2 |
 
 Once the checklist is complete, task 5 is Settings › General → Create a form block type… (2). When the site's limit is
-lower than the size wanted, task 10 adds "Change the site's limit" in the field's help (3).
+lower than the size wanted, task 10 adds "Change the site's limit" in the field's help (3). Blocked words take the
+same path as task 9, but one word alone doesn't send an entry to Spam: words and extra links add up (ADR-0012;
+information-architecture.md, section 8).
 
 ## Privacy officer
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>History and comparison · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 drafts@1440x900 compare@1440x900 diff@1440x900 version@1440x900 loading@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 drafts@1440x900 compare@1440x900 diff@1440x900 version@1440x900 row-menu@1440x900 restore@1440x900 loading@1440x900 default@920x900 drafts@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .hi-diff { width: 100%; border-collapse: collapse; }
@@ -12,6 +12,18 @@
     .hi-diff th { font-weight: 700; }
     .hi-section + .hi-section { margin-top: var(--wf-space-5); }
     .hi-section ul { display: flex; flex-direction: column; gap: var(--wf-space-1); margin-top: var(--wf-space-2); }
+    /* The comment: its own column where the workspace has room; at 620 px it moves under the row's "Changed" text, so
+       neither text is squeezed into a narrow column. */
+    .hi-below { display: none; }
+    .hi-below .wf-i { margin-right: var(--wf-space-1); }
+    @container workspace (max-width: 899px) {
+      .wf-table .hi-col-comment { display: none; }
+      .hi-below { display: block; margin-top: var(--wf-space-1); }
+    }
+    /* Two-line cells (a version and its date, a change list that wraps) keep a row padding, so the last line never
+       sits on the box edge. */
+    .wf-table td:has(> br) { padding-top: var(--wf-space-2); padding-bottom: var(--wf-space-2); }
+    .wf-table td.hi-changed { padding-top: var(--wf-space-3); padding-bottom: var(--wf-space-3); }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
@@ -20,7 +32,12 @@
   <!--
     IA 5.6: the published versions, newest first; "Show draft saves" adds the draft saves. Ticking two versions shows
     Compare, the view's main action, as the first button of the toolbar. A row opens that version beside the list,
-    compared with the current draft.
+    compared with the current draft; restoring first keeps the current draft in History, so nothing is lost.
+
+    States: default; drafts (with draft saves, whose empty comments read "none"); compare (two ticked); diff (the
+    comparison); version (one version beside the list); row-menu (a row's "…": Restore as a new draft, Pin, Add
+    comment…); restore (after restoring from that menu: the toast says what changed and offers Undo); loading. At 620 px the Comment column goes, and each comment
+    moves under its row's "Changed" text.
   -->
   <main class="wf-main">
     <header class="wf-head">
@@ -28,10 +45,10 @@
         <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms"><i data-i="arrow-left"></i></button>
         <span class="wf-head__name">Contact us</span>
         <span class="wf-chip wf-chip--warning">Published (pending changes)</span>
-        <a href="#" data-state="default drafts compare diff version loading">Used on 3 pages</a>
+        <a href="#">Used on 3 pages</a>
         <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Contact us"><i data-i="more"></i></button>
       </div>
-      <nav class="wf-tabs" aria-label="Views" data-state="default drafts compare diff version loading">
+      <nav class="wf-tabs" aria-label="Views">
         <a class="wf-tab" href="#"><i data-i="pencil" class="wf-i--20"></i>Design</a>
         <a class="wf-tab" href="#"><i data-i="settings" class="wf-i--20"></i>Settings</a>
         <a class="wf-tab" href="#"><i data-i="send" class="wf-i--20"></i>Actions</a>
@@ -43,7 +60,7 @@
       <div class="wf-toolbar">
         <button class="wf-btn" data-state="compare diff"><i data-i="columns"></i>Compare</button>
         <span class="wf-check" style="margin-left: auto">
-          <span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="hi-drafts" data-state="default compare diff version loading"></span>
+          <span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="hi-drafts" data-state="default compare diff version row-menu restore loading"></span>
           <span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="hi-drafts" data-state="drafts"></span>
           <span id="hi-drafts">Show draft saves</span>
         </span>
@@ -56,55 +73,79 @@
         </div>
       </section>
 
-      <section class="wf-box" data-state="default drafts compare diff version" aria-label="Versions">
+      <section class="wf-box" data-state="default drafts compare diff version row-menu restore" aria-label="Versions">
         <table class="wf-table" style="border: 0">
-          <thead><tr><th class="wf-col-check"><span class="wf-sr">Select</span></th><th>Version</th><th>Changed</th><th>Comment</th><th class="wf-col-end"><span class="wf-sr">Actions</span></th></tr></thead>
+          <thead><tr><th class="wf-col-check"><span class="wf-sr">Select</span></th><th>Version</th><th>Changed</th><th class="hi-col-comment">Comment</th><th class="wf-col-end"><span class="wf-sr">Actions</span></th></tr></thead>
           <tbody>
             <tr data-state="drafts" class="wf-muted">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select draft save of today, 09:12"></span></td>
               <td><a href="#">Draft save</a><br><span class="wf-small">Today, 09:12 · Lea Hoffmann</span></td>
-              <td>Email address</td><td></td>
+              <td class="wf-cell-wrap hi-changed">Email address</td>
+              <td class="hi-col-comment">none</td>
               <td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for the draft save of today, 09:12"><i data-i="more"></i></button></td>
             </tr>
             <tr data-state="drafts" class="wf-muted">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select draft save of yesterday, 16:40"></span></td>
               <td><a href="#">Draft save</a><br><span class="wf-small">Yesterday, 16:40 · Lea Hoffmann</span></td>
-              <td>Post in #leads</td><td></td>
+              <td class="wf-cell-wrap hi-changed">Post in #leads</td>
+              <td class="hi-col-comment">none</td>
               <td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for the draft save of yesterday, 16:40"><i data-i="more"></i></button></td>
             </tr>
-            <tr data-state="default drafts compare diff">
-              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select version 14" data-state="default drafts"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select version 14" data-state="compare diff"><i data-i="check"></i></span></td>
+            <tr data-state="default drafts compare diff row-menu restore">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select version 14" data-state="default drafts row-menu restore"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select version 14" data-state="compare diff"><i data-i="check"></i></span></td>
               <td><a href="#" class="wf-strong">Version 14</a> <span class="wf-chip wf-chip--positive">Published</span> <span title="Pinned"><i data-i="pin"></i><span class="wf-sr">Pinned</span></span><br><span class="wf-small wf-muted">3 Oct, 14:02 · Ana Novak</span></td>
-              <td>4 fields, After sending, 1 rule</td>
-              <td class="wf-cell-wrap">Press enquiries go to the press page</td>
+              <td class="wf-cell-wrap hi-changed">4 fields, After sending, 1 rule<span class="hi-below wf-small wf-muted"><i data-i="note"></i><span class="wf-sr">Comment: </span>Press enquiries go to the press page</span></td>
+              <td class="wf-cell-wrap hi-col-comment">Press enquiries go to the press page</td>
               <td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for version 14"><i data-i="more"></i></button></td>
             </tr>
             <tr data-state="version" aria-current="true">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select version 14"></span></td>
               <td><a href="#" class="wf-strong">Version 14</a> <span class="wf-chip wf-chip--positive">Published</span> <span title="Pinned"><i data-i="pin"></i><span class="wf-sr">Pinned</span></span><br><span class="wf-small wf-muted">3 Oct, 14:02 · Ana Novak</span></td>
-              <td>4 fields, After sending, 1 rule</td>
-              <td class="wf-cell-wrap">Press enquiries go to the press page</td>
+              <td class="wf-cell-wrap hi-changed">4 fields, After sending, 1 rule<span class="hi-below wf-small wf-muted"><i data-i="note"></i><span class="wf-sr">Comment: </span>Press enquiries go to the press page</span></td>
+              <td class="wf-cell-wrap hi-col-comment">Press enquiries go to the press page</td>
               <td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for version 14"><i data-i="more"></i></button></td>
             </tr>
-            <tr>
+            <tr data-state="default drafts compare diff version">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select version 13"></span></td>
               <td><a href="#" class="wf-strong">Version 13</a><br><span class="wf-small wf-muted">28 Sep, 10:31 · Lea Hoffmann</span></td>
-              <td>Email the team</td>
-              <td class="wf-muted">none</td>
+              <td class="wf-cell-wrap hi-changed">Email the team</td>
+              <td class="wf-muted hi-col-comment">none</td>
+              <td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for version 13"><i data-i="more"></i></button></td>
+            </tr>
+            <!-- Version 13 with its "…" open: restoring is the most common reason to open it, so it comes first -->
+            <tr data-state="row-menu">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select version 13"></span></td>
+              <td><a href="#" class="wf-strong">Version 13</a><br><span class="wf-small wf-muted">28 Sep, 10:31 · Lea Hoffmann</span></td>
+              <td class="wf-cell-wrap hi-changed">Email the team</td>
+              <td class="wf-muted hi-col-comment">none</td>
+              <td class="wf-col-end" style="position: relative">
+                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for version 13" aria-expanded="true" style="box-shadow: var(--wf-focus)"><i data-i="more"></i></button>
+                <div class="wf-pop" style="top: 42px; right: 0" role="menu" aria-label="More actions for version 13">
+                  <span class="wf-pop__item wf-pop__item--hover" role="menuitem"><i data-i="undo"></i>Restore as a new draft</span>
+                  <span class="wf-pop__item" role="menuitem"><i data-i="pin"></i>Pin</span>
+                  <span class="wf-pop__item" role="menuitem"><i data-i="note"></i>Add comment…</span>
+                </div>
+              </td>
+            </tr>
+            <tr data-state="restore" aria-current="true">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select version 13"></span></td>
+              <td><a href="#" class="wf-strong">Version 13</a><br><span class="wf-small wf-muted">28 Sep, 10:31 · Lea Hoffmann</span></td>
+              <td class="wf-cell-wrap hi-changed">Email the team</td>
+              <td class="wf-muted hi-col-comment">none</td>
               <td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for version 13"><i data-i="more"></i></button></td>
             </tr>
             <tr>
-              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select version 12" data-state="default drafts version"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select version 12" data-state="compare diff"><i data-i="check"></i></span></td>
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select version 12" data-state="default drafts version row-menu restore"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select version 12" data-state="compare diff"><i data-i="check"></i></span></td>
               <td><a href="#" class="wf-strong">Version 12</a><br><span class="wf-small wf-muted">2 Sep, 08:55 · Lea Hoffmann</span></td>
-              <td>4 fields, Spam protection</td>
-              <td class="wf-cell-wrap">Shorter form for the autumn campaign</td>
+              <td class="wf-cell-wrap hi-changed">4 fields, Spam protection<span class="hi-below wf-small wf-muted"><i data-i="note"></i><span class="wf-sr">Comment: </span>Shorter form for the autumn campaign</span></td>
+              <td class="wf-cell-wrap hi-col-comment">Shorter form for the autumn campaign</td>
               <td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for version 12"><i data-i="more"></i></button></td>
             </tr>
             <tr>
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select version 11"></span></td>
               <td><a href="#" class="wf-strong">Version 11</a><br><span class="wf-small wf-muted">14 Aug, 15:20 · Ana Novak</span></td>
-              <td>Appearance</td>
-              <td class="wf-muted">none</td>
+              <td class="wf-cell-wrap hi-changed">Appearance</td>
+              <td class="wf-muted hi-col-comment">none</td>
               <td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for version 11"><i data-i="more"></i></button></td>
             </tr>
           </tbody>
@@ -123,7 +164,7 @@
   </main>
 
   <!-- Comparing two versions -->
-  <div class="wf-backdrop" data-state="diff"></div>
+  <div class="wf-backdrop" data-state="diff version"></div>
   <aside class="wf-sidebar wf-sidebar--medium" data-state="diff" role="dialog" aria-labelledby="df-title">
     <header class="wf-sidebar__head"><h2 class="wf-title" id="df-title">Version 12 and version 14</h2></header>
     <div class="wf-sidebar__body">
@@ -160,29 +201,33 @@
   </aside>
 
   <!-- One version, compared with the current draft -->
-  <div class="wf-backdrop" data-state="version"></div>
   <aside class="wf-sidebar wf-sidebar--medium" data-state="version" role="dialog" aria-labelledby="vs-title">
     <header class="wf-sidebar__head">
       <h2 class="wf-title" id="vs-title">Version 14</h2>
       <span class="wf-muted">3 Oct, 14:02 · Ana Novak</span>
     </header>
     <div class="wf-sidebar__body">
-      <p class="wf-muted" style="margin-bottom: var(--wf-space-4)">What restoring it would change in the current draft:</p>
-      <div class="wf-box"><div class="wf-box__body">
-        <div class="hi-section">
-          <span class="wf-label">Fields</span>
-          <table class="hi-diff" style="margin-top: var(--wf-space-2)">
-            <thead><tr><th>Changed</th><th>Current draft</th><th>Version 14</th></tr></thead>
-            <tbody>
-              <tr><td>Email address, label</td><td>Your email</td><td>Email address</td></tr>
-            </tbody>
-          </table>
+      <div class="wf-stack wf-stack--lg">
+        <div>
+          <p class="wf-muted" style="margin-bottom: var(--wf-space-4)">What restoring it would change in the current draft:</p>
+          <div class="wf-box"><div class="wf-box__body">
+            <div class="hi-section">
+              <span class="wf-label">Fields</span>
+              <table class="hi-diff" style="margin-top: var(--wf-space-2)">
+                <thead><tr><th>Changed</th><th>Current draft</th><th>Version 14</th></tr></thead>
+                <tbody>
+                  <tr><td>Email address, label</td><td>Your email</td><td>Email address</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="hi-section">
+              <span class="wf-label">Actions</span>
+              <ul><li>Post in #leads is not in version 14, and would be removed</li></ul>
+            </div>
+          </div></div>
         </div>
-        <div class="hi-section">
-          <span class="wf-label">Actions</span>
-          <ul><li>Post in #leads is not in version 14, and would be removed</li></ul>
-        </div>
-      </div></div>
+        <p class="wf-note"><i data-i="info" class="wf-note__icon"></i><span>Before restoring, the current draft is saved in History, so nothing is lost.</span></p>
+      </div>
     </div>
     <footer class="wf-sidebar__foot">
       <button class="wf-btn">Cancel</button>
@@ -190,5 +235,12 @@
       <button class="wf-btn wf-btn--primary">Restore as a new draft</button>
     </footer>
   </aside>
+
+  <!-- Restore as a new draft, from a row's "…": reversible, so it acts at once (§4.13); the toast says what changed,
+       and Undo puts the draft before it back (that draft is also kept in History) -->
+  <div class="wf-toast" data-state="restore" role="status">
+    <span>Version 13 is the new draft: 4 fields, After sending, 1 rule and 1 action changed.</span>
+    <button class="wf-btn wf-btn--small">Undo</button>
+  </div>
 </body>
 </html>

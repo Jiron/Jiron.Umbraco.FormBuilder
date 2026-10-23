@@ -4,21 +4,70 @@
   <meta charset="utf-8">
   <title>Inbox (all entries) · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 filter@1440x900 columns@1440x900 sensitive-search@1440x900 empty@1440x900 loading@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 filter@1440x900 columns@1440x900 more@1440x900 shortcuts@1440x900 summary@1440x900 search@1440x900 sensitive-search@1440x900 empty@1440x900 loading@1440x900 default@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .in-col-choose { width: 44px; }
     /* Entry names wrap, so a long one never pushes the table past its box */
     .in-table td:nth-child(2) { white-space: normal; }
-    @container workspace (max-width: 899px) { .in-wide { display: none; } }
+    /* In a narrow workspace the Form and Actions columns give way: the form's name moves under the entry's title, and a
+       failed delivery shows with the state, under its chip. Both are hidden while the columns are there. */
+    .in-sub,
+    .in-mark { display: none; }
+    .in-sub { color: var(--wf-color-text-muted); font-weight: 400; }
+    .in-state { display: flex; align-items: center; gap: var(--wf-space-3); }
+    @container workspace (max-width: 899px) {
+      .in-wide { display: none; }
+      .in-sub { display: block; }
+      .in-state { flex-direction: column; align-items: flex-start; gap: var(--wf-space-1); }
+      .in-mark { display: inline-flex; align-items: center; gap: var(--wf-space-1); }
+    }
+    /* The keyboard's place in the list (j and k): the focus ring around the row and nothing else. A ticked row shows its
+       box and the bulk bar, and the open entry is filled; the cursor is neither. */
+    html[data-wf-state='shortcuts'] .in-table tr.in-cursor { outline: 2px solid var(--uui-color-focus); outline-offset: -2px; }
+    /* Keyboard shortcuts: each key, then what it does */
+    .in-keys { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--wf-space-3) var(--wf-space-5); align-items: center; }
+    /* Umbraco's header search, opened below the top bar */
+    .in-search { top: 84px; transform: translateX(-50%); --wf-dialog-size: 600px; }
+    .in-search__field { padding: var(--wf-space-5) var(--wf-space-5) var(--wf-space-3); }
+    .in-search__field .wf-input--search { width: 100%; }
+    .in-search__tabs { display: flex; gap: var(--wf-space-5); padding: 0 var(--wf-space-5); border-bottom: 1px solid var(--uui-color-divider-standalone); }
+    .in-search__tab { padding: var(--wf-space-3) 0 var(--wf-space-2); border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: var(--uui-color-interactive); }
+    .in-search__tab[aria-selected='true'] { border-bottom-color: var(--uui-color-current); color: var(--uui-color-text); font-weight: 700; }
+    .in-search__results { padding: var(--wf-space-2) 0; }
+    .in-search__result { display: flex; align-items: center; gap: var(--wf-space-3); min-height: 42px; padding: 0 var(--wf-space-5); color: var(--uui-color-text); text-decoration: none; }
+    .in-search__result--focus { background: var(--uui-color-surface-emphasis); }
+    .in-search__all { margin-top: var(--wf-space-2); border-top: 1px solid var(--uui-color-divider-standalone); }
+    .in-search__all .in-search__result { color: var(--uui-color-interactive); }
+    /* The summary's example */
+    .in-digest { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: var(--wf-space-2) var(--wf-space-5); margin: var(--wf-space-3) 0; }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
-<body data-role="handler" data-active="inbox">
+<body data-role="handler" data-active="inbox" data-tree-empty="seen">
   <!--
     IA 6.1: every form the user may view, with a form column, unseen entries first and then the newest. The unseen count
     is the sidebar badge's; the screen doesn't repeat it.
+
+    States:
+    - filter: the filter menu, with the Actions filter open (failed deliveries are found here, "Actions: failed").
+    - columns: the column chooser.
+    - more: the toolbar's "…", with Email me a summary… and Keyboard shortcuts.
+    - shortcuts: the "?" overlay over the list. The j/k cursor (row 3) is the focus ring around the row: a ticked row
+      shows its box and the bulk bar, and the open entry is filled, so the cursor never looks like either. a, r and s
+      act on the cursor's row in the list and on the open entry in the panel. Nothing here animates: these keys are
+      pressed hundreds of times a day.
+    - summary: "Email me a summary…" (IA 6.4). Off, daily or weekly at 07:00 in the site's time zone; counts and links,
+      never answers, only the forms the user may view, always to the user's own address.
+    - search: Umbraco's header search with the Forms tab: forms (with their folder) and fields (with their form), then
+      "Search entries for …", which opens the Inbox with that search (IA 10).
+    - sensitive-search: a search that finds nothing while sensitive fields exist, with Clear search.
+    - empty: no form the user may view has entries yet, so the tree shows no unseen marks and the toolbar is gone (there
+      is nothing to search, filter or export). As in Entries, the summary email is offered.
+    - loading.
+    At 920 px the list keeps the state: the form's name moves under the entry's title, and a failed delivery shows in the
+    State column, under the chip.
   -->
   <main class="wf-main">
     <header class="wf-head">
@@ -26,79 +75,106 @@
     </header>
 
     <div class="wf-content">
-      <div class="wf-toolbar" style="position: relative">
-        <span class="wf-input wf-input--search" style="width: 280px" data-state="default filter columns empty loading"><i data-i="search"></i><span class="wf-placeholder">Search entries</span></span>
+      <div class="wf-toolbar" style="position: relative" data-state="default filter columns more shortcuts summary search sensitive-search loading">
+        <span class="wf-input wf-input--search" style="width: 280px" data-state="default filter columns more shortcuts summary search empty loading"><i data-i="search"></i><span class="wf-placeholder">Search entries</span></span>
         <span class="wf-input wf-input--search" style="width: 280px" data-state="sensitive-search"><i data-i="search"></i><span>Jana</span></span>
-        <button class="wf-btn" aria-expanded="false" data-state="default columns sensitive-search empty loading"><i data-i="filter"></i>Filter</button>
+        <button class="wf-btn" aria-expanded="false" data-state="default columns more shortcuts summary search sensitive-search empty loading"><i data-i="filter"></i>Filter</button>
         <button class="wf-btn" aria-expanded="true" data-state="filter"><i data-i="filter"></i>Filter</button>
         <button class="wf-btn"><i data-i="download"></i>Export…</button>
-        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for the Inbox"><i data-i="more"></i></button>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-expanded="false" aria-label="More actions for the Inbox" data-state="default filter columns shortcuts summary search sensitive-search empty loading"><i data-i="more"></i></button>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-expanded="true" aria-label="More actions for the Inbox" data-state="more"><i data-i="more"></i></button>
 
-        <!-- The filter menu -->
+        <!-- The filter menu: Actions finds entries whose emails or webhooks failed -->
         <div class="wf-pop" data-state="filter" style="top: 44px; left: 288px; width: 300px" role="menu" aria-label="Filter">
-          <span class="wf-pop__item wf-pop__item--hover" role="menuitem"><i data-i="form"></i>Form<i data-i="chevron-right" style="margin-left: auto"></i></span>
-          <span class="wf-pop__item" role="menuitem"><i data-i="circle"></i>State<i data-i="chevron-right" style="margin-left: auto"></i></span>
-          <span class="wf-pop__item" role="menuitem"><i data-i="calendar"></i>Received<i data-i="chevron-right" style="margin-left: auto"></i></span>
+          <span class="wf-pop__item" role="menuitem" aria-haspopup="menu"><i data-i="form"></i>Form<i data-i="chevron-right" style="margin-left: auto"></i></span>
+          <span class="wf-pop__item" role="menuitem" aria-haspopup="menu"><i data-i="circle"></i>State<i data-i="chevron-right" style="margin-left: auto"></i></span>
+          <span class="wf-pop__item" role="menuitem" aria-haspopup="menu"><i data-i="calendar"></i>Received<i data-i="chevron-right" style="margin-left: auto"></i></span>
+          <span class="wf-pop__item wf-pop__item--hover" role="menuitem" aria-haspopup="menu" aria-expanded="true"><i data-i="send"></i>Actions<i data-i="chevron-right" style="margin-left: auto"></i></span>
           <span class="wf-pop__sep"></span>
           <span class="wf-pop__label">Saved</span>
           <span class="wf-pop__item" role="menuitem">Waiting, Job application</span>
           <span class="wf-pop__item" role="menuitem">This week's callbacks, Callback request</span>
           <span class="wf-pop__item" role="menuitem">Unseen, any form</span>
         </div>
+        <div class="wf-pop" data-state="filter" style="top: 152px; left: 591px; width: 220px" role="menu" aria-label="Actions">
+          <span class="wf-pop__item wf-pop__item--hover" role="menuitem">Failed</span>
+          <span class="wf-pop__item" role="menuitem">Uncertain</span>
+          <span class="wf-pop__item" role="menuitem">All delivered</span>
+        </div>
+
+        <!-- The toolbar's "…" (IA 6.1) -->
+        <div class="wf-pop" data-state="more" style="top: 44px; left: 507px; width: 280px" role="menu" aria-label="More actions for the Inbox">
+          <span class="wf-pop__item" role="menuitem"><i data-i="mail"></i>Email me a summary…</span>
+          <span class="wf-pop__item" role="menuitem"><i data-i="keyboard"></i>Keyboard shortcuts<kbd class="wf-kbd" style="margin-left: auto">?</kbd></span>
+        </div>
       </div>
 
-      <section class="wf-box" data-state="default filter columns" aria-label="Entries">
+      <section class="wf-box" data-state="default filter columns more shortcuts summary search" aria-label="Entries">
         <table class="wf-table in-table" style="border: 0">
           <thead>
             <tr>
               <th class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select all entries on this page"></span></th>
-              <th>Entry</th><th>Form</th><th class="in-wide">State</th><th>Received</th><th class="in-wide">Actions</th>
+              <th>Entry</th><th class="in-wide">Form</th><th>State</th><th>Received</th><th class="in-wide">Actions</th>
               <th class="in-col-choose wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Choose columns"><i data-i="columns"></i></button></th>
             </tr>
           </thead>
           <tbody>
             <tr class="wf-unseen">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 1043"></span></td>
-              <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Anna Svensson, Nordlicht GmbH</a><span class="wf-sr">, unseen</span></span></td>
-              <td class="wf-muted">Contact us</td><td class="in-wide"><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">12 min ago</td><td class="wf-muted in-wide">2/2 delivered</td><td></td>
+              <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Anna Svensson, Nordlicht GmbH</a><span class="wf-sr">, unseen</span></span><span class="in-sub">Contact us</span></td>
+              <td class="wf-muted in-wide">Contact us</td>
+              <td><span class="wf-chip wf-chip--positive">Approved</span></td>
+              <td class="wf-muted">12 min ago</td><td class="wf-muted in-wide">2/2 delivered</td><td></td>
             </tr>
             <tr class="wf-unseen">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 512"></span></td>
-              <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Malik Haddad</a><span class="wf-sr">, unseen</span></span></td>
-              <td class="wf-muted">Summer fair sign-up</td><td class="in-wide"><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">38 min ago</td><td class="wf-muted in-wide">1/1 delivered</td><td></td>
+              <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Malik Haddad</a><span class="wf-sr">, unseen</span></span><span class="in-sub">Summer fair sign-up</span></td>
+              <td class="wf-muted in-wide">Summer fair sign-up</td>
+              <td><span class="wf-chip wf-chip--positive">Approved</span></td>
+              <td class="wf-muted">38 min ago</td><td class="wf-muted in-wide">1/1 delivered</td><td></td>
             </tr>
-            <tr class="wf-unseen">
+            <tr class="wf-unseen in-cursor">
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 214"></span></td>
-              <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Jakob Lindqvist</a><span class="wf-sr">, unseen</span></span></td>
-              <td class="wf-muted">Job application</td><td class="in-wide"><span class="wf-chip wf-chip--warning">Waiting for approval</span></td><td class="wf-muted">3 h ago</td><td class="wf-muted in-wide">2/2 delivered</td><td></td>
+              <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Jakob Lindqvist</a><span class="wf-sr">, unseen</span></span><span class="in-sub">Job application</span></td>
+              <td class="wf-muted in-wide">Job application</td>
+              <td><span class="wf-chip wf-chip--warning">Waiting for approval</span></td>
+              <td class="wf-muted">3 h ago</td><td class="wf-muted in-wide">2/2 delivered</td><td></td>
             </tr>
             <tr>
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 64"></span></td>
-              <td><a href="#">Ines Duarte</a></td>
-              <td class="wf-muted">Callback request</td><td class="in-wide"><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">Today, 08:14</td><td class="in-wide"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--danger"></span>1 failed</span></td><td></td>
+              <td><span class="wf-row"><a href="#">Ines Duarte</a></span><span class="in-sub">Callback request</span></td>
+              <td class="wf-muted in-wide">Callback request</td>
+              <td><span class="in-state"><span class="wf-chip wf-chip--positive">Approved</span><span class="in-mark"><span class="wf-dot wf-dot--danger"></span>1 failed</span></span></td>
+              <td class="wf-muted">Today, 08:14</td><td class="in-wide"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--danger"></span>1 failed</span></td><td></td>
             </tr>
             <tr>
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 1042"></span></td>
-              <td><a href="#">Tobias Krämer, Krämer &amp; Söhne</a></td>
-              <td class="wf-muted">Contact us</td><td class="in-wide"><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">Yesterday, 17:52</td><td class="wf-muted in-wide">2/2 delivered</td><td></td>
+              <td><span class="wf-row"><a href="#">Tobias Krämer, Krämer &amp; Söhne</a></span><span class="in-sub">Contact us</span></td>
+              <td class="wf-muted in-wide">Contact us</td>
+              <td><span class="wf-chip wf-chip--positive">Approved</span></td>
+              <td class="wf-muted">Yesterday, 17:52</td><td class="wf-muted in-wide">2/2 delivered</td><td></td>
             </tr>
             <tr>
               <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 598"></span></td>
-              <td><a href="#">Entry #598</a></td>
-              <td class="wf-muted">Newsletter sign-up</td><td class="in-wide"><span class="wf-chip">Waiting for confirmation</span></td><td class="wf-muted">Yesterday, 09:03</td><td class="wf-muted in-wide">none</td><td></td>
+              <td><span class="wf-row"><a href="#">Entry #598</a></span><span class="in-sub">Newsletter sign-up</span></td>
+              <td class="wf-muted in-wide">Newsletter sign-up</td>
+              <td><span class="wf-chip">Waiting for confirmation</span></td>
+              <td class="wf-muted">Yesterday, 09:03</td><td class="wf-muted in-wide">none</td><td></td>
             </tr>
           </tbody>
         </table>
       </section>
-      <div class="wf-pager" data-state="default filter columns"><span>1 to 6 of 1,284</span><span class="wf-row"><button class="wf-btn wf-btn--small">Next</button></span></div>
+      <div class="wf-pager" data-state="default filter columns more shortcuts summary search"><span>1 to 6 of 1,284</span><span class="wf-row"><button class="wf-btn wf-btn--small">Next</button></span></div>
 
       <!-- A search that finds nothing, while sensitive fields exist -->
       <div class="wf-empty" data-state="sensitive-search">
         <p class="wf-empty__text">No entries match "Jana". Sensitive fields aren't searched.</p>
+        <button class="wf-btn">Clear search</button>
       </div>
       <!-- First use -->
       <div class="wf-empty" data-state="empty">
         <p class="wf-empty__text">No entries yet. They arrive here from every form you may view.</p>
+        <button class="wf-btn"><i data-i="mail"></i>Email me a summary…</button>
       </div>
       <!-- Loading -->
       <section class="wf-box" data-state="loading" aria-busy="true">
@@ -131,5 +207,76 @@
       <button class="wf-btn wf-btn--primary">Update</button>
     </footer>
   </aside>
+
+  <!-- Keyboard shortcuts, from "?" or the toolbar's "…". No primary: it is for reading. -->
+  <div class="wf-backdrop" data-state="shortcuts"></div>
+  <div class="wf-dialog" data-state="shortcuts" role="dialog" aria-labelledby="ks-title" style="--wf-dialog-size: 420px">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="ks-title">Keyboard shortcuts</h2></div>
+    <dl class="wf-dialog__body in-keys">
+      <dt><kbd class="wf-kbd">j</kbd></dt><dd>Next entry</dd>
+      <dt><kbd class="wf-kbd">k</kbd></dt><dd>Previous entry</dd>
+      <dt><kbd class="wf-kbd">Enter</kbd></dt><dd>Open the entry</dd>
+      <dt><kbd class="wf-kbd">a</kbd></dt><dd>Approve</dd>
+      <dt><kbd class="wf-kbd">r</kbd></dt><dd>Reject</dd>
+      <dt><kbd class="wf-kbd">s</kbd></dt><dd>Mark as spam</dd>
+      <dt><kbd class="wf-kbd">/</kbd></dt><dd>Search entries</dd>
+      <dt><kbd class="wf-kbd">Esc</kbd></dt><dd>Close the entry</dd>
+      <dt><kbd class="wf-kbd">?</kbd></dt><dd>Show these shortcuts</dd>
+    </dl>
+    <div class="wf-dialog__foot"><button class="wf-btn" style="box-shadow: var(--wf-focus)">Close</button></div>
+  </div>
+
+  <!-- Email me a summary… (IA 6.4) -->
+  <div class="wf-backdrop" data-state="summary"></div>
+  <aside class="wf-sidebar" data-state="summary" role="dialog" aria-labelledby="sm-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="sm-title">Email me a summary</h2></header>
+    <div class="wf-sidebar__body wf-stack wf-stack--lg">
+      <div class="wf-box"><div class="wf-box__body">
+        <div class="wf-field" role="radiogroup" aria-labelledby="sm-often">
+          <span class="wf-label" id="sm-often">How often</span>
+          <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="sm-o1"></span><span id="sm-o1">Off</span></span>
+          <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="true" aria-labelledby="sm-o2"></span><span id="sm-o2">Daily</span></span>
+          <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="sm-o3"></span><span id="sm-o3">Weekly, on Mondays</span></span>
+          <span class="wf-help">It goes out at 07:00 Berlin time, the site's time zone, and covers the day or week before.</span>
+        </div>
+      </div></div>
+      <section class="wf-box" aria-labelledby="sm-example">
+        <div class="wf-box__head"><h3 class="wf-box__title" id="sm-example">What it looks like</h3></div>
+        <div class="wf-box__body">
+          <p class="wf-strong">12 new entries in 3 forms</p>
+          <div class="in-digest">
+            <span>Contact us</span><span class="wf-muted">7 new</span>
+            <span>Job application</span><span class="wf-muted">3 new, 2 waiting for approval</span>
+            <span>Summer fair sign-up</span><span class="wf-muted">2 new</span>
+          </div>
+          <a href="#">Open the Inbox</a>
+        </div>
+      </section>
+      <p class="wf-help">It holds counts and links, never answers, and only the forms you may view. It goes to your own address, jonas@example.com.</p>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <div class="wf-sidebar__foot-start"><button class="wf-btn">Send test email</button></div>
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary">Save</button>
+    </footer>
+  </aside>
+
+  <!-- Umbraco's header search, with the Forms tab (IA 10). Opened inside the section, the Forms tab is chosen. -->
+  <div class="wf-backdrop" data-state="search"></div>
+  <div class="wf-dialog in-search" data-state="search" role="dialog" aria-label="Search">
+    <div class="in-search__field"><span class="wf-input wf-input--search"><i data-i="search"></i><span>sign</span></span></div>
+    <div class="in-search__tabs" role="tablist" aria-label="Search in">
+      <button class="in-search__tab" role="tab" aria-selected="false">Documents</button>
+      <button class="in-search__tab" role="tab" aria-selected="false">Media</button>
+      <button class="in-search__tab" role="tab" aria-selected="true">Forms</button>
+    </div>
+    <ul class="in-search__results" aria-label="Results in Forms">
+      <li><a class="in-search__result in-search__result--focus" href="#"><i data-i="form"></i><span>Newsletter sign-up</span></a></li>
+      <li><a class="in-search__result" href="#"><i data-i="form"></i><span>Summer fair sign-up<span class="wf-muted">, in Events</span></span></a></li>
+      <li><a class="in-search__result" href="#"><i data-i="form"></i><span>Volunteer sign-up<span class="wf-muted">, in Events</span></span></a></li>
+      <li><a class="in-search__result" href="#"><i data-i="checkbox"></i><span>Sign up for the newsletter<span class="wf-muted">, in Contact us</span></span></a></li>
+      <li class="in-search__all"><a class="in-search__result" href="#"><i data-i="inbox"></i><span>Search entries for "sign"</span></a></li>
+    </ul>
+  </div>
 </body>
 </html>

@@ -4,28 +4,45 @@
   <meta charset="utf-8">
   <title>Publish dialog · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 errors@1440x900 published@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 errors@1440x900 clean@1440x900 published@1440x900 first-publish@1440x900 first-published@1440x900 default@920x900 errors@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .pd-group + .pd-group { margin-top: var(--wf-space-5); }
     .pd-group ul { display: flex; flex-direction: column; gap: var(--wf-space-1); margin-top: var(--wf-space-2); }
+    .pd-check { display: block; }
+    .pd-check > p { margin-bottom: var(--wf-space-3); }
     .pd-problem { display: grid; grid-template-columns: 20px minmax(0, 1fr) max-content; gap: var(--wf-space-3); align-items: start; }
+    .pd-problem + .pd-problem { margin-top: var(--wf-space-3); }
+    .pd-error { color: var(--uui-color-danger-standalone); }
+    /* A first publish: the kit's tree still draws Quote request as unpublished; once published it isn't muted */
+    html[data-wf-state='first-published'] .wf-side .wf-item[aria-current='page'] { font-style: normal; color: var(--uui-color-text); }
+    html[data-wf-state='first-published'] .wf-side .wf-item[aria-current='page'] .wf-sr { display: none; }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
-<body data-role="designer" data-active="form:contact">
+<body data-role="designer" data-active="form:contact" data-active-first-publish="form:quote" data-active-first-published="form:quote">
   <!--
-    IA 5.7: what changed since the published version, grouped; the form check's result, where errors block with Fix it; an
-    optional comment for the version. After publishing, the toast says what the user can't see (copy.md, success).
+    IA 5.7: what changed since the published version, grouped; the form check's result, where errors block with Fix it
+    and warnings are listed too, because the designer's badge counts both ("2 problems"); an optional comment for the
+    version. After publishing, the chip says "Published", so the toast says only what the user can't see.
+
+    States: default (the form check found 1 warning: it doesn't block); errors (1 error, which blocks, and the same
+    warning: the badge's "2 problems"); clean (no problems); published (the toast after Publish); first-publish (the
+    dialog for a form that was never published: nothing to compare with, so it says what the first version holds);
+    first-published (no page shows the form yet, so the toast leads on to putting it on a page, through the "Used on"
+    sidebar, which explains how and offers Create a form block type… to users who may).
   -->
   <main class="wf-main">
     <header class="wf-head">
       <div class="wf-head__main">
         <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms" tabindex="-1"><i data-i="arrow-left"></i></button>
-        <span class="wf-head__name">Contact us</span>
-        <span class="wf-chip wf-chip--warning" data-state="default errors">Published (pending changes)</span>
-        <span class="wf-chip wf-chip--positive" data-state="published">Published</span>
+        <span class="wf-head__name" data-state="default errors clean published">Contact us</span>
+        <span class="wf-head__name" data-state="first-publish first-published">Quote request</span>
+        <span class="wf-chip wf-chip--warning" data-state="default errors clean">Published (pending changes)</span>
+        <span class="wf-chip" data-state="first-publish">Draft</span>
+        <span class="wf-chip wf-chip--positive" data-state="published first-published">Published</span>
+        <a href="#" data-state="first-published">Not used on any page</a>
       </div>
       <nav class="wf-tabs" aria-label="Views">
         <a class="wf-tab" href="#" aria-current="page"><i data-i="pencil" class="wf-i--20"></i>Design</a>
@@ -52,24 +69,33 @@
     </footer>
   </main>
 
-  <div class="wf-backdrop" data-state="default errors"></div>
-  <div class="wf-dialog" style="--wf-dialog-size: 640px" data-state="default errors" role="dialog" aria-labelledby="pd-title">
-    <div class="wf-dialog__head"><h2 class="wf-title" id="pd-title">Publish Contact us</h2></div>
+  <div class="wf-backdrop" data-state="default errors clean first-publish"></div>
+  <div class="wf-dialog" style="--wf-dialog-size: 640px" data-state="default errors clean first-publish" role="dialog" aria-labelledby="pd-title">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="pd-title"><span data-state="default errors clean">Publish Contact us</span><span data-state="first-publish">Publish Quote request</span></h2></div>
     <div class="wf-dialog__body">
       <div class="wf-stack wf-stack--lg">
-        <!-- The form check -->
-        <p class="wf-note wf-note--positive" data-state="default"><i data-i="check" class="wf-note__icon"></i><span>The form check found no problems.</span></p>
-        <section class="wf-note wf-note--danger" data-state="errors" role="alert" aria-labelledby="pd-errors" style="display: block">
-          <p class="wf-strong" id="pd-errors" style="margin-bottom: var(--wf-space-3)">This form can't be published yet: 1 problem needs fixing.</p>
+        <!-- The form check: errors first, which block; then warnings, which don't -->
+        <p class="wf-note wf-note--positive" data-state="clean first-publish"><i data-i="check" class="wf-note__icon"></i><span>The form check found no problems.</span></p>
+        <section class="wf-note wf-note--danger pd-check" data-state="errors" role="alert" aria-labelledby="pd-errors">
+          <p class="wf-strong" id="pd-errors">This form can't be published yet: 1 error needs fixing.</p>
           <div class="pd-problem">
-            <i data-i="alert" style="color: var(--uui-color-danger-standalone)"></i>
+            <i data-i="alert" class="pd-error"></i>
             <span><span class="wf-strong">Order number:</span> its rule uses the option "Delivery" of Topic, which no longer exists.</span>
+            <button class="wf-btn wf-btn--small">Fix it</button>
+          </div>
+        </section>
+        <section class="wf-note pd-check" data-state="default errors" aria-labelledby="pd-warnings">
+          <p class="wf-strong" id="pd-warnings"><span data-state="default">The form check found 1 warning. It doesn't block publishing.</span><span data-state="errors">It also has 1 warning, which doesn't block publishing.</span></p>
+          <div class="pd-problem">
+            <i data-i="info"></i>
+            <span><span class="wf-strong">Email address:</span> it is optional, but the confirmation email is sent to it. Visitors who leave it empty get no confirmation.</span>
             <button class="wf-btn wf-btn--small">Fix it</button>
           </div>
         </section>
 
         <!-- What changed since the published version -->
-        <section aria-labelledby="pd-changes">
+        <p data-state="first-publish">Nothing of it is published yet, so this is its first version: 1 page with 6 fields, 1 outcome and 2 actions.</p>
+        <section aria-labelledby="pd-changes" data-state="default errors clean">
           <h3 class="wf-strong" id="pd-changes" style="margin-bottom: var(--wf-space-3)">Changes since the published version</h3>
           <div class="wf-box"><div class="wf-box__body">
             <div class="pd-group">
@@ -94,14 +120,22 @@
     </div>
     <div class="wf-dialog__foot">
       <button class="wf-btn">Cancel</button>
-      <button class="wf-btn wf-btn--primary" data-state="default">Publish</button>
+      <button class="wf-btn wf-btn--primary" data-state="default clean first-publish">Publish</button>
       <button class="wf-btn wf-btn--primary" data-state="errors" aria-disabled="true">Publish</button>
     </div>
   </div>
 
+  <!-- After publishing: the chip says "Published", so the toast says what is new -->
   <div class="wf-toast" data-state="published" role="status">
     <i data-i="check" style="color: var(--uui-color-positive)"></i>
-    <span>Published. Visitors get the new version now.</span>
+    <span>Visitors get the new version now.</span>
+  </div>
+
+  <!-- After a first publish: no page shows the form yet, so the toast leads on to the "Used on" sidebar -->
+  <div class="wf-toast" data-state="first-published" role="status">
+    <i data-i="check" style="color: var(--uui-color-positive)"></i>
+    <span>Visitors can fill it in once it's on a page.</span>
+    <button class="wf-btn wf-btn--small">Show how</button>
   </div>
 </body>
 </html>

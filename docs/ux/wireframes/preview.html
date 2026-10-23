@@ -4,24 +4,46 @@
   <meta charset="utf-8">
   <title>Preview · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 phone@1440x900 menu@1440x900 sent@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 phone@1440x900 menu@1440x900 sent@1440x900 run@1440x900 default@920x900">
   <link rel="stylesheet" href="assets/kit.css">
+  <link rel="stylesheet" href="../website/assets/base.css">
+  <link rel="stylesheet" href="../website/assets/theme.css">
   <style>
     .pv { display: flex; flex-direction: column; height: 100%; }
-    .pv__stage { flex: 1; min-height: 0; overflow: auto; padding: var(--wf-space-6); background: var(--uui-color-background); }
-    .pv__frame { max-width: 760px; margin: 0 auto; padding: var(--wf-space-7); border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
-    .pv__frame--phone { max-width: 375px; padding: var(--wf-space-5); }
-    .pv__progress { display: flex; gap: var(--wf-space-5); margin-bottom: var(--wf-space-6); padding-bottom: var(--wf-space-4); border-bottom: 1px solid var(--uui-color-divider-standalone); }
-    .pv__progress span[aria-current] { font-weight: 700; }
-    .pv__frame h2 { margin-bottom: var(--wf-space-5); font-size: var(--wf-type-display); }
+    .pv__stage { --pv-w: 960px; flex: 1; min-height: 0; overflow: auto; padding: var(--wf-space-6); background: var(--uui-color-background); }
+    html[data-wf-state='phone'] .pv__stage { --pv-w: 375px; }
+    .pv__stage > * { max-width: calc(var(--pv-w) + 2 * var(--wf-space-6) + 2px); margin-inline: auto; }
+
+    /* The frame holds the form at the chosen width, rendered by its theme; with less room it narrows, never scales */
+    .pv__frame { --jfb-font-size: 16px; padding: var(--wf-space-6); border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
+    .pv__note { margin-bottom: var(--wf-space-4); }
+    .pv__note.wf-note { align-items: center; }
+    .pv__note > .pv__note-text { flex: 1; }
+    .pv__note > .wf-btn { margin-block: calc(-1 * var(--wf-space-1)); }
+    .pv__after { margin-top: var(--wf-space-4); }
+
+    /* "Narrowed to fit": the stage is narrower than the frame at the chosen width (960 + 50 + 48 px) */
+    .pv-fit { display: none; }
+    @media (max-width: 1057px) { html:not([data-wf-state='phone']) .pv-fit { display: inline; } }
+
+    .pv-run-list { display: grid; gap: var(--wf-space-3); margin-top: var(--wf-space-4); padding-left: 0; list-style: none; }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
 <body data-frame="none" data-role="designer">
   <!--
-    IA 5.7: the draft rendered by its theme in a frame, as a full-screen modal. Sending it makes a test entry, which runs
-    no actions unless "Run actions for test entries" is on (in "…").
+    IA 5.7: the draft rendered by its theme in a frame, as a full-screen modal. The frame holds the website's markup with
+    the default theme of step 2.3 (ADR-0022) at the chosen width (Desktop 960 px, Tablet 768 px, Phone 375 px), so the
+    preview shows what visitors see: from 480 px the step names stand in for the page title; narrower, "Step 1 of 2" and
+    the title. With less room than the chosen width the frame narrows, and "Narrowed to fit" says so (920 px).
+
+    Sending it makes a test entry, which runs no actions unless "Run actions for test entries" is on (in "…"). After
+    sending, the note offers to run them for that one entry, with a confirmation, because emails and messages then
+    really go out.
+
+    States: default; phone; menu (the "…"); sent (the outcome, as visitors see it); run (running the actions for that
+    test entry).
   -->
   <main class="wf-main pv">
     <header class="wf-head">
@@ -29,19 +51,20 @@
         <h1 class="wf-head__title">Preview of Contact us</h1>
         <span class="wf-muted">the draft</span>
         <div class="wf-row" style="margin-left: auto; position: relative" data-wf-actions="preview toolbar">
-          <div class="wf-seg" role="group" aria-label="Width" data-state="default menu sent">
+          <div class="wf-seg" role="group" aria-label="Width" data-state="default menu sent run">
             <button aria-pressed="false">Phone</button><button aria-pressed="false">Tablet</button><button aria-pressed="true">Desktop</button>
           </div>
           <div class="wf-seg" role="group" aria-label="Width" data-state="phone">
             <button aria-pressed="true">Phone</button><button aria-pressed="false">Tablet</button><button aria-pressed="false">Desktop</button>
           </div>
+          <span class="pv-fit wf-small wf-muted">Narrowed to fit</span>
           <button class="wf-btn" data-state="default phone menu"><i data-i="wand"></i>Fill with sample answers</button>
-          <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More preview options" aria-expanded="false" data-state="default phone sent"><i data-i="more"></i></button>
+          <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More preview options" aria-expanded="false" data-state="default phone sent run"><i data-i="more"></i></button>
           <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More preview options" aria-expanded="true" data-state="menu"><i data-i="more"></i></button>
           <div class="wf-pop" data-state="menu" style="top: 44px; right: 0; width: 300px" role="menu" aria-label="Preview options">
             <span class="wf-pop__item" role="menuitem"><i data-i="monitor"></i>Light or dark: light</span>
             <span class="wf-pop__item" role="menuitem"><i data-i="globe"></i>Language: English</span>
-            <span class="wf-pop__sep"></span>
+            <span class="wf-pop__sep" role="separator"></span>
             <span class="wf-pop__item" role="menuitemcheckbox" aria-checked="false"><span class="wf-box-check" aria-hidden="true"></span>Run actions for test entries</span>
           </div>
         </div>
@@ -50,44 +73,90 @@
     </header>
 
     <div class="pv__stage">
-      <p class="wf-muted" style="max-width: 760px; margin: 0 auto var(--wf-space-4)" data-state="default phone menu">Entries sent here are test entries. They run no actions.</p>
+      <p class="wf-muted pv__note" data-state="default phone menu">Entries sent here are test entries. They run no actions.</p>
+      <p class="wf-note wf-note--positive pv__note" role="status" data-state="sent run">
+        <i data-i="check" class="wf-note__icon"></i>
+        <span class="pv__note-text">Saved as test entry #1044. No actions ran.</span>
+        <button class="wf-btn wf-btn--small" aria-label="Run actions for test entry #1044…">Run actions…</button>
+      </p>
 
-      <div class="pv__frame" data-state="default menu" aria-label="The form as visitors see it">
-        <div class="pv__progress"><span aria-current="step">1 Your details</span><span class="wf-muted">2 Your message</span></div>
-        <h2>Your details</h2>
-        <div class="wf-stack wf-stack--lg">
-          <div class="wf-grid-2">
-            <div class="wf-vf"><span class="wf-vf__label">First name</span><span class="wf-vf__control"></span></div>
-            <div class="wf-vf"><span class="wf-vf__label">Last name</span><span class="wf-vf__control"></span></div>
+      <!-- Page 1 of Contact us, as the website renders it -->
+      <section class="pv__frame" aria-label="The form as visitors see it" data-state="default phone menu">
+        <form class="jfb-form jfb-theme-default" data-wf-sample lang="en" novalidate>
+          <div class="jfb-progress jfb-progress-steps">
+            <p class="jfb-progress-text">Step 1 of 2</p>
+            <ol aria-label="Progress">
+              <li aria-current="step"><span>Your details</span></li>
+              <li><span>Your message</span></li>
+            </ol>
           </div>
-          <div class="wf-vf"><span class="wf-vf__label">Email address</span><span class="wf-muted">We only use it to reply.</span><span class="wf-vf__control"></span></div>
-          <div class="wf-vf"><span class="wf-vf__label">Phone <span class="wf-vf__optional">(optional)</span></span><span class="wf-vf__control"></span></div>
-          <div class="wf-vf"><span class="wf-vf__label">Country</span><span class="wf-vf__control"></span></div>
-          <span class="wf-vf__submit">Next</span>
-        </div>
-      </div>
+          <section class="jfb-page">
+            <h2 class="jfb-title">Your details</h2>
+            <fieldset class="jfb-group jfb-columns-2">
+              <legend>About you</legend>
+              <div class="jfb-fields">
+                <div class="jfb-field jfb-field-text">
+                  <label class="jfb-label" for="pv-first">First name</label>
+                  <input class="jfb-control" id="pv-first" autocomplete="given-name">
+                </div>
+                <div class="jfb-field jfb-field-text">
+                  <label class="jfb-label" for="pv-last">Last name</label>
+                  <input class="jfb-control" id="pv-last" autocomplete="family-name">
+                </div>
+                <div class="jfb-field jfb-field-email jfb-span-2">
+                  <label class="jfb-label" for="pv-email">Email address</label>
+                  <p class="jfb-help" id="pv-email-help">We only use it to reply.</p>
+                  <input class="jfb-control" type="email" id="pv-email" autocomplete="email" aria-describedby="pv-email-help">
+                </div>
+                <div class="jfb-field jfb-field-phone jfb-span-2">
+                  <label class="jfb-label" for="pv-phone">Phone <span class="jfb-mark">(optional)</span></label>
+                  <input class="jfb-control" type="tel" id="pv-phone" autocomplete="tel">
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="jfb-group">
+              <legend>Where you are</legend>
+              <div class="jfb-fields">
+                <div class="jfb-field jfb-field-country">
+                  <label class="jfb-label" for="pv-country">Country</label>
+                  <div class="jfb-select"><select class="jfb-control" id="pv-country" autocomplete="country-name"><option>Choose a country</option></select></div>
+                </div>
+              </div>
+            </fieldset>
+          </section>
+          <div class="jfb-navigation"><button type="button" class="jfb-button jfb-button-primary">Next</button></div>
+        </form>
+      </section>
 
-      <div class="pv__frame pv__frame--phone" data-state="phone" aria-label="The form as visitors see it on a phone">
-        <div class="pv__progress"><span aria-current="step">Page 1 of 2</span></div>
-        <h2>Your details</h2>
-        <div class="wf-stack wf-stack--lg">
-          <div class="wf-vf"><span class="wf-vf__label">First name</span><span class="wf-vf__control"></span></div>
-          <div class="wf-vf"><span class="wf-vf__label">Last name</span><span class="wf-vf__control"></span></div>
-          <div class="wf-vf"><span class="wf-vf__label">Email address</span><span class="wf-muted">We only use it to reply.</span><span class="wf-vf__control"></span></div>
-          <div class="wf-vf"><span class="wf-vf__label">Phone <span class="wf-vf__optional">(optional)</span></span><span class="wf-vf__control"></span></div>
-          <span class="wf-vf__submit">Next</span>
+      <!-- The outcome, as visitors see it -->
+      <section class="pv__frame" aria-label="The outcome as visitors see it" data-state="sent run">
+        <div class="jfb-form jfb-theme-default" data-wf-sample lang="en">
+          <div class="jfb-outcome" tabindex="-1">
+            <h2>Thank you, Alex.</h2>
+            <p>We have received your message and answer within two working days.</p>
+          </div>
         </div>
-      </div>
-
-      <div class="wf-stack" data-state="sent" style="max-width: 760px; margin: 0 auto">
-        <p class="wf-note wf-note--positive" role="status"><i data-i="check" class="wf-note__icon"></i><span>Saved as test entry #1044. No actions ran.</span></p>
-        <div class="pv__frame" aria-label="The outcome as visitors see it">
-          <h2>Thank you, Alex.</h2>
-          <p>We have received your message and answer within two working days.</p>
-        </div>
-        <button class="wf-btn" style="align-self: flex-start"><i data-i="retry"></i>Start again</button>
-      </div>
+      </section>
+      <div class="pv__after" data-state="sent run"><button class="wf-btn"><i data-i="retry"></i>Start again</button></div>
     </div>
   </main>
+
+  <div class="wf-backdrop" data-state="run"></div>
+  <div class="wf-dialog" style="--wf-dialog-size: 520px" data-state="run" role="alertdialog" aria-labelledby="pv-run-title" aria-describedby="pv-run-text">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="pv-run-title">Run the actions for test entry #1044?</h2></div>
+    <div class="wf-dialog__body">
+      <p id="pv-run-text">These 4 actions run as they would for a real entry, so their emails and messages really go out.</p>
+      <ul class="pv-run-list">
+        <li><span class="wf-strong">Email the team</span> <span class="wf-muted">to sales@example.com and support@example.com</span></li>
+        <li><span class="wf-strong">Confirm to the visitor</span> <span class="wf-muted">to alex@example.com</span></li>
+        <li><span class="wf-strong">Send to the CRM</span> <span class="wf-muted">webhook to crm.example.com</span></li>
+        <li><span class="wf-strong">Post in #leads</span></li>
+      </ul>
+    </div>
+    <div class="wf-dialog__foot">
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary">Run 4 actions</button>
+    </div>
+  </div>
 </body>
 </html>

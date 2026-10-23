@@ -4,35 +4,69 @@
   <meta charset="utf-8">
   <title>Actions · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 added@1440x900 empty@1440x900 read-only@1440x900 loading@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 added@1440x900 run-details@1440x900 empty@1440x900 read-only@1440x900 loading@1440x900 default@920x900 run-details@920x900 read-only@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .ac-trigger + .ac-trigger { margin-top: var(--wf-space-6); }
-    .ac-trigger__head { display: flex; align-items: baseline; gap: var(--wf-space-3); margin-bottom: var(--wf-space-3); }
-    .ac-card { display: grid; grid-template-columns: 20px 24px minmax(0, 1fr) max-content; gap: var(--wf-space-4); align-items: center; padding: var(--wf-space-4); border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
+    .ac-trigger__head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--wf-space-3); margin-bottom: var(--wf-space-3); }
+    .ac-card { display: grid; grid-template-columns: 28px 24px minmax(0, 1fr) max-content; gap: var(--wf-space-3); align-items: center; padding: var(--wf-space-4) var(--wf-space-4) var(--wf-space-4) var(--wf-space-2); border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
     .ac-card + .ac-card { margin-top: var(--wf-space-3); }
     .ac-card__lines { display: flex; flex-direction: column; gap: var(--wf-space-1); min-width: 0; }
+    .ac-card__lines > a { align-self: flex-start; }
     .ac-card__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-3); }
     .ac-off { padding: var(--wf-space-4); border: 1px dashed var(--uui-color-border-standalone); border-radius: var(--wf-radius); color: var(--wf-color-text-muted); }
+    /* The move handle (ADR-0016): a real button, shown while the card is hovered or holds focus */
+    .ac-move { cursor: grab; touch-action: none; opacity: 0; }
+    .ac-card:is(:hover, :focus-within) .ac-move { opacity: 1; }
+    /* The wireframe draws the first card as hovered in the default state */
+    html[data-wf-state='default'] .ac-card--hover { background: var(--uui-color-surface-emphasis); }
+    html[data-wf-state='default'] .ac-card--hover .ac-move { opacity: 1; }
+    /* After Add, focus lands on the new card's name, which shows its move handle too */
+    html[data-wf-state='added'] .ac-card--new .ac-move { opacity: 1; }
+    html[data-wf-state='added'] .ac-card--new .ac-card__lines > a { outline: 2px solid var(--uui-color-focus); outline-offset: 2px; }
+    /* The run's details */
+    .ac-quote { margin-top: var(--wf-space-2); padding: var(--wf-space-3); border-radius: var(--wf-radius); background: var(--uui-color-background); font-family: var(--wf-font-mono); font-size: var(--wf-type-small); }
+    .ac-attempt { display: grid; grid-template-columns: 20px minmax(0, 1fr) max-content; gap: var(--wf-space-3); padding: var(--wf-space-3) 0; }
+    .ac-attempt + .ac-attempt { border-top: 1px solid var(--uui-color-divider-standalone); }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
-<body data-role="designer" data-active="form:contact">
+<body data-role="designer" data-active="form:contact" data-role-read-only="designer" data-active-read-only="form:job-application">
   <!--
     IA 5.3: the actions grouped by trigger. Add action is the view's main action: the first button of its toolbar, in the
-    secondary style, because the workspace footer keeps the form's own primary (Publish…).
+    secondary style, because the workspace footer keeps the form's own primary (Publish…). Each card's move handle is
+    a real button, "Move <action>", shown while the card is hovered or holds focus (ADR-0016: drag, or Alt+Up and
+    Alt+Down).
+
+    States:
+    - default: the first card is drawn hovered, with its move handle.
+    - added: right after Add on a published form. The sidebar closes, the new card (Post in #leads) is scrolled into
+      view and takes focus, and the toast says what happened and when it starts to run. Publish… stays in the footer
+      only.
+    - run-details: Details on a failed run. The designer holds manageActions but not viewEntries or manageSettings,
+      so the details show what the server answered and the tries, never the entry, and name who can retry (IA 11,
+      footnote 1). Test is what the designer can do here.
+    - empty, loading.
+    - read-only: the view without manageActions (IA 5.3). No seeded persona lacks it everywhere, so it is drawn where
+      the designer meets it: Job application, in the restricted HR folder, whose own grant gives the designers group
+      design but not manageActions (ADR-0013: inside a restricted folder only its own grants count). The line at the
+      top names the permission and the folder.
   -->
   <main class="wf-main">
     <header class="wf-head">
       <div class="wf-head__main">
         <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms"><i data-i="arrow-left"></i></button>
-        <span class="wf-head__name">Contact us</span>
-        <span class="wf-chip wf-chip--warning">Published (pending changes)</span>
-        <a href="#" data-state="default added empty read-only loading">Used on 3 pages</a>
-        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Contact us"><i data-i="more"></i></button>
+        <span class="wf-head__name" data-state="default added run-details empty loading">Contact us</span>
+        <span class="wf-head__name" data-state="read-only">Job application</span>
+        <span class="wf-chip wf-chip--warning" data-state="default added run-details empty loading">Published (pending changes)</span>
+        <span class="wf-chip wf-chip--positive" data-state="read-only">Published</span>
+        <a href="#" data-state="default added run-details empty loading">Used on 3 pages</a>
+        <a href="#" data-state="read-only">Used on 1 page</a>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Contact us" data-state="default added run-details empty loading"><i data-i="more"></i></button>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Job application" data-state="read-only"><i data-i="more"></i></button>
       </div>
-      <nav class="wf-tabs" aria-label="Views" data-state="default added empty read-only loading">
+      <nav class="wf-tabs" aria-label="Views">
         <a class="wf-tab" href="#"><i data-i="pencil" class="wf-i--20"></i>Design</a>
         <a class="wf-tab" href="#"><i data-i="settings" class="wf-i--20"></i>Settings</a>
         <a class="wf-tab" href="#" aria-current="page"><i data-i="send" class="wf-i--20"></i>Actions</a>
@@ -42,11 +76,9 @@
 
     <div class="wf-content wf-content--narrow">
       <div>
-        <div class="wf-toolbar" data-state="default added empty loading">
+        <div class="wf-toolbar" data-state="default added run-details empty loading">
           <button class="wf-btn"><i data-i="plus"></i>Add action</button>
         </div>
-
-        <p class="wf-note" data-state="read-only" style="margin-bottom: var(--wf-space-5)"><i data-i="lock" class="wf-note__icon"></i><span>Changing actions needs the "Manage actions" permission. An administrator can grant it in Settings › Access.</span></p>
 
         <!-- Empty -->
         <div class="wf-empty" data-state="empty">
@@ -61,12 +93,13 @@
           <span class="wf-sr">Loading the actions</span>
         </div>
 
-        <div data-state="default added read-only">
+        <!-- Contact us: the designer may change and test its actions -->
+        <div data-state="default added run-details">
           <!-- Submitted -->
           <section class="ac-trigger" aria-labelledby="t-submitted">
             <div class="ac-trigger__head"><h2 class="wf-title" id="t-submitted">Submitted</h2><span class="wf-muted">when an entry comes in</span></div>
-            <div class="ac-card">
-              <i data-i="grip" aria-hidden="true" data-state="default added"></i><span data-state="read-only"></span>
+            <div class="ac-card ac-card--hover">
+              <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ac-move" aria-label="Move Email the team" title="Move Email the team"><i data-i="grip"></i></button>
               <i data-i="mail" class="wf-i--20"></i>
               <div class="ac-card__lines">
                 <a href="#" class="wf-strong">Email the team</a>
@@ -74,14 +107,13 @@
                 <span class="ac-card__meta wf-small wf-muted"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--positive"></span>Delivered 2 hours ago</span></span>
               </div>
               <div class="wf-row" data-wf-actions="card: Email the team">
-                <span class="wf-switch" role="switch" aria-checked="true" aria-label="Email the team is on" data-state="default added"></span>
-                <span class="wf-muted" data-state="read-only">On</span>
-                <button class="wf-btn wf-btn--small" data-state="default added">Test</button>
-                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more data-state="default added" aria-label="More actions for Email the team"><i data-i="more"></i></button>
+                <span class="wf-switch" role="switch" aria-checked="true" aria-label="Use Email the team"></span>
+                <button class="wf-btn wf-btn--small">Test</button>
+                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Email the team"><i data-i="more"></i></button>
               </div>
             </div>
             <div class="ac-card">
-              <i data-i="grip" aria-hidden="true" data-state="default added"></i><span data-state="read-only"></span>
+              <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ac-move" aria-label="Move Confirm to the visitor" title="Move Confirm to the visitor"><i data-i="grip"></i></button>
               <i data-i="reply" class="wf-i--20"></i>
               <div class="ac-card__lines">
                 <a href="#" class="wf-strong">Confirm to the visitor</a>
@@ -89,28 +121,26 @@
                 <span class="ac-card__meta wf-small wf-muted"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--positive"></span>Delivered 2 hours ago</span></span>
               </div>
               <div class="wf-row" data-wf-actions="card: Confirm to the visitor">
-                <span class="wf-switch" role="switch" aria-checked="true" aria-label="Confirm to the visitor is on" data-state="default added"></span>
-                <span class="wf-muted" data-state="read-only">On</span>
-                <button class="wf-btn wf-btn--small" data-state="default added">Test</button>
-                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more data-state="default added" aria-label="More actions for Confirm to the visitor"><i data-i="more"></i></button>
+                <span class="wf-switch" role="switch" aria-checked="true" aria-label="Use Confirm to the visitor"></span>
+                <button class="wf-btn wf-btn--small">Test</button>
+                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Confirm to the visitor"><i data-i="more"></i></button>
               </div>
             </div>
             <div class="ac-card">
-              <i data-i="grip" aria-hidden="true" data-state="default added"></i><span data-state="read-only"></span>
+              <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ac-move" aria-label="Move Send to the CRM" title="Move Send to the CRM"><i data-i="grip"></i></button>
               <i data-i="webhook" class="wf-i--20"></i>
               <div class="ac-card__lines">
                 <a href="#" class="wf-strong">Send to the CRM</a>
                 <span class="wf-muted">Webhook to crm.example.com</span>
                 <span class="ac-card__meta wf-small">
                   <span class="wf-rule-chip" style="margin: 0"><i data-i="split"></i>When Topic is Sales</span>
-                  <span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--danger"></span>Failed at 14:02. Next try at 14:30.</span>
+                  <span class="wf-row" style="gap: var(--wf-space-1) var(--wf-space-3)"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--danger"></span>Failed at 14:02. Next try at 14:30.</span><a href="#" aria-label="Details of the failed run of Send to the CRM">Details</a></span>
                 </span>
               </div>
               <div class="wf-row" data-wf-actions="card: Send to the CRM">
-                <span class="wf-switch" role="switch" aria-checked="true" aria-label="Send to the CRM is on" data-state="default added"></span>
-                <span class="wf-muted" data-state="read-only">On</span>
-                <button class="wf-btn wf-btn--small" data-state="default added">Test</button>
-                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more data-state="default added" aria-label="More actions for Send to the CRM"><i data-i="more"></i></button>
+                <span class="wf-switch" role="switch" aria-checked="true" aria-label="Use Send to the CRM"></span>
+                <button class="wf-btn wf-btn--small">Test</button>
+                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Send to the CRM"><i data-i="more"></i></button>
               </div>
             </div>
           </section>
@@ -118,8 +148,9 @@
           <!-- Approved -->
           <section class="ac-trigger" aria-labelledby="t-approved">
             <div class="ac-trigger__head"><h2 class="wf-title" id="t-approved">Approved</h2><span class="wf-muted">as each entry comes in, because this form has no manual approval</span></div>
-            <div class="ac-card">
-              <i data-i="grip" aria-hidden="true" data-state="default added"></i><span data-state="read-only"></span>
+            <!-- In "added", the card that was just added: in view, with focus on its name -->
+            <div class="ac-card ac-card--new">
+              <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ac-move" aria-label="Move Post in #leads" title="Move Post in #leads"><i data-i="grip"></i></button>
               <i data-i="note" class="wf-i--20"></i>
               <div class="ac-card__lines">
                 <a href="#" class="wf-strong">Post in #leads</a>
@@ -127,10 +158,9 @@
                 <span class="ac-card__meta wf-small wf-muted">Not run yet</span>
               </div>
               <div class="wf-row" data-wf-actions="card: Post in #leads">
-                <span class="wf-switch" role="switch" aria-checked="true" aria-label="Post in #leads is on" data-state="default added"></span>
-                <span class="wf-muted" data-state="read-only">On</span>
-                <button class="wf-btn wf-btn--small" data-state="default added">Test</button>
-                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more data-state="default added" aria-label="More actions for Post in #leads"><i data-i="more"></i></button>
+                <span class="wf-switch" role="switch" aria-checked="true" aria-label="Use Post in #leads"></span>
+                <button class="wf-btn wf-btn--small">Test</button>
+                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Post in #leads"><i data-i="more"></i></button>
               </div>
             </div>
           </section>
@@ -142,6 +172,46 @@
           </section>
           <section class="ac-trigger" aria-labelledby="t-verified">
             <div class="ac-trigger__head"><h2 class="wf-title" id="t-verified">Verified</h2></div>
+            <p class="ac-off">Runs when a visitor confirms their address. It needs email verification: <a href="#">turn it on in Settings</a>.</p>
+          </section>
+        </div>
+
+        <!-- Job application, read-only: no Add action, no move handles, no switches, Test or "…"; a card still opens
+             its settings, read-only -->
+        <div data-state="read-only">
+          <p class="wf-note" style="margin-bottom: var(--wf-space-5)"><i data-i="lock" class="wf-note__icon"></i><span>Changing the actions of forms in HR needs the "Manage actions" permission for that folder. An administrator can grant it in Settings › Access.</span></p>
+          <section class="ac-trigger" aria-labelledby="r-submitted">
+            <div class="ac-trigger__head"><h2 class="wf-title" id="r-submitted">Submitted</h2><span class="wf-muted">when an entry comes in</span></div>
+            <div class="ac-card">
+              <span></span>
+              <i data-i="reply" class="wf-i--20"></i>
+              <div class="ac-card__lines">
+                <a href="#" class="wf-strong">Confirm to the applicant</a>
+                <span class="wf-muted">To the answer of Email address</span>
+                <span class="ac-card__meta wf-small wf-muted"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--positive"></span>Delivered 3 hours ago</span></span>
+              </div>
+              <span class="wf-muted">On</span>
+            </div>
+          </section>
+          <section class="ac-trigger" aria-labelledby="r-approved">
+            <div class="ac-trigger__head"><h2 class="wf-title" id="r-approved">Approved</h2><span class="wf-muted">when someone approves an entry</span></div>
+            <div class="ac-card">
+              <span></span>
+              <i data-i="mail" class="wf-i--20"></i>
+              <div class="ac-card__lines">
+                <a href="#" class="wf-strong">Email the team</a>
+                <span class="wf-muted">To hr@nordwind.example</span>
+                <span class="ac-card__meta wf-small wf-muted"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--warning"></span>Uncertain at 13:47.</span><a href="#" aria-label="Details of the uncertain run of Email the team">Details</a></span>
+              </div>
+              <span class="wf-muted">On</span>
+            </div>
+          </section>
+          <section class="ac-trigger" aria-labelledby="r-rejected">
+            <div class="ac-trigger__head"><h2 class="wf-title" id="r-rejected">Rejected</h2></div>
+            <p class="ac-off">No actions run when someone rejects an entry.</p>
+          </section>
+          <section class="ac-trigger" aria-labelledby="r-verified">
+            <div class="ac-trigger__head"><h2 class="wf-title" id="r-verified">Verified</h2></div>
             <p class="ac-off">Runs when a visitor confirms their address. It needs email verification: <a href="#">turn it on in Settings</a>.</p>
           </section>
         </div>
@@ -157,10 +227,38 @@
     </footer>
   </main>
 
-  <!-- After Add on a published form (copy.md, success) -->
+  <!-- After Add on a published form: what happened and when it runs; Publish… stays in the footer only -->
   <div class="wf-toast" data-state="added" role="status">
-    <span>Added. Visitors get it once you publish.</span>
-    <button class="wf-btn wf-btn--small">Publish…</button>
+    <i data-i="check" style="color: var(--uui-color-positive)"></i>
+    <span>Post in #leads added. It runs for new entries once you publish.</span>
   </div>
+
+  <!-- Details of a failed run, for a user without Deliveries: what the server answered and the tries, never the
+       entry; who can retry; Test, which the designer may use -->
+  <div class="wf-backdrop" data-state="run-details"></div>
+  <aside class="wf-sidebar" data-state="run-details" role="dialog" aria-labelledby="rd-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="rd-title">Send to the CRM</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-stack wf-stack--lg">
+        <div class="wf-note wf-note--danger" style="display: block">
+          <p>The last run failed at 14:02. The server answered:</p>
+          <p class="ac-quote">503 Service Unavailable</p>
+          <p style="margin-top: var(--wf-space-3)">It is tried again at 14:30, the third of 5 tries.</p>
+        </div>
+        <section class="wf-box" aria-labelledby="rd-tries">
+          <div class="wf-box__head"><h3 class="wf-box__title" id="rd-tries">Tries</h3></div>
+          <div class="wf-box__body">
+            <div class="ac-attempt"><i data-i="x" style="color: var(--uui-color-danger-standalone)"></i><span>503 Service Unavailable</span><span class="wf-muted wf-small">14:02</span></div>
+            <div class="ac-attempt"><i data-i="x" style="color: var(--uui-color-danger-standalone)"></i><span>503 Service Unavailable</span><span class="wf-muted wf-small">13:59</span></div>
+          </div>
+        </section>
+        <p>Test sends a sample entry, so you can see whether the server answers again. An administrator can retry this run now, in Activity › Deliveries.</p>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <button class="wf-btn">Close</button>
+      <button class="wf-btn">Test</button>
+    </footer>
+  </aside>
 </body>
 </html>

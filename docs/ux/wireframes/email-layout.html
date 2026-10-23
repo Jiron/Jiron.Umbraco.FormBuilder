@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Email layout · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 dark@1440x900 list@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 dark@1440x900 list@1440x900 default@920x900 preview@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .el { display: grid; grid-template-columns: 440px minmax(0, 1fr); height: 100%; }
@@ -31,7 +31,15 @@
     .mail--dark .mail__muted { color: #aab4c0; }
     .mail__foot { padding: 18px 24px; font-size: 12px; color: #52606d; }
     .mail--dark .mail__foot { color: #aab4c0; }
-    @media (max-width: 1000px) { .el { grid-template-columns: minmax(0, 1fr); } .el__preview { display: none; } }
+    /* Settings and Preview: one switch in the header where the workspace is too narrow for both side by side */
+    .el-switch { display: none; margin-left: auto; }
+    @container workspace (max-width: 899px) {
+      .el { grid-template-columns: minmax(0, 1fr); }
+      .el__settings { border-right: 0; }
+      .el-switch { display: inline-flex; }
+      html:not([data-wf-state="preview"]) .el__preview { display: none; }
+      html[data-wf-state="preview"] .el__settings { display: none; }
+    }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
@@ -41,7 +49,9 @@
     IA section 7: logo, colours, header and footer per language, beside a preview with a sample entry in light and dark.
     Header: "Used by 3 actions" and "…" (Duplicate · Delete…), as on every library item. Send test email sits with the
     preview, because it sends what the preview shows. The email's own colours are an example layout, marked
-    data-wf-sample.
+    data-wf-sample. Where the workspace is too narrow for both sides (under 900 px, so at a 920 or 1024 px window), the
+    header ends with the switch Settings · Preview, as in the theme editor and the action sidebar; state "preview" shows
+    the preview side at 920 px, with Light · Dark and Send test email where they always are.
   -->
   <main class="wf-main">
     <!-- The list -->
@@ -60,15 +70,17 @@
     <footer class="wf-foot" data-state="list"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Create email layout</button></div></footer>
 
     <!-- One layout -->
-    <header class="wf-head" data-state="default dark">
+    <header class="wf-head" data-state="default dark preview">
       <div class="wf-head__main">
         <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Email layouts"><i data-i="arrow-left"></i></button>
         <span class="wf-head__name">Brand</span>
         <a href="#">Used by 3 actions</a>
         <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Brand"><i data-i="more"></i></button>
+        <div class="wf-seg el-switch" role="group" aria-label="Show" data-state="default dark"><button aria-pressed="true">Settings</button><button aria-pressed="false">Preview</button></div>
+        <div class="wf-seg el-switch" role="group" aria-label="Show" data-state="preview"><button aria-pressed="false">Settings</button><button aria-pressed="true">Preview</button></div>
       </div>
     </header>
-    <div class="wf-content wf-content--flush" data-state="default dark">
+    <div class="wf-content wf-content--flush" data-state="default dark preview">
       <div class="el">
         <div class="el__settings">
           <div class="wf-field" style="margin-top: 0">
@@ -100,12 +112,12 @@
           <div class="wf-row wf-row--between" style="margin-bottom: var(--wf-space-4)">
             <h2 class="wf-strong" id="el-preview">Preview with a sample entry</h2>
             <div class="wf-row" data-wf-actions="preview">
-              <div class="wf-seg" role="group" aria-label="Colour scheme" data-state="default"><button aria-pressed="true">Light</button><button aria-pressed="false">Dark</button></div>
+              <div class="wf-seg" role="group" aria-label="Colour scheme" data-state="default preview"><button aria-pressed="true">Light</button><button aria-pressed="false">Dark</button></div>
               <div class="wf-seg" role="group" aria-label="Colour scheme" data-state="dark"><button aria-pressed="false">Light</button><button aria-pressed="true">Dark</button></div>
               <button class="wf-btn"><i data-i="send"></i>Send test email</button>
             </div>
           </div>
-          <div class="mail" data-wf-sample data-state="default">
+          <div class="mail" data-wf-sample data-state="default preview">
             <div class="mail__card">
               <div class="mail__head"><span class="mail__logo"></span>Nordwind Travel</div>
               <div class="mail__body">
@@ -128,7 +140,7 @@
         </section>
       </div>
     </div>
-    <footer class="wf-foot" data-state="default dark"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Save</button></div></footer>
+    <footer class="wf-foot" data-state="default dark preview"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Save</button></div></footer>
   </main>
 </body>
 </html>

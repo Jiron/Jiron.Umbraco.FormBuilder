@@ -4,60 +4,96 @@
   <meta charset="utf-8">
   <title>Overview (the start page) · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 first-run@1440x900 warnings@1440x900 loading@1440x900 error@1440x900 no-access@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 first-run@1440x900 warnings@1440x900 loading@1440x900 error@1440x900 no-access@1440x900 default@920x900 first-run@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .ov-health { display: flex; align-items: flex-start; gap: var(--wf-space-3); }
     .ov-health > :is(span, ul) { flex: 1; }
     .ov-more { margin: calc(-1 * var(--wf-space-1)) 0; }
+    .ov-step { flex: 1; min-width: 240px; }
+    .ov-done { color: var(--uui-color-positive); }
+    .ov-skel-line { display: flex; flex: 1; align-items: center; min-height: 21px; }
+    /* A fresh install's Recycle Bin is empty, so Umbraco draws it without an expander (research section 5) */
+    html[data-wf-state='first-run'] .wf-side .wf-item--tree .wf-item__chevron { visibility: hidden; }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
-<body data-role="admin" data-active="" data-role-no-access="none">
+<body data-role="admin" data-active="" data-role-no-access="none" data-tree-first-run="empty">
   <!--
     IA section 2. The section's only dashboard: no tab bar and no title (the top bar and the sidebar header already
-    name the section). It is for reading, so it has no primary action; its "…" sits at the right of the top row.
+    name the section). It is for reading, so it has no primary action; its "…" sits at the right of the top row once
+    the checklist is complete.
+
+    The setup checklist: a done step shows its check and its name; "done" is said once, to screen readers. The next
+    open step carries the step's action as a button. Later open steps keep their names as deep links, so steps can be
+    done in any order, unless they can't work yet (no form to preview) or the user can't do them (they say who can).
+
+    States: default (checklist complete); first-run (a fresh install: no forms, no entries, so the tree is empty and
+    the Inbox has no badge; one step done); warnings; loading (health and both boxes as skeletons); error (Recent
+    entries failed); no-access (a user without any permission: the checklist with three steps done, and the health
+    line). Recent entries has header cells for screen readers; its design has no visible header row.
   -->
   <main class="wf-main">
     <div class="wf-content">
       <div class="wf-stack wf-stack--lg">
 
-
         <!-- Setup checklist: until all five items are done (first run), and always for the user without access -->
         <section class="wf-box" data-state="first-run no-access" aria-labelledby="checklist-title">
           <div class="wf-box__head">
-            <h2 class="wf-box__title" id="checklist-title">Set up Forms</h2>
+            <h2 class="wf-box__title" id="checklist-title">Setup checklist</h2>
             <span class="wf-box__end wf-muted" data-state="first-run">1 of 5 done</span>
             <span class="wf-box__end wf-muted" data-state="no-access">3 of 5 done</span>
           </div>
           <ol class="wf-box__body wf-stack">
+            <!-- 1: done in both states -->
             <li class="wf-row">
-              <i data-i="check" class="wf-i--20" style="color: var(--uui-color-positive)"></i>
-              <div><span class="wf-strong">Check email sending</span><p class="wf-muted">Done</p></div>
+              <i data-i="check" class="wf-i--20 ov-done"></i>
+              <span class="wf-muted">Check email sending<span class="wf-sr">, done</span></span>
             </li>
-            <li class="wf-row">
-              <i data-i="circle" class="wf-i--20" data-state="first-run"></i>
-              <i data-i="check" class="wf-i--20" data-state="no-access" style="color: var(--uui-color-positive)"></i>
-              <div><a href="#" class="wf-strong" data-state="first-run">Create a form from a template</a><span class="wf-strong" data-state="no-access">Create a form from a template</span><p class="wf-muted" data-state="first-run">A contact or sign-up template gives you a working form in a minute.</p><p class="wf-muted" data-state="no-access">Done</p></div>
+
+            <!-- 2: the next step on a fresh install, so it carries the action; done for the user without access -->
+            <li class="wf-row" data-state="first-run" data-wf-actions="next checklist step">
+              <i data-i="circle" class="wf-i--20"></i>
+              <div class="ov-step">
+                <span class="wf-strong">Create a form from a template</span>
+                <p class="wf-muted">A contact or sign-up template gives you a working form in a minute.</p>
+              </div>
+              <button class="wf-btn">Choose a template…</button>
             </li>
-            <li class="wf-row">
-              <i data-i="circle" class="wf-i--20" data-state="first-run"></i>
-              <i data-i="check" class="wf-i--20" data-state="no-access" style="color: var(--uui-color-positive)"></i>
-              <div><a href="#" class="wf-strong" data-state="first-run">Preview and send a test entry</a><span class="wf-strong" data-state="no-access">Preview and send a test entry</span><p class="wf-muted" data-state="first-run">See the form as visitors will, and check what arrives.</p><p class="wf-muted" data-state="no-access">Done</p></div>
+            <li class="wf-row" data-state="no-access">
+              <i data-i="check" class="wf-i--20 ov-done"></i>
+              <span class="wf-muted">Create a form from a template<span class="wf-sr">, done</span></span>
             </li>
+
+            <!-- 3: needs a form, so on a fresh install it can't link yet -->
+            <li class="wf-row" data-state="first-run">
+              <i data-i="circle" class="wf-i--20"></i>
+              <div class="ov-step">
+                <span class="wf-strong">Preview and send a test entry</span>
+                <p class="wf-muted">Once there is a form: see it as visitors will, and check what arrives.</p>
+              </div>
+            </li>
+            <li class="wf-row" data-state="no-access">
+              <i data-i="check" class="wf-i--20 ov-done"></i>
+              <span class="wf-muted">Preview and send a test entry<span class="wf-sr">, done</span></span>
+            </li>
+
+            <!-- 4: a deep link on a fresh install; the next step for the user without access, who can't do it -->
             <li class="wf-row">
               <i data-i="circle" class="wf-i--20"></i>
-              <div style="flex: 1">
-                <span class="wf-strong">Put the form on a page</span>
+              <div class="ov-step">
+                <a href="#" class="wf-strong" data-state="first-run">Put the form on a page</a>
+                <span class="wf-strong" data-state="no-access">Put the form on a page</span>
                 <p class="wf-muted">Pages show forms through a block. Create the block type once; then allow it on the pages where editors may add forms.</p>
               </div>
-              <button class="wf-btn" data-state="first-run" data-wf-actions="checklist item 4">Create a form block type…</button>
               <span class="wf-muted" data-state="no-access">needs an administrator</span>
             </li>
+
+            <!-- 5 -->
             <li class="wf-row">
               <i data-i="circle" class="wf-i--20"></i>
-              <div style="flex: 1">
+              <div class="ov-step">
                 <a href="#" class="wf-strong" data-state="first-run">Choose who sees entries</a>
                 <span class="wf-strong" data-state="no-access">Choose who sees entries</span>
                 <p class="wf-muted">Give the teams that handle entries their permissions.</p>
@@ -69,9 +105,13 @@
 
         <!-- Health: one line, or one line per warning. Once the checklist is done, the overview's "…" sits at the end of
              this top row, inside it, so every box keeps one right edge. -->
-        <div class="wf-note wf-note--positive ov-health" data-state="default first-run no-access loading error">
+        <div class="wf-note wf-note--positive ov-health" data-state="default first-run no-access error">
           <i data-i="check" class="wf-note__icon"></i><span role="status">All checks pass</span>
-          <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ov-more" data-state="default loading error" data-wf-more aria-label="More actions for the overview"><i data-i="more"></i></button>
+          <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ov-more" data-state="default error" data-wf-more aria-label="More actions for the overview"><i data-i="more"></i></button>
+        </div>
+        <div class="wf-note ov-health" data-state="loading" aria-busy="true">
+          <div class="ov-skel-line"><span class="wf-skel" style="width: 32%"></span></div>
+          <span class="wf-sr">Checking the site's health</span>
         </div>
         <section class="wf-box" data-state="warnings" aria-label="Health">
           <div class="wf-box__body ov-health">
@@ -83,11 +123,12 @@
           </div>
         </section>
 
-        <!-- Recent entries -->
+        <!-- Recent entries: no visible header row, but header cells for screen readers (WCAG 1.3.1) -->
         <section class="wf-box" data-state="default warnings loading error" aria-labelledby="recent-title">
           <div class="wf-box__head"><h2 class="wf-box__title" id="recent-title">Recent entries</h2></div>
           <div class="wf-box__body wf-box__body--flush" data-state="default warnings">
             <table class="wf-table" style="border: 0">
+              <thead class="wf-sr"><tr><th scope="col">Entry</th><th scope="col">Form</th><th scope="col">Received</th></tr></thead>
               <tbody>
                 <tr class="wf-unseen"><td><span class="wf-row"><span class="wf-dot"></span><a href="#">Anna Svensson, Nordlicht GmbH</a><span class="wf-sr">, unseen</span></span></td><td class="wf-muted">Contact us</td><td class="wf-col-end wf-muted">12 min ago</td></tr>
                 <tr class="wf-unseen"><td><span class="wf-row"><span class="wf-dot"></span><a href="#">Malik Haddad</a><span class="wf-sr">, unseen</span></span></td><td class="wf-muted">Summer fair sign-up</td><td class="wf-col-end wf-muted">38 min ago</td></tr>

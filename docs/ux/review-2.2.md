@@ -659,7 +659,7 @@ a day and get no animation; sidebars, dialogs and toasts are occasional and keep
 | buttons that scale to 0.97 on press | UUI's own pressed state | the backoffice's buttons don't scale; one pressed style across the backoffice beats an added effect |
 | chart bars that grow on load | bars drawn at once | Insights is read; growth delays the reading and suggests a change that didn't happen |
 | hover effects with movement on palette items | a background change only | palette items are hovered dozens of times a session |
-| drag with a spring | UUI's sorter feedback, plus "Move to…" for the keyboard | ADR-0016; the keyboard path needs no motion at all |
+| drag with a spring | our own pointer drag (ADR-0016; Umbraco's sorter is not used): an insertion line that jumps from gap to gap, a 150 ms ease-out settle on drop, and Alt+Up/Down and "Move to…" for the keyboard, which never animate | the line follows the pointer, so easing it would lag; keyboard moves repeat many times in a row (corrected in 2.4, `docs/ux/critique-2.md`) |
 | an Undo toast that slides in from the corner | UUI's toast, entering from the same edge it leaves by | spatial consistency is the one purpose motion serves here |
 
 ## Decisions

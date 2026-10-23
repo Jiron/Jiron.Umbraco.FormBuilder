@@ -4,13 +4,26 @@
   <meta charset="utf-8">
   <title>Option list · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 list@1440x900 create@1440x900 empty@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 content@1440x900 data-type@1440x900 json@1440x900 list@1440x900 create@1440x900 empty@1440x900 default@920x900 json@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .ol { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: var(--wf-space-6); align-items: start; }
-    .ol-row { display: grid; grid-template-columns: 20px minmax(0, 1.4fr) minmax(0, 1fr) 30px; gap: var(--wf-space-3); align-items: center; }
+    .ol-row { display: grid; grid-template-columns: 28px minmax(0, 1.4fr) minmax(0, 1fr) 28px; gap: var(--wf-space-3); align-items: center; }
     .ol-row + .ol-row { margin-top: var(--wf-space-3); }
-    .ol-row--head { color: var(--wf-color-text-muted); font-weight: 700; }
+    .ol-row--head { margin-bottom: var(--wf-space-3); color: var(--wf-color-text-muted); font-weight: 700; }
+    .ol-grip { cursor: grab; }
+    /* A row's handle and remove button appear on the hovered row and on the row that holds the keyboard focus (§4.13);
+       on a touch screen, which has no hover, they stay visible. The space stays reserved, so nothing shifts. */
+    @media (hover: hover) and (pointer: fine) {
+      .ol-row:not(:hover):not(:focus-within):not(.ol-row--active) .ol-tool { opacity: 0; }
+    }
+    .ol-pick { display: flex; align-items: center; gap: var(--wf-space-3); min-height: 36px; padding: var(--wf-space-1) var(--wf-space-1) var(--wf-space-1) var(--wf-space-3); border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
+    .ol-pick > .wf-btn { margin-left: auto; }
+    .ol-indent { margin-left: 27px; }
+    .ol-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--wf-space-4); }
+    .ol-pair > .wf-field + .wf-field { margin-top: 0; }
+    .ol-pair + .wf-field, .wf-help + .wf-field { margin-top: var(--wf-space-5); }
+    .ol-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-2) var(--wf-space-3); margin-top: var(--wf-space-5); padding-top: var(--wf-space-4); border-top: 1px solid var(--uui-color-divider-standalone); }
     @media (max-width: 1000px) { .ol { grid-template-columns: minmax(0, 1fr); } }
   </style>
   <script src="assets/icons.js" defer></script>
@@ -20,6 +33,15 @@
   <!--
     IA section 7: Library › Option lists opens a list; a row opens the list's workspace (the editor for its kind with a
     live preview), with its name in the header and Save in the footer. Create option list asks for the kind first.
+    The states draw each kind's editor: fixed options (default), content, a data type and a JSON address; an upload
+    edits like fixed options once its file is read.
+    - Fixed options: each option's handle is a real button, "Move Germany" (ADR-0016): drag it, or press Alt+Up or
+      Alt+Down on it; focus stays on the moved option, and a polite live region says its new place. The handle and
+      the remove button appear on the hovered row and on the row that holds the keyboard focus, never as permanent
+      columns of icons (§4.13); Austria is drawn with the keyboard on its handle.
+    - Content and data type lists follow their source at once (published content, the data type's values), so they
+      have no cache setting; a JSON address has one, with the time it last fetched and Fetch now.
+    The preview shows the options as visitors meet them first: nothing chosen, "Choose one" in the dropdown.
   -->
   <main class="wf-main">
     <!-- The list -->
@@ -31,6 +53,7 @@
         <table class="wf-table" style="border: 0">
           <thead><tr><th>Name</th><th>Kind</th><th class="wf-num">Used by</th></tr></thead>
           <tbody>
+            <tr><td><a href="#">Contact topics</a></td><td class="wf-muted">Data type</td><td class="wf-num">1 form</td></tr>
             <tr><td><a href="#">Countries we ship to</a></td><td class="wf-muted">Fixed options</td><td class="wf-num">2 forms</td></tr>
             <tr><td><a href="#">Departments</a></td><td class="wf-muted">Content</td><td class="wf-num">4 forms</td></tr>
             <tr><td><a href="#">Event dates</a></td><td class="wf-muted">JSON address</td><td class="wf-num">1 form</td></tr>
@@ -44,51 +67,147 @@
     </div>
     <footer class="wf-foot" data-state="list create empty"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Create option list</button></div></footer>
 
-    <!-- One option list -->
-    <header class="wf-head" data-state="default">
+    <!-- One option list: the header names it, once -->
+    <header class="wf-head" data-state="default content data-type json">
       <div class="wf-head__main">
         <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Option lists"><i data-i="arrow-left"></i></button>
-        <span class="wf-head__name">Countries we ship to</span>
-        <a href="#">Used by 2 forms</a>
-        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Countries we ship to"><i data-i="more"></i></button>
+        <span class="wf-head__name" data-state="default">Countries we ship to</span>
+        <span class="wf-head__name" data-state="content">Departments</span>
+        <span class="wf-head__name" data-state="data-type">Contact topics</span>
+        <span class="wf-head__name" data-state="json">Event dates</span>
+        <a href="#" data-state="default">Used by 2 forms</a>
+        <a href="#" data-state="content">Used by 4 forms</a>
+        <a href="#" data-state="data-type json">Used by 1 form</a>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Countries we ship to" data-state="default"><i data-i="more"></i></button>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Departments" data-state="content"><i data-i="more"></i></button>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Contact topics" data-state="data-type"><i data-i="more"></i></button>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Event dates" data-state="json"><i data-i="more"></i></button>
       </div>
     </header>
-    <div class="wf-content" data-state="default">
+    <div class="wf-content" data-state="default content data-type json">
       <div class="ol" data-wf-grid>
         <section class="wf-box" aria-labelledby="ol-options">
           <div class="wf-box__head">
             <h2 class="wf-box__title" id="ol-options">Options</h2>
-            <span class="wf-box__end wf-muted">Fixed options</span>
+            <span class="wf-box__end wf-muted" data-state="default">Fixed options</span>
+            <span class="wf-box__end wf-muted" data-state="content">Content</span>
+            <span class="wf-box__end wf-muted" data-state="data-type">Data type</span>
+            <span class="wf-box__end wf-muted" data-state="json">JSON address</span>
           </div>
-          <div class="wf-box__body">
+
+          <!-- Fixed options -->
+          <div class="wf-box__body" data-state="default">
             <div class="ol-row ol-row--head" aria-hidden="true"><span></span><span>Label</span><span>Value</span><span></span></div>
-            <div class="ol-row"><i data-i="grip" aria-label="Drag to reorder Germany"></i><span class="wf-input">Germany</span><span class="wf-input">de</span><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove Germany"><i data-i="x"></i></button></div>
-            <div class="ol-row"><i data-i="grip" aria-label="Drag to reorder Austria"></i><span class="wf-input">Austria</span><span class="wf-input">at</span><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove Austria"><i data-i="x"></i></button></div>
-            <div class="ol-row"><i data-i="grip" aria-label="Drag to reorder Switzerland"></i><span class="wf-input">Switzerland</span><span class="wf-input">ch</span><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove Switzerland"><i data-i="x"></i></button></div>
-            <div class="ol-row"><i data-i="grip" aria-label="Drag to reorder Other"></i><span class="wf-input">Other</span><span class="wf-input">other</span><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove Other"><i data-i="x"></i></button></div>
+            <ul aria-labelledby="ol-options">
+              <li class="ol-row"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ol-tool ol-grip" aria-label="Move Germany"><i data-i="grip"></i></button><span class="wf-input">Germany</span><span class="wf-input">de</span><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ol-tool" aria-label="Remove Germany"><i data-i="x"></i></button></li>
+              <li class="ol-row ol-row--active"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ol-tool ol-grip" aria-label="Move Austria" style="box-shadow: var(--wf-focus)"><i data-i="grip"></i></button><span class="wf-input">Austria</span><span class="wf-input">at</span><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ol-tool" aria-label="Remove Austria"><i data-i="x"></i></button></li>
+              <li class="ol-row"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ol-tool ol-grip" aria-label="Move Switzerland"><i data-i="grip"></i></button><span class="wf-input">Switzerland</span><span class="wf-input">ch</span><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ol-tool" aria-label="Remove Switzerland"><i data-i="x"></i></button></li>
+              <li class="ol-row"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ol-tool ol-grip" aria-label="Move Other"><i data-i="grip"></i></button><span class="wf-input">Other</span><span class="wf-input">other</span><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ol-tool" aria-label="Remove Other"><i data-i="x"></i></button></li>
+            </ul>
+            <p class="wf-help wf-small" style="margin-top: var(--wf-space-3)">Reorder by dragging an option's handle, or with Alt+Up and Alt+Down on the handle.</p>
             <div class="wf-row" style="margin-top: var(--wf-space-4)">
               <button class="wf-btn wf-btn--text wf-btn--small"><i data-i="plus"></i>Add option</button>
               <button class="wf-btn wf-btn--text wf-btn--small"><i data-i="upload"></i>Upload a CSV or TXT file…</button>
             </div>
           </div>
+
+          <!-- Content: the children of a page, or of the page the form is on -->
+          <div class="wf-box__body" data-state="content">
+            <div class="wf-field" role="radiogroup" aria-labelledby="oc-start">
+              <span class="wf-label" id="oc-start">Start from</span>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="true" aria-labelledby="oc-s1"></span><span id="oc-s1">This page</span></span>
+              <div class="ol-pick ol-indent"><i data-i="sitemap"></i><span>Departments <span class="wf-muted wf-small">in Nordwind Travel › About us</span></span><button class="wf-btn wf-btn--small">Change…</button></div>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="oc-s2"></span><span id="oc-s2">The page the form is on</span></span>
+            </div>
+            <div class="ol-pair" style="margin-top: var(--wf-space-5)">
+              <label class="wf-field"><span class="wf-label">Which pages</span><span class="wf-select"><span>Its children</span><i data-i="chevron-down"></i></span></label>
+              <label class="wf-field"><span class="wf-label">Document type</span><span class="wf-select"><span>Department</span><i data-i="chevron-down"></i></span></label>
+            </div>
+            <div class="ol-pair" style="margin-top: var(--wf-space-5)">
+              <label class="wf-field"><span class="wf-label">Label</span><span class="wf-select"><span>Page name</span><i data-i="chevron-down"></i></span></label>
+              <label class="wf-field"><span class="wf-label">Value</span><span class="wf-select"><span>Page key</span><i data-i="chevron-down"></i></span></label>
+            </div>
+            <p class="wf-help" style="margin-top: var(--wf-space-2)">The key stays the same when a page is renamed or moved, so entries keep pointing at it.</p>
+            <label class="wf-field">
+              <span class="wf-label">Order</span>
+              <span class="wf-select" style="max-width: 280px"><span>As in the content tree</span><i data-i="chevron-down"></i></span>
+            </label>
+            <p class="wf-help" style="margin-top: var(--wf-space-5)">Only published pages become options, and pages that need a member to sign in are left out. Options follow the content as soon as it is published.</p>
+          </div>
+
+          <!-- A data type: its values, as they are -->
+          <div class="wf-box__body" data-state="data-type">
+            <div class="wf-field" style="margin-top: 0">
+              <span class="wf-label" id="od-type">Data type</span>
+              <div class="ol-pick" aria-labelledby="od-type"><i data-i="database"></i><span>Topic dropdown <span class="wf-muted wf-small">Dropdown</span></span><button class="wf-btn wf-btn--small">Change…</button></div>
+              <span class="wf-help">Its values become the options, in its order, each as both label and value. A change to the data type reaches every form at once.</span>
+            </div>
+          </div>
+
+          <!-- A JSON address: fetched from an allowed host and kept for a while -->
+          <div class="wf-box__body" data-state="json">
+            <label class="wf-field" style="margin-top: 0">
+              <span class="wf-label">Address</span>
+              <span class="wf-input">https://events.nordwind.example/summer-fair/dates.json</span>
+              <span class="wf-help">Only hosts the site allows: events.nordwind.example. Host configuration sets them in <span class="wf-tag">JironFormBuilder:Webhooks:AllowedHosts</span>.</span>
+            </label>
+            <label class="wf-field">
+              <span class="wf-label">The list in the answer</span>
+              <span class="wf-input"><span class="wf-tag">$.dates</span></span>
+              <span class="wf-help">Where the options are, as a JSON path.</span>
+            </label>
+            <div class="ol-pair" style="margin-top: var(--wf-space-5)">
+              <label class="wf-field"><span class="wf-label">Label from</span><span class="wf-input"><span class="wf-tag">title</span></span></label>
+              <label class="wf-field"><span class="wf-label">Value from</span><span class="wf-input"><span class="wf-tag">id</span></span></label>
+            </div>
+            <label class="wf-field">
+              <span class="wf-label">Keep fetched options for</span>
+              <span class="wf-select" style="max-width: 280px"><span>1 hour</span><i data-i="chevron-down"></i></span>
+              <span class="wf-help">Forms use the kept copy and fetch a new one after this time. If the address doesn't answer, the last copy stays in use.</span>
+            </label>
+            <div class="ol-status" role="status">
+              <i data-i="check" style="color: var(--uui-color-positive)"></i>
+              <span>Fetched today at 14:05: 3 options.</span>
+              <button class="wf-btn wf-btn--text wf-btn--small"><i data-i="retry"></i>Fetch now</button>
+            </div>
+          </div>
         </section>
+
+        <!-- The preview: the options as visitors meet them, nothing chosen yet -->
         <section class="wf-box" aria-labelledby="ol-preview">
           <div class="wf-box__head"><h2 class="wf-box__title" id="ol-preview">Preview</h2></div>
           <div class="wf-box__body wf-stack wf-stack--lg" data-wf-sample>
-            <div class="wf-stack"><span class="wf-small wf-muted" id="ol-as-select">As a dropdown</span><span class="wf-select"><span>Germany</span><i data-i="chevron-down"></i></span></div>
+            <div class="wf-stack"><span class="wf-small wf-muted">As a dropdown</span><span class="wf-select"><span class="wf-placeholder">Choose one</span><i data-i="chevron-down"></i></span></div>
             <div class="wf-stack"><span class="wf-small wf-muted" id="ol-as-radios">As radio buttons</span>
-            <div class="wf-vf__choices" role="radiogroup" aria-labelledby="ol-as-radios">
-              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="true" aria-label="Germany"></span>Germany</span>
-              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Austria"></span>Austria</span>
-              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Switzerland"></span>Switzerland</span>
-              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Other"></span>Other</span>
-            </div>
+              <div class="wf-vf__choices" role="radiogroup" aria-labelledby="ol-as-radios" data-state="default">
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Germany"></span>Germany</span>
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Austria"></span>Austria</span>
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Switzerland"></span>Switzerland</span>
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Other"></span>Other</span>
+              </div>
+              <div class="wf-vf__choices" role="radiogroup" aria-labelledby="ol-as-radios" data-state="content">
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Sales"></span>Sales</span>
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Support"></span>Support</span>
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Human resources"></span>Human resources</span>
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Marketing"></span>Marketing</span>
+              </div>
+              <div class="wf-vf__choices" role="radiogroup" aria-labelledby="ol-as-radios" data-state="data-type">
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="General question"></span>General question</span>
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Booking"></span>Booking</span>
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Press"></span>Press</span>
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Other"></span>Other</span>
+              </div>
+              <div class="wf-vf__choices" role="radiogroup" aria-labelledby="ol-as-radios" data-state="json">
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Saturday 12 June, morning"></span>Saturday 12 June, morning</span>
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Saturday 12 June, afternoon"></span>Saturday 12 June, afternoon</span>
+                <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Sunday 13 June, morning"></span>Sunday 13 June, morning</span>
+              </div>
             </div>
           </div>
         </section>
       </div>
     </div>
-    <footer class="wf-foot" data-state="default"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Save</button></div></footer>
+    <footer class="wf-foot" data-state="default content data-type json"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Save</button></div></footer>
   </main>
 
   <!-- Create option list asks for the kind first -->

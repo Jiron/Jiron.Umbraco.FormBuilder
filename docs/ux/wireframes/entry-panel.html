@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Entry panel · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 timeline@1440x900 notes@1440x900 spam@1440x900 forward@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 approved@1440x900 timeline@1440x900 notes@1440x900 edit@1440x900 reveal@1440x900 image@1440x900 spam@1440x900 forward@1440x900 default@920x900 approved@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .ep { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(0, 1.6fr); height: 100%; }
@@ -15,33 +15,73 @@
     .ep__tab { padding: var(--wf-space-4) 0 var(--wf-space-3); border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: var(--uui-color-interactive); }
     .ep__tab[aria-selected='true'] { border-bottom-color: var(--uui-color-current); color: var(--uui-color-text); font-weight: 700; }
     .ep__body { flex: 1; min-height: 0; overflow: auto; padding: var(--wf-space-6); }
-    .ep__answers { display: grid; grid-template-columns: minmax(96px, 1fr) minmax(0, 2fr); gap: var(--wf-space-3) var(--wf-space-5); }
+    .ep__answers { display: grid; grid-template-columns: minmax(96px, 1fr) minmax(0, 2fr); gap: var(--wf-space-3) var(--wf-space-5); align-items: baseline; }
     .ep__answers dd { overflow-wrap: anywhere; }
     .ep__answers dt { color: var(--wf-color-text-muted); }
+    /* Edit answers: the fields line up with their labels */
+    .ep__answers--edit { align-items: center; }
+    .ep__answers--edit dt:has(+ dd > .wf-textarea) { align-self: start; padding-top: var(--wf-space-2); }
     .ep-event { display: grid; grid-template-columns: 20px minmax(0, 1fr) max-content; gap: var(--wf-space-3); align-items: start; padding: var(--wf-space-4) 0; }
     .ep-event + .ep-event { border-top: 1px solid var(--uui-color-divider-standalone); }
     .ep-note { padding: var(--wf-space-4); }
     .ep-note + .ep-note { border-top: 1px solid var(--uui-color-divider-standalone); }
+    /* The narrowed list: each row's name and time, and its state under the name */
     .wf-table tr td.ep-name { width: 100%; }
-    .ep__title-narrow { display: none; }
+    .ep-list td { padding-top: var(--wf-space-3); padding-bottom: var(--wf-space-3); white-space: normal; }
+    /* One cell per row: the name and the time on the first line, the state under them across the whole row, so a long
+       state never pushes the time out of a 280 px list */
+    .ep-row { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: var(--wf-space-1) var(--wf-space-3); align-items: baseline; }
+    .ep-row a { text-decoration: none; }
+    .ep-row a:is(:hover, :focus-visible) { text-decoration: underline; }
+    .ep-time { font-weight: 400; white-space: nowrap; }
+    .ep-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-1) var(--wf-space-3); grid-column: 1 / -1; font-weight: 400; }
+    .ep-mark { display: inline-flex; align-items: center; gap: var(--wf-space-1); }
+    /* Where the panel covers the list (at 620 px), its header adds what the hidden row showed: the name and the state */
+    .ep__narrow { display: none; }
     @media (max-width: 1000px) {
       .ep { grid-template-columns: minmax(0, 1fr); position: relative; }
       .ep__panel { position: absolute; inset: 0; border-left: 0; }
-      .ep__title-narrow { display: inline; }
+      .ep__narrow { display: inline; }
+      .ep__narrow.wf-chip { display: inline-flex; }
     }
+    /* The image viewer */
+    .ep-viewer__head { display: flex; align-items: flex-start; gap: var(--wf-space-4); padding: var(--wf-space-5) var(--wf-space-5) var(--wf-space-4) var(--wf-space-6); }
+    .ep-viewer__head > div { flex: 1; min-width: 0; }
+    .ep-viewer__stage { display: grid; place-items: center; padding: var(--wf-space-5); background: var(--uui-color-background); border-top: 1px solid var(--uui-color-divider-standalone); }
+    .ep-viewer__img { display: grid; place-items: center; width: 300px; height: 400px; border-radius: var(--wf-radius); background: var(--uui-color-divider-standalone); color: var(--wf-color-text-muted); }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
-<body data-role="handler" data-active="inbox" data-role-spam="admin" data-active-spam="spam">
+<body data-role="handler" data-active="inbox" data-role-spam="admin" data-active-spam="spam" data-role-reveal="privacy">
   <!--
-    IA 6.3: the entry panel beside the Inbox. The list keeps its place and narrows to each row's name and time; the
-    panel shows what the row doesn't. At 620 px it covers the list, and its heading adds the entry's title.
+    IA 6.3: the entry panel beside the Inbox. The list keeps its place, its order and its scroll position, and narrows to
+    each row's name, state and time (with a failed delivery beside the state). The panel shows only what the row
+    doesn't: the form's name and, because this form has entry titles, the number. At 620 px the panel covers the list,
+    so its header adds the name and the state chip.
+
+    The action bar: the primary on the right, the visible actions beside it, then "…" (Print, and for administrators
+    Delete… and Re-run actions). A user sees only the actions their permissions allow.
+
+    States:
+    - approved: after Approve (or "a"). The panel stays on the entry and "j" moves on. The row's chip turns Approved in
+      place, Approve and Reject leave the bar (the "any other" row of IA 6.3), and the toast offers Undo. No motion:
+      approving is done hundreds of times a day.
+    - timeline, notes (the note box has real help text, no placeholder).
+    - edit: Edit answers (editEntries). The answers become fields, and the bar holds Cancel and Save alone. Files, the
+      consent's text and sensitive values the user can't see stay as they are: a file is the visitor's upload, and a
+      consent is proof of what they agreed to. Saving records the old and new values.
+    - reveal: the privacy officer (viewSensitive, deleteEntries, no state changes). Each sensitive value is revealed on
+      its own, at once and without asking, and the line under it says the reveal is recorded; Hide masks it again. Her
+      bar holds Delete… alone, as IA 6.3 says.
+    - image: an uploaded image opens in a viewer through the authorised download; other files download.
+    - spam: an entry in Spam, opened by an administrator; the row shows its number, so the header names only the form.
+    - forward: Forward… (IA 6.3).
   -->
   <main class="wf-main">
     <header class="wf-head">
       <div class="wf-head__main">
-        <h1 class="wf-head__title" data-state="default timeline notes forward">Inbox</h1>
+        <h1 class="wf-head__title" data-state="default approved timeline notes edit reveal image forward">Inbox</h1>
         <h1 class="wf-head__title" data-state="spam">Spam</h1>
       </div>
     </header>
@@ -53,24 +93,39 @@
             <span class="wf-input wf-input--search" style="flex: 1"><i data-i="search"></i><span class="wf-placeholder">Search entries</span></span>
             <button class="wf-btn wf-btn--icon" aria-label="Filter"><i data-i="filter"></i></button>
           </div>
-          <section class="wf-box" aria-label="Entries" data-state="default timeline notes forward">
-            <table class="wf-table" style="border: 0">
+          <!-- The Inbox's rows in the Inbox's order: unseen first, then the newest. Opening Jakob's entry marked it seen. -->
+          <section class="wf-box" aria-label="Entries" data-state="default approved timeline notes edit reveal image forward">
+            <table class="wf-table ep-list" style="border: 0">
               <tbody>
-                <tr aria-current="true"><td class="ep-name"><a href="#">Jakob Lindqvist</a></td><td class="wf-col-end wf-muted">3 h ago</td></tr>
-                <tr class="wf-unseen"><td class="ep-name"><span class="wf-row"><span class="wf-dot"></span><a href="#">Anna Svensson</a><span class="wf-sr">, unseen</span></span></td><td class="wf-col-end wf-muted">12 min ago</td></tr>
-                <tr class="wf-unseen"><td class="ep-name"><span class="wf-row"><span class="wf-dot"></span><a href="#">Malik Haddad</a><span class="wf-sr">, unseen</span></span></td><td class="wf-col-end wf-muted">38 min ago</td></tr>
-                <tr><td class="ep-name"><a href="#">Ines Duarte</a></td><td class="wf-col-end wf-muted">Today, 08:14</td></tr>
-                <tr><td class="ep-name"><a href="#">Tobias Krämer</a></td><td class="wf-col-end wf-muted">Yesterday</td></tr>
+                <tr class="wf-unseen">
+                  <td class="ep-name"><div class="ep-row"><span class="wf-row"><span class="wf-dot"></span><a href="#">Anna Svensson</a><span class="wf-sr">, unseen</span></span><span class="ep-time wf-muted">12 min ago</span><span class="ep-state"><span class="wf-chip wf-chip--positive">Approved</span></span></div></td>
+                </tr>
+                <tr class="wf-unseen">
+                  <td class="ep-name"><div class="ep-row"><span class="wf-row"><span class="wf-dot"></span><a href="#">Malik Haddad</a><span class="wf-sr">, unseen</span></span><span class="ep-time wf-muted">38 min ago</span><span class="ep-state"><span class="wf-chip wf-chip--positive">Approved</span></span></div></td>
+                </tr>
+                <tr aria-current="true">
+                  <td class="ep-name"><div class="ep-row"><span class="wf-row"><a href="#">Jakob Lindqvist</a></span><span class="ep-time wf-muted">3 h ago</span><span class="ep-state"><span class="wf-chip wf-chip--warning" data-state="default timeline notes edit reveal image forward">Waiting for approval</span><span class="wf-chip wf-chip--positive" data-state="approved">Approved</span></span></div></td>
+                </tr>
+                <tr>
+                  <td class="ep-name"><div class="ep-row"><span class="wf-row"><a href="#">Ines Duarte</a></span><span class="ep-time wf-muted">Today, 08:14</span><span class="ep-state"><span class="wf-chip wf-chip--positive">Approved</span><span class="ep-mark"><span class="wf-dot wf-dot--danger"></span>1 failed</span></span></div></td>
+                </tr>
+                <tr>
+                  <td class="ep-name"><div class="ep-row"><span class="wf-row"><a href="#">Tobias Krämer</a></span><span class="ep-time wf-muted">Yesterday</span><span class="ep-state"><span class="wf-chip wf-chip--positive">Approved</span></span></div></td>
+                </tr>
+                <tr>
+                  <td class="ep-name"><div class="ep-row"><span class="wf-row"><a href="#">Entry #598</a></span><span class="ep-time wf-muted">Yesterday</span><span class="ep-state"><span class="wf-chip">Waiting for confirmation</span></span></div></td>
+                </tr>
               </tbody>
             </table>
           </section>
+          <!-- Spam: no state, since everything here is in Spam -->
           <section class="wf-box" aria-label="Entries in Spam" data-state="spam">
             <table class="wf-table" style="border: 0">
               <tbody>
-                <tr aria-current="true"><td class="ep-name"><a href="#">Entry #1051</a></td><td class="wf-col-end wf-muted">1 h ago</td></tr>
-                <tr><td class="ep-name"><a href="#">Best Prices Online</a></td><td class="wf-col-end wf-muted">2 h ago</td></tr>
-                <tr><td class="ep-name"><a href="#">Marta Kowalska</a></td><td class="wf-col-end wf-muted">Yesterday</td></tr>
-                <tr><td class="ep-name"><a href="#">Entry #1047</a></td><td class="wf-col-end wf-muted">Yesterday</td></tr>
+                <tr aria-current="true"><td class="ep-name"><span class="wf-row"><a href="#">Entry #1051</a></span></td><td class="wf-col-end wf-muted">1 h ago</td></tr>
+                <tr><td class="ep-name"><span class="wf-row"><a href="#">Best Prices Online</a></span></td><td class="wf-col-end wf-muted">2 h ago</td></tr>
+                <tr><td class="ep-name"><span class="wf-row"><a href="#">Marta Kowalska</a></span></td><td class="wf-col-end wf-muted">Yesterday</td></tr>
+                <tr><td class="ep-name"><span class="wf-row"><a href="#">Entry #1047</a></span></td><td class="wf-col-end wf-muted">Yesterday</td></tr>
               </tbody>
             </table>
           </section>
@@ -79,20 +134,21 @@
         <!-- The panel -->
         <section class="ep__panel" aria-labelledby="ep-title">
           <header class="ep__head">
-            <h2 class="wf-title" id="ep-title" data-state="default timeline notes forward"><span class="ep__title-narrow">Jakob Lindqvist · </span>Job application · Entry #214</h2>
-            <h2 class="wf-title" id="ep-title-spam" data-state="spam">Contact us · Entry #1051</h2>
-            <span class="wf-chip wf-chip--warning" data-state="default timeline notes forward">Waiting for approval</span>
+            <h2 class="wf-title" id="ep-title" data-state="default approved timeline notes edit reveal image forward"><span class="ep__narrow">Jakob Lindqvist · </span>Job application · Entry #214</h2>
+            <h2 class="wf-title" id="ep-title-spam" data-state="spam"><span class="ep__narrow">Entry #1051 · </span>Contact us</h2>
+            <span class="wf-chip wf-chip--warning ep__narrow" data-state="default timeline notes edit reveal image forward">Waiting for approval</span>
+            <span class="wf-chip wf-chip--positive ep__narrow" data-state="approved">Approved</span>
             <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-frame style="margin-left: auto" aria-label="Close the entry"><i data-i="x"></i></button>
           </header>
           <div class="ep__tabs" role="tablist" aria-label="Entry">
-            <button class="ep__tab" role="tab" aria-selected="true" data-state="default spam forward">Answers</button><button class="ep__tab" role="tab" aria-selected="false" data-state="timeline notes">Answers</button>
-            <button class="ep__tab" role="tab" aria-selected="false" data-state="default notes spam forward">Timeline</button><button class="ep__tab" role="tab" aria-selected="true" data-state="timeline">Timeline</button>
-            <button class="ep__tab" role="tab" aria-selected="false" data-state="default timeline spam forward">Notes (1)</button><button class="ep__tab" role="tab" aria-selected="true" data-state="notes">Notes (1)</button>
+            <button class="ep__tab" role="tab" aria-selected="true" data-state="default approved edit reveal image spam forward">Answers</button><button class="ep__tab" role="tab" aria-selected="false" data-state="timeline notes">Answers</button>
+            <button class="ep__tab" role="tab" aria-selected="false" data-state="default approved notes edit reveal image spam forward">Timeline</button><button class="ep__tab" role="tab" aria-selected="true" data-state="timeline">Timeline</button>
+            <button class="ep__tab" role="tab" aria-selected="false" data-state="default approved timeline edit reveal image spam forward">Notes (1)</button><button class="ep__tab" role="tab" aria-selected="true" data-state="notes">Notes (1)</button>
           </div>
 
           <div class="ep__body">
             <!-- Answers -->
-            <div class="wf-stack wf-stack--lg" data-state="default forward">
+            <div class="wf-stack wf-stack--lg" data-state="default approved image forward">
               <div class="wf-row wf-row--between">
                 <p class="wf-muted">Sent from /careers/apply · English · 6 min to complete · <a href="#">More details</a></p>
                 <button class="wf-btn wf-btn--small"><i data-i="pencil"></i>Edit answers</button>
@@ -110,7 +166,63 @@
                 <div class="wf-box__head"><h3 class="wf-box__title" id="ep-p2">Your application</h3></div>
                 <dl class="wf-box__body ep__answers">
                   <dt>Position</dt><dd>Frontend developer</dd>
+                  <dt>Salary expectation</dt><dd class="wf-muted"><i data-i="lock"></i> Hidden: sensitive</dd>
                   <dt>CV</dt><dd><a href="#"><i data-i="paperclip"></i> cv-jakob-lindqvist.pdf</a> <span class="wf-muted">240 KB</span></dd>
+                  <dt>Photo</dt><dd><a href="#"><i data-i="image"></i> jakob-lindqvist.jpg</a> <span class="wf-muted">380 KB</span></dd>
+                  <dt>Why us?</dt><dd>I have followed your accessibility work for years, and I would like to help build the next version of your booking flow.</dd>
+                  <dt>Consent</dt><dd>Yes: "I agree that my application is kept for 6 months."</dd>
+                </dl>
+              </section>
+            </div>
+
+            <!-- Edit answers: the answers become fields; what can't change stays as it is -->
+            <div class="wf-stack wf-stack--lg" data-state="edit">
+              <p class="wf-muted">Your changes are recorded, with the old values.</p>
+              <section class="wf-box" aria-labelledby="ep-e1">
+                <div class="wf-box__head"><h3 class="wf-box__title" id="ep-e1">Your details</h3></div>
+                <dl class="wf-box__body ep__answers ep__answers--edit">
+                  <dt>Name</dt><dd><span class="wf-input">Jakob Lindqvist</span></dd>
+                  <dt>Email address</dt><dd><span class="wf-input">jakob.lindqvist@example.com</span></dd>
+                  <dt>Phone</dt><dd><span class="wf-input">+46 70 123 45 67</span></dd>
+                  <dt>Date of birth</dt><dd class="wf-muted"><i data-i="lock"></i> Hidden: sensitive</dd>
+                </dl>
+              </section>
+              <section class="wf-box" aria-labelledby="ep-e2">
+                <div class="wf-box__head"><h3 class="wf-box__title" id="ep-e2">Your application</h3></div>
+                <dl class="wf-box__body ep__answers ep__answers--edit">
+                  <dt>Position</dt><dd><span class="wf-select"><span>Frontend developer</span><i data-i="chevron-down"></i></span></dd>
+                  <dt>Salary expectation</dt><dd class="wf-muted"><i data-i="lock"></i> Hidden: sensitive</dd>
+                  <dt>CV</dt><dd><a href="#"><i data-i="paperclip"></i> cv-jakob-lindqvist.pdf</a> <span class="wf-muted">240 KB</span></dd>
+                  <dt>Photo</dt><dd><a href="#"><i data-i="image"></i> jakob-lindqvist.jpg</a> <span class="wf-muted">380 KB</span></dd>
+                  <dt>Why us?</dt><dd><span class="wf-textarea">I have followed your accessibility work for years, and I would like to help build the next version of your booking flow.</span></dd>
+                  <dt>Consent</dt><dd>Yes: "I agree that my application is kept for 6 months."</dd>
+                </dl>
+              </section>
+            </div>
+
+            <!-- Reveal, for the privacy officer: one sensitive value revealed, the other still masked -->
+            <div class="wf-stack wf-stack--lg" data-state="reveal">
+              <p class="wf-muted">Sent from /careers/apply · English · 6 min to complete · <a href="#">More details</a></p>
+              <section class="wf-box" aria-labelledby="ep-r1">
+                <div class="wf-box__head"><h3 class="wf-box__title" id="ep-r1">Your details</h3></div>
+                <dl class="wf-box__body ep__answers">
+                  <dt>Name</dt><dd>Jakob Lindqvist</dd>
+                  <dt>Email address</dt><dd>jakob.lindqvist@example.com</dd>
+                  <dt>Phone</dt><dd>+46 70 123 45 67</dd>
+                  <dt>Date of birth</dt>
+                  <dd>
+                    <span class="wf-row">14 March 1991 <button class="wf-btn wf-btn--text wf-btn--small" aria-label="Hide Date of birth">Hide</button></span>
+                    <span class="wf-small wf-muted" style="display: block">Shown to you and recorded in the audit log.</span>
+                  </dd>
+                </dl>
+              </section>
+              <section class="wf-box" aria-labelledby="ep-r2">
+                <div class="wf-box__head"><h3 class="wf-box__title" id="ep-r2">Your application</h3></div>
+                <dl class="wf-box__body ep__answers">
+                  <dt>Position</dt><dd>Frontend developer</dd>
+                  <dt>Salary expectation</dt><dd><span class="wf-row"><span class="wf-muted">••••••</span><button class="wf-btn wf-btn--text wf-btn--small" aria-label="Reveal Salary expectation">Reveal</button></span></dd>
+                  <dt>CV</dt><dd><a href="#"><i data-i="paperclip"></i> cv-jakob-lindqvist.pdf</a> <span class="wf-muted">240 KB</span></dd>
+                  <dt>Photo</dt><dd><a href="#"><i data-i="image"></i> jakob-lindqvist.jpg</a> <span class="wf-muted">380 KB</span></dd>
                   <dt>Why us?</dt><dd>I have followed your accessibility work for years, and I would like to help build the next version of your booking flow.</dd>
                   <dt>Consent</dt><dd>Yes: "I agree that my application is kept for 6 months."</dd>
                 </dl>
@@ -131,7 +243,7 @@
                 <dl class="wf-box__body ep__answers">
                   <dt>Name</dt><dd class="wf-muted">none</dd>
                   <dt>Email address</dt><dd>offers@example.net</dd>
-                  <dt>Date of birth</dt><dd><span class="wf-muted">••••••</span> <button class="wf-btn wf-btn--text wf-btn--small">Reveal</button></dd>
+                  <dt>Date of birth</dt><dd><span class="wf-row"><span class="wf-muted">••••••</span><button class="wf-btn wf-btn--text wf-btn--small" aria-label="Reveal Date of birth">Reveal</button></span></dd>
                   <dt>Your message</dt><dd>Visit our casino for the best offers of the year.</dd>
                 </dl>
               </section>
@@ -150,8 +262,9 @@
             <!-- Notes -->
             <div class="wf-stack wf-stack--lg" data-state="notes">
               <div class="wf-field" style="margin: 0">
-                <label class="wf-label" for="ep-new-note">New note</label>
-                <span class="wf-textarea" id="ep-new-note"><span class="wf-placeholder">Only your colleagues see notes.</span></span>
+                <span class="wf-label" id="ep-new-note">New note</span>
+                <span class="wf-textarea" role="textbox" aria-multiline="true" aria-labelledby="ep-new-note" aria-describedby="ep-note-help"></span>
+                <span class="wf-help" id="ep-note-help">Visitors never see notes. Everyone who may open this entry can read them.</span>
                 <button class="wf-btn" style="align-self: flex-start; margin-top: var(--wf-space-3)">Add note</button>
               </div>
               <section class="wf-box" aria-label="Notes">
@@ -163,19 +276,44 @@
             </div>
           </div>
 
+          <!-- The action bar: the primary on the right, the visible actions beside it, then "…" -->
           <footer class="wf-sidebar__foot">
-            <div class="wf-sidebar__foot-start"><button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for this entry"><i data-i="more"></i></button></div>
-            <button class="wf-btn" data-state="default timeline notes forward">Forward…</button>
-            <button class="wf-btn" data-state="default timeline notes forward">Mark as spam</button>
-            <button class="wf-btn" data-state="default timeline notes forward">Reject</button>
-            <button class="wf-btn wf-btn--primary" data-state="default timeline notes forward">Approve</button>
-            <button class="wf-btn" data-state="spam">Delete…</button>
+            <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for this entry" data-state="default approved timeline notes reveal image spam forward"><i data-i="more"></i></button>
+            <button class="wf-btn" data-state="default approved timeline notes image forward">Forward…</button>
+            <button class="wf-btn" data-state="default approved timeline notes image forward">Mark as spam</button>
+            <button class="wf-btn" data-state="default timeline notes image forward">Reject</button>
+            <button class="wf-btn wf-btn--primary" data-state="default timeline notes image forward">Approve</button>
+            <button class="wf-btn" data-state="edit">Cancel</button>
+            <button class="wf-btn wf-btn--primary" data-state="edit">Save</button>
+            <button class="wf-btn" data-state="spam reveal">Delete…</button>
             <button class="wf-btn wf-btn--primary" data-state="spam">Not spam</button>
           </footer>
         </section>
       </div>
     </div>
   </main>
+
+  <!-- After Approve: the change shows in the row; the toast offers the way back (§4.13, reversible actions use undo) -->
+  <div class="wf-toast" data-state="approved" role="status">
+    <span>Entry #214 approved.</span>
+    <button class="wf-btn wf-btn--small">Undo</button>
+  </div>
+
+  <!-- An uploaded image, through the authorised download (IA 6.3, Files) -->
+  <div class="wf-backdrop" data-state="image"></div>
+  <div class="wf-dialog" data-state="image" role="dialog" aria-labelledby="iv-title" aria-describedby="iv-meta" style="--wf-dialog-size: 520px">
+    <div class="ep-viewer__head">
+      <div>
+        <h2 class="wf-title" id="iv-title">jakob-lindqvist.jpg</h2>
+        <p class="wf-small wf-muted" id="iv-meta">Photo · JPEG, 380 KB</p>
+      </div>
+      <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-frame aria-label="Close the image"><i data-i="x"></i></button>
+    </div>
+    <div class="ep-viewer__stage">
+      <div class="ep-viewer__img" role="img" aria-label="jakob-lindqvist.jpg, uploaded with entry #214"><i data-i="image" class="wf-i--20"></i></div>
+    </div>
+    <div class="wf-dialog__foot"><button class="wf-btn"><i data-i="download"></i>Download</button></div>
+  </div>
 
   <!-- Forward… (IA 6.3): only people the site already trusts -->
   <div class="wf-backdrop" data-state="forward"></div>

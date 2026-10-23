@@ -20,6 +20,7 @@
   --uui-color-surface-emphasis: #fafafa;
   --uui-color-border: #d8d7d9;
   --uui-color-border-standalone: #c2c2c2;
+  --uui-color-border-emphasis: #a1a1a1;
   --uui-color-divider-standalone: #e9e9eb;
   --uui-color-text: #060606;
   --uui-color-interactive: #1b264f;
@@ -32,9 +33,10 @@
   --uui-color-focus: #3879ff;
   --uui-color-disabled-contrast: #c4c4c4;
 
-  /* The wireframes' own, provisional until 2.3 */
-  --wf-color-text-muted: #575757; /* UUI palette mine-grey-dimmed: 6.9:1 on the background */
-  --wf-color-control-border: #8d8d8d; /* UUI palette dusty-grey-dark: 3.3:1 on white, for WCAG 1.4.11 */
+  /* The wireframes' own; the backoffice names them --jfb-bo-* (docs/ux/tokens.md). Mixed from UUI's text and
+     emphasis border, so they follow the light, dark and high-contrast themes. */
+  --wf-color-text-muted: color-mix(in srgb, var(--uui-color-text) 50%, var(--uui-color-border-emphasis)); /* #545454: 7.1:1 on the background */
+  --wf-color-control-border: color-mix(in srgb, var(--uui-color-text) 20%, var(--uui-color-border-emphasis)); /* #828282: 3.6:1 on the background, for WCAG 1.4.11 */
   --wf-color-backdrop: #0000003d;
   --wf-color-skeleton: #e9e9eb;
   --wf-font: Lato, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -658,6 +660,7 @@ a {
 }
 
 .wf-pop__sep {
+  display: block;
   height: 1px;
   margin: var(--wf-space-2) 0;
   background: var(--uui-color-divider-standalone);
@@ -1168,7 +1171,10 @@ a {
 
 /* ---------- The designer ---------- */
 
+/* Palette, stage, inspector. A page narrows a panel to a 48 px rail with --wf-palette or --wf-inspector (both can be
+   collapsed, IA 5.1), and at 620 px lays the panels over the stage, which is why this is a positioning context. */
 .wf-designer {
+  position: relative;
   display: grid;
   grid-template-columns: var(--wf-palette, 248px) minmax(0, 1fr) var(--wf-inspector, 320px);
   height: 100%;
@@ -1238,19 +1244,62 @@ a {
   text-align: right;
 }
 
+/* The section's name is a button that opens it; a link in the summary ("Add a rule") sits after the button. */
+.wf-disclosure__toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--wf-space-3);
+  min-height: 30px;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.wf-disclosure__toggle:focus-visible {
+  outline: 2px solid var(--uui-color-focus);
+  outline-offset: 2px;
+}
+
+.wf-disclosure__after {
+  margin-left: 0;
+}
+
+/* The stage holds the toolbar, the steps and the canvas, and is a container, so "Narrowed to fit" can compare its
+   room with the chosen width. The toolbar and the steps follow the canvas's column. */
 .wf-stage {
   min-height: 0;
   overflow: auto;
-  padding: var(--wf-space-5) var(--wf-space-6) var(--wf-space-7);
+  padding: var(--wf-space-5) var(--wf-space-5) var(--wf-space-7);
   container: stage / inline-size;
 }
 
 .wf-stage__bar {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--wf-space-3);
   margin-bottom: var(--wf-space-5);
+}
+
+.wf-stage > :is(.wf-stage__bar, .wf-steps) {
+  max-width: calc(var(--wf-canvas-w, 960px) + 2 * var(--wf-space-5) + 2px);
+  margin-inline: auto;
+}
+
+/* The pages are buttons: each shows its page on the canvas */
+.wf-stage button.wf-step {
+  font: inherit;
+  cursor: pointer;
+}
+
+.wf-stage button.wf-step:not([aria-current]) {
+  color: var(--uui-color-text);
 }
 
 .wf-steps {
@@ -1279,6 +1328,8 @@ a {
   font-weight: 700;
 }
 
+/* The sheet the form lies on. Other screens sketch it with stand-in fields (.wf-group, .wf-el, .wf-vf) behind their
+   dialogs and sidebars; the designer renders the website's theme on it (.wf-canvas--site). */
 .wf-canvas {
   position: relative;
   max-width: var(--wf-canvas, 760px);
@@ -1289,35 +1340,314 @@ a {
   background: var(--uui-color-surface);
 }
 
-.wf-canvas--phone {
-  --wf-canvas: 375px;
-  padding: var(--wf-space-6) var(--wf-space-5);
+/*
+ * The designer's canvas: the form as the website renders it, with the default theme of step 2.3
+ * (../website/assets/base.css and theme.css) on the website's markup, marked data-wf-sample. The chosen width is the
+ * form's own width, set as --wf-canvas-w on the stage: 960px for Desktop (the theme's widest form, --jfb-size-form),
+ * 768px for Tablet, 375px for Phone. The canvas never scales the form down: with less room it shows the form as it
+ * reflows there, as the theme's container queries do for a visitor, and "Narrowed to fit" says so. 16 px stands in for
+ * the site's text size; the theme inherits the rest.
+ */
+.wf-canvas--site {
+  --jfb-font-size: 16px;
+  max-width: calc(var(--wf-canvas-w, 960px) + 2 * var(--wf-space-5) + 2px);
+  padding: var(--wf-space-5);
 }
 
-/* The canvas shows the form as it reflows in the room it has, as a visitor's narrow window would: columns stack on a
-   phone, and when the stage would leave the canvas under 420 px of form, where "Narrowed to fit" beside the width
-   switch says so. A container query measures the stage's content box: 420 px of form plus the canvas's 36 px padding
-   on each side is 492 px. */
-.wf-canvas--phone .wf-cols {
-  grid-template-columns: minmax(0, 1fr);
+/* The visitor's step progress is left out, because the steps across the top of the canvas stand in for it (IA 5.1).
+   The element stays in the markup, so the theme still lets the current step stand in for the page title from 480 px
+   (ADR-0022), as visitors see it. */
+.wf-canvas--site .jfb-form > .jfb-progress {
+  display: none;
 }
 
+/* "Narrowed to fit" shows when the stage's content box is narrower than the canvas at the chosen width: the width
+   plus the canvas's padding and border, 38 px. The three thresholds follow the three widths above. */
 .wf-fit {
   display: none;
 }
 
-@container stage (max-width: 491px) {
-  .wf-canvas {
-    padding: var(--wf-space-5);
-  }
-
-  .wf-canvas .wf-cols {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .wf-fit {
+@container stage (width < 998px) {
+  .wf-fit--desktop {
     display: inline;
   }
+}
+
+@container stage (width < 806px) {
+  .wf-fit--tablet {
+    display: inline;
+  }
+}
+
+@container stage (width < 413px) {
+  .wf-fit--phone {
+    display: inline;
+  }
+}
+
+/*
+ * The designer's own marks lie on top of the visitor's form, in the backoffice's look, and never move it:
+ * - every field and group is selected through a button over it (.wf-canvas__select, aria-pressed; a group's sits in
+ *   its legend, .wf-canvas__group). Its frame lies 6 px outside the field: a hairline on hover, the selected colour
+ *   while selected, the focus ring on keyboard focus;
+ * - the handle (.wf-canvas__handle, "Move Email address") sits on the frame's top left corner and shows on hover, on
+ *   focus and while selected. Alt+Up and Alt+Down on it move the field; dragging it moves it too (ADR-0016);
+ * - an insert point (.wf-canvas__insert, "Add a field here") lies in the gap above a field, unseen until hover or
+ *   keyboard focus; the last field of a group has one below it too (--after);
+ * - the visitor's own controls are inert: the canvas is for designing, not for filling in.
+ * Tab order follows the visual order: an insert point, the field, its handle, then the selected field's bar.
+ */
+.wf-canvas__el {
+  position: relative;
+}
+
+/* The marks are children of the field, so the theme's spacing between a field's parts must skip them */
+.wf-canvas--site .wf-canvas__el > :is(.wf-canvas__select, .wf-canvas__handle, .wf-canvas__insert, .wf-el__bar, .wf-canvas__slot, .wf-canvas__drop, .wf-canvas__ghost),
+.wf-canvas--site .wf-canvas__el > .wf-canvas__insert:first-child + * {
+  margin-block-start: 0;
+}
+
+.wf-canvas__select {
+  position: absolute;
+  inset: calc(-1 * var(--wf-space-2));
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  border-radius: var(--wf-radius);
+  background: transparent;
+  cursor: pointer;
+}
+
+.wf-canvas__select:hover {
+  box-shadow: inset 0 0 0 1px var(--uui-color-border-standalone);
+}
+
+.wf-canvas__select[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px var(--uui-color-selected);
+}
+
+/* The designer's marks take the backoffice's focus ring, not the visitor theme's */
+.wf-canvas--site :is(.wf-canvas__select, .wf-canvas__handle, .wf-canvas__insert, .wf-canvas__group, .wf-add-field, .wf-btn):focus-visible {
+  outline: none;
+}
+
+.wf-canvas--site .wf-canvas__select:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--uui-color-focus);
+}
+
+.wf-canvas--site .wf-canvas__select[aria-pressed='true']:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--uui-color-selected), 0 0 0 2px var(--uui-color-focus);
+}
+
+.wf-canvas__group {
+  padding: 0;
+  border: 0;
+  border-radius: var(--wf-radius);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.wf-canvas__group[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--uui-color-surface), 0 0 0 4px var(--uui-color-selected);
+}
+
+.wf-canvas__handle {
+  position: absolute;
+  inset-block-start: calc(-1 * var(--wf-space-2) - 24px);
+  inset-inline-start: calc(-1 * var(--wf-space-2));
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--wf-radius) var(--wf-radius) 0 0;
+  background: var(--uui-color-selected);
+  color: var(--uui-color-surface);
+  opacity: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+.wf-canvas__el:is(:hover, :focus-within, :has(> .wf-canvas__select[aria-pressed='true'])) > .wf-canvas__handle {
+  opacity: 1;
+}
+
+.wf-canvas__insert {
+  position: absolute;
+  inset-block-start: calc(-1 * var(--wf-space-6));
+  inset-inline: calc(-1 * var(--wf-space-2));
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--uui-color-surface);
+  font: 700 var(--wf-type-small) / 1 var(--wf-font);
+  opacity: 0;
+  cursor: pointer;
+}
+
+.wf-canvas__insert--after {
+  inset-block: auto calc(-1 * var(--wf-space-6));
+}
+
+.wf-canvas__insert::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 11px;
+  height: 2px;
+  background: var(--uui-color-selected);
+}
+
+.wf-canvas__insert > span {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wf-space-1);
+  height: 24px;
+  padding: 0 var(--wf-space-3);
+  border-radius: var(--wf-radius-round);
+  background: var(--uui-color-selected);
+}
+
+.wf-canvas__insert:is(:hover, :focus-visible) {
+  opacity: 1;
+}
+
+.wf-canvas--site .wf-canvas__insert:focus-visible {
+  box-shadow: none;
+}
+
+.wf-canvas__insert:focus-visible > span {
+  box-shadow: 0 0 0 2px var(--uui-color-surface), 0 0 0 4px var(--uui-color-focus);
+}
+
+/* Editing a label in place (F2, or a double click): the label becomes a field of the backoffice, in the label's type */
+.wf-canvas--site .wf-canvas__label-edit {
+  position: relative;
+  z-index: 2;
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% + 2 * var(--wf-space-2));
+  margin: 0 calc(-1 * var(--wf-space-2));
+  padding: 0 var(--wf-space-2);
+  border: 0;
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  box-shadow: inset 0 0 0 1px var(--uui-color-selected), var(--wf-focus);
+}
+
+/* A pointer drag: the field's place stays reserved, a copy follows the pointer, and a line shows where it lands */
+.wf-canvas__slot {
+  position: absolute;
+  inset: calc(-1 * var(--wf-space-2));
+  z-index: 2;
+  border: 1px dashed var(--uui-color-border-standalone);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface-emphasis);
+}
+
+.wf-canvas__drop {
+  position: absolute;
+  inset-block-start: -13px;
+  inset-inline: calc(-1 * var(--wf-space-2));
+  z-index: 2;
+  height: 2px;
+  background: var(--uui-color-selected);
+}
+
+.wf-canvas__drop::before,
+.wf-canvas__drop::after {
+  content: '';
+  position: absolute;
+  inset-block-start: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--wf-radius-round);
+  background: var(--uui-color-selected);
+}
+
+.wf-canvas__drop::before {
+  inset-inline-start: -4px;
+}
+
+.wf-canvas__drop::after {
+  inset-inline-end: -4px;
+}
+
+.wf-canvas__ghost {
+  position: absolute;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wf-space-3);
+  padding: var(--wf-space-3) var(--wf-space-4);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+  box-shadow: var(--wf-shadow);
+  color: var(--uui-color-text);
+  font: 700 var(--wf-type-body) / 1.5 var(--wf-font);
+  white-space: nowrap;
+  cursor: grabbing;
+}
+
+/* The selected field's bar: a tab on the frame's top right corner, as the handle is on its left, so it sits in the
+   gap above the field instead of over the field before it. The bar, the rule chips and Add field keep the
+   backoffice's type inside the visitor's form. */
+.wf-canvas--site .wf-el__bar {
+  top: auto;
+  right: calc(-1 * var(--wf-space-2));
+  bottom: calc(100% + var(--wf-space-2));
+  z-index: 3;
+  gap: 0;
+  padding: 0;
+  border-radius: var(--wf-radius) var(--wf-radius) 0 0;
+  background: var(--uui-color-selected);
+  box-shadow: none;
+  font: var(--wf-type-body) / 1.5 var(--wf-font);
+}
+
+.wf-canvas--site .wf-el__bar > .wf-btn {
+  height: 24px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--uui-color-surface);
+}
+
+.wf-canvas--site .wf-el__bar > .wf-btn--icon {
+  width: 24px;
+}
+
+.wf-canvas--site .wf-el__bar > .wf-btn:hover {
+  text-decoration: underline;
+}
+
+.wf-canvas--site .wf-el__bar > .wf-btn:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--uui-color-surface);
+}
+
+.wf-canvas--site .wf-rule-chip {
+  justify-self: start;
+  color: var(--uui-color-text);
+  font-family: var(--wf-font);
+}
+
+/* In the theme's ledger, Add field lines up with the fields, as the visitor's buttons do */
+.wf-canvas--site .wf-add-field {
+  grid-column: -2 / -1;
+  margin-top: var(--wf-space-6);
 }
 
 .wf-el {
@@ -1399,16 +1729,28 @@ a {
   gap: var(--wf-space-4);
 }
 
+/* "Add field" at the end of every page: a button that opens the palette for the end of the page */
 .wf-add-field {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--wf-space-2);
+  width: 100%;
   height: 44px;
   margin-top: var(--wf-space-5);
+  padding: 0;
   border: 1px dashed var(--uui-color-border-standalone);
   border-radius: var(--wf-radius);
+  background: transparent;
   color: var(--uui-color-interactive);
+  font: var(--wf-type-body) / 1.5 var(--wf-font);
+  cursor: pointer;
+}
+
+.wf-add-field[aria-expanded='true'] {
+  border-style: solid;
+  border-color: var(--uui-color-selected);
+  background: var(--uui-color-surface-emphasis);
 }
 
 .wf-rule-chip {
@@ -1424,7 +1766,8 @@ a {
   font-size: var(--wf-type-small);
 }
 
-/* The visitor's field, as the canvas and the previews draw it (placeholder look until the 2.3 theme) */
+/* A stand-in for a visitor's field, where a screen only sketches the form behind a dialog or a sidebar. The designer's
+   canvas, the preview and the template preview render the website's theme instead (.wf-canvas--site). */
 .wf-vf {
   display: flex;
   flex-direction: column;
@@ -1525,8 +1868,9 @@ a {
   background: var(--uui-color-selected);
 }
 
+/* The previous period: a grey that still has 3:1 against the surface (WCAG 1.4.11), as the bars carry data */
 .wf-bars > span.wf-bar--prev {
-  background: var(--uui-color-border-standalone);
+  background: var(--wf-color-control-border);
 }
 
 .wf-hbar {
@@ -1563,4 +1907,17 @@ a {
 
 [data-state]:not(.wf-on) {
   display: none !important;
+}
+
+/* A key in a list of keyboard shortcuts (the "?" overlay): a small framed label, as keys are drawn in Umbraco's help */
+.wf-kbd {
+  display: inline-block;
+  min-width: 24px;
+  padding: 0 var(--wf-space-2);
+  font: var(--wf-type-small) / 21px var(--wf-font-mono);
+  text-align: center;
+  color: var(--uui-color-text);
+  border: 1px solid var(--wf-color-control-border);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
 }

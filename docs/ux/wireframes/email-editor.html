@@ -4,15 +4,17 @@
   <meta charset="utf-8">
   <title>Email editor (an action) · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 merge-tags@1440x900 tested@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 merge-tags@1440x900 tested@1440x900 default@920x900 preview@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .ee { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); height: 100%; }
     .ee__form { overflow: auto; padding: var(--wf-space-6); }
     .ee__preview { overflow: auto; padding: var(--wf-space-6); border-left: 1px solid var(--uui-color-border); }
     .ee-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-2); min-height: 36px; padding: var(--wf-space-1) var(--wf-space-2); border: 1px solid var(--wf-color-control-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
-    .ee-input-tag { display: flex; gap: var(--wf-space-3); }
+    .ee-input-tag { display: flex; align-items: center; gap: var(--wf-space-3); }
     .ee-input-tag > .wf-input { flex: 1; }
+    /* Settings and Preview: one switch where the two can't sit side by side */
+    .ee-switch { display: none; margin-left: auto; }
     .rte { border: 1px solid var(--wf-color-control-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
     .rte__bar { display: flex; gap: var(--wf-space-1); padding: var(--wf-space-1) var(--wf-space-2); border-bottom: 1px solid var(--uui-color-border); }
     .rte__body { display: flex; flex-direction: column; gap: var(--wf-space-3); min-height: 150px; padding: var(--wf-space-3) var(--wf-space-4); }
@@ -23,7 +25,10 @@
     .mail__answers { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--wf-space-2) var(--wf-space-5); padding: var(--wf-space-4); border-radius: var(--wf-radius); background: var(--uui-color-background); }
     @media (max-width: 1000px) {
       .ee { grid-template-columns: minmax(0, 1fr); }
-      .ee__preview { display: none; }
+      .ee-switch { display: inline-flex; }
+      html:not([data-wf-state="preview"]) .ee__preview { display: none; }
+      html[data-wf-state="preview"] .ee__form { display: none; }
+      .ee__preview { border-left: 0; }
     }
   </style>
   <script src="assets/icons.js" defer></script>
@@ -32,8 +37,10 @@
 <body data-role="designer" data-active="form:contact">
   <!--
     IA 5.3: the action sidebar, opened by Add action ready to email the team. What happens comes first and chooses the
-    type; then the trigger; then the type's own settings, beside a live preview with a sample entry. At 920 px the
-    preview moves behind "Preview with a sample entry", a link at the end of the settings.
+    type; then the trigger; then the type's own settings, beside a live preview with a sample entry. Where the sidebar
+    is too narrow for both (a window under 1000 px), the sidebar's header gets the switch Settings · Preview, the same
+    switch the theme editor and the email layout use; state "preview" shows the preview side at 920 px. The subject
+    and the body insert merge tags with one control, "Insert merge tag", at the end of each field.
   -->
   <main class="wf-main">
     <header class="wf-head">
@@ -54,7 +61,11 @@
 
   <div class="wf-backdrop"></div>
   <aside class="wf-sidebar" style="--wf-sidebar-size: calc(100vw - 120px)" role="dialog" aria-labelledby="ee-title">
-    <header class="wf-sidebar__head"><h2 class="wf-title" id="ee-title">New action</h2></header>
+    <header class="wf-sidebar__head">
+      <h2 class="wf-title" id="ee-title">New action</h2>
+      <div class="wf-seg ee-switch" role="group" aria-label="Show" data-state="default merge-tags tested"><button aria-pressed="true">Settings</button><button aria-pressed="false">Preview</button></div>
+      <div class="wf-seg ee-switch" role="group" aria-label="Show" data-state="preview"><button aria-pressed="false">Settings</button><button aria-pressed="true">Preview</button></div>
+    </header>
     <div class="wf-sidebar__body" style="padding: 0">
       <div class="ee">
         <div class="ee__form">
@@ -83,20 +94,27 @@
               <span class="wf-label" id="ee-subject">Subject</span>
               <div class="ee-input-tag" style="position: relative">
                 <span class="wf-input" aria-labelledby="ee-subject"><span>New enquiry from <span class="wf-tag">{{ field.name }}</span></span></span>
-                <button class="wf-btn" aria-label="Insert a merge tag into the subject"><span class="wf-tag">{{ }}</span></button>
-                <div class="wf-pop" data-state="merge-tags" style="top: 40px; right: 0; width: 300px" role="menu" aria-label="Merge tags">
-                  <span class="wf-input wf-input--search" style="margin: var(--wf-space-2); width: calc(100% - 12px)"><i data-i="search"></i><span class="wf-placeholder">Search merge tags</span></span>
-                  <span class="wf-pop__label">Fields</span>
-                  <span class="wf-pop__item wf-pop__item--hover" role="menuitem">Name</span>
-                  <span class="wf-pop__item" role="menuitem">Email address</span>
-                  <span class="wf-pop__item" role="menuitem">Company</span>
-                  <span class="wf-pop__item" role="menuitem">Your message</span>
-                  <span class="wf-pop__item" role="menuitem">All answers</span>
-                  <span class="wf-pop__sep"></span>
-                  <span class="wf-pop__label">Entry</span>
-                  <span class="wf-pop__item" role="menuitem">Number</span>
-                  <span class="wf-pop__item" role="menuitem">Reference</span>
-                  <span class="wf-pop__item" role="menuitem">Sent from</span>
+                <button class="wf-btn wf-btn--text wf-btn--small" aria-label="Insert merge tag into the subject"><span class="wf-tag" aria-hidden="true">{{ }}</span>Insert merge tag</button>
+                <!-- A search field and a list, so a dialog with a listbox, not a menu (a menu holds only menu items). -->
+                <div class="wf-pop" data-state="merge-tags" style="top: 40px; right: 0; width: 300px" role="dialog" aria-label="Insert merge tag into the subject">
+                  <span class="wf-input wf-input--search" style="margin: var(--wf-space-2); width: calc(100% - 12px)" role="combobox" aria-expanded="true" aria-controls="ee-tags" aria-label="Search merge tags"><i data-i="search"></i><span class="wf-placeholder">Search merge tags</span></span>
+                  <div id="ee-tags" role="listbox" aria-label="Merge tags">
+                    <div role="group" aria-labelledby="ee-tags-fields">
+                      <span class="wf-pop__label" id="ee-tags-fields">Fields</span>
+                      <span class="wf-pop__item wf-pop__item--hover" role="option" aria-selected="true">Name</span>
+                      <span class="wf-pop__item" role="option" aria-selected="false">Email address</span>
+                      <span class="wf-pop__item" role="option" aria-selected="false">Company</span>
+                      <span class="wf-pop__item" role="option" aria-selected="false">Your message</span>
+                      <span class="wf-pop__item" role="option" aria-selected="false">All answers</span>
+                    </div>
+                    <span class="wf-pop__sep" role="presentation"></span>
+                    <div role="group" aria-labelledby="ee-tags-entry">
+                      <span class="wf-pop__label" id="ee-tags-entry">Entry</span>
+                      <span class="wf-pop__item" role="option" aria-selected="false">Number</span>
+                      <span class="wf-pop__item" role="option" aria-selected="false">Reference</span>
+                      <span class="wf-pop__item" role="option" aria-selected="false">Sent from</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -107,10 +125,10 @@
                   <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Bold"><i data-i="type"></i></button>
                   <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Link"><i data-i="link"></i></button>
                   <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Bulleted list"><i data-i="list"></i></button>
-                  <button class="wf-btn wf-btn--text wf-btn--small" style="margin-left: auto"><span class="wf-tag">{{ }}</span>Insert merge tag</button>
+                  <button class="wf-btn wf-btn--text wf-btn--small" style="margin-left: auto" aria-label="Insert merge tag into the body"><span class="wf-tag" aria-hidden="true">{{ }}</span>Insert merge tag</button>
                 </div>
                 <div class="rte__body">
-                  <p><span class="wf-tag">{{ field.name }}</span> sent a message from <span class="wf-tag">{{ entry.pageUrl }}</span>.</p>
+                  <p><span class="wf-tag">{{ field.name }}</span> sent a message from <span class="wf-tag">{{ page.url }}</span>.</p>
                   <p><span class="wf-tag">{{ entry.answers }}</span></p>
                 </div>
               </div>

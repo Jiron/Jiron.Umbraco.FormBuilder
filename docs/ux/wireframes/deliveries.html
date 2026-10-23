@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Deliveries · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 detail@1440x900 uncertain@1440x900 paused@1440x900 empty@1440x900 loading@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 detail@1440x900 uncertain@1440x900 limited@1440x900 paused@1440x900 empty@1440x900 loading@1440x900 default@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .dl-attempt { display: grid; grid-template-columns: 20px minmax(0, 1fr) max-content; gap: var(--wf-space-3); padding: var(--wf-space-3) 0; }
@@ -18,8 +18,9 @@
 <body data-role="admin" data-active="deliveries">
   <!--
     IA section 9: every email and webhook run, problems first (failed, uncertain, limited), then the newest. A row opens
-    its details, where a failed or uncertain run offers Retry. An uncertain run's Retry asks first; a limited mail offers
-    no retry and names the limit. While sending is paused, one line at the top says so.
+    its details, where a failed or uncertain run offers Retry. An uncertain run's Retry asks first; a limited mail's
+    details (state "limited") offer no retry and name the limit that held it back. While sending is paused, one line at
+    the top says so. The details are modal sidebars over the dimmed list, so their headings name the recipient again.
   -->
   <main class="wf-main">
     <header class="wf-head"><div class="wf-head__main"><h1 class="wf-head__title">Deliveries</h1></div></header>
@@ -30,20 +31,21 @@
         <span>Sending is paused by the host setting <span class="wf-tag">JironFormBuilder:Actions:Paused</span>. Entries are still stored, and their emails and webhooks go out once it is off.</span>
       </p>
 
-      <div class="wf-toolbar" data-state="default detail uncertain paused loading">
+      <div class="wf-toolbar" data-state="default detail uncertain limited paused loading">
         <span class="wf-input wf-input--search" style="width: 280px"><i data-i="search"></i><span class="wf-placeholder">Search recipients and forms</span></span>
         <button class="wf-btn"><i data-i="filter"></i>Filter</button>
       </div>
 
-      <section class="wf-box" data-state="default detail uncertain" aria-label="Deliveries">
+      <section class="wf-box" data-state="default detail uncertain limited" aria-label="Deliveries">
         <table class="wf-table" style="border: 0">
           <thead><tr><th>State</th><th>To</th><th class="dl-wide">What</th><th>Form</th><th class="wf-col-end">When</th></tr></thead>
           <tbody>
-            <tr data-state="default uncertain"><td><span class="wf-row" style="gap: var(--wf-space-2)"><span class="wf-dot wf-dot--danger"></span>Failed</span></td><td><a href="#">crm.example.com</a></td><td class="dl-wide wf-muted">Webhook: Send to the CRM</td><td class="wf-muted">Contact us</td><td class="wf-col-end wf-muted">14:02, next try 14:30</td></tr>
+            <tr data-state="default uncertain limited"><td><span class="wf-row" style="gap: var(--wf-space-2)"><span class="wf-dot wf-dot--danger"></span>Failed</span></td><td><a href="#">crm.example.com</a></td><td class="dl-wide wf-muted">Webhook: Send to the CRM</td><td class="wf-muted">Contact us</td><td class="wf-col-end wf-muted">14:02, next try 14:30</td></tr>
             <tr data-state="detail" aria-current="true"><td><span class="wf-row" style="gap: var(--wf-space-2)"><span class="wf-dot wf-dot--danger"></span>Failed</span></td><td><a href="#">crm.example.com</a></td><td class="dl-wide wf-muted">Webhook: Send to the CRM</td><td class="wf-muted">Contact us</td><td class="wf-col-end wf-muted">14:02, next try 14:30</td></tr>
-            <tr data-state="default detail"><td><span class="wf-row" style="gap: var(--wf-space-2)"><span class="wf-dot wf-dot--warning"></span>Uncertain</span></td><td><a href="#">hr@nordwind.example</a></td><td class="dl-wide wf-muted">Email the team</td><td class="wf-muted">Job application</td><td class="wf-col-end wf-muted">13:47</td></tr>
+            <tr data-state="default detail limited"><td><span class="wf-row" style="gap: var(--wf-space-2)"><span class="wf-dot wf-dot--warning"></span>Uncertain</span></td><td><a href="#">hr@nordwind.example</a></td><td class="dl-wide wf-muted">Email the team</td><td class="wf-muted">Job application</td><td class="wf-col-end wf-muted">13:47</td></tr>
             <tr data-state="uncertain" aria-current="true"><td><span class="wf-row" style="gap: var(--wf-space-2)"><span class="wf-dot wf-dot--warning"></span>Uncertain</span></td><td><a href="#">hr@nordwind.example</a></td><td class="dl-wide wf-muted">Email the team</td><td class="wf-muted">Job application</td><td class="wf-col-end wf-muted">13:47</td></tr>
-            <tr><td><span class="wf-row" style="gap: var(--wf-space-2)"><span class="wf-dot wf-dot--warning"></span>Limited</span></td><td><a href="#">anna@example.org</a></td><td class="dl-wide wf-muted">Confirm to the visitor</td><td class="wf-muted">Contact us</td><td class="wf-col-end wf-muted">11:20</td></tr>
+            <tr data-state="default detail uncertain"><td><span class="wf-row" style="gap: var(--wf-space-2)"><span class="wf-dot wf-dot--warning"></span>Limited</span></td><td><a href="#">anna@example.org</a></td><td class="dl-wide wf-muted">Confirm to the visitor</td><td class="wf-muted">Contact us</td><td class="wf-col-end wf-muted">11:20</td></tr>
+            <tr data-state="limited" aria-current="true"><td><span class="wf-row" style="gap: var(--wf-space-2)"><span class="wf-dot wf-dot--warning"></span>Limited</span></td><td><a href="#">anna@example.org</a></td><td class="dl-wide wf-muted">Confirm to the visitor</td><td class="wf-muted">Contact us</td><td class="wf-col-end wf-muted">11:20</td></tr>
             <tr><td><span class="wf-row" style="gap: var(--wf-space-2)"><span class="wf-dot wf-dot--positive"></span>Delivered</span></td><td><a href="#">sales@nordwind.example</a></td><td class="dl-wide wf-muted">Email the team</td><td class="wf-muted">Contact us</td><td class="wf-col-end wf-muted">14:10</td></tr>
             <tr><td><span class="wf-row" style="gap: var(--wf-space-2)"><span class="wf-dot wf-dot--positive"></span>Delivered</span></td><td><a href="#">#leads</a></td><td class="dl-wide wf-muted">Slack: Post in #leads</td><td class="wf-muted">Contact us</td><td class="wf-col-end wf-muted">14:10</td></tr>
           </tbody>
@@ -71,7 +73,7 @@
   </main>
 
   <!-- A failed run's details -->
-  <div class="wf-backdrop" data-state="detail uncertain"></div>
+  <div class="wf-backdrop" data-state="detail uncertain limited"></div>
   <aside class="wf-sidebar" data-state="detail" role="dialog" aria-labelledby="dd-title">
     <header class="wf-sidebar__head"><h2 class="wf-title" id="dd-title">Webhook to crm.example.com</h2></header>
     <div class="wf-sidebar__body">
@@ -98,6 +100,29 @@
       <button class="wf-btn">Close</button>
       <button class="wf-btn wf-btn--primary">Retry now</button>
     </footer>
+  </aside>
+
+  <!-- A limited mail's details: a limited mail is final (ADR-0007, ADR-0012), so there is no Retry, and Close is the only
+       button. The note names the limit that held it back and where it is set; the visitor-address limits count per
+       address and day and per site and hour, and this one names the first. -->
+  <aside class="wf-sidebar" data-state="limited" role="dialog" aria-labelledby="dlim-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="dlim-title">Email to anna@example.org</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-stack wf-stack--lg">
+        <div class="wf-note wf-note--warning">
+          <i data-i="alert" class="wf-note__icon"></i>
+          <div>
+            <p>Not sent: this site's forms had already sent 3 emails to anna@example.org today, the most one address gets in a day.</p>
+            <p class="wf-muted" style="margin-top: var(--wf-space-2)">The limit keeps the forms from being used to send mail to strangers. A limited email is never sent later, so it can't be retried. Host configuration sets the limit: <span class="wf-tag">JironFormBuilder:Limits</span>.</p>
+          </div>
+        </div>
+        <dl class="wf-dl">
+          <dt>Action</dt><dd><a href="#">Confirm to the visitor</a>, in Contact us</dd>
+          <dt>Entry</dt><dd><a href="#">Anna Svensson, Nordlicht GmbH</a></dd>
+        </dl>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot"><button class="wf-btn">Close</button></footer>
   </aside>
 
   <!-- An uncertain run: its details, and Retry asks first -->

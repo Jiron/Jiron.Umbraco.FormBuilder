@@ -2,35 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>General, Email and Data collection · Forms wireframe</title>
+  <title>Settings and Data collection · Forms wireframe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="wf-shots" content="default@1440x900 site@1440x900 email@1440x900 locked@1440x900 default@920x900">
+  <meta name="wf-shots" content="default@1440x900 site@1440x900 email@1440x900 no-email@1440x900 test-sent@1440x900 spam@1440x900 files@1440x900 integrations@1440x900 locked@1440x900 default@920x900">
   <link rel="stylesheet" href="assets/kit.css">
   <style>
     .gs-own { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-3); margin-top: var(--wf-space-2); font-size: var(--wf-type-small); }
-    .gs-locked { display: flex; align-items: center; gap: var(--wf-space-2); margin-top: var(--wf-space-2); color: var(--wf-color-text-muted); font-size: var(--wf-type-small); }
+    .gs-locked { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-2); color: var(--wf-color-text-muted); font-size: var(--wf-type-small); }
+    .gs-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-2); font-size: var(--wf-type-small); }
+    .gs-status .wf-i { color: var(--uui-color-positive); }
+    .gs-lead { margin-bottom: var(--wf-space-5); color: var(--wf-color-text-muted); }
+    /* A choice with one line on what it does; a refused choice is greyed and says why right under it */
+    .gs-choice { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: var(--wf-space-1) var(--wf-space-3); align-items: start; }
+    .gs-choice + .gs-choice { margin-top: var(--wf-space-3); }
+    .gs-choice > .wf-radio, .gs-choice > .wf-box-check { margin-top: var(--wf-space-1); }
+    .gs-choice__text { display: flex; flex-direction: column; gap: var(--wf-space-1); }
+    .gs-choice__text > .wf-muted { font-size: var(--wf-type-small); }
+    .gs-off .wf-radio, .gs-off .wf-box-check { border-color: var(--uui-color-border); background: var(--uui-color-background); }
+    .gs-off .gs-choice__name { color: var(--wf-color-text-muted); }
+    .gs-unit { display: flex; align-items: center; gap: var(--wf-space-3); }
   </style>
   <script src="assets/icons.js" defer></script>
   <script src="assets/kit.js" defer></script>
 </head>
-<body data-role="admin" data-active="general" data-active-email="email" data-active-locked="data-collection">
+<body data-role="admin" data-active="general" data-active-email="email" data-active-no-email="email" data-active-test-sent="email" data-active-spam="spam-protection" data-active-files="files" data-active-integrations="integrations" data-active-locked="data-collection">
   <!--
-    IA section 8: every settings item opens one screen, in groups of at most seven settings before "More options", each
-    setting with its help below it, and Save in the footer. General and Email start with a site switch ("All sites")
-    for the fields that can differ per site. A setting locked by host configuration shows the key that locks it.
+    IA section 8 (Settings) and 9 (Privacy › Data collection): every settings item opens one screen, in groups of at
+    most seven settings before "More options", each setting with its help below it, and Save in the footer. General and
+    Email start with a site switch ("All sites") for the fields that can differ per site. A setting locked by host
+    configuration shows the key that locks it, right where the refused value is (ADR-0008): a restriction greys out only
+    the refused choice, a clamp names the host's limit under the field.
+    States:
+      default, site    General, for all sites and for one site with its own base URL.
+      email            Email, with Send test email in the header (it goes to the user who sends it).
+      no-email         Umbraco can't send mail yet (ADR-0007's gate): one line at the top says so and names the key.
+                       Send test email is gone, because it could not work.
+      test-sent        the toast after Send test email.
+      spam             Spam protection: the default level with each provider's key status folded into its choice,
+                       content checks and blocked address ranges (ADR-0012).
+      files            Files: allowed type groups, the largest file (clamped by the host), and the scanner and storage
+                       status (ADR-0006).
+      integrations     Integrations: the webhook signing secret as a reference that shows only whether it resolves,
+                       Slack and Teams defaults, and the Umbraco webhook events (ADR-0008, §4.4).
+      locked           Privacy › Data collection: only "Store them in full" is refused by the host, the other IP choices
+                       stay usable; the captcha consent mode refuses "Load without asking" the same way (§4.10).
   -->
   <main class="wf-main">
     <header class="wf-head">
       <div class="wf-head__main">
         <h1 class="wf-head__title" data-state="default site">General</h1>
-        <h1 class="wf-head__title" data-state="email">Email</h1>
+        <h1 class="wf-head__title" data-state="email no-email test-sent">Email</h1>
+        <h1 class="wf-head__title" data-state="spam">Spam protection</h1>
+        <h1 class="wf-head__title" data-state="files">Files</h1>
+        <h1 class="wf-head__title" data-state="integrations">Integrations</h1>
         <h1 class="wf-head__title" data-state="locked">Data collection</h1>
-        <span class="wf-row" style="margin-left: auto" data-wf-actions="settings header" data-state="default site email">
+        <span class="wf-row" style="margin-left: auto" data-wf-actions="settings header" data-state="default site email no-email test-sent">
           <label class="wf-row" style="gap: var(--wf-space-3)"><span class="wf-muted">Site</span>
-            <span class="wf-select" style="width: 220px" data-state="default email" data-wf-field><span>All sites</span><i data-i="chevron-down"></i></span>
+            <span class="wf-select" style="width: 220px" data-state="default email no-email test-sent" data-wf-field><span>All sites</span><i data-i="chevron-down"></i></span>
             <span class="wf-select" style="width: 220px" data-state="site" data-wf-field><span>Nordwind Travel DE</span><i data-i="chevron-down"></i></span>
           </label>
-          <button class="wf-btn" data-state="email"><i data-i="send"></i>Send test email</button>
+          <button class="wf-btn" data-state="email test-sent"><i data-i="send"></i>Send test email</button>
         </span>
       </div>
     </header>
@@ -47,8 +78,8 @@
               <span class="wf-help">Forms use it unless their Appearance group picks another.</span>
             </label>
             <div class="wf-field" role="radiogroup" aria-labelledby="gs-marker">
-              <span class="wf-label" id="gs-marker">Mark</span>
-              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="true" aria-labelledby="gs-m1"></span><span id="gs-m1">Optional fields, with "(optional)"</span></span>
+              <span class="wf-label" id="gs-marker">Fields that get a mark</span>
+              <span class="wf-check"><span class="wf-radio" role="radio" tabindex="0" aria-checked="true" aria-labelledby="gs-m1"></span><span id="gs-m1">Optional fields, with "(optional)"</span></span>
               <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="gs-m2"></span><span id="gs-m2">Required fields, with "*"</span></span>
               <span class="wf-help">Most forms have more required fields than optional ones, so marking the few optional ones reads calmer.</span>
             </div>
@@ -88,8 +119,15 @@
         </section>
       </div>
 
-      <!-- Email -->
-      <div class="wf-stack wf-stack--lg" data-state="email">
+      <!-- Email; while Umbraco can't send mail, one line at the top says so (copy.md, "email not configured") -->
+      <div class="wf-stack wf-stack--lg" data-state="email no-email test-sent">
+        <div class="wf-note wf-note--warning" role="status" data-state="no-email">
+          <i data-i="alert" class="wf-note__icon"></i>
+          <div>
+            <p>Emails can't be sent yet: no mail server is configured. Entries are kept, and their emails go out once sending works.</p>
+            <p class="wf-muted" style="margin-top: var(--wf-space-2)">A developer sets up sending in <span class="wf-tag">Umbraco:CMS:Global:Smtp</span>. <a href="#">Learn more about sending email</a></p>
+          </div>
+        </div>
         <section class="wf-box" aria-labelledby="gs-sender">
           <div class="wf-box__head"><h2 class="wf-box__title" id="gs-sender">Sender</h2></div>
           <div class="wf-box__body">
@@ -111,29 +149,183 @@
         </section>
       </div>
 
-      <!-- Data collection, with a setting locked by configuration -->
+      <!-- Spam protection (ADR-0012). A provider's key status is part of its choice, so it is said once. -->
+      <div class="wf-stack wf-stack--lg" data-state="spam">
+        <section class="wf-box" aria-labelledby="gs-level">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-level">Default protection</h2></div>
+          <div class="wf-box__body">
+            <div class="wf-field" role="radiogroup" aria-labelledby="gs-level" style="margin-top: 0">
+              <span class="gs-choice"><span class="wf-radio" role="radio" tabindex="0" aria-checked="true" aria-labelledby="gs-l1" aria-describedby="gs-l1d"></span><span class="gs-choice__text"><span class="gs-choice__name" id="gs-l1">Standard</span><span class="wf-muted" id="gs-l1d">A hidden field, a minimum fill time and a signed check. Nothing loads from other sites.</span></span></span>
+              <span class="gs-choice"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="gs-l2" aria-describedby="gs-l2d"></span><span class="gs-choice__text"><span class="gs-choice__name" id="gs-l2">Standard, with a proof-of-work check</span><span class="wf-muted" id="gs-l2d">The visitor's browser also solves a short puzzle, which costs bots time. It needs JavaScript.</span></span></span>
+              <span class="gs-choice gs-off"><span class="wf-radio" role="radio" aria-checked="false" aria-disabled="true" aria-labelledby="gs-l3" aria-describedby="gs-l3d"></span><span class="gs-choice__text"><span class="gs-choice__name" id="gs-l3">reCAPTCHA v2</span><span class="wf-muted" id="gs-l3d">No keys yet. A developer adds them in <span class="wf-tag">JironFormBuilder:Captcha:RecaptchaV2</span>.</span></span></span>
+              <span class="gs-choice"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="gs-l4" aria-describedby="gs-l4d"></span><span class="gs-choice__text"><span class="gs-choice__name" id="gs-l4">reCAPTCHA v3</span><span class="wf-muted" id="gs-l4d">Keys found in host configuration.</span></span></span>
+              <span class="gs-choice gs-off"><span class="wf-radio" role="radio" aria-checked="false" aria-disabled="true" aria-labelledby="gs-l5" aria-describedby="gs-l5d"></span><span class="gs-choice__text"><span class="gs-choice__name" id="gs-l5">hCaptcha</span><span class="wf-muted" id="gs-l5d">No keys yet. A developer adds them in <span class="wf-tag">JironFormBuilder:Captcha:HCaptcha</span>.</span></span></span>
+              <span class="wf-help" style="margin-top: var(--wf-space-3)">Forms use it unless their Spam protection group picks another. reCAPTCHA and hCaptcha load a script from their provider, only on forms that use them and only as Privacy › <a href="#">Data collection</a> allows.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="wf-box" aria-labelledby="gs-content">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-content">Content checks</h2></div>
+          <div class="wf-box__body">
+            <p class="gs-lead">A match never refuses an entry: it moves it to Spam, where nothing is lost. Each form sets how strict these checks are.</p>
+            <label class="wf-field">
+              <span class="wf-label">Blocked words</span>
+              <span class="wf-textarea">casino<br>crypto giveaway<br>backlinks</span>
+              <span class="wf-help">One word or phrase per line, in any case. Each one found counts toward Spam, and a few together send an entry there.</span>
+            </label>
+            <label class="wf-field">
+              <span class="wf-label">Blocked email domains</span>
+              <span class="wf-textarea">mailinator.example<br>throwaway.example</span>
+              <span class="wf-help">One per line. An entry with an email address at one of them goes to Spam.</span>
+            </label>
+            <label class="wf-field">
+              <span class="wf-label">The most links an entry may hold</span>
+              <span class="wf-input" style="width: 100px">2</span>
+              <span class="wf-help">Counted over all answers. More links than this count toward Spam.</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="wf-box" aria-labelledby="gs-ranges">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-ranges">Blocked address ranges</h2></div>
+          <div class="wf-box__body">
+            <label class="wf-field" style="margin-top: 0">
+              <span class="wf-label">Ranges</span>
+              <span class="wf-textarea">203.0.113.0/24<br>198.51.100.17/32</span>
+              <span class="wf-help">One range per line. Entries sent from them go to Spam. The address is compared when an entry arrives and never stored.</span>
+            </label>
+          </div>
+        </section>
+      </div>
+
+      <!-- Files (ADR-0006) -->
+      <div class="wf-stack wf-stack--lg" data-state="files">
+        <section class="wf-box" aria-labelledby="gs-uploads">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-uploads">What visitors may upload</h2></div>
+          <div class="wf-box__body">
+            <div class="wf-field" role="group" aria-labelledby="gs-types" style="margin-top: 0">
+              <span class="wf-label" id="gs-types">Allowed types</span>
+              <span class="gs-choice"><span class="wf-box-check" role="checkbox" tabindex="0" aria-checked="true" aria-labelledby="gs-t1" aria-describedby="gs-t1d"><i data-i="check"></i></span><span class="gs-choice__text"><span id="gs-t1">Images</span><span class="wf-muted" id="gs-t1d">JPEG, PNG, GIF, WebP</span></span></span>
+              <span class="gs-choice"><span class="wf-box-check" role="checkbox" tabindex="0" aria-checked="true" aria-labelledby="gs-t2"><i data-i="check"></i></span><span class="gs-choice__text"><span id="gs-t2">PDF</span></span></span>
+              <span class="gs-choice"><span class="wf-box-check" role="checkbox" tabindex="0" aria-checked="true" aria-labelledby="gs-t3" aria-describedby="gs-t3d"><i data-i="check"></i></span><span class="gs-choice__text"><span id="gs-t3">Office documents</span><span class="wf-muted" id="gs-t3d">DOCX, XLSX, PPTX, ODT, ODS</span></span></span>
+              <span class="gs-choice"><span class="wf-box-check" role="checkbox" tabindex="0" aria-checked="true" aria-labelledby="gs-t4" aria-describedby="gs-t4d"><i data-i="check"></i></span><span class="gs-choice__text"><span id="gs-t4">Text</span><span class="wf-muted" id="gs-t4d">TXT, CSV</span></span></span>
+              <span class="gs-choice"><span class="wf-box-check" role="checkbox" tabindex="0" aria-checked="false" aria-labelledby="gs-t5" aria-describedby="gs-t5d"></span><span class="gs-choice__text"><span id="gs-t5">Archives</span><span class="wf-muted" id="gs-t5d">ZIP</span></span></span>
+              <span class="wf-help" style="margin-top: var(--wf-space-3)">Each file field picks from these. Programs, scripts, HTML and SVG are never accepted: <span class="wf-tag">JironFormBuilder:Files:BlockedExtensions</span>.</span>
+            </div>
+            <label class="wf-field">
+              <span class="wf-label">Largest file</span>
+              <span class="gs-unit"><span class="wf-input" style="width: 100px">20</span><span>MB</span></span>
+              <span class="wf-help">Each file field sets its own limit, up to this one.</span>
+              <span class="gs-locked"><i data-i="lock"></i>Host configuration allows at most 50 MB: <span class="wf-tag">JironFormBuilder:Files:MaxFileBytes</span></span>
+            </label>
+          </div>
+        </section>
+
+        <section class="wf-box" aria-labelledby="gs-checks">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-checks">Checks and storage</h2></div>
+          <div class="wf-box__body">
+            <dl class="wf-dl">
+              <dt>Type check</dt>
+              <dd>Every file's contents must match its type, whatever its name says.</dd>
+              <dt>Malware scanner</dt>
+              <dd>None installed, so files aren't checked for malware. <a href="#">Learn more about file scanners</a></dd>
+              <dt>Stored in</dt>
+              <dd>A private folder outside the website: <span class="wf-tag">JironFormBuilder:Files:Root</span>. Files have no public address; users download them from their entry.</dd>
+            </dl>
+          </div>
+        </section>
+      </div>
+
+      <!-- Integrations. A secret is entered as a reference to host configuration; the screen shows only whether it resolves (ADR-0008). -->
+      <div class="wf-stack wf-stack--lg" data-state="integrations">
+        <section class="wf-box" aria-labelledby="gs-hooks">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-hooks">Webhooks</h2></div>
+          <div class="wf-box__body">
+            <label class="wf-field" style="margin-top: 0">
+              <span class="wf-label">Signing secret</span>
+              <span class="wf-input"><span class="wf-tag">$JironFormBuilder:Secrets:WebhookSigning</span></span>
+              <span class="gs-status"><i data-i="check"></i>Found in host configuration</span>
+              <span class="wf-help">Webhook actions sign every call with it, so the receiver can tell it came from this site. The secret itself stays in host configuration. <a href="#">Learn more about checking signatures</a></span>
+            </label>
+            <div class="wf-field">
+              <span class="wf-label">Hosts that webhooks may call</span>
+              <span>crm.example.com, events.nordwind.example</span>
+              <span class="wf-help">JSON option lists use the same hosts. Host configuration sets them: <span class="wf-tag">JironFormBuilder:Webhooks:AllowedHosts</span>.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="wf-box" aria-labelledby="gs-chat">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-chat">Slack and Microsoft Teams</h2></div>
+          <div class="wf-box__body">
+            <p class="gs-lead">Slack and Microsoft Teams actions use these unless they set their own. The addresses work like passwords, so they are entered as references to host configuration.</p>
+            <label class="wf-field">
+              <span class="wf-label">Slack webhook address</span>
+              <span class="wf-input"><span class="wf-tag">$JironFormBuilder:Secrets:SlackLeads</span></span>
+              <span class="gs-status"><i data-i="check"></i>Found in host configuration</span>
+            </label>
+            <label class="wf-field">
+              <span class="wf-label">Teams webhook address</span>
+              <span class="wf-input"><span class="wf-placeholder">A reference, such as $JironFormBuilder:Secrets:TeamsSales</span></span>
+            </label>
+            <div class="wf-field" role="radiogroup" aria-labelledby="gs-msg">
+              <span class="wf-label" id="gs-msg">What a message shows</span>
+              <span class="wf-check"><span class="wf-radio" role="radio" tabindex="0" aria-checked="true" aria-labelledby="gs-msg1"></span><span id="gs-msg1">The form, the entry's title and a link to the entry</span></span>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="gs-msg2"></span><span id="gs-msg2">Also the answers</span></span>
+              <span class="wf-help">Sensitive answers are never posted. The link opens the entry for signed-in users only.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="wf-box" aria-labelledby="gs-umb">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-umb">Umbraco webhooks</h2></div>
+          <div class="wf-box__body">
+            <div class="wf-field" style="margin-top: 0">
+              <span class="wf-check"><span class="wf-switch" role="switch" tabindex="0" aria-checked="true" aria-labelledby="gs-events"></span><span class="wf-label" id="gs-events">Offer entry events</span></span>
+              <span class="wf-help">Adds Entry submitted, approved, rejected and deleted, and Action failed, to the events of Umbraco's Settings › Webhooks, where developers subscribe to them.</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Privacy › Data collection. The host refuses only full IP addresses and loading a captcha without asking (restrictions, ADR-0008). -->
       <div class="wf-stack wf-stack--lg" data-state="locked">
         <section class="wf-box" aria-labelledby="gs-ip">
           <div class="wf-box__head"><h2 class="wf-box__title" id="gs-ip">Addresses and devices</h2></div>
           <div class="wf-box__body">
             <div class="wf-field" role="radiogroup" aria-labelledby="gs-iplabel" style="margin-top: 0">
               <span class="wf-label" id="gs-iplabel">IP addresses</span>
-              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-disabled="true" aria-labelledby="gs-ip1"></span><span id="gs-ip1" class="wf-muted">Don't store them</span></span>
-              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="true" aria-disabled="true" aria-labelledby="gs-ip2"></span><span id="gs-ip2">Store them shortened</span></span>
-              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-disabled="true" aria-labelledby="gs-ip3"></span><span id="gs-ip3" class="wf-muted">Store them in full</span></span>
-              <span class="gs-locked"><i data-i="lock"></i>Locked by configuration: <span class="wf-tag">JironFormBuilder:Privacy:AllowFullIp</span></span>
+              <span class="gs-choice"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="gs-ip1"></span><span class="gs-choice__text"><span class="gs-choice__name" id="gs-ip1">Don't store them</span></span></span>
+              <span class="gs-choice"><span class="wf-radio" role="radio" tabindex="0" aria-checked="true" aria-labelledby="gs-ip2" aria-describedby="gs-ip2d"></span><span class="gs-choice__text"><span class="gs-choice__name" id="gs-ip2">Store them shortened</span><span class="wf-muted" id="gs-ip2d">The last part becomes zero (203.0.113.0): enough to spot a flood, not to find a person.</span></span></span>
+              <span class="gs-choice gs-off"><span class="wf-radio" role="radio" aria-checked="false" aria-disabled="true" aria-labelledby="gs-ip3" aria-describedby="gs-ip3d"></span><span class="gs-choice__text"><span class="gs-choice__name" id="gs-ip3">Store them in full</span><span class="gs-locked" id="gs-ip3d"><i data-i="lock"></i>Locked by configuration: <span class="wf-tag">JironFormBuilder:Privacy:AllowFullIp</span></span></span></span>
             </div>
             <div class="wf-field">
-              <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="gs-insights"></span><span class="wf-label" id="gs-insights">Insights</span></span>
+              <span class="wf-check"><span class="wf-switch" role="switch" tabindex="0" aria-checked="true" aria-labelledby="gs-insights"></span><span class="wf-label" id="gs-insights">Insights</span></span>
               <span class="wf-help">Counts views, starts and entries per form, without cookies and without storing who visited.</span>
             </div>
           </div>
         </section>
+
+        <section class="wf-box" aria-labelledby="gs-captcha">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-captcha">Third-party captchas</h2></div>
+          <div class="wf-box__body">
+            <div class="wf-field" role="radiogroup" aria-labelledby="gs-consent" style="margin-top: 0">
+              <span class="wf-label" id="gs-consent">Before reCAPTCHA or hCaptcha loads</span>
+              <span class="gs-choice"><span class="wf-radio" role="radio" tabindex="0" aria-checked="true" aria-labelledby="gs-c1" aria-describedby="gs-c1d"></span><span class="gs-choice__text"><span class="gs-choice__name" id="gs-c1">Ask on the form</span><span class="wf-muted" id="gs-c1d">The form shows a short notice and a button that loads the check.</span></span></span>
+              <span class="gs-choice"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="gs-c2" aria-describedby="gs-c2d"></span><span class="gs-choice__text"><span class="gs-choice__name" id="gs-c2">Follow a Cookiebot category</span><span class="wf-muted" id="gs-c2d">It loads once the visitor accepts the category you pick.</span></span></span>
+              <span class="gs-choice"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="gs-c3" aria-describedby="gs-c3d"></span><span class="gs-choice__text"><span class="gs-choice__name" id="gs-c3">Follow the site's consent manager</span><span class="wf-muted" id="gs-c3d">It loads once the consent manager calls <span class="wf-tag">JironFormBuilder.consent.grant('captcha')</span>.</span></span></span>
+              <span class="gs-choice gs-off"><span class="wf-radio" role="radio" aria-checked="false" aria-disabled="true" aria-labelledby="gs-c4" aria-describedby="gs-c4d"></span><span class="gs-choice__text"><span class="gs-choice__name" id="gs-c4">Load without asking</span><span class="gs-locked" id="gs-c4d"><i data-i="lock"></i>Locked by configuration: <span class="wf-tag">JironFormBuilder:Privacy:AllowImplicitCaptchaConsent</span></span></span></span>
+              <span class="wf-help" style="margin-top: var(--wf-space-3)">Only forms protected by reCAPTCHA or hCaptcha ask. Standard protection needs no consent.</span>
+            </div>
+          </div>
+        </section>
+
         <section class="wf-box" aria-labelledby="gs-sensitive">
           <div class="wf-box__head"><h2 class="wf-box__title" id="gs-sensitive">Sensitive fields</h2></div>
           <div class="wf-box__body">
             <div class="wf-field" style="margin-top: 0">
-              <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="gs-sens"></span><span class="wf-label" id="gs-sens">New date of birth and ID fields start as sensitive</span></span>
+              <span class="wf-check"><span class="wf-switch" role="switch" tabindex="0" aria-checked="true" aria-labelledby="gs-sens"></span><span class="wf-label" id="gs-sens">New date of birth and ID fields start as sensitive</span></span>
               <span class="wf-help">Answers are masked in the backoffice and left out of emails and exports.</span>
             </div>
           </div>
@@ -143,5 +335,10 @@
 
     <footer class="wf-foot"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Save</button></div></footer>
   </main>
+
+  <div class="wf-toast" data-state="test-sent" role="status">
+    <i data-i="check" style="color: var(--uui-color-positive)"></i>
+    <span>Test email sent to you (ana@example.com).</span>
+  </div>
 </body>
 </html>
