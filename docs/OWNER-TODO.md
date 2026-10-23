@@ -83,7 +83,9 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   3. Check the first run. It is the first time that the repository scripts, the browser tests and the SQL
      Server integration tests run on Linux, and the SQL Server and load-balancing jobs never run on this
      machine. Until step 8.1 fills it in, the load-balancing job only starts SQL Server, creates the
-     shared database and ends with a notice that names 8.1.
+     shared database and ends with a notice that names 8.1. From 4.3a on, the repository tests also run
+     SQL written only for SQL Server (its paging, the lock hints and the recursive folder walks of
+     ADR-0036), which has never run against a server.
 
 ## Publishing
 

@@ -48,6 +48,25 @@ A step that has shipped is never edited; a change to the schema is a new step wi
 the stored state is the plan's last one, `IFormBuilderMigrationState` reports the migrations as pending, and the parts
 of Jiron Form Builder that use the tables check it first (ADR-0033).
 
+## Access
+
+Every read and write goes through `FormBuilderDatabase` and the repositories in Core's `Persistence` folder
+([ADR-0036](decisions/0036-database-gate-units-of-work-and-repositories.md)):
+
+- **Units of work.** Each runs in its own Umbraco scope, behind one async gate that lets one unit at a time through on
+  SQLite and every unit on SQL Server. A unit inside another joins its transaction, so a service makes several
+  repository calls atomic by running them in one write.
+- **One statement per state change.** A write starts with a write. The concurrency version, a free alias, an existing
+  folder or the absence of entries are conditions of the write itself, never read first. An insert that must happen
+  once is `INSERT … SELECT … WHERE NOT EXISTS`, which locks the checked range on SQL Server.
+- **Refusals write nothing.** A stale version throws `FormBuilderConcurrencyException`. A taken alias or key, a
+  missing folder, a folder moved below itself or deeper than 32 levels, a folder with contents and a row still in use
+  throw `FormBuilderConflictException`, which names the reason.
+- **Reruns.** A unit that meets a lock conflict runs again, up to three attempts in all; a read also after a lost
+  connection or a timeout.
+- **No connections of its own.** Core never opens a connection or creates a database. A unit test reads Core's IL to
+  make sure.
+
 ## Diagram
 
 Every column, with `PK`, `FK` and `UK` (a single-column unique index) and `null` for a nullable column. Lines are
