@@ -1556,7 +1556,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a test shows the ADR-0003 schema on SQLite: `typeof` gives `real` for a stored number and `text` for a date, the value and entry indexes are exactly those of §4.5, `jfbEntryValue.FieldId` has no cascade, and the plan states `IgnoreCurrentState => false`;
     - the SQL Server DDL snapshot test passes;
     - the same tests are part of the SQL Server job in `ci.yml` (show the job definition; the owner checks the CI result).
-- [ ] **4.2a The definition model and its JSON** (4.2 split in two, WORKLOG 2026-10-23)
+- [x] **4.2a The definition model and its JSON** (4.2 split in two, WORKLOG 2026-10-23) (2026-10-23, cb3025d)
   - **The model:** C# records for §4.3, System.Text.Json with source generation, and `LocalizedText`.
   - **Reading and writing** (ADR-0002): the strict reader with the save-time refusals and their codes (unreadable JSON, unknown properties, wrong types and values, duplicate keys, an unsupported `schemaVersion`, the size, text and element limits of §4.3.1), and the canonical form with `DefinitionHash`.
   - **The schema:** `schemas/jfb-form.v1.schema.json`, with a test that validates serialised definitions against it (a JSON-schema library is allowed as a test-only dependency if MIT or Apache-2.0).
