@@ -1,0 +1,40 @@
+/*
+ * The functional base rules (ADR-0015): they ship with every theme, `unstyled` included, and need no JavaScript.
+ * Design mock of ROADMAP 2.3; step 6.3 ships these rules as they are.
+ */
+
+/* An element hidden by a rule or a page that is not the current one stays hidden, whatever a theme sets. */
+.jfb-form [hidden] {
+  display: none !important;
+}
+
+/* Text for screen readers only. */
+.jfb-form .jfb-visually-hidden {
+  position: absolute !important;
+  inline-size: 1px !important;
+  block-size: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* The live region only speaks; what it says is shown elsewhere on the form. */
+.jfb-form [data-jfb-live] {
+  position: absolute !important;
+  inline-size: 1px !important;
+  block-size: 1px !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+}
+
+/* The honeypot: out of view and, through aria-hidden in the markup, out of the accessibility tree (ADR-0012). */
+.jfb-form .jfb-hp {
+  position: absolute !important;
+  inset-inline-start: -10000px !important;
+  inline-size: 1px !important;
+  block-size: 1px !important;
+  overflow: hidden !important;
+}

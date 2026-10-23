@@ -1,0 +1,140 @@
+/*
+ * The host site around the mock forms: a public library's website, in a light and a dark design (ROADMAP 2.3,
+ * "light and dark site contexts"). It stands for any customer's site and is not part of the theme: the form
+ * inherits this page's font and size, and nothing here styles the form.
+ */
+:root {
+  --site-ink: #22262e;
+  --site-muted: #545b67;
+  --site-bg: #f6f7f9;
+  --site-head: #ffffff;
+  --site-line: #dde1e7;
+  --site-link: #7a2335;
+  color-scheme: light;
+}
+
+html[data-site="dark"] {
+  --site-ink: #e6e8ec;
+  --site-muted: #a7afbc;
+  --site-bg: #14181f;
+  --site-head: #0f1217;
+  --site-line: #2a313c;
+  --site-link: #f0a3b0;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font: 17px / 1.55 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  color: var(--site-ink);
+  background: var(--site-bg);
+}
+
+.site-head {
+  background: var(--site-head);
+  border-bottom: 1px solid var(--site-line);
+}
+
+.site-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 24px;
+}
+
+.site-brand {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--site-ink);
+  text-decoration: none;
+}
+
+.site-nav {
+  display: flex;
+  gap: 24px;
+}
+
+.site-nav a {
+  color: var(--site-ink);
+  text-decoration: none;
+}
+
+.site-main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 24px 72px;
+}
+
+.site-main > h1 {
+  margin: 0 0 12px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 40px;
+  line-height: 1.15;
+}
+
+.site-lede {
+  max-width: 60ch;
+  margin: 0 0 40px;
+  color: var(--site-muted);
+}
+
+.site-section {
+  margin: 80px 0 12px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+/* The site's own links; the form styles its links itself. */
+.site-lede a,
+.site-foot a {
+  color: var(--site-link);
+}
+
+.site-foot {
+  border-top: 1px solid var(--site-line);
+  color: var(--site-muted);
+}
+
+.site-foot p {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px;
+  font-size: 15px;
+}
+
+@media (max-width: 600px) {
+  .site-wrap {
+    padding: 12px 16px;
+  }
+
+  .site-nav {
+    gap: 16px;
+  }
+
+  .site-main {
+    padding: 24px 16px 56px;
+  }
+
+  .site-main > h1 {
+    font-size: 30px;
+  }
+
+  .site-lede {
+    margin-bottom: 32px;
+  }
+
+  .site-section {
+    margin-top: 56px;
+    font-size: 24px;
+  }
+
+  .site-foot p {
+    padding: 20px 16px;
+  }
+}

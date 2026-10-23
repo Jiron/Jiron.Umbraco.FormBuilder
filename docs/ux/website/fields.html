@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Field specimen: every field type and state (website form mock)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="jfb-shots" content="default">
+  <meta name="jfb-forced" content="default">
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/base.css">
+  <link rel="stylesheet" href="assets/theme.css">
+  <script src="assets/mock.js" defer></script>
+</head>
+<body>
+  <!--
+    The specimen: every field type of the default theme in one form, grouped the way an editor would, with the
+    states a field can be in (disabled, read-only, invalid, over the length limit). Below it, a second form shows
+    the other way of marking questions: an asterisk on required ones, with the note that explains it.
+    Also rendered with Windows forced colours (a contrast theme), the "forced" shots.
+  -->
+  <header class="site-head">
+    <div class="site-wrap">
+      <a class="site-brand" href="#">Lindenhall Library</a>
+      <nav class="site-nav" aria-label="Site"><a href="#">Visit</a><a href="#">Events</a><a href="#">Join</a></nav>
+    </div>
+  </header>
+  <main class="site-main">
+    <h1>Field specimen</h1>
+    <p class="site-lede">Every field type and state of the default theme, in one room booking form.</p>
+
+    <form class="jfb-form jfb-theme-default" id="jfb-3" data-jfb-form="c03e5d17" data-jfb-revision="1" data-jfb-api="/jfb/api/v1" data-jfb-contract="1" lang="en" dir="ltr" method="post" novalidate>
+      <script type="application/json" data-jfb-model>{"pages":1}</script>
+
+      <section class="jfb-page" data-jfb-page="p1">
+        <h2 class="jfb-title">Book a room</h2>
+
+        <fieldset class="jfb-group" data-jfb-group="g1" aria-describedby="jfb-3-g1-help">
+          <legend>Text</legend>
+          <p class="jfb-help" id="jfb-3-g1-help">One line, several lines, and the formats phones have keyboards for.</p>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-text" data-jfb-field="f1" data-jfb-alias="groupName" data-jfb-type="text">
+              <label class="jfb-label" for="jfb-3-groupName">Name of your group</label>
+              <input class="jfb-control" id="jfb-3-groupName" name="groupName" autocomplete="organization" value="Market Street knitters">
+            </div>
+            <div class="jfb-field jfb-field-email" data-jfb-field="f2" data-jfb-alias="email" data-jfb-type="email">
+              <label class="jfb-label" for="jfb-3-email">Email address</label>
+              <input class="jfb-control" type="email" id="jfb-3-email" name="email" autocomplete="email" spellcheck="false" value="hello@knitters.example">
+            </div>
+            <div class="jfb-field jfb-field-phone" data-jfb-field="f3" data-jfb-alias="phone" data-jfb-type="phone">
+              <label class="jfb-label" for="jfb-3-phone">Phone number <span class="jfb-mark">(optional)</span></label>
+              <input class="jfb-control" type="tel" id="jfb-3-phone" name="phone" autocomplete="tel">
+            </div>
+            <div class="jfb-field jfb-field-url" data-jfb-field="f4" data-jfb-alias="website" data-jfb-type="url">
+              <label class="jfb-label" for="jfb-3-website">Website <span class="jfb-mark">(optional)</span></label>
+              <div class="jfb-affix">
+                <span aria-hidden="true">https://</span>
+                <input class="jfb-control" id="jfb-3-website" name="website" inputmode="url" autocomplete="url" spellcheck="false" aria-label="Website, without https://" value="knitters.example">
+              </div>
+            </div>
+            <div class="jfb-field jfb-field-textarea" data-jfb-field="f5" data-jfb-alias="about" data-jfb-type="textarea">
+              <label class="jfb-label" for="jfb-3-about">What is the event about?</label>
+              <p class="jfb-help" id="jfb-3-about-help">We print this in the events guide, so keep it short.</p>
+              <textarea class="jfb-control" id="jfb-3-about" name="about" rows="3" aria-describedby="jfb-3-about-help jfb-3-about-count">An evening of knitting for beginners and old hands, with wool, needles and tea from us. Bring a project or start one.</textarea>
+              <p class="jfb-counter" id="jfb-3-about-count" data-jfb-over>16 characters too many</p>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group jfb-columns-2" data-jfb-group="g2">
+          <legend>Numbers and dates</legend>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-number" data-jfb-field="f6" data-jfb-alias="guests" data-jfb-type="number">
+              <label class="jfb-label" for="jfb-3-guests">Number of guests</label>
+              <div class="jfb-affix">
+                <input class="jfb-control" type="number" id="jfb-3-guests" name="guests" inputmode="numeric" min="1" max="40" value="18" aria-describedby="jfb-3-guests-unit">
+                <span id="jfb-3-guests-unit">people</span>
+              </div>
+            </div>
+            <div class="jfb-field jfb-field-number" data-jfb-field="f7" data-jfb-alias="budget" data-jfb-type="number">
+              <label class="jfb-label" for="jfb-3-budget">Your budget <span class="jfb-mark">(optional)</span></label>
+              <div class="jfb-affix">
+                <span id="jfb-3-budget-unit">&euro;</span>
+                <input class="jfb-control" id="jfb-3-budget" name="budget" inputmode="decimal" aria-describedby="jfb-3-budget-unit">
+              </div>
+            </div>
+            <div class="jfb-field jfb-field-date" data-jfb-field="f8" data-jfb-alias="date" data-jfb-type="date">
+              <label class="jfb-label" for="jfb-3-date">Date</label>
+              <input class="jfb-control" type="date" id="jfb-3-date" name="date" value="2026-11-26">
+            </div>
+            <div class="jfb-field jfb-field-time" data-jfb-field="f9" data-jfb-alias="start" data-jfb-type="time">
+              <label class="jfb-label" for="jfb-3-start">Start time</label>
+              <input class="jfb-control" type="time" id="jfb-3-start" name="start" value="18:30">
+            </div>
+            <div class="jfb-field jfb-field-slider jfb-span-2" data-jfb-field="f10" data-jfb-alias="hours" data-jfb-type="slider">
+              <label class="jfb-label" for="jfb-3-hours">How many hours?</label>
+              <div class="jfb-range">
+                <input type="range" id="jfb-3-hours" name="hours" min="1" max="8" step="1" value="3" aria-valuetext="3 hours">
+                <output for="jfb-3-hours">3 hours</output>
+              </div>
+            </div>
+            <div class="jfb-field jfb-field-calculation jfb-span-2" data-jfb-field="f11" data-jfb-alias="cost" data-jfb-type="calculation">
+              <label class="jfb-label" for="jfb-3-cost">Room hire</label>
+              <p class="jfb-help" id="jfb-3-cost-help">15 euros an hour, free for groups of library members.</p>
+              <output class="jfb-output" id="jfb-3-cost" name="cost" for="jfb-3-hours" aria-describedby="jfb-3-cost-help">&euro; 45.00</output>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group" data-jfb-group="g3">
+          <legend>Ratings</legend>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-rating" data-jfb-field="f12" data-jfb-alias="lastVisit" data-jfb-type="rating">
+              <fieldset>
+                <legend class="jfb-label">How was your last event with us?</legend>
+                <div class="jfb-choices jfb-choices-rating">
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-lastVisit" name="lastVisit" value="1"><label for="jfb-3-lastVisit"><span class="jfb-visually-hidden">1 star</span></label></div>
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-lastVisit-2" name="lastVisit" value="2"><label for="jfb-3-lastVisit-2"><span class="jfb-visually-hidden">2 stars</span></label></div>
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-lastVisit-3" name="lastVisit" value="3"><label for="jfb-3-lastVisit-3"><span class="jfb-visually-hidden">3 stars</span></label></div>
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-lastVisit-4" name="lastVisit" value="4" checked><label for="jfb-3-lastVisit-4"><span class="jfb-visually-hidden">4 stars</span></label></div>
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-lastVisit-5" name="lastVisit" value="5"><label for="jfb-3-lastVisit-5"><span class="jfb-visually-hidden">5 stars</span></label></div>
+                </div>
+              </fieldset>
+            </div>
+            <div class="jfb-field jfb-field-scale" data-jfb-field="f13" data-jfb-alias="recommend" data-jfb-type="scale">
+              <fieldset>
+                <legend class="jfb-label">How likely are you to recommend the rooms to a friend?</legend>
+                <div class="jfb-scale">
+                  <div class="jfb-choices jfb-choices-scale">
+                    <div class="jfb-choice"><input type="radio" id="jfb-3-recommend" name="recommend" value="0"><label for="jfb-3-recommend">0<span class="jfb-visually-hidden">, not likely</span></label></div>
+                    <div class="jfb-choice"><input type="radio" id="jfb-3-recommend-2" name="recommend" value="1"><label for="jfb-3-recommend-2">1</label></div>
+                    <div class="jfb-choice"><input type="radio" id="jfb-3-recommend-3" name="recommend" value="2"><label for="jfb-3-recommend-3">2</label></div>
+                    <div class="jfb-choice"><input type="radio" id="jfb-3-recommend-4" name="recommend" value="3"><label for="jfb-3-recommend-4">3</label></div>
+                    <div class="jfb-choice"><input type="radio" id="jfb-3-recommend-5" name="recommend" value="4"><label for="jfb-3-recommend-5">4</label></div>
+                    <div class="jfb-choice"><input type="radio" id="jfb-3-recommend-6" name="recommend" value="5"><label for="jfb-3-recommend-6">5</label></div>
+                    <div class="jfb-choice"><input type="radio" id="jfb-3-recommend-7" name="recommend" value="6"><label for="jfb-3-recommend-7">6</label></div>
+                    <div class="jfb-choice"><input type="radio" id="jfb-3-recommend-8" name="recommend" value="7"><label for="jfb-3-recommend-8">7</label></div>
+                    <div class="jfb-choice"><input type="radio" id="jfb-3-recommend-9" name="recommend" value="8" checked><label for="jfb-3-recommend-9">8</label></div>
+                    <div class="jfb-choice"><input type="radio" id="jfb-3-recommend-10" name="recommend" value="9"><label for="jfb-3-recommend-10">9</label></div>
+                    <div class="jfb-choice"><input type="radio" id="jfb-3-recommend-11" name="recommend" value="10"><label for="jfb-3-recommend-11">10<span class="jfb-visually-hidden">, very likely</span></label></div>
+                  </div>
+                  <div class="jfb-ends" aria-hidden="true"><span>Not likely</span><span>Very likely</span></div>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group jfb-columns-2" data-jfb-group="g4">
+          <legend>Choices</legend>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-cards jfb-span-2" data-jfb-field="f14" data-jfb-alias="room" data-jfb-type="radio">
+              <fieldset>
+                <legend class="jfb-label">Room</legend>
+                <div class="jfb-choices jfb-choices-cards">
+                  <div class="jfb-choice">
+                    <img src="assets/placeholder.svg" alt="" width="600" height="400">
+                    <input type="radio" id="jfb-3-room" name="room" value="reading" checked>
+                    <label for="jfb-3-room">Reading room <span class="jfb-places">Up to 40 people</span></label>
+                  </div>
+                  <div class="jfb-choice">
+                    <img src="assets/placeholder.svg" alt="" width="600" height="400">
+                    <input type="radio" id="jfb-3-room-2" name="room" value="garden">
+                    <label for="jfb-3-room-2">Garden room <span class="jfb-places">Up to 16 people</span></label>
+                  </div>
+                  <div class="jfb-choice">
+                    <img src="assets/placeholder.svg" alt="" width="600" height="400">
+                    <input type="radio" id="jfb-3-room-3" name="room" value="attic" disabled aria-describedby="jfb-3-room-3-full">
+                    <label for="jfb-3-room-3">Attic studio <span class="jfb-places" id="jfb-3-room-3-full">Booked on this date</span></label>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+            <div class="jfb-field jfb-field-radio" data-jfb-field="f15" data-jfb-alias="payment" data-jfb-type="radio">
+              <fieldset>
+                <legend class="jfb-label">How will you pay?</legend>
+                <div class="jfb-choices">
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-payment" name="payment" value="card"><label for="jfb-3-payment">By card on the day</label></div>
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-payment-2" name="payment" value="transfer" checked><label for="jfb-3-payment-2">Bank transfer</label></div>
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-payment-3" name="payment" value="invoice"><label for="jfb-3-payment-3">Invoice to an organisation</label></div>
+                </div>
+              </fieldset>
+            </div>
+            <div class="jfb-field jfb-field-checkboxes" data-jfb-field="f16" data-jfb-alias="needs" data-jfb-type="checkboxes">
+              <fieldset>
+                <legend class="jfb-label">What do you need? <span class="jfb-mark">(optional)</span></legend>
+                <div class="jfb-choices">
+                  <div class="jfb-choice"><input type="checkbox" id="jfb-3-needs" name="needs" value="projector" checked><label for="jfb-3-needs">A projector</label></div>
+                  <div class="jfb-choice"><input type="checkbox" id="jfb-3-needs-2" name="needs" value="tea"><label for="jfb-3-needs-2">Tea and coffee</label></div>
+                  <div class="jfb-choice"><input type="checkbox" id="jfb-3-needs-3" name="needs" value="loop" checked><label for="jfb-3-needs-3">A hearing loop</label></div>
+                </div>
+              </fieldset>
+            </div>
+            <div class="jfb-field jfb-field-radio jfb-span-2" data-jfb-field="f17" data-jfb-alias="seating" data-jfb-type="radio">
+              <fieldset>
+                <legend class="jfb-label">Seating</legend>
+                <div class="jfb-choices jfb-choices-horizontal">
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-seating" name="seating" value="rows"><label for="jfb-3-seating">In rows</label></div>
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-seating-2" name="seating" value="tables" checked><label for="jfb-3-seating-2">At tables</label></div>
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-seating-3" name="seating" value="circle"><label for="jfb-3-seating-3">In a circle</label></div>
+                </div>
+              </fieldset>
+            </div>
+            <div class="jfb-field jfb-field-dropdown jfb-span-2" data-jfb-field="f18" data-jfb-alias="floor" data-jfb-type="dropdown">
+              <label class="jfb-label" for="jfb-3-floor">Who sets up the room?</label>
+              <div class="jfb-select">
+                <select class="jfb-control" id="jfb-3-floor" name="floor">
+                  <option value="">Choose one</option>
+                  <option selected>We do, from 30 minutes before</option>
+                  <option>The library team, for 10 euros</option>
+                </select>
+              </div>
+            </div>
+            <div class="jfb-field jfb-field-yesno jfb-span-2" data-jfb-field="f19" data-jfb-alias="public" data-jfb-type="yesno">
+              <div class="jfb-choice">
+                <input type="checkbox" role="switch" class="jfb-switch" id="jfb-3-public" name="public" value="true" checked aria-describedby="jfb-3-public-help">
+                <label for="jfb-3-public">List the event in the library's events guide</label>
+              </div>
+              <p class="jfb-help" id="jfb-3-public-help">Anyone may then come along.</p>
+            </div>
+            <div class="jfb-field jfb-field-checkbox jfb-span-2" data-jfb-field="f20" data-jfb-alias="newsletter" data-jfb-type="checkbox">
+              <div class="jfb-choice">
+                <input type="checkbox" id="jfb-3-newsletter" name="newsletter" value="true">
+                <label for="jfb-3-newsletter">Send me the library newsletter <span class="jfb-mark">(optional)</span></label>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group" data-jfb-group="g5">
+          <legend>Grids and order</legend>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-grid" data-jfb-field="f21" data-jfb-alias="lastTime" data-jfb-type="grid">
+              <fieldset>
+                <legend class="jfb-label">How did these go last time?</legend>
+                <div class="jfb-matrix">
+                  <div class="jfb-matrix-head" aria-hidden="true"><span></span><div><span>Poor</span><span>Fair</span><span>Good</span><span>Very good</span></div></div>
+                  <fieldset>
+                    <legend>Booking the room</legend>
+                    <div class="jfb-choices">
+                      <div class="jfb-choice"><input type="radio" id="jfb-3-lastTime-booking" name="lastTime.booking" value="1"><label for="jfb-3-lastTime-booking"><span>Poor</span></label></div>
+                      <div class="jfb-choice"><input type="radio" id="jfb-3-lastTime-booking-2" name="lastTime.booking" value="2"><label for="jfb-3-lastTime-booking-2"><span>Fair</span></label></div>
+                      <div class="jfb-choice"><input type="radio" id="jfb-3-lastTime-booking-3" name="lastTime.booking" value="3"><label for="jfb-3-lastTime-booking-3"><span>Good</span></label></div>
+                      <div class="jfb-choice"><input type="radio" id="jfb-3-lastTime-booking-4" name="lastTime.booking" value="4" checked><label for="jfb-3-lastTime-booking-4"><span>Very good</span></label></div>
+                    </div>
+                  </fieldset>
+                  <fieldset>
+                    <legend>The room itself</legend>
+                    <div class="jfb-choices">
+                      <div class="jfb-choice"><input type="radio" id="jfb-3-lastTime-room" name="lastTime.room" value="1"><label for="jfb-3-lastTime-room"><span>Poor</span></label></div>
+                      <div class="jfb-choice"><input type="radio" id="jfb-3-lastTime-room-2" name="lastTime.room" value="2"><label for="jfb-3-lastTime-room-2"><span>Fair</span></label></div>
+                      <div class="jfb-choice"><input type="radio" id="jfb-3-lastTime-room-3" name="lastTime.room" value="3" checked><label for="jfb-3-lastTime-room-3"><span>Good</span></label></div>
+                      <div class="jfb-choice"><input type="radio" id="jfb-3-lastTime-room-4" name="lastTime.room" value="4"><label for="jfb-3-lastTime-room-4"><span>Very good</span></label></div>
+                    </div>
+                  </fieldset>
+                  <fieldset>
+                    <legend>Help from the library team</legend>
+                    <div class="jfb-choices">
+                      <div class="jfb-choice"><input type="radio" id="jfb-3-lastTime-team" name="lastTime.team" value="1"><label for="jfb-3-lastTime-team"><span>Poor</span></label></div>
+                      <div class="jfb-choice"><input type="radio" id="jfb-3-lastTime-team-2" name="lastTime.team" value="2"><label for="jfb-3-lastTime-team-2"><span>Fair</span></label></div>
+                      <div class="jfb-choice"><input type="radio" id="jfb-3-lastTime-team-3" name="lastTime.team" value="3"><label for="jfb-3-lastTime-team-3"><span>Good</span></label></div>
+                      <div class="jfb-choice"><input type="radio" id="jfb-3-lastTime-team-4" name="lastTime.team" value="4"><label for="jfb-3-lastTime-team-4"><span>Very good</span></label></div>
+                    </div>
+                  </fieldset>
+                </div>
+              </fieldset>
+            </div>
+            <div class="jfb-field jfb-field-ranking" data-jfb-field="f22" data-jfb-alias="priorities" data-jfb-type="ranking">
+              <fieldset aria-describedby="jfb-3-priorities-help">
+                <legend class="jfb-label">What matters most in a room?</legend>
+                <p class="jfb-help" id="jfb-3-priorities-help">Put the most important first.</p>
+                <ol class="jfb-ranking">
+                  <li><span>1</span><span>Daylight</span><button type="button" class="jfb-button jfb-button-icon" disabled><span class="jfb-icon jfb-icon-up" aria-hidden="true"></span><span class="jfb-visually-hidden">Move Daylight up</span></button><button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-down" aria-hidden="true"></span><span class="jfb-visually-hidden">Move Daylight down</span></button></li>
+                  <li><span>2</span><span>Step-free access</span><button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-up" aria-hidden="true"></span><span class="jfb-visually-hidden">Move Step-free access up</span></button><button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-down" aria-hidden="true"></span><span class="jfb-visually-hidden">Move Step-free access down</span></button></li>
+                  <li><span>3</span><span>A quiet street</span><button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-up" aria-hidden="true"></span><span class="jfb-visually-hidden">Move A quiet street up</span></button><button type="button" class="jfb-button jfb-button-icon" disabled><span class="jfb-icon jfb-icon-down" aria-hidden="true"></span><span class="jfb-visually-hidden">Move A quiet street down</span></button></li>
+                </ol>
+              </fieldset>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group" data-jfb-group="g6">
+          <legend>Names and addresses</legend>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-name" data-jfb-field="f23" data-jfb-alias="contact" data-jfb-type="name">
+              <fieldset>
+                <legend class="jfb-label">Who is the contact on the day?</legend>
+                <div class="jfb-parts">
+                  <div class="jfb-part"><label for="jfb-3-contact-given">First name</label><input class="jfb-control" id="jfb-3-contact-given" name="contact.given" autocomplete="given-name" value="Ines"></div>
+                  <div class="jfb-part"><label for="jfb-3-contact-family">Last name</label><input class="jfb-control" id="jfb-3-contact-family" name="contact.family" autocomplete="family-name" value="Hartmann"></div>
+                </div>
+              </fieldset>
+            </div>
+            <div class="jfb-field jfb-field-address" data-jfb-field="f24" data-jfb-alias="billing" data-jfb-type="address">
+              <fieldset>
+                <legend class="jfb-label">Address for the invoice</legend>
+                <div class="jfb-parts">
+                  <div class="jfb-part jfb-part-wide"><label for="jfb-3-billing-street">Street and number</label><input class="jfb-control" id="jfb-3-billing-street" name="billing.street" autocomplete="address-line1"></div>
+                  <div class="jfb-part"><label for="jfb-3-billing-postcode">Postcode</label><input class="jfb-control" id="jfb-3-billing-postcode" name="billing.postcode" autocomplete="postal-code"></div>
+                  <div class="jfb-part"><label for="jfb-3-billing-town">Town</label><input class="jfb-control" id="jfb-3-billing-town" name="billing.town" autocomplete="address-level2"></div>
+                  <div class="jfb-part jfb-part-wide">
+                    <label for="jfb-3-billing-country">Country</label>
+                    <div class="jfb-select">
+                      <select class="jfb-control" id="jfb-3-billing-country" name="billing.country" autocomplete="country">
+                        <option value="AT">Austria</option>
+                        <option value="DE" selected>Germany</option>
+                        <option value="CH">Switzerland</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group" data-jfb-group="g7" aria-describedby="jfb-3-g7-help">
+          <legend>States</legend>
+          <p class="jfb-help" id="jfb-3-g7-help">A field a rule turned off, a field the site filled in, and an answer to correct.</p>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-text" data-jfb-field="f25" data-jfb-alias="discount" data-jfb-type="text">
+              <label class="jfb-label" for="jfb-3-discount">Member discount code</label>
+              <p class="jfb-help" id="jfb-3-discount-help">Only for groups of library members.</p>
+              <input class="jfb-control" id="jfb-3-discount" name="discount" disabled aria-describedby="jfb-3-discount-help">
+            </div>
+            <div class="jfb-field jfb-field-text" data-jfb-field="f26" data-jfb-alias="member" data-jfb-type="text">
+              <label class="jfb-label" for="jfb-3-member">Membership number</label>
+              <p class="jfb-help" id="jfb-3-member-help">From your library account.</p>
+              <input class="jfb-control" id="jfb-3-member" name="member" readonly value="M-20417" aria-describedby="jfb-3-member-help">
+            </div>
+            <div class="jfb-field jfb-field-text" data-jfb-field="f27" data-jfb-alias="reference" data-jfb-type="text">
+              <label class="jfb-label" for="jfb-3-reference">Booking reference from last time <span class="jfb-mark">(optional)</span></label>
+              <input class="jfb-control" id="jfb-3-reference" name="reference" value="REQ-2026-4" aria-invalid="true" aria-describedby="jfb-3-reference-error">
+              <p class="jfb-error" id="jfb-3-reference-error" data-jfb-error>Enter the reference as it is in your email, for example REQ-2026-00042</p>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group" data-jfb-group="g8">
+          <legend>Content</legend>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-heading" data-jfb-field="f28" data-jfb-type="heading">
+              <h3 class="jfb-heading">Before you arrive</h3>
+            </div>
+            <div class="jfb-field jfb-field-paragraph" data-jfb-field="f29" data-jfb-type="paragraph">
+              <div class="jfb-text">
+                <p>The side door on Mill Lane opens 30 minutes before your booking. Please leave the room as you found it; the chairs stack by the window.</p>
+                <p>If you need to cancel, tell us a week ahead and we give the date to the next group on the list.</p>
+              </div>
+            </div>
+            <div class="jfb-field jfb-field-divider" data-jfb-field="f30" data-jfb-type="divider">
+              <hr class="jfb-divider">
+            </div>
+            <div class="jfb-field jfb-field-image" data-jfb-field="f31" data-jfb-type="image">
+              <figure class="jfb-image">
+                <img src="assets/placeholder.svg" alt="The reading room set out with tables for a group" width="600" height="400">
+                <figcaption>The reading room, set out with tables.</figcaption>
+              </figure>
+            </div>
+            <div class="jfb-field jfb-field-consent" data-jfb-field="f32" data-jfb-alias="consent" data-jfb-type="consent">
+              <div class="jfb-choice">
+                <input type="checkbox" id="jfb-3-consent" name="consent" value="true" required>
+                <label for="jfb-3-consent">I agree that Lindenhall Library keeps these details for a year after the event, as described in the <a href="#">privacy notice</a>.</label>
+              </div>
+              <input type="hidden" name="jfb-consent-consent" value="9a01c7">
+            </div>
+          </div>
+        </fieldset>
+      </section>
+
+      <div class="jfb-navigation">
+        <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="submit" data-jfb-nav="submit">Send</button>
+      </div>
+
+      <div data-jfb-live aria-live="polite"></div>
+      <div class="jfb-hp" aria-hidden="true">
+        <label for="jfb-3-hp">Leave this field empty</label>
+        <input id="jfb-3-hp" name="jfb-hp-1b9e" tabindex="-1" autocomplete="off">
+      </div>
+    </form>
+
+    <h2 class="site-section">Marking required questions instead</h2>
+    <p class="site-lede">When most questions are optional, an editor can mark the required ones with an asterisk. The form then explains the mark once, above the first question.</p>
+
+    <form class="jfb-form jfb-theme-default" id="jfb-4" data-jfb-form="7e2b4a90" data-jfb-revision="1" data-jfb-api="/jfb/api/v1" data-jfb-contract="1" lang="en" dir="ltr" method="post" novalidate>
+      <script type="application/json" data-jfb-model>{"pages":1}</script>
+      <p class="jfb-help">Questions marked <span aria-hidden="true">*</span><span class="jfb-visually-hidden">with an asterisk</span> need an answer.</p>
+
+      <section class="jfb-page" data-jfb-page="p1">
+        <div class="jfb-group jfb-columns-2" data-jfb-group="g1">
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-text" data-jfb-field="f1" data-jfb-alias="name" data-jfb-type="text">
+              <label class="jfb-label" for="jfb-4-name">Your name <span class="jfb-mark" aria-hidden="true">*</span></label>
+              <input class="jfb-control" id="jfb-4-name" name="name" autocomplete="name" required>
+            </div>
+            <div class="jfb-field jfb-field-email" data-jfb-field="f2" data-jfb-alias="email" data-jfb-type="email">
+              <label class="jfb-label" for="jfb-4-email">Email address <span class="jfb-mark" aria-hidden="true">*</span></label>
+              <input class="jfb-control" type="email" id="jfb-4-email" name="email" autocomplete="email" spellcheck="false" required>
+            </div>
+            <div class="jfb-field jfb-field-textarea jfb-span-2" data-jfb-field="f3" data-jfb-alias="idea" data-jfb-type="textarea">
+              <label class="jfb-label" for="jfb-4-idea">An idea for a new event</label>
+              <textarea class="jfb-control" id="jfb-4-idea" name="idea" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="jfb-navigation">
+        <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="submit" data-jfb-nav="submit">Send</button>
+      </div>
+
+      <div data-jfb-live aria-live="polite"></div>
+      <div class="jfb-hp" aria-hidden="true">
+        <label for="jfb-4-hp">Leave this field empty</label>
+        <input id="jfb-4-hp" name="jfb-hp-5d03" tabindex="-1" autocomplete="off">
+      </div>
+    </form>
+  </main>
+  <footer class="site-foot"><p>Lindenhall Library, Market Street. Open Tuesday to Saturday.</p></footer>
+</body>
+</html>

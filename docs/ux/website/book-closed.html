@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Book a workshop: closed (website form mock)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="jfb-shots" content="default opens">
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/base.css">
+  <link rel="stylesheet" href="assets/theme.css">
+  <script src="assets/mock.js" defer></script>
+</head>
+<body>
+  <!--
+    A notice in place of the form (Notice.cshtml): default shows the closed message an editor wrote; "opens" shows
+    a form that is not open yet, with the time it opens. Full, members only and "the form has changed" use the
+    same notice.
+  -->
+  <header class="site-head">
+    <div class="site-wrap">
+      <a class="site-brand" href="#">Lindenhall Library</a>
+      <nav class="site-nav" aria-label="Site"><a href="#">Visit</a><a href="#">Events</a><a href="#">Join</a></nav>
+    </div>
+  </header>
+  <main class="site-main">
+    <h1>Book a Saturday workshop</h1>
+    <p class="site-lede">Learn to mend what you own, with the volunteers of the repair café. The workshops are free, and places are limited.</p>
+
+    <div class="jfb-form jfb-theme-default" id="jfb-1" data-jfb-form="8d1f0c2e" data-jfb-contract="1" lang="en" dir="ltr">
+      <div class="jfb-notice" data-mock-not="opens">
+        <h2>Bookings have closed</h2>
+        <p>The November workshops are full. Dates for the new year go online on 1 December; the <a href="#">library newsletter</a> has them first.</p>
+      </div>
+      <div class="jfb-notice" data-mock-state="opens">
+        <h2>Bookings open on 1 December at 9:00</h2>
+        <p>Come back then to choose a workshop for January.</p>
+      </div>
+    </div>
+  </main>
+  <footer class="site-foot"><p>Lindenhall Library, Market Street. Open Tuesday to Saturday.</p></footer>
+</body>
+</html>

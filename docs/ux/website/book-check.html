@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Book a workshop, page 3: check your answers (website form mock)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="jfb-shots" content="default errors">
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/base.css">
+  <link rel="stylesheet" href="assets/theme.css">
+  <script src="assets/mock.js" defer></script>
+</head>
+<body>
+  <!--
+    The summary page: the answers by page, each with a "Change" button that goes back to its page and keeps every
+    answer; an unanswered question reads "Not answered". The consent comes last, before Send.
+    States: default, and errors (Send without the consent ticked).
+  -->
+  <header class="site-head">
+    <div class="site-wrap">
+      <a class="site-brand" href="#">Lindenhall Library</a>
+      <nav class="site-nav" aria-label="Site"><a href="#">Visit</a><a href="#">Events</a><a href="#">Join</a></nav>
+    </div>
+  </header>
+  <main class="site-main">
+    <h1>Book a Saturday workshop</h1>
+    <p class="site-lede">Learn to mend what you own, with the volunteers of the repair café. The workshops are free, and places are limited.</p>
+
+    <form class="jfb-form jfb-theme-default" id="jfb-1" data-jfb-form="8d1f0c2e" data-jfb-revision="4" data-jfb-api="/jfb/api/v1" data-jfb-contract="1" lang="en" dir="ltr" method="post" novalidate>
+      <script type="application/json" data-jfb-model>{"pages":3}</script>
+      <!-- The default button: Enter means Send, not the first Change button. -->
+      <button type="submit" class="jfb-visually-hidden" name="jfb-nav" value="submit" tabindex="-1" aria-hidden="true">Send</button>
+
+      <div class="jfb-progress jfb-progress-steps">
+        <p class="jfb-progress-text">Step 3 of 3</p>
+        <ol aria-label="Progress">
+          <li data-jfb-done><span><span class="jfb-visually-hidden">Done: </span>Your details</span></li>
+          <li data-jfb-done><span><span class="jfb-visually-hidden">Done: </span>Your workshop</span></li>
+          <li aria-current="step"><span>Check your answers</span></li>
+        </ol>
+      </div>
+
+      <div class="jfb-error-summary" data-jfb-summary role="alert" tabindex="-1" aria-labelledby="jfb-1-summary" data-mock-state="errors">
+        <h2 id="jfb-1-summary">Check this answer</h2>
+        <ul>
+          <li><a href="#jfb-1-consent">Tick the box to agree to how we use your details</a></li>
+        </ul>
+      </div>
+
+      <section class="jfb-page" data-jfb-page="summary">
+        <h2 class="jfb-title">Check your answers</h2>
+
+        <div class="jfb-summary">
+          <section aria-labelledby="jfb-1-sum-p1">
+            <h3 id="jfb-1-sum-p1">Your details</h3>
+            <dl>
+              <div><dt>Name</dt><dd>Mira Okafor</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p1:firstName">Change<span class="jfb-visually-hidden"> name</span></button></dd></div>
+              <div><dt>Email address</dt><dd>mira.okafor@example.com</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p1:email">Change<span class="jfb-visually-hidden"> email address</span></button></dd></div>
+              <div><dt>Mobile number</dt><dd data-jfb-empty>Not answered</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p1:phone">Change<span class="jfb-visually-hidden"> mobile number</span></button></dd></div>
+              <div><dt>Library card</dt><dd>Yes, card 2002 4417 9083</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p1:hasCard">Change<span class="jfb-visually-hidden"> library card</span></button></dd></div>
+              <div><dt>How you heard about the workshops</dt><dd>A poster in the library</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p1:heardFrom">Change<span class="jfb-visually-hidden"> how you heard about the workshops</span></button></dd></div>
+            </dl>
+          </section>
+          <section aria-labelledby="jfb-1-sum-p2">
+            <h3 id="jfb-1-sum-p2">Your workshop</h3>
+            <dl>
+              <div><dt>Workshop</dt><dd>Bike repair basics</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p2:workshop">Change<span class="jfb-visually-hidden"> workshop</span></button></dd></div>
+              <div><dt>Session</dt><dd>Morning, 10:00 to 12:30</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p2:session">Change<span class="jfb-visually-hidden"> session</span></button></dd></div>
+              <div><dt>Guests</dt><dd>Sam Okafor, under 16</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p2:guests">Change<span class="jfb-visually-hidden"> guests</span></button></dd></div>
+              <div><dt>Anything we should know</dt><dd>I use a wheelchair. Is the courtyard step-free?</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p2:notes">Change<span class="jfb-visually-hidden"> anything we should know</span></button></dd></div>
+            </dl>
+          </section>
+        </div>
+
+        <div class="jfb-group" data-jfb-group="g6">
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-consent" data-jfb-field="f12" data-jfb-alias="consent" data-jfb-type="consent">
+              <div class="jfb-choice">
+                <input type="checkbox" id="jfb-1-consent" name="consent" value="true" required data-mock-invalid="jfb-1-consent-error">
+                <label for="jfb-1-consent">I agree that Lindenhall Library keeps these details until a month after the workshop, as described in the <a href="#">privacy notice</a>.</label>
+              </div>
+              <input type="hidden" name="jfb-consent-consent" value="3f9c51">
+              <p class="jfb-error" id="jfb-1-consent-error" data-jfb-error data-mock-state="errors">Tick the box to agree to how we use your details</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="jfb-navigation">
+        <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="submit" data-jfb-nav="submit">Send</button>
+        <button type="submit" class="jfb-button" name="jfb-nav" value="back" data-jfb-nav="back"><span class="jfb-icon jfb-icon-back" aria-hidden="true"></span>Back</button>
+      </div>
+
+      <div data-jfb-live aria-live="polite"></div>
+      <div class="jfb-hp" aria-hidden="true">
+        <label for="jfb-1-hp">Leave this field empty</label>
+        <input id="jfb-1-hp" name="jfb-hp-7c2a" tabindex="-1" autocomplete="off">
+      </div>
+    </form>
+  </main>
+  <footer class="site-foot"><p>Lindenhall Library, Market Street. Open Tuesday to Saturday.</p></footer>
+</body>
+</html>

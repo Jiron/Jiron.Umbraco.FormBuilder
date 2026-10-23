@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Hire a room, page 3: documents and agreement (website form mock)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="jfb-shots" content="default typed">
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/base.css">
+  <link rel="stylesheet" href="assets/theme.css">
+  <script src="assets/mock.js" defer></script>
+</head>
+<body>
+  <!--
+    Page 3 of 4 of a room hire form, progress as a bar. Files: the drop zone with the runtime's buttons ("Take a
+    photo" only on touch screens), then one uploaded image, one upload in progress and one refused file.
+    Signature: the pad with a drawn signature (default), or the typed name instead (typed).
+  -->
+  <header class="site-head">
+    <div class="site-wrap">
+      <a class="site-brand" href="#">Lindenhall Library</a>
+      <nav class="site-nav" aria-label="Site"><a href="#">Visit</a><a href="#">Events</a><a href="#">Join</a></nav>
+    </div>
+  </header>
+  <main class="site-main">
+    <h1>Hire a community room</h1>
+    <p class="site-lede">The first-floor rooms seat up to 40 people. We need a floor plan of your layout and proof of insurance before we confirm a booking.</p>
+
+    <form class="jfb-form jfb-theme-default" id="jfb-2" data-jfb-form="51b7aa90" data-jfb-revision="2" data-jfb-api="/jfb/api/v1" data-jfb-contract="1" lang="en" dir="ltr" method="post" enctype="multipart/form-data" novalidate>
+      <script type="application/json" data-jfb-model>{"pages":4}</script>
+      <!-- The default button: Enter in a field means Next. -->
+      <button type="submit" class="jfb-visually-hidden" name="jfb-nav" value="next" tabindex="-1" aria-hidden="true">Next</button>
+
+      <div class="jfb-progress jfb-progress-bar">
+        <p class="jfb-progress-text" id="jfb-2-progress">Step 3 of 4</p>
+        <progress max="4" value="3" aria-labelledby="jfb-2-progress">Step 3 of 4</progress>
+      </div>
+
+      <section class="jfb-page" data-jfb-page="p3">
+        <h2 class="jfb-title">Documents and agreement</h2>
+
+        <fieldset class="jfb-group" data-jfb-group="g7" aria-describedby="jfb-2-g7-help">
+          <legend>Documents</legend>
+          <p class="jfb-help" id="jfb-2-g7-help">We check them within two working days.</p>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-file" data-jfb-field="f20" data-jfb-alias="documents" data-jfb-type="file">
+              <label class="jfb-label" for="jfb-2-documents">Floor plan and insurance certificate</label>
+              <p class="jfb-help" id="jfb-2-documents-help">PDF or images, up to 10 MB each, at most four files.</p>
+              <div class="jfb-upload" data-jfb-dropzone data-jfb-enhanced>
+                <span class="jfb-icon jfb-icon-upload" aria-hidden="true"></span>
+                <p>Drag files here, or</p>
+                <div class="jfb-upload-actions">
+                  <input type="file" id="jfb-2-documents" name="documents" multiple accept=".pdf,image/*" aria-describedby="jfb-2-documents-help">
+                  <label class="jfb-button" for="jfb-2-documents">Choose files</label>
+                  <input type="file" class="jfb-upload-camera" id="jfb-2-documents-camera" accept="image/*" capture="environment" aria-describedby="jfb-2-documents-help">
+                  <label class="jfb-button jfb-upload-camera" for="jfb-2-documents-camera">Take a photo</label>
+                </div>
+              </div>
+              <ul class="jfb-files" aria-label="Your files">
+                <li class="jfb-file">
+                  <img src="assets/placeholder.svg" alt="">
+                  <strong>hall-floor-plan.jpg</strong>
+                  <p class="jfb-help">1.2 MB</p>
+                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Remove hall-floor-plan.jpg</span></button>
+                </li>
+                <li class="jfb-file" data-jfb-busy>
+                  <span class="jfb-icon jfb-icon-file" aria-hidden="true"></span>
+                  <strong>insurance-certificate.pdf</strong>
+                  <progress max="100" value="60" aria-label="Uploading insurance-certificate.pdf">60 %</progress>
+                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Stop uploading insurance-certificate.pdf</span></button>
+                </li>
+                <li class="jfb-file" data-jfb-error>
+                  <span class="jfb-icon jfb-icon-file" aria-hidden="true"></span>
+                  <strong>room-photos.zip</strong>
+                  <p class="jfb-error">This file is larger than 10 MB. Choose a smaller one.</p>
+                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Remove room-photos.zip</span></button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group jfb-columns-2" data-jfb-group="g8">
+          <legend>Agreement</legend>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-signature jfb-span-2" data-jfb-field="f21" data-jfb-alias="signature" data-jfb-type="signature">
+              <fieldset>
+                <legend class="jfb-label">Your signature</legend>
+                <div class="jfb-signature" data-mock-not="typed">
+                  <p class="jfb-help">Sign with your finger or the mouse.</p>
+                  <canvas class="jfb-signature-pad" width="900" height="300" role="img" aria-label="Your signature, drawn" data-mock-signature></canvas>
+                  <div class="jfb-signature-tools">
+                    <button type="button" class="jfb-button jfb-button-link">Clear</button>
+                    <button type="button" class="jfb-button jfb-button-link">Type your name instead</button>
+                  </div>
+                </div>
+                <div class="jfb-signature" data-mock-state="typed">
+                  <p class="jfb-help" id="jfb-2-signature-name-help">Type your full name. It counts as your signature.</p>
+                  <label class="jfb-visually-hidden" for="jfb-2-signature-name">Your full name</label>
+                  <input class="jfb-control" id="jfb-2-signature-name" name="signature.typed" autocomplete="name" value="Daniel Fernandes" aria-describedby="jfb-2-signature-name-help">
+                  <div class="jfb-signature-tools">
+                    <button type="button" class="jfb-button jfb-button-link">Sign by hand instead</button>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+            <div class="jfb-field jfb-field-date" data-jfb-field="f22" data-jfb-alias="signedOn" data-jfb-type="date">
+              <label class="jfb-label" for="jfb-2-signedOn">Date</label>
+              <input class="jfb-control" type="date" id="jfb-2-signedOn" name="signedOn" value="2026-10-23">
+            </div>
+            <div class="jfb-field jfb-field-checkbox jfb-span-2" data-jfb-field="f23" data-jfb-alias="terms" data-jfb-type="checkbox">
+              <div class="jfb-choice">
+                <input type="checkbox" id="jfb-2-terms" name="terms" value="true" checked required>
+                <label for="jfb-2-terms">I have read the <a href="#">room hire terms</a> and accept them.</label>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+      </section>
+
+      <div class="jfb-navigation">
+        <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="next" data-jfb-nav="next">Next</button>
+        <button type="submit" class="jfb-button" name="jfb-nav" value="back" data-jfb-nav="back"><span class="jfb-icon jfb-icon-back" aria-hidden="true"></span>Back</button>
+      </div>
+
+      <div data-jfb-live aria-live="polite"></div>
+      <div class="jfb-hp" aria-hidden="true">
+        <label for="jfb-2-hp">Leave this field empty</label>
+        <input id="jfb-2-hp" name="jfb-hp-e41d" tabindex="-1" autocomplete="off">
+      </div>
+    </form>
+  </main>
+  <footer class="site-foot"><p>Lindenhall Library, Market Street. Open Tuesday to Saturday.</p></footer>
+</body>
+</html>

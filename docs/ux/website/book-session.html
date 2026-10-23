@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Book a workshop, page 2: your workshop (website form mock)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="jfb-shots" content="default">
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/base.css">
+  <link rel="stylesheet" href="assets/theme.css">
+  <script src="assets/mock.js" defer></script>
+</head>
+<body>
+  <!--
+    Page 2 of the booking: choice cards with place limits (one option full), a row of radio buttons, a card-style
+    group with a repeater row, and an optional text area with its character counter.
+  -->
+  <header class="site-head">
+    <div class="site-wrap">
+      <a class="site-brand" href="#">Lindenhall Library</a>
+      <nav class="site-nav" aria-label="Site"><a href="#">Visit</a><a href="#">Events</a><a href="#">Join</a></nav>
+    </div>
+  </header>
+  <main class="site-main">
+    <h1>Book a Saturday workshop</h1>
+    <p class="site-lede">Learn to mend what you own, with the volunteers of the repair café. The workshops are free, and places are limited.</p>
+
+    <form class="jfb-form jfb-theme-default" id="jfb-1" data-jfb-form="8d1f0c2e" data-jfb-revision="4" data-jfb-api="/jfb/api/v1" data-jfb-contract="1" lang="en" dir="ltr" method="post" novalidate>
+      <script type="application/json" data-jfb-model>{"pages":3}</script>
+      <!-- The default button: Enter in a field means Next, not the first Remove or Add button below. -->
+      <button type="submit" class="jfb-visually-hidden" name="jfb-nav" value="next" tabindex="-1" aria-hidden="true">Next</button>
+
+      <div class="jfb-progress jfb-progress-steps">
+        <p class="jfb-progress-text">Step 2 of 3</p>
+        <ol aria-label="Progress">
+          <li data-jfb-done><span><span class="jfb-visually-hidden">Done: </span>Your details</span></li>
+          <li aria-current="step"><span>Your workshop</span></li>
+          <li><span>Check your answers</span></li>
+        </ol>
+      </div>
+
+      <section class="jfb-page" data-jfb-page="p2">
+        <h2 class="jfb-title">Your workshop</h2>
+
+        <fieldset class="jfb-group" data-jfb-group="g3" aria-describedby="jfb-1-g3-help">
+          <legend>Choose a workshop</legend>
+          <p class="jfb-help" id="jfb-1-g3-help">All workshops are on Saturday 14 November, in the library.</p>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-radio" data-jfb-field="f8" data-jfb-alias="workshop" data-jfb-type="radio">
+              <fieldset>
+                <legend class="jfb-label">Workshop</legend>
+                <div class="jfb-choices jfb-choices-cards">
+                  <div class="jfb-choice">
+                    <input type="radio" id="jfb-1-workshop" name="workshop" value="bikes" checked>
+                    <label for="jfb-1-workshop">Bike repair basics <span class="jfb-places">3 places left</span></label>
+                  </div>
+                  <div class="jfb-choice">
+                    <input type="radio" id="jfb-1-workshop-2" name="workshop" value="mending">
+                    <label for="jfb-1-workshop-2">Mending clothes <span class="jfb-places">12 places left</span></label>
+                  </div>
+                  <div class="jfb-choice">
+                    <input type="radio" id="jfb-1-workshop-3" name="workshop" value="electricals" disabled aria-describedby="jfb-1-workshop-3-full">
+                    <label for="jfb-1-workshop-3">Small electricals <span class="jfb-places" id="jfb-1-workshop-3-full">Full</span></label>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+            <div class="jfb-field jfb-field-radio" data-jfb-field="f9" data-jfb-alias="session" data-jfb-type="radio">
+              <fieldset>
+                <legend class="jfb-label">Session</legend>
+                <div class="jfb-choices jfb-choices-horizontal">
+                  <div class="jfb-choice"><input type="radio" id="jfb-1-session" name="session" value="am" checked><label for="jfb-1-session">Morning, 10:00 to 12:30</label></div>
+                  <div class="jfb-choice"><input type="radio" id="jfb-1-session-2" name="session" value="pm"><label for="jfb-1-session-2">Afternoon, 14:00 to 16:30</label></div>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group jfb-group-card" data-jfb-group="g4" aria-describedby="jfb-1-g4-help">
+          <legend>Who is coming</legend>
+          <p class="jfb-help" id="jfb-1-g4-help">Guests under 16 come with an adult.</p>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-repeater" data-jfb-field="f10" data-jfb-alias="guests" data-jfb-type="repeater">
+              <fieldset aria-describedby="jfb-1-guests-help">
+                <legend class="jfb-label">Guests <span class="jfb-mark">(optional)</span></legend>
+                <p class="jfb-help" id="jfb-1-guests-help">Add up to two guests.</p>
+                <div class="jfb-repeater">
+                  <fieldset class="jfb-row">
+                    <legend>Guest 1</legend>
+                    <button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="remove:guests:0">Remove<span class="jfb-visually-hidden"> guest 1</span></button>
+                    <div class="jfb-fields jfb-columns-2">
+                      <div class="jfb-field jfb-field-text" data-jfb-alias="guests[0].name" data-jfb-type="text">
+                        <label class="jfb-label" for="jfb-1-guests-0-name">Name</label>
+                        <input class="jfb-control" id="jfb-1-guests-0-name" name="guests[0].name" value="Sam Okafor" autocomplete="off">
+                      </div>
+                      <div class="jfb-field jfb-field-dropdown" data-jfb-alias="guests[0].age" data-jfb-type="dropdown">
+                        <label class="jfb-label" for="jfb-1-guests-0-age">Age</label>
+                        <div class="jfb-select">
+                          <select class="jfb-control" id="jfb-1-guests-0-age" name="guests[0].age">
+                            <option value="">Choose one</option>
+                            <option selected>Under 16</option>
+                            <option>16 or over</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </fieldset>
+                  <button type="submit" class="jfb-button" name="jfb-nav" value="add:guests"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>Add a guest</button>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group" data-jfb-group="g5">
+          <legend>Anything else</legend>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-textarea" data-jfb-field="f11" data-jfb-alias="notes" data-jfb-type="textarea">
+              <label class="jfb-label" for="jfb-1-notes">Anything we should know? <span class="jfb-mark">(optional)</span></label>
+              <p class="jfb-help" id="jfb-1-notes-help">For example, access needs or allergies.</p>
+              <textarea class="jfb-control" id="jfb-1-notes" name="notes" rows="4" maxlength="500" aria-describedby="jfb-1-notes-help jfb-1-notes-count">I use a wheelchair. Is the courtyard step-free?</textarea>
+              <p class="jfb-counter" id="jfb-1-notes-count">453 characters left</p>
+            </div>
+          </div>
+        </fieldset>
+      </section>
+
+      <div class="jfb-navigation">
+        <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="next" data-jfb-nav="next">Next</button>
+        <button type="submit" class="jfb-button" name="jfb-nav" value="back" data-jfb-nav="back"><span class="jfb-icon jfb-icon-back" aria-hidden="true"></span>Back</button>
+      </div>
+
+      <div data-jfb-live aria-live="polite"></div>
+      <div class="jfb-hp" aria-hidden="true">
+        <label for="jfb-1-hp">Leave this field empty</label>
+        <input id="jfb-1-hp" name="jfb-hp-7c2a" tabindex="-1" autocomplete="off">
+      </div>
+    </form>
+  </main>
+  <footer class="site-foot"><p>Lindenhall Library, Market Street. Open Tuesday to Saturday.</p></footer>
+</body>
+</html>
