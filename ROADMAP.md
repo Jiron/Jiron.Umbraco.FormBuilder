@@ -1403,7 +1403,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
 
 The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This phase designs every screen before any of it is built, so later phases implement a design instead of improvising one.
 
-- [ ] **2.1 Information architecture and words**
+- [x] **2.1 Information architecture and words** (2026-10-23, aeb7bfa)
   - Write `docs/ux/information-architecture.md`:
     - the Forms section's menus, trees, workspaces and views;
     - every screen with its one primary action and its secondary actions (visible or in "…");
