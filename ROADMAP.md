@@ -242,7 +242,7 @@ These come from the owner or from planning. Change one only through an ADR that 
 | D12 | **The backoffice** is a top-level section **Forms** (alias `Jiron.FormBuilder.Section`), built with Lit, TypeScript and UUI, using Umbraco's own patterns: trees, workspaces with views, the save bar, modals and sidebars, the sorter, entity actions and toasts. It talks to the server through a generated OpenAPI client. | It must feel native to Umbraco. No foreign design system. |
 | D13 | **Privacy by default:** <ul><li>no cookies, and IP addresses are not stored;</li><li>retention defaults are on;</li><li>sensitive fields are masked;</li><li>consent fields store the exact wording shown;</li><li>logs never contain field values;</li><li>nothing loads from third-party hosts unless an editor chooses a third-party captcha.</li></ul> | GDPR, TDDDG and good practice (§3.7). Site owners get compliance help without configuring anything. |
 | D14 | **Spam protection needs no third party by default:** a honeypot, a minimum fill time, a signed challenge, rate limits and content rules feed a spam score. A proof-of-work challenge is optional. reCAPTCHA v2/v3 and hCaptcha are optional providers that load only per §4.10. Suspicious entries go to **Spam**, where nothing is lost and no action runs, instead of being dropped. | Stops bots without privacy costs, and never silently loses a real lead. |
-| D15 | **Files:** <ul><li>stored outside the public web root, through a Jiron Form Builder `IFileSystem`, which also works with Umbraco's official storage providers;</li><li>names are random, and downloads go only through authorised endpoints;</li><li>extension allowlist, content sniffing, size and count limits;</li><li>a scanner hook (`IFormBuilderFileScanner`), and deletion with the entry.</li></ul> | Uploaded files are personal data and an attack vector. |
+| D15 | **Files:** <ul><li>stored outside the public web root, through Jiron Form Builder's asynchronous `IFormBuilderFileStore`, which also works with Umbraco's official storage providers (ADR-0006: Umbraco's `IFileSystem` writes synchronously, which a streamed upload cannot feed);</li><li>names are random, and downloads go only through authorised endpoints;</li><li>extension allowlist, content sniffing, size and count limits;</li><li>a scanner hook (`IFormBuilderFileScanner`), and deletion with the entry.</li></ul> | Uploaded files are personal data and an attack vector. |
 | D16 | **Versioning and branches:** the package major follows the Umbraco major. The first line is `17.0.0-alpha.N`, then `-beta.N`, then `17.0.0`, for CMS 17. `main` is the 17 line and holds every ROADMAP and WORKLOG change; CMS 18 code lives on `v18/main` (Phase 19). Changes flow one way: `main` is merged into `v18/main`, never the reverse. `Directory.Build.props` holds `VersionPrefix` 17.0.0 and `VersionSuffix` alpha.0; release builds pass the tag's version; local test packs use `-dev.<yyyyMMddHHmm>`. | Compatibility is obvious at a glance, and stale NuGet caches can never serve old bits. |
 | D17 | **No publishing, no visibility changes.** The release workflow is built and tested, but the NuGet push stays disabled (`vars.JFB_NUGET_PUBLISH != 'true'`). CI runs on pushes only when `vars.JFB_CI == 'true'`. The repo stays private. | Only the owner can do these. |
 | D18 | **UX is a first-class requirement** in the backoffice and on the website (§4.13): <ul><li>progressive disclosure, so no screen is cluttered;</li><li>one primary action per view, with secondary actions in menus;</li><li>**say it once:** each fact appears once per screen, never as a highlighted tab, a sidebar heading and a page title at the same time;</li><li>nothing squashed on phones: text keeps its width, and controls move to their own row;</li><li>every state designed, sensible defaults and plain language;</li><li>a guided first run, live previews and keyboard paths.</li></ul> | The owner: "It's important that we don't have a bunch of buttons and stuff clustered in the same place." During Tandem the owner added: no "5 gazillion buttons", nothing "repeating itself multiple times", and no button squeezed into the middle of a text on a phone (Tandem ADR-0079). |
@@ -377,7 +377,9 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
 - **No-JavaScript posts** (confirmed in 1.4a, ADR-0004): the form posts back to its own page with Umbraco's encrypted route token `ufprt`, which routes the post to a `SurfaceController` action. `CurrentUmbracoPage()` renders the page again in the same request, and state reaches the view through `HttpContext.Items`. `RedirectToCurrentUmbracoPage(QueryString)` answers `302` to the page with the query but cannot add a fragment, so Jiron Form Builder builds its own redirect. `BeginUmbracoForm(…, antiforgery: false)` writes no token, but posts to the bare current path, always adds a multipart encoding and a random `id`; `Html.SurfaceControllerHiddenInput<T>()` gives the same routing inside our own `<form>`. `[IgnoreAntiforgeryToken]` on the action overrides the controller's `[AutoValidateAntiforgeryToken]`. `CurrentPage` throws when the action is reached through the auto-route `/umbraco/surface/…`, so the action checks the `UmbracoRouteValues` feature first. A tampered `ufprt` never reaches the action: Umbraco renders the page.
 - **Content creation** (the "create content" action): the async `IContentEditingService` / `IContentPublishingService` of 14+ rather than the legacy `IContentService` (confirmed in 1.2a).
 - **Members:** `IMemberManager` for the current member, `IMemberService` and `IMemberGroupService`.
-- **Files:** `IFileSystem`, `PhysicalFileSystem`, and `IHostEnvironment` paths. Umbraco's official Azure Blob storage provider targets the media and image cache file systems; how a package registers its own blob-backed file system is decided in 1.4b *(verify in 1.4b)*.
+- **Files** (decided in 1.4b, ADR-0006): Umbraco's `IFileSystem` writes synchronously, and Kestrel refuses synchronous reads of a request body, so Jiron Form Builder stores files through its own asynchronous `IFormBuilderFileStore`. Umbraco's official Azure Blob provider (`Umbraco.StorageProviders.AzureBlob`, 17.1.0 for 17) registers named containers with `AddAzureBlobFileSystem(name, configure)`, settings in `Umbraco:Storage:AzureBlob:{name}`, and `IAzureBlobFileSystemProvider.GetFileSystem(name).GetBlobClient(path)` gives the SDK's asynchronous client, which a blob store uses (the 15.2 sample). Without `ContainerRootPath` the provider prefixes every blob name with the virtual path; the plain registration serves nothing.
+- **Umbraco reads the form of every form post while routing** (found in 1.4b): its `EagerMatcherPolicy` applies to every endpoint and, when more than one matches a path (its content route always does), looks for `ufprt` in `Request.Form`. That reads a multipart body in full (64 KB in memory, the rest in the ASP.NET temp folder) before any action, for controllers outside `/umbraco` too, and adding the path to `ReservedPaths` does not prevent it. A middleware before routing (an Umbraco pipeline filter) that gives the request an `IFormFeature` with no form content does. Umbraco sets Kestrel's body limit and the multipart limit from `Umbraco:CMS:Runtime:MaxRequestLength` (in KB; by default 52,428,800 bytes and unlimited).
+- **Section access in code** (found in 1.4b): Umbraco's section requirement is internal and the allowed-applications claim is obsolete in 17 (`CS0618`), so a requirement handler reads `IUser.AllowedSections` through `IAuthorizationHelper.TryGetUmbracoUser`. Authorization handlers are singletons: a scoped one fails start-up scope validation, because Umbraco's singleton event authorizers consume `IAuthorizationService`.
 - **Health checks:** classes with `[HealthCheck]` appear on the Settings › Health Check dashboard, grouped by `Group` (confirmed in 1.2b). A status's action runs at once, without a confirmation, so only safe, repeatable actions go there. Messages are server strings that Umbraco shows as written.
 - **Webhooks** (confirmed in 1.2b): an event class derives from `WebhookEventBase<TNotification>` with `[WebhookEvent(name, Constants.WebhookEvents.Types.Other)]` and is registered with `builder.AddWebhookEvent<T>()`; publishing the notification queues the request. A distributed job sends it (every 10 s by default) with the header `Umb-Webhook-Event: <alias>` and our payload as the body.
 - **Localization** (confirmed in 1.2b): one `localization` manifest per culture (`en`, `de`); a regional culture such as `de-de` falls back to the language file. The global search tab label and server strings (health checks, webhook event names) are shown as written.
@@ -816,7 +818,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | `GET forms/{keyOrAlias}?culture=&contentKey=` | The public projection for headless rendering, when the form allows it. `ETag` from the public revision and culture. |
 | `GET forms/{key}/render?instance=&page=&contentKey=&culture=` | The published form as HTML in the page's theme and culture, for a runtime that got `form_changed` on a page that may come from a cache (ADR-0004). `page` must be a local path. `no-store`. |
 | `POST forms/{key}/challenge` | A signed challenge (form, time, and optionally a proof-of-work puzzle). Fetched on first interaction, so cached pages stay cacheable. The response also carries what cached markup cannot: the places left per option, and the member values that rules use (§4.3.3). |
-| `POST forms/{key}/uploads` | Upload one file before submitting (progress per file). Returns a signed upload token. Limits per form, file and IP. |
+| `POST forms/{key}/uploads` | Upload one file before submitting (progress per file): `multipart/form-data` with the `challenge` part first, then the `file` part, streamed and checked on its first bytes (ADR-0006). Returns a signed upload token. Limits per form, file and IP; `413 payload_too_large` and `415 unsupported_media_type` close the connection. |
 | `POST forms/{key}/validate` | Validate one page's values on the server (multi-page, `422` with errors by alias). |
 | `POST forms/{key}/entries` | Submit: `{submissionId, revision, culture, contentKey, values, uploads, context, challenge, captchaToken}` → `{receipt, outcome:{kind, html \| url, delaySeconds}}`. |
 | `POST forms/{key}/receipt` | Check an uncertain submission by `{submissionId, receipt}`. |
@@ -863,7 +865,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 "JironFormBuilder": {
   "PublicApi": { "BasePath": "/jfb/api", "AllowedOrigins": [], "ServerKeys": [] },
   "Rendering": { "DefaultTheme": "default", "IncludeAssetsAutomatically": true },
-  "Files": { "Root": "~/umbraco/Data/JironFormBuilder/Uploads", "MaxRequestBytes": 52428800, "BlockedExtensions": ["exe", "dll", "js", "bat", "cmd", "ps1", "sh", "msi", "html", "svg"] },
+  "Files": { "Root": "~/umbraco/Data/JironFormBuilder/Uploads", "MaxFileBytes": 52428800, "BlockedExtensions": ["exe", "dll", "js", "bat", "cmd", "ps1", "sh", "msi", "html", "svg"] },
   "Privacy": { "AllowFullIp": false, "AllowRetentionOff": false, "ThirdPartyCaptchaConsent": "explicit" },
   "Captcha": { "RecaptchaV2": { "SiteKey": null, "SecretKey": null }, "RecaptchaV3": { "...": "..." }, "HCaptcha": { "...": "..." } },
   "Webhooks": { "AllowedHosts": [], "AllowHttp": false },
@@ -875,6 +877,8 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   "LockedSections": []
 }
 ```
+
+`Files:MaxFileBytes` caps the limit an editor can give any file field. It is not a request limit: the upload endpoint and the no-JS post set Kestrel's limit per request from the form's fields, whatever the site's `Umbraco:CMS:Runtime:MaxRequestLength` (ADR-0006).
 
 **Backoffice settings** (typed sections in `jfbSetting`; `global` scope, plus per-site overrides where marked):
 
@@ -922,7 +926,7 @@ A settings change raises a notification and a cache refresher, so every server s
   - `IFormBuilderSpamCheck`: an extra spam signal with a score and a reason;
   - `IFormBuilderMergeTagSource` and `IFormBuilderMergeTagFilter`;
   - `IFormBuilderFileScanner`: malware scanning, for example ClamAV, in a sample;
-  - `IFormBuilderFileStore`: other storage, for example blob storage.
+  - `IFormBuilderFileStore`: other storage, for example blob storage through Umbraco's official provider (sample in 15.2). Asynchronous: `SaveAsync(id, stream)` stores all of it or nothing, `OpenReadAsync(id)` returns a stream or null, `DeleteAsync(id)`; ids are random and never URLs (ADR-0006).
 - **Settings schemas:** C# attributes on a settings class (`[FormBuilderSetting(Label, Description, Editor, Order, Group, SupportsMergeTags)]`) give every custom type a backoffice editor without any JavaScript. A custom Lit element can replace the editor for a setting through a `jfbSettingEditor` manifest.
 - **Notifications:**
   - forms: `FormSaving`/`Saved`, `FormPublishing`/`Published`, `FormTrashing`/`Deleted`;
@@ -972,6 +976,9 @@ A settings change raises a notification and a cache refresher, so every server s
 - **Files:**
   - an extension allowlist per field plus a global blocklist, checked against the bytes' magic numbers;
   - random stored names, never served from a public path, sizes enforced while streaming;
+  - **the public API never takes a form:** a middleware before routing gives every request under its base path an `IFormFeature` with no form content, because Umbraco's routing would otherwise read (and buffer) the whole body of any form post before the action (§3.4, ADR-0006);
+  - upload refusals are strict: the server never reads past a field's limit, refuses a declared length over it before reading, and checks the challenge before the file's first byte; `413` and `415` close the connection;
+  - **no-JS posts with files** name their form in the action (`?jfb-post=<key>.<instance>`), so a middleware before routing sets the form's limits, reads the post itself and turns one that is too large into an error at the field; Kestrel may drain up to twice the form's limit after the answer, so the browser shows the page instead of a reset connection;
   - downloads only through the management API, with permission checks, `Content-Disposition: attachment` and `X-Content-Type-Options: nosniff`;
   - images are never rendered inline from untrusted SVG;
   - the scanner hook can quarantine a file, which marks the entry.
@@ -1311,7 +1318,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
     - a page served from the output cache is byte-identical for two visitors who share no cookies, and contains no per-visitor value (no antiforgery token, no challenge, no nonce);
     - the CSP pages log no violation in the browser.
 - [ ] **1.4b Spike: uploads and file storage**
-  - **Uploads:** a streamed multipart upload with size limits enforced while reading, stored through an `IFileSystem` in a folder that is not web-accessible, with a magic-number check.
+  - **Uploads:** a streamed multipart upload with size limits enforced while reading, stored through an `IFileSystem` in a folder that is not web-accessible, with a magic-number check. *(Done through an asynchronous store instead, because `IFileSystem` writes synchronously; ADR-0006.)*
   - **Downloads:** a protected download through the management API.
   - **Blob storage:** read the docs and source of Umbraco's official Azure Blob storage provider and decide how an `IFormBuilderFileStore` can use it (a sample, not a dependency). Resolve the open files note of §3.4.
   - Write ADR-0006 "File storage and uploads".
@@ -1519,7 +1526,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The file store:** the physical `IFormBuilderFileStore` per ADR-0006, in a folder that is not web-accessible. Uploads arrive in 6.1, hardening in 7.3.
   - **The audit log and daily stats:** port the pattern (§3.3).
   - Done when:
-    - integration tests cover CRUD for each repository, concurrency conflicts on forms and settings, **unique entry numbers under 50 parallel inserts**, every filter kind (with the correctness cases of 1.3), and storing, reading and deleting files;
+    - integration tests cover CRUD for each repository, concurrency conflicts on forms and settings, **unique entry numbers under 50 parallel inserts**, every filter kind (with the correctness cases of 1.3), and storing, reading and deleting files, with a failed or cut-off save leaving nothing behind (ADR-0006);
     - on SQLite, `EXPLAIN QUERY PLAN` tests show every shape of the query builder on its index, with and without planner statistics: no `SCAN` of `jfbEntryValue` and no temporary b-tree for a sort by a value (ADR-0003);
     - a statement past its time budget is interrupted and answered with `query_timeout`, and a submission made meanwhile still succeeds; a search with more than 1,000 matches reports "more than 1,000";
     - tests prove there are no field values in audit details, and that counters are correct under parallel increments.
@@ -1632,12 +1639,12 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 
 - [ ] **6.1 The public API and the submission pipeline**
   - Set up §4.6 at a configurable base path, with CORS, ProblemDetails codes, request limits and the OpenAPI document `jfb-public` (with a snapshot test).
-  - **Endpoints built here:** the form definition, `validate`, `entries`, `receipt`, `options` and `uploads` (basic limits, using the 4.3 file store; hardening in 7.3). The others are built and tested by the steps that need them: `challenge` (7.1), `drafts` and `resume` (8.6), `verify` (8.5), `events` (11.5).
+  - **Endpoints built here:** the form definition, `validate`, `entries`, `receipt`, `options` and `uploads` (per ADR-0006: the no-form middleware before routing, the multipart body read as a stream, strict limits and the magic-number check, using the 4.3 file store; the challenge part is verified from 7.1 on; hardening in 7.3). The others are built and tested by the steps that need them: `challenge` (7.1), `drafts` and `resume` (8.6), `verify` (8.5), `events` (11.5).
   - Implement the pipeline of §4.4 end to end (spam layers come in Phase 7): availability, validation, idempotency (the server generates a `submissionId` when none is posted), the single transaction, outcomes.
     - **Places on options** (§4.4): taken in the transaction, given back on reject, spam, delete and erase.
     - **Empty submissions are refused:** a submission with no answer at all fails validation with a form-level message.
     - **Values kept only until the actions have run** are stored only when an action run applies (§4.4; their deletion comes with the processor in 8.1).
-  - Done when: integration tests cover each endpoint built here for success; validation errors by alias; a replayed submission returning the same receipt and a changed one returning `409`; `form_changed`, `form_closed` and the entry limit; CORS allowed and denied; oversize bodies. They also cover 50 parallel submissions for the last 10 places of an option (exactly 10 accepted), a rejected entry giving its place back, and an empty submission refused.
+  - Done when: integration tests cover each endpoint built here for success; validation errors by alias; a replayed submission returning the same receipt and a changed one returning `409`; `form_changed`, `form_closed` and the entry limit; CORS allowed and denied; oversize bodies. The upload test of 1.4b is ported, with the ASP.NET temp folder watched: a 60 MB upload to a 50 MB field is cut off with nothing buffered, a renamed `.exe` is refused on its first bytes with nothing stored, and a declared length over the limit is refused before a byte is read. They also cover 50 parallel submissions for the last 10 places of an option (exactly 10 accepted), a rejected entry giving its place back, and an empty submission refused.
 - [ ] **6.2 Razor rendering**
   - **Rendering:**
     - the view component and tag helpers (`<jfb-render>`, `<jfb-assets>`, included once per page automatically unless turned off), with the nonce option (`<jfb-assets nonce>` and `IFormBuilderCspNonceProvider`, ADR-0004);
@@ -1651,9 +1658,10 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the markup contract (`data-jfb-*` attributes, deterministic per-request instance ids);
     - member gating messages and culture.
   - **The no-JS post:** through the surface controller, with post/redirect/get and re-rendered errors, server-side paging for multi-page forms, and the outcomes (message, redirect, message then redirect). Our own `<form>` with `SurfaceControllerHiddenInput`, the redirect with the instance fragment, and the `UmbracoRouteValues` check, per ADR-0004.
+  - **No-JS posts with files** (ADR-0006): the `?jfb-post=<key>.<instance>` marker in the action, the limits middleware before routing with its drain allowance, and the upload's file rules in the surface action. The message for a post that is too large is designed once, and a file that passed its checks is kept across a re-render for other errors, through a signed token in the form.
   - **The output cache rules of ADR-0004:** `no-store` on every response of the surface action and on every render that is per visitor, not a `GET`, or carries `jfb-sent`; the `IWebsiteOutputCacheVaryByProvider` for `jfb-sent`; never an `IWebsiteOutputCacheRequestFilter`.
   - **The `render` endpoint** of §4.6 (for `form_changed`), through the same view component.
-  - Done when: TestServer tests pass (including the compressed and cacheable asset responses), and Playwright with JavaScript **disabled** submits a valid form, an invalid one and a three-page one, with two forms on one page. With Umbraco's output cache on, tests also show: a cached page byte-identical for two visitors and holding nothing per visitor; `?jfb-sent` showing the outcome and never stored, for any value; no response to a post stored; the surface auto-route answering `400`; and `render` returning the published form with the given instance id.
+  - Done when: TestServer tests pass (including the compressed and cacheable asset responses), and Playwright with JavaScript **disabled** submits a valid form, an invalid one and a three-page one, with two forms on one page. With Umbraco's output cache on, tests also show: a cached page byte-identical for two visitors and holding nothing per visitor; `?jfb-sent` showing the outcome and never stored, for any value; no response to a post stored; the surface auto-route answering `400`; and `render` returning the published form with the given instance id. With JavaScript disabled, Playwright in Edge also shows a file that is too large reported at its field (not a reset connection), a valid file stored, a renamed `.exe` refused, and a valid file kept when another field fails (ADR-0006).
 - [ ] **6.3 Themes**
   - **`default`:**
     - CSS custom properties and an opt-in dark scheme;
@@ -1681,13 +1689,14 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a submission id that does not depend on `crypto.randomUUID()`, which exists only in secure contexts, and chunk file names with a content hash (ADR-0004).
   - **The developer surface and constraints:** the JS API and DOM events (§4.9), the CSP nonce, no cookies.
   - **Field behaviours:**
-    - Loaded on demand: uploads with progress (against `uploads`), the repeater, the signature pad (with the typed alternative), character counters, choice cards and the "Other" input.
+    - Loaded on demand: uploads with progress (against `uploads`, the challenge part first; size and type are checked in the browser before sending, with signature test vectors shared with the server; a reset during an upload is a failed upload the visitor can retry, ADR-0006), the repeater, the signature pad (with the typed alternative), character counters, choice cards and the "Other" input.
     - The ranking field's move buttons with live announcements, and the grid's stacked layout on phones.
   - Done when:
     - Vitest covers the runtime;
     - Playwright on the demo covers validation, rules, calculations, answer recall, submission, `form_changed` and every field type's interaction, with `form_changed` on a page served stale from the output cache (the published form swapped in, the answers kept);
     - Playwright shows no CSP violation with `script-src 'self'` on a cached page and with a nonce on an uncached one, lazily loaded chunks included, and a submission from a plain-HTTP origin;
     - a **keyboard-only** run completes the kitchen-sink form;
+    - Playwright shows an oversize file and a renamed `.exe` refused before any upload request is sent, and an upload cut off by the server reported as a failed upload with a retry;
     - axe is clean;
     - the size check passes with every chunk.
 - [ ] **6.5 Multi-page, summary and prefill**
@@ -1727,7 +1736,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Signals:**
     - a honeypot whose name varies per public revision;
     - a minimum fill time from the signed challenge;
-    - the `challenge` endpoint (§4.6) and its use by the runtime for JS posts;
+    - the `challenge` endpoint (§4.6) and its use by the runtime for JS posts, and as the first part of every upload, verified before the file is read (ADR-0006);
     - no time signal on no-JS posts, because the markup is cache-safe (§3.4). They are scored on the honeypot, rate limits and content rules (ADR-0012), and a test covers that case;
     - the challenge id stored on the entry (unique per form), so a solved challenge can't be replayed.
   - **What cached markup cannot carry** (§4.6): the challenge response also brings the places left per option and the member values for rules. The runtime then shows the places ("3 places left", "full") and evaluates member conditions with them; the server has refused full options since 6.1 either way.
@@ -1755,7 +1764,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - random names.
   - **Cleanup and scanning:** the orphan-cleanup job, and the scanner hook with quarantine.
   - **Downloads:** protected and permission-checked; ZIP exports safe against path traversal.
-  - Done when: tests cover a polyglot file, a double extension, an oversize stream aborted early, a zip-slip name, and a quarantined file.
+  - Done when: tests cover a polyglot file, a double extension, an oversize stream aborted early, a zip-slip name, and a quarantined file. Over HTTPS with HTTP/2, Playwright shows that a refused upload's answer reaches the browser (ADR-0006).
 - [ ] **7.4 Phase review**
   - A security review of Phases 6 and 7 (STRIDE for the public surface). Fix what it finds, with a test per fix.
   - Write the handover note.
@@ -2177,11 +2186,11 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - a spam check (link density);
     - a merge-tag source (values from a site-settings node);
     - a file scanner (a stub that quarantines files named "eicar");
-    - a file store sketch for blob storage;
+    - a file store for blob storage on Umbraco's official Azure Blob provider, per ADR-0006 (a private container, `ContainerRootPath` set, blocks committed only when complete);
     - a notification handler that adds a field error.
 
     Each is compiled and tested in CI and documented in `docs/extending.md`.
-  - Done when: the samples build and their tests pass.
+  - Done when: the samples build and their tests pass; the blob file store passes the store's contract tests against a local storage emulator (a dev-only tool).
 - [ ] **15.3 The AI add-on and phase review**
   - **First, a spike on Umbraco.AI:**
     - Confirm the Umbraco.AI 17.x chat API (`IAIChatService`) and structured output.
