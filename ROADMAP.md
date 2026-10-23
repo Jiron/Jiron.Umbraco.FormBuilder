@@ -1294,7 +1294,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
     - a fresh install and an upgrade both pass on SQLite;
     - number and date range filters and sorts are **correct** for negative, decimal and multi-digit values and for dates across years (SQLite must not compare them as text);
     - the ADR has measured numbers that meet §4.12.
-- [ ] **1.4a Spike: rendering and posting**
+- [x] **1.4a Spike: rendering and posting** (2026-10-23, 751442b)
   - In the sandbox:
     - a view component and a tag helper rendering a three-field form;
     - a **no-JS post** through a `SurfaceController` with `BeginUmbracoForm`, re-rendering errors and doing post/redirect/get on success;
