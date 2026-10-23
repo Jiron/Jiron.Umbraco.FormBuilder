@@ -1427,7 +1427,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Render them to PNG with Playwright (`scripts/wireframes.mjs`).
   - Write `docs/ux/review-2.2.md` with a checklist per screen against the measurable rules of §4.13, including the "said twice?" line and the token rules.
   - Done when: the PNGs, `PRODUCT.md` and the review are committed, every screen passes its checklist, and the review has a section per skill with its output and findings.
-- [ ] **2.3 Website form design**
+- [x] **2.3 Website form design** (2026-10-23, a22f7d7)
   - **Design the default theme:**
     - field anatomy (label, help, input, error);
     - the required and optional marks, the error summary and inline errors;
