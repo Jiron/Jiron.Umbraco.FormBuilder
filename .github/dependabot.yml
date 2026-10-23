@@ -7,6 +7,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 0
+    ignore:
+      # 9.x comes with a maintenance-fee agreement (CLAUDE.md rule 4); 8.0.5 is the last MIT release (ADR-0034).
+      - dependency-name: JsonSchema.Net
+        versions: [">= 9.0.0"]
   - package-ecosystem: npm
     directories:
       - /scripts

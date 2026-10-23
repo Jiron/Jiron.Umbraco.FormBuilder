@@ -26,7 +26,7 @@ npx playwright test --project=smoke
 
 | Project | What it holds |
 | --- | --- |
-| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), and the Testing project's own tests. |
+| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), and the Testing project's own tests. |
 | `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, and the schema and its migrations (`Persistence/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
@@ -51,6 +51,23 @@ that passes in one runtime and fails in the other is a bug in one of them.
 TypeScript's clean, fold and NFC recomposition do to every code point into `vectors/tables/typescript.json`; a Vitest
 test fails when the file no longer matches the running Node, and `Logic/UnicodeTablesTests.cs` compares Core with it,
 listing the known gaps exactly.
+
+## The definition tests
+
+`Tests.Unit/Definitions/` tests the definition model, its reader and writer, the schema and the upgraders
+([ADR-0034](../docs/decisions/0034-definition-model-reading-and-writing.md)):
+
+| Tests | What they show |
+| --- | --- |
+| `RoundTripTests` | 500 definitions from `DefinitionGenerator` (one per seed) write, read and write to the same bytes and model, and between them set every property of the model. |
+| `CanonicalFormTests` | `fixtures/definitions/v1-full.json`, written by hand with every property, reads and writes byte for byte, and its hash. |
+| `RefusalTests` | Every save refusal with its code and JSON path, each one change to a valid document. |
+| `DefinitionSchemaTests` | `schemas/jfb-form.v1.schema.json` validates the generated definitions and the fixture, names the same objects, properties, required ones and words as the model (`ModelProperties`), and refuses the refusals a schema can say. |
+| `UpgradeTests` | A synthetic older version read through the real reader, and the chain's checks. |
+| `DefinitionValueTests` | Localised texts, default values, settings objects, instants and the string escaping. |
+
+A new property of the model needs the record, the schema, the generator and the fixture: until all four agree, the
+coverage, schema and fixture tests fail.
 
 ## The Testing project
 

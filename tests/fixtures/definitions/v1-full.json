@@ -1,0 +1,443 @@
+{
+  "schemaVersion": 1,
+  "key": "f0000000-0000-4000-8000-000000000001",
+  "settings": {
+    "submission": {
+      "submitLabel": { "": "Send registration", "de": "Anmeldung senden", "de-CH": "Anmeldung abschicken" },
+      "nextLabel": { "": "Next" },
+      "backLabel": { "": "Back" },
+      "summaryPage": true,
+      "progress": "bar",
+      "store": "days",
+      "storeDays": 365,
+      "approval": "manual",
+      "verification": { "emailField": "30000000-0000-4000-8000-000000000002", "days": 14 },
+      "resume": { "days": 10 },
+      "entryTitle": "{{ field.name }}, {{ field.company }}",
+      "entryReference": { "prefix": "REG-", "year": false, "digits": 6 }
+    },
+    "availability": {
+      "opensAt": "2026-11-01T08:00:00Z",
+      "closesAt": "2027-01-31T22:59:59Z",
+      "maxEntries": 500,
+      "closedMessage": { "": "<p>Registration has closed.</p>", "fr": "<p>Les inscriptions sont closes.</p>" },
+      "members": "groups",
+      "memberGroups": [ "70000000-0000-4000-8000-000000000001", "70000000-0000-4000-8000-000000000002" ],
+      "onePerMember": true
+    },
+    "protection": {
+      "level": "captcha",
+      "captcha": { "provider": "hcaptcha", "settings": { "size": "compact", "theme": { "dark": true } } },
+      "contentRules": "strict"
+    },
+    "privacy": {
+      "retentionDays": { "submitted": 180, "approved": 365, "rejected": 30, "spam": 7 },
+      "ip": "anonymised",
+      "insights": false
+    },
+    "appearance": {
+      "theme": "conference",
+      "requiredMarker": "optional",
+      "validationSummary": false,
+      "choiceLayout": "cards",
+      "cssClass": "registration-form"
+    },
+    "developer": { "headless": true, "queryValues": [ "utm_source", "ref" ], "contextValues": [ "campaign" ] }
+  },
+  "pages": [
+    {
+      "key": "10000000-0000-4000-8000-000000000001",
+      "title": { "": "Your details", "de": "Ihre Angaben" },
+      "description": { "": "<p>We need a few details.</p>" },
+      "groups": [
+        {
+          "key": "20000000-0000-4000-8000-000000000001",
+          "title": { "": "Contact" },
+          "description": { "": "<p>How we reach you.</p>" },
+          "columns": 2,
+          "style": "card",
+          "rules": [
+            {
+              "key": "40000000-0000-4000-8000-000000000001",
+              "effect": "hide",
+              "enabled": false,
+              "match": "any",
+              "conditions": [ { "context": "memberSignedIn", "op": "isChecked" } ]
+            }
+          ],
+          "fields": [
+            {
+              "key": "30000000-0000-4000-8000-000000000001",
+              "type": "text",
+              "alias": "name",
+              "formerAliases": [ "fullName" ],
+              "span": 2,
+              "label": { "": "Name", "de": "Name" },
+              "hideLabel": false,
+              "help": { "": "As it should appear on your badge.\nFirst and last name." },
+              "placeholder": { "": "Anna Müller" },
+              "required": true,
+              "messages": { "required": { "": "Please tell us your name." }, "maxLength": { "": "That name is too long." } },
+              "defaultValue": "{{ member.name }}",
+              "prefill": { "query": "name", "member": "displayName", "memberMode": "hide" },
+              "sensitive": false,
+              "includeInEmails": true,
+              "keep": "always",
+              "autocomplete": "name",
+              "cssClass": "badge-name",
+              "validation": [ { "kind": "pattern", "pattern": "[A-Za-z ]+", "message": { "": "Letters only." } } ],
+              "rules": [
+                {
+                  "key": "40000000-0000-4000-8000-000000000002",
+                  "effect": "require",
+                  "enabled": true,
+                  "match": "all",
+                  "conditions": [ { "field": "30000000-0000-4000-8000-000000000002", "op": "isNotEmpty" } ]
+                }
+              ],
+              "settings": { "counter": true, "maxLength": 80 }
+            },
+            {
+              "key": "30000000-0000-4000-8000-000000000002",
+              "type": "email",
+              "alias": "email",
+              "span": 1,
+              "label": { "": "Email" },
+              "hideLabel": true,
+              "required": true,
+              "sensitive": true,
+              "includeInEmails": false,
+              "keep": "untilActionsRun",
+              "autocomplete": "email",
+              "validation": [ { "kind": "uniquePerForm", "message": { "": "You are already registered." } } ],
+              "settings": { "confirm": true, "confirmLabel": { "": "Email again" }, "domains": { "list": [ "example.com" ], "mode": "block" } }
+            },
+            {
+              "key": "30000000-0000-4000-8000-000000000003",
+              "type": "email",
+              "alias": "confirmEmail",
+              "span": 1,
+              "label": { "": "Email again" },
+              "hideLabel": false,
+              "required": false,
+              "sensitive": false,
+              "includeInEmails": true,
+              "keep": "always",
+              "validation": [ { "kind": "matchesField", "field": "30000000-0000-4000-8000-000000000002", "message": { "": "The addresses differ." } } ]
+            }
+          ]
+        },
+        {
+          "key": "20000000-0000-4000-8000-000000000002",
+          "columns": 1,
+          "style": "plain",
+          "fields": [
+            {
+              "key": "30000000-0000-4000-8000-000000000004",
+              "type": "radio",
+              "alias": "ticket",
+              "span": 1,
+              "label": { "": "Ticket" },
+              "hideLabel": false,
+              "required": true,
+              "sensitive": false,
+              "includeInEmails": true,
+              "keep": "always",
+              "rules": [
+                {
+                  "key": "40000000-0000-4000-8000-000000000003",
+                  "effect": "show",
+                  "enabled": true,
+                  "match": "all",
+                  "conditions": [ { "field": "30000000-0000-4000-8000-000000000001", "op": "isNotEmpty" } ]
+                }
+              ],
+              "options": {
+                "source": "items",
+                "items": [
+                  {
+                    "value": "standard",
+                    "label": { "": "Standard" },
+                    "description": { "": "Talks and lunch." },
+                    "image": "71000000-0000-4000-8000-000000000001",
+                    "places": 200
+                  },
+                  { "value": "workshop", "label": { "": "Workshop day" }, "places": 25 },
+                  { "value": "Café-Paß", "label": { "": "Café & Paß 🎟", "ja": "カフェ" } }
+                ]
+              }
+            },
+            {
+              "key": "30000000-0000-4000-8000-000000000005",
+              "type": "checkboxes",
+              "alias": "sessions",
+              "span": 1,
+              "label": { "": "Sessions" },
+              "hideLabel": false,
+              "required": false,
+              "defaultValue": [ "keynote", "panel" ],
+              "sensitive": false,
+              "includeInEmails": true,
+              "keep": "always",
+              "options": {
+                "source": "list",
+                "list": "72000000-0000-4000-8000-000000000001",
+                "parent": "30000000-0000-4000-8000-000000000004"
+              },
+              "settings": { "maxSelections": 3, "minSelections": 1 }
+            },
+            {
+              "key": "30000000-0000-4000-8000-000000000006",
+              "type": "dropdown",
+              "alias": "country",
+              "span": 1,
+              "label": { "": "Country" },
+              "hideLabel": false,
+              "required": false,
+              "sensitive": false,
+              "includeInEmails": true,
+              "keep": "always",
+              "autocomplete": "country",
+              "options": { "source": "countries", "config": { "top": [ "CH", "DE", "AT" ] } }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "10000000-0000-4000-8000-000000000002",
+      "title": { "": "Your stay" },
+      "rules": [
+        {
+          "key": "40000000-0000-4000-8000-000000000004",
+          "effect": "show",
+          "enabled": true,
+          "match": "any",
+          "conditions": [
+            { "field": "30000000-0000-4000-8000-000000000004", "op": "equals", "value": "workshop" },
+            {
+              "match": "all",
+              "conditions": [
+                { "context": "query.ref", "op": "startsWith", "value": "partner" },
+                { "context": "today", "op": "lessThan", "value": { "today": "+30d" } }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "key": "20000000-0000-4000-8000-000000000003",
+          "columns": 3,
+          "style": "plain",
+          "fields": [
+            {
+              "key": "30000000-0000-4000-8000-000000000007",
+              "type": "date",
+              "alias": "arrival",
+              "span": 1,
+              "label": { "": "Arrival" },
+              "hideLabel": false,
+              "required": false,
+              "sensitive": false,
+              "includeInEmails": true,
+              "keep": "always",
+              "settings": { "min": { "today": "+1d" }, "weekdaysOnly": true }
+            },
+            {
+              "key": "30000000-0000-4000-8000-000000000008",
+              "type": "date",
+              "alias": "departure",
+              "span": 1,
+              "label": { "": "Departure" },
+              "hideLabel": false,
+              "required": false,
+              "sensitive": false,
+              "includeInEmails": true,
+              "keep": "always",
+              "rules": [
+                {
+                  "key": "40000000-0000-4000-8000-000000000005",
+                  "effect": "require",
+                  "enabled": true,
+                  "match": "all",
+                  "conditions": [ { "field": "30000000-0000-4000-8000-000000000007", "op": "isNotEmpty" } ]
+                }
+              ]
+            },
+            {
+              "key": "30000000-0000-4000-8000-000000000009",
+              "type": "grid",
+              "alias": "satisfaction",
+              "span": 3,
+              "label": { "": "How was it?" },
+              "hideLabel": false,
+              "required": false,
+              "sensitive": false,
+              "includeInEmails": true,
+              "keep": "always",
+              "options": { "source": "items", "items": [ { "value": "1", "label": { "": "Poor" } }, { "value": "2", "label": { "": "Good" } } ] },
+              "rows": [
+                { "key": "31000000-0000-4000-8000-000000000001", "label": { "": "Venue" }, "required": true },
+                { "key": "31000000-0000-4000-8000-000000000002", "label": { "": "Food" }, "required": false }
+              ],
+              "settings": { "multiple": false }
+            },
+            {
+              "key": "30000000-0000-4000-8000-00000000000a",
+              "type": "repeater",
+              "alias": "guests",
+              "span": 3,
+              "label": { "": "Guests" },
+              "hideLabel": false,
+              "required": false,
+              "sensitive": false,
+              "includeInEmails": true,
+              "keep": "always",
+              "fields": [
+                {
+                  "key": "30000000-0000-4000-8000-00000000000b",
+                  "type": "text",
+                  "alias": "guestName",
+                  "span": 2,
+                  "label": { "": "Guest name" },
+                  "hideLabel": false,
+                  "required": true,
+                  "sensitive": false,
+                  "includeInEmails": true,
+                  "keep": "always"
+                },
+                {
+                  "key": "30000000-0000-4000-8000-00000000000c",
+                  "type": "number",
+                  "alias": "guestAge",
+                  "span": 1,
+                  "label": { "": "Age" },
+                  "hideLabel": false,
+                  "required": false,
+                  "sensitive": true,
+                  "includeInEmails": false,
+                  "keep": "untilActionsRun",
+                  "settings": { "max": "120", "min": "0" }
+                }
+              ],
+              "settings": { "addLabel": { "": "Add a guest" }, "maxRows": 4 }
+            },
+            {
+              "key": "30000000-0000-4000-8000-00000000000d",
+              "type": "textarea",
+              "alias": "notes",
+              "span": 3,
+              "label": { "": "Anything else?" },
+              "hideLabel": false,
+              "help": { "": "Diet, access needs, a \"hello\" \\ anything." },
+              "required": false,
+              "sensitive": false,
+              "includeInEmails": true,
+              "keep": "always",
+              "rules": [
+                {
+                  "key": "40000000-0000-4000-8000-000000000006",
+                  "effect": "hide",
+                  "enabled": true,
+                  "match": "all",
+                  "conditions": [
+                    { "field": "30000000-0000-4000-8000-000000000005", "op": "isNoneOf", "value": [ "keynote", { "field": "30000000-0000-4000-8000-000000000004" } ] },
+                    { "field": "30000000-0000-4000-8000-000000000007", "op": "between", "value": [ { "today": "" }, { "today": "+1y" } ] },
+                    { "match": "any" }
+                  ]
+                }
+              ]
+            },
+            {
+              "key": "30000000-0000-4000-8000-00000000000e",
+              "type": "heading",
+              "span": 3,
+              "hideLabel": false,
+              "required": false,
+              "sensitive": false,
+              "includeInEmails": true,
+              "keep": "always",
+              "settings": { "level": 3, "text": { "": "Almost done" } }
+            },
+            {
+              "key": "30000000-0000-4000-8000-00000000000f",
+              "type": "consent",
+              "alias": "privacy",
+              "span": 3,
+              "hideLabel": false,
+              "required": true,
+              "sensitive": false,
+              "includeInEmails": true,
+              "keep": "always",
+              "settings": { "text": { "": "I agree to the <a href=\"/privacy\">privacy notice</a>." } }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "validationRules": [
+    {
+      "key": "41000000-0000-4000-8000-000000000001",
+      "enabled": true,
+      "field": "30000000-0000-4000-8000-000000000008",
+      "message": { "": "Departure is after arrival." },
+      "match": "all",
+      "conditions": [ { "field": "30000000-0000-4000-8000-000000000008", "op": "lessThan", "value": { "field": "30000000-0000-4000-8000-000000000007" } } ]
+    }
+  ],
+  "actions": [
+    {
+      "key": "50000000-0000-4000-8000-000000000001",
+      "type": "email",
+      "name": "Notify the team",
+      "enabled": true,
+      "trigger": "submitted",
+      "stopOnFailure": true,
+      "rules": [
+        {
+          "key": "40000000-0000-4000-8000-000000000007",
+          "effect": "run",
+          "enabled": true,
+          "match": "all",
+          "conditions": [ { "field": "30000000-0000-4000-8000-000000000004", "op": "isOneOf", "value": [ "workshop", "standard" ] } ]
+        }
+      ],
+      "settings": { "attachFiles": false, "subject": "New registration #{{ entry.number }}", "to": [ "team@example.com" ] }
+    },
+    {
+      "key": "50000000-0000-4000-8000-000000000002",
+      "type": "webhook",
+      "name": "CRM",
+      "enabled": false,
+      "trigger": "approved",
+      "stopOnFailure": false,
+      "settings": { "secret": "$JironFormBuilder:Secrets:CrmToken", "url": "https://crm.example.com/hooks/registrations" }
+    }
+  ],
+  "outcomes": [
+    {
+      "key": "60000000-0000-4000-8000-000000000001",
+      "kind": "redirect",
+      "showAnswers": false,
+      "redirect": { "content": "73000000-0000-4000-8000-000000000001", "delaySeconds": 0 },
+      "rules": [
+        {
+          "key": "40000000-0000-4000-8000-000000000008",
+          "effect": "use",
+          "enabled": true,
+          "match": "all",
+          "conditions": [ { "context": "culture", "op": "startsWith", "value": "de" } ]
+        }
+      ]
+    },
+    {
+      "key": "60000000-0000-4000-8000-000000000002",
+      "kind": "message",
+      "message": { "": "<p>Thanks, {{ field.name }}!</p>", "de": "<p>Danke, {{ field.name }}!</p>" },
+      "showAnswers": true,
+      "redirect": { "url": "/events/thanks?ref={{ query.ref | url }}", "delaySeconds": 5 }
+    }
+  ]
+}
