@@ -332,9 +332,10 @@ sequenceDiagram
   W->>W: send through IEmailSender, call webhooks
 ```
 
-- The pipeline is the one of §4.4, the same for JavaScript posts, no-JS posts (ADR-0004) and the API; the
-  idempotency of the `submissionId` comes before the revision, availability and the single use of the challenge, so
-  a retry after a lost answer always gets its receipt (ADR-0012).
+- The pipeline is the one of §4.4, the same for JavaScript posts, no-JS posts (ADR-0004) and the API; the idempotency
+  of the `submissionId` comes before the revision, availability and the single use of the challenge, so a retry after
+  a lost answer gets its receipt, through `receipt` once its challenge has expired, for up to 24 hours past that
+  expiry (ADR-0012).
 - Suspicious submissions take the same path into `Spam`, with no action runs (ADR-0012).
 - After the commit the worker sends within milliseconds; the distributed job only wakes it (ADR-0007).
 

@@ -276,7 +276,8 @@ runtime asks the receipt route instead, which checks the challenge's signature a
 its expiry; only a `404` there makes it post again with a fresh challenge. `POST forms/{key}/receipt` takes
 `{ submissionId, challenge }` (or the server key that submitted the entry) and returns the receipt and the outcome
 only when an entry with that submission id was made with that challenge or key; any miss is the same `404 not_found`,
-so submission ids cannot be probed.
+so submission ids cannot be probed. The post with a fresh challenge keeps the same `submissionId`; past the grace it
+meets `409 duplicate_submission`, which the runtime reports as already sent, without the outcome.
 
 ### What the validate endpoint does not check
 

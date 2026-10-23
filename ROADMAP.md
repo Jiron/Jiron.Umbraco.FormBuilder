@@ -1787,8 +1787,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - integration tests cover each signal, and a flood from 20,000 distinct IPs neither bypasses the site-wide limit nor grows memory without bound;
     - a `429` keeps the visitor's answers and says when to send again, in the runtime and on the no-JS page (Playwright);
-    - a replay with the same body and its entry's own, already used challenge returns the original receipt and outcome, also once the form has closed or the option it took is full; the same `submissionId` with another challenge or server key gets `409` with neither receipt nor outcome;
-    - `receipt` finds an entry by its challenge for up to 24 hours past that challenge's expiry and answers `404` after that, and a runtime test shows a retry after a lost answer, whose challenge has expired, asking `receipt` and showing the original outcome;
+    - a replay with the same body and its entry's own, already used challenge returns the original receipt and outcome, also once the form has closed or the option it took is full; the same `submissionId` and the same body with another challenge or server key gets `409` with neither receipt nor outcome;
+    - `receipt` finds an entry by its challenge for up to 24 hours past that challenge's expiry and answers `404` after that, and a runtime test shows a retry after a lost answer, whose challenge has expired, asking `receipt` and showing the original outcome, and, past the grace, the fresh post's `409` shown as already sent;
     - tests cover a blocked IPv4 and IPv6 range, and Playwright shows the places left changing on a cached page after another visitor's submission, and a member condition applied for a signed-in member;
     - tests cover each content rule, a custom `IFormBuilderSpamCheck`, and "not spam" running the submitted actions.
 - [ ] **7.2 Proof of work and captcha providers**
