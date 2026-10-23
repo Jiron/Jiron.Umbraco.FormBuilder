@@ -374,10 +374,10 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
   - `UMB_NOTIFICATION_CONTEXT` toasts and modals through `umbOpenModal`.
 - **Property editors:** a `propertyEditorSchema`, which is a server `DataEditor`, plus a `propertyEditorUi`. Use a `PropertyValueConverterBase` for Razor, and an `IDeliveryApiPropertyValueConverter` for the Content Delivery API, which must be enabled with `Umbraco:CMS:DeliveryApi:Enabled`.
 - **"Used on" tracking:** `IDataValueReferenceFactory` / `IDataValueReference` report references from property values, and Umbraco's walk covers blocks. Umbraco stores references only between `umbracoNode` rows and drops a form's, so Jiron Form Builder keeps its own index, refreshed on content save, and shows it with Umbraco's `entityReferences` info app (1.2b, ADR-0017).
-- **No-JavaScript posts:** a `SurfaceController` with `BeginUmbracoForm` posts back to the current page through an encrypted route token. `CurrentUmbracoPage()` re-renders with `ModelState`, and `RedirectToCurrentUmbracoPage()` implements post/redirect/get *(verify in 1.4)*.
+- **No-JavaScript posts** (confirmed in 1.4a, ADR-0004): the form posts back to its own page with Umbraco's encrypted route token `ufprt`, which routes the post to a `SurfaceController` action. `CurrentUmbracoPage()` renders the page again in the same request, and state reaches the view through `HttpContext.Items`. `RedirectToCurrentUmbracoPage(QueryString)` answers `302` to the page with the query but cannot add a fragment, so Jiron Form Builder builds its own redirect. `BeginUmbracoForm(…, antiforgery: false)` writes no token, but posts to the bare current path, always adds a multipart encoding and a random `id`; `Html.SurfaceControllerHiddenInput<T>()` gives the same routing inside our own `<form>`. `[IgnoreAntiforgeryToken]` on the action overrides the controller's `[AutoValidateAntiforgeryToken]`. `CurrentPage` throws when the action is reached through the auto-route `/umbraco/surface/…`, so the action checks the `UmbracoRouteValues` feature first. A tampered `ufprt` never reaches the action: Umbraco renders the page.
 - **Content creation** (the "create content" action): the async `IContentEditingService` / `IContentPublishingService` of 14+ rather than the legacy `IContentService` (confirmed in 1.2a).
 - **Members:** `IMemberManager` for the current member, `IMemberService` and `IMemberGroupService`.
-- **Files:** `IFileSystem`, `PhysicalFileSystem`, and `IHostEnvironment` paths. Umbraco's official Azure Blob storage provider targets the media and image cache file systems; how a package registers its own blob-backed file system is decided in 1.4 *(verify in 1.4)*.
+- **Files:** `IFileSystem`, `PhysicalFileSystem`, and `IHostEnvironment` paths. Umbraco's official Azure Blob storage provider targets the media and image cache file systems; how a package registers its own blob-backed file system is decided in 1.4b *(verify in 1.4b)*.
 - **Health checks:** classes with `[HealthCheck]` appear on the Settings › Health Check dashboard, grouped by `Group` (confirmed in 1.2b). A status's action runs at once, without a confirmation, so only safe, repeatable actions go there. Messages are server strings that Umbraco shows as written.
 - **Webhooks** (confirmed in 1.2b): an event class derives from `WebhookEventBase<TNotification>` with `[WebhookEvent(name, Constants.WebhookEvents.Types.Other)]` and is registered with `builder.AddWebhookEvent<T>()`; publishing the notification queues the request. A distributed job sends it (every 10 s by default) with the header `Umb-Webhook-Event: <alias>` and our payload as the body.
 - **Localization** (confirmed in 1.2b): one `localization` manifest per culture (`en`, `de`); a regional culture such as `de-de` falls back to the language file. The global search tab label and server strings (health checks, webhook event names) are shown as written.
@@ -402,7 +402,14 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
   - the new generator writes enums as numbers, integers as "integer or string" and every record constructor parameter as required, documents form files and validation problems differently, and needs a schema transformer to give the TypeScript client the same types as on 17;
   - the snapshots in `docs/api/` and the generated client therefore differ per line.
 - **Static files:** Umbraco serves package files through `UseStaticFiles`, with no compression and no caching headers, so the website runtime needs its own serving to meet §4.12 (6.2).
-- **Output caching:** sites may put pages behind output caching or a CDN. Jiron Form Builder markup therefore contains nothing per visitor: the challenge is fetched when the visitor first interacts, and there is no antiforgery token on anonymous forms (§4.10).
+- **Output caching:** sites may put pages behind output caching or a CDN. Jiron Form Builder markup therefore contains nothing per visitor: the challenge is fetched when the visitor first interacts, and there is no antiforgery token on anonymous forms (§4.10). Umbraco's own website output cache (confirmed in 1.4a; not in 17.3.0, present in 17.5.0, 17.7.1 and 18.2.1):
+  - opt-in with `Umbraco:CMS:Website:OutputCache:Enabled` (`ContentDuration` defaults to 10 s);
+  - **the cache key ignores the query string**, so anything rendered from the query needs an `IWebsiteOutputCacheVaryByProvider` (a collection: a package adds rules without removing the site's);
+  - `IWebsiteOutputCacheRequestFilter` is a single service, so a package must never register one;
+  - only `Set-Cookie` or `no-store` block storage: the policy checks neither the method nor the status code (posts to a surface action were still never stored in 1.4a);
+  - `IWebsiteOutputCacheTagProvider` (a collection) tags pages, and `IWebsiteOutputCacheManager.EvictByTagAsync` evicts them.
+
+  ADR-0004 sets Jiron Form Builder's rules on top of it.
 
 ### 3.5 Umbraco Marketplace and NuGet facts (research 2026-10-19)
 
@@ -807,6 +814,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | Route | Purpose |
 | --- | --- |
 | `GET forms/{keyOrAlias}?culture=&contentKey=` | The public projection for headless rendering, when the form allows it. `ETag` from the public revision and culture. |
+| `GET forms/{key}/render?instance=&page=&contentKey=&culture=` | The published form as HTML in the page's theme and culture, for a runtime that got `form_changed` on a page that may come from a cache (ADR-0004). `page` must be a local path. `no-store`. |
 | `POST forms/{key}/challenge` | A signed challenge (form, time, and optionally a proof-of-work puzzle). Fetched on first interaction, so cached pages stay cacheable. The response also carries what cached markup cannot: the places left per option, and the member values that rules use (§4.3.3). |
 | `POST forms/{key}/uploads` | Upload one file before submitting (progress per file). Returns a signed upload token. Limits per form, file and IP. |
 | `POST forms/{key}/validate` | Validate one page's values on the server (multi-page, `422` with errors by alias). |
@@ -928,6 +936,7 @@ A settings change raises a notification and a cache refresher, so every server s
   - `IFormBuilderMergeTagService`.
 - **Rendering:**
   - the `<jfb-render form="alias|key" theme="…" context-…="…">` tag helper, `@await Component.InvokeAsync("FormBuilderForm", …)` and `<jfb-assets>`. The custom element `<jfb-form>` belongs to the headless renderer;
+  - the CSP nonce: `<jfb-assets nonce="…">`, or an `IFormBuilderCspNonceProvider` that a site (or its CSP package) registers to return the request's nonce, which `<jfb-assets>` also uses when it is included automatically (ADR-0004);
   - theme views in Jiron Form Builder's own layout, fixed in ADR-0015 without mirroring any other product's conventions. The proposal: `Views/JironFormBuilder/<theme>/` holds `Form.cshtml`, `Page.cshtml`, `Group.cshtml`, `Summary.cshtml`, `Outcome.cshtml` and `fields/<type>.cshtml`;
   - per-form overrides in `Views/JironFormBuilder/<theme>/_forms/<alias>/`, with the same file names.
 - **Website JS API:**
@@ -1000,7 +1009,7 @@ A settings change raises a notification and a cache refresher, so every server s
   - sent emails purged after 30 days;
   - no cookies, and no browser storage unless the visitor uses "save and resume";
   - insights are counters only.
-- **CSP-friendly website runtime:** no inline scripts or event handlers, a nonce option for the script tag, and no `eval`.
+- **CSP-friendly website runtime:** no inline scripts or event handlers, no style attributes, a nonce option for the script tag, and no `eval`. On cached pages `script-src 'self'` is enough. A nonce works only on uncached pages: a cached page keeps an old nonce and the browser blocks the runtime (1.4a). Lazily imported chunks inherit the module script's nonce, with or without `'strict-dynamic'` (ADR-0004).
 
 ### 4.11 Ports, folders and local files
 
@@ -1034,7 +1043,7 @@ Servers that Jiron Form Builder starts use only these ports. Ports the OS assign
 
 - **Website runtime:** ≤ 16 KB gzip for the core, with features loaded on demand (uploads, signature, repeater, calculations, captchas): ≤ 40 KB gzip with everything. The default theme CSS is ≤ 10 KB gzip. Nothing loads from third parties (§4.10). The files are served compressed and cacheable (6.2), because Umbraco's static files are neither, and a page with a form scores the same in Lighthouse as the page without it (16.2).
 - **Server speed (demo machine, SQLite):** each budget is measured at a stated concurrency. SQLite has a single writer that Umbraco itself also uses, so parallel writes queue there (Tandem ADR-0063). The load test (16.2) therefore also reports where SQLite stops keeping up, and the docs steer busy sites to SQL Server.
-  - rendering a 50-field form takes ≤ 20 ms from the cached definition;
+  - rendering a 50-field form takes ≤ 20 ms from the cached definition (1.4a: a median of 0.12 to 0.15 ms, ADR-0004);
   - a submission (store plus outbox) takes ≤ 150 ms at p95, with up to 10 submissions arriving at the same moment on SQLite (ADR-0003);
   - the first page of entries for a form with 100,000 entries loads in ≤ 300 ms, and a 10,000-entry CSV export streams in ≤ 5 s;
   - the first email leaves ≤ 10 s after a submission.
@@ -1285,7 +1294,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
     - a fresh install and an upgrade both pass on SQLite;
     - number and date range filters and sorts are **correct** for negative, decimal and multi-digit values and for dates across years (SQLite must not compare them as text);
     - the ADR has measured numbers that meet §4.12.
-- [ ] **1.4 Spike: rendering, posting and uploads**
+- [ ] **1.4a Spike: rendering and posting**
   - In the sandbox:
     - a view component and a tag helper rendering a three-field form;
     - a **no-JS post** through a `SurfaceController` with `BeginUmbracoForm`, re-rendering errors and doing post/redirect/get on success;
@@ -1295,14 +1304,20 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
     - RCL static web assets under `dotnet run` **and** after `dotnet publish`;
     - a CSP with a script nonce.
   - Write ADR-0004 "Rendering and submission paths". It also decides where the runtime gets the new form after `form_changed` (an endpoint in §4.6 that renders the published form, or a page reload), because the page itself may come from an output cache.
-  - **Files and storage:**
-    - **Uploads:** a streamed multipart upload with size limits enforced while reading, stored through an `IFileSystem` in a folder that is not web-accessible, with a magic-number check.
-    - **Downloads:** a protected download through the management API.
-    - **Blob storage:** read the docs and source of Umbraco's official Azure Blob storage provider and decide how an `IFormBuilderFileStore` can use it (a sample, not a dependency).
-    - Write ADR-0006 "File storage and uploads".
+  - Resolve the open no-JS note of §3.4.
   - Done when:
     - Playwright shows a no-JS submission (JavaScript disabled) and a JS submission, both with errors and success, plus published-mode assets loading;
-    - an integration test shows that a 60 MB upload to a 50 MB limit is cut off without buffering, that a renamed `.exe` is refused, and that the stored file cannot be fetched by URL.
+    - with two forms on one page, each keeps its own errors and values;
+    - a page served from the output cache is byte-identical for two visitors who share no cookies, and contains no per-visitor value (no antiforgery token, no challenge, no nonce);
+    - the CSP pages log no violation in the browser.
+- [ ] **1.4b Spike: uploads and file storage**
+  - **Uploads:** a streamed multipart upload with size limits enforced while reading, stored through an `IFileSystem` in a folder that is not web-accessible, with a magic-number check.
+  - **Downloads:** a protected download through the management API.
+  - **Blob storage:** read the docs and source of Umbraco's official Azure Blob storage provider and decide how an `IFormBuilderFileStore` can use it (a sample, not a dependency). Resolve the open files note of §3.4.
+  - Write ADR-0006 "File storage and uploads".
+  - Done when:
+    - an integration test shows that a 60 MB upload to a 50 MB limit is cut off without buffering, that a renamed `.exe` is refused, and that the stored file cannot be fetched by URL;
+    - the same test shows the download working for an authorised backoffice user and refused (`401` or `403`) for an anonymous caller and a user without access.
 - [ ] **1.5 Spike: one logic, two runtimes**
   - Write a minimal rules evaluator in C# and TypeScript, with 40 vectors in one JSON file run by NUnit and by Vitest.
   - **Decide:**
@@ -1625,7 +1640,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when: integration tests cover each endpoint built here for success; validation errors by alias; a replayed submission returning the same receipt and a changed one returning `409`; `form_changed`, `form_closed` and the entry limit; CORS allowed and denied; oversize bodies. They also cover 50 parallel submissions for the last 10 places of an option (exactly 10 accepted), a rejected entry giving its place back, and an empty submission refused.
 - [ ] **6.2 Razor rendering**
   - **Rendering:**
-    - the view component and tag helpers (`<jfb-render>`, `<jfb-assets>`, included once per page automatically unless turned off);
+    - the view component and tag helpers (`<jfb-render>`, `<jfb-assets>`, included once per page automatically unless turned off), with the nonce option (`<jfb-assets nonce>` and `IFormBuilderCspNonceProvider`, ADR-0004);
     - **serving the assets** under `/jfb/assets/` itself:
       - the precompressed Brotli or gzip copy, chosen by `Accept-Encoding`;
       - `Cache-Control: public, max-age=31536000, immutable` under a `?v=` fingerprint;
@@ -1635,8 +1650,10 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the form picker model `FormBuilderFormReference`;
     - the markup contract (`data-jfb-*` attributes, deterministic per-request instance ids);
     - member gating messages and culture.
-  - **The no-JS post:** through the surface controller, with post/redirect/get and re-rendered errors, server-side paging for multi-page forms, and the outcomes (message, redirect, message then redirect).
-  - Done when: TestServer tests pass (including the compressed and cacheable asset responses), and Playwright with JavaScript **disabled** submits a valid form, an invalid one and a three-page one, with two forms on one page.
+  - **The no-JS post:** through the surface controller, with post/redirect/get and re-rendered errors, server-side paging for multi-page forms, and the outcomes (message, redirect, message then redirect). Our own `<form>` with `SurfaceControllerHiddenInput`, the redirect with the instance fragment, and the `UmbracoRouteValues` check, per ADR-0004.
+  - **The output cache rules of ADR-0004:** `no-store` on every response of the surface action and on every render that is per visitor, not a `GET`, or carries `jfb-sent`; the `IWebsiteOutputCacheVaryByProvider` for `jfb-sent`; never an `IWebsiteOutputCacheRequestFilter`.
+  - **The `render` endpoint** of §4.6 (for `form_changed`), through the same view component.
+  - Done when: TestServer tests pass (including the compressed and cacheable asset responses), and Playwright with JavaScript **disabled** submits a valid form, an invalid one and a three-page one, with two forms on one page. With Umbraco's output cache on, tests also show: a cached page byte-identical for two visitors and holding nothing per visitor; `?jfb-sent` showing the outcome and never stored, for any value; no response to a post stored; the surface auto-route answering `400`; and `render` returning the published form with the given instance id.
 - [ ] **6.3 Themes**
   - **`default`:**
     - CSS custom properties and an opt-in dark scheme;
@@ -1660,14 +1677,16 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Submitting:**
     - fetch submission with an in-flight lock and a stable `submissionId`;
     - the error summary with focus management, and `aria-live` announcements;
-    - `form_changed` handling with answer restore (§3.1).
+    - `form_changed` handling with answer restore (§3.1), through the `render` endpoint (ADR-0004);
+    - a submission id that does not depend on `crypto.randomUUID()`, which exists only in secure contexts, and chunk file names with a content hash (ADR-0004).
   - **The developer surface and constraints:** the JS API and DOM events (§4.9), the CSP nonce, no cookies.
   - **Field behaviours:**
     - Loaded on demand: uploads with progress (against `uploads`), the repeater, the signature pad (with the typed alternative), character counters, choice cards and the "Other" input.
     - The ranking field's move buttons with live announcements, and the grid's stacked layout on phones.
   - Done when:
     - Vitest covers the runtime;
-    - Playwright on the demo covers validation, rules, calculations, answer recall, submission, `form_changed` and every field type's interaction;
+    - Playwright on the demo covers validation, rules, calculations, answer recall, submission, `form_changed` and every field type's interaction, with `form_changed` on a page served stale from the output cache (the published form swapped in, the answers kept);
+    - Playwright shows no CSP violation with `script-src 'self'` on a cached page and with a nonce on an uncached one, lazily loaded chunks included, and a submission from a plain-HTTP origin;
     - a **keyboard-only** run completes the kitchen-sink form;
     - axe is clean;
     - the size check passes with every chunk.
@@ -1695,7 +1714,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The data type "Jiron Form Builder form picker":** single or multiple, allowed folders or forms, optional theme override and redirect override. Plus the value converters and the UFM block-label component.
   - **"Create a form block for me":** an idempotent service that creates a "Form" element type and data type, and never changes existing types.
   - **"Used on":** reference tracking per ADR-0017, with the references endpoint of §4.7, so that trash and delete can name the pages that use a form (9.2).
-  - Done when: integration tests pass (including "a page that picks the form is listed as a reference, and stops being listed after the pick is removed"), and Playwright shows an editor picking a form in a block on the demo and the page rendering it.
+  - **Eviction:** an `IWebsiteOutputCacheTagProvider` tags the pages that use a form with `jfb-form-<key>` from the "used on" index, and publishing a form evicts that tag (ADR-0004).
+  - Done when: integration tests pass (including "a page that picks the form is listed as a reference, and stops being listed after the pick is removed", and, with output caching on, "publishing the form re-renders a cached page that picks it at once"), and Playwright shows an editor picking a form in a block on the demo and the page rendering it.
 - [ ] **6.8 Phase review**
   - An accessibility pass over the themes (axe, keyboard, screen-reader names), and a security pass over the public API.
   - Write the handover note.
