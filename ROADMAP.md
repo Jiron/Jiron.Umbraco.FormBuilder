@@ -1493,7 +1493,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - `dotnet test` passes, with the integration sample test booting Umbraco with Jiron Form Builder's composers;
     - a test proves that a host outside Development has no `/jfb-testing/` endpoint.
-- [ ] **3.4b Vector runners and the tables check**
+- [x] **3.4b Vector runners and the tables check** (2026-10-23, 49da93b)
   - **Vectors:** a runner that turns `tests/vectors/*.json` into NUnit cases and Vitest cases (the `jfb-vectors/1` format, one test case per vector, files read in place; ADR-0005), and the tables check: a script writes fold, clean and recomposition for every code point from the TypeScript side, and an NUnit test compares them, with known gaps listed exactly.
   - **The logic they run:** the runners need the code they test, so port the spike's modules of 1.5 (text, exact decimals, calendar values, patterns, conditions and rules, calculations; ADR-0005) into Core and `packages/logic` as the start that 5.2 and 5.3 complete, and its vector file into `tests/vectors/` with the script that writes it as ASCII.
   - Done when:
