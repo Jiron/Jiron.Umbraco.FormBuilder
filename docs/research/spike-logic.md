@@ -205,12 +205,13 @@ Measured on 2026-10-23 on the demo machine (Windows 11, the system ICU in `C:\Wi
 | First file, translator patterns | 115 | 116 of 116 | 114 of 116: fold (55 code points) and NFC (U+FFFE throws) differ |
 | Fold limited to stable blocks, noncharacters replaced | 115 | 116 of 116 | 118 of 119: 20 recomposition gaps, then listed exactly |
 | Mutation vectors added | 139 | 140 of 140 | 145 of 145 |
-| Own matcher, final file | 163 | 164 of 164 | 170 of 170 |
+| Own matcher, final file | 163 | 164 of 164 | 171 of 171 |
 | `greaterThan` made inclusive in TypeScript | 163 | 1 failed (`number-greater-than-equal-is-false`), then reverted: 164 of 164 | |
 | C# with invariant globalization | 163 | | 13 failed |
 
 Both final runs read `C:\Code\Jiron.Umbraco.FormBuilder\.local\sandbox\vectors\spike.json` (SHA-256 `dd5ea105…`).
-`tsc --noEmit` and the C# build with warnings as errors and the recommended analyzers were clean.
+Vitest counts the vectors and the format check; NUnit also counts the three tables, two probes of the JSON reader and
+two of .NET's own rounding and whitespace handling. `tsc --noEmit` and the C# build with warnings as errors and the recommended analyzers were clean.
 
 ## 10. Notes for later
 
