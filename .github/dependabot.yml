@@ -1,0 +1,22 @@
+# Dependency updates (ROADMAP 3.5). The pull request limit stays 0 until the owner raises it (docs/OWNER-TODO.md):
+# nobody reviews the pull requests while the roadmap runs. scripts/check-workflows.mjs checks this file.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+  - package-ecosystem: npm
+    directories:
+      - /scripts
+      - /src/Jiron.Umbraco.FormBuilder.Web/Client
+      - /tests/e2e
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0

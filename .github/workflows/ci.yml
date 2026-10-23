@@ -1,0 +1,259 @@
+# Jiron Form Builder's CI (ROADMAP 3.5, ADR-0011). scripts/ci-local.ps1 runs the same checks locally, without
+# SQL Server, which the development machine never connects to (CLAUDE.md rule 6).
+#
+# Gated to save the private repository's Actions minutes (D17): a run started by hand and a version tag always run.
+# Pushes to main and to v18/main (the Umbraco 18 line, Phase 19) run only when the owner sets the repository
+# variable JFB_CI to 'true'; until then every job's `if` is false and the push run ends at once, without a runner.
+name: CI
+
+on:
+  push:
+    branches: [main, v18/main]
+    # Until the release workflow of step 18.2 runs CI for its tags itself (through workflow_call).
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: '1'
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  # Restore and scripts/third-party-notices.mjs read the same packages folder (ROADMAP 3.5).
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  build:
+    name: Build, checks and tests (SQLite)
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            scripts/package-lock.json
+            src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
+      - uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'NuGet.config', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Repository checks
+        run: |
+          npm ci --prefix scripts --no-audit --no-fund
+          node scripts/secret-scan.mjs --tracked
+          node scripts/term-guard.mjs --tracked
+          node scripts/check-text.mjs --tracked
+          node scripts/check-workflows.mjs
+          node scripts/check-audit-suppressions.mjs
+          node scripts/check-npm-licences.mjs
+      # The script tests render two small pages; in CI they use Playwright's Chromium (scripts/lib/browser.mjs).
+      - name: Install Chromium for the script tests
+        working-directory: scripts
+        run: npx playwright install --with-deps chromium
+      - name: Script tests
+        run: node --test "scripts/tests/*.test.mjs"
+
+      - name: Client lint, tests and build
+        working-directory: src/Jiron.Umbraco.FormBuilder.Web/Client
+        run: |
+          npm ci --no-audit --no-fund
+          npm run lint
+          npm test
+          npm run build
+      - name: Client size budgets
+        run: node scripts/size-check.mjs
+
+      - name: Restore
+        run: dotnet restore
+      - name: Build (warnings are errors)
+        run: dotnet build -c Release --no-restore
+      - name: Formatting
+        run: dotnet format --verify-no-changes --no-restore
+      - name: NuGet licences and third-party notices
+        run: |
+          node scripts/check-nuget-licences.mjs
+          node scripts/third-party-notices.mjs --check
+      - name: Packages
+        run: node scripts/pack.mjs --no-build --output artifacts/packages
+      - name: Unit and integration tests (SQLite)
+        run: dotnet test -c Release --no-build --blame-hang --blame-hang-timeout 10m --blame-hang-dump-type none --logger trx --results-directory TestResults/sqlite
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-sqlite
+          path: TestResults/sqlite
+          if-no-files-found: ignore
+      - name: Upload the packages
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: artifacts/packages
+          if-no-files-found: ignore
+
+  sqlserver:
+    name: Integration tests (SQL Server)
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          # A throwaway password for this run's container only; nothing outside the job reaches it.
+          MSSQL_SA_PASSWORD: ${{ format('Jfb-{0}-{1}-Ci', github.run_id, github.run_attempt) }}
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P ${MSSQL_SA_PASSWORD} -Q 'SELECT 1' -b -o /dev/null"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      # Umbraco's integration test base reads these (Tests:Database) and creates its test databases on this server.
+      Tests__Database__DatabaseType: SqlServer
+      Tests__Database__SQLServerMasterConnectionString: Server=localhost,1433;User Id=sa;Password=${{ format('Jfb-{0}-{1}-Ci', github.run_id, github.run_attempt) }};TrustServerCertificate=True
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'NuGet.config', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+      - name: Integration tests (SQL Server)
+        run: dotnet test tests/Jiron.Umbraco.FormBuilder.Tests.Integration -c Release --blame-hang --blame-hang-timeout 10m --blame-hang-dump-type none --logger trx --results-directory TestResults/sqlserver
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-sqlserver
+          path: TestResults/sqlserver
+          if-no-files-found: ignore
+
+  smoke:
+    name: Browser tests (smoke)
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
+            tests/e2e/package-lock.json
+      - uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'NuGet.config', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+      - name: Install the browser tests
+        working-directory: tests/e2e
+        run: |
+          npm ci --no-audit --no-fund
+          npm run check
+          npx playwright install --with-deps chromium
+      # The global set-up builds the client and the demo, and starts a fresh host on port 5520 (ADR-0031).
+      - name: Smoke tests (Chromium)
+        working-directory: tests/e2e
+        run: npx playwright test --project=smoke
+      - name: Upload the report, the traces and the host's log
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-smoke
+          path: |
+            .local/e2e/report
+            .local/e2e/results
+            .local/e2e/host-5520/host.log
+          if-no-files-found: ignore
+
+  loadbalancing:
+    name: Load balancing (two demo instances, SQL Server)
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v') || vars.JFB_CI == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: ${{ format('Jfb-{0}-{1}-Ci', github.run_id, github.run_attempt) }}
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P ${MSSQL_SA_PASSWORD} -Q 'SELECT 1' -b -o /dev/null"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      SA_PASSWORD: ${{ format('Jfb-{0}-{1}-Ci', github.run_id, github.run_attempt) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            src/Jiron.Umbraco.FormBuilder.Web/Client/package-lock.json
+            tests/e2e/package-lock.json
+      - uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'NuGet.config', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+      # Both demo instances (ports 5500 and 5501, ROADMAP 4.11) share this database.
+      - name: Create the shared database
+        run: docker exec "${{ job.services.mssql.id }}" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$SA_PASSWORD" -b -Q "CREATE DATABASE JfbLoadBalancing"
+      - name: Install the browser tests
+        working-directory: tests/e2e
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      # Step 8.1 adds the `lb` project, its specs and the two hosts on the shared database. Until then the job
+      # proves the service and the database, and says that the suite is still to come.
+      - name: Load-balancing suite (Chromium)
+        if: ${{ hashFiles('tests/e2e/specs/lb/**') != '' }}
+        working-directory: tests/e2e
+        run: npx playwright test --project=lb
+      - name: The load-balancing suite comes with ROADMAP 8.1
+        if: ${{ hashFiles('tests/e2e/specs/lb/**') == '' }}
+        run: echo "::notice title=Load balancing::No load-balancing specs yet; ROADMAP step 8.1 fills in this job."
+      - name: Upload the report and the logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-loadbalancing
+          path: |
+            .local/e2e/report
+            .local/e2e/results
+            .local/e2e/lb-5500/host.log
+            .local/e2e/lb-5501/host.log
+          if-no-files-found: ignore
