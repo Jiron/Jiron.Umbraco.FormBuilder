@@ -74,11 +74,16 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   - enable private vulnerability reporting (`SECURITY.md` points to it);
   - enable Discussions (the issue template links questions there);
   - protect `main`.
-- [ ] **Enable CI and check the runs.** Set the repository variable `JFB_CI` to `true` so pushes
-  to `main` run the jobs. Then check the first run of `.github/workflows/ci.yml`, especially the SQL
-  Server and load-balancing jobs, which never run on this machine.
-- [ ] **Enable Dependabot** by raising `open-pull-requests-limit` in `.github/dependabot.yml` (it starts
-  at 0, because nobody reviews PRs during the build).
+- [ ] **Set `JFB_CI`, raise the Dependabot limit, and check the first CI run (including the SQL Server and
+  load-balancing jobs)** (ROADMAP 3.5, ADR-0032).
+  1. Set the repository variable `JFB_CI` to `true`, so pushes to `main` and `v18/main` run the jobs of
+     `.github/workflows/ci.yml`. Until then only a run started by hand or a `v*` tag runs them.
+  2. Raise `open-pull-requests-limit` in `.github/dependabot.yml` for each ecosystem (nuget, npm,
+     github-actions). It is 0 because nobody reviews pull requests during the build.
+  3. Check the first run. It is the first time that the repository scripts, the browser tests and the SQL
+     Server integration tests run on Linux, and the SQL Server and load-balancing jobs never run on this
+     machine. Until step 8.1 fills it in, the load-balancing job only starts SQL Server, creates the
+     shared database and ends with a notice that names 8.1.
 
 ## Publishing
 

@@ -88,14 +88,17 @@ The shared vectors in `tests/vectors/` run in the unit tests and in the client's
 node tests/vectors/build.mjs
 ```
 
-**Before you push**, format and check everything:
+**Before you push**, format everything, then run the gate. `scripts/ci-local.ps1` runs what CI runs, except the SQL
+Server and load-balancing jobs (`.github/workflows/ci.yml`), stops at the first failure and prints the time of every
+stage. `-SkipE2E` leaves out the browser tests for a quicker run while working; that run is not the gate.
 
 ```
 node scripts/fix.mjs
-node --test "scripts/tests/*.test.mjs"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\ci-local.ps1
 ```
 
-From step 3.5 of the roadmap on, `scripts/ci-local.ps1` runs the whole gate that CI runs.
+CI runs on a push only when the repository variable `JFB_CI` is `true`, and always when it is started by hand or for
+a version tag.
 
 **The demo site** (`demo/`, Umbraco on SQLite at http://127.0.0.1:5500) is started, stopped and reset only with
 `scripts/demo.ps1`, which generates its accounts into the git-ignored `.local/credentials.json`;
