@@ -331,7 +331,10 @@
     "RuleGroup": {
       "type": "object",
       "additionalProperties": false,
-      "anyOf": [ { "required": [ "match" ] }, { "required": [ "conditions" ] } ],
+      "anyOf": [
+        { "required": [ "match" ], "properties": { "match": { "$ref": "#/$defs/RuleMatch" } } },
+        { "required": [ "conditions" ], "properties": { "conditions": { "type": "array", "minItems": 1 } } }
+      ],
       "properties": {
         "match": { "anyOf": [ { "$ref": "#/$defs/RuleMatch" }, { "type": "null" } ] },
         "conditions": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/RuleItem" } }
@@ -409,28 +412,28 @@
       "not": { "type": "string", "pattern": "[\\r\\n\\u0085\\u2028\\u2029]" }
     },
     "LocalizedLine": {
-      "description": "A text that renders on one line, per culture; \"\" is the default text, which every text has.",
+      "description": "A text that renders on one line, per culture; \"\" is the default text, which every text that has a text has. A null text is no text.",
       "type": [ "object", "null" ],
       "propertyNames": { "$ref": "#/$defs/Culture" },
-      "additionalProperties": { "$ref": "#/$defs/SingleLine", "type": "string", "maxLength": 500 },
-      "if": { "type": "object", "minProperties": 1 },
-      "then": { "required": [ "" ] }
+      "additionalProperties": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
+      "if": { "type": "object", "not": { "additionalProperties": { "type": "null" } } },
+      "then": { "required": [ "" ], "properties": { "": { "type": "string" } } }
     },
     "LocalizedPlain": {
       "description": "A plain text that may span lines, per culture.",
       "type": [ "object", "null" ],
       "propertyNames": { "$ref": "#/$defs/Culture" },
-      "additionalProperties": { "type": "string", "maxLength": 2000 },
-      "if": { "type": "object", "minProperties": 1 },
-      "then": { "required": [ "" ] }
+      "additionalProperties": { "type": [ "string", "null" ], "maxLength": 2000 },
+      "if": { "type": "object", "not": { "additionalProperties": { "type": "null" } } },
+      "then": { "required": [ "" ], "properties": { "": { "type": "string" } } }
     },
     "LocalizedHtml": {
       "description": "Rich text per culture, sanitised on every output.",
       "type": [ "object", "null" ],
       "propertyNames": { "$ref": "#/$defs/Culture" },
-      "additionalProperties": { "type": "string", "maxLength": 50000 },
-      "if": { "type": "object", "minProperties": 1 },
-      "then": { "required": [ "" ] }
+      "additionalProperties": { "type": [ "string", "null" ], "maxLength": 50000 },
+      "if": { "type": "object", "not": { "additionalProperties": { "type": "null" } } },
+      "then": { "required": [ "" ], "properties": { "": { "type": "string" } } }
     },
     "Culture": {
       "description": "\"\" for the default text, or a culture name such as de, de-CH or sr-Latn-RS.",

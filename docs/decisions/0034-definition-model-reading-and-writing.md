@@ -73,8 +73,11 @@ Option 3 for reading, option 2 for writing, JsonSchema.Net 8.0.5 as a test-only 
 - **Value types with their own rules:** `LocalizedText` and `LocalizedHtml` (validated and sorted when built: a
   default text, culture names, no culture twice in any letter case; `Resolve` falls back through the parent cultures
   to the default); `FieldDefaultValue` (one text or a list); `ConditionOperand` (a text, another answer, a date
-  relative to today, or a list of those); `SettingsObject` (a type's settings as canonical JSON, bound to the type's
-  settings class with `Bind`).
+  relative to today, or a list of those, which holds at least one item and no list and checks that when it is built);
+  `SettingsObject` (a type's settings as canonical JSON, bound to the type's settings class with `Bind`).
+- **An object that may be absent always writes a property** (a boolean, a number, a word or a required one), because
+  the canonical form leaves out `{}` and such an object would read back as nothing. `FormField.Messages` is therefore
+  never null but empty by default, as ADR-0002 has it, and a test checks every object that may be null or a list item.
 - **`DefinitionLimits`** is a public record with ADR-0002's limits as defaults; 4.4 binds it from
   `JironFormBuilder:Limits:Definitions`.
 - **Internal:** the serializer (`FormDefinitionSerializer`), the shape reader, the save checks and the upgraders. The
@@ -87,12 +90,18 @@ A read runs these steps and stops at the first that fails, reporting at most 100
 path (`$.pages[0].title['']`) and a message:
 
 1. the size (the site's limit, 2 MiB by default, counted in UTF-8 bytes);
-2. UTF-8 that is well formed, and JSON that parses with a depth of at most 64;
-3. a root object with a `schemaVersion` the site reads;
-4. for an older version, a check for properties named twice, then the upgraders;
-5. the shape, against the source-generated metadata;
-6. System.Text.Json reads the cleaned document;
-7. the save checks on the model, which a definition built in code also runs before it is written.
+2. UTF-8 that is well formed, and JSON that parses with a depth of at most 64 (a scan tells a document that is only
+   too deep from one that is not JSON, however deep it nests);
+3. a root object whose property names can all be read (an escaped lone surrogate in a name is `invalid_value` at its
+   object, since .NET cannot read such a name);
+4. a `schemaVersion` the site reads;
+5. for an older version, a check for properties named twice, then the upgraders;
+6. the shape, against the source-generated metadata;
+7. System.Text.Json reads the cleaned document;
+8. the save checks on the model, which a definition built in code also runs before it is written.
+
+Reading takes time in proportion to the document's size: a path becomes text only when a problem names it, so a long
+property name over a long array costs no more than its bytes.
 
 | Code | Meaning |
 | --- | --- |
@@ -115,6 +124,8 @@ path (`$.pages[0].title['']`) and a message:
   refused by the save checks, and the writer refuses it too.
 - **Texts:** lengths count UTF-16 code units, as .NET's and JavaScript's `length` do. Line breaks are CR, LF, NEL,
   U+2028 and U+2029. A lone surrogate is refused (`invalid_json` in the raw text, `invalid_value` once escaped).
+  Culture names, keys and dictionary keys must match to the very end of the text, so a trailing newline is refused
+  (the .NET patterns end with `\z`, since `$` also matches before a final newline).
 - **Ranges:** columns 1 to 4; a span from 1 to its group's columns (a repeater's children use the group's); `storeDays`
   1 to 36,500, required when `store` is `days` and absent otherwise; verification 1 to 90 days; resume 1 to 365 days;
   reference digits 1 to 10; `maxEntries` at least 1; places 0 to 1,000,000; retention 1 to 36,500 days; a redirect's
@@ -135,14 +146,20 @@ path (`$.pages[0].title['']`) and a message:
   every other character below U+0020 as `\u00xx` in lowercase. Everything else is written as UTF-8, including `<`,
   `>`, `&`, `'`, U+007F and U+2028.
 - **`DefinitionHash`** is the SHA-256 of the canonical bytes in lowercase hex. The writer throws for what it cannot
-  write faithfully (a lone surrogate, an instant it would change), so a hash is never taken of a changed document.
+  write faithfully (a lone surrogate, an instant it would change) or what no reader would read (a document nested
+  deeper than 64 levels), so a hash is never taken of a changed or unreadable document.
+- **`CheckSave`** runs the save checks and then, when they pass, measures the canonical form: deeper than 64 levels or
+  larger than the size limit is `limit_exceeded` at `$`. A definition built in code thus meets the limits of one that
+  is read. System.Text.Json itself may nest up to 128 levels while it reads and writes the model, because it meets the
+  empty lists the canonical form leaves out one level below the deepest object.
 
 ### The schema
 
 - `schemas/jfb-form.v1.schema.json`, JSON Schema draft 2020-12, with the identifier
   `urn:jiron:form-builder:schema:jfb-form:v1`: a name, not an address, so no tool fetches it and no host is promised.
   One definition per model object, named like the record, with `additionalProperties: false`; the enums; the ranges
-  and text limits above; `null` allowed wherever the reader takes it as absent.
+  and text limits above; `null` allowed wherever the reader takes it as absent, a culture's text included (once any
+  culture has a text, the default `""` is a text too); a nested group has its `match` or at least one condition.
 - **Patterns mean the same in every dialect:** none relies on `$`, which in .NET and PCRE also matches before a final
   newline. Keys and instants have a fixed length, and single-line texts refuse a line break with `not`.
 - **What a schema cannot say** stays with the reader, and the schema's description names it: element keys that
@@ -160,8 +177,9 @@ path (`$.pages[0].title['']`) and a message:
 - `IFormDefinitionUpgrader` (internal) reads one schema version as a `JsonObject` and returns the next. The chain is
   checked when it is built: one upgrader per version from the oldest to the current, no gap, no twin, none past the
   current version.
-- An exception from an upgrader becomes `invalid_value` at `$`; the upgraded document then goes through the strict
-  reader like any other.
+- Any exception from an upgrader becomes `invalid_value` at `$`, since an upgrader meets old documents nobody has seen
+  yet, and a result that nests deeper than 64 levels is `limit_exceeded` at `$`. The upgraded document then goes
+  through the strict reader like any other.
 - With v1 the only version, the tests use a synthetic version 0 and a synthetic chain to version 3 through the real
   reader. A custom field type upgrades its own settings (ADR-0002).
 

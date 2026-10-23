@@ -1,6 +1,8 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -51,6 +53,62 @@ public sealed class RoundTripTests
         {
             Assert.That(ModelProperties.All().Count(), Is.GreaterThan(150), "the model's properties are found");
             Assert.That(ModelProperties.All().Except(seen).Order(StringComparer.Ordinal), Is.Empty, "properties no generated definition sets");
+        });
+    }
+
+    [Test]
+    public void EveryObjectThatMayBeAbsent_AlwaysWritesAProperty()
+    {
+        // The canonical form leaves out {}, so an object that may be null or a list item needs a property that is
+        // always written; without one, an object with nothing set would read back as no object at all.
+        var options = DefinitionJsonContext.Default.Options;
+        var mayBeAbsent = new HashSet<Type>();
+        void Add(Type type)
+        {
+            if (type == typeof(RuleItem))
+            {
+                mayBeAbsent.Add(typeof(RuleCondition));
+                mayBeAbsent.Add(typeof(RuleGroup));
+            }
+            else if (!ModelProperties.Leaves.Contains(type))
+            {
+                mayBeAbsent.Add(type);
+            }
+        }
+
+        foreach (var type in ModelProperties.Clr.Values)
+        {
+            foreach (var property in options.GetTypeInfo(type).Properties)
+            {
+                var held = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+                if (ModelProperties.Leaves.Contains(held) || held.IsEnum)
+                {
+                    continue;
+                }
+
+                var info = options.GetTypeInfo(held);
+                if (info.Kind == JsonTypeInfoKind.Enumerable)
+                {
+                    Add(info.ElementType!);
+                }
+                else if (property.IsGetNullable)
+                {
+                    Add(held);
+                }
+            }
+        }
+
+        bool WritesAlways(Type type)
+        {
+            var info = options.GetTypeInfo(type);
+            return info.PolymorphismOptions is not null
+                || info.Properties.Any(property => property.IsRequired || (property.PropertyType.IsValueType && Nullable.GetUnderlyingType(property.PropertyType) is null));
+        }
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(mayBeAbsent, Has.Count.GreaterThan(10), "the objects that may be absent are found");
+            Assert.That(mayBeAbsent.Where(type => !WritesAlways(type)).Select(type => type.Name), Is.Empty);
         });
     }
 

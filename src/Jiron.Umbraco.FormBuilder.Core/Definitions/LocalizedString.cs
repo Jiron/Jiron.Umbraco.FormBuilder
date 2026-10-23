@@ -127,10 +127,10 @@ public abstract partial class LocalizedString : IEquatable<LocalizedString>
     /// <inheritdoc />
     public override string ToString() => Default;
 
-    [GeneratedRegex("^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*\z", RegexOptions.CultureInvariant)]
     private static partial Regex CultureName();
 
-    [GeneratedRegex(@"^#[A-Za-z0-9._\-]+$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^#[A-Za-z0-9._\-]+\z", RegexOptions.CultureInvariant)]
     private static partial Regex DictionaryReference();
 }
 

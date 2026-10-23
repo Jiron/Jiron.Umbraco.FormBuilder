@@ -246,7 +246,7 @@ internal sealed class DefinitionGenerator
             Help = Text(singleLine: false),
             Placeholder = Text(),
             Required = Chance(),
-            Messages = Chance() ? Messages() : null,
+            Messages = Chance() ? Messages() : new(),
             DefaultValue = _random.Next(3) switch
             {
                 0 => null,

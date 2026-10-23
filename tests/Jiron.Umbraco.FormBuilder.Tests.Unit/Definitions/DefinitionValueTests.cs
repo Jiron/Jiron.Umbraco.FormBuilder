@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 
@@ -52,6 +53,7 @@ public sealed class DefinitionValueTests
     [TestCase("|d", TestName = "LocalizedText_Refuses(a one-letter culture)")]
     [TestCase("|de_CH", TestName = "LocalizedText_Refuses(an underscore)")]
     [TestCase(null, TestName = "LocalizedText_Refuses(no text at all)")]
+    [TestCase("|de\n", TestName = "LocalizedText_Refuses(a line break after a culture)")]
     public void LocalizedText_RefusesTextsThatAreNotOne(string? cultures)
     {
         var texts = (cultures?.Split('|') ?? []).Select(culture => new KeyValuePair<string, string>(culture, "x"));
@@ -66,6 +68,7 @@ public sealed class DefinitionValueTests
     [TestCase("#Form Email", null)]
     [TestCase("Form.Email", null)]
     [TestCase("#Form.Email ", null)]
+    [TestCase("#Form.Email\n", null)]
     public void DictionaryKeys_AreTheWholeTextAfterAHash(string text, string? key)
     {
         Assert.That(LocalizedString.TryGetDictionaryKey(text, out var found) ? found : null, Is.EqualTo(key));
@@ -107,6 +110,76 @@ public sealed class DefinitionValueTests
     public void SettingsObject_RefusesWhatADefinitionCannotHold(string json)
     {
         Assert.Throws<ArgumentException>(() => SettingsObject.Parse(json));
+    }
+
+    [Test]
+    public void SettingsObject_RefusesANameWithALoneSurrogate()
+    {
+        Assert.Throws<ArgumentException>(() => SettingsObject.Parse("{ \"" + (char)92 + "ud800\": 1 }"));
+    }
+
+    [Test]
+    public void ACultureWithALineBreak_IsNotACulture()
+    {
+        var document = JsonNode.Parse(FormDefinitionSerializer.WriteString(Minimal()))!.AsObject();
+        document["pages"]![0]!["title"] = new JsonObject { [string.Empty] = "Details", ["de\n"] = "Angaben" };
+
+        var result = DefinitionFixtures.Serializer().Read(document.ToJsonString());
+
+        Assert.That(result.Problems.Select(problem => (problem.Code, problem.Path)), Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, JsonPaths.Property("$.pages[0].title", "de\n")) }));
+    }
+
+    [Test]
+    public void AListOperand_HoldsAtLeastOneItem_AndNoList()
+    {
+        var items = new List<ConditionOperand> { new ConditionOperand.Text("a") };
+        var list = new ConditionOperand.List(items);
+        items.Add(new ConditionOperand.Text("b"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(list.Items, Has.Count.EqualTo(1), "the list keeps its own copy");
+            Assert.Throws<ArgumentException>(() => _ = new ConditionOperand.List([]));
+            Assert.Throws<ArgumentException>(() => _ = new ConditionOperand.List([list]));
+            Assert.Throws<ArgumentException>(() => _ = new ConditionOperand.List([null!]));
+        });
+    }
+
+    [Test]
+    public void ADefinitionAsDeepAsADocumentMayBe_ReadsAndWritesTheSame()
+    {
+        // 29 fields inside each other put the innermost one's options 64 levels deep, the deepest a document may
+        // nest; the reader then fills in their empty list of items one level further down.
+        var json = FormDefinitionSerializer.WriteString(Nested(29, new FieldOptions { Source = OptionSource.List, List = FieldKey(9) }));
+
+        var read = DefinitionFixtures.Read(json);
+
+        Assert.That(FormDefinitionSerializer.WriteString(read), Is.EqualTo(json));
+    }
+
+    [TestCase(40, TestName = "ADefinitionDeeperThanADocumentMayBe_IsRefusedByTheWriterAndTheSaveChecks(deeper)")]
+    [TestCase(70, TestName = "ADefinitionDeeperThanADocumentMayBe_IsRefusedByTheWriterAndTheSaveChecks(deeper than the serializer goes)")]
+    public void ADefinitionDeeperThanADocumentMayBe_IsRefusedByTheWriterAndTheSaveChecks(int fields)
+    {
+        var definition = Nested(fields);
+
+        Assert.Multiple(() =>
+        {
+            Assert.Throws<ArgumentException>(() => FormDefinitionSerializer.Write(definition));
+            Assert.That(
+                DefinitionFixtures.Serializer().CheckSave(definition).Select(problem => (problem.Code, problem.Path)),
+                Is.EqualTo(new[] { (DefinitionErrors.LimitExceeded, "$") }));
+        });
+    }
+
+    [Test]
+    public void ADefinitionLargerThanTheLimit_IsRefusedByTheSaveChecks()
+    {
+        var definition = Minimal() with { Pages = [Minimal().Pages[0] with { Title = new LocalizedText(new string('a', 300)) }] };
+
+        Assert.That(
+            DefinitionFixtures.Serializer(new DefinitionLimits { MaxBytes = 200 }).CheckSave(definition).Select(problem => (problem.Code, problem.Path)),
+            Is.EqualTo(new[] { (DefinitionErrors.LimitExceeded, "$") }));
     }
 
     [Test]
@@ -178,6 +251,21 @@ public sealed class DefinitionValueTests
         using var document = JsonDocument.Parse(FormDefinitionSerializer.Write(Minimal()));
 
         Assert.That(document.RootElement.EnumerateObject().First().ToString(), Is.EqualTo($"\"schemaVersion\":{FormDefinition.CurrentSchemaVersion}"));
+    }
+
+    private static Guid FieldKey(int number) => new($"30000000-0000-4000-8000-{number:000000000000}");
+
+    // The minimal definition with fields inside each other, as many as given, the innermost with the options given.
+    private static FormDefinition Nested(int fields, FieldOptions? options = null)
+    {
+        var field = new FormField { Key = FieldKey(1000 + fields), Type = "text", Options = options };
+        for (var i = fields - 1; i > 0; i--)
+        {
+            field = new FormField { Key = FieldKey(1000 + i), Type = "repeater", Fields = [field] };
+        }
+
+        var page = Minimal().Pages[0];
+        return Minimal() with { Pages = [page with { Groups = [page.Groups[0] with { Fields = [field] }] }] };
     }
 
     private static FormDefinition Minimal() => new()

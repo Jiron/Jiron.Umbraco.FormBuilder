@@ -85,8 +85,8 @@ public sealed record FormField
     /// <summary>Whether an answer is required.</summary>
     public bool Required { get; init; }
 
-    /// <summary>Custom messages for the type's error kinds.</summary>
-    public FieldMessages? Messages { get; init; }
+    /// <summary>Custom messages for the type's error kinds; none by default.</summary>
+    public FieldMessages Messages { get; init; } = new();
 
     /// <summary>The default value; merge tags are allowed (ADR-0014).</summary>
     public FieldDefaultValue? DefaultValue { get; init; }

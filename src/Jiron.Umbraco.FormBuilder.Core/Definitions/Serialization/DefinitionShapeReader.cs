@@ -580,6 +580,6 @@ internal sealed partial class DefinitionShapeReader
         return value.EnumerateObject().Any(property => !names.Add(property.Name) || (property.Value.ValueKind == JsonValueKind.Object && HasDuplicate(property.Value)));
     }
 
-    [GeneratedRegex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z", RegexOptions.CultureInvariant)]
     private static partial Regex Key();
 }

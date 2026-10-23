@@ -286,10 +286,7 @@ internal sealed class DefinitionSaveChecks
         Text(field.Label, P(path, "label"), TextKind.Line);
         Text(field.Help, P(path, "help"), TextKind.Plain);
         Text(field.Placeholder, P(path, "placeholder"), TextKind.Line);
-        if (field.Messages is { } messages)
-        {
-            Messages(messages, P(path, "messages"));
-        }
+        Messages(field.Messages, P(path, "messages"));
 
         if (field.DefaultValue is { } defaultValue)
         {
@@ -478,20 +475,10 @@ internal sealed class DefinitionSaveChecks
                 String(today.Offset, P(path, "today"), LineLength, singleLine: true);
                 break;
             case ConditionOperand.List list:
+                // A list holds at least one item and no list (its constructor sees to that).
                 for (var i = 0; i < list.Items.Count; i++)
                 {
-                    if (list.Items[i] is ConditionOperand.List)
-                    {
-                        Fail(DefinitionErrors.InvalidType, I(path, i), "A list operand holds no list.");
-                        continue;
-                    }
-
                     Operand(list.Items[i], I(path, i));
-                }
-
-                if (list.Items.Count == 0)
-                {
-                    Fail(DefinitionErrors.InvalidValue, path, "A list operand has at least one item.");
                 }
 
                 break;

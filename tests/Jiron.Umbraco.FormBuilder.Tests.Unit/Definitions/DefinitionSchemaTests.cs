@@ -45,6 +45,21 @@ public sealed partial class DefinitionSchemaTests
         where !BeyondTheSchema.Contains(name)
         select new TestCaseData(data.Arguments[0], data.Arguments[2]).SetName($"TheSchema_Refuses({name})");
 
+    public static IEnumerable<TestCaseData> Absences()
+    {
+        TestCaseData Case(string name, Action<JsonObject> change) => new TestCaseData(change).SetName($"TheSchema_Accepts({name})");
+        static JsonObject Field(JsonObject d) => d["pages"]![0]!["groups"]![0]!["fields"]![0]!.AsObject();
+
+        yield return Case("a culture's text given as null", d => d["pages"]![0]!["title"]!["de"] = null);
+        yield return Case("a text whose texts are all null", d => Field(d)["help"] = new JsonObject { ["de"] = null });
+        yield return Case("an empty text", d => Field(d)["label"] = new JsonObject());
+        yield return Case("a list given as null", d => Field(d)["rules"] = null);
+        yield return Case("an empty list", d => Field(d)["validation"] = new JsonArray());
+        yield return Case("a setting given as null", d => Field(d)["settings"]!["layout"] = null);
+        yield return Case("empty settings", d => Field(d)["settings"] = new JsonObject());
+        yield return Case("a nested group with its match only", d => Field(d)["rules"]![0]!["conditions"]!.AsArray().Add(new JsonObject { ["match"] = "any" }));
+    }
+
     [Test]
     public void TheFullFixture_Validates()
     {
@@ -162,6 +177,16 @@ public sealed partial class DefinitionSchemaTests
                 Has.Some.Matches<string>(location => location == pointer || location == parent || location.StartsWith(pointer + "/", StringComparison.Ordinal)),
                 $"an error at {pointer} or around it; found {string.Join(", ", located)}");
         });
+    }
+
+    [TestCaseSource(nameof(Absences))]
+    public void TheSchema_AcceptsWhatTheReaderTakesAsAbsent(Action<JsonObject> change)
+    {
+        var json = RefusalTests.Changed(change);
+        using var document = JsonDocument.Parse(json);
+
+        Assert.That(DefinitionFixtures.Serializer().Read(json).Problems, Is.Empty, "the reader reads it");
+        AssertValid(document.RootElement, "the changed document");
     }
 
     [Test]

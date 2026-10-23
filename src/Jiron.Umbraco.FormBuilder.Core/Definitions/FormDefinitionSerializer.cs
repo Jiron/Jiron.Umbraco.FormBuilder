@@ -30,10 +30,17 @@ internal sealed class FormDefinitionSerializer
     /// <summary>How deeply a document may nest; the deepest real definitions nest about 20 levels.</summary>
     public const int MaxDepth = 64;
 
+    /// <summary>
+    /// How deeply System.Text.Json may nest while it reads and writes the model: deeper than a document, because it
+    /// meets the empty lists and objects that the canonical form leaves out one level below the deepest object.
+    /// </summary>
+    public const int ModelDepth = 2 * MaxDepth;
+
     private const string SchemaVersionProperty = "schemaVersion";
 
     private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static readonly HashSet<string> Skipped = new(StringComparer.Ordinal) { SchemaVersionProperty };
+    private static readonly JsonSerializerOptions UpgradedText = new() { MaxDepth = 16 * MaxDepth };
 
     private readonly FormDefinitionUpgrades _upgrades;
     private readonly DefinitionLimits _limits;
@@ -95,6 +102,12 @@ internal sealed class FormDefinitionSerializer
             return DefinitionReadResult.Refused(DefinitionErrors.InvalidType, JsonPaths.Root, $"A definition is an object, not {JsonPaths.Describe(root.ValueKind)}.");
         }
 
+        // Everything after this reads property names, which .NET cannot do for a name with a lone surrogate.
+        if (CheckNames(root, JsonPaths.Location.At(JsonPaths.Root), duplicates: false) is { } badName)
+        {
+            return new DefinitionReadResult(null, [badName], null);
+        }
+
         var versionRefusal = ReadSchemaVersion(root, out var version);
         if (versionRefusal is not null)
         {
@@ -106,19 +119,27 @@ internal sealed class FormDefinitionSerializer
             return ReadCurrent(root, version);
         }
 
-        if (FindDuplicate(root, JsonPaths.Root) is { } duplicate)
+        // An upgrader reads the document as a JsonObject, which would keep one of two equal names without a word.
+        if (CheckNames(root, JsonPaths.Location.At(JsonPaths.Root), duplicates: true) is { } duplicate)
         {
             return new DefinitionReadResult(null, [duplicate], version);
         }
 
-        string upgraded;
+        byte[] upgraded;
         try
         {
-            upgraded = _upgrades.Upgrade(JsonNode.Parse(root.GetRawText())!.AsObject(), version).ToJsonString();
+            var node = _upgrades.Upgrade(JsonNode.Parse(root.GetRawText())!.AsObject(), version);
+            upgraded = JsonSerializer.SerializeToUtf8Bytes(node, UpgradedText);
         }
-        catch (Exception exception) when (exception is InvalidOperationException or FormatException or InvalidCastException or ArgumentException or KeyNotFoundException)
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
+            // An upgrader is code that meets old documents nobody has seen yet: whatever it throws refuses the document.
             return DefinitionReadResult.Refused(DefinitionErrors.InvalidValue, JsonPaths.Root, $"Schema version {version} could not be upgraded: {exception.Message}", version);
+        }
+
+        if (NestsDeeperThan(upgraded, MaxDepth))
+        {
+            return DefinitionReadResult.Refused(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"Upgraded from schema version {version}, the document nests deeper than {MaxDepth} levels.", version);
         }
 
         using var upgradedDocument = JsonDocument.Parse(upgraded, new JsonDocumentOptions { MaxDepth = MaxDepth });
@@ -126,8 +147,53 @@ internal sealed class FormDefinitionSerializer
     }
 
     /// <summary>The canonical form of a definition as UTF-8 bytes.</summary>
-    /// <exception cref="ArgumentException">The definition holds what the canonical form cannot carry, such as a lone surrogate; the save checks refuse it first.</exception>
+    /// <exception cref="ArgumentException">
+    /// The definition holds what the canonical form cannot carry, such as a lone surrogate, or nests deeper than a
+    /// document may; <see cref="CheckSave"/> refuses it first.
+    /// </exception>
     public static byte[] Write(FormDefinition definition)
+    {
+        var canonical = WriteCanonical(definition);
+        return NestsDeeperThan(canonical, MaxDepth)
+            ? throw new ArgumentException($"The definition nests deeper than {MaxDepth} levels, which no reader reads.", nameof(definition))
+            : canonical;
+    }
+
+    /// <summary>The canonical form of a definition as text.</summary>
+    public static string WriteString(FormDefinition definition) => Encoding.UTF8.GetString(Write(definition));
+
+    /// <summary>
+    /// The problems a save refuses in a definition built in code, the same a read would refuse in its canonical form;
+    /// a read definition has none.
+    /// </summary>
+    public IReadOnlyList<DefinitionProblem> CheckSave(FormDefinition definition)
+    {
+        var problems = DefinitionSaveChecks.Check(definition, _limits);
+        if (problems.Count > 0)
+        {
+            return problems;
+        }
+
+        // The checks on the model found nothing the writer refuses, so what is left is the document's size and depth.
+        byte[] canonical;
+        try
+        {
+            canonical = WriteCanonical(definition);
+        }
+        catch (ArgumentException)
+        {
+            return [new DefinitionProblem(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"The definition nests deeper than {MaxDepth} levels.")];
+        }
+
+        if (NestsDeeperThan(canonical, MaxDepth))
+        {
+            return [new DefinitionProblem(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"The definition nests deeper than {MaxDepth} levels.")];
+        }
+
+        return canonical.Length > _limits.MaxBytes ? [TooLarge().Problems[0]] : [];
+    }
+
+    private static byte[] WriteCanonical(FormDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
         byte[] serialized;
@@ -140,15 +206,9 @@ internal sealed class FormDefinitionSerializer
             throw new ArgumentException($"The definition cannot be written: {exception.Message}", nameof(definition), exception);
         }
 
-        using var document = JsonDocument.Parse(serialized, new JsonDocumentOptions { MaxDepth = 1000 });
+        using var document = JsonDocument.Parse(serialized, new JsonDocumentOptions { MaxDepth = ModelDepth });
         return CanonicalJson.WriteUtf8(document.RootElement, sortProperties: false);
     }
-
-    /// <summary>The canonical form of a definition as text.</summary>
-    public static string WriteString(FormDefinition definition) => Encoding.UTF8.GetString(Write(definition));
-
-    /// <summary>The problems a save refuses in a definition built in code (a read definition has none).</summary>
-    public IReadOnlyList<DefinitionProblem> CheckSave(FormDefinition definition) => DefinitionSaveChecks.Check(definition, _limits);
 
     private static JsonDocument? Parse(ReadOnlySpan<byte> utf8, out DefinitionReadResult? refusal)
     {
@@ -160,48 +220,57 @@ internal sealed class FormDefinitionSerializer
         catch (JsonException exception)
         {
             var position = $"line {exception.LineNumber + 1}, byte {exception.BytePositionInLine + 1}";
-            if (IsTooDeep(utf8))
-            {
-                refusal = DefinitionReadResult.Refused(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"The document nests deeper than {MaxDepth} levels ({position}).");
-            }
-            else
-            {
-                refusal = DefinitionReadResult.Refused(DefinitionErrors.InvalidJson, JsonPaths.Root, $"The text is not JSON ({position}).");
-            }
-
+            refusal = NestsDeeperThan(utf8, MaxDepth)
+                ? DefinitionReadResult.Refused(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"The document nests deeper than {MaxDepth} levels ({position}).")
+                : DefinitionReadResult.Refused(DefinitionErrors.InvalidJson, JsonPaths.Root, $"The text is not JSON ({position}).");
             return null;
         }
     }
 
-    // Parsing again without the depth limit tells a document that is only too deep from one that is not JSON at all.
-    private static bool IsTooDeep(ReadOnlySpan<byte> utf8)
+    // Whether the text opens more than maxDepth nested objects and arrays before it ends or stops being JSON: this
+    // tells a document that is only too deep from one that is not JSON, whatever its depth, without parsing it.
+    private static bool NestsDeeperThan(ReadOnlySpan<byte> utf8, int maxDepth)
     {
+        var reader = new Utf8JsonReader(utf8, new JsonReaderOptions { MaxDepth = int.MaxValue });
         try
         {
-            using var document = JsonDocument.Parse(utf8.ToArray(), new JsonDocumentOptions { MaxDepth = 4096 });
-            return true;
+            while (reader.Read())
+            {
+                if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray && reader.CurrentDepth >= maxDepth)
+                {
+                    return true;
+                }
+            }
         }
         catch (JsonException)
         {
-            return false;
+            // Not JSON before it was too deep.
         }
+
+        return false;
     }
 
-    private static DefinitionProblem? FindDuplicate(JsonElement value, string path)
+    // The first property name that cannot be read (a lone surrogate) and, when asked, the first named twice.
+    private static DefinitionProblem? CheckNames(JsonElement value, JsonPaths.Location location, bool duplicates)
     {
         switch (value.ValueKind)
         {
             case JsonValueKind.Object:
-                var names = new HashSet<string>(StringComparer.Ordinal);
+                var names = duplicates ? new HashSet<string>(StringComparer.Ordinal) : null;
                 foreach (var property in value.EnumerateObject())
                 {
-                    var child = JsonPaths.Property(path, property.Name);
-                    if (!names.Add(property.Name))
+                    if (JsonPaths.TryGetName(property) is not { } name)
                     {
-                        return new DefinitionProblem(DefinitionErrors.DuplicateProperty, child, $"The property \"{property.Name}\" appears twice.");
+                        return new DefinitionProblem(DefinitionErrors.InvalidValue, location.ToString(), "A property name holds a lone surrogate.");
                     }
 
-                    if (FindDuplicate(property.Value, child) is { } problem)
+                    var child = location.Property(name);
+                    if (names is not null && !names.Add(name))
+                    {
+                        return new DefinitionProblem(DefinitionErrors.DuplicateProperty, child.ToString(), $"The property \"{name}\" appears twice.");
+                    }
+
+                    if (CheckNames(property.Value, child, duplicates) is { } problem)
                     {
                         return problem;
                     }
@@ -212,7 +281,7 @@ internal sealed class FormDefinitionSerializer
                 var index = 0;
                 foreach (var item in value.EnumerateArray())
                 {
-                    if (FindDuplicate(item, JsonPaths.Index(path, index++)) is { } problem)
+                    if (CheckNames(item, location.Item(index++), duplicates) is { } problem)
                     {
                         return problem;
                     }
@@ -274,10 +343,10 @@ internal sealed class FormDefinitionSerializer
         {
             definition = node.Deserialize(DefinitionJsonContext.Default.FormDefinition)!;
         }
-        catch (JsonException exception)
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException or ArgumentException)
         {
             // The shape reader refuses everything System.Text.Json would; this is the safety net.
-            return DefinitionReadResult.Refused(DefinitionErrors.InvalidValue, exception.Path ?? JsonPaths.Root, exception.Message, sourceVersion);
+            return DefinitionReadResult.Refused(DefinitionErrors.InvalidValue, (exception as JsonException)?.Path ?? JsonPaths.Root, exception.Message, sourceVersion);
         }
 
         var problems = DefinitionSaveChecks.Check(definition, _limits);

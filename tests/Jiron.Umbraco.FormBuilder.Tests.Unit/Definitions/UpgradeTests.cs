@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Upgrades;
@@ -76,6 +78,58 @@ public sealed class UpgradeTests
         {
             Assert.That(result.Problems.Select(problem => (problem.Code, problem.Path)), Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, "$") }));
             Assert.That(result.Problems[0].Message, Does.Contain("Schema version 0 could not be upgraded"));
+        });
+    }
+
+    [TestCase(typeof(NullReferenceException))]
+    [TestCase(typeof(JsonException))]
+    [TestCase(typeof(IndexOutOfRangeException))]
+    public void AnUpgraderThatThrowsAnything_RefusesTheDocument(Type exception)
+    {
+        var serializer = new FormDefinitionSerializer(new FormDefinitionUpgrades([new Failing((Exception)Activator.CreateInstance(exception)!)]), new DefinitionLimits());
+
+        var result = serializer.Read(Version0);
+
+        Assert.That(result.Problems.Select(problem => (problem.Code, problem.Path)), Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, "$") }));
+    }
+
+    [Test]
+    public void AnUpgradeThatNestsTooDeeply_IsRefused()
+    {
+        var serializer = new FormDefinitionSerializer(new FormDefinitionUpgrades([new Deepens()]), new DefinitionLimits());
+
+        var result = serializer.Read(Version0);
+
+        Assert.That(result.Problems.Select(problem => (problem.Code, problem.Path)), Is.EqualTo(new[] { (DefinitionErrors.LimitExceeded, "$") }));
+    }
+
+    [Test]
+    public void AnOlderDocument_WithALoneSurrogateInAName_IsRefusedBeforeItIsUpgraded()
+    {
+        var serializer = new FormDefinitionSerializer(new FormDefinitionUpgrades([new FlatFieldsToPages()]), new DefinitionLimits());
+        var json = Version0.Replace("\"caption\": \"Name\"", "\"caption\": \"Name\", \"" + (char)92 + "udc00\": 1", StringComparison.Ordinal);
+
+        var result = serializer.Read(json);
+
+        Assert.That(result.Problems.Select(problem => (problem.Code, problem.Path)), Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, "$.fields[0]") }));
+    }
+
+    [Test]
+    [Timeout(60_000)]
+    public void AnOlderDocument_WithALongNameOverALongArray_IsCheckedInLinearTime()
+    {
+        var serializer = new FormDefinitionSerializer(new FormDefinitionUpgrades([new FlatFieldsToPages()]), new DefinitionLimits());
+        var name = new string('a', 1_000_000);
+        var items = string.Join(',', Enumerable.Repeat("0", 400_000));
+        var json = Version0.Replace("\"fields\": [", $"\"x\": {{ \"{name}\": [{items}] }}, \"fields\": [", StringComparison.Ordinal);
+        var stopwatch = Stopwatch.StartNew();
+
+        var result = serializer.Read(json);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Problems.Select(problem => (problem.Code, problem.Path)), Is.EqualTo(new[] { (DefinitionErrors.UnknownProperty, "$.x") }));
+            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(10)));
         });
     }
 
@@ -158,6 +212,32 @@ public sealed class UpgradeTests
                 ["title"] = pageTitle is null ? null : new JsonObject { [string.Empty] = pageTitle },
                 ["groups"] = new JsonArray(new JsonObject { ["key"] = "20000000-0000-4000-8000-000000000001", ["fields"] = upgraded }),
             });
+            return definition;
+        }
+    }
+
+    /// <summary>A step that fails as an upgrader with a bug would.</summary>
+    private sealed class Failing(Exception exception) : IFormDefinitionUpgrader
+    {
+        public int FromVersion => 0;
+
+        public JsonObject Upgrade(JsonObject definition) => throw exception;
+    }
+
+    /// <summary>A step whose result nests deeper than a document may.</summary>
+    private sealed class Deepens : IFormDefinitionUpgrader
+    {
+        public int FromVersion => 0;
+
+        public JsonObject Upgrade(JsonObject definition)
+        {
+            JsonNode deep = new JsonArray();
+            for (var i = 0; i < 70; i++)
+            {
+                deep = new JsonArray(deep);
+            }
+
+            definition["deep"] = deep;
             return definition;
         }
     }

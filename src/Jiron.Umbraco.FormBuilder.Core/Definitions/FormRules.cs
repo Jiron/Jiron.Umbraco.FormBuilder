@@ -92,9 +92,30 @@ public abstract record ConditionOperand
     public sealed record Today(string Offset) : ConditionOperand;
 
     /// <summary>A list of texts, answers and dates, for <c>isOneOf</c>, <c>isNoneOf</c> and <c>between</c>.</summary>
-    /// <param name="Items">The items, at least one; a list holds no list.</param>
-    public sealed record List(IReadOnlyList<ConditionOperand> Items) : ConditionOperand
+    public sealed record List : ConditionOperand
     {
+        /// <summary>A list of the items given.</summary>
+        /// <param name="items">At least one item, and no list among them.</param>
+        /// <exception cref="ArgumentException">The list is empty, or holds a list or null.</exception>
+        public List(IReadOnlyList<ConditionOperand> items)
+        {
+            ArgumentNullException.ThrowIfNull(items);
+            if (items.Count == 0)
+            {
+                throw new ArgumentException("A list operand has at least one item.", nameof(items));
+            }
+
+            if (items.Any(item => item is null or List))
+            {
+                throw new ArgumentException("A list operand holds texts, answers and dates, not lists.", nameof(items));
+            }
+
+            Items = [.. items];
+        }
+
+        /// <summary>The items, at least one; none is a list.</summary>
+        public IReadOnlyList<ConditionOperand> Items { get; }
+
         /// <inheritdoc />
         public bool Equals(List? other) => other is not null && Items.SequenceEqual(other.Items);
 

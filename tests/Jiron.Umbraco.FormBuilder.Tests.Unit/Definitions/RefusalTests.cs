@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
@@ -12,6 +13,9 @@ public sealed class RefusalTests
 {
     private const string Field = "$.pages[0].groups[0].fields[0]";
     private const string Group = "$.pages[0].groups[0]";
+
+    // An escaped lone surrogate as JSON writes it, built from code points so that no tool turns it into a character.
+    private static readonly string LoneSurrogate = (char)92 + "udc00";
 
     /// <summary>The valid document each change starts from; the schema tests start from it too.</summary>
     internal const string Valid = """
@@ -96,15 +100,18 @@ public sealed class RefusalTests
         yield return Case("a key in upper case", d => Page(d)["key"] = "10000000-0000-4000-8000-00000000000A", DefinitionErrors.InvalidValue, "$.pages[0].key");
         yield return Case("a key in braces", d => Page(d)["key"] = "{10000000-0000-4000-8000-000000000001}", DefinitionErrors.InvalidValue, "$.pages[0].key");
         yield return Case("the empty GUID as a key", d => Page(d)["key"] = Guid.Empty.ToString(), DefinitionErrors.InvalidValue, "$.pages[0].key");
+        yield return Case("a key with a line break after it", d => Page(d)["key"] = "10000000-0000-4000-8000-000000000001\n", DefinitionErrors.InvalidValue, "$.pages[0].key");
         yield return Case("the empty GUID as a reference", d => FieldOf(d)["rules"]![0]!["conditions"]![0]!["field"] = Guid.Empty.ToString(), DefinitionErrors.InvalidValue, $"{Field}.rules[0].conditions[0].field");
         yield return Case("an instant with an offset", d => d["settings"]!["availability"]!["opensAt"] = "2026-11-01T09:00:00+01:00", DefinitionErrors.InvalidValue, "$.settings.availability.opensAt");
         yield return Case("an instant that does not exist", d => d["settings"]!["availability"]!["opensAt"] = "2026-02-30T00:00:00Z", DefinitionErrors.InvalidValue, "$.settings.availability.opensAt");
         yield return Case("a number too large for its property", d => GroupOf(d)["columns"] = 2147483648L, DefinitionErrors.InvalidValue, $"{Group}.columns");
         yield return Case("a culture that is not one", d => Page(d)["title"]!["de_CH"] = "Angaben", DefinitionErrors.InvalidValue, "$.pages[0].title.de_CH");
         yield return Case("a culture twice in two cases", d => Page(d)["title"]!["DE"] = "Angaben", DefinitionErrors.InvalidValue, "$.pages[0].title.DE");
+        yield return Case("a default text given as null", d => Page(d)["title"]![string.Empty] = null, DefinitionErrors.InvalidValue, "$.pages[0].title");
         yield return Case("a text without its default", d => Page(d)["title"]!.AsObject().Remove(string.Empty), DefinitionErrors.InvalidValue, "$.pages[0].title");
         yield return Case("a line break in a label", d => FieldOf(d)["label"]![string.Empty] = "Ticket\ntype", DefinitionErrors.InvalidValue, $"{Field}.label['']");
         yield return Case("a line separator in a title", d => Page(d)["title"]!["de"] = "An" + (char)0x2028 + "gaben", DefinitionErrors.InvalidValue, "$.pages[0].title.de");
+        yield return Case("an empty nested group", d => FieldOf(d)["rules"]![0]!["conditions"]!.AsArray().Add(new JsonObject { ["match"] = null }), DefinitionErrors.InvalidValue, $"{Field}.rules[0].conditions[1]");
         yield return Case("an empty list operand", d => FieldOf(d)["rules"]![0]!["conditions"]![0]!["value"] = new JsonArray(), DefinitionErrors.InvalidValue, $"{Field}.rules[0].conditions[0].value");
         yield return Case("an operand naming a field and today", d => FieldOf(d)["rules"]![0]!["conditions"]![0]!["value"] = new JsonObject { ["field"] = "30000000-0000-4000-8000-000000000001", ["today"] = "+1d" }, DefinitionErrors.InvalidValue, $"{Field}.rules[0].conditions[0].value");
         yield return Case("a decimal in settings", d => FieldOf(d)["settings"]!["max"] = 2.5, DefinitionErrors.InvalidValue, $"{Field}.settings.max");
@@ -166,6 +173,9 @@ public sealed class RefusalTests
         yield return Case("a leading zero", Replace("\"columns\":2", "\"columns\":02"), DefinitionErrors.InvalidJson, "$");
         yield return Case("an escaped lone surrogate", Replace("\"Ticket\"", "\"Ti\\ud800cket\""), DefinitionErrors.InvalidValue, $"{Field}.label['']");
         yield return Case("a document nested too deeply", Replace("\"max\":3", "\"max\":" + new string('[', 70) + new string(']', 70)), DefinitionErrors.LimitExceeded, "$");
+        yield return Case("a property name with a lone surrogate", Replace("\"schemaVersion\":1", "\"schemaVersion\":1,\"" + LoneSurrogate + "\":0"), DefinitionErrors.InvalidValue, "$");
+        yield return Case("a setting's name with a lone surrogate", Replace("\"max\":3", "\"max\":3,\"" + LoneSurrogate + "\":1"), DefinitionErrors.InvalidValue, $"{Field}.settings");
+        yield return Case("a culture with a lone surrogate", Replace("\"de\":\"Angaben\"", "\"de\":\"Angaben\",\"" + LoneSurrogate + "\":\"x\""), DefinitionErrors.InvalidValue, "$.pages[0].title");
     }
 
     /// <summary>The valid document with one change of <see cref="Changes"/> made.</summary>
@@ -212,6 +222,42 @@ public sealed class RefusalTests
         var json = DefinitionFixtures.Minify(Valid).Replace("Ticket", "Ti" + (char)0xD800 + "cket", StringComparison.Ordinal);
 
         AssertRefused(DefinitionFixtures.Serializer().Read(json), DefinitionErrors.InvalidJson, "$");
+    }
+
+    [Test]
+    public void TheDepthLimit_RefusesTheFirstLevelPastIt_HoweverDeepTheDocument()
+    {
+        // The field's settings sit 8 levels deep, so 56 nested arrays reach the limit of 64 and 57 pass it.
+        string Nested(int arrays) => DefinitionFixtures.Minify(Valid).Replace("\"max\":3", "\"max\":" + new string('[', arrays) + "1" + new string(']', arrays), StringComparison.Ordinal);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(DefinitionFixtures.Serializer().Read(Nested(56)).Problems, Is.Empty, "as deep as a document may be");
+            AssertRefused(DefinitionFixtures.Serializer().Read(Nested(57)), DefinitionErrors.LimitExceeded, "$");
+            AssertRefused(DefinitionFixtures.Serializer().Read(Nested(5000)), DefinitionErrors.LimitExceeded, "$");
+        });
+    }
+
+    [Test]
+    [Timeout(60_000)]
+    public void ALongSettingName_OverALongArray_IsReadInLinearTime()
+    {
+        // Each item's path starts with the name; building every item's path as text would copy the name 400,000 times.
+        var name = new string('a', 1_000_000);
+        var items = string.Join(',', Enumerable.Repeat("0", 400_000));
+        var valid = DefinitionFixtures.Minify(Valid).Replace("\"max\":3", $"\"{name}\":[{items}]", StringComparison.Ordinal);
+        var refused = valid.Replace($"{items}]", $"{items},0.5]", StringComparison.Ordinal);
+        var stopwatch = Stopwatch.StartNew();
+
+        var read = DefinitionFixtures.Serializer().Read(valid);
+        var problems = DefinitionFixtures.Serializer().Read(refused).Problems;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Problems, Is.Empty);
+            Assert.That(problems.Select(problem => problem.Path), Is.EqualTo(new[] { $"{Field}.settings.{name}[400000]" }));
+            Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(10)));
+        });
     }
 
     [Test]

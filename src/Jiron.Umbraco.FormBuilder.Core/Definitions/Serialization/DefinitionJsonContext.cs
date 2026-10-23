@@ -12,6 +12,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     RespectNullableAnnotations = true,
+    MaxDepth = FormDefinitionSerializer.ModelDepth,
     Converters = [typeof(UtcInstantConverter), typeof(StrictStringConverter)])]
 [JsonSerializable(typeof(FormDefinition))]
 [JsonSerializable(typeof(RuleGroup))]

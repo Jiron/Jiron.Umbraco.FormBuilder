@@ -6,7 +6,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 
 /// <summary>
 /// Checks and canonicalises settings objects (<see cref="SettingsObject"/>): integers of at most 15 digits only, no
-/// <c>null</c> inside an array, no property named twice; properties sorted, and those with nothing in them left out.
+/// <c>null</c> inside an array, no property named twice, no name or text with a lone surrogate; properties sorted, and
+/// those with nothing in them left out.
 /// </summary>
 internal static partial class SettingsJson
 {
@@ -24,7 +25,7 @@ internal static partial class SettingsJson
             return false;
         }
 
-        problem = Check(value, path);
+        problem = Check(value, JsonPaths.Location.At(path));
         if (problem is not null)
         {
             return false;
@@ -44,7 +45,7 @@ internal static partial class SettingsJson
     public static bool IsCanonicalInteger(string raw, int maxDigits) =>
         CanonicalInteger().IsMatch(raw) && raw != "-0" && raw.TrimStart('-').Length <= maxDigits;
 
-    private static DefinitionProblem? Check(JsonElement value, string path)
+    private static DefinitionProblem? Check(JsonElement value, JsonPaths.Location location)
     {
         switch (value.ValueKind)
         {
@@ -52,10 +53,15 @@ internal static partial class SettingsJson
                 var names = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var property in value.EnumerateObject())
                 {
-                    var child = JsonPaths.Property(path, property.Name);
-                    if (!names.Add(property.Name))
+                    if (JsonPaths.TryGetName(property) is not { } name)
                     {
-                        return new DefinitionProblem(DefinitionErrors.DuplicateProperty, child, $"The property \"{property.Name}\" appears twice.");
+                        return new DefinitionProblem(DefinitionErrors.InvalidValue, location.ToString(), "A property name holds a lone surrogate.");
+                    }
+
+                    var child = location.Property(name);
+                    if (!names.Add(name))
+                    {
+                        return new DefinitionProblem(DefinitionErrors.DuplicateProperty, child.ToString(), $"The property \"{name}\" appears twice.");
                     }
 
                     if (property.Value.ValueKind != JsonValueKind.Null && Check(property.Value, child) is { } problem)
@@ -69,10 +75,10 @@ internal static partial class SettingsJson
                 var index = 0;
                 foreach (var item in value.EnumerateArray())
                 {
-                    var child = JsonPaths.Index(path, index++);
+                    var child = location.Item(index++);
                     if (item.ValueKind == JsonValueKind.Null)
                     {
-                        return new DefinitionProblem(DefinitionErrors.InvalidType, child, "An array in settings holds no null.");
+                        return new DefinitionProblem(DefinitionErrors.InvalidType, child.ToString(), "An array in settings holds no null.");
                     }
 
                     if (Check(item, child) is { } problem)
@@ -85,16 +91,16 @@ internal static partial class SettingsJson
             case JsonValueKind.Number:
                 return IsCanonicalInteger(value.GetRawText(), 15)
                     ? null
-                    : new DefinitionProblem(DefinitionErrors.InvalidValue, path, "Numbers in settings are integers of at most 15 digits; a decimal is a string in the wire form.");
+                    : new DefinitionProblem(DefinitionErrors.InvalidValue, location.ToString(), "Numbers in settings are integers of at most 15 digits; a decimal is a string in the wire form.");
             case JsonValueKind.String:
                 return JsonPaths.TryGetString(value) is null
-                    ? new DefinitionProblem(DefinitionErrors.InvalidValue, path, "The string holds a lone surrogate.")
+                    ? new DefinitionProblem(DefinitionErrors.InvalidValue, location.ToString(), "The string holds a lone surrogate.")
                     : null;
             default:
                 return null;
         }
     }
 
-    [GeneratedRegex("^-?(0|[1-9][0-9]*)$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^-?(0|[1-9][0-9]*)\z", RegexOptions.CultureInvariant)]
     private static partial Regex CanonicalInteger();
 }
