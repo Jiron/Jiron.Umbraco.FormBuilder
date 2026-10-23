@@ -18,4 +18,15 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
+  <!--
+    Tests read files of the repository in place (the vector files, the projects the architecture tests check) through
+    this attribute, set at build time, so nothing is copied into the output (ADR-0005). RepositoryRoot.Of reads it.
+  -->
+  <ItemGroup Condition="$(MSBuildProjectName.Contains('.Tests.'))">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>JfbRepositoryRoot</_Parameter1>
+      <_Parameter2>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
 </Project>

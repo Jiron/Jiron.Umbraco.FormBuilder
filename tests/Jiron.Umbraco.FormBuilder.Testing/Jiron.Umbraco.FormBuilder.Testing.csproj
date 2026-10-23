@@ -1,13 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Test-only code for the test hosts and the demo (ADR-0001, ADR-0011): the HTTP stub, the captcha and AI fakes, the
-    test clock, the user and member factories, the test-only endpoints and the test transport, from 3.4 on. Never packed
-    (IsPackable is false for everything outside src/), and never referenced by a package.
+    Test-only code for the test hosts and the demo (ADR-0001, ADR-0011, ADR-0029): the HTTP stub on 5560, the test
+    clocks, the user and member factories, the mail pickup reader and the test-only endpoints under /jfb-testing/. The
+    captcha and AI fakes and the test transport join with their features. Never packed (IsPackable is false for
+    everything outside src/), and never referenced by a package.
   -->
+  <ItemGroup>
+    <!-- The stub is a small Kestrel server, and the test-only endpoints are ASP.NET Core middleware. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder.Core\Jiron.Umbraco.FormBuilder.Core.csproj" />
     <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder.Web\Jiron.Umbraco.FormBuilder.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The unit tests check the endpoints' gate and the stub's internals. -->
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.Unit" />
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.Integration" />
   </ItemGroup>
 
 </Project>
