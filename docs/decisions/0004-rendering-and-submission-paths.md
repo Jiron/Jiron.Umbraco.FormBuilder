@@ -1,6 +1,6 @@
 # 0004. Rendering and submission paths
 
-- Status: accepted; members-only forms and the no-JS action amended in 1.8
+- Status: accepted; members-only forms and the no-JS action amended in 1.8; the assets amended in 3.2 (ADR-0026)
 - Date: 2026-10-23
 - Roadmap step: 1.4a (decided); built in 6.1 (the public API), 6.2 (Razor rendering, the no-JS post, the cache
   rules, `render`), 6.4 (the runtime) and 6.6 (headless); reviewed in 6.8 and 16.x
@@ -141,6 +141,9 @@ Option 3 for the no-JS post, option 1 for the state after it, option 2 for `form
 - **Assets:** the extension's static web assets under `/jfb/assets/` (`StaticWebAssetBasePath` `/`), the same under
   `dotnet run` and after `dotnet publish`; publishing also writes Brotli and gzip copies. Umbraco serves static files
   without compression or caching headers, so 6.2 serves them itself, as §3.4 and §4.12 already plan.
+  **Amended in 3.2 (ADR-0026):** packed as static web assets, the build's compressed copies broke every installing
+  site's build, so the website assets are embedded in the Web assembly with their copies and 6.2 serves them from
+  there; the URLs under `/jfb/assets/` stay as planned.
 - **Data Protection:** the route token and the challenge (members-only forms included) depend on it, so load-balanced
   sites need a shared key ring. The install docs say so.
 

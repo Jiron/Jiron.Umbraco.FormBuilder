@@ -408,7 +408,7 @@ Each fact below was confirmed on this machine in the Phase 1 step it names. The 
   - documents register through `AddBackOfficeOpenApiDocument` and are served at `/umbraco/openapi/{name}.json`; tests read them through `IOpenApiDocumentProvider`, keyed by name;
   - the new generator writes enums as numbers, integers as "integer or string" and every record constructor parameter as required, documents form files and validation problems differently, and needs a schema transformer to give the TypeScript client the same types as on 17;
   - the snapshots in `docs/api/` and the generated client therefore differ per line.
-- **Static files:** Umbraco serves package files through `UseStaticFiles`, with no compression and no caching headers (measured in 1.4a), so the website runtime needs its own serving to meet §4.12 (6.2).
+- **Static files:** Umbraco serves package files through `UseStaticFiles`, with no compression and no caching headers (measured in 1.4a), so the website runtime needs its own serving to meet §4.12 (6.2). Packed as static web assets, precompressed copies break the build of every site that installs the package (SDK 10.0.401 records each copy's original with the packing machine's path), so the website assets are embedded in the Web assembly instead (3.2, ADR-0026).
 - **Output caching:** sites may put pages behind output caching or a CDN. The markup of anonymous forms therefore contains nothing per visitor: the challenge is fetched when the visitor first interacts, and there is no antiforgery token (§4.10); members-only forms are rendered per member and never cached (ADR-0004). Umbraco's own website output cache (confirmed in 1.4a; not in 17.3.0, present in 17.5.0, 17.7.1 and 18.2.1):
   - opt-in with `Umbraco:CMS:Website:OutputCache:Enabled` (`ContentDuration` defaults to 10 s);
   - **the cache key ignores the query string**, so anything rendered from the query needs an `IWebsiteOutputCacheVaryByProvider` (a collection: a package adds rules without removing the site's);
@@ -1455,13 +1455,13 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [ ] **3.2 Client workspace**
   - Create `src/Jiron.Umbraco.FormBuilder.Web/Client` as an npm workspace with `packages/logic`, `runtime`, `element` and `backoffice`: TypeScript strict, Vite library builds, ESLint, Prettier and Vitest.
   - **The backoffice package:** Lit, `@umbraco-cms/backoffice` pinned to the minimum supported 17.x, and `@hey-api/openapi-ts` client generation.
-  - **The runtime and element packages:** no runtime dependencies, output to `wwwroot/jfb/assets/`, and code split per feature. The build also writes Brotli and gzip copies of every file, which 6.2 serves (§3.4, "Static files").
+  - **The runtime and element packages:** no runtime dependencies, output to `WebsiteAssets/` and embedded in the Web assembly as `jfb/assets/<path>` (ADR-0026: packed as static web assets under `wwwroot/jfb/assets/`, the compressed copies broke the build of every site that installs the package), and code split per feature. The build also writes Brotli and gzip copies of every file, which 6.2 serves (§3.4, "Static files").
   - **Checks:**
     - `scripts/size-check.mjs` measures gzip sizes against §4.12. It also reports the backoffice bundle's size, which Tandem never measured and a form designer will make much larger; 9.6 sets its budget;
-    - an MSBuild target fails `dotnet pack` when the assets are missing, stale (an input hash), for another version, or contain source maps. Each pack builds the client for its own version (Tandem's `TANDEM001`);
+    - an MSBuild target fails `dotnet pack` when the assets are missing, stale (an input hash), for another version, or contain source maps, and when the assembly to be packed does not embed the website assets as they are (ADR-0026). Each pack builds the client for its own version (Tandem's `TANDEM001`);
     - `umbraco-package.json` gets its `version` stamped at build;
     - **the licence notice:** every emitted JS and CSS file keeps a `/*! Jiron Form Builder … Required Notice: … */` banner (the bundler's legal-comments setting), as PolyForm requires for every copy. The size check counts it, and the MSBuild target checks it is there.
-  - **Ignored output:** the built assets are git-ignored (`.gitignore` already lists both output folders).
+  - **Ignored output:** the built assets are git-ignored (`.gitignore` lists both output folders, `wwwroot/App_Plugins/JironFormBuilder/` and `WebsiteAssets/`).
   - Done when: `npm ci && npm run lint && npm test && npm run build` passes, the size check prints the budgets, and the pack check fails on an asset without the notice (tested).
 - [ ] **3.3 Demo site**
   - Create `demo/Jiron.Umbraco.FormBuilder.Demo` (Umbraco 17.7.1, created in the private template hive, §3.4) on port 5500 with SQLite and unattended install. Admin credentials are generated on first start into `.local/credentials.json` by the script, never on a command line.
@@ -1515,7 +1515,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **`dependabot.yml`:** nuget, npm and github-actions, with `open-pull-requests-limit: 0` until the owner turns it on.
   - **Checks:**
     - `scripts/check-workflows.mjs` (GitHub's MIT parser);
-    - `scripts/check-npm-licences.mjs`;
+    - `scripts/check-npm-licences.mjs`, over every lock file (`scripts/` and `Client/`, later `tests/e2e/`): rule 4's list for packages that ship, and for development packages also the public-domain dedications of ADR-0027, tested as ADR-0027 says;
     - `scripts/check-audit-suppressions.mjs` (port, ADR-0024): fails when a package whose advisories `NuGetAudit.props` suppresses is referenced directly (`PackageReference` or `PackageVersion`), and when an ImageSharp entry leaves the host-only group. A test covers both;
     - `scripts/check-nuget-licences.mjs` (new: reads each restored package's nuspec license and fails on anything outside CLAUDE.md rule 4);
     - `scripts/third-party-notices.mjs` (generates and checks `THIRD-PARTY-NOTICES.md`). It reads the nuspecs from `NUGET_PACKAGES` when that is set, as CI sets it, and from the default cache otherwise; Tandem's read only the default cache, so its CI check would have failed on a fresh runner. A test covers both.
@@ -1688,7 +1688,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [ ] **6.2 Razor rendering**
   - **Rendering:**
     - the view component and tag helpers (`<jfb-render>`, `<jfb-assets>`, included once per page automatically unless turned off), with the nonce option (`<jfb-assets nonce>` and `IFormBuilderCspNonceProvider`, ADR-0004);
-    - **serving the assets** under `/jfb/assets/` itself:
+    - **serving the assets** under `/jfb/assets/` itself, from the resources embedded in the Web assembly (ADR-0026): only names the assembly holds, compared exactly (no case folding, no decoded `%2F`, nothing outside `jfb/assets/`):
       - the precompressed Brotli or gzip copy, chosen by `Accept-Encoding`;
       - `Cache-Control: public, max-age=31536000, immutable` under a `?v=` fingerprint;
       - `X-Content-Type-Options: nosniff`.
@@ -1701,7 +1701,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **No-JS posts with files** (ADR-0006): the `?jfb-post=<key>.<instance>` marker in the action, the limits middleware before routing with its drain allowance, and the upload's file rules in the surface action. The message for a post that is too large is designed once, and a file that passed its checks is kept across a re-render for other errors, through a signed token in the form.
   - **The output cache rules of ADR-0004:** `no-store` on every response of the surface action and on every render that is per visitor, not a `GET`, or carries `jfb-sent`; the `IWebsiteOutputCacheVaryByProvider` for `jfb-sent`; never an `IWebsiteOutputCacheRequestFilter`.
   - **The `render` endpoint** of §4.6 (for `form_changed`), through the same view component.
-  - Done when: TestServer tests pass (including the compressed and cacheable asset responses), and Playwright with JavaScript **disabled** submits a valid form, an invalid one and a three-page one, with two forms on one page. A no-JS post whose consent wording changed since the page was rendered shows the form again with that consent unticked and a notice. With Umbraco's output cache on, tests also show: a cached page byte-identical for two visitors and holding nothing per visitor; `?jfb-sent` showing the outcome and never stored, for any value; no response to a post stored; the surface auto-route answering `400`; and `render` returning the published form with the given instance id. With JavaScript disabled, Playwright in Edge also shows a file that is too large reported at its field (not a reset connection), a valid file stored, a renamed `.exe` refused, and a valid file kept when another field fails (ADR-0006).
+  - Done when: TestServer tests pass (including the compressed and cacheable asset responses, every built website asset found in the assembly with both its copies, and `404` for an unknown, differently cased or traversing asset path), and Playwright with JavaScript **disabled** submits a valid form, an invalid one and a three-page one, with two forms on one page. A no-JS post whose consent wording changed since the page was rendered shows the form again with that consent unticked and a notice. With Umbraco's output cache on, tests also show: a cached page byte-identical for two visitors and holding nothing per visitor; `?jfb-sent` showing the outcome and never stored, for any value; no response to a post stored; the surface auto-route answering `400`; and `render` returning the published form with the given instance id. With JavaScript disabled, Playwright in Edge also shows a file that is too large reported at its field (not a reset connection), a valid file stored, a renamed `.exe` refused, and a valid file kept when another field fails (ADR-0006).
 - [ ] **6.3 Themes**
   - **`default`:**
     - CSS custom properties and an opt-in dark scheme;

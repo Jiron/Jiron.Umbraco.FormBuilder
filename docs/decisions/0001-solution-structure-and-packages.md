@@ -1,6 +1,6 @@
 # 0001. Solution structure and packages
 
-- Status: accepted
+- Status: accepted; the delivery of the website assets amended in 3.2 (ADR-0026)
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 3.1 and 3.2, packed in 18.1, the add-on in 15.3
 
@@ -95,7 +95,8 @@ Nothing references the AI add-on, and Core and Web never reference Umbraco.AI.
 - `StaticWebAssetBasePath` is `/`. The backoffice is served from `/App_Plugins/JironFormBuilder/` with
   `umbraco-package.json` (`id` `Jiron.Umbraco.FormBuilder`, the id sites install; `version` stamped at build), and the
   website runtime, the web component and the theme CSS from `/jfb/assets/`, through Jiron Form Builder's own serving
-  with compression and fingerprints (§3.4, 6.2).
+  with compression and fingerprints (§3.4, 6.2). **Amended in 3.2 (ADR-0026):** the website assets are embedded in
+  the Web assembly with their Brotli and gzip copies, not packed as static web assets; only the backoffice is.
 - **Built client assets are not committed.** `npm run build` writes them in scripts and CI, and an MSBuild check
   (`JFB001`) fails `dotnet pack` when they are missing, stale, built for another version, without the licence notice,
   or with source maps (3.2). Source maps are made only on request for local debugging.
