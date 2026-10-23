@@ -3,15 +3,21 @@
 Jiron Form Builder is the original work of Manassés Zähnler, licensed under the PolyForm Perimeter License
 1.0.1 ([LICENSE.md](LICENSE.md)). This file lists the third-party material it uses (CLAUDE.md rule 4).
 
-From step 3.5 on, `scripts/third-party-notices.mjs` generates the package sections of this file from the
-restored packages and checks that it is current.
+`scripts/third-party-notices.mjs` writes the two generated parts of this file from the restored packages, and
+checks that the development table names every direct development tool with the versions and licences restored now
+(`--check`, in the local gate and in CI). `scripts/check-npm-licences.mjs` and `scripts/check-nuget-licences.mjs`
+check every package, direct and transitive ([ADR-0032](docs/decisions/0032-ci-gate-and-licence-checks.md)).
 
 ## Shipped to sites
 
 Runtime dependencies, direct and transitive, may only be MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC or
 0BSD.
 
-None yet. Umbraco CMS packages are not listed here: sites already run them, and Jiron Form Builder only
+<!-- jfb-shipped:start -->
+None: Jiron Form Builder's packages bring nothing to a site that Umbraco CMS does not already bring.
+<!-- jfb-shipped:end -->
+
+Umbraco CMS packages, and what they bring, are not listed here: sites already run them, and Jiron Form Builder only
 declares them as dependencies.
 
 ## Development only (never shipped)
@@ -20,9 +26,11 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 
 | Package | Version | Licence | Used for |
 | --- | --- | --- | --- |
-| `@playwright/test`, `playwright`, `playwright-core` | 1.63.0 | Apache-2.0 | browser checks and screenshots (`scripts/`) |
+| `@playwright/test`, `playwright`, `playwright-core` | 1.63.0 | Apache-2.0 | browser checks and screenshots (`scripts/`), the browser tests (`tests/e2e/`) |
 | `axe-core` | 4.14.0 | MPL-2.0 | accessibility checks (`scripts/`) |
 | `@axe-core/playwright` | 4.14.0 | MPL-2.0 | accessibility checks in Playwright (`scripts/`) |
+| `@actions/workflow-parser` | 0.3.61 | MIT | GitHub's workflow parser, for the workflow check (`scripts/`) |
+| `yaml` | 2.9.1 | ISC | reading the workflow files and `dependabot.yml` (`scripts/`) |
 | `NUnit` | 3.14.0 | MIT | unit and integration tests (`tests/`) |
 | `NUnit3TestAdapter` | 5.0.0 | MIT | running the NUnit tests (`tests/`) |
 | `Microsoft.NET.Test.Sdk` | 18.9.0 | MIT | running the tests (`tests/`) |
@@ -33,7 +41,7 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | `MimeKit` | 4.16.0, 4.17.0 | MIT | reading the test hosts' mail in the Testing project; Umbraco already brings it (`tests/`) |
 | `@umbraco-cms/backoffice` | 17.5.0 | MIT | the backoffice extension's types; external in its build, since Umbraco provides it in the page (`Client/`) |
 | `@hey-api/openapi-ts` | 0.99.0 | MIT | generating the management API client (`Client/`) |
-| `typescript` | 6.0.3 | Apache-2.0 | type checking (`Client/`) |
+| `typescript` | 6.0.3 | Apache-2.0 | type checking (`Client/`, `tests/e2e/`) |
 | `vite` | 8.3.3 | MIT | the library builds (`Client/`) |
 | `vitest` | 5.0.3 | MIT | the client tests (`Client/`) |
 | `jsdom` | 30.1.2 | MIT | the browser environment of the client tests (`Client/`) |
@@ -41,14 +49,25 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | `typescript-eslint` | 8.71.0 | MIT | linting TypeScript (`Client/`) |
 | `eslint-config-prettier` | 10.1.8 | MIT | leaving formatting to Prettier (`Client/`) |
 | `globals` | 17.13.0 | MIT | the browser and Node globals for linting (`Client/`) |
-| `prettier` | 3.9.9 | MIT | formatting (`Client/`) |
-| `@types/node` | 24.19.1 | MIT | Node types for the build scripts (`Client/`) |
+| `prettier` | 3.9.9 | MIT | formatting (`Client/`, `tests/e2e/`) |
+| `@types/node` | 24.19.1 | MIT | Node types for the build scripts and the browser tests (`Client/`, `tests/e2e/`) |
 
-The client workspace's 391 transitive packages are MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD,
-MPL-2.0, BlueOak-1.0.0 or Python-2.0, except four: `@csstools/color-helpers` and
-`@csstools/css-syntax-patches-for-csstree` (MIT-0) and `mdn-data` (CC0-1.0) through jsdom, and `fetch-cookie`
-(Unlicense) through a peer of `@umbraco-cms/backoffice`. These public-domain dedications are accepted for
-development tools only ([ADR-0027](docs/decisions/0027-public-domain-dedications-in-development-tools.md)).
+`Client/` is `src/Jiron.Umbraco.FormBuilder.Web/Client/`. The transitive packages of these tools are MIT,
+Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, MPL-2.0, BlueOak-1.0.0 or Python-2.0, with two kinds of
+exception. What the Umbraco packages above bring is Umbraco's platform, as on every site
+([ADR-0032](docs/decisions/0032-ci-gate-and-licence-checks.md)). And the packages below rely on public-domain
+dedications, which are accepted for development tools only
+([ADR-0027](docs/decisions/0027-public-domain-dedications-in-development-tools.md)): the MIT-0 and CC0-1.0
+packages come through jsdom, the Unlicense one through a peer of `@umbraco-cms/backoffice`.
+
+<!-- jfb-public-domain:start -->
+| Package | Version | Licence | Where |
+| --- | --- | --- | --- |
+| `@csstools/color-helpers` | 6.1.2 | MIT-0 | `Client/` |
+| `@csstools/css-syntax-patches-for-csstree` | 1.1.15 | MIT-0 | `Client/` |
+| `fetch-cookie` | 2.2.0 | Unlicense | `Client/` |
+| `mdn-data` | 2.27.1 | CC0-1.0 | `Client/` |
+<!-- jfb-public-domain:end -->
 
 ## Documents
 

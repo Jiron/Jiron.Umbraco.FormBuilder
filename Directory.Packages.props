@@ -2,8 +2,9 @@
 
   <!--
     Central package management (ROADMAP 0.2). Every package version lives here; projects reference packages
-    without a version. Licences are checked before a package is added (CLAUDE.md rule 4), and runtime
-    dependencies are listed in THIRD-PARTY-NOTICES.md.
+    without a version. scripts/check-nuget-licences.mjs checks the licence of every restored package (CLAUDE.md
+    rule 4), and THIRD-PARTY-NOTICES.md lists the shipped and the development packages, which
+    scripts/third-party-notices.mjs keeps current (ADR-0032).
 
     Umbraco is a range, not a pin: it becomes the packages' dependency range [17.5.0, 18.0.0) (D3). NuGet
     resolves the lowest version of a range, so Jiron Form Builder compiles against its minimum supported
@@ -14,7 +15,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
-  <!-- Umbraco CMS 17 (D3): the packages' dependency ranges. MIT. -->
+  <!-- Umbraco CMS 17 (D3): the packages' dependency ranges. -->
   <ItemGroup>
     <PackageVersion Include="Umbraco.Cms.Core" Version="[17.5.0, 18.0.0)" />
     <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="[17.5.0, 18.0.0)" />
@@ -25,16 +26,15 @@
     <PackageVersion Include="Umbraco.Cms.Api.Delivery" Version="[17.5.0, 18.0.0)" />
   </ItemGroup>
 
-  <!-- The demo site and the test hosts only: the latest 17.x, pinned exactly (D3). MIT. -->
+  <!-- The demo site and the test hosts only: the latest 17.x, pinned exactly (D3). -->
   <ItemGroup>
     <PackageVersion Include="Umbraco.Cms" Version="17.7.1" />
     <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="17.7.1" />
   </ItemGroup>
 
   <!--
-    Test tools (ADR-0011), pinned exactly, all dev-only: NUnit, NUnit3TestAdapter, Microsoft.NET.Test.Sdk and
-    coverlet.collector are MIT, NSubstitute is BSD-3-Clause. NUnit stays on 3.x, because Umbraco.Cms.Tests.Integration
-    17 depends on it (D19).
+    Test tools (ADR-0011), pinned exactly, all dev-only. NUnit stays on 3.x, because Umbraco.Cms.Tests.Integration 17
+    depends on it (D19).
   -->
   <ItemGroup>
     <PackageVersion Include="NUnit" Version="3.14.0" />
