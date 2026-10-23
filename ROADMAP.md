@@ -243,7 +243,7 @@ These come from the owner or from planning. Change one only through an ADR that 
 | D13 | **Privacy by default:** <ul><li>no cookies, and IP addresses are not stored;</li><li>retention defaults are on;</li><li>sensitive fields are masked;</li><li>consent fields store the exact wording shown;</li><li>logs never contain field values;</li><li>nothing loads from third-party hosts unless an editor chooses a third-party captcha.</li></ul> | GDPR, TDDDG and good practice (§3.7). Site owners get compliance help without configuring anything. |
 | D14 | **Spam protection needs no third party by default:** a honeypot, a minimum fill time, a signed challenge, rate limits and content rules feed a spam score. A proof-of-work challenge is optional. reCAPTCHA v2/v3 and hCaptcha are optional providers that load only per §4.10. Suspicious entries go to **Spam**, where nothing is lost and no action runs, instead of being dropped. | Stops bots without privacy costs, and never silently loses a real lead. |
 | D15 | **Files:** <ul><li>stored outside the public web root, through Jiron Form Builder's asynchronous `IFormBuilderFileStore`, which also works with Umbraco's official storage providers (ADR-0006: Umbraco's `IFileSystem` writes synchronously, which a streamed upload cannot feed);</li><li>names are random, and downloads go only through authorised endpoints;</li><li>extension allowlist, content sniffing, size and count limits;</li><li>a scanner hook (`IFormBuilderFileScanner`), and deletion with the entry.</li></ul> | Uploaded files are personal data and an attack vector. |
-| D16 | **Versioning and branches:** the package major follows the Umbraco major. The first line is `17.0.0-alpha.N`, then `-beta.N`, then `17.0.0`, for CMS 17. `main` is the 17 line and holds every ROADMAP and WORKLOG change; CMS 18 code lives on `v18/main` (Phase 19). Changes flow one way: `main` is merged into `v18/main`, never the reverse. `Directory.Build.props` holds `VersionPrefix` 17.0.0 and `VersionSuffix` alpha.0; release builds pass the tag's version; local test packs use `-dev.<yyyyMMddHHmm>`. | Compatibility is obvious at a glance, and stale NuGet caches can never serve old bits. |
+| D16 | **Versioning and branches:** the package major follows the Umbraco major. The first line is `17.0.0-alpha.N`, then `-beta.N` (and `-rc.N` when a release candidate is needed, ADR-0010), then `17.0.0`, for CMS 17. `main` is the 17 line and holds every ROADMAP and WORKLOG change; CMS 18 code lives on `v18/main` (Phase 19). Changes flow one way: `main` is merged into `v18/main`, never the reverse. `Directory.Build.props` holds `VersionPrefix` 17.0.0 and `VersionSuffix` alpha.0; release builds pass the tag's version; local test packs use `-dev.<yyyyMMddHHmm>`. | Compatibility is obvious at a glance, and stale NuGet caches can never serve old bits. |
 | D17 | **No publishing, no visibility changes.** The release workflow is built and tested, but the NuGet push stays disabled (`vars.JFB_NUGET_PUBLISH != 'true'`). CI runs on pushes only when `vars.JFB_CI == 'true'`. The repo stays private. | Only the owner can do these. |
 | D18 | **UX is a first-class requirement** in the backoffice and on the website (§4.13): <ul><li>progressive disclosure, so no screen is cluttered;</li><li>one primary action per view, with secondary actions in menus;</li><li>**say it once:** each fact appears once per screen, never as a highlighted tab, a sidebar heading and a page title at the same time;</li><li>nothing squashed on phones: text keeps its width, and controls move to their own row;</li><li>every state designed, sensible defaults and plain language;</li><li>a guided first run, live previews and keyboard paths.</li></ul> | The owner: "It's important that we don't have a bunch of buttons and stuff clustered in the same place." During Tandem the owner added: no "5 gazillion buttons", nothing "repeating itself multiple times", and no button squeezed into the middle of a text on a phone (Tandem ADR-0079). |
 | D19 | **Tests:** NUnit 3 for unit and integration tests (`Umbraco.Cms.Tests.Integration` 17.x requires NUnit 3), with NUnit's own constraints (no FluentAssertions) and NSubstitute. Vitest covers the client packages, Playwright the browser (Edge locally, Chromium in CI, phones emulated in Chromium because WebKit is not available here), and axe-core accessibility. The harness follows Tandem's (§3.3). | Official Umbraco test tooling with permissive licenses, the same stack Tandem proved on this machine. |
@@ -418,7 +418,7 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
 
 ### 3.5 Umbraco Marketplace and NuGet facts (research 2026-10-19)
 
-- **Listing requirements:** the installable package needs the NuGet tag `umbraco-marketplace` (only on the meta package) and must depend on `Umbraco.Cms.*`. Jiron Form Builder's meta package therefore references `Umbraco.Cms.Web.Website` `[17.5.0, 18.0.0)` directly, not only through Web *(verify whether a transitive dependency is enough)*. The AI add-on, which is installed on its own, gets the tag too. Supported versions come from the dependency range (`[17.5.0,18.0.0)` = 17 only). Non-OSI and commercial licences are accepted; the listing is about the package, not its licence type.
+- **Listing requirements:** the installable package needs the NuGet tag `umbraco-marketplace` (only on the meta package) and must depend on `Umbraco.Cms.*`. Jiron Form Builder's meta package therefore references `Umbraco.Cms.Web.Website` `[17.5.0, 18.0.0)` directly, not only through Web, so the listing never depends on whether the Marketplace reads dependencies through our other packages (ADR-0001). The AI add-on, which is installed on its own, gets the tag too. Supported versions come from the dependency range (`[17.5.0,18.0.0)` = 17 only). Non-OSI and commercial licences are accepted; the listing is about the package, not its licence type.
 - **Sync:** new packages are picked up daily at 04:00 UTC, and known ones every 2 h.
 - **`umbraco-marketplace.json`:**
   - It is read from the root that `PackageProjectUrl` points to, so **it cannot be read while the repo is private**.
@@ -536,13 +536,13 @@ Jiron.Umbraco.FormBuilder/
 ### 4.2 Modules and dependencies
 
 ```
-Jiron.Umbraco.FormBuilder (meta)
+Jiron.Umbraco.FormBuilder (meta) ──► Umbraco.Cms.Web.Website [17.5,18) (directly, for the Marketplace)
   └─ FormBuilder.Web ──► FormBuilder.Core ──► Umbraco.Cms.Core / Infrastructure [17.5,18)
          └──────────► Umbraco.Cms.Web.Common, Web.Website, Api.Common, Api.Management, Api.Delivery [17.5,18)
-Jiron.Umbraco.FormBuilder.AI (optional) ──► FormBuilder.Core, Umbraco.AI.Core [17.x]
+Jiron.Umbraco.FormBuilder.AI (optional) ──► FormBuilder.Web, FormBuilder.Core, Umbraco.AI (ADR-0018)
 ```
 
-- **Core** holds every rule of the product and knows nothing about HTTP. Services take and return domain types. Every public service has an interface.
+- **Core** holds every rule of the product and knows nothing about HTTP. Services take and return domain types. Every public service has an interface. An architecture test fails the build when Core references an ASP.NET Core HTTP, MVC, routing or Razor assembly, or an Umbraco web or API package (ADR-0001).
 - **Web** hosts the HTTP surfaces, rendering and static assets. All Umbraco-major-specific glue (OpenAPI registration, auth policies, manifest helpers) lives in clearly named classes, so the 18 port touches as few files as possible.
 - **Client packages:**
   - `logic` has no DOM and no dependencies, and is tested against `tests/vectors/`;
@@ -551,19 +551,19 @@ Jiron.Umbraco.FormBuilder.AI (optional) ──► FormBuilder.Core, Umbraco.AI.C
 
 ### 4.3 The form definition model (schema v1)
 
-A form definition is one JSON document, validated against `schemas/jfb-form.v1.schema.json` and upgraded by code when `schemaVersion` changes. Phase 1 (1.7) fixes the exact shape in an ADR. The design:
+A form definition is one JSON document, validated against `schemas/jfb-form.v1.schema.json` and upgraded by code when `schemaVersion` changes. ADR-0002 fixes the exact shape: every property with its default, the form settings and each built-in type's settings. In outline:
 
 ```jsonc
 {
   "schemaVersion": 1,
-  "key": "guid", "alias": "contactUs", "name": "Contact us",
+  "key": "guid",                                   // the name, alias and folder live on the form row (ADR-0002)
   "settings": { /* §4.3.4 */ },
   "pages": [{
     "key": "guid", "title": { "": "Your details", "de-DE": "Ihre Angaben" }, "description": null,
-    "rule": null,                                   // show/hide (skip) the whole page
+    "rules": [],                                    // show/hide (skip) the whole page
     "groups": [{
       "key": "guid", "title": null, "description": null, "columns": 2, "style": "plain|card",
-      "rule": null,
+      "rules": [],
       "fields": [{
         "key": "guid", "alias": "email", "type": "email", "span": 1,
         "label": { "": "Email" }, "hideLabel": false, "help": null, "placeholder": null,
@@ -571,17 +571,18 @@ A form definition is one JSON document, validated against `schemas/jfb-form.v1.s
         "defaultValue": null, "prefill": { "query": null, "member": null, "memberMode": "show|hide" },
         "sensitive": false, "includeInEmails": true, "keep": "always|untilActionsRun",
         "autocomplete": "email", "cssClass": null,
-        "validation": [ { "kind": "pattern", "value": "...", "message": { "": "..." } } ],
-        "rule": null,
+        "validation": [ { "kind": "pattern", "pattern": "...", "message": { "": "..." } } ],
+        "rules": [ { "key": "guid", "effect": "show|hide|require", "enabled": true, "match": "all|any", "conditions": [] } ],
+        "options": null,                            // choice types: { "source": "items|list|content|…", "items": [ … ] }
         "settings": { /* type-specific, validated by the field type */ }
       }]
     }]
   }],
   "validationRules": [ /* form-level: rule + target field + message, for cross-field checks */ ],
-  "actions":   [ { "key": "guid", "type": "email", "name": "Notify sales", "enabled": true,
-                   "trigger": "submitted|approved|rejected|verified", "rule": null, "settings": {} } ],
-  "outcomes":  [ { "rule": null, "kind": "message|redirect", "message": { "": "<p>Thanks!</p>" },
-                   "redirect": { "contentKey": null, "url": null, "delaySeconds": 0 } } ]
+  "actions":   [ { "key": "guid", "type": "email", "name": "Notify sales", "enabled": true, "stopOnFailure": false,
+                   "trigger": "submitted|approved|rejected|verified", "rules": [], "settings": {} } ],
+  "outcomes":  [ { "key": "guid", "kind": "message|redirect", "message": { "": "<p>Thanks!</p>" }, "showAnswers": false,
+                   "redirect": { "content": null, "url": null, "delaySeconds": 0 }, "rules": [] } ]
 }
 ```
 
@@ -589,19 +590,20 @@ A form definition is one JSON document, validated against `schemas/jfb-form.v1.s
 
 - **Keys and aliases:**
   - Every element has a stable GUID `key`. Entries, rules and actions refer to fields by key, never by alias or position.
+  - The form's own name, alias and folder live on `jfbForm`, not in the document, so restoring a version never renames a form. The form alias follows the field alias pattern and is unique among all forms, trashed ones included (ADR-0002).
   - `alias` is unique within the form, matches `^[a-z][a-zA-Z0-9]{0,63}$`, and is not reserved: `form`, `entry`, `page`, `member`, `query`, `context`, `site`, `date` and the honeypot names.
   - An alias is generated from the label (camelCase). It can be edited until the first published version has entries; after that, changing it asks for confirmation and keeps the old alias as a merge-tag alias.
 - **Localised text:** every editor-written text is a `LocalizedText`, a map from culture (`""` = default) to text.
   - The visible text resolves as the request culture → its neutral culture → default.
   - A value of exactly `#key` resolves through the Umbraco dictionary.
 - **Limits** (host-configurable): 30 pages, 100 groups, 300 fields, 1,000 options per field, 50 actions and 200 rules per form. A definition of at most 2 MB.
-- **The public projection** (what the website and the headless API get) never contains:
-  - actions, outcomes' internal settings or recipients;
-  - option-source configuration;
+- **The public projection** (what the website and the headless API get) is built from an allowlist (ADR-0002). It never contains:
+  - actions, outcomes (the submission's answer carries the outcome) or recipients;
+  - option-source configuration. Options from a library list or another source are resolved when the form is rendered, so editing a list needs no publish;
   - prefill-from-member mappings beyond the field;
   - anything marked internal.
 
-  The **public revision** changes only when the public projection changes (§3.1).
+  The **public revision** changes only when the public projection changes (§3.1). A submission against an older revision is accepted when its errors fall only on fields the visitor saw, and answered with `form_changed` otherwise (ADR-0002).
 
 #### 4.3.2 Field types (built in)
 
@@ -660,7 +662,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 #### 4.3.3 Rules, validation, merge tags and calculations (one logic, two runtimes, D10)
 
 - **Rules:**
-  - A rule is `{ "effect": "show|hide|require", "enabled": true, "match": "all|any", "conditions": [ … ] }`. A condition is one of:
+  - A rule is `{ "key": guid, "effect": "show|hide|require|run|use", "enabled": true, "match": "all|any", "conditions": [ … ] }`. Each element holds a list of rules, at most one per effect (`show` and `hide` exclude each other), so a field can be shown under one rule and required under another (ADR-0002). A condition is one of:
     - `{ "field": key, "op": …, "value": … }`, where the value can also be `{ "field": key }` to compare two answers ("departure after arrival");
     - `{ "context": "culture|memberSignedIn|memberGroup|query.<name>|today", "op": …, "value": … }`, for the page's language, the member, an allowed query value and the date in the site's time zone;
     - a nested group.
@@ -677,11 +679,12 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - **How values compare** (ADR-0005): answers are cleaned (lone surrogates and noncharacters replaced, NFC, an explicit whitespace list trimmed) and empty ones dropped. Text compares without case, folded one character at a time in the Latin, Greek, Cyrillic and Armenian blocks and the full-width Latin letters (other scripts compare exactly, because runtimes case their new letters differently); option keys compare exactly; numbers and dates compare by value, and an invalid value never matches. `equals` and `isOneOf` look for some answer, comparisons take the first answer, bounds are inclusive, and every negation is the exact opposite.
   - **What rules apply to:** fields, groups, pages, actions, outcomes and form-level validation rules.
   - **Hidden means gone:** a hidden field is never required, never validated and never stored, and the server strips it even if posted. A rule that depends on a hidden field sees it as empty.
-  - **Saving refuses** cycles and rules that point at missing fields, and any condition that fails the check both runtimes run before they evaluate (ADR-0005): unknown operators, an operator the field's kind does not take, a malformed operand and an unsafe pattern.
+  - **Publishing refuses** cycles and rules that point at missing fields, and any condition that fails the check both runtimes run before they evaluate (ADR-0005): unknown operators, an operator the field's kind does not take, a malformed operand and an unsafe pattern. A draft keeps them, so an editor never loses work, and the form check lists each one with a fix; the preview shows a broken rule as an issue instead of evaluating it (ADR-0002).
 - **Validation kinds:**
   - `required`, `minLength`/`maxLength`, `min`/`max`, `pattern`, `format`;
   - `dateWindow`, `matchesField`, `uniquePerForm`, `fileTypes`/`fileSize`/`fileCount`, `selections`;
   - plus form-level validation rules ("show this message on field X when the rule matches").
+  - **Where they live** (ADR-0002): the limits a field type owns (lengths, ranges, steps, date windows, selections, file rules) are its settings, with custom messages per error kind; a field's `validation` list holds only `pattern`, `matchesField` and `uniquePerForm`.
   - **Patterns** run on Jiron Form Builder's own matcher in both runtimes, never on a regular-expression engine (ADR-0005): a small subset of the usual syntax, parsed and compiled to an automaton that reads code points in time linear in the value's length, so no pattern can hang a browser or a server. A pattern matches the whole value and is case-sensitive; saving refuses anything outside the subset and its limits.
 - **Merge tags:** `{{ source.path | filter: arg }}`.
   - **Sources:**
@@ -781,7 +784,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | --- | --- | --- |
 | `jfbFolder` | Id PK, Key (unique), ParentId FK null, Name, SortOrder, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (ParentId). Trash keeps the tree; restore returns to the parent or the root. |
 | `jfbForm` | Id PK, Key (unique), FolderId FK null, Alias (unique), Name, DraftVersionId FK null, PublishedVersionId FK null, PublicRevision, ConcurrencyVersion, LastEntryNumber, ThemeKey null, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (FolderId), (TrashedUtc). `ConcurrencyVersion` makes stale saves fail with `409 concurrency_conflict`. |
-| `jfbFormVersion` | Id PK, FormId FK (cascade), Number, Kind (Draft, Published), SchemaVersion, Definition (NVARCHARMAX), DefinitionHash, PublicHash, Comment, IsPinned, CreatedUtc, CreatedByUserKey, PublishedUtc null, PublishedByUserKey null | Unique (FormId, Number). Every save adds a row. Published versions are never pruned. Draft saves are pruned by the cleanup job (keep the last 50 and the last 90 days, never pinned ones). |
+| `jfbFormVersion` | Id PK, FormId FK (cascade), Number, Kind (Draft, Published), SchemaVersion, Definition (NVARCHARMAX), DefinitionHash, PublicHash, PublicRevision null, Comment, IsPinned, CreatedUtc, CreatedByUserKey, PublishedUtc null, PublishedByUserKey null | Unique (FormId, Number). Every save adds a row. Published versions are never pruned. Draft saves are pruned by the cleanup job (keep the last 50 and the last 90 days, never pinned ones or ones an entry points at). `PublicRevision` is set on published rows (ADR-0002). |
 | `jfbFormField` | Id PK, FormId FK (cascade), FieldKey, Alias, Label (default culture), Type, StorageKind, IsSensitive, SortOrder, FirstVersionNumber, LastVersionNumber null (null = in the live version), ParentFieldKey null (repeater children and grid rows) | Unique (FormId, FieldKey). The **field catalogue**: every field ever published, for entry columns, exports and search. `jfbEntryValue` refers to a field by this `Id`, so a field gets its row before its first value is stored: on publish, or on the first preview submission for a field that exists only in the draft (ADR-0003). |
 | `jfbEntry` | Id PK (bigint), Key (unique), FormId FK, FormVersionId FK, Number, State, IsTest, SubmissionId, Digest, Culture, ContentKey null, PageUrl (path only), MemberKey null, IpAddress null, SpamScore, SpamReasons, SearchText (NVARCHARMAX, normalised, no sensitive values), Context (JSON), DurationSeconds null, SubmittedUtc, UpdatedUtc, StateChangedUtc, StateChangedByUserKey null, FirstSeenUtc null, VerifiedUtc null, ResumeTokenHash null, ResumeExpiresUtc null, CurrentPageKey null, ChallengeId null, HoldUntilUtc null, HoldReason null, PurgeAfterUtc null | Unique (FormId, Number) and (FormId, SubmissionId). `SubmissionId` is always set; the server generates one for no-JS, server-key and programmatic entries. **Filtered** unique indexes `WHERE … IS NOT NULL` on (FormId, ChallengeId) and on ResumeTokenHash, created with custom SQL in the migration (SQLite and SQL Server both support them; a test inserts two NULL rows). Also (FormId, SubmittedUtc), (FormId, State, SubmittedUtc), (MemberKey), (PurgeAfterUtc) (ADR-0003). |
 | `jfbEntryValue` | Id PK (bigint), EntryId FK (cascade), FieldId FK (`jfbFormField`, no cascade: SQL Server refuses a second cascade path, and entries are deleted before their form), RowIndex, ValueIndex, Text (NVARCHARMAX) null, TextKey (nvarchar 256, normalised in C# with the invariant culture, for sort and filter; SQLite's `LOWER` folds ASCII only) null, Number (a double: `REAL` on SQLite, `FLOAT` on SQL Server, exact for the at most 15 significant digits a number field accepts; `Text` keeps the submitted value; Umbraco maps `decimal` to `TEXT` on SQLite) null, Date null, Bool null, FileId FK null | (EntryId, FieldId), (FieldId, TextKey, EntryId), (FieldId, Number, EntryId), (FieldId, Date, EntryId): covering indexes for the query shapes of ADR-0003. An integer `FieldId` instead of the field's GUID key halves the values on disk (1.3). Multi-value and repeater rows use ValueIndex and RowIndex. |
@@ -822,7 +825,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 
 | Route | Purpose |
 | --- | --- |
-| `GET forms/{keyOrAlias}?culture=&contentKey=` | The public projection for headless rendering, when the form allows it. `ETag` from the public revision and culture. |
+| `GET forms/{keyOrAlias}?culture=&contentKey=` | The public projection for headless rendering, when the form allows it. `ETag` from the response itself, so it follows the public revision, the culture and dictionary changes (ADR-0002). |
 | `GET forms/{key}/render?instance=&page=&contentKey=&culture=` | The published form as HTML in the page's theme and culture, for a runtime that got `form_changed` on a page that may come from a cache (ADR-0004). `page` must be a local path. `no-store`. |
 | `POST forms/{key}/challenge` | A signed challenge (form, time, and optionally a proof-of-work puzzle). Fetched on first interaction, so cached pages stay cacheable. The response also carries what cached markup cannot: the places left per option, and the member values that rules use (§4.3.3). |
 | `POST forms/{key}/uploads` | Upload one file before submitting (progress per file): `multipart/form-data` with the `challenge` part first, then the `file` part, streamed and checked on its first bytes (ADR-0006). Returns a signed upload token. Limits per form, file and IP; `413 payload_too_large` and `415 unsupported_media_type` close the connection. |
@@ -880,20 +883,20 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   "Secrets": { "CrmToken": null },
   "Definitions": { "Mirror": false, "Folder": "~/umbraco/JironFormBuilder/forms" },
   "Limits": { "...": "hard caps the backoffice cannot exceed" },
-  "Designer": { "SettingLocks": [ { "type": "email", "setting": "from", "value": "noreply@example.com", "hidden": true } ] },
+  "Designer": { "SettingLocks": [ { "kind": "action", "type": "email", "setting": "from", "value": "noreply@example.com", "hidden": true } ] },
   "LockedSections": []
 }
 ```
 
 `Files:MaxFileBytes` caps the limit an editor can give any file field. It is not a request limit: the upload endpoint and the no-JS post set Kestrel's limit per request from the form's fields, whatever the site's `Umbraco:CMS:Runtime:MaxRequestLength` (ADR-0006).
 
-**Backoffice settings** (typed sections in `jfbSetting`; `global` scope, plus per-site overrides where marked):
+**Backoffice settings** (typed sections in `jfbSetting`, ADR-0008; `global` scope, plus per-site overrides where marked). A site is a root content node, and the site of a request is the root of the content the form is shown on or submitted from; without content, the global values apply.
 
-- **General:**
+- **General** (each field can be set per site):
   - default theme, the required-marker style, default labels;
   - new-form defaults (consent field, notify-the-creator action);
-  - per site: the base URL and the **time zone** (an IANA id, used for "today", opening dates and relative dates; saving refuses an id the server cannot resolve, ADR-0005).
-- **Email** (per site):
+  - per site: the base URL (by default the site's first `https` domain in Umbraco, otherwise Umbraco's application URL, never the request's Host header) and the **time zone** (an IANA id, used for "today", opening dates and relative dates; saving refuses an id the server cannot resolve, ADR-0005).
+- **Email** (each field can be set per site):
   - sender name and address;
   - default layout;
   - team recipients for system notices (failed deliveries);
@@ -912,13 +915,13 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - sensitive-field defaults;
   - third-party captcha consent mode (explicit, Cookiebot category, CMP through the JS API);
   - the insights switch.
-- **Access:** which user groups get which Jiron Form Builder permissions, globally and per folder or form (when the host doesn't lock them).
+- **Access:** which user groups get which Jiron Form Builder permissions, globally and per folder or form (when the host doesn't lock them). Stored in `jfbPermission` (ADR-0013), with the same locks, conflicts and audit as the sections.
 - **Integrations:** webhook signing secret reference, Slack and Teams defaults, Umbraco webhook events on or off.
 
 Every setting has:
 
 - a default, validation (server and client), help text, a docs entry and a test;
-- a "locked by configuration" display when the host locks it.
+- a "locked by configuration" display naming the key when the host locks it: locked, restricted (some values refused) or clamped (ADR-0008). A lock added later applies where the value is used, without rewriting stored rows.
 
 A settings change raises a notification and a cache refresher, so every server sees it at once.
 
@@ -1135,9 +1138,10 @@ Servers that Jiron Form Builder starts use only these ports. Ports the OS assign
 
 ### 4.14 Upgrade and compatibility policy
 
-- **Semantic Versioning** within each Umbraco major line. A patch never needs a migration, and a minor may add migrations but never breaks public C#, HTTP or JS APIs.
-- **The public surface** is listed in `docs/extending.md`: public C# types, `/jfb/api/v1`, the definition schema, the JS API and DOM events, theme view names and CSS custom properties.
-  - Breaking changes there need a new major or a new API version.
+- **Semantic Versioning** within each Umbraco major line. A patch never needs a migration, and a minor may add migrations but never breaks public C#, HTTP or JS APIs. Prereleases are `-alpha.N`, `-beta.N` and `-rc.N` (ADR-0010).
+- **The public surface** is listed in `docs/extending.md`: public C# types, `/jfb/api/v1`, the definition schema and the public projection, the JS API, DOM events and `data-jfb-*` attributes, theme view names, the markup contract and CSS custom properties, and host configuration keys (ADR-0010).
+  - Breaking changes there need a new major or a new API version, served beside the old one for at least the rest of the major.
+  - The management API belongs to the backoffice, which ships in the same package version. It changes by addition where it can, but it is not part of the guarantee, and the upgrade notes list any change that could break a site's own script.
   - Deprecations carry `[Obsolete]` with the replacement and last for the whole major.
 - **Data:** migrations are idempotent and forward-only. Definition and settings JSON carry `schemaVersion`, and code upgraders are tested with stored fixtures of every released version.
 - **Theme views are versioned.** Each one starts with a comment naming its contract version. The upgrade notes list every view whose contract changed, so sites with overrides know what to check.
@@ -1350,23 +1354,32 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
   - Measure the time from submission to email.
   - Write ADR-0007 "Background work, outbox and email".
   - Done when: the latency numbers are in the ADR, and no action ran twice in 1,000 simulated runs with two processors.
-- [ ] **1.7 Architecture and the remaining ADRs**
-  - Write `docs/architecture.md`, the contract for later phases:
-    - modules, the dependency diagram, the definition model and its JSON schema outline, the data model with an ER diagram;
-    - the public and management APIs, settings, extension points;
-    - a threat model (STRIDE table), quality budgets and the glossary.
+- [ ] **1.7a The foundation ADRs**
   - ADRs:
     - 0001 solution structure and packages;
     - 0002 the form definition model, versions and the public projection;
     - 0008 the settings model (typed sections, schema versions, scopes, locks);
-    - 0009 privacy defaults;
     - 0010 versioning, branching and the upgrade policy (§4.14);
-    - 0011 testing strategy;
+    - 0011 testing strategy.
+  - Done when: all of them are committed, and §4 of this roadmap is updated where the ADRs changed it.
+- [ ] **1.7b The other remaining ADRs**
+  - ADRs:
+    - 0009 privacy defaults;
     - 0012 anonymous endpoints, spam protection and challenges;
     - 0013 permissions;
     - 0014 the merge-tag language;
     - 0015 themes and the markup contract.
   - Done when: all of them are committed, and §4 of this roadmap is updated where the ADRs changed it.
+- [ ] **1.7c The architecture document**
+  - Write `docs/architecture.md`, the contract for later phases:
+    - modules, the dependency diagram, the definition model and its JSON schema outline, the data model with an ER diagram;
+    - the public and management APIs, settings, extension points;
+    - a threat model (STRIDE table), quality budgets and the glossary.
+  - It draws on every ADR so far and does not repeat them: where an ADR decides something, the document says so in a line and links to it.
+  - Done when:
+    - it is committed with every part above;
+    - a check shows that its ER diagram names every table of §4.5, and its API sections every route of §4.6;
+    - all ten ADRs of 1.7a and 1.7b are committed, and §4 of this roadmap is updated where they changed it.
 - [ ] **1.8 Phase review**
   - A subagent reviews the ADRs for contradictions with §1, §2 and §4. Fix what it finds.
   - Check that no *(verify)* is left in §3 and §4.
