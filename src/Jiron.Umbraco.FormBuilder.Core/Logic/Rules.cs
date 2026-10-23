@@ -50,7 +50,7 @@ internal static class Rules
     /// <summary>Checks the condition, then evaluates it.</summary>
     public static bool EvaluateCondition(Condition condition, Subject subject)
     {
-        CheckCondition(condition, subject);
+        CheckCondition(condition, subject.Fields);
         return Evaluate(condition, subject);
     }
 
@@ -58,8 +58,27 @@ internal static class Rules
     public static bool? EvaluateRule(Rule rule, Subject subject)
     {
         var group = new Group(rule.Match, rule.Conditions);
-        CheckGroup(group, subject);
+        CheckGroup(group, subject.Fields);
         return rule.Enabled ? EvaluateGroup(group, subject) : null;
+    }
+
+    /// <summary>
+    /// The check both runtimes run before they evaluate a condition, on the form's fields alone: null when the
+    /// condition can be evaluated, otherwise the code of the first problem (publishing refuses it, ADR-0035).
+    /// </summary>
+    /// <param name="condition">The condition.</param>
+    /// <param name="fields">The fields that hold a value rules can compare, with the kind each compares as.</param>
+    public static string? Check(Condition condition, IReadOnlyDictionary<string, FieldKind> fields)
+    {
+        try
+        {
+            CheckCondition(condition, fields);
+            return null;
+        }
+        catch (LogicException exception)
+        {
+            return exception.Code;
+        }
     }
 
     /// <summary>Context subjects: what a condition can look at besides answers, each with the kind it compares as.</summary>
@@ -73,7 +92,7 @@ internal static class Rules
         _ => throw new LogicException(LogicErrors.UnknownField),
     };
 
-    private static FieldKind SubjectKind(Condition condition, Subject subject)
+    private static FieldKind SubjectKind(Condition condition, IReadOnlyDictionary<string, FieldKind> fields)
     {
         if ((condition.Field is null) == (condition.Context is null))
         {
@@ -85,20 +104,20 @@ internal static class Rules
             return ContextKind(context);
         }
 
-        return subject.Fields.TryGetValue(condition.Field!, out var kind)
+        return fields.TryGetValue(condition.Field!, out var kind)
             ? kind
             : throw new LogicException(LogicErrors.UnknownField);
     }
 
     /// <summary>A single operand: text, another answer, or a date relative to today.</summary>
-    private static void CheckOne(Operand? operand, Subject subject)
+    private static void CheckOne(Operand? operand, IReadOnlyDictionary<string, FieldKind> fields)
     {
         switch (operand)
         {
             case TextOperand:
                 return;
             case FieldOperand field:
-                if (!subject.Fields.ContainsKey(field.Field))
+                if (!fields.ContainsKey(field.Field))
                 {
                     throw new LogicException(LogicErrors.UnknownField);
                 }
@@ -111,9 +130,9 @@ internal static class Rules
         }
     }
 
-    private static void CheckCondition(Condition condition, Subject subject)
+    private static void CheckCondition(Condition condition, IReadOnlyDictionary<string, FieldKind> fields)
     {
-        var kind = SubjectKind(condition, subject);
+        var kind = SubjectKind(condition, fields);
         if (!Operators.TryGetValue(condition.Op, out var op))
         {
             throw new LogicException(LogicErrors.UnknownOperator);
@@ -135,19 +154,19 @@ internal static class Rules
 
                 return;
             case OperandShape.One:
-                CheckOne(value, subject);
+                CheckOne(value, fields);
                 return;
             case OperandShape.List:
                 if (value is ListOperand list)
                 {
                     foreach (var item in list.Items)
                     {
-                        CheckOne(item, subject);
+                        CheckOne(item, fields);
                     }
                 }
                 else if (value is FieldOperand)
                 {
-                    CheckOne(value, subject);
+                    CheckOne(value, fields);
                 }
                 else
                 {
@@ -163,7 +182,7 @@ internal static class Rules
 
                 foreach (var item in pair.Items)
                 {
-                    CheckOne(item, subject);
+                    CheckOne(item, fields);
                 }
 
                 return;
@@ -197,7 +216,7 @@ internal static class Rules
     private static bool IsCount(string text) =>
         text.Length is >= 1 and <= 6 && text.All(char.IsAsciiDigit) && (text.Length == 1 || text[0] != '0');
 
-    private static void CheckGroup(Group group, Subject subject)
+    private static void CheckGroup(Group group, IReadOnlyDictionary<string, FieldKind> fields)
     {
         if (group.Match is not ("all" or "any"))
         {
@@ -208,11 +227,11 @@ internal static class Rules
         {
             if (item is Group nested)
             {
-                CheckGroup(nested, subject);
+                CheckGroup(nested, fields);
             }
             else
             {
-                CheckCondition((Condition)item, subject);
+                CheckCondition((Condition)item, fields);
             }
         }
     }
@@ -313,7 +332,7 @@ internal static class Rules
 
     private static bool Evaluate(Condition condition, Subject subject)
     {
-        var kind = SubjectKind(condition, subject);
+        var kind = SubjectKind(condition, subject.Fields);
         var values = SubjectValues(condition, subject);
         var value = condition.Value;
         List<string> Operands() => Resolve(value!, subject);

@@ -132,8 +132,13 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
 
 - **Versions:** every save appends a version row; publishing appends a published one, updates the field catalogue and
   raises the public revision when the projection changed. Drafts keep what publishing refuses; the form check lists it.
-- **The public projection** is built from an allowlist and carries no actions, outcomes, recipients, option-source
-  configuration or privacy settings. Its TypeScript types and schema ship in `schemas/` (6.6).
+- **Publishing** ([ADR-0035](decisions/0035-structural-validation-and-public-projection.md)) runs the save checks and
+  then the structural validation: aliases, names and option values, references, what each field type supports (its
+  traits, from the field-type registry from 5.1 on), rule effects, cycles of visibility through rules and containment,
+  safe patterns and redirects. Every problem has a code and a JSON path.
+- **The public projection** is built from an allowlist of public types (`Core.Definitions.Projection`) and carries no
+  actions, outcomes, recipients, option-source configuration, privacy settings or switched-off rules; its SHA-256 is
+  `PublicHash`. Its TypeScript types and schema ship in `schemas/` (6.6).
 - **Reading and writing** ([ADR-0034](decisions/0034-definition-model-reading-and-writing.md)): the records are
   public in `Jiron.Umbraco.FormBuilder.Core.Definitions`; Core's internal serializer reads strictly, reporting every
   problem with a code and a JSON path, and writes the canonical form, whose SHA-256 is `DefinitionHash`. The limits
@@ -372,7 +377,7 @@ others in a cluster.
 | Repudiation | An editor denies a change, export, deletion or reveal | the audit log with user, entity and changed fields, never values | §4.10, ADR-0013 | 4.3, 12.4b |
 | Repudiation | A visitor disputes a consent | the exact consent text's hash and culture with the entry | ADR-0009 | 6.1 |
 | Repudiation | Nobody knows whether a mail went out | runs and mail with states, `Uncertain` and the deliveries log | ADR-0007 | 8.1, 8.2 |
-| Information disclosure | The projection leaks recipients, secrets or option sources | an allowlisted projection and a property-style test | ADR-0002 | 4.2b |
+| Information disclosure | The projection leaks recipients, secrets or option sources | an allowlisted projection and a property-style test | ADR-0002, ADR-0035 | 4.2b |
 | Information disclosure | XSS through names or values in the backoffice, Razor, mail or exports | escaping contexts, one confirm helper, the formula guard | ADR-0014, §4.10 | 5.3, 9.1, 11.4 |
 | Information disclosure | Personal data in logs or job errors | no values, email or IP addresses, tokens or file names in logs; exception types only | §4.10, ADR-0009 | every step with captured logs |
 | Information disclosure | Users see forms or entries they should not | permissions, restricted folders and forms, `404` for what they cannot see, database-side filters | ADR-0013 | 4.6, 4.7 |
@@ -393,7 +398,7 @@ others in a cluster.
 | Elevation of privilege | Test-only endpoints or loopback access in production | guarded to test hosts; a test proves a normal host has none | ADR-0011, §4.10 | 3.4 |
 | Elevation of privilege | Merge tags or calculations running code | a grammar of paths and filters, no evaluation, no reflection | ADR-0014, ADR-0005 | 5.3 |
 | Elevation of privilege | An editor bypasses a host lock | locks enforced on the server and where values are used | ADR-0008 | 4.4 |
-| Elevation of privilege | An open redirect through an outcome | the editor fixes scheme and host; merge tags only after the host | ADR-0002 | 6.1, 16.1 |
+| Elevation of privilege | An open redirect through an outcome | the editor fixes scheme and host; merge tags only after the host; publishing refuses the rest | ADR-0002, ADR-0035 | 4.2b, 6.1, 16.1 |
 | Elevation of privilege | A move widens access to a restricted form | moves that widen access need `managePermissions` | ADR-0013 | 4.6 |
 
 Phase reviews 6.8 and 7.4 and the security review 16.1 repeat this pass on the code as it is.

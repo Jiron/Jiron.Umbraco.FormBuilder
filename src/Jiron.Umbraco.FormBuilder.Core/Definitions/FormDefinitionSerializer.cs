@@ -193,6 +193,18 @@ internal sealed class FormDefinitionSerializer
         return canonical.Length > _limits.MaxBytes ? [TooLarge().Problems[0]] : [];
     }
 
+    /// <summary>
+    /// The problems publishing refuses: those of a save, and when there are none, those of the structural validation
+    /// (ADR-0035), which a draft keeps.
+    /// </summary>
+    /// <param name="definition">The definition to publish.</param>
+    /// <param name="types">The field types the site has.</param>
+    public IReadOnlyList<DefinitionProblem> CheckPublish(FormDefinition definition, FieldTypeCatalog types)
+    {
+        var problems = CheckSave(definition);
+        return problems.Count > 0 ? problems : DefinitionStructureChecks.Check(definition, types);
+    }
+
     private static byte[] WriteCanonical(FormDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
