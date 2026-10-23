@@ -1,7 +1,9 @@
 # Tests
 
 How Jiron Form Builder is tested is decided in [ADR-0011](../docs/decisions/0011-testing-strategy.md); the Testing
-project is described in [ADR-0029](../docs/decisions/0029-testing-project.md).
+project is described in [ADR-0029](../docs/decisions/0029-testing-project.md), the shared vectors in
+[ADR-0005](../docs/decisions/0005-shared-logic-and-test-vectors.md) and
+[ADR-0030](../docs/decisions/0030-porting-the-shared-logic.md).
 
 ## Running them
 
@@ -16,9 +18,30 @@ installed; Umbraco works in `Tests.Integration/TEMP/`, which git ignores.
 
 | Project | What it holds |
 | --- | --- |
-| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP) and the Testing project's own tests. |
+| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), and the Testing project's own tests. |
 | `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, and the test-only endpoints on a real site. |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
+| `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
+
+## The shared vectors
+
+Rules, validation, merge tags and calculations exist in C# and in TypeScript, and both must give the same answer
+(D10). Each module in `vectors/suites/` holds cases in the `jfb-vectors/1` format, and `vectors/build.mjs` writes it to
+`vectors/<suite>.json` as plain ASCII, with special characters built from code points:
+
+```
+node tests/vectors/build.mjs
+node tests/vectors/build.mjs --check
+```
+
+Both runners read every `vectors/*.json` in place, one test case per vector: `Logic/VectorTests.cs` in the unit tests
+(a case is named `Vector(<suite>/<id>)`) and `packages/logic/test/vectors.test.ts` in the client's `npm test`. A case
+that passes in one runtime and fails in the other is a bug in one of them.
+
+**The tables check** compares the two runtimes' Unicode data. `npm run tables` in `packages/logic` writes what
+TypeScript's clean, fold and NFC recomposition do to every code point into `vectors/tables/typescript.json`; a Vitest
+test fails when the file no longer matches the running Node, and `Logic/UnicodeTablesTests.cs` compares Core with it,
+listing the known gaps exactly.
 
 ## The Testing project
 

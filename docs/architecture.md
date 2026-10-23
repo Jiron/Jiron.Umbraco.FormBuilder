@@ -66,7 +66,7 @@ database connection of its own. Its areas:
 | --- | --- | --- |
 | Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions, the field catalogue | ADR-0002 |
 | Fields and options | the field type registry, the built-in types, option sources and lists, places on options | ADR-0002, §4.3.2 |
-| Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014 |
+| Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
 | Actions and email | action types, action runs, the email outbox, the worker | ADR-0007 |
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
@@ -91,7 +91,8 @@ database connection of its own. Its areas:
 **The client packages** (`src/Jiron.Umbraco.FormBuilder.Web/Client`, an npm workspace):
 
 - `logic`: rules, validation, merge tags and calculations in TypeScript; no DOM and no dependencies; run against the
-  shared vectors ([ADR-0005](decisions/0005-shared-logic-and-test-vectors.md));
+  shared vectors ([ADR-0005](decisions/0005-shared-logic-and-test-vectors.md),
+  [ADR-0030](decisions/0030-porting-the-shared-logic.md));
 - `runtime`: enhances Razor-rendered forms through the markup contract;
 - `element`: `<jfb-form>`, the headless renderer, with the same markup and runtime;
 - `backoffice`: the Forms section in Lit and TypeScript with UUI, through the generated client.

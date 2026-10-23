@@ -72,6 +72,13 @@ installed.
 dotnet test Jiron.Umbraco.FormBuilder.slnx --blame-hang-timeout 10m
 ```
 
+The shared vectors in `tests/vectors/` run in the unit tests and in the client's `npm test`. After changing a suite in
+`tests/vectors/suites/`, write the vector files again:
+
+```
+node tests/vectors/build.mjs
+```
+
 **Before you push**, format and check everything:
 
 ```

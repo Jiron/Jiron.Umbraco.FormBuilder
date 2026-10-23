@@ -1,6 +1,7 @@
 # 0005. Shared logic and test vectors
 
-- Status: accepted; unsafe patterns at publish and stored calculation results amended in 1.8
+- Status: accepted; unsafe patterns at publish and stored calculation results amended in 1.8; the instruction limit
+  for patterns, the instant's form and IANA-only time zones amended in 3.4b (ADR-0030)
 - Date: 2026-10-23
 - Roadmap step: 1.5 (decided); built in 3.4 (the vector runners), 4.4 (the time zone and start-up checks), 5.2 (rules
   and validation), 5.3 (merge tags and calculations), 5.4 (number fields), 6.1 and 6.4 (the wire); reviewed in 5.5
@@ -71,7 +72,8 @@ Option 3 for text, option 2 for patterns, exact decimals for numbers, and one JS
     without a zone; all validated as real calendar values in years 1 to 9999;
   - a checked checkbox is "true"; choices and files are their option keys or tokens; text is any string;
   - the instant of evaluation is ISO 8601 with Z or an offset, injected (the server's `TimeProvider`, the browser's
-    clock).
+    clock), in one form: `YYYY-MM-DDTHH:mm:ss`, an optional fraction of 1 to 9 digits, and `Z` or `+HH:mm`/`-HH:mm`,
+    from 1970 to the end of 9998 in UTC; anything else is `invalid_context` (ADR-0030).
 - **Text:**
   - **clean:** lone surrogates and noncharacters become U+FFFD, the text is normalised to NFC, and an explicit list
     of whitespace is trimmed from both ends (the research note lists it);
@@ -91,14 +93,14 @@ Option 3 for text, option 2 for patterns, exact decimals for numbers, and one JS
 - **Dates and "today":**
   - "today" is the local date of the injected instant in the site's IANA time zone: `Intl.DateTimeFormat` with
     `formatToParts` in the browser, `TimeZoneInfo.FindSystemTimeZoneById` and `ConvertTime` on the server; an unknown
-    zone is `unknown_time_zone`;
+    zone is `unknown_time_zone`, and so are Windows names and offsets, which only one runtime takes (ADR-0030);
   - relative dates are `([+-][0-9]{1,4}[dwmy])*`, applied in written order, with months and years clamped to the end
     of the month; outside years 1 to 9999 they match nothing;
   - calendar arithmetic uses day numbers, never JavaScript `Date`;
   - the browser uses its own clock and the site's zone; the server decides, so a device with a wrong clock sees the
     server's answer as an ordinary validation message.
 - **Patterns:** the subset and its limits of the research note (500 code points, counts up to 1,000, at most 2,000
-  characters once counted repeats are unrolled), parsed, compiled to a Thompson automaton and run over code points,
+  characters once counted repeats are unrolled), and at most 10,000 instructions in the automaton (ADR-0030), parsed, compiled to a Thompson automaton and run over code points,
   the same algorithm in both runtimes. A pattern matches the whole value, is case-sensitive, and is normalised like a
   value. Anything outside the subset is `unsafe_pattern`: publishing refuses it, and a draft keeps it while the form
   check lists it (ADR-0002). Neither runtime's regular-expression engine runs editors' patterns.
