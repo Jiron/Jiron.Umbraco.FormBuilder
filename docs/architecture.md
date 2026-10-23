@@ -318,7 +318,7 @@ sequenceDiagram
   V->>P: challenge (first interaction)
   P-->>V: signed challenge, places, member values
   V->>P: entries {submissionId, revision, values, consents, challenge}
-  P->>S: limits, origin, body checked
+  P->>S: CORS, body and time limits checked
   S->>S: the gate: the origin (members-only), rate limits, the challenge (and its member)
   S->>D: a known submissionId with its own challenge? then the original receipt
   S->>S: revision and consent hashes, availability, protection and spam score
