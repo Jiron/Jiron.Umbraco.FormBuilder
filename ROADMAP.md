@@ -1583,7 +1583,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - integration tests cover CRUD for each of these repositories, and concurrency conflicts on forms and settings;
     - a lookup by alias finds the form in any letter case (ADR-0033);
     - a test fails the build when Core constructs a database connection of its own (ADR-0007).
-- [ ] **4.3b The library and permission repositories**
+- [x] **4.3b The library and permission repositories** (2026-10-24, 6410aaf)
   - **Repositories:** option lists, themes, email layouts, templates and permissions, through the gate of 4.3a.
   - **Aliases** (option lists, themes, email layouts) are looked up without regard to case on both databases, as they are unique (ADR-0033).
   - Done when: integration tests cover CRUD for each of these repositories and concurrency conflicts on the library rows that carry a concurrency version; a lookup by alias finds the option list, theme or layout in any letter case (ADR-0033).
