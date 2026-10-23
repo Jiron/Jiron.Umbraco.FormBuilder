@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-23T12:00:00Z",
+  "title": "Design System: Jiron Form Builder",
+  "source": "docs/ux/tokens.md is the single source of every value. The fallbacks inside var() below repeat the light-scheme defaults from docs/ux/tokens.md only so the snippets render on their own; the token names are the contract. The build is docs/ux/website/assets/theme.css.",
+  "extensions": {
+    "colorMeta": {
+      "accent": { "role": "primary", "cssProperty": "--jfb-color-accent", "displayName": "Evergreen", "canonical": "#0f6e5c", "dark": "#5fd0b8", "use": "Act, chosen, done: the primary button, chosen choices, links, done steps, the outcome mark." },
+      "on-accent": { "role": "primary", "cssProperty": "--jfb-color-on-accent", "displayName": "On Evergreen", "canonical": "#ffffff", "dark": "#0b1a17", "use": "Text and ticks on the accent." },
+      "focus": { "role": "secondary", "cssProperty": "--jfb-color-focus", "displayName": "Signal Blue", "canonical": "#1a5fd1", "dark": "#8ab4f8", "use": "The focus ring, never anything else." },
+      "error": { "role": "tertiary", "cssProperty": "--jfb-color-error", "displayName": "Correction Red", "canonical": "#b3261e", "dark": "#f2a59e", "use": "Error text, invalid borders, the error summary." },
+      "text": { "role": "neutral", "cssProperty": "--jfb-color-text", "displayName": "Cool Ink", "canonical": "#1d2433", "dark": "#e8eaee", "use": "Text, typed answers, icons on plain buttons." },
+      "text-muted": { "role": "neutral", "cssProperty": "--jfb-color-text-muted", "displayName": "Slate Note", "canonical": "#5b6372", "dark": "#aab2bf", "use": "Help, marks, counters, places left, the progress text." },
+      "surface": { "role": "neutral", "cssProperty": "--jfb-color-surface", "displayName": "Plain Surface", "canonical": "#ffffff", "dark": "#1d232d", "use": "Controls, choice cards, files, card groups, notices." },
+      "border": { "role": "neutral", "cssProperty": "--jfb-color-border", "displayName": "Boundary Grey", "canonical": "#767c88", "dark": "#8b95a5", "use": "The boundary of every control." },
+      "rule": { "role": "neutral", "cssProperty": "--jfb-color-rule", "displayName": "Hairline", "canonical": "#d9dde3", "dark": "#343c49", "use": "Hairlines between groups and rows, steps not reached, the progress track." }
+    },
+    "derivedColors": [
+      { "name": "accent strong", "value": "color-mix(in srgb, var(--jfb-color-accent) 80%, var(--jfb-color-text))", "purpose": "The primary button on hover." },
+      { "name": "border strong", "value": "color-mix(in srgb, var(--jfb-color-border) 50%, var(--jfb-color-text))", "purpose": "A control's boundary on hover." },
+      { "name": "tint", "value": "color-mix(in srgb, var(--jfb-color-accent) 8%, var(--jfb-color-surface))", "purpose": "A chosen card, the outcome mark's disc, a file being dragged in." },
+      { "name": "wash", "value": "color-mix(in srgb, var(--jfb-color-text) 5%, var(--jfb-color-surface))", "purpose": "Disabled and read-only fills, prefix and suffix boxes, hover on plain buttons." },
+      { "name": "error wash", "value": "color-mix(in srgb, var(--jfb-color-error) 7%, var(--jfb-color-surface))", "purpose": "The error summary's fill." }
+    ],
+    "typographyMeta": {
+      "title": { "displayName": "Title", "cssProperty": "--jfb-font-size-title", "purpose": "The page title and the outcome heading." },
+      "headline": { "displayName": "Headline", "cssProperty": "--jfb-font-size-large", "purpose": "Group headings, summary section headings, the error summary heading, notices, calculated values." },
+      "body": { "displayName": "Body", "cssProperty": "--jfb-font-size", "purpose": "The site's own font and size; unset by default so the form inherits them." },
+      "label": { "displayName": "Label", "cssProperty": "--jfb-font-weight-strong", "purpose": "Labels, legends, buttons, inline errors, summary terms." },
+      "small": { "displayName": "Small", "cssProperty": "--jfb-font-size-small", "purpose": "Help, counters, places left, the progress text, captions, a grid's column heads." }
+    },
+    "radii": [
+      { "name": "base", "cssProperty": "--jfb-radius", "purpose": "The one radius every step derives from." },
+      { "name": "panel", "cssProperty": "--jfb-radius-panel", "purpose": "Card groups, the error summary, notices." },
+      { "name": "card", "cssProperty": "--jfb-radius-card", "purpose": "Choice cards, the upload zone, files, the signature pad, the ranking list, images." },
+      { "name": "control", "cssProperty": "--jfb-radius-control", "purpose": "Inputs, dropdowns, buttons, prefix and suffix boxes." },
+      { "name": "tag", "cssProperty": "--jfb-radius-tag", "purpose": "Checkboxes, file thumbnails." }
+    ],
+    "spacing": [
+      { "name": "space-1", "cssProperty": "--jfb-space-1" },
+      { "name": "space-2", "cssProperty": "--jfb-space-2" },
+      { "name": "space-3", "cssProperty": "--jfb-space-3" },
+      { "name": "space-4", "cssProperty": "--jfb-space-4" },
+      { "name": "space-5", "cssProperty": "--jfb-space-5" },
+      { "name": "space-6", "cssProperty": "--jfb-space-6", "purpose": "Between groups and between the form's parts." },
+      { "name": "space-7", "cssProperty": "--jfb-space-7", "purpose": "The ledger's gutter between heading column and fields." }
+    ],
+    "shadows": [
+      { "name": "shade", "cssProperty": "--jfb-shade", "value": "var(--jfb-shade)", "purpose": "The one ink-tinted shade, used only by card-style groups. Values in docs/ux/tokens.md." }
+    ],
+    "motion": [
+      { "name": "fast", "cssProperty": "--jfb-motion-fast", "purpose": "A button sinking when pressed, colour changes on hover and choice." },
+      { "name": "base", "cssProperty": "--jfb-motion-base", "purpose": "An error, a new repeater row or a new page coming in." },
+      { "name": "ease", "cssProperty": "--jfb-motion-ease", "purpose": "Every movement; colour changes use ease. Both durations are zero with reduced motion." }
+    ],
+    "breakpoints": [
+      { "name": "narrow", "value": "@container jfb-form (max-width: 479px)", "purpose": "One column, full-width navigation buttons, Step N of M beside short bars." },
+      { "name": "steps-named", "value": "@container jfb-form (min-width: 480px)", "purpose": "Step names show; the current step stands in for the page title." },
+      { "name": "scale-wrap", "value": "@container jfb-form (max-width: 539px)", "purpose": "A long scale wraps into even rows." },
+      { "name": "matrix-stack", "value": "@container jfb-form (max-width: 599px)", "purpose": "A grid of statements stacks." },
+      { "name": "ledger", "value": "@container jfb-form (min-width: 720px)", "purpose": "The ledger: heading column in the first third, fields in the other two." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "One per page, filled with the accent; sinks a step when pressed.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Next</button>",
+      "css": ".ds-btn { display: inline-flex; gap: var(--jfb-space-2, 8px); align-items: center; justify-content: center; min-block-size: var(--jfb-size-control, 48px); padding: var(--jfb-space-2, 8px) var(--jfb-space-5, 24px); font: inherit; font-weight: var(--jfb-font-weight-strong, 600); line-height: 1.25; color: var(--jfb-color-text, #1d2433); background: var(--jfb-color-surface, #fff); border: 1px solid var(--jfb-color-border, #767c88); border-radius: var(--jfb-radius-control, 6px); cursor: pointer; transition: background-color var(--jfb-motion-fast, 120ms) ease, border-color var(--jfb-motion-fast, 120ms) ease, transform var(--jfb-motion-fast, 120ms) var(--jfb-motion-ease, cubic-bezier(.23, 1, .32, 1)); } .ds-btn-primary { color: var(--jfb-color-on-accent, #fff); background: var(--jfb-color-accent, #0f6e5c); border-color: var(--jfb-color-accent, #0f6e5c); } .ds-btn-primary:hover { background: color-mix(in srgb, var(--jfb-color-accent, #0f6e5c) 80%, var(--jfb-color-text, #1d2433)); border-color: color-mix(in srgb, var(--jfb-color-accent, #0f6e5c) 80%, var(--jfb-color-text, #1d2433)); } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { outline: var(--jfb-focus-ring, 2px solid var(--jfb-color-focus, #1a5fd1)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Outlined, for Back and other page actions; washes on hover.",
+      "html": "<button class=\"ds-btn-secondary\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m15 18-6-6 6-6\"/></svg>Back</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; gap: var(--jfb-space-2, 8px); align-items: center; min-block-size: var(--jfb-size-control, 48px); padding: var(--jfb-space-2, 8px) var(--jfb-space-5, 24px); font: inherit; font-weight: var(--jfb-font-weight-strong, 600); color: var(--jfb-color-text, #1d2433); background: var(--jfb-color-surface, #fff); border: 1px solid var(--jfb-color-border, #767c88); border-radius: var(--jfb-radius-control, 6px); cursor: pointer; transition: background-color var(--jfb-motion-fast, 120ms) ease, border-color var(--jfb-motion-fast, 120ms) ease; } .ds-btn-secondary:hover { background: color-mix(in srgb, var(--jfb-color-text, #1d2433) 5%, var(--jfb-color-surface, #fff)); border-color: color-mix(in srgb, var(--jfb-color-border, #767c88) 50%, var(--jfb-color-text, #1d2433)); } .ds-btn-secondary:active { transform: translateY(1px); } .ds-btn-secondary:focus-visible { outline: var(--jfb-focus-ring, 2px solid var(--jfb-color-focus, #1a5fd1)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Link Button",
+      "kind": "button",
+      "refersTo": "button-link",
+      "description": "Accent, underlined, for small actions such as Change and Remove.",
+      "html": "<button class=\"ds-btn-link\">Change</button>",
+      "css": ".ds-btn-link { min-block-size: 44px; padding: var(--jfb-space-2, 8px) 0; font: inherit; font-weight: var(--jfb-font-weight-strong, 600); color: var(--jfb-color-accent, #0f6e5c); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .2em; background: none; border: 0; cursor: pointer; } .ds-btn-link:hover { text-decoration-thickness: 2px; } .ds-btn-link:focus-visible { outline: var(--jfb-focus-ring, 2px solid var(--jfb-color-focus, #1a5fd1)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "control",
+      "description": "Label, help, control, error, in that order; the help never sits inside the control.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-label\" for=\"ds-mobile\">Mobile number <span class=\"ds-mark\">(optional)</span></label><p class=\"ds-help\">For a text message the day before.</p><input class=\"ds-control\" id=\"ds-mobile\" type=\"tel\"></div>",
+      "css": ".ds-field { display: grid; gap: var(--jfb-space-2, 8px); max-inline-size: 28rem; } .ds-label { font-weight: var(--jfb-font-weight-strong, 600); color: var(--jfb-color-text, #1d2433); } .ds-mark { font-weight: 400; color: var(--jfb-color-text-muted, #5b6372); } .ds-help { margin: 0; font-size: var(--jfb-font-size-small, .875em); color: var(--jfb-color-text-muted, #5b6372); } .ds-control { min-block-size: var(--jfb-size-control, 48px); padding: var(--jfb-space-2, 8px) var(--jfb-space-3, 12px); font: inherit; font-size: max(1em, 16px); color: var(--jfb-color-text, #1d2433); background: var(--jfb-color-surface, #fff); border: 1px solid var(--jfb-color-border, #767c88); border-radius: var(--jfb-radius-control, 6px); caret-color: var(--jfb-color-accent, #0f6e5c); transition: border-color var(--jfb-motion-fast, 120ms) ease; } .ds-control:focus-visible { outline: var(--jfb-focus-ring, 2px solid var(--jfb-color-focus, #1a5fd1)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Invalid Field",
+      "kind": "input",
+      "refersTo": "control-invalid",
+      "description": "An error-red edge doubled by an inset ring, and a bold message led by the alert icon.",
+      "html": "<div class=\"ds-field-err\"><label class=\"ds-label-err\" for=\"ds-first\">First name</label><input class=\"ds-control-err\" id=\"ds-first\" aria-invalid=\"true\" aria-describedby=\"ds-first-err\"><p class=\"ds-error\" id=\"ds-first-err\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4M12 17h.01\"/></svg>Enter your first name</p></div>",
+      "css": ".ds-field-err { display: grid; gap: var(--jfb-space-2, 8px); max-inline-size: 28rem; } .ds-label-err { font-weight: var(--jfb-font-weight-strong, 600); color: var(--jfb-color-text, #1d2433); } .ds-control-err { min-block-size: var(--jfb-size-control, 48px); padding: var(--jfb-space-2, 8px) var(--jfb-space-3, 12px); font: inherit; color: var(--jfb-color-text, #1d2433); background: var(--jfb-color-surface, #fff); border: 1px solid var(--jfb-color-error, #b3261e); box-shadow: inset 0 0 0 1px var(--jfb-color-error, #b3261e); border-radius: var(--jfb-radius-control, 6px); } .ds-control-err:focus-visible { outline: var(--jfb-focus-ring, 2px solid var(--jfb-color-focus, #1a5fd1)); outline-offset: 2px; } .ds-error { display: flex; gap: var(--jfb-space-2, 8px); align-items: center; margin: 0; font-weight: var(--jfb-font-weight-strong, 600); color: var(--jfb-color-error, #b3261e); }"
+    },
+    {
+      "name": "Choice Card",
+      "kind": "chip",
+      "refersTo": "choice-card",
+      "description": "The whole card is the target; chosen takes the tint and a doubled accent edge; full is dashed but readable.",
+      "html": "<div class=\"ds-cards\"><label class=\"ds-card ds-card-on\"><input type=\"radio\" name=\"ds-w\" checked><span><strong>Bike repair basics</strong><small>3 places left</small></span></label><label class=\"ds-card\"><input type=\"radio\" name=\"ds-w\"><span><strong>Mending clothes</strong><small>12 places left</small></span></label><label class=\"ds-card ds-card-full\"><input type=\"radio\" name=\"ds-w\" disabled><span><strong>Small electricals</strong><small>Full</small></span></label></div>",
+      "css": ".ds-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: var(--jfb-space-3, 12px); } .ds-card { display: flex; gap: var(--jfb-space-3, 12px); align-items: flex-start; padding: var(--jfb-space-4, 16px); color: var(--jfb-color-text, #1d2433); background: var(--jfb-color-surface, #fff); border: 1px solid var(--jfb-color-border, #767c88); border-radius: var(--jfb-radius-card, 9px); cursor: pointer; transition: border-color var(--jfb-motion-fast, 120ms) ease, background-color var(--jfb-motion-fast, 120ms) ease; } .ds-card > span { display: grid; gap: var(--jfb-space-1, 4px); } .ds-card small { font-size: var(--jfb-font-size-small, .875em); color: var(--jfb-color-text-muted, #5b6372); } .ds-card input { margin: 0; inline-size: 24px; block-size: 24px; accent-color: var(--jfb-color-accent, #0f6e5c); } .ds-card:hover { border-color: color-mix(in srgb, var(--jfb-color-border, #767c88) 50%, var(--jfb-color-text, #1d2433)); } .ds-card-on, .ds-card-on:hover { background: color-mix(in srgb, var(--jfb-color-accent, #0f6e5c) 8%, var(--jfb-color-surface, #fff)); border-color: var(--jfb-color-accent, #0f6e5c); box-shadow: inset 0 0 0 1px var(--jfb-color-accent, #0f6e5c); } .ds-card-full, .ds-card-full:hover { background: transparent; border-style: dashed; border-color: var(--jfb-color-border, #767c88); cursor: not-allowed; } .ds-card:has(:focus-visible) { outline: var(--jfb-focus-ring, 2px solid var(--jfb-color-focus, #1a5fd1)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Step Progress",
+      "kind": "nav",
+      "refersTo": "progress-steps",
+      "description": "Equal bars across the form; done and current take the accent; the current step's name is the visible page title.",
+      "html": "<ol class=\"ds-steps\"><li class=\"ds-step-done\">Your details</li><li class=\"ds-step-now\" aria-current=\"step\">Your workshop</li><li>Check your answers</li></ol>",
+      "css": ".ds-steps { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: var(--jfb-space-2, 8px); margin: 0; padding: 0; list-style: none; } .ds-steps > li { padding-block-start: var(--jfb-space-2, 8px); font-size: var(--jfb-font-size-small, .875em); color: var(--jfb-color-text-muted, #5b6372); border-block-start: 4px solid var(--jfb-color-rule, #d9dde3); } .ds-steps > .ds-step-done, .ds-steps > .ds-step-now { color: var(--jfb-color-text, #1d2433); border-color: var(--jfb-color-accent, #0f6e5c); } .ds-steps > .ds-step-now { font-weight: var(--jfb-font-weight-strong, 600); }"
+    },
+    {
+      "name": "Error Summary",
+      "kind": "custom",
+      "refersTo": "error-summary",
+      "description": "The signature moment: one list at the top that names each field and its fix, each a link to the field.",
+      "html": "<div class=\"ds-errsum\" tabindex=\"-1\"><h2><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4M12 17h.01\"/></svg>Check these answers</h2><ul><li><a href=\"#ds-first\">Enter your first name</a></li><li><a href=\"#ds-email\">Enter your email address, for example name@example.com</a></li></ul></div>",
+      "css": ".ds-errsum { display: grid; gap: var(--jfb-space-2, 8px); padding: var(--jfb-space-4, 16px) var(--jfb-space-5, 24px); color: var(--jfb-color-text, #1d2433); background: color-mix(in srgb, var(--jfb-color-error, #b3261e) 7%, var(--jfb-color-surface, #fff)); border: 2px solid var(--jfb-color-error, #b3261e); border-radius: var(--jfb-radius-panel, 12px); } .ds-errsum:focus-visible { outline: var(--jfb-focus-ring, 2px solid var(--jfb-color-focus, #1a5fd1)); outline-offset: 2px; } .ds-errsum h2 { display: flex; gap: var(--jfb-space-2, 8px); align-items: center; margin: 0; font-size: var(--jfb-font-size-large, 1.25em); font-weight: var(--jfb-font-weight-strong, 600); } .ds-errsum h2 svg { color: var(--jfb-color-error, #b3261e); } .ds-errsum ul { display: grid; margin: 0; padding: 0; list-style: none; } .ds-errsum a { display: block; min-block-size: 44px; padding-block: var(--jfb-space-2, 8px); font-weight: var(--jfb-font-weight-strong, 600); color: var(--jfb-color-error, #b3261e); } .ds-errsum a:focus-visible { outline: var(--jfb-focus-ring, 2px solid var(--jfb-color-focus, #1a5fd1)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Card Group",
+      "kind": "card",
+      "refersTo": "group-card",
+      "description": "The only shaded element: lifted by the one shade, no visible border; its transparent border is the edge in forced colours.",
+      "html": "<fieldset class=\"ds-cardgroup\"><legend>Who is coming</legend><p>Guests under 16 come with an adult.</p></fieldset>",
+      "css": ".ds-cardgroup { display: grid; gap: var(--jfb-space-1, 4px); margin: 0; padding: var(--jfb-space-5, 24px); color: var(--jfb-color-text, #1d2433); background: var(--jfb-color-surface, #fff); border: 1px solid transparent; border-radius: var(--jfb-radius-panel, 12px); box-shadow: var(--jfb-shade, 0 1px 2px rgb(29 36 51 / .08), 0 4px 16px -2px rgb(29 36 51 / .12)); } .ds-cardgroup legend { float: inline-start; inline-size: 100%; padding: 0; font-size: var(--jfb-font-size-large, 1.25em); font-weight: var(--jfb-font-weight-strong, 600); } .ds-cardgroup p { margin: 0; font-size: var(--jfb-font-size-small, .875em); color: var(--jfb-color-text-muted, #5b6372); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Question Ledger",
+    "overview": "The form reads like a well-kept ledger set into the host page. When the form is wide, each titled group owns a quiet heading column on the left, with its fields in the two thirds beside it. On a phone, or in any narrow column, the whole form becomes one calm column. Hairlines separate the groups. Nothing is boxed unless an editor asks for a card.\n\nThe form brings no font and no ground of its own. It inherits the site's typeface, size and background, so it looks at home on a site it has never seen. What it adds is a cool ink for text, one evergreen accent for acting and choosing, a separate blue ring for the keyboard's place, a red that only ever means \"fix this\", and controls that are tall, plain and clearly bounded. Density is medium, motion is small and quick, and every state is said in words as well as colour.\n\nThe theme refuses the boxed card inside a card, floating labels and placeholder text used as a label. It carries no illustration, no decorative gradients and no decorative icons.\n\nThe backoffice (the Forms section in Umbraco) uses Umbraco's own UUI components and tokens, by their UUI names, so the screens feel native to Umbraco. See the backoffice section of docs/ux/tokens.md.",
+    "keyCharacteristics": [
+      "The ledger: heading column beside fields from a medium form width, one column below it.",
+      "The site's own font, size and ground; three type steps around the site's size.",
+      "One evergreen accent, one blue focus ring, one error red, each with one meaning.",
+      "Hairline rules between groups, rows and answers instead of boxes.",
+      "Tall controls with corners derived from one radius.",
+      "One ink-tinted shade, used only by card-style groups.",
+      "Drawn checkboxes, radios and switches on native inputs, so keyboards and screen readers work as ever.",
+      "A light scheme by default and an opt-in dark scheme with the same token names."
+    ],
+    "rules": [
+      { "name": "The One Meaning Rule", "body": "The accent means act, chosen or done. The blue means focus. The red means fix this. The muted ink means secondary. None of them is ever borrowed for decoration.", "section": "colors" },
+      { "name": "The Never Colour Alone Rule", "body": "A chosen state also fills or ticks. An error also carries the alert icon and words. Green, blue and red are never the only signal.", "section": "colors" },
+      { "name": "The Mixed, Not Picked Rule", "body": "Hover, tint and wash colours are mixed from the tokens with `color-mix()`. A hand-picked colour in a style is a review finding.", "section": "colors" },
+      { "name": "The Site's Type Wins Rule", "body": "The theme never ships a font. A site that wants another face sets `--jfb-font-family`; otherwise the form reads as part of the page.", "section": "typography" },
+      { "name": "The Help Before the Input Rule", "body": "A field reads label, help, control, error, in that order. Help never hides inside the control as placeholder text.", "section": "typography" },
+      { "name": "The One Shade Rule", "body": "One shade, for card groups only. Notices, the error summary, choice cards, files and the upload zone are drawn with borders or fills, never lifted.", "section": "elevation" },
+      { "name": "The No Box in a Box Rule", "body": "A repeater row inside a card is separated by a hairline, never by another box.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do take every value from a `--jfb-*` token listed in `docs/ux/tokens.md`, and mix hover and fill colours from them.",
+      "Do let a titled group sit in the ledger on a wide form: heading and help in the first third, fields in the other two, the primary button on the field line.",
+      "Do separate groups, repeater rows and summary answers with hairlines (`--jfb-color-rule`).",
+      "Do keep the order label, help, control, error, and mark optional questions with \"(optional)\" by default.",
+      "Do keep every target at least the touch-target floor, and every control at least `--jfb-size-control` high.",
+      "Do say each fact once: under step progress on a wide form, the current step's name is the visible page title and the page heading stays for screen readers only.",
+      "Do draw icons as masks in the text colour, next to words or with a text alternative, so they survive forced colours.",
+      "Do give every state a non-colour signal: a fill, a tick, a dashed edge, an icon or words."
+    ],
+    "donts": [
+      "Don't put a box inside a box: no card inside a card, no boxed repeater row inside a card group.",
+      "Don't use floating labels or placeholder text as a label.",
+      "Don't ship a font, a background for the page, or anything loaded from another host.",
+      "Don't use the accent for focus, or the focus blue for anything but focus.",
+      "Don't add a second shade, or put the shade on anything but a card-style group.",
+      "Don't add illustration, decorative gradients or decorative icons.",
+      "Don't pick a colour, corner, size or space by hand; a value off the tokens or off the spacing grid is a finding.",
+      "Don't animate with reduced motion on: both durations drop to zero."
+    ]
+  }
+}
