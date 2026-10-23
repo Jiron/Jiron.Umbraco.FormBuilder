@@ -1354,7 +1354,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
   - Measure the time from submission to email.
   - Write ADR-0007 "Background work, outbox and email".
   - Done when: the latency numbers are in the ADR, and no action ran twice in 1,000 simulated runs with two processors.
-- [ ] **1.7a The foundation ADRs**
+- [x] **1.7a The foundation ADRs** (2026-10-23, 0d0cdd0)
   - ADRs:
     - 0001 solution structure and packages;
     - 0002 the form definition model, versions and the public projection;
