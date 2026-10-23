@@ -1,0 +1,6 @@
+@inherits UmbracoViewPage<Umbraco.Cms.Core.Models.Blocks.BlockListItem>
+@* A text block: a heading and rich text. *@
+<section class="site-block">
+    <h2>@(Model.Content.Value<string>("heading"))</h2>
+    <div class="site-body">@(Model.Content.Value<IHtmlEncodedString>("text"))</div>
+</section>

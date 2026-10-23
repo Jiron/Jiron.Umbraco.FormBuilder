@@ -4,6 +4,9 @@
     <Project Path="src/Jiron.Umbraco.FormBuilder.Web/Jiron.Umbraco.FormBuilder.Web.csproj" />
     <Project Path="src/Jiron.Umbraco.FormBuilder/Jiron.Umbraco.FormBuilder.csproj" />
   </Folder>
+  <Folder Name="/demo/">
+    <Project Path="demo/Jiron.Umbraco.FormBuilder.Demo/Jiron.Umbraco.FormBuilder.Demo.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Jiron.Umbraco.FormBuilder.Testing/Jiron.Umbraco.FormBuilder.Testing.csproj" />
     <Project Path="tests/Jiron.Umbraco.FormBuilder.Tests.Integration/Jiron.Umbraco.FormBuilder.Tests.Integration.csproj" />

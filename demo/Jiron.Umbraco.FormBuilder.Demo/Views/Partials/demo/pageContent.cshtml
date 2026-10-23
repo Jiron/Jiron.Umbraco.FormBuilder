@@ -1,0 +1,12 @@
+@inherits UmbracoViewPage
+@* A page's own content: its heading, introduction, body text and blocks (ROADMAP 3.3). *@
+<h1>@(Model.Value<string>("heading") ?? Model.Name)</h1>
+@if (Model.HasValue("lede"))
+{
+    <p class="site-lede">@(Model.Value<string>("lede"))</p>
+}
+@if (Model.HasValue("bodyText"))
+{
+    <div class="site-body">@(Model.Value<IHtmlEncodedString>("bodyText"))</div>
+}
+@await Html.GetBlockListHtmlAsync(Model, "blocks")

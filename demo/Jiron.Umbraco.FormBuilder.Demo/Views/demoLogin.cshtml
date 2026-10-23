@@ -1,0 +1,31 @@
+@inherits UmbracoViewPage
+@using Umbraco.Cms.Web.Website.Controllers
+@*
+    The sign-in page (ROADMAP 3.3). Umbraco shows it at the address of a protected page, so after signing in the
+    member is sent back to that address. A failed attempt renders the page again with one message.
+*@
+@{
+    Layout = "~/Views/Shared/_DemoLayout.cshtml";
+    var returnTo = Context.Request.Path.ToString();
+}
+@await Html.PartialAsync("demo/pageContent", Model)
+@using (Html.BeginUmbracoForm<UmbLoginController>("HandleLogin", new { RedirectUrl = returnTo }, new { @class = "site-form" }))
+{
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <p class="site-error" role="alert">@Umbraco.GetDictionaryValue("Demo.Login.Failed")</p>
+    }
+    <div class="site-field">
+        <label for="login-email">@Umbraco.GetDictionaryValue("Demo.Login.Email")</label>
+        <input id="login-email" name="loginModel.Username" type="email" autocomplete="username" spellcheck="false" required />
+    </div>
+    <div class="site-field">
+        <label for="login-password">@Umbraco.GetDictionaryValue("Demo.Login.Password")</label>
+        <input id="login-password" name="loginModel.Password" type="password" autocomplete="current-password" required />
+    </div>
+    <div class="site-check">
+        <input id="login-remember" name="loginModel.RememberMe" type="checkbox" value="true" />
+        <label for="login-remember">@Umbraco.GetDictionaryValue("Demo.Login.Remember")</label>
+    </div>
+    <button class="site-button" type="submit">@Umbraco.GetDictionaryValue("Demo.Login.Submit")</button>
+}

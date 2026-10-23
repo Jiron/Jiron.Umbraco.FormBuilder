@@ -1,0 +1,272 @@
+{
+  "dictionary": {
+    "Demo.SkipToContent": { "en": "Skip to content", "de": "Zum Inhalt springen" },
+    "Demo.MainMenu": { "en": "Main menu", "de": "Hauptmenü" },
+    "Demo.OtherLanguage": { "en": "Deutsch", "de": "English" },
+    "Demo.Legal": { "en": "Legal", "de": "Rechtliches" },
+    "Demo.Address": {
+      "en": "Lindenhall Library, Market Street 12. Open Tuesday to Saturday.",
+      "de": "Bibliothek Lindenhall, Marktstraße 12. Geöffnet Dienstag bis Samstag."
+    },
+    "Demo.Login.Email": { "en": "Email address", "de": "E-Mail-Adresse" },
+    "Demo.Login.Password": { "en": "Password", "de": "Passwort" },
+    "Demo.Login.Remember": { "en": "Keep me signed in", "de": "Angemeldet bleiben" },
+    "Demo.Login.Submit": { "en": "Sign in", "de": "Anmelden" },
+    "Demo.Login.Failed": {
+      "en": "The email address or the password is not right. Please try again.",
+      "de": "Die E-Mail-Adresse oder das Passwort stimmt nicht. Bitte versuchen Sie es noch einmal."
+    },
+    "Demo.Members.SignedInAs": { "en": "You are signed in as", "de": "Sie sind angemeldet als" },
+    "Demo.Members.SignOut": { "en": "Sign out", "de": "Abmelden" }
+  },
+  "home": {
+    "key": "7bbb6953-972d-499e-a05a-c7cf1d45b1db",
+    "type": "demoHome",
+    "en": {
+      "name": "Home",
+      "heading": "Lindenhall Library",
+      "lede": "Books, workshops and a quiet place to work, on Market Street since 1911.",
+      "body": "<p>Lindenhall Library is open to everyone. Borrow books, films and games, use the reading room, or join one of the free workshops of our repair café.</p>",
+      "newsletterHeading": "Our newsletter",
+      "newsletterText": "News about events, new books and opening hours, once a month."
+    },
+    "de": {
+      "name": "Startseite",
+      "heading": "Bibliothek Lindenhall",
+      "lede": "Bücher, Workshops und ein ruhiger Ort zum Arbeiten, an der Marktstraße seit 1911.",
+      "body": "<p>Die Bibliothek Lindenhall steht allen offen. Leihen Sie Bücher, Filme und Spiele aus, nutzen Sie den Lesesaal oder besuchen Sie einen der kostenlosen Workshops unseres Reparatur-Cafés.</p>",
+      "newsletterHeading": "Unser Newsletter",
+      "newsletterText": "Neues zu Veranstaltungen, neuen Büchern und Öffnungszeiten, einmal im Monat."
+    },
+    "blocks": [
+      {
+        "type": "demoHighlightBlock",
+        "en": {
+          "heading": "Opening hours",
+          "text": "Tuesday to Friday 10:00 to 19:00, Saturday 10:00 to 16:00. Closed on Sundays, Mondays and public holidays."
+        },
+        "de": {
+          "heading": "Öffnungszeiten",
+          "text": "Dienstag bis Freitag 10 bis 19 Uhr, Samstag 10 bis 16 Uhr. Sonntags, montags und an Feiertagen geschlossen."
+        }
+      },
+      {
+        "type": "demoHighlightBlock",
+        "en": {
+          "heading": "Repair café",
+          "text": "Every first Saturday of the month, volunteers help you mend bikes, clothes and small appliances."
+        },
+        "de": {
+          "heading": "Reparatur-Café",
+          "text": "Jeden ersten Samstag im Monat helfen Ehrenamtliche beim Reparieren von Fahrrädern, Kleidung und kleinen Geräten."
+        }
+      },
+      {
+        "type": "demoTextBlock",
+        "en": {
+          "heading": "Become a member",
+          "text": "<p>A library card is free for children and young people and costs 30 euros a year for adults. Members borrow up to 20 items at once and book workshops online.</p>"
+        },
+        "de": {
+          "heading": "Mitglied werden",
+          "text": "<p>Der Bibliotheksausweis ist für Kinder und Jugendliche kostenlos und kostet für Erwachsene 30 Euro im Jahr. Mitglieder leihen bis zu 20 Medien gleichzeitig aus und buchen Workshops online.</p>"
+        }
+      }
+    ]
+  },
+  "pages": [
+    {
+      "key": "8603878d-af82-4867-92ba-ee28f9f12c86",
+      "type": "demoPage",
+      "en": {
+        "name": "Events",
+        "heading": "Events and workshops",
+        "lede": "Workshops, readings and the repair café. Most events are free; some need a booking because places are limited.",
+        "body": "<p>New dates are added every month.</p>"
+      },
+      "de": {
+        "name": "Veranstaltungen",
+        "heading": "Veranstaltungen und Workshops",
+        "lede": "Workshops, Lesungen und das Reparatur-Café. Die meisten Veranstaltungen sind kostenlos; für einige braucht es eine Buchung, weil die Plätze begrenzt sind.",
+        "body": "<p>Jeden Monat kommen neue Termine dazu.</p>"
+      },
+      "blocks": [
+        {
+          "type": "demoTextBlock",
+          "en": {
+            "heading": "Bike repair basics",
+            "text": "<p>Saturday, 10:00 to 12:00, in the workshop room. Learn to fix a puncture, adjust brakes and gears, and keep your chain running. Bring your own bike if you like.</p>"
+          },
+          "de": {
+            "heading": "Fahrrad-Reparatur für Einsteiger",
+            "text": "<p>Samstag, 10 bis 12 Uhr, im Werkraum. Lernen Sie, einen Platten zu flicken, Bremsen und Schaltung einzustellen und Ihre Kette zu pflegen. Bringen Sie gern Ihr eigenes Fahrrad mit.</p>"
+          }
+        },
+        {
+          "type": "demoTextBlock",
+          "en": {
+            "heading": "Reading: stories from Market Street",
+            "text": "<p>Thursday, 19:00, in the reading room. Local authors read from a new collection about the street and its people.</p>"
+          },
+          "de": {
+            "heading": "Lesung: Geschichten aus der Marktstraße",
+            "text": "<p>Donnerstag, 19 Uhr, im Lesesaal. Autorinnen und Autoren aus der Region lesen aus einer neuen Sammlung über die Straße und ihre Menschen.</p>"
+          }
+        },
+        {
+          "type": "demoTextBlock",
+          "en": {
+            "heading": "Mending clothes",
+            "text": "<p>Saturday, 14:00 to 16:00. Sew on buttons, patch a hole and fix a zip with our volunteers.</p>"
+          },
+          "de": {
+            "heading": "Kleidung flicken",
+            "text": "<p>Samstag, 14 bis 16 Uhr. Knöpfe annähen, Löcher flicken und Reißverschlüsse reparieren, mit unseren Ehrenamtlichen.</p>"
+          }
+        }
+      ]
+    },
+    {
+      "key": "3aa33187-0516-4e6e-87cb-360f47e7e739",
+      "type": "demoPage",
+      "en": {
+        "name": "Careers",
+        "heading": "Work with us",
+        "lede": "We are a team of 14 librarians, assistants and volunteers. Join us.",
+        "body": "<p>We offer flexible hours, a train pass and 30 days of holiday a year.</p>"
+      },
+      "de": {
+        "name": "Stellen",
+        "heading": "Arbeiten bei uns",
+        "lede": "Wir sind ein Team aus 14 Bibliothekarinnen, Bibliothekaren, Fachangestellten und Ehrenamtlichen. Machen Sie mit.",
+        "body": "<p>Wir bieten flexible Arbeitszeiten, ein Deutschlandticket und 30 Urlaubstage im Jahr.</p>"
+      },
+      "blocks": [
+        {
+          "type": "demoTextBlock",
+          "en": {
+            "heading": "Library assistant (60%)",
+            "text": "<p>You help visitors find what they need, look after the loans desk and run the children's reading hour once a week. Start: 1 February.</p>"
+          },
+          "de": {
+            "heading": "Bibliotheksassistenz (60 %)",
+            "text": "<p>Sie helfen Besucherinnen und Besuchern, das Gesuchte zu finden, betreuen die Ausleihe und gestalten einmal pro Woche die Vorlesestunde für Kinder. Beginn: 1. Februar.</p>"
+          }
+        },
+        {
+          "type": "demoTextBlock",
+          "en": {
+            "heading": "Volunteer coordinator (40%)",
+            "text": "<p>You welcome new volunteers, plan the repair café and keep everyone informed. Start: as soon as possible.</p>"
+          },
+          "de": {
+            "heading": "Koordination Ehrenamt (40 %)",
+            "text": "<p>Sie begrüßen neue Ehrenamtliche, planen das Reparatur-Café und halten alle auf dem Laufenden. Beginn: so bald wie möglich.</p>"
+          }
+        }
+      ]
+    },
+    {
+      "key": "e0433b9a-d747-44b8-8ec1-fd17e114f344",
+      "type": "demoPage",
+      "en": {
+        "name": "Feedback",
+        "heading": "Tell us what you think",
+        "lede": "What do you like about the library, and what should we change? Your feedback helps us plan the year ahead.",
+        "body": "<p>We read every message. If you would like an answer, leave your email address.</p>"
+      },
+      "de": {
+        "name": "Feedback",
+        "heading": "Ihre Meinung",
+        "lede": "Was gefällt Ihnen an der Bibliothek, und was sollten wir ändern? Ihre Rückmeldung hilft uns, das kommende Jahr zu planen.",
+        "body": "<p>Wir lesen jede Nachricht. Wenn Sie eine Antwort möchten, hinterlassen Sie Ihre E-Mail-Adresse.</p>"
+      },
+      "blocks": []
+    },
+    {
+      "key": "f1fa2112-fba3-49d8-ba32-fb1312d6c172",
+      "type": "demoPage",
+      "en": {
+        "name": "Contact",
+        "heading": "Contact us",
+        "lede": "Questions about your account, a booking or our collection? We answer within two working days.",
+        "body": "<p>Lindenhall Library<br>Market Street 12<br>12345 Lindenhall</p><p>Phone: 01234 56789<br>Email: info@lindenhall.example</p>"
+      },
+      "de": {
+        "name": "Kontakt",
+        "heading": "Kontakt",
+        "lede": "Fragen zu Ihrem Konto, einer Buchung oder unserem Bestand? Wir antworten innerhalb von zwei Werktagen.",
+        "body": "<p>Bibliothek Lindenhall<br>Marktstraße 12<br>12345 Lindenhall</p><p>Telefon: 01234 56789<br>E-Mail: info@lindenhall.example</p>"
+      },
+      "blocks": []
+    },
+    {
+      "key": "f282792e-a9ed-4bd4-9224-bab20781a827",
+      "type": "demoMembers",
+      "en": {
+        "name": "Members",
+        "heading": "Your library account",
+        "lede": "Book workshops, see your loans and keep your details up to date.",
+        "body": "<p>Members can book one workshop a month and reserve up to five items.</p>"
+      },
+      "de": {
+        "name": "Mitglieder",
+        "heading": "Ihr Bibliothekskonto",
+        "lede": "Buchen Sie Workshops, sehen Sie Ihre Ausleihen und halten Sie Ihre Angaben aktuell.",
+        "body": "<p>Mitglieder können einen Workshop pro Monat buchen und bis zu fünf Medien vormerken.</p>"
+      },
+      "blocks": []
+    },
+    {
+      "key": "e62ecf55-2d33-403a-b24e-084a4874e8c5",
+      "type": "demoLogin",
+      "en": {
+        "name": "Sign in",
+        "heading": "Sign in",
+        "lede": "Sign in with the email address and password of your library account.",
+        "body": ""
+      },
+      "de": {
+        "name": "Anmelden",
+        "heading": "Anmelden",
+        "lede": "Melden Sie sich mit der E-Mail-Adresse und dem Passwort Ihres Bibliothekskontos an.",
+        "body": ""
+      },
+      "blocks": []
+    },
+    {
+      "key": "d2ee284d-4e41-4545-aa9b-75eaf09915a9",
+      "type": "demoLegalPage",
+      "en": {
+        "name": "Privacy",
+        "heading": "Privacy",
+        "lede": "How Lindenhall Library handles your personal data.",
+        "body": "<p>This is a demonstration site. Lindenhall Library is fictional, and nothing entered here leaves this computer.</p><p>We keep the details you give us only as long as we need them for the purpose you gave them for. You can ask for a copy of your data, or for its deletion, at any time: privacy@lindenhall.example.</p>"
+      },
+      "de": {
+        "name": "Datenschutz",
+        "heading": "Datenschutz",
+        "lede": "Wie die Bibliothek Lindenhall mit Ihren personenbezogenen Daten umgeht.",
+        "body": "<p>Dies ist eine Demo-Website. Die Bibliothek Lindenhall ist erfunden, und nichts, was Sie hier eingeben, verlässt diesen Computer.</p><p>Wir bewahren Ihre Angaben nur so lange auf, wie wir sie für den Zweck brauchen, für den Sie sie uns gegeben haben. Sie können jederzeit eine Kopie Ihrer Daten oder deren Löschung verlangen: privacy@lindenhall.example.</p>"
+      },
+      "blocks": []
+    },
+    {
+      "key": "1df64b7f-b825-4df1-a49d-e943f5fff234",
+      "type": "demoLegalPage",
+      "en": {
+        "name": "Imprint",
+        "heading": "Imprint",
+        "lede": "Who runs this website.",
+        "body": "<p>Lindenhall Library<br>Market Street 12<br>12345 Lindenhall</p><p>A fictional library that demonstrates Jiron Form Builder.</p>"
+      },
+      "de": {
+        "name": "Impressum",
+        "heading": "Impressum",
+        "lede": "Wer diese Website betreibt.",
+        "body": "<p>Bibliothek Lindenhall<br>Marktstraße 12<br>12345 Lindenhall</p><p>Eine erfundene Bibliothek, die Jiron Form Builder vorführt.</p>"
+      },
+      "blocks": []
+    }
+  ]
+}

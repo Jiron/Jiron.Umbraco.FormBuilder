@@ -1,0 +1,12 @@
+@inherits UmbracoViewPage<Umbraco.Cms.Core.Models.Blocks.BlockListModel>
+@* The page's blocks, each through its element type's view in Components/ (ROADMAP 3.3). *@
+@{
+    if (Model?.Any() != true) { return; }
+}
+<div class="site-blocks">
+    @foreach (var block in Model)
+    {
+        if (block?.ContentKey == null) { continue; }
+        @await Html.PartialAsync("blocklist/Components/" + block.Content.ContentType.Alias, block)
+    }
+</div>

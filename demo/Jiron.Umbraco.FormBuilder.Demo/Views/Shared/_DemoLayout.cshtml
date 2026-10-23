@@ -1,0 +1,71 @@
+@inherits UmbracoViewPage
+@*
+    The demo's layout (ROADMAP 3.3): the header with the menu and the language switch, the page, and the footer
+    with the newsletter slot, the address and the legal pages. Its texts come from the dictionary items and the
+    home page that the seeder creates; it styles nothing inside a form.
+*@
+@{
+    var german = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("de", StringComparison.OrdinalIgnoreCase);
+    var otherCulture = german ? "en-US" : "de-DE";
+    var home = Model.Root();
+    var children = home.Children().ToList();
+    var menu = children.Where(page => page.ContentType.Alias is "demoPage" or "demoMembers").ToList();
+    var legal = children.Where(page => page.ContentType.Alias == "demoLegalPage").ToList();
+    var brand = home.Value<string>("heading") ?? home.Name;
+    var title = Model.Id == home.Id ? brand : $"{Model.Value<string>("heading") ?? Model.Name} | {brand}";
+    // The current page by address: the sign-in page is shown at the address of the protected page it guards.
+    var path = (Context.Request.Path.Value ?? "/").TrimEnd('/');
+    string? Current(IPublishedContent item) => item.Url().TrimEnd('/') == path ? "page" : null;
+}
+<!doctype html>
+<html lang="@(german ? "de" : "en")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title</title>
+    <link rel="alternate" hreflang="@(german ? "en" : "de")" href="@Model.Url(otherCulture)" />
+    <link rel="stylesheet" href="/demo/site.css" />
+</head>
+<body>
+    <a class="site-skip" href="#main">@Umbraco.GetDictionaryValue("Demo.SkipToContent")</a>
+    <header class="site-head">
+        <div class="site-wrap">
+            <a class="site-brand" href="@home.Url()">@brand</a>
+            <nav class="site-nav" aria-label="@Umbraco.GetDictionaryValue("Demo.MainMenu")">
+                <ul>
+                    @foreach (var item in menu)
+                    {
+                        <li><a href="@item.Url()" aria-current="@Current(item)">@item.Name</a></li>
+                    }
+                </ul>
+            </nav>
+            <a class="site-lang" href="@Model.Url(otherCulture)" hreflang="@(german ? "en" : "de")" lang="@(german ? "en" : "de")">@Umbraco.GetDictionaryValue("Demo.OtherLanguage")</a>
+        </div>
+    </header>
+
+    <main id="main" class="site-main" tabindex="-1">
+        @RenderBody()
+    </main>
+
+    <footer class="site-foot">
+        <div class="site-foot-wrap">
+            @* The newsletter slot: a later step puts the newsletter form here (ROADMAP 3.3). *@
+            <section class="site-slot" data-demo-slot="newsletter" aria-labelledby="newsletter-heading">
+                <h2 id="newsletter-heading">@(home.Value<string>("newsletterHeading"))</h2>
+                <p>@(home.Value<string>("newsletterText"))</p>
+            </section>
+            <div class="site-foot-meta">
+                <p>@Umbraco.GetDictionaryValue("Demo.Address")</p>
+                <nav aria-label="@Umbraco.GetDictionaryValue("Demo.Legal")">
+                    <ul>
+                        @foreach (var item in legal)
+                        {
+                            <li><a href="@item.Url()" aria-current="@Current(item)">@item.Name</a></li>
+                        }
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

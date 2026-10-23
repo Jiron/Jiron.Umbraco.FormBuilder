@@ -25,8 +25,9 @@
     <PackageVersion Include="Umbraco.Cms.Api.Delivery" Version="[17.5.0, 18.0.0)" />
   </ItemGroup>
 
-  <!-- Test hosts only: the latest 17.x, pinned exactly (D3). MIT. -->
+  <!-- The demo site and the test hosts only: the latest 17.x, pinned exactly (D3). MIT. -->
   <ItemGroup>
+    <PackageVersion Include="Umbraco.Cms" Version="17.7.1" />
     <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="17.7.1" />
   </ItemGroup>
 

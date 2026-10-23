@@ -29,6 +29,7 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | `NSubstitute` | 6.2.0 | BSD-3-Clause | test doubles in unit tests (`tests/`) |
 | `coverlet.collector` | 10.1.0 | MIT | test coverage (`tests/`) |
 | `Umbraco.Cms.Tests.Integration` | 17.7.1 | MIT | integration tests on a real Umbraco (`tests/`) |
+| `Umbraco.Cms` | 17.7.1 | MIT | the demo site, a whole Umbraco site on SQLite (`demo/`) |
 | `@umbraco-cms/backoffice` | 17.5.0 | MIT | the backoffice extension's types; external in its build, since Umbraco provides it in the page (`Client/`) |
 | `@hey-api/openapi-ts` | 0.99.0 | MIT | generating the management API client (`Client/`) |
 | `typescript` | 6.0.3 | Apache-2.0 | type checking (`Client/`) |

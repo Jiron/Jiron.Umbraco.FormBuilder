@@ -1,0 +1,5 @@
+@inherits UmbracoViewPage
+@{
+    Layout = "~/Views/Shared/_DemoLayout.cshtml";
+}
+@await Html.PartialAsync("demo/pageContent", Model)

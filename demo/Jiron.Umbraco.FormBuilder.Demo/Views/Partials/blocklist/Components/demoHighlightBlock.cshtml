@@ -1,0 +1,6 @@
+@inherits UmbracoViewPage<Umbraco.Cms.Core.Models.Blocks.BlockListItem>
+@* A highlight: a heading and a short plain text, set off by a line on its start side. *@
+<section class="site-highlight">
+    <h2>@(Model.Content.Value<string>("heading"))</h2>
+    <p>@(Model.Content.Value<string>("text"))</p>
+</section>

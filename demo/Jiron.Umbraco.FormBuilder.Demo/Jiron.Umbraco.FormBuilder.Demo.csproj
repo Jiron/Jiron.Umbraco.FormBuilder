@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    The demo site (ROADMAP 3.3): Umbraco 17.7.1 on SQLite with Jiron Form Builder, the website of the fictional
+    Lindenhall Library in English and German. Created with `dotnet new umbraco` (Umbraco.Templates 17.7.1, private
+    template hive) and restructured: package versions come from the repository's Directory.Packages.props, and the
+    site is started only by scripts/demo.ps1 on http://127.0.0.1:5500, which passes the generated admin, members and
+    imaging key as environment variables. None of them is ever stored in these files.
+  -->
+  <PropertyGroup>
+    <!-- It runs a whole Umbraco site, so the host-only audit entries apply (NuGetAudit.props, ADR-0024). -->
+    <JfbUmbracoHost>true</JfbUmbracoHost>
+    <!-- Umbraco's backoffice files come precompressed; the template turns the SDK's compression off. -->
+    <CompressionEnabled>false</CompressionEnabled>
+    <!-- Windows and Linux hosts have ICU, so the demo needs no app-local copy of it. -->
+    <UmbracoUseAppLocalIcu>false</UmbracoUseAppLocalIcu>
+    <!-- Razor files are needed for the backoffice to work correctly (the template's setting). -->
+    <CopyRazorGenerateFilesToPublishDirectory>true</CopyRazorGenerateFilesToPublishDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The meta package, as sites install it. -->
+    <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder\Jiron.Umbraco.FormBuilder.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The page texts are data the seeder reads from the assembly, so a host with another content root has them. -->
+    <Content Remove="Seeding\**" />
+    <None Remove="Seeding\**" />
+    <EmbeddedResource Include="Seeding\DemoContent.json" LogicalName="Jiron.Umbraco.FormBuilder.Demo.DemoContent.json" />
+    <!-- Keep a local settings override out of the publish output (the template's rule). -->
+    <Content Update="appsettings.Local.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,20 @@
+@inherits UmbracoViewPage
+@using Umbraco.Cms.Core.Security
+@using Umbraco.Cms.Web.Website.Controllers
+@inject IMemberManager MemberManager
+@*
+    The members area (ROADMAP 3.3). Public access shows the sign-in page here to visitors who are not signed in, so
+    this view only ever renders for a member of the library.
+*@
+@{
+    Layout = "~/Views/Shared/_DemoLayout.cshtml";
+    var member = await MemberManager.GetCurrentMemberAsync();
+}
+@await Html.PartialAsync("demo/pageContent", Model)
+<div class="site-account">
+    <p>@Umbraco.GetDictionaryValue("Demo.Members.SignedInAs") <strong>@member?.Name</strong></p>
+    @using (Html.BeginUmbracoForm<UmbLoginStatusController>("HandleLogout", new { RedirectUrl = Model.Root().Url() }))
+    {
+        <button class="site-button" type="submit">@Umbraco.GetDictionaryValue("Demo.Members.SignOut")</button>
+    }
+</div>

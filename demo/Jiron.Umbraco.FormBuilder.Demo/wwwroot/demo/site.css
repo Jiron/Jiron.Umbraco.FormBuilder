@@ -1,0 +1,334 @@
+/*
+ * The demo site's own design (ROADMAP 3.3): the public library's website from the Phase 2 mocks
+ * (docs/ux/website/assets/site.css), grown into a whole site. It stands for any customer's site, so it never styles
+ * anything inside a form: the forms bring their theme, and inherit only this page's font and size.
+ */
+:root {
+  --site-ink: #22262e;
+  --site-muted: #545b67;
+  --site-bg: #f6f7f9;
+  --site-head: #ffffff;
+  --site-line: #dde1e7;
+  --site-link: #7a2335;
+  --site-focus: #1b5fc1;
+  --site-error: #a3221b;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* The footer stays at the bottom of short pages. */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  font: 17px / 1.55 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  color: var(--site-ink);
+  background: var(--site-bg);
+}
+
+a {
+  color: var(--site-link);
+}
+
+:focus-visible {
+  outline: 3px solid var(--site-focus);
+  outline-offset: 2px;
+}
+
+main:focus {
+  outline: none;
+}
+
+.site-skip {
+  position: absolute;
+  inset-inline-start: 16px;
+  inset-block-start: -64px;
+  padding: 8px 16px;
+  background: var(--site-head);
+  border: 1px solid var(--site-line);
+}
+
+.site-skip:focus {
+  inset-block-start: 8px;
+}
+
+/* The header: the brand, the menu and the language switch, wrapping onto their own rows on a phone. */
+.site-head {
+  background: var(--site-head);
+  border-block-end: 1px solid var(--site-line);
+}
+
+.site-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  align-items: center;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 24px;
+}
+
+.site-brand {
+  margin-inline-end: auto;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--site-ink);
+  text-decoration: none;
+}
+
+.site-nav ul,
+.site-foot ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-nav a,
+.site-lang,
+.site-foot nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--site-ink);
+  text-decoration: none;
+}
+
+.site-nav a:hover,
+.site-lang:hover,
+.site-foot nav a:hover {
+  text-decoration: underline;
+}
+
+.site-nav a[aria-current="page"],
+.site-foot nav a[aria-current="page"] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+
+.site-lang {
+  color: var(--site-link);
+}
+
+/* The page. */
+.site-main {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 24px 72px;
+}
+
+.site-main h1 {
+  margin: 0 0 12px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 40px;
+  line-height: 1.15;
+}
+
+.site-lede {
+  max-width: 60ch;
+  margin: 0 0 32px;
+  font-size: 19px;
+  color: var(--site-muted);
+}
+
+.site-body {
+  max-width: 65ch;
+}
+
+.site-body > :first-child {
+  margin-block-start: 0;
+}
+
+.site-blocks {
+  display: grid;
+  gap: 40px;
+  margin-block-start: 48px;
+}
+
+.site-block h2,
+.site-highlight h2,
+.site-slot h2 {
+  margin: 0 0 8px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.site-highlight {
+  max-width: 65ch;
+  padding-inline-start: 20px;
+  border-inline-start: 4px solid var(--site-link);
+}
+
+.site-highlight p {
+  margin: 0;
+}
+
+/* The sign-in form and the members area: the site's own controls, not a form of Jiron Form Builder. */
+.site-form,
+.site-account {
+  display: grid;
+  gap: 20px;
+  max-width: 28rem;
+  margin-block-start: 32px;
+}
+
+.site-field {
+  display: grid;
+  gap: 6px;
+}
+
+.site-field label {
+  font-weight: 600;
+}
+
+.site-field input {
+  min-height: 44px;
+  padding: 8px 12px;
+  font: inherit;
+  color: var(--site-ink);
+  background: var(--site-head);
+  border: 1px solid var(--site-muted);
+  border-radius: 4px;
+}
+
+.site-check {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+}
+
+.site-check input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--site-link);
+}
+
+.site-button {
+  justify-self: start;
+  min-height: 44px;
+  padding: 8px 20px;
+  font: inherit;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--site-link);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 160ms ease-out;
+}
+
+.site-button:active {
+  transform: scale(0.97);
+}
+
+.site-button:hover {
+  background: #5e1a29;
+}
+
+.site-error {
+  margin: 0;
+  padding: 12px 16px;
+  color: var(--site-error);
+  background: var(--site-head);
+  border-inline-start: 4px solid var(--site-error);
+}
+
+.site-account p {
+  margin: 0;
+}
+
+/* The footer: the newsletter slot, then the address and the legal pages. */
+.site-foot {
+  color: var(--site-muted);
+  background: var(--site-head);
+  border-block-start: 1px solid var(--site-line);
+}
+
+.site-foot-wrap {
+  display: grid;
+  gap: 32px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.site-slot {
+  max-width: 65ch;
+  color: var(--site-ink);
+}
+
+.site-slot p {
+  margin: 0;
+}
+
+.site-foot-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+}
+
+.site-foot-meta p {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-button {
+    transition: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .site-wrap {
+    padding: 12px 16px;
+  }
+
+  .site-nav {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .site-nav ul {
+    gap: 0 20px;
+  }
+
+  .site-main {
+    padding: 24px 16px 56px;
+  }
+
+  .site-main h1 {
+    font-size: 30px;
+  }
+
+  .site-lede {
+    font-size: 17px;
+  }
+
+  .site-block h2,
+  .site-highlight h2,
+  .site-slot h2 {
+    font-size: 22px;
+  }
+
+  .site-foot-wrap {
+    padding: 32px 16px;
+  }
+}
