@@ -1516,6 +1516,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Checks:**
     - `scripts/check-workflows.mjs` (GitHub's MIT parser);
     - `scripts/check-npm-licences.mjs`;
+    - `scripts/check-audit-suppressions.mjs` (port, ADR-0024): fails when a package whose advisories `NuGetAudit.props` suppresses is referenced directly (`PackageReference` or `PackageVersion`), and when an ImageSharp entry leaves the host-only group. A test covers both;
     - `scripts/check-nuget-licences.mjs` (new: reads each restored package's nuspec license and fails on anything outside CLAUDE.md rule 4);
     - `scripts/third-party-notices.mjs` (generates and checks `THIRD-PARTY-NOTICES.md`). It reads the nuspecs from `NUGET_PACKAGES` when that is set, as CI sets it, and from the default cache otherwise; Tandem's read only the default cache, so its CI check would have failed on a fresh runner. A test covers both.
   - **`scripts/ci-local.ps1`** runs everything except SQL Server and load balancing: the gate.

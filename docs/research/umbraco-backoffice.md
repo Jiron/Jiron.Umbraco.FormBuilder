@@ -27,7 +27,7 @@ Fix these before anything else:
 | `@hey-api/openapi-ts ^0.85.2` | `@umbraco-cms/backoffice` 17.7.1 needs `>=0.99.0 <1`; `npm install` fails with ERESOLVE | pin `0.99.0` (the sandbox script does) |
 | the pre-generated client in `src/api` | fails `tsc` against 0.99 (`QuerySerializerOptions`) | regenerate from the running site |
 | `runtimeConfigPath` in `scripts/generate-openapi.js` | 0.99 resolves it from the project root, not the output folder | `'./src/hey-api.ts'` |
-| `allowTelemetry: true` in `umbraco-package.json` | sends package telemetry by default | decide explicitly (D-level choice in 3.1) |
+| `allowTelemetry: true` in `umbraco-package.json` | sends package telemetry by default | decided in 3.1: `false` (ADR-0025) |
 | `sourcemap: true` in `vite.config.ts` | ships source maps | off for release builds |
 | base controller `[Authorize(Policy = AuthorizationPolicies.SectionAccessContent)]` | a placeholder: anyone with the **Content** section may call the API | Jiron Form Builder's own section policy |
 | `ControllerBase` as the base class | none of Umbraco's management API conventions | see section 2 |
@@ -38,8 +38,8 @@ More build facts:
   which brings the base URL and the credentials (section 3). §3.4 said `UMB_AUTH_CONTEXT.configureClient(client)`;
   1.2b corrected it.
 - Umbraco 17.7.1 pulls transitive packages with advisories (NU1902/NU1903): `MessagePack` 3.1.8,
-  `System.Security.Cryptography.Pkcs` 10.0.10 and `System.Security.Cryptography.Xml` 10.0.10. Step 3.1 decides how
-  the audit is handled (pin patched versions centrally, or record the exception).
+  `System.Security.Cryptography.Pkcs` 10.0.10 and `System.Security.Cryptography.Xml` 10.0.10. Step 3.1 decided: a
+  reviewed suppression per advisory, never a pin (ADR-0024).
 - **New bundle files need a site rebuild.** Vite emits hashed chunk names; the site serves a library's
   `wwwroot` through the static web assets manifest written at build time, so a new chunk name answers 404 until
   the site is rebuilt and restarted. A watch mode for development must account for this.
@@ -560,7 +560,7 @@ export class FormNameUfmElement extends UmbUfmElementBase { /* consume UMB_UFM_R
 | UUI | 1.x (UUI 2 from 17.6) | the host supplies UUI at run time; the 18.3 smoke on a 17.5 site checks the screens |
 | Cache busting of package files | none (from 17.6) | 18.3 checks an upgrade on a 17.5 site |
 | `@hey-api/openapi-ts` peer range | `>=0.85.2` (17.7: `>=0.99.0`) | pin 0.99.x, which satisfies both |
-| NuGet audit | `MessagePack` 3.1.7, `Microsoft.OpenApi` 2.4.1 (high), `System.Security.Cryptography.Pkcs` and `.Xml` 10.0.6 | more than on 17.7.1; step 3.1 handles both sets |
+| NuGet audit | `MessagePack` 3.1.7, `Microsoft.OpenApi` 2.4.1 (high), `System.Security.Cryptography.Pkcs` and `.Xml` 10.0.6 | more than on 17.7.1; both sets are listed in `NuGetAudit.props` (ADR-0024) |
 
 - **So D3's floor holds:** nothing Jiron Form Builder needs is newer than 17.5.0. Step 3.2 already pins
   `@umbraco-cms/backoffice` to the minimum supported 17.x, and NuGet resolves a range such as `[17.5.0, 18.0.0)`
