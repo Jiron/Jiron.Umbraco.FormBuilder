@@ -1,0 +1,143 @@
+// Exact decimal numbers (ADR-0005), the same in C#: a BigInt n and a scale s for the value n / 10^s. Neither runtime
+// uses its own number type for answers: C# decimal and JavaScript doubles round differently.
+import { LogicError } from './errors.ts';
+
+/** An exact decimal n / 10^s with s >= 0 and no trailing zeros in the fraction (so equal values look alike). */
+export interface Decimal {
+  readonly n: bigint;
+  readonly s: number;
+}
+
+/** Digits a stored number may have in all (leading zeros don't count), and after the point (ADR-0003). */
+export const STORED_DIGITS = 15;
+/** Places a division keeps, rounded half away from zero. */
+export const DIVISION_PLACES = 20;
+/** The most places `round` takes. */
+export const MAX_ROUND_PLACES = 20;
+/** Digits an intermediate result may have before a calculation is out of range. */
+export const MAX_DIGITS = 60;
+
+const ZERO = 48;
+const NINE = 57;
+const MINUS = 45;
+const POINT = 46;
+
+const pow10 = (k: number): bigint => 10n ** BigInt(k);
+const abs = (n: bigint): bigint => (n < 0n ? -n : n);
+const digits = (n: bigint): number => abs(n).toString().length;
+
+function normalise(n: bigint, s: number): Decimal {
+  while (s > 0 && n % 10n === 0n) {
+    n /= 10n;
+    s--;
+  }
+  return { n, s };
+}
+
+function inRange(d: Decimal): Decimal {
+  if (digits(d.n) > MAX_DIGITS) throw new LogicError('out_of_range');
+  return d;
+}
+
+function readDigits(text: string, start: number): number {
+  let i = start;
+  while (i < text.length && text.charCodeAt(i) >= ZERO && text.charCodeAt(i) <= NINE) i++;
+  return i;
+}
+
+function trimZeros(digitsText: string): string {
+  let end = digitsText.length;
+  while (end > 0 && digitsText.charCodeAt(end - 1) === ZERO) end--;
+  return digitsText.slice(0, end);
+}
+
+/**
+ * Parses the wire form: an optional minus, an integer part without leading zeros, and an optional point followed
+ * by at least one digit. ASCII digits only; no plus sign, exponent, group separator or culture. Null otherwise.
+ */
+export function parseDecimal(text: string): Decimal | null {
+  const negative = text.charCodeAt(0) === MINUS;
+  const start = negative ? 1 : 0;
+  const intEnd = readDigits(text, start);
+  const intPart = text.slice(start, intEnd);
+  if (intPart.length === 0 || (intPart.length > 1 && intPart.charCodeAt(0) === ZERO)) return null;
+  let fraction = '';
+  if (intEnd < text.length) {
+    if (text.charCodeAt(intEnd) !== POINT) return null;
+    const fractionEnd = readDigits(text, intEnd + 1);
+    if (fractionEnd === intEnd + 1 || fractionEnd !== text.length) return null;
+    // Trailing zeros go before the digits become a number, so a long run of them costs one pass.
+    fraction = trimZeros(text.slice(intEnd + 1, fractionEnd));
+  }
+  const n = BigInt(intPart + fraction);
+  return { n: negative ? -n : n, s: fraction.length };
+}
+
+/** The canonical wire form: no trailing fraction zeros, no "-0". */
+export function formatDecimal(d: Decimal): string {
+  const body = abs(d.n)
+    .toString()
+    .padStart(d.s + 1, '0');
+  const point = body.length - d.s;
+  const text = d.s === 0 ? body : body.slice(0, point) + '.' + body.slice(point);
+  return d.n < 0n ? '-' + text : text;
+}
+
+/** Applies the storage limits: at most 15 digits in all (leading zeros don't count), at most 15 after the point. */
+export function stored(d: Decimal): Decimal {
+  if (digits(d.n) > STORED_DIGITS || d.s > STORED_DIGITS) throw new LogicError('too_many_digits');
+  return d;
+}
+
+/** Orders two values: negative, zero or positive. */
+export function compare(a: Decimal, b: Decimal): number {
+  const s = Math.max(a.s, b.s);
+  const x = a.n * pow10(s - a.s);
+  const y = b.n * pow10(s - b.s);
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
+/** The exact sum. */
+export function add(a: Decimal, b: Decimal): Decimal {
+  const s = Math.max(a.s, b.s);
+  return inRange(normalise(a.n * pow10(s - a.s) + b.n * pow10(s - b.s), s));
+}
+
+/** The exact difference. */
+export function subtract(a: Decimal, b: Decimal): Decimal {
+  return add(a, { n: -b.n, s: b.s });
+}
+
+/** The exact product. */
+export function multiply(a: Decimal, b: Decimal): Decimal {
+  return inRange(normalise(a.n * b.n, a.s + b.s));
+}
+
+/** num / den rounded to an integer, half away from zero (BigInt division truncates toward zero). */
+function roundedQuotient(num: bigint, den: bigint): bigint {
+  const q = num / den;
+  const r = num % den;
+  if (2n * abs(r) < abs(den)) return q;
+  return num < 0n !== den < 0n ? q - 1n : q + 1n;
+}
+
+/** The quotient, kept to DIVISION_PLACES places and rounded half away from zero. */
+export function divide(a: Decimal, b: Decimal): Decimal {
+  if (b.n === 0n) throw new LogicError('division_by_zero');
+  // a / b = (a.n * 10^b.s) / (b.n * 10^a.s), kept to DIVISION_PLACES places.
+  const q = roundedQuotient(a.n * pow10(b.s + DIVISION_PLACES), b.n * pow10(a.s));
+  return inRange(normalise(q, DIVISION_PLACES));
+}
+
+/** Rounds to `scale` places, half away from zero. */
+export function round(a: Decimal, scale: number): Decimal {
+  if (a.s <= scale) return a;
+  return inRange(normalise(roundedQuotient(a.n, pow10(a.s - scale)), scale));
+}
+
+/** A value read from outside (a calculation's constant or an answer): the wire form within MAX_DIGITS. */
+export function operand(text: string): Decimal {
+  const d = parseDecimal(text);
+  if (d === null) throw new LogicError('not_a_number');
+  return inRange(d);
+}
