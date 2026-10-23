@@ -1479,7 +1479,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the demo is never started any other way (the imaging-key lesson, §3.3);
     - `login` prints the URL and the credentials file path, never the password.
   - Done when: `scripts/demo.ps1 reset; scripts/demo.ps1 start` serves the home page in both languages, and Playwright logs into the backoffice with the generated credentials.
-- [ ] **3.4a Test projects and the Testing project**
+- [x] **3.4a Test projects and the Testing project** (2026-10-23, d701d52)
   - 3.4 was split into 3.4a, 3.4b and 3.4c on 2026-10-23: the .NET test projects, the vector runners and the browser harness are three harnesses, each with its own checks (WORKLOG).
   - **Unit:** NUnit 3 and NSubstitute.
   - Build the harness in the shape of the lessons file, part 2 (§3.3).
