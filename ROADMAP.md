@@ -346,7 +346,9 @@ Before Phase 1, read its `CLAUDE.md`, `docs/STATUS.md`, the handover notes in `d
 
 Read the file in full in 1.1, and look up the parts a step touches before starting it. References below to "§3.3" mean the table above and that file.
 
-### 3.4 Umbraco 17 package facts (research 2026-10-19; confirm in Phase 1)
+### 3.4 Umbraco 17 package facts (research 2026-10-19; checked in Phase 1)
+
+Each fact below was confirmed on this machine in the Phase 1 step it names. The few that only a later step can show name that step.
 
 - **What the sandbox showed:** [docs/research/umbraco-backoffice.md](docs/research/umbraco-backoffice.md) has the confirmed shapes, signatures and traps from 1.2a and 1.2b. Its last section lists what they mean for Jiron Form Builder; every backoffice step reads it before it starts.
 - **Templates:** `dotnet new install Umbraco.Templates@17.7.1`.
@@ -354,7 +356,7 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
   - Pin 17.7.1 for the whole run. Only 18.3 (the 17.5 floor) and Phase 19 use other versions, each in its own hive.
   - `dotnet new umbraco-extension -n <Name> -ex -pm Central` creates an RCL with `Client/` (Vite library mode, Lit, TypeScript, `@umbraco-cms/backoffice`, `@hey-api/openapi-ts`), `StaticWebAssetBasePath=/`, and output to `wwwroot/App_Plugins/<Name>`. It does not run npm during `dotnet build`; run it in scripts and CI. Its `@hey-api/openapi-ts ^0.85.2` fails `npm install` against 17.7.1: pin 0.99.x, which also satisfies 17.5 (1.2a, 1.2b).
   - Test sites: `dotnet new umbraco -n Site --development-database-type SQLite`, then the admin through the unattended-install settings (`Umbraco__CMS__Unattended__InstallUnattended` and the `UnattendedUser*` values) in the start-up environment, so the password never appears on a command line (`scripts/sandbox.mjs`, 1.2a).
-- **`umbraco-package.json`:** in `wwwroot/App_Plugins/JironFormBuilder/`, with `id` = NuGet id. Since 17.6, `version` drives cache busting, so stamp it at build time. 17.5 has no cache busting for package files, so 18.3 checks an upgrade on the 17.5 floor. Register the manifests with a `bundle` extension.
+- **`umbraco-package.json`:** in `wwwroot/App_Plugins/JironFormBuilder/`, with `id` = NuGet id. Since 17.6, `version` drives cache busting, so stamp it at build time. 17.5 has no cache busting for package files, so 18.3 checks an upgrade on the 17.5 floor. Register the manifests with a `bundle` extension (1.2a, 1.2b).
 - **Management API:**
   - Attributes: `[ApiController]`, `[BackOfficeRoute("jfb/management/api/v{version:apiVersion}")]`, `[MapToApi("jfb")]`, `[JsonOptionsName(Constants.JsonOptionsNames.BackOffice)]`, `[Authorize(Policy = …)]`, `[ApiVersion("1.0")]` on every concrete controller.
   - Register the OpenAPI document in one composer, because CMS 18 replaces Swashbuckle with Microsoft.AspNetCore.OpenApi.
@@ -372,11 +374,11 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
   - the data type picker (`umb-data-type-input`), the user group picker (`umb-user-group-input`) and the member group picker (`umb-input-member-group`);
   - the code editor (`umb-code-editor`: `.code` and `.language`, and it needs a height);
   - `UMB_NOTIFICATION_CONTEXT` toasts and modals through `umbOpenModal`.
-- **Property editors:** a `propertyEditorSchema`, which is a server `DataEditor`, plus a `propertyEditorUi`. Use a `PropertyValueConverterBase` for Razor, and an `IDeliveryApiPropertyValueConverter` for the Content Delivery API, which must be enabled with `Umbraco:CMS:DeliveryApi:Enabled`.
+- **Property editors:** a `propertyEditorSchema`, which is a server `DataEditor`, plus a `propertyEditorUi`. Use a `PropertyValueConverterBase` for Razor, and an `IDeliveryApiPropertyValueConverter` for the Content Delivery API, which must be enabled with `Umbraco:CMS:DeliveryApi:Enabled` (1.2a).
 - **"Used on" tracking:** `IDataValueReferenceFactory` / `IDataValueReference` report references from property values, and Umbraco's walk covers blocks. Umbraco stores references only between `umbracoNode` rows and drops a form's, so Jiron Form Builder keeps its own index, refreshed on content save, and shows it with Umbraco's `entityReferences` info app (1.2b, ADR-0017).
 - **No-JavaScript posts** (confirmed in 1.4a, ADR-0004): the form posts back to its own page with Umbraco's encrypted route token `ufprt`, which routes the post to a `SurfaceController` action. `CurrentUmbracoPage()` renders the page again in the same request, and state reaches the view through `HttpContext.Items`. `RedirectToCurrentUmbracoPage(QueryString)` answers `302` to the page with the query but cannot add a fragment, so Jiron Form Builder builds its own redirect. `BeginUmbracoForm(…, antiforgery: false)` writes no token, but posts to the bare current path, always adds a multipart encoding and a random `id`; `Html.SurfaceControllerHiddenInput<T>()` gives the same routing inside our own `<form>`. `[IgnoreAntiforgeryToken]` on the action overrides the controller's `[AutoValidateAntiforgeryToken]`. `CurrentPage` throws when the action is reached through the auto-route `/umbraco/surface/…`, so the action checks the `UmbracoRouteValues` feature first. A tampered `ufprt` never reaches the action: Umbraco renders the page.
 - **Content creation** (the "create content" action): the async `IContentEditingService` / `IContentPublishingService` of 14+ rather than the legacy `IContentService` (confirmed in 1.2a).
-- **Members:** `IMemberManager` for the current member, `IMemberService` and `IMemberGroupService`.
+- **Members:** `IMemberManager` (Umbraco.Web.Common) for the current member, `IMemberService` and `IMemberGroupService` (Umbraco.Core), all present in 17.7.1 (1.8); the member picker and a member workspace view work (1.2a, 1.2b). 14.3 builds on them.
 - **Files** (decided in 1.4b, ADR-0006): Umbraco's `IFileSystem` writes synchronously, and Kestrel refuses synchronous reads of a request body, so Jiron Form Builder stores files through its own asynchronous `IFormBuilderFileStore`. Umbraco's official Azure Blob provider (`Umbraco.StorageProviders.AzureBlob`, 17.1.0 for 17) registers named containers with `AddAzureBlobFileSystem(name, configure)`, settings in `Umbraco:Storage:AzureBlob:{name}`, and `IAzureBlobFileSystemProvider.GetFileSystem(name).GetBlobClient(path)` gives the SDK's asynchronous client, which a blob store uses (the 15.2 sample). Without `ContainerRootPath` the provider prefixes every blob name with the virtual path; the plain registration serves nothing.
 - **Umbraco reads the form of every form post while routing** (found in 1.4b): its `EagerMatcherPolicy` applies to every endpoint and, when more than one matches a path (its content route always does), looks for `ufprt` in `Request.Form`. That reads a multipart body in full (64 KB in memory, the rest in the ASP.NET temp folder) before any action, for controllers outside `/umbraco` too, and adding the path to `ReservedPaths` does not prevent it. A middleware before routing (an Umbraco pipeline filter) that gives the request an `IFormFeature` with no form content does. Umbraco sets Kestrel's body limit and the multipart limit from `Umbraco:CMS:Runtime:MaxRequestLength` (in KB; by default 52,428,800 bytes and unlimited).
 - **Section access in code** (found in 1.4b): Umbraco's section requirement is internal and the allowed-applications claim is obsolete in 17 (`CS0618`), so a requirement handler reads `IUser.AllowedSections` through `IAuthorizationHelper.TryGetUmbracoUser`. Authorization handlers are singletons: a scoped one fails start-up scope validation, because Umbraco's singleton event authorizers consume `IAuthorizationService`.
@@ -385,7 +387,7 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
 - **Webhooks** (confirmed in 1.2b): an event class derives from `WebhookEventBase<TNotification>` with `[WebhookEvent(name, Constants.WebhookEvents.Types.Other)]` and is registered with `builder.AddWebhookEvent<T>()`; publishing the notification queues the request. A distributed job sends it (every 10 s by default) with the header `Umb-Webhook-Event: <alias>` and our payload as the body.
 - **Localization** (confirmed in 1.2b): one `localization` manifest per culture (`en`, `de`); a regional culture such as `de-de` falls back to the language file. The global search tab label and server strings (health checks, webhook event names) are shown as written.
 - **Database:**
-  - `PackageMigrationPlan` (it auto-runs unattended; `Umbraco:CMS:Unattended:PackageMigrationsUnattended`) with `AsyncMigrationBase` steps;
+  - `PackageMigrationPlan` (it auto-runs unattended; `Umbraco:CMS:Unattended:PackageMigrationsUnattended`) with `AsyncMigrationBase` steps (1.3, ADR-0003);
   - DTO attributes `[TableName]`, `[PrimaryKey]`, `[ExplicitColumns]`, `[Column]`, `[NullSetting]`, `[Length]`, `[SpecialDbType(NVARCHARMAX)]`, `[Index]`, `[ForeignKey]`;
   - store dates in UTC;
   - use `ICoreScopeProvider` and `IScopeAccessor`, and call `Complete()`;
@@ -396,17 +398,17 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
   - The runner starts one due job per 5-second tick, in table order, with Umbraco's own jobs first, so a package job may wait (D8, Tandem ADR-0076). Measured in 1.6 next to Umbraco's ten distributed jobs: a 5-second job ran about every 20 s (5 to 50 s apart), a 1-minute job every 65 to 70 s, and the first job ran 109 s after the process started. **The runner waits for each job:** while one job slept for 70 s, no other distributed job ran on that server, so a slow job holds Umbraco's scheduled publishing back too (ADR-0007).
   - `IRecurringBackgroundJob` runs on every server.
 - **Email:** `IEmailSender.SendAsync(EmailMessage, emailType, …)`. Check `CanSendRequiredEmail()` first: without SMTP settings Umbraco drops mail silently. Settings live in `Umbraco:CMS:Global:Smtp`, and `DeliveryMethod=SpecifiedPickupDirectory` suits tests. `EmailMessage` carries one body (HTML or text), so a multipart message with both is not possible through it: an HTML mail is one `text/html` part, a text mail one `text/plain` part, and attachments make `multipart/mixed` (1.6). Jiron Form Builder sends one body per mail (ADR-0007), and sites that replace `IEmailSender` (for example with a mail service) keep working. Measured in 1.6: `CanSendRequiredEmail()` is true with a host, a pickup folder or a `SendEmailNotification` handler, also when no From address is configured, and that send then throws; a pickup folder that does not exist throws `DirectoryNotFoundException`; MimeKit encodes non-ASCII subjects and drops line breaks in them, which glues the words together.
-- **Integration tests:** `Umbraco.Cms.Tests.Integration` 17.x (NUnit ≥3.14 <4), `UmbracoIntegrationTest`, `UmbracoTestServerTestBase`, `[UmbracoTest(Database = NewSchemaPerTest)]`.
-- **Release schedule:**
+- **Integration tests:** `Umbraco.Cms.Tests.Integration` 17.x, `UmbracoIntegrationTest`, `UmbracoTestServerTestBase`, `[UmbracoTest(Database = NewSchemaPerTest)]`. Its 17.7.1 and 18.2.1 packages depend on NUnit 3.14.0 or later (1.8); D19 stays on NUnit 3, and 3.4 builds the harness on it.
+- **Release schedule** (Umbraco's published plan, read 2026-10-19):
   - 17 LTS: until 2028-11-27;
   - 18 STS: 2026-06-25 to 2027-06-25;
   - 19 STS: planned 2026-12-10;
   - 21: the next LTS, planned 2027-12.
-- **What 18 breaks:** `MigrationBase`, `UmbracoApiController`, `ILocalizationService`, `IFileService` and some sync overloads are removed. Swagger moves to `/umbraco/openapi` (OpenAPI 3.1). From Tandem's 18 line (Tandem ADR-0078):
+- **What 18 breaks** (Tandem's 18 line met it; Phase 19 checks Jiron Form Builder's): `MigrationBase`, `UmbracoApiController`, `ILocalizationService`, `IFileService` and some sync overloads are removed. Swagger moves to `/umbraco/openapi` (OpenAPI 3.1). From Tandem's 18 line (Tandem ADR-0078):
   - documents register through `AddBackOfficeOpenApiDocument` and are served at `/umbraco/openapi/{name}.json`; tests read them through `IOpenApiDocumentProvider`, keyed by name;
   - the new generator writes enums as numbers, integers as "integer or string" and every record constructor parameter as required, documents form files and validation problems differently, and needs a schema transformer to give the TypeScript client the same types as on 17;
   - the snapshots in `docs/api/` and the generated client therefore differ per line.
-- **Static files:** Umbraco serves package files through `UseStaticFiles`, with no compression and no caching headers, so the website runtime needs its own serving to meet §4.12 (6.2).
+- **Static files:** Umbraco serves package files through `UseStaticFiles`, with no compression and no caching headers (measured in 1.4a), so the website runtime needs its own serving to meet §4.12 (6.2).
 - **Output caching:** sites may put pages behind output caching or a CDN. Jiron Form Builder markup therefore contains nothing per visitor: the challenge is fetched when the visitor first interacts, and there is no antiforgery token on anonymous forms (§4.10). Umbraco's own website output cache (confirmed in 1.4a; not in 17.3.0, present in 17.5.0, 17.7.1 and 18.2.1):
   - opt-in with `Umbraco:CMS:Website:OutputCache:Enabled` (`ContentDuration` defaults to 10 s);
   - **the cache key ignores the query string**, so anything rendered from the query needs an `IWebsiteOutputCacheVaryByProvider` (a collection: a package adds rules without removing the site's);
@@ -424,10 +426,11 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
   - It is read from the root that `PackageProjectUrl` points to, so **it cannot be read while the repo is private**.
   - Schema: `https://marketplace.umbraco.com/umbraco-marketplace-schema.json`; validator: `https://marketplace.umbraco.com/validate`.
   - Fields:
-    - `Title`, `Description`;
-    - `Category` and `AlternateCategory`. **There is no "Forms" category**: use "Editor Tools", plus "Campaign & Marketing" *(verify the current list)*;
+    - `Title` (at most 256 characters), `Description` (at most 4,000);
+    - `Category` and `AlternateCategory`, each one of "Analytics & Insights", "Artificial Intelligence", "Campaign & Marketing", "Commerce", "Developer Tools", "Editor Tools", "Headless", "PIM & DAM", "Search", "Themes & Starter Kits" and "Translations" (the schema's list, confirmed 2026-10-23 in 1.8). **There is no "Forms" category**: use "Editor Tools", plus "Campaign & Marketing";
     - `AuthorDetails`, `DocumentationUrl`, `IssueTrackerUrl`, `DiscussionForumUrl`, `VideoUrl`, `Screenshots`, `Tags`;
-    - `PackageType` (`Package`), `LicenseTypes` (`Free` | `Purchase` | `Subscription`; this is about price, so `["Free"]`);
+    - `PackageType` (`Package` | `Integration`; `Package`), `LicenseTypes` (`Free` | `Purchase` | `Subscription`; this is about price, so `["Free"]`);
+    - `VersionDependencyMode` (`Default` | `SemVer`): `Default`, because the dependency range has an upper bound. The deprecated `LicenseType` and `AlternatePackageNames` stay unused;
     - `RelatedPackages`, `IsSubPackageOf`, `PackagesByAuthor`, `VersionSpecificPackageIds`;
     - `LookingForContributors`, `LookingForMaintainer`, `AddOnPackagesRequiredForUmbracoCloud`.
   - `additionalProperties: false`.
@@ -2373,7 +2376,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - `PackageTags`: the meta package and the AI add-on (both installed by sites) get `umbraco umbraco-marketplace forms form-builder contact-form`; Core and Web get `umbraco` only;
     - the meta package references `Umbraco.Cms.Web.Website` `[17.5.0, 18.0.0)` directly (§3.5);
     - SourceLink, `snupkg`, `EnablePackageValidation`, `ContinuousIntegrationBuild` in CI.
-  - The appsettings JSON schema is shipped the way Umbraco merges package schemas *(verify)*.
+  - The appsettings JSON schema ships as ADR-0008 decides: the Core package's `buildTransitive` props file adds `appsettings-schema.Jiron.Umbraco.FormBuilder.json` to `UmbracoJsonSchemaFiles`. Umbraco.Cms.Targets then copies it into the site's project folder and adds a reference to it to the site's `appsettings-schema.json` before every build (its `CopyUmbracoJsonSchemaFiles` and `AddUmbracoJsonSchemaReferences` targets, confirmed in 17.6.2, 17.7.1 and 18.2.1 in 1.8).
   - **`umbraco-marketplace.json`:**
     - **Fill it in from the schema:**
       - `Title` "Jiron Form Builder", `Description`;
@@ -2399,7 +2402,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Done when: the workflow check passes, and a dry run of the pack steps in `scripts/ci-local.ps1` produces the same files.
 - [ ] **18.3 Install test from packages**
   - With `scripts/install-test.ps1` (16.5), create a fresh Umbraco 17.7.1 site on 5530 that installs `Jiron.Umbraco.FormBuilder` (Jiron Form Builder packages only from the local feed).
-  - **Smoke:** the section is visible to the admin; a form is created through the management API and placed on a page; it renders, submits and emails (pickup); the entry shows in the backoffice.
+  - **Smoke:** the section is visible to the admin; a form is created through the management API and placed on a page; it renders, submits and emails (pickup); the entry shows in the backoffice; after the build, the site's `appsettings-schema.json` references `appsettings-schema.Jiron.Umbraco.FormBuilder.json` and the file is next to it (18.1).
   - Run the same smoke after `dotnet publish` of that site (static assets, §3.2).
   - **The supported floor:** run the same smoke on a fresh **Umbraco 17.5.x** site (its own template hive), because D3 promises `[17.5.0, 18.0.0)`.
   - **An upgrade on the floor:** on that 17.5.x site, update the packages to a second build with a higher version, restart, and check in a signed-in browser that keeps its cache that the backoffice runs the new code without a hard refresh. 17.5 adds no cache busting to package files (1.2b), and §3.4 says Umbraco sends package files without caching headers.

@@ -15,9 +15,9 @@ definitions and settings, a fixture and an upgrade test for every released schem
 deprecations that last a major, and `docs/upgrading.md`. §4.14 adds the public surface and versioned theme views. D3
 puts 17 first: the 18 line never costs `main` a feature, a fix, a delay or a compromise.
 
-Tandem used the same scheme (Tandem ADR-0010, ADR-0067, ADR-0077, ADR-0078) and showed what a second line costs:
-OpenAPI moved generators between 17 and 18, the snapshots and the generated client differ per line, and every
-hard-coded "17" in a script broke on the 18 branch. Nothing is published during the build (D17).
+Tandem used the same scheme (Tandem ADR-0010, Tandem ADR-0067, Tandem ADR-0077 and Tandem ADR-0078) and showed
+what a second line costs: OpenAPI moved generators between 17 and 18, the snapshots and the generated client differ
+per line, and every hard-coded "17" in a script broke on the 18 branch. Nothing is published during the build (D17).
 
 ## Options
 
