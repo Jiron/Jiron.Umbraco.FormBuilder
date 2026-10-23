@@ -106,8 +106,9 @@ proxies configure ASP.NET Core's forwarded headers with their known proxies (doc
 carry `[FormBuilderRateLimit(policy)]`. Windows are sliding windows of ten segments on the injected `TimeProvider`. A
 refusal answers `429 rate_limited` with `Retry-After`. Jiron Form Builder's policies never enter the site's
 `RateLimiterOptions`. On the surface action of a no-JS post, the middleware hands its refusal to the action, which
-renders the page again with the answers, a notice saying when to send again, `429` and `Retry-After`; an address more
-than ten times over its limit gets a bare `429`, so a flood still costs next to nothing.
+renders the page again with the answers, a notice saying when to send again, `429` and `Retry-After`. Only refusals of
+the per-address and per-form partitions below ten times their limit are rendered; site-wide and overflow-partition
+refusals, and an address further over its limit, get a bare `429`, so a flood still costs next to nothing.
 
 | Policy | Partitions (host keys under `JironFormBuilder:Limits`, defaults) |
 | --- | --- |
@@ -158,7 +159,7 @@ statement each, ADR-0003, ADR-0007):
 - **Single use:** the challenge id is stored on the entry (`jfbEntry.ChallengeId`, unique per form), so a solved
   challenge cannot make a second entry. A used challenge is accepted only together with the `submissionId` of its
   entry, and then the same digest returns the original receipt and a different one `409 duplicate_submission`
-  (§4.4, step 5); with any other `submissionId` it is `401 challenge_required`.
+  (§4.4, step 3); with any other `submissionId` it is `401 challenge_required`.
 - **The member part** is filled only for a signed-in member, and only with what rules and prefill on this form need.
 
 ### Signals and the spam score
@@ -190,7 +191,8 @@ more is **Spam**: accepted, stored, answered with the form's normal outcome, and
   rendered challenge only binds the post to the member (below). They are scored on the honeypot, the blocked ranges
   and the content rules, and limited like every post. On a form whose protection needs JavaScript, they go to Spam
   with `no_script`, so a real visitor without JavaScript is never lost and never trusted.
-- **"Not spam"** moves an entry to `Submitted` and runs its `submitted` actions then (§4.4). Spam keeps no places and
+- **"Not spam"** moves an entry to `Submitted` and runs its `submitted` actions then, or, on a form with email
+  verification and no `VerifiedUtc` yet, to `Unverified` with the verification mail (§4.4). Spam keeps no places and
   sends no mail.
 
 ### Proof of work
@@ -226,7 +228,8 @@ them checks the signed-in member (`member_required` without one) and that the ch
 (`challenge_required` otherwise, so the runtime fetches a fresh one). No cookie is set: the protection holds because no
 other origin can read a member's challenge (no credentials across origins, above, and the browser's same-origin policy
 for the page), and the page refuses to be framed by another origin (ADR-0004). Across origins and with a server key, a
-members-only form always answers `member_required`.
+members-only form always answers `member_required`; in the preview, a valid preview ticket stands in for a test
+member, and the test entry has no `MemberKey`.
 
 **Their no-JS posts** carry the rendered challenge:
 
@@ -234,7 +237,11 @@ members-only form always answers `member_required`.
   entry and redirects to its outcome instead of making a second one;
 - a missing, expired or foreign challenge renders the page again through `CurrentUmbracoPage()` with the answers, a
   fresh challenge and a notice to send again;
-- the minimum fill time does not apply, as for every no-JS post (a re-render would restart it).
+- the minimum fill time does not apply, as for every no-JS post (a re-render would restart it);
+- **the origin comes first:** before any re-render (a bad challenge, `form_changed`, a `429`, validation errors), the
+  surface action accepts only an `Origin` that is one of the site's own origins, and a missing or `null` `Origin` only
+  with `Sec-Fetch-Site: same-origin`. Anything else gets a plain `403 origin_denied` page that shows none of the posted
+  answers, so no other site can have a member's page filled in and handed a fresh challenge.
 
 ### Server keys
 

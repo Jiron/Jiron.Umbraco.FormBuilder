@@ -123,6 +123,7 @@ administrators unrestricted, because they could widen any group anyway.
 | viewer | `viewEntries` globally |
 | privacy officer | `privacyTools`, `viewEntries`, `viewSensitive`, `deleteEntries` globally |
 | no access | the Forms section, no grants |
+| outsider | a backoffice user without the Forms section (for the section requirement, 4.7) |
 
 A restricted folder with its own grant to a separate group is part of the seed, so every list test also proves that
 the restriction holds.

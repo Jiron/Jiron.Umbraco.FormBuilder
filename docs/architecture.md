@@ -317,9 +317,11 @@ sequenceDiagram
   participant W as Worker on this server
   V->>P: challenge (first interaction)
   P-->>V: signed challenge, places, member values
-  V->>P: entries {submissionId, revision, values, challenge}
+  V->>P: entries {submissionId, revision, values, consents, challenge}
   P->>S: limits, origin, body checked
-  S->>S: form and revision, availability, protection and spam score
+  S->>S: the gate: rate limits, the challenge (and its member)
+  S->>D: a known submissionId? then the original receipt
+  S->>S: revision and consent hashes, availability, protection and spam score
   S->>S: rules, then parse and validate each field
   S->>D: one transaction: entry, values, files, consent, event, action runs, places, stats
   D-->>S: committed
@@ -331,7 +333,8 @@ sequenceDiagram
 ```
 
 - The pipeline is the one of §4.4, the same for JavaScript posts, no-JS posts (ADR-0004) and the API; the
-  idempotency of the `submissionId` comes before the single use of the challenge (ADR-0012).
+  idempotency of the `submissionId` comes before the revision, availability and the single use of the challenge, so
+  a retry after a lost answer always gets its receipt (ADR-0012).
 - Suspicious submissions take the same path into `Spam`, with no action runs (ADR-0012).
 - After the commit the worker sends within milliseconds; the distributed job only wakes it (ADR-0007).
 
@@ -389,7 +392,8 @@ client committed from its snapshot. Areas (§4.7) and the permission each needs:
 | Permissions | `managePermissions` |
 | Privacy: find, export, erase, retention dry run | `privacyTools` |
 | Insights and answer summaries | `viewEntries` |
-| Setup and health, user settings | any user of the section |
+| Setup checklist, health results, user settings | any user of the section |
+| "Create a form block type for me" | `manageSettings` and Umbraco's Settings section |
 | The form picker in content | any user who may edit content; names and keys only |
 
 What a user may not see answers `404`; what they may see but not do answers `403` with the permission's name. The

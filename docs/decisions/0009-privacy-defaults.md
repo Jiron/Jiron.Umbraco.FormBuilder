@@ -46,7 +46,7 @@ search text, events) shorter or out altogether.
 | The member | the member's key, when a member is signed in (needed for "one entry per member" and the member's entries view) | – | – |
 | Context values | only the names the form lists (`developer.contextValues`), plus the name of the server key a server-to-server submission used, under the reserved name `jfbServerKey` (ADR-0012) | per form | – |
 | Duration | seconds from the first interaction to the submission (insights) | – | – |
-| Consent | `true` plus the hash of the exact text shown and its culture (`jfbConsentText`). The form posts the hash of the wording it showed, and a post whose hash differs from the current wording is answered as a changed form (ADR-0002), so the stored wording is always the one shown | – | – |
+| Consent | `true` plus the hash of the exact text shown and its culture (`jfbConsentText`). The form posts that same hash for the wording it showed (from the markup, or from the projection for headless and server-key clients), and the server compares it on every submission: a different hash is answered as a changed form (ADR-0002), and a ticked consent without one is `form_changed` for a browser post and `422` for a server key, so the stored wording is always the one shown | – | – |
 | Search text | the normalised values of non-sensitive fields only | – | – |
 
 **Retention defaults** (the engine is 13.1; each starts from the entry's last state change):

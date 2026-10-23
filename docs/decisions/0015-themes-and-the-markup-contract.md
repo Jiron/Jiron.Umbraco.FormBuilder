@@ -100,7 +100,8 @@ What the runtime, the headless element and site CSS may rely on, in every theme:
 | Navigation | `<div class="jfb-navigation">` with `<button type="submit" name="jfb-nav" value="back\|next\|submit" data-jfb-nav="…">` |
 | The outcome | `<div class="jfb-outcome" data-jfb-outcome tabindex="-1">`, which receives focus |
 | The honeypot | `<div class="jfb-hp" aria-hidden="true">` with its label and input (ADR-0012) |
-| A consent field | its checkbox, plus `<input type="hidden" name="jfb-consent-<alias>" value="<hash>">` holding the SHA-256 of the wording shown, which is the same for every visitor (ADR-0009) |
+| A consent field | its checkbox, plus `<input type="hidden" name="jfb-consent-<alias>" value="<hash>">` holding the `jfbConsentText` hash (SHA-256 of the culture and the wording shown), which is the same for every visitor (ADR-0009) |
+| A members-only form | `<input type="hidden" name="jfb-challenge" value="…">` with the member-bound challenge (ADR-0012); an override must keep it |
 
 - **State lives in attributes** (`hidden`, `disabled`, `aria-invalid`, `aria-current="step"`, `data-jfb-busy`), so
   themes style states without classes the runtime would have to manage.

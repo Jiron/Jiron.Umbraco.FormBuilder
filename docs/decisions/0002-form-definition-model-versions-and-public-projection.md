@@ -28,7 +28,7 @@ Questions the sketch leaves open:
   publish of every form that uses it.
 - **When to refuse:** §4.3.3 says saving refuses cycles and rules that point at missing fields, while §1.1's form
   check flags "a rule that points at a deleted field". Step 4.5 runs the structural validation at publish.
-- **Revisions:** what "older but compatible" (§4.4, step 1) means, and how a sanitiser or dictionary change affects
+- **Revisions:** what "older but compatible" (§4.4, step 4) means, and how a sanitiser or dictionary change affects
   caches.
 
 Ligata.Forms (§3.1) kept the editor's concurrency version apart from a visitor-facing revision that changed only
@@ -236,10 +236,10 @@ to the action type. Secrets appear only as `$JironFormBuilder:Secrets:<Name>` re
 ```
 
 Email verification is the `verification` setting only, never an action: its mail is a system mail (ADR-0007). While
-the entry is `Unverified` no action runs; confirming makes it `Submitted` and queues its `submitted` actions, then its
-`verified` ones. "Unique per form on a chosen field" shows under Availability in the designer and is stored as that
-field's `uniquePerForm` check. ADR-0012 fixes the protection levels and ADR-0009 the privacy values; their shape here
-is theirs to refine before v1 is fixed (below).
+the entry is `Unverified` no action runs; confirming makes it `Submitted` and queues its `submitted` and `verified`
+actions together, in the order shown. "Unique per form on a chosen field" shows under Availability in the designer and
+is stored as that field's `uniquePerForm` check. ADR-0012 fixes the protection levels and ADR-0009 the privacy values;
+their shape here is theirs to refine before v1 is fixed (below).
 
 **The built-in types' settings** (§4.3.2). Numbers that answers are compared with (min, max, step) are wire
 strings (ADR-0005); counts are JSON integers; relative dates use the operand form `{ "today": "+2d" }`.
@@ -352,9 +352,11 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
 - **It contains:** the form's key and alias, its public revision, and the culture's resolved texts; the settings
   visitors need (labels, the summary page, progress, the required marker, the validation summary, the theme, whether
   save and resume is on, whether the form is open and its closed message, whether it is for members, and what the
-  protection needs: the challenge, proof of work, the captcha provider, its site key and the consent mode); the
-  pages, groups and fields with their public properties and the public part of each type's settings (the type
-  declares it); rules; checks; form-level validation rules; and the allowed query values.
+  protection needs: the challenge, proof of work, the captcha provider, its site key and the consent mode, and the
+  honeypot's name for this revision); per consent field, the `jfbConsentText` hash of its wording for the requested
+  culture and content (ADR-0009); the pages, groups and fields with their public properties and the public part of
+  each type's settings (the type declares it); rules; checks; form-level validation rules; and the allowed query
+  values.
 - **It never contains:** actions, outcomes (the submission's answer carries the outcome, §4.6), recipients,
   `sensitive`, `includeInEmails`, `keep`, `formerAliases`, option-source configuration, member prefill mappings (only
   the fact that a field is prefilled from the member), the entry title and reference, storage, approval, retention,
@@ -371,7 +373,7 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
   sanitiser and the dictionary, so a package update or a dictionary edit never changes it.
 - **The ETag** of `GET forms/{keyOrAlias}` is a hash of the response itself, so it also changes when the dictionary
   or the sanitiser changes what the visitor gets.
-- **"Older but compatible"** (§4.4, step 1): a submission against an older revision is validated against the current
+- **"Older but compatible"** (§4.4, step 4): a submission against an older revision is validated against the current
   published version. When every error falls on a field that the posted revision also had, the answer is the usual
   `422 validation_failed`. When an error falls on a field the visitor never saw, when a field the visitor answered no
   longer exists, or when a consent text the visitor agreed to has changed (by the hash of the wording shown, which the

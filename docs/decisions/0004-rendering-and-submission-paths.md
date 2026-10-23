@@ -122,14 +122,17 @@ Option 3 for the no-JS post, option 1 for the state after it, option 2 for `form
 - **Members-only forms bind every post to the member** instead of using ASP.NET Core's antiforgery, whose cookie D13
   rules out:
   - Their pages are per member, so the view sends `Cache-Control: no-store`, which also keeps them out of Umbraco's
-    output cache, and `Content-Security-Policy: frame-ancestors 'self'` with `X-Frame-Options: SAMEORIGIN` unless the
-    response already has a framing policy, so no other site can frame the page and trick the member into sending it.
-    `render` does the same for such a form.
+    output cache. In `Response.OnStarting`, so headers that site middleware adds later count too, it adds a separate
+    `Content-Security-Policy: frame-ancestors 'self'` header (never replacing the site's own CSP) and
+    `X-Frame-Options: SAMEORIGIN`, unless the response already has an `X-Frame-Options` header or a CSP with
+    `frame-ancestors`. No other site can then frame the page and trick the member into sending it. `render` does the
+    same for such a form.
   - Their challenge (ADR-0012) holds the signed-in member's key. The runtime fetches it from the same origin with
     `credentials: 'same-origin'` (it never uses `'include'`), so the browser sends the member's login cookie, and the
     no-JS form carries one rendered into the page.
-  - Both paths accept a post only when the challenge names the member who is signed in now, and the origin checks of
-    every post apply as well. Another origin cannot read such a challenge: the public API never allows credentials
+  - Both paths accept a post only when the challenge names the member who is signed in now, and only from the site's
+    own origin: the surface action checks the origin before any re-render and refuses others without showing their
+    answers (ADR-0012). Another origin cannot read such a challenge: the public API never allows credentials
     across origins (ADR-0012), and the browser's same-origin policy protects the page. A site whose own CORS lets
     another origin read its pages with credentials hands that origin the challenge too; the docs say so.
   - Members-only forms therefore work only on the site's own origin: across origins and with server keys they answer

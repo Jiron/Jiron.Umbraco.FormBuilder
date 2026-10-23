@@ -67,8 +67,8 @@ later steps name theirs.
 **The Testing project** (`tests/Jiron.Umbraco.FormBuilder.Testing`, never packed, ADR-0001):
 
 - **Time:** a test clock, a `TimeProvider` over it, and manual timers.
-- **People:** seeders for the test roles (admin, designer, entry handler, viewer, privacy officer, no access) and two
-  members (§4.11).
+- **People:** seeders for the test roles (admin, designer, entry handler, viewer, privacy officer, no access,
+  outsider) and two members (§4.11).
 - **Test-only endpoints** under `/jfb-testing/…` (seed, move the clock, run a job now, age entries): their composer
   answers only on a test host, in Development, on loopback, and a test proves that a normal host has none of them.
 - **Stubs and fakes:** the HTTP stub on 5560 (webhook calls recorded, URL option lists, captcha verification answers),
