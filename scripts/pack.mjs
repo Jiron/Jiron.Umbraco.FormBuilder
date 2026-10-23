@@ -10,7 +10,9 @@
  *     --version   the packages' version; without it a local test version <VersionPrefix>-dev.<yyyyMMddHHmm> in UTC
  *                 (D16), so a test pack never meets an older pack of the same version in a package cache
  *     --no-build  packs what an earlier step built for that version: no client build and `dotnet pack --no-build`
- *                 (the static web assets are fixed when .NET builds, so the client must be built before it)
+ *                 (the static web assets are fixed when .NET builds, so the client must be built before it). Without
+ *                 --version it packs the version a plain build stamps, VersionPrefix-VersionSuffix, as the gate and
+ *                 CI do after their Release build
  *
  * Package files already in the folder are removed first; other files stay. Exit codes: 0 packed, 1 a step or a
  * check failed, 2 usage.
@@ -32,6 +34,23 @@ export function devVersion(propsText, now = new Date()) {
   const pad = (n) => String(n).padStart(2, '0');
   const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}`;
   return `${prefix}-dev.${stamp}`;
+}
+
+/** VersionPrefix-VersionSuffix: what a build without a version of its own stamps (the client's version.mjs too). */
+export function builtVersion(propsText) {
+  const prefix = propsText.match(/<VersionPrefix>([^<]+)<[/]VersionPrefix>/)?.[1]?.trim();
+  const suffix = propsText.match(/<VersionSuffix>([^<]*)<[/]VersionSuffix>/)?.[1]?.trim();
+  if (!prefix) throw new Error('Directory.Build.props has no VersionPrefix');
+  return suffix ? `${prefix}-${suffix}` : prefix;
+}
+
+/**
+ * The version a pack uses: the one asked for; otherwise a local test version when the pack builds, and the version
+ * the earlier build stamped when it does not (a test version would never match that build's assets).
+ */
+export function packVersion({ version, build, propsText, now = new Date() }) {
+  if (version) return version;
+  return build ? devVersion(propsText, now) : builtVersion(propsText);
 }
 
 /** The arguments of `dotnet pack` for an output folder and a version. */
@@ -93,8 +112,8 @@ function main() {
     console.error('usage: node scripts/pack.mjs --output <folder> [--version <version>] [--no-build]');
     process.exit(2);
   }
-  const version = option(args, '--version') ?? devVersion(readFileSync(join(root, 'Directory.Build.props'), 'utf8'));
   const build = !args.includes('--no-build');
+  const version = packVersion({ version: option(args, '--version'), build, propsText: readFileSync(join(root, 'Directory.Build.props'), 'utf8') });
   const folder = resolve(output);
   for (const file of packageFiles(folder)) rmSync(join(folder, file));
 

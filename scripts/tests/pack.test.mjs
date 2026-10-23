@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { devVersion, PACKAGE_IDS, packageFiles, packArguments, packProblems, SOLUTION_FILTER } from '../pack.mjs';
+import { builtVersion, devVersion, PACKAGE_IDS, packageFiles, packArguments, packProblems, packVersion, SOLUTION_FILTER } from '../pack.mjs';
 
 const VERSION = '17.0.0-dev.202610231200';
 
@@ -14,6 +14,16 @@ describe('the version of a local test pack', () => {
     const props = '<VersionPrefix>17.0.0</VersionPrefix><VersionSuffix>alpha.0</VersionSuffix>';
     assert.equal(devVersion(props, new Date(Date.UTC(2026, 9, 23, 7, 5))), '17.0.0-dev.202610230705');
     assert.throws(() => devVersion('<Project />'), /VersionPrefix/);
+  });
+
+  test('is the one asked for, a test version when the pack builds, and the built version when it does not', () => {
+    const props = '<VersionPrefix>17.0.0</VersionPrefix><VersionSuffix>alpha.0</VersionSuffix>';
+    const now = new Date(Date.UTC(2026, 9, 23, 7, 5));
+    assert.equal(packVersion({ version: '17.0.0-beta.1', build: false, propsText: props, now }), '17.0.0-beta.1');
+    assert.equal(packVersion({ build: true, propsText: props, now }), '17.0.0-dev.202610230705');
+    assert.equal(packVersion({ build: false, propsText: props, now }), '17.0.0-alpha.0');
+    assert.equal(builtVersion('<VersionPrefix>17.1.0</VersionPrefix><VersionSuffix></VersionSuffix>'), '17.1.0');
+    assert.throws(() => builtVersion('<Project />'), /VersionPrefix/);
   });
 });
 
