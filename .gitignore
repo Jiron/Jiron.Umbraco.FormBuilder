@@ -17,6 +17,7 @@
 # =====================================================================
 .local/
 .claude/
+.impeccable/review/
 **/appsettings.Local.json
 **/appsettings.*.Local.json
 
