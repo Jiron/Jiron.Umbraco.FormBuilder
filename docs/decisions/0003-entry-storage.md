@@ -1,6 +1,7 @@
 # 0003. Entry storage
 
-- Status: accepted; catalogue rows of draft-only fields amended in 1.8
+- Status: accepted; catalogue rows of draft-only fields amended in 1.8; column names, two indexes and the capacity key
+  amended by [0033](0033-schema-v1.md) in 4.1
 - Date: 2026-10-23
 - Roadmap step: 1.3 (decided); built in 4.1 (schema), 4.3 (repositories and the entries query builder), 6.1 (the
   submission transaction), 11.1 (the entries list) and 11.4 (exports); load-tested in 16.2
