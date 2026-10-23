@@ -1,9 +1,10 @@
 # 0002. The form definition model, versions and the public projection
 
 - Status: accepted; theme alias, calculation decimals, consent and card defaults, unsafe patterns and verification
-  amended in 1.8
+  amended in 1.8; the save codes, unsupported properties and the outcome limit amended by
+  [ADR-0034](0034-definition-model-reading-and-writing.md) in 4.2a
 - Date: 2026-10-23
-- Roadmap step: 1.7a (decided); built in 4.2 (the model, the schema, upgraders, structural validation, the
+- Roadmap step: 1.7a (decided); built in 4.2a (the model, the schema, upgraders), 4.2b (structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
 
 ## Context
@@ -112,7 +113,7 @@ characters and no line breaks, other plain texts 2,000 characters, rich texts 50
 | `fields` | Field[] | may be empty |
 
 **Field.** The common properties; a type declares which of them it supports (§4.3.2), and a property the type does
-not support must be absent.
+not support keeps its default (ADR-0034: booleans and numbers are always written).
 
 | Property | Type | Default | Notes |
 | --- | --- | --- | --- |
@@ -287,8 +288,8 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
 - **C#:** immutable records in Core (`FormDefinition`, `FormPage`, `FormGroup`, `FormField`, `FormRule` and so on),
   read and written with System.Text.Json source generation. A type's settings travel as a JSON object and are bound
   to its settings class by the type.
-- **Strict reading:** unknown properties, numbers where a string belongs, enum values as numbers and duplicate keys
-  are refused with the JSON path. A new property, a new enum value or a new effect therefore needs a new
+- **Strict reading:** unknown properties, numbers where a string belongs, enum values as numbers and a property
+  named twice are refused with the JSON path (ADR-0034 has the steps and every code). A new property, a new enum value or a new effect therefore needs a new
   `schemaVersion`, so an older site never drops part of a newer document without noticing.
 - **The canonical form:** properties in declaration order, `null` and empty arrays and objects left out, booleans and
   numbers always written, no indentation, and the keys of `LocalizedText` and of settings objects sorted ordinally
@@ -297,10 +298,11 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
 ### Refusing
 
 - **Every save** (draft, import, template, mirror file) refuses what makes the document unreadable: invalid JSON,
-  unknown properties, wrong types, invalid keys, duplicate keys, an unknown or newer `schemaVersion`, the size limits
-  (2 MB, the text lengths above) and the element limits of §4.3.1. Codes: `invalid_json`, `unknown_property`,
-  `invalid_type`, `invalid_value`, `duplicate_key`, `unsupported_schema_version`, `limit_exceeded`.
-- **Publishing** also runs the structural validation of 4.2 and refuses every problem it finds: aliases
+  unknown and missing properties, a property named twice, wrong types, invalid keys, two elements with one key, an
+  unknown or newer `schemaVersion`, the size limits (2 MB, the text lengths above) and the element limits of §4.3.1
+  with 50 outcomes per form. Codes: `invalid_json`, `unknown_property`, `missing_property`, `duplicate_property`,
+  `invalid_type`, `invalid_value`, `duplicate_key`, `unsupported_schema_version`, `limit_exceeded` (ADR-0034).
+- **Publishing** also runs the structural validation of 4.2b and refuses every problem it finds: aliases
   (`alias_invalid`, `alias_reserved`, `alias_duplicate`), references (`unknown_field` for a condition, check or option
   parent that names no field, `unknown_type`), cycles in the graph of rules over fields, groups and pages (`cycle`),
   and the condition checks both runtimes run (`unknown_operator`, `operator_not_for_kind`, `invalid_operand`,
@@ -348,7 +350,7 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
 
 - **Built from an allowlist,** never by removing internal parts: a separate set of public types holds each property
   that may reach a visitor, so a property added to the definition stays private until it is added there. A test
-  serialises fully populated definitions (property-style, 4.2) and compares the projection with the allowlist.
+  serialises fully populated definitions (property-style, 4.2b) and compares the projection with the allowlist.
 - **It contains:** the form's key and alias, its public revision, and the culture's resolved texts; the settings
   visitors need (labels, the summary page, progress, the required marker, the validation summary, the theme, whether
   save and resume is on, whether the form is open and its closed message, whether it is for members, and what the

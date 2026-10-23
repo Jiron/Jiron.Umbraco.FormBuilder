@@ -601,7 +601,7 @@ A form definition is one JSON document, validated against `schemas/jfb-form.v1.s
 - **Localised text:** every editor-written text is a `LocalizedText`, a map from culture (`""` = default) to text.
   - The visible text resolves as the request culture → its neutral culture → default.
   - A value of exactly `#key` resolves through the Umbraco dictionary.
-- **Limits** (host-configurable): 30 pages, 100 groups, 300 fields, 1,000 options per field, 50 actions and 200 rules per form. A definition of at most 2 MB.
+- **Limits** (host-configurable): 30 pages, 100 groups, 300 fields, 1,000 options per field, 50 actions, 50 outcomes and 200 rules per form (ADR-0034). A definition of at most 2 MB.
 - **The public projection** (what the website and the headless API get) is built from an allowlist (ADR-0002). It never contains:
   - actions, outcomes (the submission's answer carries the outcome) or recipients;
   - option-source configuration. Options from a library list or another source are resolved when the form is rendered, so editing a list needs no publish;
@@ -1556,17 +1556,24 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a test shows the ADR-0003 schema on SQLite: `typeof` gives `real` for a stored number and `text` for a date, the value and entry indexes are exactly those of §4.5, `jfbEntryValue.FieldId` has no cascade, and the plan states `IgnoreCurrentState => false`;
     - the SQL Server DDL snapshot test passes;
     - the same tests are part of the SQL Server job in `ci.yml` (show the job definition; the owner checks the CI result).
-- [ ] **4.2 The definition model**
+- [ ] **4.2a The definition model and its JSON** (4.2 split in two, WORKLOG 2026-10-23)
   - **The model:** C# records for §4.3, System.Text.Json with source generation, and `LocalizedText`.
+  - **Reading and writing** (ADR-0002): the strict reader with the save-time refusals and their codes (unreadable JSON, unknown properties, wrong types and values, duplicate keys, an unsupported `schemaVersion`, the size, text and element limits of §4.3.1), and the canonical form with `DefinitionHash`.
   - **The schema:** `schemas/jfb-form.v1.schema.json`, with a test that validates serialised definitions against it (a JSON-schema library is allowed as a test-only dependency if MIT or Apache-2.0).
   - **Upgraders:** the definition upgrader framework, tested with a synthetic older version.
+  - Done when:
+    - round trips are lossless: a property-style test over generated definitions writes, reads and writes each one to the same bytes and the same model, and a fully populated document is read and written byte for byte;
+    - serialised definitions validate against the schema, and a test shows that the schema and the model name the same properties, with the same required ones, for every object;
+    - every save-time refusal has a unit test that checks its code and its JSON path;
+    - the upgrader test reads a synthetic older version through the real reader.
+- [ ] **4.2b Structural validation and the public projection**
   - **Structural validation**, with stable error codes:
     - limits, alias rules and reserved aliases;
     - aliases unique without regard to case, and the option values of a field unique once folded as rules compare text (ADR-0005), because SQL Server ignores case where SQLite does not, and entry filters compare folded text (ADR-0033);
     - unique keys, existing references and cycles;
     - pattern safety.
   - **The public projection** and its hash.
-  - Done when: unit tests cover every structural rule (aliases that differ only by case and option values that fold to the same text included), round trips are lossless, and a property-style test over generated definitions shows that the public projection never contains action settings, recipients or option-source configuration.
+  - Done when: unit tests cover every structural rule (aliases that differ only by case and option values that fold to the same text included), and a property-style test over generated definitions shows that the public projection never contains action settings, recipients or option-source configuration.
 - [ ] **4.3 Repositories, the file store, the audit log and stats**
   - One repository per aggregate (forms with versions and the field catalogue, folders, entries with values and files, events and notes, action runs, emails, option lists, themes, layouts, templates, settings, permissions, audit, stats, key-value).
   - All async, inside Umbraco scopes, through the database gate (D7). Paging, filtering and sorting happen in the database.
@@ -1586,10 +1593,10 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a test fails the build when Core constructs a database connection of its own (ADR-0007).
 - [ ] **4.4 The settings framework** (port the pattern, §3.3)
   - **Model:** typed sections (§4.8) with defaults, validators and JSON schema versions with migrations, plus global and per-site scope.
-  - **Host options:** bound and validated at start (`ValidateOnStart`); locks win over the backoffice, including `Designer:SettingLocks`.
+  - **Host options:** bound and validated at start (`ValidateOnStart`); locks win over the backoffice, including `Designer:SettingLocks`. They include the definition limits of 4.2a (`Limits:Definitions`), which the reader and the structural validation already take.
   - **Runtime:** a cached reader invalidated by a cache refresher, and a `SettingsSaved` notification. Ship a JSON schema for `appsettings` IntelliSense (with a `!` exception in `.gitignore`), and test that its `$ref`s resolve from the file itself (Tandem's first one resolved them from the options class, Tandem 11.1b).
   - **Globalization** (ADR-0005): start-up refuses invariant globalization, which turns normalisation off and loses IANA time zones on Windows; saving a time zone the server cannot resolve is refused.
-  - Done when: unit tests cover every validator and default; migrating an old payload works; a lock overrides the backoffice value; an invalid host config fails start-up with a clear message; a site with invariant globalization fails start-up with a clear message, and an unknown time zone cannot be saved.
+  - Done when: unit tests cover every validator and default; migrating an old payload works; a lock overrides the backoffice value; a lowered `Limits:Definitions` limit refuses a definition that the default allows; an invalid host config fails start-up with a clear message; a site with invariant globalization fails start-up with a clear message, and an unknown time zone cannot be saved.
 - [ ] **4.5 The form service**
   - **Create:**
     - from blank, with the configured new-form defaults;
@@ -1597,7 +1604,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - by import.
   - **Save and publish:**
     - save draft with a concurrency check;
-    - publish: run the structural validation (4.2), update the field catalogue, and bump the public revision only when the public projection changed. Publishing is a pipeline that later steps extend: the form check joins in 9.5b, the mirror file in 12.5;
+    - publish: run the structural validation (4.2b), update the field catalogue, and bump the public revision only when the public projection changed. Publishing is a pipeline that later steps extend: the form check joins in 9.5b, the mirror file in 12.5;
     - unpublish.
   - **Versions:** list, diff, restore (as a new version), pin and comment, plus the draft-version cleanup, the first part of the retention job (D8, ADR-0007).
   - **Copies and moves:**
