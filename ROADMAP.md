@@ -1653,7 +1653,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the parse and validate contract;
     - an availability check ("not configured: …").
   - **Changing types:** a "change type" compatibility map, and `Designer:SettingLocks` applied.
-  - Done when: unit tests pass, including a custom type registered by a test composer and a type removed from the collection.
+  - **Publishing** (ADR-0035): the structural validation and the public projection read each type's traits from the registry instead of 4.2b's built-in table, and publishing runs each type's check of its own settings.
+  - Done when: unit tests pass, including a custom type registered by a test composer and a type removed from the collection; 4.2b's support matrix runs against the registry's traits.
 - [ ] **5.2 Rules and validation engines** (C# and `packages/logic`)
   - Implement §4.3.3 in both runtimes, with form-level validation rules and the "hidden means gone" propagation (a field hidden because its group or page is hidden). Groups nest only to a limited depth, checked before evaluation, because both evaluators recurse (ADR-0030).
   - **Vectors (≥ 300 cases),** starting from the 163 of 1.5 (ADR-0005):
@@ -1665,7 +1666,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when: both runtimes pass every vector, and a scripted mutation check flips each TypeScript operator in turn and shows at least one failing vector for each. The mutation check also covers the text, decimal, date and pattern modules in TypeScript and the parts where .NET differs in C# (the Turkish i's, noncharacters, the folded blocks); every survivor is either written down as an equivalent change or killed by a new vector. The tables check passes.
 - [ ] **5.3 Merge tags and calculations** (C# and `packages/logic`)
   - Implement the sources, filters and escaping contexts of §4.3.3, plus unknown-tag handling and the calculation parser and evaluator, with no `eval`, no reflection and documented rounding (the exact decimals of ADR-0005: division to 20 places and `round` half away from zero, `out_of_range` past 60 digits).
-  - **Also:** answer recall (only fields above the text or on earlier pages, hidden fields empty), `entry.reference`, the date functions `daysBetween` and `yearsBetween` (leap days and a daylight-saving change in the vectors), and a limit on how deeply calculations nest (ADR-0030).
+  - **Also:** answer recall (only fields above the text or on earlier pages, hidden fields empty), `entry.reference`, the date functions `daysBetween` and `yearsBetween` (leap days and a daylight-saving change in the vectors), and a limit on how deeply calculations nest (ADR-0030). Publishing refuses a calculation that names no field or depends on itself (ADR-0035).
   - Done when:
     - the vectors pass in both runtimes, including answer recall, the date functions, and division and rounding at their edges (thirds, halves, negative halves, division by zero, out of range), and a calculation result rounded to its decimals and read rounded by a rule (ADR-0005);
     - a fuzz test of 10,000 random templates and formulas never throws an unhandled exception and never takes longer than 50 ms per input;
@@ -1708,7 +1709,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - **Places on options** (§4.4): taken in the transaction, given back on reject, spam, delete and erase.
     - **Empty submissions are refused:** a submission with no answer at all fails validation with a form-level message.
     - **Values kept only until the actions have run** are stored only when an action run applies (§4.4; their deletion comes with the processor in 8.1).
-  - Done when: integration tests cover each endpoint built here for success; validation errors by alias; a replayed submission returning the same receipt (also once the form has closed, its entry limit is reached or the option it took is full) and a changed one returning `409`; `form_changed`, `form_closed` and the entry limit; CORS allowed and denied; oversize bodies. The upload test of 1.4b is ported, with the ASP.NET temp folder watched: a 60 MB upload to a 50 MB field is cut off with nothing buffered, a renamed `.exe` is refused on its first bytes with nothing stored, and a declared length over the limit is refused before a byte is read. They also cover 50 parallel submissions for the last 10 places of an option (exactly 10 accepted), a rejected entry giving its place back, and an empty submission refused. A JSON body with an escaped lone surrogate answers `400 invalid_request`, not `500` (ADR-0005). A consent posted with the hash of a wording that has changed since (through the dictionary) answers `form_changed` and stores nothing. A calculation result too long for a number is stored as text only, with `Number` null (ADR-0005). While the migrations are pending, every public endpoint answers `503 migrations_pending` and stores nothing (ADR-0033).
+    - **Redirect outcomes** (ADR-0035): the rendered URL is checked again by the publish rule, and one that fails it is not followed; the visitor gets the default thank-you message and the site logs a warning without the answers.
+  - Done when: integration tests cover each endpoint built here for success; validation errors by alias; a replayed submission returning the same receipt (also once the form has closed, its entry limit is reached or the option it took is full) and a changed one returning `409`; `form_changed`, `form_closed` and the entry limit; CORS allowed and denied; oversize bodies. The upload test of 1.4b is ported, with the ASP.NET temp folder watched: a 60 MB upload to a 50 MB field is cut off with nothing buffered, a renamed `.exe` is refused on its first bytes with nothing stored, and a declared length over the limit is refused before a byte is read. They also cover 50 parallel submissions for the last 10 places of an option (exactly 10 accepted), a rejected entry giving its place back, and an empty submission refused. A JSON body with an escaped lone surrogate answers `400 invalid_request`, not `500` (ADR-0005). A consent posted with the hash of a wording that has changed since (through the dictionary) answers `form_changed` and stores nothing. A calculation result too long for a number is stored as text only, with `Number` null (ADR-0005). While the migrations are pending, every public endpoint answers `503 migrations_pending` and stores nothing (ADR-0033). A redirect outcome whose merge tags render `//` and another host is not followed (ADR-0035).
 - [ ] **6.2 Razor rendering**
   - **Rendering:**
     - the view component and tag helpers (`<jfb-render>`, `<jfb-assets>`, included once per page automatically unless turned off), with the nonce option (`<jfb-assets nonce>` and `IFormBuilderCspNonceProvider`, ADR-0004);
@@ -1822,7 +1824,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - tests cover each content rule, a custom `IFormBuilderSpamCheck`, and "not spam" running the submitted actions.
 - [ ] **7.2 Proof of work and captcha providers**
   - **Proof of work:** a SHA-256 puzzle with difficulty per level, a signed and expiring nonce, solved in a Web Worker with a progress hint for slow devices.
-  - **Third-party providers:** reCAPTCHA v2 and v3 (ported from Ligata.Forms) and hCaptcha. Providers are greyed out without keys. The consent modes of §4.10 apply.
+  - **Third-party providers:** reCAPTCHA v2 and v3 (ported from Ligata.Forms) and hCaptcha. Providers are greyed out without keys. The consent modes of §4.10 apply. Publishing refuses a provider the site lacks (`unknown_type` at `settings.protection.captcha.provider`, ADR-0035).
   - Done when:
     - unit tests pass against the HTTP stub;
     - Playwright, with the provider hosts routed to a local stub (`page.route`, so no real third-party request ever happens, D22), shows **zero requests to them before consent** and the script loading after;
@@ -1844,7 +1846,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 ### Phase 8: Actions and email
 
 - [ ] **8.1 The action framework**
-  - **The model:** a registry with `FormBuilderActionTypeBase<TSettings>`, triggers, rules, order and "stop the rest if this fails".
+  - **The model:** a registry with `FormBuilderActionTypeBase<TSettings>`, triggers, rules, order and "stop the rest if this fails". Publishing refuses an action type the site lacks (`unknown_type` at `actions[n].type`, ADR-0035) and runs each type's check of its own settings.
   - **The processor** (ADR-0007): one worker per server, woken after each commit through a scoped notification and a bounded channel of one, with claims by token, leases, back-off, the late finisher and the `Uncertain` state. The distributed job only wakes its server's worker and returns.
   - **The pause switch** (§4.4): while `JironFormBuilder:Actions:Paused` is on, the processor claims nothing, and the kick does nothing.
   - **Values kept only until the actions have run** (§4.4): deleted, with the entry event, once no trigger can still fire for the entry and every run is final.

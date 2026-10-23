@@ -2,7 +2,8 @@
 
 - Status: accepted; theme alias, calculation decimals, consent and card defaults, unsafe patterns and verification
   amended in 1.8; the save codes, unsupported properties and the outcome limit amended by
-  [ADR-0034](0034-definition-model-reading-and-writing.md) in 4.2a
+  [ADR-0034](0034-definition-model-reading-and-writing.md) in 4.2a; the publish codes and what the projection and its
+  hash hold amended by [ADR-0035](0035-structural-validation-and-public-projection.md) in 4.2b
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2a (the model, the schema, upgraders), 4.2b (structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
@@ -302,11 +303,13 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
   unknown or newer `schemaVersion`, the size limits (2 MB, the text lengths above) and the element limits of §4.3.1
   with 50 outcomes per form. Codes: `invalid_json`, `unknown_property`, `missing_property`, `duplicate_property`,
   `invalid_type`, `invalid_value`, `duplicate_key`, `unsupported_schema_version`, `limit_exceeded` (ADR-0034).
-- **Publishing** also runs the structural validation of 4.2b and refuses every problem it finds: aliases
-  (`alias_invalid`, `alias_reserved`, `alias_duplicate`), references (`unknown_field` for a condition, check or option
-  parent that names no field, `unknown_type`), cycles in the graph of rules over fields, groups and pages (`cycle`),
-  and the condition checks both runtimes run (`unknown_operator`, `operator_not_for_kind`, `invalid_operand`,
-  `unsafe_pattern`, ADR-0005), the last also for the `pattern` checks of a field's `validation` list. The form check
+- **Publishing** also runs the structural validation of 4.2b and refuses every problem it finds: aliases, names and
+  option values (`alias_invalid`, `alias_reserved`, `alias_duplicate`, and so on), references (`unknown_field`,
+  `invalid_reference`, `unknown_type`), cycles in the graph of rules and containment over fields, groups and pages
+  (`cycle`), the condition checks both runtimes run (`unknown_operator`, `operator_not_for_kind`, `invalid_operand`,
+  `unsafe_pattern`, ADR-0005), the last also for the `pattern` checks of a field's `validation` list, what a field
+  type does not support, missing and misplaced parts, rule effects, and redirects that could leave the site.
+  ADR-0035 has every code and where it points. The form check
   (9.5b) adds its errors (a missing label, an email action without an email field, a text that recalls a later field,
   a consent text with a merge tag other than `form`, `page`, `site` or `dictionary`) and its warnings, which never
   block.
@@ -357,12 +360,15 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
   protection needs: the challenge, proof of work, the captcha provider, its site key and the consent mode, and the
   honeypot's name for this revision); per consent field, the `jfbConsentText` hash of its wording for the requested
   culture and content (ADR-0009); the pages, groups and fields with their public properties and the public part of
-  each type's settings (the type declares it); rules; checks; form-level validation rules; and the allowed query
-  values.
+  each type's settings (the type declares it); switched-on rules; checks; switched-on form-level validation rules;
+  and the allowed query values. The projection of a definition holds what the definition decides; the form endpoint
+  adds the alias, the revision, whether the form is open, the protection data and the consent hashes outside
+  `PublicHash` (ADR-0035).
 - **It never contains:** actions, outcomes (the submission's answer carries the outcome, §4.6), recipients,
   `sensitive`, `includeInEmails`, `keep`, `formerAliases`, option-source configuration, member prefill mappings (only
   the fact that a field is prefilled from the member), the entry title and reference, storage, approval, retention,
-  IP handling, insights, context values, or anything a type marks private.
+  IP handling, insights, context values, switched-off rules, the hidden field's default value (resolved when the
+  entry is submitted), or anything a type marks private.
 - **Options:** a field's own `items` are part of the projection, without their `places` (places left are per moment,
   and come with the challenge, §4.6). Options from a library list or another source are resolved when the form is
   rendered or asked for (`GET forms/{key}/options/{fieldKey}`), cached by the source's `CacheSeconds`, and are not
