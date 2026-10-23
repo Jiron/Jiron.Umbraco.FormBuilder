@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    The HTTP surfaces, rendering and static assets (ADR-0001): the public and management APIs, the view component,
+    tag helpers and surface controller, themes, the form picker, health checks and the files built from Client/.
+    Based on Umbraco's umbraco-extension template (17.7.1, `-ex -pm Central`), restructured (ADR-0025): a Razor class
+    library serving wwwroot from the site root, so the backoffice lives under /App_Plugins/JironFormBuilder/ and the
+    website assets under /jfb/assets/.
+  -->
+  <PropertyGroup>
+    <Title>Jiron Form Builder Web</Title>
+    <Description>The public and management APIs, form rendering, themes and the Forms section of Jiron Form Builder for Umbraco 17. Sites install Jiron.Umbraco.FormBuilder, which brings this package.</Description>
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Web.Common" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" />
+    <PackageReference Include="Umbraco.Cms.Api.Common" />
+    <PackageReference Include="Umbraco.Cms.Api.Management" />
+    <PackageReference Include="Umbraco.Cms.Api.Delivery" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jiron.Umbraco.FormBuilder.Core\Jiron.Umbraco.FormBuilder.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The client sources (3.2) are built into wwwroot; they are never packed themselves. -->
+    <Content Remove="Client\**" />
+    <None Remove="Client\**" />
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+</Project>

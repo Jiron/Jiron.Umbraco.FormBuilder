@@ -1,0 +1,18 @@
+<Project>
+
+  <!--
+    Jiron Form Builder's packages always install together and share internals (ADR-0001), so a package depends on its
+    siblings with the exact version ([x]) instead of NuGet's default ">= x". This rewrites the versions that NuGet's
+    pack computes for project references; step 3.1 checked the nuspecs, and the pack listing (18.1) keeps checking them.
+  -->
+  <Target Name="JfbExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
+    <ItemGroup>
+      <_JfbExactProjectReferences Include="@(_ProjectReferencesWithVersions)">
+        <ProjectVersion>[%(_ProjectReferencesWithVersions.ProjectVersion)]</ProjectVersion>
+      </_JfbExactProjectReferences>
+      <_ProjectReferencesWithVersions Remove="@(_ProjectReferencesWithVersions)" />
+      <_ProjectReferencesWithVersions Include="@(_JfbExactProjectReferences)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

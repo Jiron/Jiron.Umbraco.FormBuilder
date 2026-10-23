@@ -11,3 +11,5 @@ follows the Umbraco major).
 
 - The repository foundation: the build settings, the git hooks (commit identity, secret scan, private term
   guard, text check) and the community files (security policy, contribution guide, code of conduct, support).
+- The solution and its projects: `Jiron.Umbraco.FormBuilder.Core`, `Jiron.Umbraco.FormBuilder.Web` and the
+  `Jiron.Umbraco.FormBuilder` package that sites install, for Umbraco `[17.5.0, 18.0.0)`, plus the test projects.

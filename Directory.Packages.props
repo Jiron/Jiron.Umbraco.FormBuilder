@@ -8,10 +8,39 @@
     Umbraco is a range, not a pin: it becomes the packages' dependency range [17.5.0, 18.0.0) (D3). NuGet
     resolves the lowest version of a range, so Jiron Form Builder compiles against its minimum supported
     version; the demo and test hosts reference the latest 17.x exactly. Tools and test packages are pinned
-    exactly. Step 3.1 adds the first packages.
+    exactly. Floating versions stay off (the template's CentralPackageFloatingVersionsEnabled is not used).
   -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
+
+  <!-- Umbraco CMS 17 (D3): the packages' dependency ranges. MIT. -->
+  <ItemGroup>
+    <PackageVersion Include="Umbraco.Cms.Core" Version="[17.5.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="[17.5.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="[17.5.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="[17.5.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="[17.5.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[17.5.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Delivery" Version="[17.5.0, 18.0.0)" />
+  </ItemGroup>
+
+  <!-- Test hosts only: the latest 17.x, pinned exactly (D3). MIT. -->
+  <ItemGroup>
+    <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="17.7.1" />
+  </ItemGroup>
+
+  <!--
+    Test tools (ADR-0011), pinned exactly, all dev-only: NUnit, NUnit3TestAdapter, Microsoft.NET.Test.Sdk and
+    coverlet.collector are MIT, NSubstitute is BSD-3-Clause. NUnit stays on 3.x, because Umbraco.Cms.Tests.Integration
+    17 depends on it (D19).
+  -->
+  <ItemGroup>
+    <PackageVersion Include="NUnit" Version="3.14.0" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageVersion Include="NSubstitute" Version="6.2.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.1.0" />
+  </ItemGroup>
 
 </Project>

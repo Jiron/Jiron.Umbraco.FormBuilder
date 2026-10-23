@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Test-only code for the test hosts and the demo (ADR-0001, ADR-0011): the HTTP stub, the captcha and AI fakes, the
+    test clock, the user and member factories, the test-only endpoints and the test transport, from 3.4 on. Never packed
+    (IsPackable is false for everything outside src/), and never referenced by a package.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder.Core\Jiron.Umbraco.FormBuilder.Core.csproj" />
+    <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder.Web\Jiron.Umbraco.FormBuilder.Web.csproj" />
+  </ItemGroup>
+
+</Project>

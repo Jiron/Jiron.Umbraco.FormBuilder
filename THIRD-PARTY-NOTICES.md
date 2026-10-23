@@ -23,6 +23,12 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | `@playwright/test`, `playwright`, `playwright-core` | 1.63.0 | Apache-2.0 | browser checks and screenshots (`scripts/`) |
 | `axe-core` | 4.14.0 | MPL-2.0 | accessibility checks (`scripts/`) |
 | `@axe-core/playwright` | 4.14.0 | MPL-2.0 | accessibility checks in Playwright (`scripts/`) |
+| `NUnit` | 3.14.0 | MIT | unit and integration tests (`tests/`) |
+| `NUnit3TestAdapter` | 5.0.0 | MIT | running the NUnit tests (`tests/`) |
+| `Microsoft.NET.Test.Sdk` | 18.9.0 | MIT | running the tests (`tests/`) |
+| `NSubstitute` | 6.2.0 | BSD-3-Clause | test doubles in unit tests (`tests/`) |
+| `coverlet.collector` | 10.1.0 | MIT | test coverage (`tests/`) |
+| `Umbraco.Cms.Tests.Integration` | 17.7.1 | MIT | integration tests on a real Umbraco (`tests/`) |
 
 ## Documents
 

@@ -1,0 +1,42 @@
+<Project>
+
+  <!-- The packages that ship to sites (ADR-0001). The repository-wide settings come first. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!--
+    Every package's metadata (§3.5); each project adds its Title and Description, and the meta package its Marketplace
+    tag. The NuGet readme and the icon follow in 18.1, once docs/README.nuget.md and assets/ exist.
+  -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <PackageTags>umbraco</PackageTags>
+    <!-- The Marketplace reads umbraco-marketplace.json from here, once the repository is public (OWNER-TODO). -->
+    <PackageProjectUrl>https://github.com/Jiron/Jiron.Umbraco.FormBuilder</PackageProjectUrl>
+    <!--
+      PolyForm Perimeter 1.0.1 has no SPDX id, so the licence is the packed LICENSE.md, and acceptance is required as a
+      visible signal of a licence that is not a standard one (§3.5).
+    -->
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <!-- Symbols as a .snupkg next to each package, with Source Link to the commit (built into the SDK). -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <!-- Checks the package's assets on every pack; a baseline version follows the first published release. -->
+    <EnablePackageValidation>true</EnablePackageValidation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\LICENSE.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <!-- Tests may see internals; NSubstitute needs DynamicProxyGenAssembly2 to substitute internal interfaces. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.Unit" />
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.Integration" />
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Testing" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
+</Project>

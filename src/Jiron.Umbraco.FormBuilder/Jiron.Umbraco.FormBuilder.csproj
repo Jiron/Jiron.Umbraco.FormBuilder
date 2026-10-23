@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The package sites install (ADR-0001). It has no code: it brings Core and Web, and references Umbraco.Cms.Web.Website
+    itself, so the Marketplace lists it whether or not it reads dependencies through the other packages (§3.5).
+  -->
+  <PropertyGroup>
+    <Title>Jiron Form Builder</Title>
+    <Description>A form builder for Umbraco 17: editors design forms with pages, rules and actions in a Forms section of the backoffice, visitors fill them in on the website (Razor or headless), and teams review, approve and export the entries.</Description>
+    <PackageTags>umbraco umbraco-marketplace forms form-builder</PackageTags>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeSymbols>false</IncludeSymbols>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jiron.Umbraco.FormBuilder.Core\Jiron.Umbraco.FormBuilder.Core.csproj" />
+    <ProjectReference Include="..\Jiron.Umbraco.FormBuilder.Web\Jiron.Umbraco.FormBuilder.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Web.Website" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- An empty lib folder marker, so NuGet knows the package targets net10.0 although it has no assembly. -->
+    <None Include="_._" Pack="true" PackagePath="lib\$(TargetFramework)\" />
+  </ItemGroup>
+
+</Project>

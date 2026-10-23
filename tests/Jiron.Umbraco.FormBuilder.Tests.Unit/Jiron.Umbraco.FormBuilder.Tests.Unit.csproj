@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Unit tests (ADR-0011): NUnit 3 with its constraint model, NSubstitute; the rest comes from tests/Directory.Build.props. -->
+  <ItemGroup>
+    <PackageReference Include="NUnit" />
+    <PackageReference Include="NSubstitute" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder.Web\Jiron.Umbraco.FormBuilder.Web.csproj" />
+    <ProjectReference Include="..\Jiron.Umbraco.FormBuilder.Testing\Jiron.Umbraco.FormBuilder.Testing.csproj" />
+  </ItemGroup>
+
+</Project>
