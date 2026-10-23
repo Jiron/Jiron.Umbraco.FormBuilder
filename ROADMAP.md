@@ -139,7 +139,7 @@ A NuGet package for Umbraco 17 sites. Install it, open the **Forms** section, an
   - prefill from merge tags (member data, the page, the query string when allowed).
 - **Actions** run after a submission:
   - **Kinds:**
-    - email the team, or confirm to the submitter (responsive HTML, per language, attachments optional; a plain-text part only if ADR-0007 finds a way through Umbraco's mail sender, §3.4);
+    - email the team, or confirm to the submitter (responsive HTML, or plain text when the action chooses it, per language, attachments optional; one body per mail, because Umbraco's mail sender takes one, ADR-0007);
     - call a webhook (signed, retried, SSRF-safe), or post to Slack or Microsoft Teams;
     - create or update Umbraco content;
     - change the entry's state;
@@ -388,12 +388,14 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
   - `PackageMigrationPlan` (it auto-runs unattended; `Umbraco:CMS:Unattended:PackageMigrationsUnattended`) with `AsyncMigrationBase` steps;
   - DTO attributes `[TableName]`, `[PrimaryKey]`, `[ExplicitColumns]`, `[Column]`, `[NullSetting]`, `[Length]`, `[SpecialDbType(NVARCHARMAX)]`, `[Index]`, `[ForeignKey]`;
   - store dates in UTC;
-  - use `ICoreScopeProvider` and `IScopeAccessor`, and call `Complete()`.
+  - use `ICoreScopeProvider` and `IScopeAccessor`, and call `Complete()`;
+  - a notification published through `scope.Notifications` reaches its handlers after the outermost scope commits, and never after a rollback (1.6, ADR-0007);
+  - NPoco reads `@name` inside a SQL string literal as a parameter, so values always go in as parameters, and `PRAGMA` statements need their table-valued form (`SELECT … FROM pragma_journal_mode`) through `Fetch` (1.6).
 - **Jobs:**
   - `IDistributedBackgroundJob` (`Name`, `Period`, `ExecuteAsync(CancellationToken)` from 17.5), registered with `AddSingleton<IDistributedBackgroundJob, T>()`. Settings live in `Umbraco:CMS:DistributedJobs`. Confirmed on 17.5.0 and 17.7.1 in 1.2b: the parameterless `ExecuteAsync()` is still abstract, so implement both; `AlignToClock` (17.6.2) is not used.
-  - The runner starts one due job per 5-second tick, in table order, with Umbraco's own jobs first, so a package job may wait (D8, Tandem ADR-0076).
+  - The runner starts one due job per 5-second tick, in table order, with Umbraco's own jobs first, so a package job may wait (D8, Tandem ADR-0076). Measured in 1.6 next to Umbraco's ten distributed jobs: a 5-second job ran about every 20 s (5 to 50 s apart), a 1-minute job every 65 to 70 s, and the first job ran 109 s after the process started. **The runner waits for each job:** while one job slept for 70 s, no other distributed job ran on that server, so a slow job holds Umbraco's scheduled publishing back too (ADR-0007).
   - `IRecurringBackgroundJob` runs on every server.
-- **Email:** `IEmailSender.SendAsync(EmailMessage, emailType, …)`. Check `CanSendRequiredEmail()` first: without SMTP settings Umbraco drops mail silently. Settings live in `Umbraco:CMS:Global:Smtp`, and `DeliveryMethod=SpecifiedPickupDirectory` suits tests. `EmailMessage` carries one body (HTML or text), so a multipart message with both is not possible through it; 1.6 decides how Jiron Form Builder handles that, and sites that replace `IEmailSender` (for example with a mail service) must keep working.
+- **Email:** `IEmailSender.SendAsync(EmailMessage, emailType, …)`. Check `CanSendRequiredEmail()` first: without SMTP settings Umbraco drops mail silently. Settings live in `Umbraco:CMS:Global:Smtp`, and `DeliveryMethod=SpecifiedPickupDirectory` suits tests. `EmailMessage` carries one body (HTML or text), so a multipart message with both is not possible through it: an HTML mail is one `text/html` part, a text mail one `text/plain` part, and attachments make `multipart/mixed` (1.6). Jiron Form Builder sends one body per mail (ADR-0007), and sites that replace `IEmailSender` (for example with a mail service) keep working. Measured in 1.6: `CanSendRequiredEmail()` is true with a host, a pickup folder or a `SendEmailNotification` handler, also when no From address is configured, and that send then throws; a pickup folder that does not exist throws `DirectoryNotFoundException`; MimeKit encodes non-ASCII subjects and drops line breaks in them, which glues the words together.
 - **Integration tests:** `Umbraco.Cms.Tests.Integration` 17.x (NUnit ≥3.14 <4), `UmbracoIntegrationTest`, `UmbracoTestServerTestBase`, `[UmbracoTest(Database = NewSchemaPerTest)]`.
 - **Release schedule:**
   - 17 LTS: until 2028-11-27;
@@ -757,14 +759,16 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 - **Values kept only until the actions have run:** a field set to "only until the actions have run" is stored with the entry, used by its action runs, and deleted once every one of them is final (succeeded, failed for good or skipped). An entry event records it, and the entry shows the field as "not kept". When no action run applies, the value is never stored.
 - **Actions:**
   - **Built-in types:**
-    - email (to fixed addresses, a field value, the member, or the creator; CC/BCC; reply-to a field; attachments of uploaded files within size caps; HTML with a layout plus generated text; per-culture subject and body; or a Razor view chosen by a developer);
+    - email (to fixed addresses, a field value, the member, or the creator; CC/BCC; reply-to a field; attachments of uploaded files within size caps; HTML with a layout, or plain text, with the text version always generated (one body per mail, ADR-0007); per-culture subject and body; or a Razor view chosen by a developer);
     - webhook (JSON, form-encoded or XML; field mapping or "everything"; standard metadata; HMAC-SHA256 signature header; secrets as `$JironFormBuilder:Secrets:<Name>` references; SSRF protection);
     - Slack and Microsoft Teams messages (webhook presets with formatted text);
     - create or update content (document type, parent from a picker or a dynamic rule, mapping fields and fixed values to properties, publish or save only);
     - set state (approve, reject or mark as spam, under a rule);
     - send verification (double opt-in).
   - **Running them:**
-    - Actions run in the background in the order shown, each in its own `ActionRun`, with retries (5 attempts, exponential back-off from 1 minute) and an `Uncertain` state when a lease expires mid-send.
+    - Actions run in the background in the order shown, each in its own `ActionRun`, with retries (5 attempts, after 1, 3, 9 and 27 minutes) and an `Uncertain` state when a lease expires mid-send or an attempt is cut off (ADR-0007).
+    - **The order:** a run starts once every earlier run of its entry has finished its first attempt (or its lease ran out), and once an earlier run that stops the rest is final. A retrying run does not hold the later ones back.
+    - **The late finisher:** an attempt whose lease ran out may still record its result, which then replaces `Uncertain`. Nothing else retries an `Uncertain` run by itself.
     - A failed action never blocks the others unless it is marked "stop the rest if this fails".
     - Every run shows on the entry's timeline and in the **deliveries** log, which can retry it.
     - **Retrying an `Uncertain` run asks first,** because its first attempt may already have been delivered: the screen says so, and the management API refuses the retry without an explicit confirmation.
@@ -785,8 +789,8 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | `jfbConsentText` | Hash PK (SHA-256 of culture and text), Culture, Text (NVARCHARMAX), FirstSeenUtc | A consent value stores `true` plus this hash: proof of the exact wording, stored once. |
 | `jfbEntryEvent` | Id PK (bigint), EntryId FK (cascade), OccurredUtc, Kind, UserKey null, Details (JSON) | (EntryId, OccurredUtc). Edits record old and new values only for non-sensitive fields, and they are deleted with the entry. |
 | `jfbEntryNote` | Id PK, EntryId FK (cascade), UserKey, Body, CreatedUtc, UpdatedUtc | Internal notes, never sent anywhere. |
-| `jfbActionRun` | Id PK (bigint), EntryId FK (cascade), FormVersionId, ActionKey, ActionType, Trigger, State (Pending, Running, Succeeded, Failed, Skipped, Uncertain), Attempts, NextAttemptUtc, LockedUntilUtc, LockedBy, LastErrorCode, LastErrorMessage (sanitised, ≤ 1000), CreatedUtc, StartedUtc, FinishedUtc | (State, NextAttemptUtc), (EntryId). |
-| `jfbEmail` | Id PK (bigint), Kind (Action, Resume, Verification, Test, Report, Digest, Forward), EntryId FK null (set null), ActionRunId null, To, Cc, Bcc, ReplyTo, From, Subject, HtmlBody, TextBody, Attachments (JSON of file keys), Culture, RecipientKey null, State (Queued, Sending, Sent, Failed), Attempts, NextAttemptUtc, LockedUntilUtc, LastError, CreatedUtc, SentUtc, PurgeAfterUtc | (State, NextAttemptUtc), (PurgeAfterUtc), (RecipientKey, CreatedUtc). Sent mail is purged after N days (default 30). RecipientKey is the visitor-typed address, trimmed and case-folded in C# (SQLite's `LOWER` folds ASCII only), so the per-address limits count every spelling of one mailbox. |
+| `jfbActionRun` | Id PK (bigint), EntryId FK (cascade), FormVersionId, ActionKey, ActionType, Trigger, Seq, StopOnFailure, State (Pending, Running, Succeeded, Failed, Skipped, Uncertain), Attempts, NextAttemptUtc, LockedUntilUtc, LockedBy, LastErrorCode, LastErrorMessage (sanitised, ≤ 1000), CreatedUtc, StartedUtc, FinishedUtc | (State, NextAttemptUtc), (EntryId, Seq). `Seq` is the action's position, for the order of §4.4. A claim writes a token of its own to `LockedBy`, and every state change names the run, its token and its state (ADR-0007). |
+| `jfbEmail` | Id PK (bigint), Kind (Action, Resume, Verification, Test, Report, Digest, Forward), EntryId FK null (set null), ActionRunId null, To, Cc, Bcc, ReplyTo, From, Subject, HtmlBody, TextBody, Attachments (JSON of file keys), Culture, RecipientKey null, State (Queued, Sending, Sent, Failed, Uncertain), Attempts, NextAttemptUtc, LockedUntilUtc, LockedBy, LastError, CreatedUtc, SentUtc, PurgeAfterUtc | (State, NextAttemptUtc), (PurgeAfterUtc), (RecipientKey, CreatedUtc). Sent mail is purged after N days (default 30). RecipientKey is the visitor-typed address, trimmed and case-folded in C# (SQLite's `LOWER` folds ASCII only), so the per-address limits count every spelling of one mailbox. |
 | `jfbOptionList` | Id PK, Key (unique), Alias (unique), Name, Kind (Manual, Content, DataType, Url, File, Countries, Code), Config (JSON), Items (JSON), CacheSeconds, ConcurrencyVersion, CreatedUtc, UpdatedUtc | |
 | `jfbTheme` | Id PK, Key (unique), Alias (unique), Name, BaseTheme, Tokens (JSON), CustomCss, IsDefault, ConcurrencyVersion, CreatedUtc, UpdatedUtc | |
 | `jfbEmailLayout` | Id PK, Key (unique), Alias (unique), Name, Layout (JSON: logo, colours, header and footer per culture), IsDefault, CreatedUtc, UpdatedUtc | |
@@ -1003,7 +1007,7 @@ A settings change raises a notification and a cache refresher, so every server s
   - MVC logs action arguments at Trace through their `ToString`, and records print every property there, so request models that carry values or tokens seal a `ToString` that prints only their type.
   - Job runs log exception types and codes, never messages, because database and mail server messages can quote personal data.
 - **Email:**
-  - headers are stripped of CR/LF, and the sender always comes from configuration, never from a visitor;
+  - line breaks in header values are replaced by a space (MimeKit alone would drop them and glue the words, 1.6), and the sender always comes from configuration, never from a visitor;
   - links in emails come only from the configured base URL, never from the request's Host header;
   - attachments are capped.
   - **Mail to an address a visitor typed** (confirmations, verification, resume links) is the main abuse surface of any form: a bot can make the site send mail, under the site's own name, to anyone. Tandem's reviews found this four times. So:
@@ -1526,6 +1530,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [ ] **4.3 Repositories, the file store, the audit log and stats**
   - One repository per aggregate (forms with versions and the field catalogue, folders, entries with values and files, events and notes, action runs, emails, option lists, themes, layouts, templates, settings, permissions, audit, stats, key-value).
   - All async, inside Umbraco scopes, through the database gate (D7). Paging, filtering and sorting happen in the database.
+  - **One way to the database** (ADR-0007): Core opens no database connection of its own, because on SQLite a connection outside Umbraco's shared cache can hang Umbraco's own transactions (1.6). Every state change of an action run or an email is one conditional statement, and no repository reads and then writes in one transaction.
   - **Text keys:** `jfbEntryValue.TextKey` is the value cleaned and folded as rules compare text (ADR-0005), so the entries screen filters as rules decide.
   - **The entries query builder** turns typed field filters into SQL against `jfbEntryValue`, using only the shapes of ADR-0003 (`IN` subqueries, keyset paging, the value-index walk for a sort by a value, one-pass search with a count up to 1,000) under the per-statement time budget.
   - **The file store:** the physical `IFormBuilderFileStore` per ADR-0006, in a folder that is not web-accessible. Uploads arrive in 6.1, hardening in 7.3.
@@ -1535,7 +1540,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - on SQLite, `EXPLAIN QUERY PLAN` tests show every shape of the query builder on its index, with and without planner statistics: no `SCAN` of `jfbEntryValue` and no temporary b-tree for a sort by a value (ADR-0003);
     - a statement past its time budget is interrupted and answered with `query_timeout`, and a submission made meanwhile still succeeds; a search with more than 1,000 matches reports "more than 1,000";
     - tests prove there are no field values in audit details, and that counters are correct under parallel increments;
-    - a unit test shows `TextKey` folding as the rule vectors of 1.5 compare (the Turkish i's, final sigma, no folding outside the folded blocks).
+    - a unit test shows `TextKey` folding as the rule vectors of 1.5 compare (the Turkish i's, final sigma, no folding outside the folded blocks);
+    - a test fails the build when Core constructs a database connection of its own (ADR-0007).
 - [ ] **4.4 The settings framework** (port the pattern, §3.3)
   - **Model:** typed sections (§4.8) with defaults, validators and JSON schema versions with migrations, plus global and per-site scope.
   - **Host options:** bound and validated at start (`ValidateOnStart`); locks win over the backoffice, including `Designer:SettingLocks`.
@@ -1781,7 +1787,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 
 - [ ] **8.1 The action framework**
   - **The model:** a registry with `FormBuilderActionTypeBase<TSettings>`, triggers, rules, order and "stop the rest if this fails".
-  - **The processor:** a distributed job plus the in-process kick, with leases, back-off and the `Uncertain` state.
+  - **The processor** (ADR-0007): one worker per server, woken after each commit through a scoped notification and a bounded channel of one, with claims by token, leases, back-off, the late finisher and the `Uncertain` state. The distributed job only wakes its server's worker and returns.
   - **The pause switch** (§4.4): while `JironFormBuilder:Actions:Paused` is on, the processor claims nothing, and the kick does nothing.
   - **Values kept only until the actions have run** (§4.4): deleted, with the entry event, once the entry's last action run is final.
   - **The retry API,** which refuses to retry an `Uncertain` run without an explicit confirmation (§4.4).
@@ -1790,13 +1796,13 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - webhooks send to the configured URL with `X-Jfb-Test: true` after a confirmation;
     - content actions create nothing (a dry run that shows what would be created).
   - Fill in the CI load-balancing job.
-  - Done when: tests cover ordering, retries with fake time, lease expiry turning into `Uncertain`, and **no double execution** with two processors on one database. The `loadbalancing` job definition is shown. Tests also show that nothing runs while sending is paused and every queued run goes out once it is not, that a retry of an `Uncertain` run without the confirmation is refused, and that a value kept only until the actions have run is still there while a run is retrying and gone after the last one is final.
+  - Done when: tests cover ordering, retries with fake time, lease expiry turning into `Uncertain`, the late finisher, and **no double execution** with two processors on one database. The two-processor test injects the faults of 1.6 and fails against a claim without its state condition (a mutant), so it is known to catch doubles. A test shows that every Jiron Form Builder job returns within 10 s. The `loadbalancing` job definition is shown. Tests also show that nothing runs while sending is paused and every queued run goes out once it is not, that a retry of an `Uncertain` run without the confirmation is refused, and that a value kept only until the actions have run is still there while a run is retrying and gone after the last one is final.
 - [ ] **8.2 Email infrastructure**
   - **Sending:** the outbox and sender job through `IEmailSender`, with `CanSendRequiredEmail()` gating so no retries are burnt while email is not configured (Umbraco would drop the mail silently). Queuing wakes the sender at once (D8). The sender also honours the pause switch (§4.4).
-  - **Content:** responsive HTML layouts that work in dark mode, a text part as ADR-0007 decided, header sanitising, attachment caps, the per-site sender, a test email, and retention purge. The layouts follow the client rules of §3.3: inline styles on table cells, `<!--[if mso]>` tables for Outlook, and no styles on `<body>`.
+  - **Content:** responsive HTML layouts that work in dark mode, one body per mail as ADR-0007 decided (HTML, or plain text when the action chooses it, with the text version always generated), header sanitising, attachment caps, the per-site sender, a test email, and retention purge. The layouts follow the client rules of §3.3: inline styles on table cells, `<!--[if mso]>` tables for Outlook, and no styles on `<body>`.
   - **The limits for visitor-addressed mail** (§4.10): per recipient address (counted on `RecipientKey`, §4.5), per site, and the "limited" delivery state.
   - Done when:
-    - tests pass with the pickup folder;
+    - tests pass with the pickup folder, including one that shows an HTML mail as one `text/html` part and a plain-text mail as one `text/plain` part, and one that shows header values with line breaks arriving with spaces;
     - HTML snapshot tests pass;
     - every email is well-formed with inlined CSS (checked by a test);
     - a long unbroken word stays inside a 375 px wide rendering of every layout (Playwright on the `.eml` HTML);
@@ -1865,7 +1871,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - the setup checklist of §4.13, each item with a detector on the server that knows when it is done;
     - recent entries;
     - health warnings.
-  - **Health checks** (also on Umbraco's Health Check dashboard): email can be sent, the uploads folder is not web-accessible, the Data Protection key ring is persisted (needed for challenges across restarts and servers), jobs are running, deliveries are failing, sending is paused (§4.4), the mirror has conflicts.
+  - **Health checks** (also on Umbraco's Health Check dashboard): email can be sent (Umbraco's gate, and a From address, which the gate does not check, ADR-0007), the uploads folder is not web-accessible, the Data Protection key ring is persisted (needed for challenges across restarts and servers), jobs are running, deliveries are failing, sending is paused (§4.4), the mirror has conflicts.
   - **Plumbing:**
     - en/de localisation infrastructure, the generated API client, and the global search provider;
     - the safe confirm helper (§4.10), with the source test that bans direct use of Umbraco's confirm modal.
