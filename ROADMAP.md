@@ -1574,23 +1574,42 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - pattern safety.
   - **The public projection** and its hash.
   - Done when: unit tests cover every structural rule (aliases that differ only by case and option values that fold to the same text included), and a property-style test over generated definitions shows that the public projection never contains action settings, recipients or option-source configuration.
-- [ ] **4.3 Repositories, the file store, the audit log and stats**
-  - One repository per aggregate (forms with versions and the field catalogue, folders, entries with values and files, events and notes, action runs, emails, option lists, themes, layouts, templates, settings, permissions, audit, stats, key-value).
-  - All async, inside Umbraco scopes, through the database gate (D7). Paging, filtering and sorting happen in the database.
-  - **One way to the database** (ADR-0007): Core opens no database connection of its own, because on SQLite a connection outside Umbraco's shared cache can hang Umbraco's own transactions (1.6). Every state change of an action run or an email is one conditional statement, and no repository reads and then writes in one transaction.
-  - **Text keys:** `jfbEntryValue.TextKey` is the value cleaned and folded as rules compare text (ADR-0005), so the entries screen filters as rules decide.
-  - **Aliases** (forms, option lists, themes, email layouts) are looked up without regard to case on both databases, as they are unique (ADR-0033).
-  - **The entries query builder** turns typed field filters into SQL against `jfbEntryValue`, using only the shapes of ADR-0003 (`IN` subqueries, keyset paging, the value-index walk for a sort by a value, one-pass search with a count up to 1,000) under the per-statement time budget.
-  - **The file store:** the physical `IFormBuilderFileStore` per ADR-0006, in a folder that is not web-accessible. Uploads arrive in 6.1, hardening in 7.3.
-  - **The audit log and daily stats:** port the pattern (§3.3).
+- [ ] **4.3a The database gate and the form repositories** (4.3 split in six, WORKLOG 2026-10-23)
+  - **The database** (D7, ADR-0007): every unit of work runs in its own Umbraco scope behind one async gate (port the pattern, §3.3). A write starts with a write; a unit the database turns away with a transient error runs again where that is safe. Paging, filtering and sorting happen in the database, and no repository reads and then writes in one transaction to change a state.
+  - **One way to the database** (ADR-0007): Core opens no database connection of its own, because on SQLite a connection outside Umbraco's shared cache can hang Umbraco's own transactions (1.6).
+  - **Repositories,** one per aggregate, all async: key-value, folders, forms with versions and the field catalogue, and settings.
+  - **Aliases** of forms are looked up without regard to case on both databases, as they are unique (ADR-0033).
   - Done when:
-    - integration tests cover CRUD for each repository, concurrency conflicts on forms and settings, **unique entry numbers under 50 parallel inserts**, every filter kind (with the correctness cases of 1.3), and storing, reading and deleting files, with a failed or cut-off save leaving nothing behind (ADR-0006);
-    - on SQLite, `EXPLAIN QUERY PLAN` tests show every shape of the query builder on its index, with and without planner statistics: no `SCAN` of `jfbEntryValue` and no temporary b-tree for a sort by a value (ADR-0003);
-    - a statement past its time budget is interrupted and answered with `query_timeout`, and a submission made meanwhile still succeeds; a search with more than 1,000 matches reports "more than 1,000";
-    - tests prove there are no field values in audit details, and that counters are correct under parallel increments;
-    - a lookup by alias finds the form, option list, theme or layout in any letter case (ADR-0033);
-    - a unit test shows `TextKey` folding as the rule vectors of 1.5 compare (the Turkish i's, final sigma, no folding outside the folded blocks);
+    - integration tests cover CRUD for each of these repositories, and concurrency conflicts on forms and settings;
+    - a lookup by alias finds the form in any letter case (ADR-0033);
     - a test fails the build when Core constructs a database connection of its own (ADR-0007).
+- [ ] **4.3b The library and permission repositories**
+  - **Repositories:** option lists, themes, email layouts, templates and permissions, through the gate of 4.3a.
+  - **Aliases** (option lists, themes, email layouts) are looked up without regard to case on both databases, as they are unique (ADR-0033).
+  - Done when: integration tests cover CRUD for each of these repositories and concurrency conflicts on the library rows that carry a concurrency version; a lookup by alias finds the option list, theme or layout in any letter case (ADR-0033).
+- [ ] **4.3c Entries, their values, files, events and notes**
+  - **Repositories:** entries with their values and file rows, events and notes.
+  - **Entry numbers** come from the atomic update of ADR-0003, as the first write of the unit, with the unique index as the backstop. The values of a page load by `EntryId IN (…)`, at most 1,000 ids per statement.
+  - **Text keys:** `jfbEntryValue.TextKey` is the value cleaned and folded as rules compare text (ADR-0005), so the entries screen filters as rules decide.
+  - Done when:
+    - integration tests cover CRUD for each of these repositories, and **unique entry numbers under 50 parallel inserts**;
+    - a unit test shows `TextKey` folding as the rule vectors of 1.5 compare (the Turkish i's, final sigma, no folding outside the folded blocks).
+- [ ] **4.3d The entries query builder**
+  - **The entries query builder** turns typed field filters into SQL against `jfbEntryValue`, using only the shapes of ADR-0003 (`IN` subqueries, keyset paging, the value-index walk for a sort by a value, one-pass search with a count up to 1,000) under the per-statement time budget.
+  - Done when:
+    - integration tests cover every filter kind, with the correctness cases of 1.3;
+    - on SQLite, `EXPLAIN QUERY PLAN` tests show every shape of the query builder on its index, with and without planner statistics: no `SCAN` of `jfbEntryValue` and no temporary b-tree for a sort by a value (ADR-0003);
+    - a statement past its time budget is interrupted and answered with `query_timeout`, and a submission made meanwhile still succeeds; a search with more than 1,000 matches reports "more than 1,000".
+- [ ] **4.3e The outbox repositories: action runs and emails**
+  - **Repositories:** action runs and emails (the processor is 8.1, the mail queue 8.2).
+  - **Every state change** of an action run or an email is one conditional statement that names the row, its token and its state, and no repository reads and then writes in one transaction (ADR-0007): the claim with its order condition, the outcomes, expired leases, the late finisher and stopping the rest.
+  - Done when: integration tests cover CRUD for both repositories and every state change, and a change with a stale token or state changes nothing (ADR-0007).
+- [ ] **4.3f The file store, the audit log and daily stats**
+  - **The file store:** the physical `IFormBuilderFileStore` per ADR-0006, in a folder that is not web-accessible. Uploads arrive in 6.1, hardening in 7.3.
+  - **The audit log and daily stats:** port the pattern (§3.3), with their repositories.
+  - Done when:
+    - integration tests cover storing, reading and deleting files, with a failed or cut-off save leaving nothing behind (ADR-0006), and CRUD for the audit and stats repositories;
+    - tests prove there are no field values in audit details, and that counters are correct under parallel increments.
 - [ ] **4.4 The settings framework** (port the pattern, §3.3)
   - **Model:** typed sections (§4.8) with defaults, validators and JSON schema versions with migrations, plus global and per-site scope.
   - **Host options:** bound and validated at start (`ValidateOnStart`); locks win over the backoffice, including `Designer:SettingLocks`. They include the definition limits of 4.2a (`Limits:Definitions`), which the reader and the structural validation already take.
@@ -1612,7 +1631,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - copy actions to another form, remapping fields by alias and reporting the unmapped ones;
     - move.
   - **Trash and delete:** trash, restore, delete permanently (cascading entries, files, versions, permissions, references and daily stats; references and stats name the form without a foreign key, ADR-0033), empty trash.
-  - **Folders**, and notifications for every lifecycle event.
+  - **Folders**, and notifications for every lifecycle event. Trashing a folder takes the folders and forms in it to the trash with it, and restoring it brings back what went with it (the repository of 4.3a marks one row at a time, ADR-0036).
   - Done when: unit and integration tests cover each operation, including:
     - "restore creates a new version";
     - "duplicate remaps rule references";

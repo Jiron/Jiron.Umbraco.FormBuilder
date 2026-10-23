@@ -1,6 +1,7 @@
 # 0007. Background work, outbox and email
 
-- Status: accepted; the `Limited` mail state and the draft-version cleanup amended in 1.8
+- Status: accepted; the `Limited` mail state and the draft-version cleanup amended in 1.8; the reruns of reads
+  amended by [ADR-0036](0036-database-gate-units-of-work-and-repositories.md) in 4.3a
 - Date: 2026-10-23
 - Roadmap step: 1.6 (decided); built in 4.1 (the tables), 4.3 (the repositories), 8.1 (the action processor) and
   8.2 (the email outbox); every later job follows its job rules
@@ -127,7 +128,8 @@ Option 3 in each case.
   when it writes, and reads first when it only might write. Jiron Form Builder never opens a database connection of
   its own: on SQLite, a connection outside Umbraco's shared cache can hang Umbraco's own transactions that read
   before they write (Tandem ADR-0011 saw the same hang with parallel sign-ins). Units are rerun on SQLite codes 5 and
-  6 and SQL Server 1205 and 1222. None were needed in the spike's 5,000 runs.
+  6 and SQL Server 1205 and 1222, and reads also after a lost connection or a timeout (ADR-0036). None were needed
+  in the spike's 5,000 runs.
 - **Email:**
   - Mail is sent through `IEmailSender.SendAsync(message, "JironFormBuilder", enableNotification: true, expires: 45 s)`,
     so a site's own sender and its `SendEmailNotification` handlers see every mail.
