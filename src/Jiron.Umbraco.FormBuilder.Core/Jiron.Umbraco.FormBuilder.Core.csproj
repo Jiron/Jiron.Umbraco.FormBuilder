@@ -17,9 +17,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      The shared logic (Logic/) is internal until its engines get public interfaces, and Web uses it. The test
+      projects see internals through src/Directory.Build.props.
+    -->
     <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Web" />
-    <!-- The shared logic (Logic/) is internal until its engines get public interfaces; the vector runners test it. -->
-    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.Unit" />
   </ItemGroup>
 
 </Project>
