@@ -1438,7 +1438,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Build it as mock HTML and CSS in `docs/ux/website/`, with PNGs at 375 and 1440 px in light and dark site contexts.
   - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before the design starts (ADR-0019, ADR-0020), and write `DESIGN.md`, the `impeccable` design context, pointing to the token file instead of repeating its values.
   - Done when: axe is clean on the mocks, every text and control passes WCAG 2.2 AA contrast (checked by a script), the token file and `DESIGN.md` are committed with each skill's output, and the work is committed.
-- [ ] **2.4 Design critique and phase review**
+- [x] **2.4 Design critique and phase review** (2026-10-23, 6f6559e)
   - Run a design critique on 2.2 and 2.3: rerun all three design skills (ADR-0019, ADR-0020): `design-taste-frontend`, an `impeccable` critique and audit, and an `emil-design-eng` review. A subagent with the §4.13 checklist may add a fourth view. Fix every finding that is not purely taste, and re-render.
   - **Phase review:** write the handover note.
   - Done when:
