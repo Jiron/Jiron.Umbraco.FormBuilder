@@ -29,6 +29,24 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | `NSubstitute` | 6.2.0 | BSD-3-Clause | test doubles in unit tests (`tests/`) |
 | `coverlet.collector` | 10.1.0 | MIT | test coverage (`tests/`) |
 | `Umbraco.Cms.Tests.Integration` | 17.7.1 | MIT | integration tests on a real Umbraco (`tests/`) |
+| `@umbraco-cms/backoffice` | 17.5.0 | MIT | the backoffice extension's types; external in its build, since Umbraco provides it in the page (`Client/`) |
+| `@hey-api/openapi-ts` | 0.99.0 | MIT | generating the management API client (`Client/`) |
+| `typescript` | 6.0.3 | Apache-2.0 | type checking (`Client/`) |
+| `vite` | 8.3.3 | MIT | the library builds (`Client/`) |
+| `vitest` | 5.0.3 | MIT | the client tests (`Client/`) |
+| `jsdom` | 30.1.2 | MIT | the browser environment of the client tests (`Client/`) |
+| `eslint`, `@eslint/js` | 10.12.0, 10.0.1 | MIT | linting (`Client/`) |
+| `typescript-eslint` | 8.71.0 | MIT | linting TypeScript (`Client/`) |
+| `eslint-config-prettier` | 10.1.8 | MIT | leaving formatting to Prettier (`Client/`) |
+| `globals` | 17.13.0 | MIT | the browser and Node globals for linting (`Client/`) |
+| `prettier` | 3.9.9 | MIT | formatting (`Client/`) |
+| `@types/node` | 24.19.1 | MIT | Node types for the build scripts (`Client/`) |
+
+The client workspace's 391 transitive packages are MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD,
+MPL-2.0, BlueOak-1.0.0 or Python-2.0, except four: `@csstools/color-helpers` and
+`@csstools/css-syntax-patches-for-csstree` (MIT-0) and `mdn-data` (CC0-1.0) through jsdom, and `fetch-cookie`
+(Unlicense) through a peer of `@umbraco-cms/backoffice`. These public-domain dedications are accepted for
+development tools only ([ADR-0027](docs/decisions/0027-public-domain-dedications-in-development-tools.md)).
 
 ## Documents
 

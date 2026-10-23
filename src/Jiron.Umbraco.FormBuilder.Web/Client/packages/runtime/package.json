@@ -1,0 +1,10 @@
+{
+  "name": "@jfb/runtime",
+  "private": true,
+  "type": "module",
+  "description": "The website runtime that enhances Razor-rendered forms (ROADMAP section 4.2, ADR-0004): no runtime dependencies, one module entry and a chunk per feature, embedded in the Web assembly and served from /jfb/assets/runtime/.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "vite build"
+  }
+}

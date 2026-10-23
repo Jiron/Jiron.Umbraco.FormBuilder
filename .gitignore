@@ -50,7 +50,7 @@ test-results/
 blob-report/
 # Built client assets (built by npm in scripts, CI and pack; never committed)
 src/Jiron.Umbraco.FormBuilder.Web/wwwroot/App_Plugins/JironFormBuilder/
-src/Jiron.Umbraco.FormBuilder.Web/wwwroot/jfb/
+src/Jiron.Umbraco.FormBuilder.Web/WebsiteAssets/
 *.log
 npm-debug.log*
 
@@ -69,3 +69,6 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# The client build records (chunk reports, the stamp): never committed (ADR-0026).
+src/Jiron.Umbraco.FormBuilder.Web/Client/.build/

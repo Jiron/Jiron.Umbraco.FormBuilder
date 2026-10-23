@@ -1,0 +1,14 @@
+{
+  "id": "Jiron.Umbraco.FormBuilder",
+  "name": "Jiron Form Builder",
+  "version": "0.0.0",
+  "allowTelemetry": false,
+  "extensions": [
+    {
+      "type": "bundle",
+      "alias": "Jiron.FormBuilder.Bundle",
+      "name": "Jiron Form Builder bundle",
+      "js": "/App_Plugins/JironFormBuilder/jfb-backoffice.js"
+    }
+  ]
+}

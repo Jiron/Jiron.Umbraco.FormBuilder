@@ -26,10 +26,37 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The client sources (3.2) are built into wwwroot; they are never packed themselves. -->
+    <!--
+      The client sources are built into wwwroot/App_Plugins/JironFormBuilder (the backoffice, static web assets) and
+      WebsiteAssets (embedded, below); the sources themselves are never packed (ADR-0026).
+    -->
     <Content Remove="Client\**" />
     <None Remove="Client\**" />
+    <None Remove="WebsiteAssets\**" />
     <Folder Include="wwwroot\" />
   </ItemGroup>
+
+  <!--
+    The website assets (the runtime, the element and, from 6.3, the themes) are embedded in this assembly with the
+    Brotli and gzip copies the client build writes, as jfb/assets/<path>, and served from there by Jiron Form Builder's
+    own asset endpoint (6.2, ADR-0026). They are no static web assets: packed that way, the SDK records each copy's
+    file with this machine's absolute path, and every site that installs the package then fails to build.
+  -->
+  <Target Name="JfbEmbedWebsiteAssets" BeforeTargets="PrepareResourceNames">
+    <ItemGroup>
+      <_JfbWebsiteAsset Include="WebsiteAssets\**\*" />
+      <EmbeddedResource Include="@(_JfbWebsiteAsset)" LogicalName="jfb/assets/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\', '/'))" WithCulture="false" Type="Non-Resx" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    The built client assets are not committed (ADR-0001), so packing checks that they exist, match the current Client
+    sources, were built for this package's version, carry the licence banner and their compressed copies, and hold no
+    source map, and that the assembly to be packed embeds them as they are now (JFB001, ADR-0026).
+    scripts/pack.mjs builds them for the version it packs.
+  -->
+  <Target Name="JfbCheckClientAssets" BeforeTargets="GenerateNuspec">
+    <Exec Command="node &quot;$(MSBuildThisFileDirectory)Client/scripts/stamp.mjs&quot; check &quot;$(PackageVersion)&quot; &quot;$(TargetPath)&quot;" />
+  </Target>
 
 </Project>

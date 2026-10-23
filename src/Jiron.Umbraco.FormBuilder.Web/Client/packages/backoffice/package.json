@@ -1,0 +1,11 @@
+{
+  "name": "@jfb/backoffice",
+  "private": true,
+  "type": "module",
+  "description": "The Forms section of the backoffice (Lit through @umbraco-cms/backoffice, which the backoffice provides at run time), built to /App_Plugins/JironFormBuilder/.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "vite build",
+    "generate-client": "node scripts/generate-client.mjs"
+  }
+}

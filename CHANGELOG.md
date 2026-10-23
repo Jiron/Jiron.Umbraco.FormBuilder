@@ -13,3 +13,6 @@ follows the Umbraco major).
   guard, text check) and the community files (security policy, contribution guide, code of conduct, support).
 - The solution and its projects: `Jiron.Umbraco.FormBuilder.Core`, `Jiron.Umbraco.FormBuilder.Web` and the
   `Jiron.Umbraco.FormBuilder` package that sites install, for Umbraco `[17.5.0, 18.0.0)`, plus the test projects.
+- The client workspace: the website runtime and web component, served from the Web assembly under `/jfb/assets/`
+  with Brotli and gzip copies, and the backoffice extension under `/App_Plugins/JironFormBuilder/`, each built file
+  carrying the licence notice; size budgets and a pack check that refuses missing, stale or unmarked assets.
