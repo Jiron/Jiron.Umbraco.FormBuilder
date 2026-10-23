@@ -15,8 +15,9 @@ namespace Jiron.Umbraco.FormBuilder.Testing;
 /// <summary>
 /// Registers the test-only services in the hosts that reference this project (the test hosts, and the demo from 3.4c).
 /// Everything is off unless the <c>JironFormBuilderTesting</c> section turns it on (<see cref="FormBuilderTestingOptions"/>):
-/// the people seeder does nothing without people, the clock and the stub are registered only when asked for, and the
-/// test-only endpoints answer only behind their gate (<see cref="TestEndpointsGate"/>).
+/// the people seeder does nothing without people, the clock and the stub are registered only when asked for (the
+/// start-up marker too, in <see cref="Startup.StartupMarkerComposer"/>), and the test-only endpoints answer only behind
+/// their gate (<see cref="TestEndpointsGate"/>).
 /// </summary>
 public sealed class FormBuilderTestingComposer : IComposer
 {

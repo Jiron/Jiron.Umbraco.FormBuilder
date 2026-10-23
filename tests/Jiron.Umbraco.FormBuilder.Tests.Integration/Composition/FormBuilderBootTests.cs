@@ -1,6 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Testing.People;
+using Jiron.Umbraco.FormBuilder.Testing.Startup;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.Composing;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Infrastructure.Examine;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 
@@ -32,7 +34,7 @@ public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
     {
         var composers = GetRequiredService<TypeLoader>().GetTypes<IComposer>().ToList();
 
-        Assert.That(composers, Is.SupersetOf(new[] { typeof(FormBuilderCoreComposer), typeof(FormBuilderWebComposer), typeof(FormBuilderTestingComposer) }));
+        Assert.That(composers, Is.SupersetOf(new[] { typeof(FormBuilderCoreComposer), typeof(FormBuilderWebComposer), typeof(FormBuilderTestingComposer), typeof(StartupMarkerComposer) }));
     }
 
     [Test]
@@ -43,6 +45,12 @@ public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
             Assert.That(GetRequiredService<TestPeople>(), Is.Not.Null);
             Assert.That(GetRequiredService<TimeProvider>(), Is.SameAs(GetRequiredService<TestClock>()));
         });
+    }
+
+    [Test]
+    public void Boot_WithoutTheStartupMarker_RegistersNoMarkerPopulator()
+    {
+        Assert.That(GetRequiredService<IEnumerable<IIndexPopulator>>().OfType<StartupMarkerPopulator>(), Is.Empty);
     }
 
     [Test]

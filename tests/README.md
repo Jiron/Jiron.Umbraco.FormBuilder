@@ -52,6 +52,7 @@ listing the known gaps exactly.
 | `Mail/` | `TestMailbox` reads and waits for the `.eml` files in a host's mail pickup folder. |
 | `Stub/` | `StubServer`, the local HTTP stub: webhooks, captcha verification (`StubCaptcha` tokens) and scripted answers, with every call recorded. |
 | `Endpoints/` | The test-only endpoints under `/jfb-testing/`. |
+| `Startup/` | `StartupMarkerPopulator`, which logs a line once Umbraco has rebuilt its indexes, for the browser tests' start-up wait. |
 
 A host turns these on in the `JironFormBuilderTesting` section; everything is off by default:
 
@@ -60,6 +61,7 @@ A host turns these on in the `JironFormBuilderTesting` section; everything is of
 | `Endpoints` | Answers `/jfb-testing/status` and `/jfb-testing/clock`, only in Development and only for requests from this machine. |
 | `Clock` | Runs the host on `TestClock`. |
 | `StubPort` | Starts the stub on that port (5560 for the browser tests' host), only in Development. |
+| `StartupMarker` | Logs `Jiron Form Builder test host: indexes rebuilt` after each rebuild of Umbraco's indexes. |
 | `UserGroups`, `Users`, `Members` | The people the host creates at start-up; their passwords come from the environment only. |
 
 ## Writing tests

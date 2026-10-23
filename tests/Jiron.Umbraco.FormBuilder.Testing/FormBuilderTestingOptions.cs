@@ -28,6 +28,12 @@ public sealed class FormBuilderTestingOptions
     /// </summary>
     public int StubPort { get; set; }
 
+    /// <summary>
+    /// True to log <see cref="Startup.StartupMarkerPopulator.Marker"/> whenever Umbraco has rebuilt its indexes, which
+    /// the browser tests' start-up wait looks for.
+    /// </summary>
+    public bool StartupMarker { get; set; }
+
     /// <summary>Backoffice user groups to create before the users; existing aliases are left as they are.</summary>
     public IList<TestUserGroup> UserGroups { get; } = [];
 
