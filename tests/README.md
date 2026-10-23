@@ -27,7 +27,7 @@ npx playwright test --project=smoke
 | Project | What it holds |
 | --- | --- |
 | `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, and the schema and its migrations (`Persistence/`, below). |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, and the repositories (`Persistence/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -106,6 +106,24 @@ the diff gets read and committed):
 - `SchemaV1DdlTests`: the SQL Server statements of step 1, rendered without a server, in
   `Persistence/schema-v1.sqlserver.sql`;
 - `DatabaseDocsTests`: the diagram in [docs/database.md](../docs/database.md).
+
+## The repository tests
+
+`Tests.Integration/Persistence/Repositories/` migrates a fresh database per test, with a clock that stands still
+(`RepositoryTestBase`). The tests cover:
+
+- each repository's reads and writes, and every refusal, with nothing written;
+- writers at the same moment: of ten saves from one version, exactly one gets through;
+- units of work that commit or roll back together;
+- the reruns after SQLite's real busy error.
+
+The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made to do on cue:
+
+- a commit that fails on its way, a lost connection, and the waits between attempts;
+- the arguments each repository refuses;
+- the product rows against the migration's snapshots.
+
+`Architecture/CoreDatabaseConnectionTests` reads Core's IL and fails on any connection of Core's own (ADR-0036).
 
 ## Writing tests
 

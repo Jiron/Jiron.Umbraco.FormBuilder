@@ -1,0 +1,64 @@
+using System.Reflection;
+using Jiron.Umbraco.FormBuilder.Core.Composing;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
+using NPoco;
+using Dtos = Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
+
+namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Persistence;
+
+/// <summary>
+/// The repositories read and write their own rows, apart from the frozen snapshots of the migration steps (ADR-0033):
+/// each product row names exactly the columns of its table as schema v1 creates it, with the same types and nullability.
+/// </summary>
+[TestFixture]
+public sealed class ProductDtoTests
+{
+    private static readonly object[] Pairs =
+    [
+        new object[] { typeof(Dtos.KeyValueDto), typeof(CreateSchemaV1.KeyValueDto) },
+        new object[] { typeof(Dtos.FolderDto), typeof(CreateSchemaV1.FolderDto) },
+        new object[] { typeof(Dtos.FormDto), typeof(CreateSchemaV1.FormDto) },
+        new object[] { typeof(Dtos.FormVersionDto), typeof(CreateSchemaV1.FormVersionDto) },
+        new object[] { typeof(Dtos.FormFieldDto), typeof(CreateSchemaV1.FormFieldDto) },
+        new object[] { typeof(Dtos.SettingDto), typeof(CreateSchemaV1.SettingDto) },
+    ];
+
+    [TestCaseSource(nameof(Pairs))]
+    public void AProductRow_HasTheColumnsOfItsTable(Type product, Type snapshot)
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(product.GetCustomAttribute<TableNameAttribute>()?.Value, Is.EqualTo(snapshot.GetCustomAttribute<TableNameAttribute>()?.Value), "table");
+            Assert.That(Key(product), Is.EqualTo(Key(snapshot)), "primary key");
+            Assert.That(product.GetCustomAttribute<ExplicitColumnsAttribute>(), Is.Not.Null, "only the columns it names");
+            Assert.That(Columns(product), Is.EqualTo(Columns(snapshot)), "columns, types and nullability");
+        });
+    }
+
+    [Test]
+    public void EveryProductRow_IsCompared()
+    {
+        var products = typeof(FormBuilderCoreComposer).Assembly.GetTypes()
+            .Where(type => type.Namespace == typeof(Dtos.FormDto).Namespace && type.GetCustomAttribute<TableNameAttribute>() is not null);
+
+        Assert.That(products, Is.EquivalentTo(Pairs.Select(pair => ((object[])pair)[0])));
+    }
+
+    private static string Key(Type type) =>
+        type.GetCustomAttribute<PrimaryKeyAttribute>() is { } key ? $"{key.Value} (auto increment: {key.AutoIncrement})" : "none";
+
+    private static List<string> Columns(Type type)
+    {
+        var nullability = new NullabilityInfoContext();
+        return type.GetProperties()
+            .Where(property => property.GetCustomAttribute<ColumnAttribute>() is not null)
+            .Select(property =>
+            {
+                var nullable = Nullable.GetUnderlyingType(property.PropertyType) is not null
+                    || nullability.Create(property).WriteState == NullabilityState.Nullable;
+                return $"{property.GetCustomAttribute<ColumnAttribute>()!.Name} {(Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType).Name}{(nullable ? "?" : string.Empty)}";
+            })
+            .Order(StringComparer.Ordinal)
+            .ToList();
+    }
+}
