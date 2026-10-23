@@ -766,9 +766,9 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | `jfbFolder` | Id PK, Key (unique), ParentId FK null, Name, SortOrder, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (ParentId). Trash keeps the tree; restore returns to the parent or the root. |
 | `jfbForm` | Id PK, Key (unique), FolderId FK null, Alias (unique), Name, DraftVersionId FK null, PublishedVersionId FK null, PublicRevision, ConcurrencyVersion, LastEntryNumber, ThemeKey null, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (FolderId), (TrashedUtc). `ConcurrencyVersion` makes stale saves fail with `409 concurrency_conflict`. |
 | `jfbFormVersion` | Id PK, FormId FK (cascade), Number, Kind (Draft, Published), SchemaVersion, Definition (NVARCHARMAX), DefinitionHash, PublicHash, Comment, IsPinned, CreatedUtc, CreatedByUserKey, PublishedUtc null, PublishedByUserKey null | Unique (FormId, Number). Every save adds a row. Published versions are never pruned. Draft saves are pruned by the cleanup job (keep the last 50 and the last 90 days, never pinned ones). |
-| `jfbFormField` | Id PK, FormId FK (cascade), FieldKey, Alias, Label (default culture), Type, StorageKind, IsSensitive, SortOrder, FirstVersionNumber, LastVersionNumber null (null = in the live version), ParentFieldKey null (repeater children and grid rows) | Unique (FormId, FieldKey). The **field catalogue**: every field ever published, for entry columns, exports and search. |
-| `jfbEntry` | Id PK (bigint), Key (unique), FormId FK, FormVersionId FK, Number, State, IsTest, SubmissionId, Digest, Culture, ContentKey null, PageUrl (path only), MemberKey null, IpAddress null, SpamScore, SpamReasons, SearchText (NVARCHARMAX, normalised, no sensitive values), Context (JSON), DurationSeconds null, SubmittedUtc, UpdatedUtc, StateChangedUtc, StateChangedByUserKey null, FirstSeenUtc null, VerifiedUtc null, ResumeTokenHash null, ResumeExpiresUtc null, CurrentPageKey null, ChallengeId null, HoldUntilUtc null, HoldReason null, PurgeAfterUtc null | Unique (FormId, Number) and (FormId, SubmissionId). `SubmissionId` is always set; the server generates one for no-JS, server-key and programmatic entries. **Filtered** unique indexes `WHERE … IS NOT NULL` on (FormId, ChallengeId) and on ResumeTokenHash, created with custom SQL in the migration (SQLite and SQL Server both support them; a test inserts two NULL rows). Also (FormId, State, SubmittedUtc), (MemberKey), (PurgeAfterUtc). |
-| `jfbEntryValue` | Id PK (bigint), EntryId FK (cascade), FieldKey, RowIndex, ValueIndex, Text (NVARCHARMAX) null, TextKey (nvarchar 256, normalised in C# with the invariant culture, for sort and filter; SQLite's `LOWER` folds ASCII only) null, Number (decimal 38,10) null, Date null, Bool null, FileId FK null | (EntryId), (FieldKey, TextKey), (FieldKey, Number), (FieldKey, Date). Multi-value and repeater rows use ValueIndex and RowIndex. |
+| `jfbFormField` | Id PK, FormId FK (cascade), FieldKey, Alias, Label (default culture), Type, StorageKind, IsSensitive, SortOrder, FirstVersionNumber, LastVersionNumber null (null = in the live version), ParentFieldKey null (repeater children and grid rows) | Unique (FormId, FieldKey). The **field catalogue**: every field ever published, for entry columns, exports and search. `jfbEntryValue` refers to a field by this `Id`, so a field gets its row before its first value is stored: on publish, or on the first preview submission for a field that exists only in the draft (ADR-0003). |
+| `jfbEntry` | Id PK (bigint), Key (unique), FormId FK, FormVersionId FK, Number, State, IsTest, SubmissionId, Digest, Culture, ContentKey null, PageUrl (path only), MemberKey null, IpAddress null, SpamScore, SpamReasons, SearchText (NVARCHARMAX, normalised, no sensitive values), Context (JSON), DurationSeconds null, SubmittedUtc, UpdatedUtc, StateChangedUtc, StateChangedByUserKey null, FirstSeenUtc null, VerifiedUtc null, ResumeTokenHash null, ResumeExpiresUtc null, CurrentPageKey null, ChallengeId null, HoldUntilUtc null, HoldReason null, PurgeAfterUtc null | Unique (FormId, Number) and (FormId, SubmissionId). `SubmissionId` is always set; the server generates one for no-JS, server-key and programmatic entries. **Filtered** unique indexes `WHERE … IS NOT NULL` on (FormId, ChallengeId) and on ResumeTokenHash, created with custom SQL in the migration (SQLite and SQL Server both support them; a test inserts two NULL rows). Also (FormId, SubmittedUtc), (FormId, State, SubmittedUtc), (MemberKey), (PurgeAfterUtc) (ADR-0003). |
+| `jfbEntryValue` | Id PK (bigint), EntryId FK (cascade), FieldId FK (`jfbFormField`, no cascade: SQL Server refuses a second cascade path, and entries are deleted before their form), RowIndex, ValueIndex, Text (NVARCHARMAX) null, TextKey (nvarchar 256, normalised in C# with the invariant culture, for sort and filter; SQLite's `LOWER` folds ASCII only) null, Number (a double: `REAL` on SQLite, `FLOAT` on SQL Server, exact for the at most 15 significant digits a number field accepts; `Text` keeps the submitted value; Umbraco maps `decimal` to `TEXT` on SQLite) null, Date null, Bool null, FileId FK null | (EntryId, FieldId), (FieldId, TextKey, EntryId), (FieldId, Number, EntryId), (FieldId, Date, EntryId): covering indexes for the query shapes of ADR-0003. An integer `FieldId` instead of the field's GUID key halves the values on disk (1.3). Multi-value and repeater rows use ValueIndex and RowIndex. |
 | `jfbEntryFile` | Id PK, Key (unique), EntryId FK (cascade) null, FormId, FieldKey, OriginalName, StoredName, ContentType, SizeBytes, Sha256, ScanState, CreatedUtc | (EntryId), (CreatedUtc). Files without an entry after 24 h are orphans and get cleaned up. |
 | `jfbConsentText` | Hash PK (SHA-256 of culture and text), Culture, Text (NVARCHARMAX), FirstSeenUtc | A consent value stores `true` plus this hash: proof of the exact wording, stored once. |
 | `jfbEntryEvent` | Id PK (bigint), EntryId FK (cascade), OccurredUtc, Kind, UserKey null, Details (JSON) | (EntryId, OccurredUtc). Edits record old and new values only for non-sensitive fields, and they are deleted with the entry. |
@@ -793,6 +793,8 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - Or use a filtered index, as on `jfbEntry`.
   - A schema test enforces this.
 - **Times on SQL Server** are `DATETIME`, rounded to about 3 ms. Lists order by (time, Id), and nothing compares stored times for equality.
+- **Times on SQLite** are text in one format, which sorts correctly only while every value is written the same way. They are written only as UTC `DateTime` parameters (never as strings, `DateTimeOffset` values or SQL date functions), and read back as UTC (ADR-0003).
+- **Entry queries** use only the shapes of ADR-0003: field filters as `IN` subqueries, keyset paging, a sort by a value that walks the value index, one-pass search, and a time budget per statement (`query_timeout`). They need no planner statistics on SQLite.
 - **Counters and once-only rows** (entry numbers, daily stats, one-time flags) use one atomic statement, never a read followed by a write:
   - `UPDATE … SET LastEntryNumber = LastEntryNumber + 1`, read back in the same transaction;
   - or `INSERT … SELECT … WHERE NOT EXISTS`;
@@ -1033,7 +1035,7 @@ Servers that Jiron Form Builder starts use only these ports. Ports the OS assign
 - **Website runtime:** ≤ 16 KB gzip for the core, with features loaded on demand (uploads, signature, repeater, calculations, captchas): ≤ 40 KB gzip with everything. The default theme CSS is ≤ 10 KB gzip. Nothing loads from third parties (§4.10). The files are served compressed and cacheable (6.2), because Umbraco's static files are neither, and a page with a form scores the same in Lighthouse as the page without it (16.2).
 - **Server speed (demo machine, SQLite):** each budget is measured at a stated concurrency. SQLite has a single writer that Umbraco itself also uses, so parallel writes queue there (Tandem ADR-0063). The load test (16.2) therefore also reports where SQLite stops keeping up, and the docs steer busy sites to SQL Server.
   - rendering a 50-field form takes ≤ 20 ms from the cached definition;
-  - a submission (store plus outbox) takes ≤ 150 ms at p95;
+  - a submission (store plus outbox) takes ≤ 150 ms at p95, with up to 10 submissions arriving at the same moment on SQLite (ADR-0003);
   - the first page of entries for a form with 100,000 entries loads in ≤ 300 ms, and a 10,000-entry CSV export streams in ≤ 5 s;
   - the first email leaves ≤ 10 s after a submission.
 - **Backoffice:** a 300-field form keeps designer interactions under 100 ms, and the form tree with 1,000 forms opens in under 1 s.
@@ -1307,7 +1309,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
     - the vector format;
     - wire formats (invariant culture, ISO dates, decimal strings);
     - time zones and "today" (the per-site `TimeZone` setting of §4.8, with injected time, and vectors across a daylight-saving change);
-    - number semantics (C# `decimal` against JS numbers) and the rounding rules for calculations.
+    - number semantics (C# `decimal` against JS numbers) and the rounding rules for calculations. Stored numbers keep at most 15 significant digits (ADR-0003).
   - Write ADR-0005 "Shared logic and test vectors".
   - Done when: `dotnet test` and `npx vitest run` in the sandbox run the same vector file, and a deliberately broken TypeScript operator makes the TypeScript suite fail (shown, then reverted).
 - [ ] **1.6 Spike: background work and email**
@@ -1482,6 +1484,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a schema test shows that no nullable column is part of a primary key or a plain unique index (§4.5);
     - a second run is a no-op;
     - two entries with a NULL `ChallengeId` can be stored;
+    - a test shows the ADR-0003 schema on SQLite: `typeof` gives `real` for a stored number and `text` for a date, the value and entry indexes are exactly those of §4.5, `jfbEntryValue.FieldId` has no cascade, and the plan states `IgnoreCurrentState => false`;
     - the SQL Server DDL snapshot test passes;
     - the same tests are part of the SQL Server job in `ci.yml` (show the job definition; the owner checks the CI result).
 - [ ] **4.2 The definition model**
@@ -1497,11 +1500,13 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [ ] **4.3 Repositories, the file store, the audit log and stats**
   - One repository per aggregate (forms with versions and the field catalogue, folders, entries with values and files, events and notes, action runs, emails, option lists, themes, layouts, templates, settings, permissions, audit, stats, key-value).
   - All async, inside Umbraco scopes, through the database gate (D7). Paging, filtering and sorting happen in the database.
-  - **The entries query builder** turns typed field filters into SQL against `jfbEntryValue`.
+  - **The entries query builder** turns typed field filters into SQL against `jfbEntryValue`, using only the shapes of ADR-0003 (`IN` subqueries, keyset paging, the value-index walk for a sort by a value, one-pass search with a count up to 1,000) under the per-statement time budget.
   - **The file store:** the physical `IFormBuilderFileStore` per ADR-0006, in a folder that is not web-accessible. Uploads arrive in 6.1, hardening in 7.3.
   - **The audit log and daily stats:** port the pattern (§3.3).
   - Done when:
     - integration tests cover CRUD for each repository, concurrency conflicts on forms and settings, **unique entry numbers under 50 parallel inserts**, every filter kind (with the correctness cases of 1.3), and storing, reading and deleting files;
+    - on SQLite, `EXPLAIN QUERY PLAN` tests show every shape of the query builder on its index, with and without planner statistics: no `SCAN` of `jfbEntryValue` and no temporary b-tree for a sort by a value (ADR-0003);
+    - a statement past its time budget is interrupted and answered with `query_timeout`, and a submission made meanwhile still succeeds; a search with more than 1,000 matches reports "more than 1,000";
     - tests prove there are no field values in audit details, and that counters are correct under parallel increments.
 - [ ] **4.4 The settings framework** (port the pattern, §3.3)
   - **Model:** typed sections (§4.8) with defaults, validators and JSON schema versions with migrations, plus global and per-site scope.
@@ -1583,6 +1588,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Implement the types of §4.3.2 from Text to Country: parsing, validation, storage, "Other" options, consent text hashing into `jfbConsentText`, and country names from .NET culture data.
     - **Grid and ranking** (added in 1.1): each grid row has its own key and is stored like a child field (`ParentFieldKey` = the grid, §4.5), so it filters, sorts and exports like any field; a ranking stores one value per position (`ValueIndex`). With the required-rows rule and unique positions.
     - **Smaller settings:** word limits, excluded dates, the camera option on file fields, and place limits on options (the counting itself comes with the pipeline in 6.1).
+    - **Numbers** accept at most 15 significant digits, so the stored double is exact (ADR-0003); a unit test refuses a 16-digit number with its own message.
   - **Advanced fields:**
     - **Files and signatures:** file (linking upload tokens) and signature (PNG checks on size, dimensions and magic number).
     - **Composite:** name, address, and repeater (rows, limits, per-row validation).
@@ -1949,7 +1955,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 - [ ] **11.1 The entries list**
   - **The table:** a collection table per form, a column chooser (saved per user in `jfbUserSetting`), server-side paging, "new" markers and mark-as-seen, and an action status ("3/3 delivered"). Each entry is named by its entry title (§4.3.4), or by its number when the form has none.
-  - **Finding entries:** filters as chips (date presets and ranges, state, typed field filters), search and sort. A set of filters can be saved under a name (per user).
+  - **Finding entries:** filters as chips (date presets and ranges, state, typed field filters), search and sort. A set of filters can be saved under a name (per user). A search shows its count exactly up to 1,000 and as "more than 1,000" beyond (ADR-0003).
   - **Working on many:** bulk actions (approve, reject, spam, not spam, delete, export selected, re-run actions) and the keyboard shortcuts of §4.13.
   - Done when: Playwright passes with 1,000 seeded entries, including a saved filter set reopened in a second browser, and the 100,000-entry budget of §4.12 is measured and met.
 - [ ] **11.2 The entry panel**
@@ -1976,7 +1982,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - **ZIP** of the files: a folder per entry, safe names.
   - **Columns:** a grid gives one column per row, and a ranking one column per position.
   - **The export dialog** remembers the last format, fields and delimiter per user and form (`jfbUserSetting`).
-  - **Large exports:** a background job, a notification, and a time-limited download.
+  - **Large exports:** a background job, a notification, and a time-limited download. Every export reads in keyset pages of 250 entries, each its own gated read, so submissions wait behind one page at most (ADR-0003).
   - **Rules:** every export respects the filters, the permissions and the sensitive-data rules, and is audited.
   - Done when: tests open the produced files (the XLSX with a test-only reader, CSV round trip, ZIP listing), and the 10,000-entry budget is met.
 - [ ] **11.5 Insights**
