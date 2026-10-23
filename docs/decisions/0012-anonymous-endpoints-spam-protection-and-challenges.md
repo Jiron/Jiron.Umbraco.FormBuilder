@@ -1,6 +1,6 @@
 # 0012. Anonymous endpoints, spam protection and challenges
 
-- Status: accepted
+- Status: accepted; rate limits (refines D14), member-bound challenges, the honeypot and `invalid_request` amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the
@@ -14,7 +14,7 @@ and content rules feeding a spam score, optional proof of work, and reCAPTCHA or
 chooses them. Suspicious entries go to **Spam**, where nothing is lost and no action runs, and bots learn nothing
 (§4.4). §4.10 adds the rest: Data Protection challenges bound to the form and the time, rate limits per IP, form and
 site with bounded partitions that fail closed, size and time limits, `no-store`, origin checks, no antiforgery token on
-anonymous forms (so pages can be cached) but antiforgery on members-only forms, and mail limits for addresses that
+anonymous forms (so pages can be cached), member-bound challenges instead on members-only forms, and mail limits for addresses that
 visitors type.
 
 What is fixed already:
@@ -53,7 +53,9 @@ What is fixed already:
 ## Decision
 
 Option 3 for rate limits, option 2 for suspicious submissions. A refusal is kept only for what a real visitor can fix
-or retry: a missing or expired challenge, a failed captcha, a limit, an invalid request.
+or retry: a missing or expired challenge, a failed captcha, a limit, an invalid request. Rate limits therefore refuse
+rather than score, which refines D14 (it listed them among the score's signals): a flood must cost nothing to turn
+away, and a real visitor behind a busy address keeps every answer and is told when to send again.
 
 ### The endpoints
 
@@ -66,7 +68,8 @@ or retry: a missing or expired challenge, a failed captcha, a limit, an invalid 
   `ETag` (ADR-0002).
 - **Bodies:** JSON only, except uploads (`multipart/form-data`, ADR-0006). A declared length over the endpoint's limit
   is refused before reading, and a body without one is counted while it is read (`413 payload_too_large`,
-  `415 unsupported_media_type`). JSON with a lone surrogate is `400` (ADR-0005).
+  `415 unsupported_media_type`). JSON with a lone surrogate, or a body that is not the request's shape, is
+  `400 invalid_request` (ADR-0005).
 - **Time limits:** each endpoint has one, on the site's `TimeProvider`. Running out answers `504 timeout`; a visitor
   who left gets no answer.
 - **Errors** are ProblemDetails with the stable codes of §4.6, plus `origin_denied`, `timeout`, `not_found`, and
@@ -82,7 +85,7 @@ or retry: a missing or expired challenge, a failed captcha, a limit, an invalid 
 - **CORS is Jiron Form Builder's own middleware,** for the base path only: `Vary: Origin` on every answer; a preflight
   from an allowed origin gets `GET, POST`, `Content-Type`, ten minutes and no credentials; any other gets
   `403 origin_denied`. Actual requests from allowed origins get `Access-Control-Allow-Origin` and expose `ETag` and
-  `Retry-After`; others get no CORS headers, so the browser hands them nothing.
+  `Retry-After`, never `Access-Control-Allow-Credentials`; others get no CORS headers, so the browser hands them nothing.
 - A request without an `Origin` (a server, a no-JS post) passes the origin check and meets every other check.
 - **The preview frame** has the opaque origin `null` (§4.10). The public API accepts `Origin: null` only with a preview
   ticket: a Data Protection token bound to the form's draft, valid for ten minutes, issued by the management API to a
@@ -141,8 +144,8 @@ statement each, ADR-0003, ADR-0007):
 ```
 
 - **The token** is Data Protection protected (purpose `Jiron.FormBuilder.Challenge.v1`, ADR-0001) and holds the form
-  key, a challenge id (128 random bits), the issue time, the expiry (24 hours) and, for proof of work, the nonce and
-  difficulty. It is bound to the form and the time, not to the address, because phones change networks while a form
+  key, a challenge id (128 random bits), the issue time, the expiry (24 hours), on a members-only form the signed-in
+  member's key, and, for proof of work, the nonce and difficulty. It is bound to the form and the time, not to the address, because phones change networks while a form
   is open.
 - **Renewal:** the runtime may send its previous token, even expired, when it asks for a new one. A valid signature
   carries the original issue time over, so a visitor who took a long time is not scored as too fast.
@@ -174,8 +177,9 @@ more is **Spam**: accepted, stored, answered with the form's normal outcome, and
 - **Strictness** (`protection.contentRules`): `off` skips the content rules, `normal` uses the weights above, and
   `strict` doubles the content-rule weights and counts any link in an answer where the form's maximum is 0.
 - **The honeypot** is a text input whose name is derived from the form key and the public revision, so it is the same
-  in every cached copy of one revision and different in the next. It sits in a container that the theme hides from
-  view and from assistive technology (`aria-hidden`, `tabindex="-1"`, `autocomplete="off"`), with a label that says
+  in every cached copy of one revision and different in the next. The name always contains a `-`, which no field
+  alias can (ADR-0002), so it never collides with a field. It sits in a container that the functional base
+  rules of every theme hide from view (ADR-0015), and that is hidden from assistive technology (`aria-hidden`, `tabindex="-1"`, `autocomplete="off"`), with a label that says
   to leave it empty, in case a screen reader reaches it anyway.
 - **No-JS posts** have no challenge, so they carry no time signal. They are scored on the honeypot, the blocked ranges
   and the content rules, and limited like every post. On a form whose protection needs JavaScript, they go to Spam
@@ -210,8 +214,11 @@ that the demo machine solves it in under 2 seconds.
 
 ### Members-only forms
 
-They render an antiforgery token, so their pages are not cached (ADR-0004), and every post and API call for them
-checks it and the signed-in member: `member_required` without one.
+Their challenge holds the signed-in member's key (ADR-0004). The runtime fetches it from the same origin, and the no-JS
+form carries one rendered into its page, which is per member and sent with `no-store`. Every post and API call for
+them checks the signed-in member (`member_required` without one) and that the challenge names that member
+(`challenge_required` otherwise, so the runtime fetches a fresh one). No cookie is set: the protection holds because
+no other origin can read a member's challenge (no credentials across origins, above).
 
 ### Server keys
 

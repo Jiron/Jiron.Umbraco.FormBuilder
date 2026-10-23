@@ -1,6 +1,6 @@
 # 0016. Designer interaction: our own pointer drag, with keyboard moves and announcements
 
-- Status: accepted
+- Status: accepted; changes D12 (amended in 1.8)
 - Date: 2026-10-22
 - Roadmap step: 1.2a (measured in the sandbox); applies to 9.3c and to every reorderable list
 
@@ -68,7 +68,8 @@ model functions (move, step to the neighbour, refuse a move that breaks a rule),
   through `host`. Content slotted into a workspace scrolls inside the slot's shadow container, so a walk that
   skips slots finds no scrolling area at all (the spike's first version did exactly that).
 
-Umbraco's sorter is not used in Jiron Form Builder.
+Umbraco's sorter is not used in Jiron Form Builder. This changes D12, which listed the sorter among Umbraco's patterns
+to use: the measurements above are the reason, and D12 now names this controller instead.
 
 ## Consequences
 

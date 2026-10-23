@@ -1,6 +1,6 @@
 # 0015. Themes and the markup contract
 
-- Status: accepted
+- Status: accepted; the functional base rules and theme resolution amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 2.3 (the visual design and its tokens), 6.2 (rendering), 6.3 (the themes),
   6.4 (the runtime), 6.6 (the headless element) and 12.2 (the theme editor)
@@ -37,13 +37,18 @@ inline script or style. ADR-0002 fixed what the projection holds; ADR-0012 the h
 
 - **A theme** is registered in code through `IFormBuilderTheme`: an alias, a display name, a stylesheet (or none), a
   class map, its token defaults, whether it offers the dark scheme, and its view folder.
-- **Built in:** `default`; `unstyled` (no stylesheet, no extra classes); `bootstrap5` (a class map onto Bootstrap's
+- **Built in:** `default`; `unstyled` (no look and no extra classes, only the functional base rules below); `bootstrap5` (a class map onto Bootstrap's
   classes and a small stylesheet for what Bootstrap lacks, such as the error summary and choice cards; Bootstrap
   itself is the site's).
 - **Library themes** (`jfbTheme`, 12.2) are a base theme plus tokens and custom CSS. They add no views of their own; a
   site may still give one a view folder.
-- **A form's theme** is its `appearance.theme` key (ADR-0002), else the site's default (ADR-0008), else `default`. A
-  form picker can override it per placement (6.7).
+- **The functional base rules** ship with every theme, `unstyled` included, in a small stylesheet that `<jfb-assets>`
+  always includes: the honeypot's container kept out of view, visually hidden text for screen readers, and `[hidden]`
+  honoured. They need no JavaScript, and no theme can leave them out.
+- **A form's theme** is its `appearance.theme` alias (ADR-0002), else the default theme of the General section for the
+  form's site (ADR-0008), whose code default is `default`. A form picker can override it per placement (6.7). A theme's
+  alias is fixed once it exists (its name can change); a form whose theme is gone renders with `default`, and the form
+  check says so. The form row copies the published theme alias (`jfbForm.ThemeAlias`) for the library's "used by" list.
 
 ### Views
 

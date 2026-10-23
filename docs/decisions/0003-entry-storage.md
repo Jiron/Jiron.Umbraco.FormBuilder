@@ -1,6 +1,6 @@
 # 0003. Entry storage
 
-- Status: accepted
+- Status: accepted; catalogue rows of draft-only fields amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.3 (decided); built in 4.1 (schema), 4.3 (repositories and the entries query builder), 6.1 (the
   submission transaction), 11.1 (the entries list) and 11.4 (exports); load-tested in 16.2
@@ -57,7 +57,8 @@ Option 2.
   - **`jfbEntryValue.FieldId`** refers to the field's row in the field catalogue `jfbFormField`, with no cascade
     (SQL Server refuses a second cascade path, and the form service deletes entries before the form). A field gets
     its catalogue row before its first value is stored: on publish for live fields, and on the first preview
-    submission for a field that exists only in the draft. The small tables that name a field (`jfbEntryFile`,
+    submission for a field that exists only in the draft. Such a row has no `FirstVersionNumber` until a publish
+    includes the field, and the columns, filters and exports of real entries leave it out. The small tables that name a field (`jfbEntryFile`,
     `jfbOptionCapacity`) keep `FieldKey`.
 - **Indexes:**
   - `jfbEntryValue`: `(EntryId, FieldId)`, `(FieldId, TextKey, EntryId)`, `(FieldId, Number, EntryId)` and

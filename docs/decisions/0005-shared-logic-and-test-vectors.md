@@ -1,6 +1,6 @@
 # 0005. Shared logic and test vectors
 
-- Status: accepted
+- Status: accepted; unsafe patterns at publish and stored calculation results amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.5 (decided); built in 3.4 (the vector runners), 4.4 (the time zone and start-up checks), 5.2 (rules
   and validation), 5.3 (merge tags and calculations), 5.4 (number fields), 6.1 and 6.4 (the wire); reviewed in 5.5
@@ -83,7 +83,10 @@ Option 3 for text, option 2 for patterns, exact decimals for numbers, and one JS
   - division keeps 20 places, rounded half away from zero; `round(x, places)` rounds half away from zero, with 0 to
     20 places; more than 60 digits is `out_of_range`; division by zero is `division_by_zero`;
   - a stored number has at most 15 digits in all, leading zeros not counted, and at most 15 after the point
-    (`too_many_digits`), so it is exact as a double (ADR-0003); comparisons are exact at any length.
+    (`too_many_digits`), so it is exact as a double (ADR-0003); comparisons are exact at any length;
+  - a calculation's result is stored rounded half away from zero to its `format.decimals` (2 when unset, 0 to 15). A
+    result that still has more than 15 digits is stored as text only (`Number` stays null, so it neither filters nor
+    sorts) and is never refused, because the visitor did not type it.
 - **Dates and "today":**
   - "today" is the local date of the injected instant in the site's IANA time zone: `Intl.DateTimeFormat` with
     `formatToParts` in the browser, `TimeZoneInfo.FindSystemTimeZoneById` and `ConvertTime` on the server; an unknown
@@ -96,7 +99,8 @@ Option 3 for text, option 2 for patterns, exact decimals for numbers, and one JS
 - **Patterns:** the subset and its limits of the research note (500 code points, counts up to 1,000, at most 2,000
   characters once counted repeats are unrolled), parsed, compiled to a Thompson automaton and run over code points,
   the same algorithm in both runtimes. A pattern matches the whole value, is case-sensitive, and is normalised like a
-  value. Anything outside the subset is `unsafe_pattern` when the form is saved. Neither runtime's regular-expression
+  value. Anything outside the subset is `unsafe_pattern`: publishing refuses it, and a draft keeps it while
+  the form check lists it (ADR-0002). Neither runtime's regular-expression
   engine runs editors' patterns.
 - **Conditions and rules** are checked as a whole before they are evaluated, with the codes `unknown_field`,
   `unknown_operator`, `operator_not_for_kind`, `invalid_operand` and `unsafe_pattern`, so evaluation order never

@@ -1,6 +1,6 @@
 # 0009. Privacy defaults
 
-- Status: accepted
+- Status: accepted; consent texts, sensitive fields in mail, the global privacy section and context values amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 4.1 (the columns), 6.1 (what a submission stores), 8.x (mail), 13.1 to 13.4
   (retention, data subject tools, sensitive data and IP addresses, the documentation) and 14.3 (members)
@@ -31,7 +31,7 @@ search text, events) shorter or out altogether.
 
 ## Decision
 
-**Option 2 as the default.** Options 1 and 3 stay reachable per form and per site, within the host's locks
+**Option 2 as the default.** Options 1 and 3 stay reachable per form and globally, within the host's locks
 (ADR-0008): "never store" is a form setting, and turning retention off needs `JironFormBuilder:Privacy:AllowRetentionOff`.
 
 **What a submission stores, by default:**
@@ -43,7 +43,7 @@ search text, events) shorter or out altogether.
 | The page | the path only, never the query or the referrer | – | – |
 | User agent, screen, location | never | – | – |
 | The member | the member's key, when a member is signed in (needed for "one entry per member" and the member's entries view) | – | – |
-| Context values | only the names the form lists (`developer.contextValues`) | per form | – |
+| Context values | only the names the form lists (`developer.contextValues`), plus the name of the server key a server-to-server submission used (ADR-0012) | per form | – |
 | Duration | seconds from the first interaction to the submission (insights) | – | – |
 | Consent | `true` plus the hash of the exact text shown and its culture (`jfbConsentText`) | – | – |
 | Search text | the normalised values of non-sensitive fields only | – | – |
@@ -65,7 +65,7 @@ search text, events) shorter or out altogether.
 | Action-run error messages | with their entry; sanitised and at most 1,000 characters (§4.5) |
 | The audit log (user and entity keys, never values) | 365 days |
 | Daily statistics (no personal data) | 3 years |
-| Consent texts (no personal data) | while an entry points at them |
+| Consent texts (no personal data: they recall no answers, ADR-0014) | while an entry points at them |
 | A legal hold | keeps an entry past its retention until the hold's end date, at most 365 days at a time, with a reason and the user who set it |
 
 Deleting an entry deletes its values, files, events, notes, action runs and queued mail with it (§4.4).
@@ -74,8 +74,9 @@ Deleting an entry deletes its values, files, events, notes, action runs and queu
 
 - masked in lists, the entry panel and previews unless the user holds "view sensitive data" (ADR-0013); every reveal is
   audited;
-- left out of emails unless the action includes them by name, out of exports unless chosen and permitted, out of the
-  entry title, the search text, timeline old and new values, and logs;
+- left out of the answers in mail and shown as `•••` where a mail names them, unless the action includes them by name
+  (ADR-0014); out of exports unless chosen and permitted, out of the entry title, the search text, timeline old and
+  new values, and logs;
 - masked in the copy of the answers and the outcome message that a visitor sees.
 
 **Members:** when a member is deleted, their entries are anonymised by default (values replaced, files removed,
@@ -91,7 +92,7 @@ statistics kept); a site setting can choose deletion instead (14.3).
   stacks or the site's own font (CLAUDE.md rule 4). A third-party captcha loads only on forms that use it and only
   after consent (ADR-0012, §4.10).
 - **Insights** are counters per form and day with no identifiers (`jfbDailyStat`); the beacon carries the event, the
-  page key or the field key and the kind of error, nothing else. The switch is per form and per site.
+  page key or the field key and the kind of error, nothing else. The switch is per form and global (the privacy section is global, ADR-0008).
 
 **Mail:**
 

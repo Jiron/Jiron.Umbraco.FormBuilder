@@ -1,6 +1,6 @@
 # 0004. Rendering and submission paths
 
-- Status: accepted
+- Status: accepted; members-only forms and the no-JS action amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.4a (decided); built in 6.1 (the public API), 6.2 (Razor rendering, the no-JS post, the cache
   rules, `render`), 6.4 (the runtime) and 6.6 (headless); reviewed in 6.8 and 16.x
@@ -41,7 +41,7 @@ checked them in Edge with JavaScript on and off, under `dotnet build` and after 
 **The no-JS post:**
 
 1. **`BeginUmbracoForm` with its antiforgery token** (Umbraco's default). The token and its cookie make every page
-   with a form uncacheable. Rejected for anonymous forms; members-only forms keep it (below).
+   with a form uncacheable. Rejected for anonymous forms, and for members-only forms too, because D13 sets no cookies (below).
 2. **`BeginUmbracoForm(…, antiforgery: false)`.** Cacheable, but with the limits above: no way back to the form after
    errors, a needless multipart encoding, a random id, and the wrong action when the form is rendered by the API.
 3. **Our own `<form>` with `Html.SurfaceControllerHiddenInput<T>()`.** The same encrypted route token and surface
@@ -71,7 +71,8 @@ Option 3 for the no-JS post, option 1 for the state after it, option 2 for `form
   forms on one page never collide. The markup holds nothing per visitor: no antiforgery token on anonymous forms, no
   challenge, no nonce, no time stamp.
 - **The no-JS post:**
-  - The form is `<form method="post" action="<page path>#<instance>" novalidate>`, with
+  - The form is `<form method="post" action="<page path>#<instance>" novalidate>` (with
+    `?jfb-post=<key>.<instance>` before the fragment when the form has a file field, ADR-0006), with
     `Html.SurfaceControllerHiddenInput<…>()` for Umbraco's route token. `novalidate` with `required` and the other
     constraint attributes still in place: the server's messages are the errors on both paths, not the browser's
     bubbles. `enctype="multipart/form-data"` only when the form has an upload field.
@@ -84,7 +85,8 @@ Option 3 for the no-JS post, option 1 for the state after it, option 2 for `form
     built by Jiron Form Builder because `RedirectToCurrentUmbracoPage(QueryString)` cannot add the fragment. The
     view component shows the outcome for that instance. A redirect outcome goes straight to its target.
 - **The JavaScript path:** the public controller at `/jfb/api/v1` (§4.6), attribute-routed, anonymous, with
-  ProblemDetails codes and `Cache-Control: no-store` on every response. The runtime fetches the challenge on the
+  ProblemDetails codes and `Cache-Control: no-store` on every response but the definition (`no-cache` with its `ETag`,
+  ADR-0012). The runtime fetches the challenge on the
   visitor's first `focusin` or `input`, posts entries with a stable `submissionId`, loads its error display on
   demand, renders the same summary and inline errors as the server, and moves focus to the summary or the outcome.
 - **The output cache rules** (Umbraco's website output cache, and any CDN that respects `Cache-Control`):
@@ -114,13 +116,18 @@ Option 3 for the no-JS post, option 1 for the state after it, option 2 for `form
     it, and the chunks it imports inherit it, with or without `'strict-dynamic'`.
   - A nonce belongs only on uncached pages; the docs explain why with the spike's result, and how to exclude such
     pages from the cache.
-- **Members-only forms keep antiforgery:** they render the token, which makes their page uncacheable (antiforgery
-  sends `no-store` and its cookie), and both paths validate it explicitly with `IAntiforgery`: the surface action
-  from the form field, the API from the `RequestVerificationToken` header that the runtime copies from the form.
+- **Members-only forms bind every post to the member** instead of using ASP.NET Core's antiforgery, whose cookie D13
+  rules out. Their pages are per member, so the view sends `Cache-Control: no-store`, which also keeps them out of
+  Umbraco's output cache. Their challenge (ADR-0012) holds the signed-in member's key: the runtime fetches it from the
+  same origin, so the browser sends the member's login cookie with it, and the no-JS form carries one rendered into the
+  page. Both paths accept a post only when the challenge names the member who is signed in now, and the origin checks
+  of every post apply as well. A page on another site cannot read such a challenge, because the public API never
+  allows credentials across origins (ADR-0012), so it cannot make a post for the member. Jiron Form Builder sets no
+  cookie of its own; the member's login cookie is Umbraco's.
 - **Assets:** the extension's static web assets under `/jfb/assets/` (`StaticWebAssetBasePath` `/`), the same under
   `dotnet run` and after `dotnet publish`; publishing also writes Brotli and gzip copies. Umbraco serves static files
   without compression or caching headers, so 6.2 serves them itself, as §3.4 and §4.12 already plan.
-- **Data Protection:** the route token, the challenge and the antiforgery token all depend on it, so load-balanced
+- **Data Protection:** the route token and the challenge (members-only forms included) depend on it, so load-balanced
   sites need a shared key ring. The install docs say so.
 
 **The render budget** (§4.12, a 50-field form from the cached definition in ≤ 20 ms): the view component rendered

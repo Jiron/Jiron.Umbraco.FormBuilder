@@ -1,6 +1,6 @@
 # 0006. File storage and uploads
 
-- Status: accepted
+- Status: accepted; narrows §1.1 (amended in 1.8)
 - Date: 2026-10-23
 - Roadmap step: 1.4b (decided); built in 4.3 (the physical store), 6.1 (the upload endpoint), 6.2 (no-JS posts with
   files), 6.4 (the runtime's uploads), 7.3 (hardening, downloads), 15.2 (the blob sample); reviewed in 7.4 and 16.x
@@ -149,6 +149,8 @@ nothing in the temp folder; on the blob store against the local emulator, with 1
 - 15.2's blob sample follows this ADR and passes the store's contract tests against a local storage emulator. Only
   the samples project references the provider (an Umbraco HQ package, MIT) and, through it, the Azure SDK; the
   product's packages never do, so no site gets them unless it adds the sample's store itself.
+- This narrows §1.1, which promised file storage "through Umbraco's file system providers": they write
+  synchronously, so the official blob provider is reached through the sample store, and §1.1 now says so.
 - Load-balanced sites need a shared store (the blob sample or a shared folder) as well as a shared Data Protection key
   ring, because the upload token and the file must be found by whichever server takes the submission.
 - **Revisit** if Umbraco stops reading forms in its matcher policy or adds a supported opt-out, if `IFileSystem`

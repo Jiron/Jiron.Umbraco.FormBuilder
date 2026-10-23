@@ -1,6 +1,6 @@
 # 0014. The merge-tag language
 
-- Status: accepted
+- Status: accepted; consent texts and sensitive fields amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 5.3 (both runtimes and the vectors), used by 6.x (texts, defaults, outcomes),
   8.x (emails, webhooks, content), 9.4 and 10.2 (the picker) and 11.x (entry titles)
@@ -83,8 +83,15 @@ ws        = { " " | tab } ;
 A field's former aliases (ADR-0002) resolve to the field. Sources added through `IFormBuilderMergeTagSource` declare
 their name, their paths for the picker, the contexts they may be used in, and whether their values are per visitor.
 
-**Sensitive fields** render masked (`•••`) everywhere, except in an action that names the field to include it
-(ADR-0009). **Hidden fields** render empty.
+**Sensitive fields** (ADR-0009), one rule per output:
+
+- entry titles and the search text leave them out (their tags render empty);
+- a `field.<alias>` tag renders `•••`, except in an action that names the field to include it;
+- `entry.answers` leaves them out, except in an action that names them to include them; in mail it also leaves out
+  every field whose `includeInEmails` is false (ADR-0002);
+- the copy of the answers and the outcome message that a visitor sees show them masked.
+
+**Fields that rules hid** for the entry render empty, and `entry.answers` leaves them out.
 
 ### Filters
 
@@ -135,7 +142,8 @@ never on the template's own text.
 
 | Where | Context | Sources |
 | --- | --- | --- |
-| Labels, help, placeholders, page and group titles, text blocks, consent texts | `html` or `text` | `field.*` (answer recall) of fields above the text or on earlier pages; `form`, `page`, `site`, `date`, `dictionary` |
+| Labels, help, placeholders, page and group titles, text blocks | `html` or `text` | `field.*` (answer recall) of fields above the text or on earlier pages; `form`, `page`, `site`, `date`, `dictionary` |
+| Consent texts | `html` | `form`, `page`, `site`, `dictionary` only, so the stored wording is the same for every visitor and holds no personal data (ADR-0009); any other source is a form-check error |
 | Default values | `text` | `form`, `page`, `site`, `date`, `dictionary`, `query` (allowed names) |
 | Hidden field values | `text` | all, `member` and `context` included, resolved when the entry is submitted and never rendered into the page (§4.3.2) |
 | Outcome messages and the copy of the answers | `html` | all |

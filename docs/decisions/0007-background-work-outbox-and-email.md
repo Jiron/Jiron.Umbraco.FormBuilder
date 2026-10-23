@@ -1,6 +1,6 @@
 # 0007. Background work, outbox and email
 
-- Status: accepted
+- Status: accepted; the `Limited` mail state and the draft-version cleanup amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.6 (decided); built in 4.1 (the tables), 4.3 (the repositories), 8.1 (the action processor) and
   8.2 (the email outbox); every later job follows its job rules
@@ -83,7 +83,8 @@ woken through a channel, a distributed job, and a second processor with its own 
 Option 3 in each case.
 
 - **The tables** are `jfbActionRun` and `jfbEmail` of §4.5. `jfbActionRun` gains `Seq` (the action's position) and
-  `StopOnFailure`, indexed on (EntryId, Seq). `jfbEmail` gains `LockedBy` and the state `Uncertain`.
+  `StopOnFailure`, indexed on (EntryId, Seq). `jfbEmail` gains `LockedBy`, the state `Uncertain`, and the final state `Limited` for mail
+  that the visitor-address limits hold back (ADR-0012), which is never claimed.
 - **One state machine for both tables:**
   - **The claim:** `Pending` (`Queued` for mail) becomes `Running` (`Sending`) through
     `UPDATE … SET State = 'Running', LockedBy = @token, LockedUntilUtc = @until, Attempts = Attempts + 1 WHERE Id = @id AND State = 'Pending' AND NextAttemptUtc <= @now`,
@@ -115,7 +116,8 @@ Option 3 in each case.
 - **The job:** `Jiron.FormBuilder.Outbox`, an `IDistributedBackgroundJob` with a 1-minute period, only wakes its
   server's worker and returns. It picks up retries as they fall due, expired leases, and work that a stopped server
   left behind, each at most about a minute late.
-- **Every Jiron Form Builder job** (the outbox, retention, stats roll-ups, abandoned-upload cleanup, file-mirror sync)
+- **Every Jiron Form Builder job** (the outbox, retention with the draft-version cleanup of ADR-0002, stats roll-ups, abandoned-upload cleanup,
+  file-mirror sync)
   returns from `ExecuteAsync` within 10 seconds, because the runner waits for it and holds every other distributed
   job on its server meanwhile. Longer work goes in bounded, idempotent batches that continue on the next run. Periods
   are a minute or longer, and each job first checks that Umbraco runs and that no migration is pending.

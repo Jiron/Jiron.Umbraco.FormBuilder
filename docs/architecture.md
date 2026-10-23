@@ -359,8 +359,8 @@ codes, `no-store` except the definition, the OpenAPI document `jfb-public`
 
 - **Origins:** the same origin always; others only from `AllowedOrigins`; the preview's opaque origin only with a
   preview ticket.
-- **Members-only forms** add antiforgery and the signed-in member (`member_required`).
-- **Error codes:** `form_not_found`, `form_closed`, `form_changed`, `validation_failed`, `challenge_required`,
+- **Members-only forms** bind the challenge to the signed-in member (`member_required` without one), with no cookie.
+- **Error codes:** `form_not_found`, `form_closed`, `form_changed`, `validation_failed`, `invalid_request`, `challenge_required`,
   `captcha_failed`, `rate_limited`, `payload_too_large`, `unsupported_media_type`, `member_required`,
   `duplicate_submission`, `entry_limit_reached`, `already_submitted`, `origin_denied`, `timeout`, `not_found`,
   `server_error` (§4.6).
@@ -393,7 +393,8 @@ client committed from its snapshot. Areas (§4.7) and the permission each needs:
 | The form picker in content | any user who may edit content; names and keys only |
 
 What a user may not see answers `404`; what they may see but not do answers `403` with the permission's name. The
-`403` matrix covers every endpoint (4.7, ADR-0011). The management API is part of the backoffice, not of the public
+permission matrix checks both answers on every endpoint; only the form picker is exempt, because content access
+authorises it (4.7, ADR-0011, ADR-0013). The management API is part of the backoffice, not of the public
 surface (ADR-0010).
 
 ## 7. Settings
@@ -474,7 +475,7 @@ others in a cluster.
 | Spoofing | A bot posts as a visitor | signed challenge, honeypot, minimum fill time, rate limits, optional proof of work or captcha; suspicious entries go to Spam | ADR-0012 | 7.1, 7.2 |
 | Spoofing | A forged server key or token (resume, verification, upload, preview) | keys stored as SHA-256 and compared in fixed time; Data Protection tokens bound to form and time; resume tokens stored as hashes | ADR-0012 | 6.6, 7.1, 8.5, 8.6 |
 | Spoofing | A faked client address through `X-Forwarded-For` | the connection address only; forwarded headers only through ASP.NET Core with known proxies | ADR-0012 | 7.1 |
-| Spoofing | Someone posts as a member | antiforgery and the member's session on members-only forms | ADR-0004, ADR-0012 | 14.3 |
+| Spoofing | Someone posts as a member | a challenge bound to the signed-in member, readable only from the same origin, on members-only forms | ADR-0004, ADR-0012 | 14.3 |
 | Spoofing | A forged Host header steers links in mail | links only from the site's base URL | ADR-0008 | 8.2 |
 | Tampering | Posted values for hidden fields, member-prefilled hidden fields or calculations | hidden fields stripped, hide-mode prefill ignored, calculations recomputed on the server | §4.3.3, ADR-0005 | 6.1, 6.5 |
 | Tampering | A submission against an older definition | the compatibility rule: `form_changed` unless every error falls on a field the visitor saw | ADR-0002 | 6.1, 6.4 |
@@ -486,7 +487,7 @@ others in a cluster.
 | Repudiation | Nobody knows whether a mail went out | runs and mail with states, `Uncertain` and the deliveries log | ADR-0007 | 8.1, 8.2 |
 | Information disclosure | The projection leaks recipients, secrets or option sources | an allowlisted projection and a property-style test | ADR-0002 | 4.2 |
 | Information disclosure | XSS through names or values in the backoffice, Razor, mail or exports | escaping contexts, one confirm helper, the formula guard | ADR-0014, §4.10 | 5.3, 9.1, 11.4 |
-| Information disclosure | Personal data in logs or job errors | no values, addresses, tokens or file names in logs; exception types only | §4.10, ADR-0009 | every step with captured logs |
+| Information disclosure | Personal data in logs or job errors | no values, email or IP addresses, tokens or file names in logs; exception types only | §4.10, ADR-0009 | every step with captured logs |
 | Information disclosure | Users see forms or entries they should not | permissions, restricted folders and forms, `404` for what they cannot see, database-side filters | ADR-0013 | 4.6, 4.7 |
 | Information disclosure | Sensitive values shown to the wrong people | masking and `viewSensitive`, audited reveals | ADR-0009, ADR-0013 | 13.3 |
 | Information disclosure | Cached pages hand one visitor's data to another | markup holds nothing per visitor; per-visitor renders are `no-store` | ADR-0004 | 6.2 |
@@ -501,7 +502,7 @@ others in a cluster.
 | Denial of service | Locked SQLite under parallel writes | the database gate, writes first, no connections of our own | D7, ADR-0007 | 4.3, 16.2 |
 | Denial of service | The site's mail used against strangers | per-recipient and per-site caps for visitor-typed addresses | ADR-0012 | 8.3, 8.6 |
 | Denial of service | Expensive entry queries | the ADR-0003 query shapes and a per-statement time budget | ADR-0003 | 4.3 |
-| Elevation of privilege | Management endpoints without the permission | one policy per permission, resource checks, the `403` matrix | ADR-0013 | 4.7 |
+| Elevation of privilege | Management endpoints without the permission | one policy per permission, resource checks, the permission matrix (`403` and `404`) | ADR-0013 | 4.7 |
 | Elevation of privilege | Test-only endpoints or loopback access in production | guarded to test hosts; a test proves a normal host has none | ADR-0011, §4.10 | 3.4 |
 | Elevation of privilege | Merge tags or calculations running code | a grammar of paths and filters, no evaluation, no reflection | ADR-0014, ADR-0005 | 5.3 |
 | Elevation of privilege | An editor bypasses a host lock | locks enforced on the server and where values are used | ADR-0008 | 4.4 |
@@ -538,7 +539,7 @@ The product's words are CLAUDE.md's vocabulary; the technical words are used the
 | **field** | one question or one piece of content on a page |
 | **option list** | a reusable set of options, or a source of them, in the library |
 | **rule** | a condition with an effect: show, hide, require, run or use |
-| **action** | what runs after a submission (email, webhook, content, state, verification) |
+| **action** | what runs after a submission (email, webhook, Slack or Teams, content, state) |
 | **entry** | one submission, with its values, files, timeline and notes |
 | **theme** | how forms look on the website: a stylesheet, a class map and tokens over the shared views |
 | **merge tag** | `{{ source.path \| filter }}` in a text, filled in when it is shown or sent |

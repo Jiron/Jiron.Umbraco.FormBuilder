@@ -1,6 +1,6 @@
 # 0011. Testing strategy
 
-- Status: accepted
+- Status: accepted; the permission matrix (`403` and `404`) amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 3.4 (the harness) and 3.5 (CI and the gate), extended by every later step
 
@@ -45,7 +45,7 @@ rule 6); Edge but no WebKit; GitHub Actions results are not visible from here, s
 | --- | --- | --- | --- |
 | **Unit** (`tests/Jiron.Umbraco.FormBuilder.Tests.Unit`) | NUnit 3.14 with its constraint model (MIT), NSubstitute (BSD-3-Clause), coverlet (MIT) | Pure logic with a fake `TimeProvider`: the definition model, upgraders and structural validation; rules, validation, merge tags and calculations; field and action types; the spam score; the settings validators and host rules; the sanitiser's configuration; the SSRF guard; exports and the formula guard. | every build, under a minute |
 | **Vectors** (`tests/vectors/*.json`) | the NUnit and Vitest runners of ADR-0005 | Rules, validation, merge tags and calculations in the `jfb-vectors/1` format; a case that passes in one runtime and fails in the other fails the build. The tables check compares fold, clean and recomposition for every code point. | every build |
-| **Integration** (`tests/Jiron.Umbraco.FormBuilder.Tests.Integration`) | `Umbraco.Cms.Tests.Integration` 17.x (MIT; it brings Moq, AutoFixture and Bogus), `UmbracoIntegrationTest`, `UmbracoTestServerTestBase` | A real Umbraco with Jiron Form Builder's composers: migrations (fresh, rerun, upgrade from fixtures), repositories and the entries query shapes, the submission pipeline, the outbox with two processors, settings across simulated servers, every public and management endpoint (success, validation, `401`, `403` for every role, rate limits, CORS, size limits), file uploads and downloads, logs captured and checked for personal data. | SQLite locally and in CI; **SQL Server in a CI job** |
+| **Integration** (`tests/Jiron.Umbraco.FormBuilder.Tests.Integration`) | `Umbraco.Cms.Tests.Integration` 17.x (MIT; it brings Moq, AutoFixture and Bogus), `UmbracoIntegrationTest`, `UmbracoTestServerTestBase` | A real Umbraco with Jiron Form Builder's composers: migrations (fresh, rerun, upgrade from fixtures), repositories and the entries query shapes, the submission pipeline, the outbox with two processors, settings across simulated servers, every public and management endpoint (success, validation, `401`, `403` or `404` for every role as ADR-0013 sets, rate limits, CORS, size limits), file uploads and downloads, logs captured and checked for personal data. | SQLite locally and in CI; **SQL Server in a CI job** |
 | **Client** (`Client/packages/*`) | Vitest (MIT), jsdom (MIT) | The logic package, the website runtime's modules, the web component, and the backoffice's element logic and pure editor-model functions (the designer's reducers, ported from Ligata's tested editor model, §3.1). | every build |
 | **Browser** (`tests/e2e`) | Playwright Test (Apache-2.0), `@axe-core/playwright` (MPL-2.0, an unmodified dev tool) | Journeys in a real browser against a fresh host: the website with and without JavaScript, phones, headless and cross-origin pages, the backoffice as every role, email files, privacy, resilience, accessibility. | the gate and CI |
 | **Packages** (`scripts/install-test.ps1`) | the install harness (16.5) | A fresh site that installs the packed packages from the local feed: install, `dotnet publish`, the 17.5 floor and the upgrade from `baseline/schema-v1` (16.5, 18.3). | the steps that own them and each release |
@@ -115,8 +115,9 @@ integration project of its own.
 - **Assertions** use NUnit's constraint model (`Assert.That(x, Is.EqualTo(y))`); no FluentAssertions or other
   commercially licensed tools (CLAUDE.md rule 4).
 - **A bug fix comes with the test that would have caught it.**
-- **Security is first-class:** the `403` matrix for every management endpoint (route parameters filled by type, so a
-  route never answers `404` before the permission check), escaping tests with hostile names and values in every
+- **Security is first-class:** the permission matrix for every management endpoint (`403` where the user sees the
+  resource but lacks the permission, `404` where they hold nothing on it, ADR-0013; route parameters filled by type, so
+  a route never answers `404` for a malformed parameter before the permission check), escaping tests with hostile names and values in every
   output (Razor, email, backoffice, exports), and log checks for every path that handles values, tokens or file
   names (§4.10).
 - **Bodies, not only statuses:** error tests check the ProblemDetails `code`, because Umbraco's error handling can drop

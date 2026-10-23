@@ -1,6 +1,6 @@
 # 0002. The form definition model, versions and the public projection
 
-- Status: accepted
+- Status: accepted; theme alias, calculation decimals, consent and card defaults, unsafe patterns and verification amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2 (the model, the schema, upgraders, structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
@@ -128,7 +128,7 @@ not support must be absent.
 | `defaultValue` | string, string[] or null | null | Merge tags allowed (ADR-0014). A list for types with several answers. |
 | `prefill` | object or null | null | `{ "query": name or null, "member": property alias or null, "memberMode": "show" or "hide" }`. |
 | `sensitive` | boolean | false | §4.10. |
-| `includeInEmails` | boolean | true | |
+| `includeInEmails` | boolean | true | False leaves the field out of `entry.answers` in mail (ADR-0014); a tag that names the field still renders it. |
 | `keep` | `always` or `untilActionsRun` | `always` | §4.4. |
 | `autocomplete` | string | null | An HTML autocomplete token. |
 | `cssClass` | string | null | |
@@ -226,7 +226,7 @@ to the action type. Secrets appear only as `$JironFormBuilder:Secrets:<Name>` re
     "insights": true
   },
   "appearance": {
-    "theme": null,                                               // a theme key; null = the site's default
+    "theme": null,                                               // a theme alias; null = the site's default
     "requiredMarker": "inherit",                                 // inherit | required | optional | none
     "validationSummary": true, "choiceLayout": "vertical", "cssClass": null
   },
@@ -234,7 +234,9 @@ to the action type. Secrets appear only as `$JironFormBuilder:Secrets:<Name>` re
 }
 ```
 
-"Unique per form on a chosen field" shows under Availability in the designer and is stored as that field's
+Email verification is the `verification` setting only, never an action: its mail is a system mail (ADR-0007), and
+the actions on the `verified` trigger run once the visitor confirms. "Unique per form on a chosen field" shows under
+Availability in the designer and is stored as that field's
 `uniquePerForm` check. ADR-0012 fixes the protection levels and ADR-0009 the privacy values; their shape here is
 theirs to refine before v1 is fixed (below).
 
@@ -255,15 +257,15 @@ strings (ADR-0005); counts are JSON integers; relative dates use the operand for
 | `rating` | `count` (5, 3 to 10), `symbol` (`star`, `heart`, `circle`), `lowLabel`, `highLabel` |
 | `scale` | `from` (0 or 1), `to` (10, 5 to 10), `lowLabel`, `highLabel` |
 | `slider` | `min` ("0"), `max` ("100"), `step` ("1"), `unit`, `showValue` (true) |
-| `calculation` | `formula`, `format` (`{ "decimals", "prefix", "suffix" }`), `visible` (true) |
+| `calculation` | `formula`, `format` (`{ "decimals", "prefix", "suffix" }`; `decimals` 0 to 15, 2 when unset), `visible` (true) |
 | `dropdown` | `prompt`, `multiple` (false), `minSelections`, `maxSelections` |
-| `radio` | `layout` (`inherit`, `vertical`, `horizontal`, `cards`), `other` (`{ "label" }` or null) |
+| `radio` | `layout` (`inherit`, `vertical`, `horizontal`, `cards`: a card per option, with the option's image when it has one), `other` (`{ "label" }` or null) |
 | `checkboxes` | `layout`, `minSelections`, `maxSelections`, `other` |
 | `grid` | `multiple` (false); columns come from `options` or `scale` (`{ "from", "to" }`); rows from `rows`. A required grid requires every row; otherwise each row's `required` decides. |
 | `ranking` | `top` (null = rank all) |
 | `checkbox` | `text` (LocalizedHtml beside the box) |
 | `yesno` | `yesLabel`, `noLabel`, `style` (`buttons` or `switch`) |
-| `consent` | `text` (LocalizedHtml, required). No `defaultValue`: a consent is never ticked in advance (§3.7). |
+| `consent` | `text` (LocalizedHtml, required). `required` defaults to true for this type. No `defaultValue`: a consent is never ticked in advance (§3.7). |
 | `country` | `allowed` (alpha-2 codes; empty = all), `top`, `default` |
 | `name` | `parts` (`title`, `first`, `middle`, `last`), `requiredParts` |
 | `address` | `parts` (`street2`, `region`, `country`), `requiredParts` |
@@ -301,8 +303,8 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
   `alias_reserved`, `alias_duplicate`), references (`unknown_field` for a condition, check or option parent that names
   no field, `unknown_type`), cycles in the graph of rules over fields, groups and pages (`cycle`), and the condition
   checks both runtimes run (`unknown_operator`, `operator_not_for_kind`, `invalid_operand`, `unsafe_pattern`,
-  ADR-0005). The form check (9.5b) adds its errors (a missing label, an email action without an email field, a text
-  that recalls a later field) and its warnings, which never block.
+  ADR-0005), the last also for the `pattern` checks of a field's `validation` list. The form check (9.5b) adds its errors (a missing label, an email action without an email field, a text
+  that recalls a later field, a consent text whose merge tags differ per visitor) and its warnings, which never block.
 - **A draft keeps** what the editor did, and the form check lists every problem with a "fix it" link. Deleting a
   field that rules use says so and can be undone; it does not force the editor to rewrite the rules first. Drafts
   reach visitors only through the preview, which runs both runtimes' checks first and shows a broken rule as an issue
@@ -320,8 +322,8 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
 - **Unpublishing** clears `PublishedVersionId`; the versions and entries stay.
 - **Restoring** a version copies its definition into a new draft row ("restored from version N"); publishing it is a
   separate step.
-- **Pinning and comments:** a version can carry a comment and be pinned. The cleanup job keeps every published
-  version, every pinned one and every one an entry points at (preview entries point at drafts), plus the last 50
+- **Pinning and comments:** a version can carry a comment and be pinned. The retention job (ADR-0007) keeps every
+  published version, every pinned one and every one an entry points at (preview entries point at drafts), plus the last 50
   drafts and the drafts of the last 90 days.
 - **Concurrency:** every change to a form (save, publish, rename, move) raises `jfbForm.ConcurrencyVersion`. A save
   sends the value it read; a stale one gets `409 concurrency_conflict` with the current state.
