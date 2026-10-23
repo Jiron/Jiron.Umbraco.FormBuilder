@@ -1574,7 +1574,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - pattern safety.
   - **The public projection** and its hash.
   - Done when: unit tests cover every structural rule (aliases that differ only by case and option values that fold to the same text included), and a property-style test over generated definitions shows that the public projection never contains action settings, recipients or option-source configuration.
-- [ ] **4.3a The database gate and the form repositories** (4.3 split in six, WORKLOG 2026-10-23)
+- [x] **4.3a The database gate and the form repositories** (4.3 split in six, WORKLOG 2026-10-23) (2026-10-24, 067274a)
   - **The database** (D7, ADR-0007): every unit of work runs in its own Umbraco scope behind one async gate (port the pattern, §3.3). A write starts with a write; a unit the database turns away with a transient error runs again where that is safe. Paging, filtering and sorting happen in the database, and no repository reads and then writes in one transaction to change a state.
   - **One way to the database** (ADR-0007): Core opens no database connection of its own, because on SQLite a connection outside Umbraco's shared cache can hang Umbraco's own transactions (1.6).
   - **Repositories,** one per aggregate, all async: key-value, folders, forms with versions and the field catalogue, and settings.
