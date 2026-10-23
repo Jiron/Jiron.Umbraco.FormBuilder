@@ -1479,7 +1479,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the demo is never started any other way (the imaging-key lesson, §3.3);
     - `login` prints the URL and the credentials file path, never the password.
   - Done when: `scripts/demo.ps1 reset; scripts/demo.ps1 start` serves the home page in both languages, and Playwright logs into the backoffice with the generated credentials.
-- [ ] **3.4 Test projects and harness**
+- [ ] **3.4a Test projects and the Testing project**
+  - 3.4 was split into 3.4a, 3.4b and 3.4c on 2026-10-23: the .NET test projects, the vector runners and the browser harness are three harnesses, each with its own checks (WORKLOG).
   - **Unit:** NUnit 3 and NSubstitute.
   - Build the harness in the shape of the lessons file, part 2 (§3.3).
   - **Integration:** `Umbraco.Cms.Tests.Integration` 17.x, set up per Tandem's lessons (§3.3), with a sample test that boots Umbraco with Jiron Form Builder's composers.
@@ -1489,7 +1490,17 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - users and members factories;
     - a mail pickup reader;
     - the test-only endpoints (`/jfb-testing/…`), guarded to test hosts.
+  - Done when:
+    - `dotnet test` passes, with the integration sample test booting Umbraco with Jiron Form Builder's composers;
+    - a test proves that a host outside Development has no `/jfb-testing/` endpoint.
+- [ ] **3.4b Vector runners and the tables check**
   - **Vectors:** a runner that turns `tests/vectors/*.json` into NUnit cases and Vitest cases (the `jfb-vectors/1` format, one test case per vector, files read in place; ADR-0005), and the tables check: a script writes fold, clean and recomposition for every code point from the TypeScript side, and an NUnit test compares them, with known gaps listed exactly.
+  - **The logic they run:** the runners need the code they test, so port the spike's modules of 1.5 (text, exact decimals, calendar values, patterns, conditions and rules, calculations; ADR-0005) into Core and `packages/logic` as the start that 5.2 and 5.3 complete, and its vector file into `tests/vectors/` with the script that writes it as ASCII.
+  - Done when:
+    - both vector runners run the spike file of 1.5 with every case passing, and the tables check passes;
+    - `dotnet test` and the client's `npm test` pass.
+- [ ] **3.4c The browser harness**
+  - Build it in the shape of the lessons file, part 2 (§3.3).
   - **E2E:** Playwright Test, with Edge locally and Chromium in CI.
     - **Global setup:**
       - starts a fresh host on 5520 with its own database and mail folder, and waits for Umbraco's start-up work. The wait looks for a log marker that appears whether the Content Delivery API is on or off: Tandem's waited for "The Delivery API is not enabled", which 6.6 would make disappear;
@@ -1499,8 +1510,6 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - **Projects:** the ones of the lessons file, each added to the config together with its first spec (`smoke` now).
   - Done when:
     - `dotnet test` and `npx playwright test --project=smoke` pass;
-    - both vector runners run the spike file of 1.5 with every case passing, and the tables check passes;
-    - a test proves that a host outside Development has no `/jfb-testing/` endpoint;
     - a test of `support/host-health.ts` shows that a hung database writes the marker, and that the start-up wait ends with the Delivery API on and with it off.
 - [ ] **3.5 CI, the local CI mirror and phase review**
   - **`.github/workflows/ci.yml`** (ubuntu-latest):
