@@ -27,7 +27,7 @@ npx playwright test --project=smoke
 | Project | What it holds |
 | --- | --- |
 | `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, and the test-only endpoints on a real site. |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, and the schema and its migrations (`Persistence/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -72,6 +72,18 @@ A host turns these on in the `JironFormBuilderTesting` section; everything is of
 | `StubPort` | Starts the stub on that port (5560 for the browser tests' host), only in Development. |
 | `StartupMarker` | Logs `Jiron Form Builder test host: indexes rebuilt` after each rebuild of Umbraco's indexes. |
 | `UserGroups`, `Users`, `Members` | The people the host creates at start-up; their passwords come from the environment only. |
+
+## The schema tests
+
+`Tests.Integration/Persistence/` runs the migration plan on a fresh database per test and reads the schema back with
+queries of its own (`SchemaInspector`), comparing it with `ExpectedSchemaV1`, which is written out by hand from §4.5
+and [ADR-0033](../docs/decisions/0033-schema-v1.md). The same tests run against SQL Server in the `sqlserver` CI job.
+Two of them compare with files under review, and rewrite them when `JFB_UPDATE_SNAPSHOTS=1` is set (and then fail, so
+the diff gets read and committed):
+
+- `SchemaV1DdlTests`: the SQL Server statements of step 1, rendered without a server, in
+  `Persistence/schema-v1.sqlserver.sql`;
+- `DatabaseDocsTests`: the diagram in [docs/database.md](../docs/database.md).
 
 ## Writing tests
 

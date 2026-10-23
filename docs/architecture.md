@@ -141,7 +141,8 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
 
 Twenty-four tables with the prefix `jfb`, all times in UTC, created by the migration plan `Jiron.Umbraco.FormBuilder`
 ([§4.5](../ROADMAP.md#45-database-schema-v1-table-prefix-jfb-all-times-utc-guid-keys-for-anything-exposed) has the
-columns, [ADR-0003](decisions/0003-entry-storage.md) the entry storage). The diagram shows keys and links only;
+columns, [ADR-0003](decisions/0003-entry-storage.md) the entry storage). The diagram shows how the tables relate, by
+foreign key or by a key inside a definition; [database.md](database.md) has every column, index and foreign key.
 Umbraco's own tables (users, user groups, members, content) appear as one entity, `umbraco`.
 
 ```mermaid
@@ -175,139 +176,12 @@ erDiagram
   umbraco ||--o{ jfbSetting : "site roots scope"
   umbraco ||--o{ jfbReference : "content uses"
   umbraco ||--o{ jfbAuditEntry : "users act in"
-  jfbKeyValue {
-    string Key PK
-  }
-  jfbFolder {
-    int Id PK
-    guid Key UK
-    int ParentId FK
-    bool IsRestricted
-  }
-  jfbForm {
-    int Id PK
-    guid Key UK
-    string Alias UK
-    int FolderId FK
-    int DraftVersionId FK
-    int PublishedVersionId FK
-    int PublicRevision
-    bool IsRestricted
-  }
-  jfbFormVersion {
-    int Id PK
-    int FormId FK
-    int Number
-    string Kind
-    int PublicRevision
-  }
-  jfbFormField {
-    int Id PK
-    int FormId FK
-    guid FieldKey
-  }
-  jfbEntry {
-    bigint Id PK
-    guid Key UK
-    int FormId FK
-    int FormVersionId FK
-    int Number
-    string State
-  }
-  jfbEntryValue {
-    bigint Id PK
-    bigint EntryId FK
-    int FieldId FK
-    int FileId FK
-  }
-  jfbEntryFile {
-    int Id PK
-    guid Key UK
-    bigint EntryId FK
-  }
-  jfbConsentText {
-    string Hash PK
-  }
-  jfbEntryEvent {
-    bigint Id PK
-    bigint EntryId FK
-  }
-  jfbEntryNote {
-    int Id PK
-    bigint EntryId FK
-  }
-  jfbActionRun {
-    bigint Id PK
-    bigint EntryId FK
-    int Seq
-    string State
-    string LockedBy
-  }
-  jfbEmail {
-    bigint Id PK
-    bigint EntryId FK
-    bigint ActionRunId FK
-    string State
-    string LockedBy
-  }
-  jfbOptionList {
-    int Id PK
-    guid Key UK
-  }
-  jfbTheme {
-    int Id PK
-    guid Key UK
-  }
-  jfbEmailLayout {
-    int Id PK
-    guid Key UK
-  }
-  jfbFormTemplate {
-    int Id PK
-    guid Key UK
-  }
-  jfbOptionCapacity {
-    int FormId PK
-    guid FieldKey PK
-    string OptionValue PK
-  }
-  jfbUserSetting {
-    guid UserKey PK
-    string Name PK
-  }
-  jfbPermission {
-    int Id PK
-    guid UserGroupKey
-    string TargetType
-    guid TargetKey
-  }
-  jfbSetting {
-    int Id PK
-    string Scope
-    string Section
-  }
-  jfbReference {
-    int FormId PK
-    guid ContentKey PK
-    string PropertyAlias PK
-    string Culture PK
-  }
-  jfbAuditEntry {
-    bigint Id PK
-    guid EntityKey
-  }
-  jfbDailyStat {
-    date Day PK
-    int FormId PK
-    string Metric PK
-    string Dimension PK
-  }
 ```
 
 Links to option lists, layouts and templates are by key, and to themes by alias, inside definitions and settings, not
 foreign keys. The rules every table follows (no NULL in keys, times on each database, atomic counters, the entry query
-shapes) are in §4.5 and [ADR-0003](decisions/0003-entry-storage.md); `docs/database.md` (4.1) gets the full diagram
-with every column, kept in sync with the DTOs by a test.
+shapes) are in §4.5, [ADR-0003](decisions/0003-entry-storage.md) and [ADR-0033](decisions/0033-schema-v1.md), and
+[database.md](database.md) explains each table.
 
 ## 4. How a submission flows
 
