@@ -1,6 +1,7 @@
 # 0011. Testing strategy
 
-- Status: accepted; the permission matrix (`403` and `404`) amended in 1.8
+- Status: accepted; the permission matrix (`403` and `404`) amended in 1.8; the start-up marker, the stub inside the
+  host and the static site with 6.6 amended in 3.4c (ADR-0031)
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 3.4 (the harness) and 3.5 (CI and the gate), extended by every later step
 
@@ -89,7 +90,8 @@ integration project of its own.
 
 - **The host:** a fresh demo build on 5520 with its own content root under `.local/e2e/host-5520/` (database, mail
   folder, log), on the test clock. The global set-up waits for Umbraco's start-up work with a marker that appears
-  whether the Content Delivery API is on or off (3.4), and starts the static site on 5521 and the stub on 5560.
+  whether the Content Delivery API is on or off (3.4, ADR-0031). The stub on 5560 runs inside the host (ADR-0029), and
+  the set-up starts the static site on 5521 from 6.6 on, with its first spec.
 - **Users:** passwords are new for every run and live only in `.local/credentials.json` and the host's environment.
   Sign-ins and password resets run one at a time across workers (a lock directory with PID takeover), because parallel
   sign-ins hang SQLite. Tests read only the error section of Playwright's error context, which can hold typed values.
