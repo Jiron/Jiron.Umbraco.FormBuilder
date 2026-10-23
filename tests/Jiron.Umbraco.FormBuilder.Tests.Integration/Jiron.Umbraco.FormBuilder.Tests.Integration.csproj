@@ -2,8 +2,12 @@
 
   <!--
     Integration tests on a real Umbraco (ADR-0011): Umbraco.Cms.Tests.Integration 17.x, SQLite here and SQL Server in
-    CI. The test SDK, adapter and coverlet come from tests/Directory.Build.props; 3.4 adds the harness in the shape of
-    Tandem's lessons (§3.3).
+    CI (Tests__Database__DatabaseType=SqlServer plus Tests__Database__SQLServerMasterConnectionString). The test SDK,
+    adapter and coverlet come from tests/Directory.Build.props. The harness follows Tandem's lessons (section 3.3):
+    - this project has its own appsettings.Tests.json (the package's copy is not copied to the output), with unattended
+      package migrations off, so a pending plan cannot hang the test host, and ModelsBuilder off;
+    - run it with dotnet test and a blame hang timeout of 10 minutes (CONTRIBUTING), so a hanging test is named
+      instead of stalling the gate.
   -->
   <PropertyGroup>
     <!-- It runs a whole Umbraco site, so the host-only audit entries apply (NuGetAudit.props, ADR-0024). -->
@@ -15,9 +19,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The meta package, as sites install it. -->
+    <!-- The meta package, as sites install it: the test server validates the whole container. -->
     <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder\Jiron.Umbraco.FormBuilder.csproj" />
     <ProjectReference Include="..\Jiron.Umbraco.FormBuilder.Testing\Jiron.Umbraco.FormBuilder.Testing.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="appsettings.Tests.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!--
+    UmbracoTestServerTestBase uses WebApplicationFactory<UmbracoTestServerTestBase>, which insists on the deps file of
+    Umbraco's own test assembly (Umbraco.Tests.Integration.deps.json). This project's deps file describes the same test
+    host, so it is copied under that name.
+  -->
+  <Target Name="JfbTestServerDepsFile" AfterTargets="Build">
+    <Copy SourceFiles="$(ProjectDepsFilePath)" DestinationFiles="$(OutDir)Umbraco.Tests.Integration.deps.json" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

@@ -29,6 +29,8 @@
 **/umbraco/Logs/
 **/umbraco/mediacache/
 **/wwwroot/media/
+# Umbraco.Cms.Tests.Integration works in TEMP/ under the test project (test databases, media).
+tests/**/TEMP/
 
 # =====================================================================
 # Build and test output
