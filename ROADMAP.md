@@ -1328,7 +1328,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
   - Done when:
     - an integration test shows that a 60 MB upload to a 50 MB limit is cut off without buffering, that a renamed `.exe` is refused, and that the stored file cannot be fetched by URL;
     - the same test shows the download working for an authorised backoffice user and refused (`401` or `403`) for an anonymous caller and a user without access.
-- [ ] **1.5 Spike: one logic, two runtimes**
+- [x] **1.5 Spike: one logic, two runtimes** (2026-10-23, 106a893)
   - Write a minimal rules evaluator in C# and TypeScript, with 40 vectors in one JSON file run by NUnit and by Vitest.
   - **Decide:**
     - the vector format;
