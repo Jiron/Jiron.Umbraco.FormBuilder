@@ -380,6 +380,7 @@ Read the file in full in 1.1, and look up the parts a step touches before starti
 - **Files** (decided in 1.4b, ADR-0006): Umbraco's `IFileSystem` writes synchronously, and Kestrel refuses synchronous reads of a request body, so Jiron Form Builder stores files through its own asynchronous `IFormBuilderFileStore`. Umbraco's official Azure Blob provider (`Umbraco.StorageProviders.AzureBlob`, 17.1.0 for 17) registers named containers with `AddAzureBlobFileSystem(name, configure)`, settings in `Umbraco:Storage:AzureBlob:{name}`, and `IAzureBlobFileSystemProvider.GetFileSystem(name).GetBlobClient(path)` gives the SDK's asynchronous client, which a blob store uses (the 15.2 sample). Without `ContainerRootPath` the provider prefixes every blob name with the virtual path; the plain registration serves nothing.
 - **Umbraco reads the form of every form post while routing** (found in 1.4b): its `EagerMatcherPolicy` applies to every endpoint and, when more than one matches a path (its content route always does), looks for `ufprt` in `Request.Form`. That reads a multipart body in full (64 KB in memory, the rest in the ASP.NET temp folder) before any action, for controllers outside `/umbraco` too, and adding the path to `ReservedPaths` does not prevent it. A middleware before routing (an Umbraco pipeline filter) that gives the request an `IFormFeature` with no form content does. Umbraco sets Kestrel's body limit and the multipart limit from `Umbraco:CMS:Runtime:MaxRequestLength` (in KB; by default 52,428,800 bytes and unlimited).
 - **Section access in code** (found in 1.4b): Umbraco's section requirement is internal and the allowed-applications claim is obsolete in 17 (`CS0618`), so a requirement handler reads `IUser.AllowedSections` through `IAuthorizationHelper.TryGetUmbracoUser`. Authorization handlers are singletons: a scoped one fails start-up scope validation, because Umbraco's singleton event authorizers consume `IAuthorizationService`.
+- **Text and time zones in .NET** (found in 1.5, ADR-0005): on Windows, .NET takes casing from the host's ICU and character data from its own tables, so letters added in recent Unicode versions case differently from host to host, and its invariant casing leaves U+0130 and U+0131 as they are. `string.Normalize` throws for U+FFFE, and `System.Text.Json` throws `InvalidOperationException` when it reads an escaped lone surrogate. `TimeZoneInfo.FindSystemTimeZoneById` resolves IANA ids on Windows through ICU. With invariant globalization, normalisation does nothing and IANA ids are not found on Windows.
 - **Health checks:** classes with `[HealthCheck]` appear on the Settings › Health Check dashboard, grouped by `Group` (confirmed in 1.2b). A status's action runs at once, without a confirmation, so only safe, repeatable actions go there. Messages are server strings that Umbraco shows as written.
 - **Webhooks** (confirmed in 1.2b): an event class derives from `WebhookEventBase<TNotification>` with `[WebhookEvent(name, Constants.WebhookEvents.Types.Other)]` and is registered with `builder.AddWebhookEvent<T>()`; publishing the notification queues the request. A distributed job sends it (every 10 s by default) with the header `Umb-Webhook-Event: <alias>` and our payload as the body.
 - **Localization** (confirmed in 1.2b): one `localization` manifest per culture (`en`, `de`); a regional culture such as `de-de` falls back to the language file. The global search tab label and server strings (health checks, webhook event names) are shown as written.
@@ -671,14 +672,15 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
     - `isChecked`, `isNotChecked`;
     - `countAtLeast`, `countAtMost` (multi-choice and files);
     - `matches` (a safe pattern).
+  - **How values compare** (ADR-0005): answers are cleaned (lone surrogates and noncharacters replaced, NFC, an explicit whitespace list trimmed) and empty ones dropped. Text compares without case, folded one character at a time in the Latin, Greek, Cyrillic and Armenian blocks and the full-width Latin letters (other scripts compare exactly, because runtimes case their new letters differently); option keys compare exactly; numbers and dates compare by value, and an invalid value never matches. `equals` and `isOneOf` look for some answer, comparisons take the first answer, bounds are inclusive, and every negation is the exact opposite.
   - **What rules apply to:** fields, groups, pages, actions, outcomes and form-level validation rules.
   - **Hidden means gone:** a hidden field is never required, never validated and never stored, and the server strips it even if posted. A rule that depends on a hidden field sees it as empty.
-  - **Saving refuses** cycles and rules that point at missing fields.
+  - **Saving refuses** cycles and rules that point at missing fields, and any condition that fails the check both runtimes run before they evaluate (ADR-0005): unknown operators, an operator the field's kind does not take, a malformed operand and an unsafe pattern.
 - **Validation kinds:**
   - `required`, `minLength`/`maxLength`, `min`/`max`, `pattern`, `format`;
   - `dateWindow`, `matchesField`, `uniquePerForm`, `fileTypes`/`fileSize`/`fileCount`, `selections`;
   - plus form-level validation rules ("show this message on field X when the rule matches").
-  - Patterns run with `RegexOptions.NonBacktracking` and a timeout on the server, and saving refuses patterns that the non-backtracking engine cannot run.
+  - **Patterns** run on Jiron Form Builder's own matcher in both runtimes, never on a regular-expression engine (ADR-0005): a small subset of the usual syntax, parsed and compiled to an automaton that reads code points in time linear in the value's length, so no pattern can hang a browser or a server. A pattern matches the whole value and is case-sensitive; saving refuses anything outside the subset and its limits.
 - **Merge tags:** `{{ source.path | filter: arg }}`.
   - **Sources:**
     - `field.<alias>`, `field.<alias>.label`;
@@ -691,8 +693,9 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - **Escaping:** output is HTML-escaped in HTML contexts, URL-encoded in URL contexts and JSON-escaped in JSON contexts. Unknown tags render empty and raise a form-check warning.
   - **Answer recall:** visitor texts (labels, help texts, text blocks, page titles and outcome messages) may use `field.<alias>` of a field above them or on an earlier page ("Thanks, Anna. Where should we send the quote?"). The runtime updates them as the visitor types, the server renders the same text for no-JS posts and the summary page, and a hidden field resolves empty. A text that names a later field is a form-check error.
   - Developers add sources and filters through `IFormBuilderMergeTagSource` and `IFormBuilderMergeTagFilter`.
-- **Calculations:** a tiny expression language (numbers, field references, `+ - * / ( )`, `min`, `max`, `round`, `if`, and `daysBetween`, `yearsBetween` over date fields in the site's time zone), parsed into a tree. It has no evaluation of arbitrary code and no reflection. The server recomputes every calculation, and its result is stored.
-- **Shared test vectors:** `tests/vectors/rules.json`, `validation.json`, `merge-tags.json` and `calculations.json` are run by NUnit against Core and by Vitest against `packages/logic`. A case that passes in one runtime and fails in the other fails CI.
+- **Calculations:** a tiny expression language (numbers, field references, `+ - * / ( )`, `min`, `max`, `round`, `if`, and `daysBetween`, `yearsBetween` over date fields in the site's time zone), parsed into a tree. It has no evaluation of arbitrary code and no reflection. The server recomputes every calculation, and its result is stored. Numbers are exact decimals in both runtimes: division keeps 20 places and `round` rounds half away from zero (ADR-0005).
+- **Wire forms** (ADR-0005): invariant and strict. Numbers have an optional minus, no leading zeros, no exponent and no culture; dates are `YYYY-MM-DD`, times `HH:mm(:ss)`, date-times local wall-clock `YYYY-MM-DDTHH:mm(:ss)`; a checked checkbox is "true". "Today" is the local date of the injected instant in the site's time zone.
+- **Shared test vectors:** `tests/vectors/rules.json`, `validation.json`, `merge-tags.json` and `calculations.json` are run by NUnit against Core and by Vitest against `packages/logic`, in the `jfb-vectors/1` format of ADR-0005. A case that passes in one runtime and fails in the other fails CI. A tables check compares fold, clean and recomposition between the runtimes for every code point.
 
 #### 4.3.4 Form settings (grouped as they appear in the UI)
 
@@ -885,7 +888,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 - **General:**
   - default theme, the required-marker style, default labels;
   - new-form defaults (consent field, notify-the-creator action);
-  - per site: the base URL and the **time zone** (an IANA id, used for "today", opening dates and relative dates).
+  - per site: the base URL and the **time zone** (an IANA id, used for "today", opening dates and relative dates; saving refuses an id the server cannot resolve, ADR-0005).
 - **Email** (per site):
   - sender name and address;
   - default layout;
@@ -1455,7 +1458,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - users and members factories;
     - a mail pickup reader;
     - the test-only endpoints (`/jfb-testing/…`), guarded to test hosts.
-  - **Vectors:** a runner that turns `tests/vectors/*.json` into NUnit cases and Vitest cases.
+  - **Vectors:** a runner that turns `tests/vectors/*.json` into NUnit cases and Vitest cases (the `jfb-vectors/1` format, one test case per vector, files read in place; ADR-0005), and the tables check: a script writes fold, clean and recomposition for every code point from the TypeScript side, and an NUnit test compares them, with known gaps listed exactly.
   - **E2E:** Playwright Test, with Edge locally and Chromium in CI.
     - **Global setup:**
       - starts a fresh host on 5520 with its own database and mail folder, and waits for Umbraco's start-up work. The wait looks for a log marker that appears whether the Content Delivery API is on or off: Tandem's waited for "The Delivery API is not enabled", which 6.6 would make disappear;
@@ -1465,6 +1468,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - **Projects:** the ones of the lessons file, each added to the config together with its first spec (`smoke` now).
   - Done when:
     - `dotnet test` and `npx playwright test --project=smoke` pass;
+    - both vector runners run the spike file of 1.5 with every case passing, and the tables check passes;
     - a test proves that a host outside Development has no `/jfb-testing/` endpoint;
     - a test of `support/host-health.ts` shows that a hung database writes the marker, and that the start-up wait ends with the Delivery API on and with it off.
 - [ ] **3.5 CI, the local CI mirror and phase review**
@@ -1522,6 +1526,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [ ] **4.3 Repositories, the file store, the audit log and stats**
   - One repository per aggregate (forms with versions and the field catalogue, folders, entries with values and files, events and notes, action runs, emails, option lists, themes, layouts, templates, settings, permissions, audit, stats, key-value).
   - All async, inside Umbraco scopes, through the database gate (D7). Paging, filtering and sorting happen in the database.
+  - **Text keys:** `jfbEntryValue.TextKey` is the value cleaned and folded as rules compare text (ADR-0005), so the entries screen filters as rules decide.
   - **The entries query builder** turns typed field filters into SQL against `jfbEntryValue`, using only the shapes of ADR-0003 (`IN` subqueries, keyset paging, the value-index walk for a sort by a value, one-pass search with a count up to 1,000) under the per-statement time budget.
   - **The file store:** the physical `IFormBuilderFileStore` per ADR-0006, in a folder that is not web-accessible. Uploads arrive in 6.1, hardening in 7.3.
   - **The audit log and daily stats:** port the pattern (§3.3).
@@ -1529,12 +1534,14 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - integration tests cover CRUD for each repository, concurrency conflicts on forms and settings, **unique entry numbers under 50 parallel inserts**, every filter kind (with the correctness cases of 1.3), and storing, reading and deleting files, with a failed or cut-off save leaving nothing behind (ADR-0006);
     - on SQLite, `EXPLAIN QUERY PLAN` tests show every shape of the query builder on its index, with and without planner statistics: no `SCAN` of `jfbEntryValue` and no temporary b-tree for a sort by a value (ADR-0003);
     - a statement past its time budget is interrupted and answered with `query_timeout`, and a submission made meanwhile still succeeds; a search with more than 1,000 matches reports "more than 1,000";
-    - tests prove there are no field values in audit details, and that counters are correct under parallel increments.
+    - tests prove there are no field values in audit details, and that counters are correct under parallel increments;
+    - a unit test shows `TextKey` folding as the rule vectors of 1.5 compare (the Turkish i's, final sigma, no folding outside the folded blocks).
 - [ ] **4.4 The settings framework** (port the pattern, §3.3)
   - **Model:** typed sections (§4.8) with defaults, validators and JSON schema versions with migrations, plus global and per-site scope.
   - **Host options:** bound and validated at start (`ValidateOnStart`); locks win over the backoffice, including `Designer:SettingLocks`.
   - **Runtime:** a cached reader invalidated by a cache refresher, and a `SettingsSaved` notification. Ship a JSON schema for `appsettings` IntelliSense (with a `!` exception in `.gitignore`), and test that its `$ref`s resolve from the file itself (Tandem's first one resolved them from the options class, Tandem 11.1b).
-  - Done when: unit tests cover every validator and default; migrating an old payload works; a lock overrides the backoffice value; an invalid host config fails start-up with a clear message.
+  - **Globalization** (ADR-0005): start-up refuses invariant globalization, which turns normalisation off and loses IANA time zones on Windows; saving a time zone the server cannot resolve is refused.
+  - Done when: unit tests cover every validator and default; migrating an old payload works; a lock overrides the backoffice value; an invalid host config fails start-up with a clear message; a site with invariant globalization fails start-up with a clear message, and an unknown time zone cannot be saved.
 - [ ] **4.5 The form service**
   - **Create:**
     - from blank, with the configured new-form defaults;
@@ -1592,25 +1599,25 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when: unit tests pass, including a custom type registered by a test composer and a type removed from the collection.
 - [ ] **5.2 Rules and validation engines** (C# and `packages/logic`)
   - Implement §4.3.3 in both runtimes, with form-level validation rules and the "hidden means gone" propagation (a field hidden because its group or page is hidden).
-  - **Vectors (≥ 300 cases):**
+  - **Vectors (≥ 300 cases),** starting from the 163 of 1.5 (ADR-0005):
     - every operator against every storage kind;
     - empty and unchecked values, and multi-values;
     - relative dates with an injected "today" in two time zones;
     - nested groups and hidden propagation;
     - the `require` effect, conditions that compare two answers, context conditions (culture, member, query value, today) and switched-off rules.
-  - Done when: both runtimes pass every vector, and a scripted mutation check flips each TypeScript operator in turn and shows at least one failing vector for each.
+  - Done when: both runtimes pass every vector, and a scripted mutation check flips each TypeScript operator in turn and shows at least one failing vector for each. The mutation check also covers the text, decimal, date and pattern modules in TypeScript and the parts where .NET differs in C# (the Turkish i's, noncharacters, the folded blocks); every survivor is either written down as an equivalent change or killed by a new vector. The tables check passes.
 - [ ] **5.3 Merge tags and calculations** (C# and `packages/logic`)
-  - Implement the sources, filters and escaping contexts of §4.3.3, plus unknown-tag handling and the calculation parser and evaluator, with no `eval`, no reflection and documented rounding.
+  - Implement the sources, filters and escaping contexts of §4.3.3, plus unknown-tag handling and the calculation parser and evaluator, with no `eval`, no reflection and documented rounding (the exact decimals of ADR-0005: division to 20 places and `round` half away from zero, `out_of_range` past 60 digits).
   - **Also:** answer recall (only fields above the text or on earlier pages, hidden fields empty), `entry.reference`, and the date functions `daysBetween` and `yearsBetween` (leap days and a daylight-saving change in the vectors).
   - Done when:
-    - the vectors pass in both runtimes, including answer recall and the date functions;
+    - the vectors pass in both runtimes, including answer recall, the date functions, and division and rounding at their edges (thirds, halves, negative halves, division by zero, out of range);
     - a fuzz test of 10,000 random templates and formulas never throws an unhandled exception and never takes longer than 50 ms per input;
     - an injection test shows that merge tags cannot produce HTML, URL or JSON breakouts.
 - [ ] **5.4 Field types (server side)** (server side)
   - Implement the types of §4.3.2 from Text to Country: parsing, validation, storage, "Other" options, consent text hashing into `jfbConsentText`, and country names from .NET culture data.
     - **Grid and ranking** (added in 1.1): each grid row has its own key and is stored like a child field (`ParentFieldKey` = the grid, §4.5), so it filters, sorts and exports like any field; a ranking stores one value per position (`ValueIndex`). With the required-rows rule and unique positions.
     - **Smaller settings:** word limits, excluded dates, the camera option on file fields, and place limits on options (the counting itself comes with the pipeline in 6.1).
-    - **Numbers** accept at most 15 significant digits, so the stored double is exact (ADR-0003); a unit test refuses a 16-digit number with its own message.
+    - **Numbers** accept at most 15 significant digits, so the stored double is exact (ADR-0003): at most 15 digits in all, leading zeros not counted, and at most 15 after the point (ADR-0005). A unit test refuses a 16-digit number with its own message, and another a number with 16 places. The value of a no-JS `<input type="number">`, which may use an exponent, is converted exactly to the wire form before the limits apply.
   - **Advanced fields:**
     - **Files and signatures:** file (linking upload tokens) and signature (PNG checks on size, dimensions and magic number).
     - **Composite:** name, address, and repeater (rows, limits, per-row validation).
@@ -1644,7 +1651,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - **Places on options** (§4.4): taken in the transaction, given back on reject, spam, delete and erase.
     - **Empty submissions are refused:** a submission with no answer at all fails validation with a form-level message.
     - **Values kept only until the actions have run** are stored only when an action run applies (§4.4; their deletion comes with the processor in 8.1).
-  - Done when: integration tests cover each endpoint built here for success; validation errors by alias; a replayed submission returning the same receipt and a changed one returning `409`; `form_changed`, `form_closed` and the entry limit; CORS allowed and denied; oversize bodies. The upload test of 1.4b is ported, with the ASP.NET temp folder watched: a 60 MB upload to a 50 MB field is cut off with nothing buffered, a renamed `.exe` is refused on its first bytes with nothing stored, and a declared length over the limit is refused before a byte is read. They also cover 50 parallel submissions for the last 10 places of an option (exactly 10 accepted), a rejected entry giving its place back, and an empty submission refused.
+  - Done when: integration tests cover each endpoint built here for success; validation errors by alias; a replayed submission returning the same receipt and a changed one returning `409`; `form_changed`, `form_closed` and the entry limit; CORS allowed and denied; oversize bodies. The upload test of 1.4b is ported, with the ASP.NET temp folder watched: a 60 MB upload to a 50 MB field is cut off with nothing buffered, a renamed `.exe` is refused on its first bytes with nothing stored, and a declared length over the limit is refused before a byte is read. They also cover 50 parallel submissions for the last 10 places of an option (exactly 10 accepted), a rejected entry giving its place back, and an empty submission refused. A JSON body with an escaped lone surrogate answers `400`, not `500` (ADR-0005).
 - [ ] **6.2 Razor rendering**
   - **Rendering:**
     - the view component and tag helpers (`<jfb-render>`, `<jfb-assets>`, included once per page automatically unless turned off), with the nonce option (`<jfb-assets nonce>` and `IFormBuilderCspNonceProvider`, ADR-0004);
@@ -1678,7 +1685,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before styling the themes (ADR-0019, ADR-0020).
   - Done when: Playwright screenshots of a kitchen-sink form (every field type) per theme at 375 and 1440 px, and once with `dir="rtl"`, are reviewed in `docs/ux/review-6.3.md`, which has a section per skill with its output and findings; axe is clean; the CSS is within budget; a lint check refuses physical `left`/`right` properties in the theme CSS.
 - [ ] **6.4 The website runtime**
-  - **Validation and rules:** progressive enhancement, plus client validation and rules from `packages/logic`.
+  - **Validation and rules:** progressive enhancement, plus client validation and rules from `packages/logic`. Values are cleaned with the same functions before they are sent, and numbers sent in the wire form (ADR-0005).
     - **Messages:** English and German now; 14.2 adds the other five languages.
     - **Delivery:** one small file per language, loaded for the page's culture only, to keep the §4.12 budget.
   - **Live calculations and answer recall:** texts that use earlier answers update as the visitor types (§4.3.3).
