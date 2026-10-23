@@ -1341,7 +1341,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
     - number semantics (C# `decimal` against JS numbers) and the rounding rules for calculations. Stored numbers keep at most 15 significant digits (ADR-0003).
   - Write ADR-0005 "Shared logic and test vectors".
   - Done when: `dotnet test` and `npx vitest run` in the sandbox run the same vector file, and a deliberately broken TypeScript operator makes the TypeScript suite fail (shown, then reverted).
-- [ ] **1.6 Spike: background work and email**
+- [x] **1.6 Spike: background work and email** (2026-10-23, 86d24fb)
   - Write a distributed job with leases, and an in-process "kick" after commit through a bounded channel.
   - Simulate two servers on one database: SQLite cannot be shared reliably, so simulate the second processor in-process, and note the real two-host check, which 8.1 adds to CI.
   - Send through `IEmailSender` to a pickup folder, gated by `CanSendRequiredEmail()`.
