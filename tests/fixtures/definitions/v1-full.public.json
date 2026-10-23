@@ -1,0 +1,538 @@
+{
+  "key": "f0000000-0000-4000-8000-000000000001",
+  "settings": {
+    "submitLabel": {
+      "": "Send registration",
+      "de": "Anmeldung senden",
+      "de-CH": "Anmeldung abschicken"
+    },
+    "nextLabel": {
+      "": "Next"
+    },
+    "backLabel": {
+      "": "Back"
+    },
+    "summaryPage": true,
+    "progress": "bar",
+    "resume": true,
+    "closedMessage": {
+      "": "<p>Registration has closed.</p>",
+      "fr": "<p>Les inscriptions sont closes.</p>"
+    },
+    "membersOnly": true,
+    "protection": "captcha",
+    "captchaProvider": "hcaptcha",
+    "theme": "conference",
+    "requiredMarker": "optional",
+    "validationSummary": false,
+    "choiceLayout": "cards",
+    "cssClass": "registration-form",
+    "queryValues": [
+      "utm_source",
+      "ref",
+      "name"
+    ]
+  },
+  "pages": [
+    {
+      "key": "10000000-0000-4000-8000-000000000001",
+      "title": {
+        "": "Your details",
+        "de": "Ihre Angaben"
+      },
+      "description": {
+        "": "<p>We need a few details.</p>"
+      },
+      "groups": [
+        {
+          "key": "20000000-0000-4000-8000-000000000001",
+          "title": {
+            "": "Contact"
+          },
+          "description": {
+            "": "<p>How we reach you.</p>"
+          },
+          "columns": 2,
+          "style": "card",
+          "fields": [
+            {
+              "key": "30000000-0000-4000-8000-000000000001",
+              "type": "text",
+              "alias": "name",
+              "span": 2,
+              "label": {
+                "": "Name",
+                "de": "Name"
+              },
+              "hideLabel": false,
+              "help": {
+                "": "As it should appear on your badge.\nFirst and last name."
+              },
+              "placeholder": {
+                "": "Anna Müller"
+              },
+              "required": true,
+              "messages": {
+                "required": {
+                  "": "Please tell us your name."
+                },
+                "maxLength": {
+                  "": "That name is too long."
+                }
+              },
+              "defaultValue": "{{ member.name }}",
+              "prefill": {
+                "query": "name",
+                "fromMember": true,
+                "memberMode": "hide"
+              },
+              "autocomplete": "name",
+              "cssClass": "badge-name",
+              "validation": [
+                {
+                  "kind": "pattern",
+                  "pattern": "[A-Za-z ]+",
+                  "message": {
+                    "": "Letters only."
+                  }
+                }
+              ],
+              "rules": [
+                {
+                  "key": "40000000-0000-4000-8000-000000000002",
+                  "effect": "require",
+                  "match": "all",
+                  "conditions": [
+                    {
+                      "field": "30000000-0000-4000-8000-000000000002",
+                      "op": "isNotEmpty"
+                    }
+                  ]
+                }
+              ],
+              "settings": {
+                "counter": true,
+                "maxLength": 80
+              }
+            },
+            {
+              "key": "30000000-0000-4000-8000-000000000002",
+              "type": "email",
+              "alias": "email",
+              "span": 1,
+              "label": {
+                "": "Email"
+              },
+              "hideLabel": true,
+              "required": true,
+              "autocomplete": "email",
+              "validation": [
+                {
+                  "kind": "uniquePerForm",
+                  "message": {
+                    "": "You are already registered."
+                  }
+                }
+              ],
+              "settings": {
+                "confirm": true,
+                "confirmLabel": {
+                  "": "Email again"
+                }
+              }
+            },
+            {
+              "key": "30000000-0000-4000-8000-000000000003",
+              "type": "email",
+              "alias": "confirmEmail",
+              "span": 1,
+              "label": {
+                "": "Email again"
+              },
+              "hideLabel": false,
+              "required": false,
+              "validation": [
+                {
+                  "kind": "matchesField",
+                  "field": "30000000-0000-4000-8000-000000000002",
+                  "message": {
+                    "": "The addresses differ."
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "key": "20000000-0000-4000-8000-000000000002",
+          "columns": 1,
+          "style": "plain",
+          "fields": [
+            {
+              "key": "30000000-0000-4000-8000-000000000004",
+              "type": "radio",
+              "alias": "ticket",
+              "span": 1,
+              "label": {
+                "": "Ticket"
+              },
+              "hideLabel": false,
+              "required": true,
+              "rules": [
+                {
+                  "key": "40000000-0000-4000-8000-000000000003",
+                  "effect": "show",
+                  "match": "all",
+                  "conditions": [
+                    {
+                      "field": "30000000-0000-4000-8000-000000000001",
+                      "op": "isNotEmpty"
+                    }
+                  ]
+                }
+              ],
+              "options": {
+                "items": [
+                  {
+                    "value": "standard",
+                    "label": {
+                      "": "Standard"
+                    },
+                    "description": {
+                      "": "Talks and lunch."
+                    },
+                    "image": "71000000-0000-4000-8000-000000000001"
+                  },
+                  {
+                    "value": "workshop",
+                    "label": {
+                      "": "Workshop day"
+                    }
+                  },
+                  {
+                    "value": "Café-Paß",
+                    "label": {
+                      "": "Café & Paß 🎟",
+                      "ja": "カフェ"
+                    }
+                  }
+                ],
+                "fromSource": false
+              }
+            },
+            {
+              "key": "30000000-0000-4000-8000-000000000005",
+              "type": "checkboxes",
+              "alias": "sessions",
+              "span": 1,
+              "label": {
+                "": "Sessions"
+              },
+              "hideLabel": false,
+              "required": false,
+              "defaultValue": [
+                "keynote",
+                "panel"
+              ],
+              "options": {
+                "fromSource": true,
+                "parent": "30000000-0000-4000-8000-000000000004"
+              },
+              "settings": {
+                "maxSelections": 3,
+                "minSelections": 1
+              }
+            },
+            {
+              "key": "30000000-0000-4000-8000-000000000006",
+              "type": "dropdown",
+              "alias": "country",
+              "span": 1,
+              "label": {
+                "": "Country"
+              },
+              "hideLabel": false,
+              "required": false,
+              "autocomplete": "country",
+              "options": {
+                "fromSource": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "10000000-0000-4000-8000-000000000002",
+      "title": {
+        "": "Your stay"
+      },
+      "rules": [
+        {
+          "key": "40000000-0000-4000-8000-000000000004",
+          "effect": "show",
+          "match": "any",
+          "conditions": [
+            {
+              "field": "30000000-0000-4000-8000-000000000004",
+              "op": "equals",
+              "value": "workshop"
+            },
+            {
+              "match": "all",
+              "conditions": [
+                {
+                  "context": "query.ref",
+                  "op": "startsWith",
+                  "value": "partner"
+                },
+                {
+                  "context": "today",
+                  "op": "lessThan",
+                  "value": {
+                    "today": "+30d"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "key": "20000000-0000-4000-8000-000000000003",
+          "columns": 3,
+          "style": "plain",
+          "fields": [
+            {
+              "key": "30000000-0000-4000-8000-000000000007",
+              "type": "date",
+              "alias": "arrival",
+              "span": 1,
+              "label": {
+                "": "Arrival"
+              },
+              "hideLabel": false,
+              "required": false,
+              "settings": {
+                "min": {
+                  "today": "+1d"
+                },
+                "weekdaysOnly": true
+              }
+            },
+            {
+              "key": "30000000-0000-4000-8000-000000000008",
+              "type": "date",
+              "alias": "departure",
+              "span": 1,
+              "label": {
+                "": "Departure"
+              },
+              "hideLabel": false,
+              "required": false,
+              "rules": [
+                {
+                  "key": "40000000-0000-4000-8000-000000000005",
+                  "effect": "require",
+                  "match": "all",
+                  "conditions": [
+                    {
+                      "field": "30000000-0000-4000-8000-000000000007",
+                      "op": "isNotEmpty"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "key": "30000000-0000-4000-8000-000000000009",
+              "type": "grid",
+              "alias": "satisfaction",
+              "span": 3,
+              "label": {
+                "": "How was it?"
+              },
+              "hideLabel": false,
+              "required": false,
+              "options": {
+                "items": [
+                  {
+                    "value": "1",
+                    "label": {
+                      "": "Poor"
+                    }
+                  },
+                  {
+                    "value": "2",
+                    "label": {
+                      "": "Good"
+                    }
+                  }
+                ],
+                "fromSource": false
+              },
+              "rows": [
+                {
+                  "key": "31000000-0000-4000-8000-000000000001",
+                  "label": {
+                    "": "Venue"
+                  },
+                  "required": true
+                },
+                {
+                  "key": "31000000-0000-4000-8000-000000000002",
+                  "label": {
+                    "": "Food"
+                  },
+                  "required": false
+                }
+              ],
+              "settings": {
+                "multiple": false
+              }
+            },
+            {
+              "key": "30000000-0000-4000-8000-00000000000a",
+              "type": "repeater",
+              "alias": "guests",
+              "span": 3,
+              "label": {
+                "": "Guests"
+              },
+              "hideLabel": false,
+              "required": false,
+              "fields": [
+                {
+                  "key": "30000000-0000-4000-8000-00000000000b",
+                  "type": "text",
+                  "alias": "guestName",
+                  "span": 2,
+                  "label": {
+                    "": "Guest name"
+                  },
+                  "hideLabel": false,
+                  "required": true
+                },
+                {
+                  "key": "30000000-0000-4000-8000-00000000000c",
+                  "type": "number",
+                  "alias": "guestAge",
+                  "span": 1,
+                  "label": {
+                    "": "Age"
+                  },
+                  "hideLabel": false,
+                  "required": false,
+                  "settings": {
+                    "max": "120",
+                    "min": "0"
+                  }
+                }
+              ],
+              "settings": {
+                "addLabel": {
+                  "": "Add a guest"
+                },
+                "maxRows": 4
+              }
+            },
+            {
+              "key": "30000000-0000-4000-8000-00000000000d",
+              "type": "textarea",
+              "alias": "notes",
+              "span": 3,
+              "label": {
+                "": "Anything else?"
+              },
+              "hideLabel": false,
+              "help": {
+                "": "Diet, access needs, a \"hello\" \\ anything."
+              },
+              "required": false,
+              "rules": [
+                {
+                  "key": "40000000-0000-4000-8000-000000000006",
+                  "effect": "hide",
+                  "match": "all",
+                  "conditions": [
+                    {
+                      "field": "30000000-0000-4000-8000-000000000005",
+                      "op": "isNoneOf",
+                      "value": [
+                        "keynote",
+                        {
+                          "field": "30000000-0000-4000-8000-000000000004"
+                        }
+                      ]
+                    },
+                    {
+                      "field": "30000000-0000-4000-8000-000000000007",
+                      "op": "between",
+                      "value": [
+                        {
+                          "today": ""
+                        },
+                        {
+                          "today": "+1y"
+                        }
+                      ]
+                    },
+                    {
+                      "match": "any"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "key": "30000000-0000-4000-8000-00000000000e",
+              "type": "heading",
+              "span": 3,
+              "hideLabel": false,
+              "required": false,
+              "settings": {
+                "level": 3,
+                "text": {
+                  "": "Almost done"
+                }
+              }
+            },
+            {
+              "key": "30000000-0000-4000-8000-00000000000f",
+              "type": "consent",
+              "alias": "privacy",
+              "span": 3,
+              "hideLabel": false,
+              "required": true,
+              "settings": {
+                "text": {
+                  "": "I agree to the <a href=\"/privacy\">privacy notice</a>."
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "validationRules": [
+    {
+      "key": "41000000-0000-4000-8000-000000000001",
+      "field": "30000000-0000-4000-8000-000000000008",
+      "message": {
+        "": "Departure is after arrival."
+      },
+      "match": "all",
+      "conditions": [
+        {
+          "field": "30000000-0000-4000-8000-000000000008",
+          "op": "lessThan",
+          "value": {
+            "field": "30000000-0000-4000-8000-000000000007"
+          }
+        }
+      ]
+    }
+  ]
+}

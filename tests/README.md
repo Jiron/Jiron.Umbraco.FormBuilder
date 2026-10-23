@@ -55,7 +55,8 @@ listing the known gaps exactly.
 ## The definition tests
 
 `Tests.Unit/Definitions/` tests the definition model, its reader and writer, the schema and the upgraders
-([ADR-0034](../docs/decisions/0034-definition-model-reading-and-writing.md)):
+([ADR-0034](../docs/decisions/0034-definition-model-reading-and-writing.md)), and publishing's structural validation
+and the public projection ([ADR-0035](../docs/decisions/0035-structural-validation-and-public-projection.md)):
 
 | Tests | What they show |
 | --- | --- |
@@ -65,6 +66,10 @@ listing the known gaps exactly.
 | `DefinitionSchemaTests` | `schemas/jfb-form.v1.schema.json` validates the generated definitions and the fixture, names the same objects, properties, required ones and words as the model (`ModelProperties`), and refuses the refusals a schema can say. |
 | `UpgradeTests` | A synthetic older version read through the real reader, and the chain's checks. |
 | `DefinitionValueTests` | Localised texts, default values, settings objects, instants and the string escaping. |
+| `StructureTests` | A document that publishes, and each publish refusal with its code and JSON path as one change to it (aliases that differ only in letter case and option values that fold to one text included); what publishes; that a save refusal comes first; and 500 generated definitions checked without throwing, every path naming a part of them. |
+| `FieldTypeSupportTests` | §4.3.2 restated apart from the code: each built-in type refuses exactly the common properties, checks, rules and messages it does not support. |
+| `RedirectUrlTests` | The redirects that could leave the editor's site, and those that stay on it. |
+| `ProjectionTests` | 500 generated definitions with a marker in every private place project without it; the projection names only allowlisted properties; `fixtures/definitions/v1-full.public.json` is the reviewed projection of the fixture; which changes move `PublicHash` and which do not. |
 
 A new property of the model needs the record, the schema, the generator and the fixture: until all four agree, the
 coverage, schema and fixture tests fail.

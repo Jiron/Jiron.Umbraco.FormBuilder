@@ -42,7 +42,7 @@
       "choiceLayout": "cards",
       "cssClass": "registration-form"
     },
-    "developer": { "headless": true, "queryValues": [ "utm_source", "ref" ], "contextValues": [ "campaign" ] }
+    "developer": { "headless": true, "queryValues": [ "utm_source", "ref", "name" ], "contextValues": [ "campaign" ] }
   },
   "pages": [
     {

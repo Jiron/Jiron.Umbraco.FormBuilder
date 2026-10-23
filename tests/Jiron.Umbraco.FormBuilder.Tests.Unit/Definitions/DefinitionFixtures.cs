@@ -11,6 +11,9 @@ internal static class DefinitionFixtures
     /// <summary>A fully populated v1 document, hand-written in canonical property order and indented for review.</summary>
     public static string Full => File.ReadAllText(Path("v1-full.json"));
 
+    /// <summary>The reviewed public projection of <see cref="Full"/>, indented in canonical property order.</summary>
+    public static string FullProjection => File.ReadAllText(Path("v1-full.public.json"));
+
     /// <summary>The production serializer: no upgraders (v1 is the only schema), the default limits.</summary>
     public static FormDefinitionSerializer Serializer(DefinitionLimits? limits = null) =>
         new(new FormDefinitionUpgrades([]), limits ?? new DefinitionLimits());
