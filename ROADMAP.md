@@ -1500,7 +1500,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - both vector runners run the spike file of 1.5 with every case passing, and the tables check passes;
     - `dotnet test` and the client's `npm test` pass.
-- [ ] **3.4c The browser harness**
+- [x] **3.4c The browser harness** (2026-10-23, 78d494e)
   - Build it in the shape of the lessons file, part 2 (§3.3).
   - **E2E:** Playwright Test, with Edge locally and Chromium in CI.
     - **Global setup:**
