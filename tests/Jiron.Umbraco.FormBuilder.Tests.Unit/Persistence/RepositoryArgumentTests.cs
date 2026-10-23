@@ -1,5 +1,6 @@
 using System.Data;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -19,18 +20,25 @@ public sealed class RepositoryArgumentTests
 {
     private static readonly string Hash = new('a', 64);
     private IScopeProvider _scopeProvider = null!;
+    private IFormBuilderDatabaseGate _gate = null!;
     private FormBuilderDatabase _database = null!;
 
     [SetUp]
     public void SetUp()
     {
         _scopeProvider = Substitute.For<IScopeProvider>();
-        _database = new FormBuilderDatabase(_scopeProvider, Substitute.For<IScopeAccessor>(), Substitute.For<IFormBuilderDatabaseGate>(), TimeProvider.System, NullLogger<FormBuilderDatabase>.Instance);
+        _gate = Substitute.For<IFormBuilderDatabaseGate>();
+        _database = new FormBuilderDatabase(_scopeProvider, Substitute.For<IScopeAccessor>(), _gate, TimeProvider.System, NullLogger<FormBuilderDatabase>.Instance);
     }
 
+    // Every unit of work passes the gate first, and the substitute gate never runs one: a call that reached it would have
+    // reached the database.
     [TearDown]
-    public void NothingReachedTheDatabase() =>
+    public void NothingReachedTheDatabase()
+    {
+        Assert.That(_gate.ReceivedCalls(), Is.Empty, "a unit of work was started");
         _scopeProvider.DidNotReceiveWithAnyArgs().CreateScope(Arg.Any<IsolationLevel>(), Arg.Any<RepositoryCacheMode>(), Arg.Any<IEventDispatcher?>(), Arg.Any<IScopedNotificationPublisher?>(), Arg.Any<bool?>(), Arg.Any<bool>(), Arg.Any<bool>());
+    }
 
     [TestCase("forms-section-granted", true)]
     [TestCase("mirror:forms/contact.json", true)]
@@ -176,6 +184,99 @@ public sealed class RepositoryArgumentTests
             Assert.That(() => repository.DeleteAsync(SettingsScopes.Global, "email", 1), Throws.ArgumentException, "the global rows always stay");
         });
     }
+
+    [TestCase("Manual", true)]
+    [TestCase("DataType", true)]
+    [TestCase("Countries", true)]
+    [TestCase("abcdefghijklmnop", true)]
+    [TestCase("abcdefghijklmnopq", false)]
+    [TestCase("", false)]
+    [TestCase("data-type", false)]
+    [TestCase("Code2", false)]
+    public void OptionLists_KindsAreAsciiLetters(string kind, bool valid) =>
+        Assert.That(OptionListRepository.IsValidKind(kind), Is.EqualTo(valid));
+
+    [Test]
+    public void TheLibrary_RefusesWhatItsColumnsCannotHold()
+    {
+        var lists = new OptionListRepository(_database);
+        var themes = new ThemeRepository(_database);
+        var layouts = new EmailLayoutRepository(_database);
+        var alias = new string('a', AliasedLibraryTable<OptionListDto>.MaxAliasLength + 1);
+        var name = new string('n', AliasedLibraryTable<OptionListDto>.MaxNameLength + 1);
+        var list = new NewOptionList(Guid.NewGuid(), "colours", "Colours", "Manual");
+        var theme = new NewTheme(Guid.NewGuid(), "brand", "Brand", "default");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(() => lists.CreateAsync(list with { Alias = string.Empty }), Throws.ArgumentException);
+            Assert.That(() => lists.CreateAsync(list with { Alias = alias }), Throws.ArgumentException);
+            Assert.That(() => lists.CreateAsync(list with { Name = string.Empty }), Throws.ArgumentException);
+            Assert.That(() => lists.CreateAsync(list with { Name = name }), Throws.ArgumentException);
+            Assert.That(() => lists.CreateAsync(list with { Kind = "Kind1" }), Throws.ArgumentException);
+            Assert.That(() => lists.CreateAsync(list with { CacheSeconds = -1 }), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(() => lists.CreateAsync(list with { Items = null! }), Throws.InstanceOf<ArgumentNullException>());
+            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, alias, "Colours", "Manual", "{}", "[]", 0)), Throws.ArgumentException);
+            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, "colours", "Colours", string.Empty, "{}", "[]", 0)), Throws.ArgumentException);
+            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, null!, "Colours", "Manual", "{}", "[]", 0)), Throws.InstanceOf<ArgumentNullException>(), "an alias is never kept by leaving it out");
+            Assert.That(() => themes.CreateAsync(theme with { Alias = alias }), Throws.ArgumentException);
+            Assert.That(() => themes.CreateAsync(theme with { BaseTheme = string.Empty }), Throws.ArgumentException);
+            Assert.That(() => themes.CreateAsync(theme with { BaseTheme = new string('b', ThemeRepository.MaxBaseThemeLength + 1) }), Throws.ArgumentException);
+            Assert.That(() => themes.CreateAsync(theme with { Tokens = null! }), Throws.InstanceOf<ArgumentNullException>());
+            Assert.That(() => themes.CreateAsync(theme with { CustomCss = string.Empty }), Throws.ArgumentException, "null stands for none");
+            Assert.That(() => themes.UpdateAsync(new ThemeUpdate(1, 1, name, "default", "{}", null)), Throws.ArgumentException);
+            Assert.That(() => layouts.CreateAsync(new NewEmailLayout(Guid.NewGuid(), "plain", "Plain", null!)), Throws.InstanceOf<ArgumentNullException>());
+            Assert.That(() => layouts.UpdateAsync(new EmailLayoutUpdate(1, 1, string.Empty, "Plain", "{}")), Throws.ArgumentException);
+            Assert.That(() => layouts.UpdateAsync(new EmailLayoutUpdate(1, 1, null!, "Plain", "{}")), Throws.InstanceOf<ArgumentNullException>(), "an alias is never kept by leaving it out");
+        });
+    }
+
+    [Test]
+    public void Templates_RefuseWhatTheirColumnsCannotHold()
+    {
+        var repository = new FormTemplateRepository(_database);
+        var template = new NewFormTemplate(Guid.NewGuid(), FormTemplateKind.Form, "Contact", "{}");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(() => repository.CreateAsync(template with { Kind = (FormTemplateKind)7 }), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(() => repository.CreateAsync(template with { Name = string.Empty }), Throws.ArgumentException);
+            Assert.That(() => repository.CreateAsync(template with { Name = new string('n', FormTemplateRepository.MaxNameLength + 1) }), Throws.ArgumentException);
+            Assert.That(() => repository.CreateAsync(template with { Description = string.Empty }), Throws.ArgumentException, "null stands for none");
+            Assert.That(() => repository.CreateAsync(template with { Description = new string('d', FormTemplateRepository.MaxDescriptionLength + 1) }), Throws.ArgumentException);
+            Assert.That(() => repository.CreateAsync(template with { Category = string.Empty }), Throws.ArgumentException, "null stands for none");
+            Assert.That(() => repository.CreateAsync(template with { Category = new string('c', FormTemplateRepository.MaxCategoryLength + 1) }), Throws.ArgumentException);
+            Assert.That(() => repository.CreateAsync(template with { Definition = string.Empty }), Throws.ArgumentException);
+            Assert.That(() => repository.UpdateAsync(new FormTemplateUpdate(1, string.Empty, null, null, "{}")), Throws.ArgumentException);
+            Assert.That(() => repository.UpdateAsync(new FormTemplateUpdate(1, "Contact", null, null, string.Empty)), Throws.ArgumentException);
+        });
+    }
+
+    [Test]
+    public void Permissions_RefuseGrantsWithoutAGroup_OrWithATargetThatDoesNotFit()
+    {
+        var repository = new PermissionRepository(_database);
+        var group = Guid.NewGuid();
+        var key = Guid.NewGuid();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(() => repository.ChangeAsync(new GrantChange(Guid.Empty, PermissionTarget.Global, Guid.Empty, 0, 1)), Throws.ArgumentException);
+            Assert.That(() => repository.ChangeAsync(new GrantChange(group, PermissionTarget.Global, key, 0, 1)), Throws.ArgumentException, "a global grant names no target");
+            Assert.That(() => repository.ChangeAsync(new GrantChange(group, PermissionTarget.Folder, Guid.Empty, 0, 1)), Throws.ArgumentException);
+            Assert.That(() => repository.ChangeAsync(new GrantChange(group, PermissionTarget.Form, Guid.Empty, 0, 0)), Throws.ArgumentException);
+            Assert.That(() => repository.ChangeAsync(new GrantChange(group, (PermissionTarget)9, key, 0, 1)), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(() => repository.GetAsync(group, PermissionTarget.Form, Guid.Empty), Throws.ArgumentException);
+            Assert.That(() => repository.ListForTargetAsync(PermissionTarget.Folder, Guid.Empty), Throws.ArgumentException);
+            Assert.That(() => repository.DeleteForTargetAsync(PermissionTarget.Global, key), Throws.ArgumentException);
+            Assert.That(() => repository.DeleteForTargetAsync(PermissionTarget.Global, Guid.Empty), Throws.ArgumentException, "never every global grant at once");
+            Assert.That(() => repository.DeleteForGroupAsync(Guid.Empty), Throws.ArgumentException);
+        });
+    }
+
+    [Test]
+    public async Task Permissions_ReadNoGroups_WithoutTheDatabase() =>
+        Assert.That(await new PermissionRepository(_database).ListForGroupsAsync([]), Is.Empty);
 
     private static VersionDocument Document() => new(1, "{}", Hash, Hash);
 

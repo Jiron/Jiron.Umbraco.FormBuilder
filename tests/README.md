@@ -112,8 +112,11 @@ the diff gets read and committed):
 `Tests.Integration/Persistence/Repositories/` migrates a fresh database per test, with a clock that stands still
 (`RepositoryTestBase`). The tests cover:
 
-- each repository's reads and writes, and every refusal, with nothing written;
+- each repository's reads and writes, and every refusal, with nothing written. A refusal must come from the
+  statement's own condition: `AssertRefused` fails when the unique index refused instead;
 - writers at the same moment: of ten saves from one version, exactly one gets through;
+- what option lists, themes and email layouts share, written once in `AliasedLibraryRepositoryTests` and run for each
+  of the three;
 - units of work that commit or roll back together;
 - the reruns after SQLite's real busy error.
 

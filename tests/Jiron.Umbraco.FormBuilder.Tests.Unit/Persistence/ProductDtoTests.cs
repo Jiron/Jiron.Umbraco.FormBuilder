@@ -21,6 +21,11 @@ public sealed class ProductDtoTests
         new object[] { typeof(Dtos.FormVersionDto), typeof(CreateSchemaV1.FormVersionDto) },
         new object[] { typeof(Dtos.FormFieldDto), typeof(CreateSchemaV1.FormFieldDto) },
         new object[] { typeof(Dtos.SettingDto), typeof(CreateSchemaV1.SettingDto) },
+        new object[] { typeof(Dtos.OptionListDto), typeof(CreateSchemaV1.OptionListDto) },
+        new object[] { typeof(Dtos.ThemeDto), typeof(CreateSchemaV1.ThemeDto) },
+        new object[] { typeof(Dtos.EmailLayoutDto), typeof(CreateSchemaV1.EmailLayoutDto) },
+        new object[] { typeof(Dtos.FormTemplateDto), typeof(CreateSchemaV1.FormTemplateDto) },
+        new object[] { typeof(Dtos.PermissionDto), typeof(CreateSchemaV1.PermissionDto) },
     ];
 
     [TestCaseSource(nameof(Pairs))]

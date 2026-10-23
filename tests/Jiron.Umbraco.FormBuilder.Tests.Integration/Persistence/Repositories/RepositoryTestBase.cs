@@ -32,6 +32,16 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
 
     private protected ISettingsRepository Settings => Repo<ISettingsRepository>();
 
+    private protected IOptionListRepository OptionLists => Repo<IOptionListRepository>();
+
+    private protected IThemeRepository Themes => Repo<IThemeRepository>();
+
+    private protected IEmailLayoutRepository EmailLayouts => Repo<IEmailLayoutRepository>();
+
+    private protected IFormTemplateRepository Templates => Repo<IFormTemplateRepository>();
+
+    private protected IPermissionRepository Permissions => Repo<IPermissionRepository>();
+
     [SetUp]
     public async Task MigrateAsync()
     {
@@ -89,6 +99,18 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
     /// <summary>A value of an entry, for a field of the catalogue.</summary>
     private protected void AddValue(long entryId, int fieldId) =>
         Write(db => db.Insert(new Schema.EntryValueDto { EntryId = entryId, FieldId = fieldId, ValueIndex = 0, Text = "JFB_TEST" }));
+
+    /// <summary>
+    /// Asserts that a change is refused with <paramref name="conflict"/> by the condition of its own statement, not by a
+    /// unique index: a refusal the index made carries the database's error inside (ADR-0036).
+    /// </summary>
+    private protected static void AssertRefused<T>(Func<Task<T>> change, FormBuilderConflict conflict, string? why = null) =>
+        Assert.That(
+            async () => await change(),
+            Throws.InstanceOf<FormBuilderConflictException>()
+                .With.Property(nameof(FormBuilderConflictException.Conflict)).EqualTo(conflict)
+                .And.Property(nameof(Exception.InnerException)).Null,
+            why ?? conflict.ToString());
 
     private protected static string Sha256(string text) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
 
