@@ -688,14 +688,15 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - **Patterns** run on Jiron Form Builder's own matcher in both runtimes, never on a regular-expression engine (ADR-0005): a small subset of the usual syntax, parsed and compiled to an automaton that reads code points in time linear in the value's length, so no pattern can hang a browser or a server. A pattern matches the whole value and is case-sensitive; saving refuses anything outside the subset and its limits.
 - **Merge tags:** `{{ source.path | filter: arg }}`.
   - **Sources:**
-    - `field.<alias>`, `field.<alias>.label`;
-    - `entry.number|reference|date|url|state`, `form.name|alias`;
+    - `field.<alias>` (the answer as displayed), `field.<alias>.value` (its wire form), `field.<alias>.label`;
+    - `entry.number|reference|date|url|state|answers`, `form.name|alias`;
     - `page.name|url|<propertyAlias>` (with `page.up.<alias>` to search the ancestors);
     - `member.name|email|<propertyAlias>`;
     - `query.<name>` (only where the form allows query values), `context.<key>` (values the developer passes when rendering or submitting);
     - `site.name|url`, `date.now`, `dictionary.<key>`.
   - **Filters:** `default`, `upper`, `lower`, `truncate`, `date`, `number`, `currency`, `join`, `html`, `url`, `json`.
-  - **Escaping:** output is HTML-escaped in HTML contexts, URL-encoded in URL contexts and JSON-escaped in JSON contexts. Unknown tags render empty and raise a form-check warning.
+  - **Escaping:** each place that renders a template has one context (`html`, `text`, `header`, `url`, `jsonString`, `form` or `xml`), whose encoder runs on every value a tag produces; explicit filters combine with it without a breakout (ADR-0014). Unknown tags render empty and raise a form-check warning; malformed ones render as their text and are a form-check error. Nothing throws.
+  - **Cache-safe visitor texts:** before submission, visitor texts use only what is the same for every visitor on the page, plus answer recall; `member`, `context` and `entry` belong to hidden fields, outcomes, mail and actions. Culture formats of dates and numbers come from the server as explicit patterns, so both runtimes print the same text (ADR-0014).
   - **Answer recall:** visitor texts (labels, help texts, text blocks, page titles and outcome messages) may use `field.<alias>` of a field above them or on an earlier page ("Thanks, Anna. Where should we send the quote?"). The runtime updates them as the visitor types, the server renders the same text for no-JS posts and the summary page, and a hidden field resolves empty. A text that names a later field is a form-check error.
   - Developers add sources and filters through `IFormBuilderMergeTagSource` and `IFormBuilderMergeTagFilter`.
 - **Calculations:** a tiny expression language (numbers, field references, `+ - * / ( )`, `min`, `max`, `round`, `if`, and `daysBetween`, `yearsBetween` over date fields in the site's time zone), parsed into a tree. It has no evaluation of arbitrary code and no reflection. The server recomputes every calculation, and its result is stored. Numbers are exact decimals in both runtimes: division keeps 20 places and `round` rounds half away from zero (ADR-0005).
@@ -751,7 +752,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 - **The pipeline** for a submission (JavaScript, no-JS post or API):
   1. Resolve the form and its published version. If the posted public revision is older but compatible, accept it; otherwise answer `form_changed` (the runtime refreshes the form, §3.1).
   2. Check availability: dates, limits, members, uniqueness, and the places left on chosen options.
-  3. Check protection: rate limits, challenge, honeypot, time, captcha, content rules. The result is a spam score with reasons. A failed challenge or captcha is rejected. A high score is **accepted silently into `Spam`**, so bots learn nothing.
+  3. Check protection: rate limits, challenge, honeypot, time, captcha, content rules. The result is a spam score with reasons. A failed challenge or captcha is rejected. A high score is **accepted silently into `Spam`**, so bots learn nothing. An unavailable captcha provider, and a no-JS post on a form whose protection needs JavaScript, score into `Spam` too, so no lead is lost and none runs actions unchecked (ADR-0012).
   4. Parse and validate per field type, after applying rules. Hidden fields are stripped, and calculations recomputed.
   5. Idempotency: the same `submissionId` with the same digest returns the original receipt; with a different digest it returns `409 duplicate_submission`.
   6. **One transaction:** the entry, values, file links, consent texts, the timeline event, one `ActionRun` per action whose trigger and rule match (none for spam or test entries), the places taken, and the stats increment.
@@ -782,8 +783,8 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 
 | Table | Columns (main) | Indexes and notes |
 | --- | --- | --- |
-| `jfbFolder` | Id PK, Key (unique), ParentId FK null, Name, SortOrder, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (ParentId). Trash keeps the tree; restore returns to the parent or the root. |
-| `jfbForm` | Id PK, Key (unique), FolderId FK null, Alias (unique), Name, DraftVersionId FK null, PublishedVersionId FK null, PublicRevision, ConcurrencyVersion, LastEntryNumber, ThemeKey null, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (FolderId), (TrashedUtc). `ConcurrencyVersion` makes stale saves fail with `409 concurrency_conflict`. |
+| `jfbFolder` | Id PK, Key (unique), ParentId FK null, Name, SortOrder, IsRestricted, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (ParentId). Trash keeps the tree; restore returns to the parent or the root. `IsRestricted` limits the folder to the grants made on it (ADR-0013). |
+| `jfbForm` | Id PK, Key (unique), FolderId FK null, Alias (unique), Name, DraftVersionId FK null, PublishedVersionId FK null, PublicRevision, ConcurrencyVersion, LastEntryNumber, ThemeKey null, IsRestricted, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (FolderId), (TrashedUtc). `ConcurrencyVersion` makes stale saves fail with `409 concurrency_conflict`. `IsRestricted` as on `jfbFolder`. |
 | `jfbFormVersion` | Id PK, FormId FK (cascade), Number, Kind (Draft, Published), SchemaVersion, Definition (NVARCHARMAX), DefinitionHash, PublicHash, PublicRevision null, Comment, IsPinned, CreatedUtc, CreatedByUserKey, PublishedUtc null, PublishedByUserKey null | Unique (FormId, Number). Every save adds a row. Published versions are never pruned. Draft saves are pruned by the cleanup job (keep the last 50 and the last 90 days, never pinned ones or ones an entry points at). `PublicRevision` is set on published rows (ADR-0002). |
 | `jfbFormField` | Id PK, FormId FK (cascade), FieldKey, Alias, Label (default culture), Type, StorageKind, IsSensitive, SortOrder, FirstVersionNumber, LastVersionNumber null (null = in the live version), ParentFieldKey null (repeater children and grid rows) | Unique (FormId, FieldKey). The **field catalogue**: every field ever published, for entry columns, exports and search. `jfbEntryValue` refers to a field by this `Id`, so a field gets its row before its first value is stored: on publish, or on the first preview submission for a field that exists only in the draft (ADR-0003). |
 | `jfbEntry` | Id PK (bigint), Key (unique), FormId FK, FormVersionId FK, Number, State, IsTest, SubmissionId, Digest, Culture, ContentKey null, PageUrl (path only), MemberKey null, IpAddress null, SpamScore, SpamReasons, SearchText (NVARCHARMAX, normalised, no sensitive values), Context (JSON), DurationSeconds null, SubmittedUtc, UpdatedUtc, StateChangedUtc, StateChangedByUserKey null, FirstSeenUtc null, VerifiedUtc null, ResumeTokenHash null, ResumeExpiresUtc null, CurrentPageKey null, ChallengeId null, HoldUntilUtc null, HoldReason null, PurgeAfterUtc null | Unique (FormId, Number) and (FormId, SubmissionId). `SubmissionId` is always set; the server generates one for no-JS, server-key and programmatic entries. **Filtered** unique indexes `WHERE … IS NOT NULL` on (FormId, ChallengeId) and on ResumeTokenHash, created with custom SQL in the migration (SQLite and SQL Server both support them; a test inserts two NULL rows). Also (FormId, SubmittedUtc), (FormId, State, SubmittedUtc), (MemberKey), (PurgeAfterUtc) (ADR-0003). |
@@ -831,7 +832,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | `POST forms/{key}/uploads` | Upload one file before submitting (progress per file): `multipart/form-data` with the `challenge` part first, then the `file` part, streamed and checked on its first bytes (ADR-0006). Returns a signed upload token. Limits per form, file and IP; `413 payload_too_large` and `415 unsupported_media_type` close the connection. |
 | `POST forms/{key}/validate` | Validate one page's values on the server (multi-page, `422` with errors by alias). |
 | `POST forms/{key}/entries` | Submit: `{submissionId, revision, culture, contentKey, values, uploads, context, challenge, captchaToken}` → `{receipt, outcome:{kind, html \| url, delaySeconds}}`. |
-| `POST forms/{key}/receipt` | Check an uncertain submission by `{submissionId, receipt}`. |
+| `POST forms/{key}/receipt` | Check an uncertain submission by `{submissionId, challenge}`: the receipt and the outcome when an entry with that submission id was made with that challenge, otherwise `404 not_found` for every miss (ADR-0012). |
 | `POST forms/{key}/drafts` | Save and resume: `{values, pageKey, email}` → the resume link is emailed; the response never contains it. |
 | `POST drafts/resume` | `{token}` → values and page. The token comes from the URL fragment (`#jfb-resume=…`), so it never reaches server logs. |
 | `GET verify?t=` and `POST verify` | Email verification. The GET only shows a confirm button, because mail scanners follow links; the POST confirms. |
@@ -843,8 +844,9 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 - Tokens always travel in the body or the URL fragment, never in query strings that get logged (except the verify link, which is single-use and short-lived).
 - Same-origin requests are always accepted; others only from `JironFormBuilder:PublicApi:AllowedOrigins`.
 - Client IPs come only from `HttpContext.Connection.RemoteIpAddress`. Sites behind proxies configure ASP.NET Core `ForwardedHeaders` (documented).
-- **Server-to-server headless submissions** may send `Authorization: Jfb-Key <key>`, with keys in host configuration compared by hash. They skip the browser challenge and captcha, never validation.
-- **Stable error codes:** `form_not_found`, `form_closed`, `form_changed`, `validation_failed` (`422`, errors by alias), `challenge_required`, `captcha_failed`, `rate_limited`, `payload_too_large`, `unsupported_media_type`, `member_required`, `duplicate_submission`, `entry_limit_reached`, `already_submitted`.
+- **Server-to-server headless submissions** may send `Authorization: Jfb-Key <key>`. Host configuration holds a name and the SHA-256 of each key, never the key, compared in fixed time. They skip the browser challenge, the captcha and the honeypot, never validation, the content rules or the domain limits, and are limited per key (ADR-0012).
+- **Stable error codes:** `form_not_found`, `form_closed`, `form_changed`, `validation_failed` (`422`, errors by alias), `challenge_required`, `captcha_failed`, `rate_limited`, `payload_too_large`, `unsupported_media_type`, `member_required`, `duplicate_submission`, `entry_limit_reached`, `already_submitted`, `origin_denied`, `timeout`, `not_found`, `server_error`.
+- **Every endpoint declares** its rate-limit policy, body limit and time limit, and a test reads the OpenAPI document and fails when one is missing (ADR-0012).
 
 ### 4.7 Management API (`/umbraco/jfb/management/api/v1`, OpenAPI document `jfb`, generated TS client)
 
@@ -881,6 +883,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   "Webhooks": { "AllowedHosts": [], "AllowHttp": false },
   "Actions": { "Paused": false },
   "Secrets": { "CrmToken": null },
+  "Access": { "Grants": [ { "group": "editor", "permissions": [ "viewEntries" ] } ] },
   "Definitions": { "Mirror": false, "Folder": "~/umbraco/JironFormBuilder/forms" },
   "Limits": { "...": "hard caps the backoffice cannot exceed" },
   "Designer": { "SettingLocks": [ { "kind": "action", "type": "email", "setting": "from", "value": "noreply@example.com", "hidden": true } ] },
@@ -890,7 +893,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 
 `Files:MaxFileBytes` caps the limit an editor can give any file field. It is not a request limit: the upload endpoint and the no-JS post set Kestrel's limit per request from the form's fields, whatever the site's `Umbraco:CMS:Runtime:MaxRequestLength` (ADR-0006).
 
-**Backoffice settings** (typed sections in `jfbSetting`, ADR-0008; `global` scope, plus per-site overrides where marked). A site is a root content node, and the site of a request is the root of the content the form is shown on or submitted from; without content, the global values apply.
+**Backoffice settings** (typed sections in `jfbSetting`, ADR-0008; `global` scope, plus per-site overrides where marked). A site is a root content node, and the site of a request is the root of the content the form is shown on or submitted from; without content, the root whose Umbraco domain matches the request's host (14.4); otherwise the global values apply.
 
 - **General** (each field can be set per site):
   - default theme, the required-marker style, default labels;
@@ -915,7 +918,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - sensitive-field defaults;
   - third-party captcha consent mode (explicit, Cookiebot category, CMP through the JS API);
   - the insights switch.
-- **Access:** which user groups get which Jiron Form Builder permissions, globally and per folder or form (when the host doesn't lock them). Stored in `jfbPermission` (ADR-0013), with the same locks, conflicts and audit as the sections.
+- **Access:** which user groups get which Jiron Form Builder permissions, globally and per folder or form (when the host doesn't lock them). Stored in `jfbPermission` (ADR-0013), with the same locks, conflicts and audit as the sections. A folder or form can be **restricted**, so that only grants made on it count there; `JironFormBuilder:Access:Grants` sets the global grants from host configuration.
 - **Integrations:** webhook signing secret reference, Slack and Teams defaults, Umbraco webhook events on or off.
 
 Every setting has:
@@ -936,6 +939,7 @@ A settings change raises a notification and a cache refresher, so every server s
   - `IFormBuilderSpamCheck`: an extra spam signal with a score and a reason;
   - `IFormBuilderMergeTagSource` and `IFormBuilderMergeTagFilter`;
   - `IFormBuilderFileScanner`: malware scanning, for example ClamAV, in a sample;
+  - `IFormBuilderTheme`: a theme, with its stylesheet, class map, token defaults and view folder (ADR-0015);
   - `IFormBuilderFileStore`: other storage, for example blob storage through Umbraco's official provider (sample in 15.2). Asynchronous: `SaveAsync(id, stream)` stores all of it or nothing, `OpenReadAsync(id)` returns a stream or null, `DeleteAsync(id)`; ids are random and never URLs (ADR-0006).
 - **Settings schemas:** C# attributes on a settings class (`[FormBuilderSetting(Label, Description, Editor, Order, Group, SupportsMergeTags)]`) give every custom type a backoffice editor without any JavaScript. A custom Lit element can replace the editor for a setting through a `jfbSettingEditor` manifest.
 - **Notifications:**
@@ -951,8 +955,9 @@ A settings change raises a notification and a cache refresher, so every server s
 - **Rendering:**
   - the `<jfb-render form="alias|key" theme="…" context-…="…">` tag helper, `@await Component.InvokeAsync("FormBuilderForm", …)` and `<jfb-assets>`. The custom element `<jfb-form>` belongs to the headless renderer;
   - the CSP nonce: `<jfb-assets nonce="…">`, or an `IFormBuilderCspNonceProvider` that a site (or its CSP package) registers to return the request's nonce, which `<jfb-assets>` also uses when it is included automatically (ADR-0004);
-  - theme views in Jiron Form Builder's own layout, fixed in ADR-0015 without mirroring any other product's conventions. The proposal: `Views/JironFormBuilder/<theme>/` holds `Form.cshtml`, `Page.cshtml`, `Group.cshtml`, `Summary.cshtml`, `Outcome.cshtml` and `fields/<type>.cshtml`;
-  - per-form overrides in `Views/JironFormBuilder/<theme>/_forms/<alias>/`, with the same file names.
+  - theme views in Jiron Form Builder's own layout (ADR-0015): one set of views that every theme shares, themed by a class map, a stylesheet and tokens. `Views/JironFormBuilder/<theme>/` holds `Form.cshtml`, `Page.cshtml`, `Group.cshtml`, `Field.cshtml`, `fields/<type>.cshtml`, `Navigation.cshtml`, `Progress.cshtml`, `ErrorSummary.cshtml`, `Summary.cshtml`, `Outcome.cshtml` and `Notice.cshtml`, each starting with its contract header (`@* jfb-view: Field 1 *@`);
+  - per-form overrides in `Views/JironFormBuilder/<theme>/_forms/<alias>/`, with the same file names. A view resolves from the form's override, then the theme, its base theme, and `default`;
+  - the markup contract of ADR-0015 (the `data-jfb-*` hooks, ids, names and states), shared by every theme, the runtime and `<jfb-form>`.
 - **Website JS API:**
   - `window.JironFormBuilder.init(root)` for forms injected later;
   - `get(formEl)` → `{ validate(), next(), back(), submit(), values() }`;
@@ -970,7 +975,7 @@ A settings change raises a notification and a cache refresher, so every server s
   - Exports guard against formula injection.
 - **Anonymous endpoints:**
   - signed challenges (Data Protection, form-bound, time-bound), honeypot, minimum fill time;
-  - the ASP.NET Core rate limiter per IP, per form and site-wide, with bounded partitions that fail closed;
+  - the ASP.NET Core rate limiter per IP, per form and site-wide, with bounded partitions that fail closed: .NET's partitioned limiters on `TimeProvider`, applied by Jiron Form Builder's own middleware, so a site's own `UseRateLimiter()` and CORS are untouched; past `MaxTrackedClients` new addresses share one overflow partition (ADR-0012);
   - request size and time limits, and cancellation everywhere;
   - `Cache-Control: no-store`;
   - origin checks.
@@ -1025,7 +1030,8 @@ A settings change raises a notification and a cache refresher, so every server s
   - retention on (submitted 365 days, approved 365, rejected 90, spam 30; editable);
   - sent emails purged after 30 days;
   - no cookies, and no browser storage unless the visitor uses "save and resume";
-  - insights are counters only.
+  - insights are counters only;
+  - the full table of defaults, test entries, drafts, files, the audit log and statistics included, is ADR-0009.
 - **CSP-friendly website runtime:** no inline scripts or event handlers, no style attributes, a nonce option for the script tag, and no `eval`. On cached pages `script-src 'self'` is enough. A nonce works only on uncached pages: a cached page keeps an old nonce and the browser blocks the runtime (1.4a). Lazily imported chunks inherit the module script's nonce, with or without `'strict-dynamic'` (ADR-0004).
 
 ### 4.11 Ports, folders and local files

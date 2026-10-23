@@ -1,6 +1,6 @@
 # 0008. The settings model
 
-- Status: accepted
+- Status: accepted, the site of a request without content amended in 1.7b
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.4 (the framework), each section in the step that builds its service, the
   screens in Phase 9 and later
@@ -59,7 +59,9 @@ change a migration of everything.
   overridden per site field by field: a site row holds only the fields it overrides, and the screen shows the others
   as inherited, with a way back to inheriting. The other sections are global.
 - **The site of a request** is the root of the content the form is shown on or submitted from (`contentKey`). Without
-  content (a headless call without `contentKey`, an entry created in code) the global values apply.
+  content (a headless call without `contentKey`), it is the root whose Umbraco domain matches the request's host, as
+  14.4 asks; the host only selects among configured sites and never becomes a URL. Otherwise (no match, an entry
+  created in code) the global values apply.
 - **Storage:** each record is camelCase JSON in `jfbSetting (Scope, Section)` with `SchemaVersion`, `Version`,
   `UpdatedUtc` and `UpdatedByUserKey`. Enums are camelCase text (numbers are refused, so a stored value never changes
   meaning when an enum grows), and nulls are left out.
