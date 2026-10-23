@@ -1376,7 +1376,7 @@ All spikes run in `.local/sandbox/` (git-ignored) on port 5510. Findings go to `
     - 0014 the merge-tag language;
     - 0015 themes and the markup contract.
   - Done when: all of them are committed, and §4 of this roadmap is updated where the ADRs changed it.
-- [ ] **1.7c The architecture document**
+- [x] **1.7c The architecture document** (2026-10-23, e14ff19)
   - Write `docs/architecture.md`, the contract for later phases:
     - modules, the dependency diagram, the definition model and its JSON schema outline, the data model with an ER diagram;
     - the public and management APIs, settings, extension points;
