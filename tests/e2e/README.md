@@ -1,0 +1,80 @@
+# Browser tests
+
+Playwright Test against a fresh demo host for every run ([ADR-0011](../../docs/decisions/0011-testing-strategy.md),
+[ADR-0031](../../docs/decisions/0031-browser-harness.md)).
+
+```
+cd tests/e2e
+npm ci
+npx playwright test --project=smoke
+```
+
+## The host
+
+`global-setup.ts` builds the client assets (when stale) and the demo, then starts the demo's DLL on
+`http://127.0.0.1:5520` with its own content root in `.local/e2e/host-5520/`: its SQLite database, the mail pickup
+folder `mail/` and the log `host.log`. The teardown stops it with its whole process tree.
+
+- **The Testing project** is on in this host only: the test-only endpoints under `/jfb-testing/`, the test clock, the
+  stub on `http://127.0.0.1:5560`, and the start-up marker (ADR-0029, ADR-0031).
+- **The start-up wait:** Umbraco 17 registers its jobs and rebuilds its indexes about a minute after it starts, and
+  the tests start only after that (`support/host-health.ts`). The wait ends on a log line that appears whether the
+  Content Delivery API is on or off. If the work does not finish, the set-up fails with the reason and the end of
+  the host's log.
+- **The hang marker:** when the host's database hung, the run leaves `.local/e2e/host-5520/database-hung.txt`, and
+  the gate runs the browser projects once more. That is the only rerun ("Flaky means broken").
+- **The settings come from the harness only:** variables in your shell that would configure Umbraco or the demo are
+  not passed on.
+
+| Variable                  | Effect                                                         |
+| ------------------------- | -------------------------------------------------------------- |
+| `JFB_E2E_DELIVERY_API=on` | runs the host with the Content Delivery API on (default `off`) |
+| `JFB_E2E_SKIP_BUILD=1`    | uses the demo and the client assets as they were last built    |
+| `JFB_E2E_CONFIGURATION`   | the demo's build configuration (default `Debug`)               |
+
+## The people
+
+Every run generates new passwords into `.local/credentials.json` under `e2e`; they are never printed.
+
+| Persona          | User groups                            | Sections         |
+| ---------------- | -------------------------------------- | ---------------- |
+| `admin`          | the unattended install's administrator | Umbraco's        |
+| `designer`       | `jfbDesigners`                         | Content, Forms   |
+| `entryHandler`   | `jfbEntryHandlers`                     | Forms            |
+| `viewer`         | `jfbViewers`                           | Forms            |
+| `privacyOfficer` | `jfbPrivacyOfficers`                   | Forms            |
+| `noAccess`       | `jfbNoAccess`                          | Forms, no grants |
+| `outsider`       | Umbraco's `writer`                     | Content          |
+
+Step 4.6 gives the groups their Jiron Form Builder permissions (ADR-0013). Two members, in the demo's member group,
+may open the members area.
+
+## Fixtures
+
+`fixtures.ts` gives every spec:
+
+- `loginAs(role)`: signs in through the login screen; `apiAs(role)`: signs in through the Management API's PKCE
+  flow (`support/api-login.ts`). Sign-ins and password resets run one at a time across workers, because parallel
+  sign-ins hang Umbraco 17 on SQLite (`support/user-lock.ts`).
+- `accountOf(role)`, `memberOf(index)`, `requestPasswordReset(role)`.
+- `waitForMail(match)`: reads the host's pickup folder (`support/mail.ts` also decodes headers and bodies).
+- `fillForm(values)` and `submitForm()`: answer fields by alias and send the form through the markup contract
+  (`support/form.ts`, ADR-0015).
+
+The support code has its own tests: `npm run support`.
+
+## Projects
+
+Edge locally (`channel: 'msedge'`), Playwright's Chromium when `CI` is set; `retries: 0`. Each project joins the
+config with its first spec.
+
+| Project | What it checks                                                                                                                                                            |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `smoke` | the site in both languages, every persona's sign-in and groups, the members area, the mail pickup, the test host (status, stub, Delivery API switch) and the form helpers |
+
+## Checks and output
+
+- `npm run check`: the type check, the formatting and the support tests. `npm run fix` formats.
+- Reports, traces and screenshots go to `.local/e2e/` (git-ignored). Traces can hold typed values; this run's
+  passwords stop working when the next run starts. `npm run report` serves the report on
+  http://127.0.0.1:5551.

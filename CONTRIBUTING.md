@@ -72,6 +72,15 @@ installed.
 dotnet test Jiron.Umbraco.FormBuilder.slnx --blame-hang-timeout 10m
 ```
 
+The browser tests (Playwright, [tests/e2e/README.md](tests/e2e/README.md)) start a fresh demo host on port 5520 and
+run in Edge:
+
+```
+cd tests/e2e
+npm ci
+npx playwright test --project=smoke
+```
+
 The shared vectors in `tests/vectors/` run in the unit tests and in the client's `npm test`. After changing a suite in
 `tests/vectors/suites/`, write the vector files again:
 

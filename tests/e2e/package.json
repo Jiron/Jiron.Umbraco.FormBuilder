@@ -1,0 +1,24 @@
+{
+  "name": "jfb-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Jiron Form Builder's browser tests (Playwright Test, ADR-0011): a fresh demo host on port 5520 per run, Edge locally and Chromium in CI. Never shipped.",
+  "license": "SEE LICENSE IN ../../LICENSE.md",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "smoke": "playwright test --project=smoke",
+    "support": "node --test \"support/*.test.ts\"",
+    "check": "tsc --noEmit && prettier --check . && node --test \"support/*.test.ts\"",
+    "fix": "prettier --write .",
+    "report": "playwright show-report ../../.local/e2e/report --host 127.0.0.1 --port 5551"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.19.1",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3"
+  }
+}

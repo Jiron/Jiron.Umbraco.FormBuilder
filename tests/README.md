@@ -14,6 +14,14 @@ dotnet test Jiron.Umbraco.FormBuilder.slnx --blame-hang-timeout 10m
 The hang timeout names a test that hangs instead of stalling the run. The integration tests use SQLite and need nothing
 installed; Umbraco works in `Tests.Integration/TEMP/`, which git ignores.
 
+The browser tests start a fresh demo host of their own and run in Edge (Playwright's Chromium in CI):
+
+```
+cd tests/e2e
+npm ci
+npx playwright test --project=smoke
+```
+
 ## The projects
 
 | Project | What it holds |
@@ -22,6 +30,7 @@ installed; Umbraco works in `Tests.Integration/TEMP/`, which git ignores.
 | `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, and the test-only endpoints on a real site. |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
+| `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
 
 ## The shared vectors
 

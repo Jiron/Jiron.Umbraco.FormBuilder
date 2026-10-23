@@ -1,0 +1,49 @@
+import { readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+
+// Where the browser tests find things, and the ports they use (ROADMAP section 4.11). Specs and scripts read ports and
+// addresses from here and from the demo's appsettings.json, never from a copy ("One source for every value").
+
+/** The repository root. */
+export const repoRoot = resolve(import.meta.dirname, '..', '..', '..');
+
+/** Git-ignored state of the browser test runs: hosts, mail, locks, reports and traces. */
+export const e2eState = join(repoRoot, '.local', 'e2e');
+
+/** The generated local credentials; never committed, never printed (CLAUDE.md rule 3). */
+export const credentialsFile = join(repoRoot, '.local', 'credentials.json');
+
+/** The demo site project, which the browser tests run as their host. */
+export const demoProject = join(repoRoot, 'demo', 'Jiron.Umbraco.FormBuilder.Demo');
+
+/** The texts the demo's seeder writes: the specs expect what it seeded. */
+export const demoContentFile = join(demoProject, 'Seeding', 'DemoContent.json');
+
+/** The client workspace (the website assets and the backoffice bundle the demo embeds). */
+export const clientDir = join(repoRoot, 'src', 'Jiron.Umbraco.FormBuilder.Web', 'Client');
+
+/** The Testing project, whose log lines the host's start-up waits for. */
+export const testingProject = join(repoRoot, 'tests', 'Jiron.Umbraco.FormBuilder.Testing');
+
+/** The target framework of every project, from Directory.Build.props. */
+export const TARGET_FRAMEWORK: string = (() => {
+  const props = readFileSync(join(repoRoot, 'Directory.Build.props'), 'utf8');
+  const found = /<TargetFramework>([^<]+)<\/TargetFramework>/.exec(props)?.[1];
+  if (!found) throw new Error('Directory.Build.props names no TargetFramework.');
+  return found;
+})();
+
+/** The address of the demo that scripts/demo.ps1 starts, from the demo's own settings; no test host uses its port. */
+export const DEMO_URL: string = JSON.parse(readFileSync(join(demoProject, 'appsettings.json'), 'utf8')).Umbraco.CMS
+  .WebRouting.UmbracoApplicationUrl;
+
+/** The ports Jiron Form Builder's servers may use (CLAUDE.md rule 6). */
+export const PORT_RANGE = { first: 5500, last: 5599 } as const;
+
+/** The browser tests' host, with a fresh database per run. */
+export const E2E_PORT = 5520;
+export const E2E_BASE_URL = `http://127.0.0.1:${E2E_PORT}`;
+
+/** The HTTP stub that the test host starts for webhooks, URL option lists and captcha verification. */
+export const STUB_PORT = 5560;
+export const STUB_URL = `http://127.0.0.1:${STUB_PORT}`;
