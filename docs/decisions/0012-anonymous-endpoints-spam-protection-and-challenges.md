@@ -1,6 +1,7 @@
 # 0012. Anonymous endpoints, spam protection and challenges
 
-- Status: accepted; rate limits (refines D14), member-bound challenges, the honeypot and `invalid_request` amended in 1.8
+- Status: accepted; rate limits (refines D14), member-bound challenges, the honeypot and `invalid_request`
+  amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the
@@ -8,14 +9,14 @@
 
 ## Context
 
-The public API (`/jfb/api/v1`, §4.6) and the no-JavaScript post (ADR-0004) take submissions from anyone. D14 asks
-for spam protection without third parties by default: a honeypot, a minimum fill time, a signed challenge, rate limits
-and content rules feeding a spam score, optional proof of work, and reCAPTCHA or hCaptcha only when an editor
-chooses them. Suspicious entries go to **Spam**, where nothing is lost and no action runs, and bots learn nothing
-(§4.4). §4.10 adds the rest: Data Protection challenges bound to the form and the time, rate limits per IP, form and
-site with bounded partitions that fail closed, size and time limits, `no-store`, origin checks, no antiforgery token on
-anonymous forms (so pages can be cached), member-bound challenges instead on members-only forms, and mail limits for addresses that
-visitors type.
+The public API (`/jfb/api/v1`, §4.6) and the no-JavaScript post (ADR-0004) take submissions from anyone. D14, as first
+written, asked for spam protection without third parties by default: a honeypot, a minimum fill time, a signed
+challenge, rate limits and content rules feeding a spam score, optional proof of work, and reCAPTCHA or hCaptcha only
+when an editor chooses them. Suspicious entries go to **Spam**, where nothing is lost and no action runs, and bots
+learn nothing (§4.4). §4.10 adds the rest: Data Protection challenges bound to the form and the time, rate limits per
+IP, form and site with bounded partitions that fail closed, size and time limits, `no-store`, origin checks, no
+antiforgery token on anonymous forms (so pages can be cached), member-bound challenges instead on members-only forms,
+and mail limits for addresses that visitors type.
 
 What is fixed already:
 
@@ -85,7 +86,8 @@ away, and a real visitor behind a busy address keeps every answer and is told wh
 - **CORS is Jiron Form Builder's own middleware,** for the base path only: `Vary: Origin` on every answer; a preflight
   from an allowed origin gets `GET, POST`, `Content-Type`, ten minutes and no credentials; any other gets
   `403 origin_denied`. Actual requests from allowed origins get `Access-Control-Allow-Origin` and expose `ETag` and
-  `Retry-After`, never `Access-Control-Allow-Credentials`; others get no CORS headers, so the browser hands them nothing.
+  `Retry-After`, never `Access-Control-Allow-Credentials`; others get no CORS headers, so the browser hands them
+  nothing.
 - A request without an `Origin` (a server, a no-JS post) passes the origin check and meets every other check.
 - **The preview frame** has the opaque origin `null` (§4.10). The public API accepts `Origin: null` only with a preview
   ticket: a Data Protection token bound to the form's draft, valid for ten minutes, issued by the management API to a
@@ -103,7 +105,9 @@ proxies configure ASP.NET Core's forwarded headers with their known proxies (doc
 **On each server, in memory**, applied by `FormBuilderRateLimitMiddleware` after routing, only to endpoints that
 carry `[FormBuilderRateLimit(policy)]`. Windows are sliding windows of ten segments on the injected `TimeProvider`. A
 refusal answers `429 rate_limited` with `Retry-After`. Jiron Form Builder's policies never enter the site's
-`RateLimiterOptions`.
+`RateLimiterOptions`. On the surface action of a no-JS post, the middleware hands its refusal to the action, which
+renders the page again with the answers, a notice saying when to send again, `429` and `Retry-After`; an address more
+than ten times over its limit gets a bare `429`, so a flood still costs next to nothing.
 
 | Policy | Partitions (host keys under `JironFormBuilder:Limits`, defaults) |
 | --- | --- |
@@ -132,7 +136,7 @@ statement each, ADR-0003, ADR-0007):
   a day per recipient across all forms, and at most 200 an hour per site, both host-configurable. The count and the
   queue insert are one `INSERT … SELECT … WHERE` statement on the recipient key (case-folded, `+tag` removed), with a
   range lock on SQL Server, so parallel requests cannot pass them together. A mail over a limit is stored as
-  `limited`, shown in the deliveries log, and never sent (§4.10).
+  `Limited` (ADR-0007), shown in the deliveries log, and never sent (§4.10).
 
 ### The challenge
 
@@ -145,8 +149,8 @@ statement each, ADR-0003, ADR-0007):
 
 - **The token** is Data Protection protected (purpose `Jiron.FormBuilder.Challenge.v1`, ADR-0001) and holds the form
   key, a challenge id (128 random bits), the issue time, the expiry (24 hours), on a members-only form the signed-in
-  member's key, and, for proof of work, the nonce and difficulty. It is bound to the form and the time, not to the address, because phones change networks while a form
-  is open.
+  member's key, and, for proof of work, the nonce and difficulty. It is bound to the form and the time, not to the
+  address, because phones change networks while a form is open.
 - **Renewal:** the runtime may send its previous token, even expired, when it asks for a new one. A valid signature
   carries the original issue time over, so a visitor who took a long time is not scored as too fast.
 - **Use:** every JavaScript submission, page validation, draft and upload sends the challenge. A missing, forged or
@@ -177,11 +181,13 @@ more is **Spam**: accepted, stored, answered with the form's normal outcome, and
 - **Strictness** (`protection.contentRules`): `off` skips the content rules, `normal` uses the weights above, and
   `strict` doubles the content-rule weights and counts any link in an answer where the form's maximum is 0.
 - **The honeypot** is a text input whose name is derived from the form key and the public revision, so it is the same
-  in every cached copy of one revision and different in the next. The name always contains a `-`, which no field
-  alias can (ADR-0002), so it never collides with a field. It sits in a container that the functional base
-  rules of every theme hide from view (ADR-0015), and that is hidden from assistive technology (`aria-hidden`, `tabindex="-1"`, `autocomplete="off"`), with a label that says
-  to leave it empty, in case a screen reader reaches it anyway.
-- **No-JS posts** have no challenge, so they carry no time signal. They are scored on the honeypot, the blocked ranges
+  in every cached copy of one revision and different in the next. The name always contains a `-`, which no field alias
+  can (ADR-0002), and never starts with `jfb-`, the prefix of Jiron Form Builder's own inputs, so it collides with
+  nothing. It sits in a container that the functional base rules of every theme hide from view (ADR-0015), and that is
+  hidden from assistive technology (`aria-hidden`, `tabindex="-1"`, `autocomplete="off"`), with a label that says to
+  leave it empty, in case a screen reader reaches it anyway.
+- **No-JS posts** carry no time signal: on anonymous forms they have no challenge, and on members-only forms the
+  rendered challenge only binds the post to the member (below). They are scored on the honeypot, the blocked ranges
   and the content rules, and limited like every post. On a form whose protection needs JavaScript, they go to Spam
   with `no_script`, so a real visitor without JavaScript is never lost and never trusted.
 - **"Not spam"** moves an entry to `Submitted` and runs its `submitted` actions then (§4.4). Spam keeps no places and
@@ -217,15 +223,26 @@ that the demo machine solves it in under 2 seconds.
 Their challenge holds the signed-in member's key (ADR-0004). The runtime fetches it from the same origin, and the no-JS
 form carries one rendered into its page, which is per member and sent with `no-store`. Every post and API call for
 them checks the signed-in member (`member_required` without one) and that the challenge names that member
-(`challenge_required` otherwise, so the runtime fetches a fresh one). No cookie is set: the protection holds because
-no other origin can read a member's challenge (no credentials across origins, above).
+(`challenge_required` otherwise, so the runtime fetches a fresh one). No cookie is set: the protection holds because no
+other origin can read a member's challenge (no credentials across origins, above, and the browser's same-origin policy
+for the page), and the page refuses to be framed by another origin (ADR-0004). Across origins and with a server key, a
+members-only form always answers `member_required`.
+
+**Their no-JS posts** carry the rendered challenge:
+
+- the post's `submissionId` is derived from the challenge id, so a repeated post (a double click, a reload) finds the
+  entry and redirects to its outcome instead of making a second one;
+- a missing, expired or foreign challenge renders the page again through `CurrentUmbracoPage()` with the answers, a
+  fresh challenge and a notice to send again;
+- the minimum fill time does not apply, as for every no-JS post (a re-render would restart it).
 
 ### Server keys
 
 Headless servers may send `Authorization: Jfb-Key <key>`. Host configuration (`PublicApi:ServerKeys`) holds a name and
 the SHA-256 of each key, never the key, compared in fixed time. A server-key submission skips the challenge, the
 captcha and the honeypot, never validation, the content rules or the domain limits, and is limited per key. The entry
-records which key's name submitted it in its context.
+records which key's name submitted it in its context, under the reserved name `jfbServerKey`, which
+`developer.contextValues` cannot list.
 
 ### The other tokens
 

@@ -65,7 +65,7 @@ Written 2026-10-19 from the owner's brief, with research into Umbraco 17 packagi
 - **ADR numbers 0001 to 0018** are reserved for the ADRs this roadmap names. Any other ADR starts at 0019. Tandem's ADRs are always cited as "Tandem ADR-NNNN".
 - **When a feature appears in two steps,** the earlier step builds the part it names, and the later step completes and audits it.
 - **Every step that adds UI or endpoints** adds:
-  - its §4.7 endpoints, with integration tests including the `403` matrix (4.7);
+  - its §4.7 endpoints, with integration tests including the permission matrix (4.7);
   - the regenerated API client;
   - English and German localisation keys for every new string.
 
@@ -409,7 +409,7 @@ Each fact below was confirmed on this machine in the Phase 1 step it names. The 
   - the new generator writes enums as numbers, integers as "integer or string" and every record constructor parameter as required, documents form files and validation problems differently, and needs a schema transformer to give the TypeScript client the same types as on 17;
   - the snapshots in `docs/api/` and the generated client therefore differ per line.
 - **Static files:** Umbraco serves package files through `UseStaticFiles`, with no compression and no caching headers (measured in 1.4a), so the website runtime needs its own serving to meet §4.12 (6.2).
-- **Output caching:** sites may put pages behind output caching or a CDN. Jiron Form Builder markup therefore contains nothing per visitor: the challenge is fetched when the visitor first interacts, and there is no antiforgery token on anonymous forms (§4.10). Umbraco's own website output cache (confirmed in 1.4a; not in 17.3.0, present in 17.5.0, 17.7.1 and 18.2.1):
+- **Output caching:** sites may put pages behind output caching or a CDN. The markup of anonymous forms therefore contains nothing per visitor: the challenge is fetched when the visitor first interacts, and there is no antiforgery token (§4.10); members-only forms are rendered per member and never cached (ADR-0004). Umbraco's own website output cache (confirmed in 1.4a; not in 17.3.0, present in 17.5.0, 17.7.1 and 18.2.1):
   - opt-in with `Umbraco:CMS:Website:OutputCache:Enabled` (`ContentDuration` defaults to 10 s);
   - **the cache key ignores the query string**, so anything rendered from the query needs an `IWebsiteOutputCacheVaryByProvider` (a collection: a package adds rules without removing the site's);
   - `IWebsiteOutputCacheRequestFilter` is a single service, so a package must never register one;
@@ -594,7 +594,7 @@ A form definition is one JSON document, validated against `schemas/jfb-form.v1.s
 - **Keys and aliases:**
   - Every element has a stable GUID `key`. Entries, rules and actions refer to fields by key, never by alias or position.
   - The form's own name, alias and folder live on `jfbForm`, not in the document, so restoring a version never renames a form. The form alias follows the field alias pattern and is unique among all forms, trashed ones included (ADR-0002).
-  - `alias` is unique within the form, matches `^[a-z][a-zA-Z0-9]{0,63}$`, and is not reserved: `form`, `entry`, `page`, `member`, `query`, `context`, `site` and `date`. The honeypot's name always contains a `-`, which no alias can, so the two never collide (ADR-0012).
+  - `alias` is unique within the form, matches `^[a-z][a-zA-Z0-9]{0,63}$`, and is not reserved: `form`, `entry`, `page`, `member`, `query`, `context`, `site` and `date`. Jiron Form Builder's own inputs (`jfb-…`) and the honeypot's name always contain a `-`, which no alias can, so none of them collides with a field (ADR-0012).
   - An alias is generated from the label (camelCase). It can be edited until the first published version has entries; after that, changing it asks for confirmation and keeps the old alias as a merge-tag alias.
 - **Localised text:** every editor-written text is a `LocalizedText`, a map from culture (`""` = default) to text.
   - The visible text resolves as the request culture → its neutral culture → default.
@@ -634,7 +634,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | | Ranking (`ranking`) | options to put in order, all of them or the top N. "Move up" and "move down" buttons with live announcements, never drag only; without JavaScript, a position number per option, checked for unique positions on the server. |
 | | Checkbox (`checkbox`) | text beside the box (rich text with links); required means it must be ticked |
 | | Yes/No (`yesno`) | labels, style (two buttons or a switch) |
-| | Consent (`consent`) | consent text (rich text with links to the privacy page), required by default. **The exact text shown is stored** (§4.5 `jfbConsentText`), so it may use only merge tags that are the same for every visitor (ADR-0014). |
+| | Consent (`consent`) | consent text (rich text with links to the privacy page), required by default. **The exact text shown is stored** (§4.5 `jfbConsentText`), so it may use only merge tags that are the same for every visitor (ADR-0014), and the form posts the hash of the wording it showed, so a changed wording is never stored as agreed (ADR-0009). |
 | | Country (`country`) | allowed countries, countries on top, default; names come from `Intl.DisplayNames` in the browser and the server's culture data, so no country data file is needed |
 | **People** | Name (`name`) | parts (title, first, middle, last), with the right autocomplete tokens |
 | | Address (`address`) | parts (two street lines, postcode, city, region, country), required parts, autocomplete tokens |
@@ -684,7 +684,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - **Hidden means gone:** a hidden field is never required, never validated and never stored, and the server strips it even if posted. A rule that depends on a hidden field sees it as empty.
   - **Publishing refuses** cycles and rules that point at missing fields, and any condition that fails the check both runtimes run before they evaluate (ADR-0005): unknown operators, an operator the field's kind does not take, a malformed operand and an unsafe pattern. A draft keeps them, so an editor never loses work, and the form check lists each one with a fix; the preview shows a broken rule as an issue instead of evaluating it (ADR-0002).
 - **Validation kinds** (the error kinds of ADR-0002, which messages, statistics, the insights beacon and the vectors use):
-  - `required`, `invalid` (a value the type cannot read, such as a malformed email address or date), `minLength`/`maxLength`, `minWords`/`maxWords`, `min`/`max`, `step`;
+  - `required`, `invalid` (a value the type cannot read, such as a malformed email address or date, or a number with more than 15 digits, `too_many_digits` in the vectors), `minLength`/`maxLength`, `minWords`/`maxWords`, `min`/`max`, `step`;
   - `dateWindow`, `selections`, `fileType`/`fileSize`/`fileCount`, `full` (no places left on a chosen option);
   - the checks of a field's `validation` list: `pattern`, `matchesField`, `uniquePerForm`;
   - plus form-level validation rules ("show this message on field X when the rule matches").
@@ -747,7 +747,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 
 - **Entry states:**
   - `Draft` (save and resume) → `Submitted`;
-  - `Unverified` (waiting for email verification) → `Submitted`;
+  - `Unverified` (waiting for email verification) → `Submitted`: an `Unverified` entry runs no action, and confirming queues its `submitted` actions, then its `verified` ones;
   - `Submitted` → `Approved` or `Rejected` (manual approval; without it, entries are approved automatically and the `approved` trigger fires);
   - any state ↔ `Spam` (marking an entry "not spam" moves it to `Submitted` and runs its `submitted` actions then).
 
@@ -759,7 +759,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   3. Check protection: rate limits first (a refusal, `429 rate_limited` with `Retry-After`; the runtime and the no-JS page keep every answer and say when to send again, ADR-0012), then challenge, honeypot, time, captcha, content rules. The result is a spam score with reasons. A failed challenge or captcha is rejected. A high score is **accepted silently into `Spam`**, so bots learn nothing. An unavailable captcha provider, and a no-JS post on a form whose protection needs JavaScript, score into `Spam` too, so no lead is lost and none runs actions unchecked (ADR-0012).
   4. Parse and validate per field type, after applying rules. Hidden fields are stripped, and calculations recomputed.
   5. Idempotency: the same `submissionId` with the same digest returns the original receipt; with a different digest it returns `409 duplicate_submission`.
-  6. **One transaction:** the entry, values, file links, consent texts, the timeline event, one `ActionRun` per action whose trigger and rule match (none for spam or test entries), the places taken, and the stats increment.
+  6. **One transaction:** the entry, values, file links, consent texts, the timeline event, one `ActionRun` per action whose trigger and rule match (none for spam, test or unverified entries), the places taken, and the stats increment.
   7. After the commit, wake this server's action processor, then return the outcome.
 - **Places on options:**
   - The submission takes a place on each chosen option with a limit through one atomic statement on `jfbOptionCapacity` (§4.5), so two servers can never overbook. When none is left, the field fails validation with its own message, and the visitor can choose another option.
@@ -773,7 +773,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
     - create or update content (document type, parent from a picker or a dynamic rule, mapping fields and fixed values to properties, publish or save only);
     - set state (approve, reject or mark as spam, under a rule).
 
-    Email verification is a form setting (§4.3.4), not an action type: its mail is a system mail (ADR-0007), and actions on the `verified` trigger run once the visitor confirms.
+    Email verification is a form setting (§4.3.4), not an action type: its mail is a system mail (ADR-0007), and no action runs until the visitor confirms; then the `submitted` actions run, followed by the `verified` ones.
   - **Running them:**
     - Actions run in the background in the order shown, each in its own `ActionRun`, with retries (5 attempts, after 1, 3, 9 and 27 minutes) and an `Uncertain` state when a lease expires mid-send or an attempt is cut off (ADR-0007).
     - **The order:** a run starts once every earlier run of its entry has finished its first attempt (or its lease ran out) and none of them is running at that moment, and once an earlier run that stops the rest is final (ADR-0007). A retrying run does not hold the later ones back.
@@ -788,10 +788,10 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 
 | Table | Columns (main) | Indexes and notes |
 | --- | --- | --- |
-| `jfbFolder` | Id PK, Key (unique), ParentId FK null, Name, SortOrder, IsRestricted, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (ParentId). Trash keeps the tree; restore returns to the parent or the root. `IsRestricted` limits the folder to the grants made on it or inside it (ADR-0013). |
+| `jfbFolder` | Id PK, Key (unique), ParentId FK null, Name, SortOrder, IsRestricted, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (ParentId). Trash keeps the tree; restore returns to the parent or the root. `IsRestricted` makes only the grants on the nearest restricted folder or form, and on everything between it and the form, count there (ADR-0013). |
 | `jfbForm` | Id PK, Key (unique), FolderId FK null, Alias (unique), Name, DraftVersionId FK null, PublishedVersionId FK null, PublicRevision, ConcurrencyVersion, LastEntryNumber, ThemeAlias null, IsRestricted, TrashedUtc null, CreatedUtc, UpdatedUtc, CreatedByUserKey, UpdatedByUserKey | (FolderId), (TrashedUtc). `ConcurrencyVersion` makes stale saves fail with `409 concurrency_conflict`. `IsRestricted` as on `jfbFolder`. `ThemeAlias` copies the published version's `appearance.theme`, for the library's "used by" list and its delete guard (ADR-0015). |
 | `jfbFormVersion` | Id PK, FormId FK (cascade), Number, Kind (Draft, Published), SchemaVersion, Definition (NVARCHARMAX), DefinitionHash, PublicHash, PublicRevision null, Comment, IsPinned, CreatedUtc, CreatedByUserKey, PublishedUtc null, PublishedByUserKey null | Unique (FormId, Number). Every save adds a row. Published versions are never pruned. Draft saves are pruned by the cleanup job (keep the last 50 and the last 90 days, never pinned ones or ones an entry points at). `PublicRevision` is set on published rows (ADR-0002). |
-| `jfbFormField` | Id PK, FormId FK (cascade), FieldKey, Alias, Label (default culture), Type, StorageKind, IsSensitive, SortOrder, FirstVersionNumber null (null = only in a draft so far: shown with test entries only, set by the first publish that has the field), LastVersionNumber null (null = in the live version), ParentFieldKey null (repeater children and grid rows) | Unique (FormId, FieldKey). The **field catalogue**: every field ever published, for entry columns, exports and search. `jfbEntryValue` refers to a field by this `Id`, so a field gets its row before its first value is stored: on publish, or on the first preview submission for a field that exists only in the draft (ADR-0003). |
+| `jfbFormField` | Id PK, FormId FK (cascade), FieldKey, Alias, Label (default culture), Type, StorageKind, IsSensitive, SortOrder, FirstVersionNumber null (null = only in a draft so far: shown with test entries only, set by the first publish that has the field), LastVersionNumber null (null = in the live version, when `FirstVersionNumber` is set), ParentFieldKey null (repeater children and grid rows) | Unique (FormId, FieldKey). The **field catalogue**: every field ever published, for entry columns, exports and search. `jfbEntryValue` refers to a field by this `Id`, so a field gets its row before its first value is stored: on publish, or on the first preview submission for a field that exists only in the draft (ADR-0003). |
 | `jfbEntry` | Id PK (bigint), Key (unique), FormId FK, FormVersionId FK, Number, State, IsTest, SubmissionId, Digest, Culture, ContentKey null, PageUrl (path only), MemberKey null, IpAddress null, SpamScore, SpamReasons, SearchText (NVARCHARMAX, normalised, no sensitive values), Context (JSON), DurationSeconds null, SubmittedUtc, UpdatedUtc, StateChangedUtc, StateChangedByUserKey null, FirstSeenUtc null, VerifiedUtc null, ResumeTokenHash null, ResumeExpiresUtc null, CurrentPageKey null, ChallengeId null, HoldUntilUtc null, HoldReason null, PurgeAfterUtc null | Unique (FormId, Number) and (FormId, SubmissionId). `SubmissionId` is always set; the server generates one for no-JS, server-key and programmatic entries. **Filtered** unique indexes `WHERE … IS NOT NULL` on (FormId, ChallengeId) and on ResumeTokenHash, created with custom SQL in the migration (SQLite and SQL Server both support them; a test inserts two NULL rows). Also (FormId, SubmittedUtc), (FormId, State, SubmittedUtc), (MemberKey), (PurgeAfterUtc) (ADR-0003). |
 | `jfbEntryValue` | Id PK (bigint), EntryId FK (cascade), FieldId FK (`jfbFormField`, no cascade: SQL Server refuses a second cascade path, and entries are deleted before their form), RowIndex, ValueIndex, Text (NVARCHARMAX) null, TextKey (nvarchar 256, cleaned and folded in C# as rules compare (ADR-0005), for sort and filter; SQLite's `LOWER` folds ASCII only) null, Number (a double: `REAL` on SQLite, `FLOAT` on SQL Server, exact for the at most 15 significant digits a number field accepts; `Text` keeps the submitted value; Umbraco maps `decimal` to `TEXT` on SQLite) null, Date null, Bool null, FileId FK null | (EntryId, FieldId), (FieldId, TextKey, EntryId), (FieldId, Number, EntryId), (FieldId, Date, EntryId): covering indexes for the query shapes of ADR-0003. An integer `FieldId` instead of the field's GUID key halves the values on disk (1.3). Multi-value and repeater rows use ValueIndex and RowIndex. |
 | `jfbEntryFile` | Id PK, Key (unique), EntryId FK (cascade) null, FormId, FieldKey, OriginalName, StoredName, ContentType, SizeBytes, Sha256, ScanState, CreatedUtc | (EntryId), (CreatedUtc). Files without an entry after 24 h are orphans and get cleaned up. |
@@ -799,10 +799,10 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | `jfbEntryEvent` | Id PK (bigint), EntryId FK (cascade), OccurredUtc, Kind, UserKey null, Details (JSON) | (EntryId, OccurredUtc). Edits record old and new values only for non-sensitive fields, and they are deleted with the entry. |
 | `jfbEntryNote` | Id PK, EntryId FK (cascade), UserKey, Body, CreatedUtc, UpdatedUtc | Internal notes, never sent anywhere. |
 | `jfbActionRun` | Id PK (bigint), EntryId FK (cascade), FormVersionId, ActionKey, ActionType, Trigger, Seq, StopOnFailure, State (Pending, Running, Succeeded, Failed, Skipped, Uncertain), Attempts, NextAttemptUtc, LockedUntilUtc, LockedBy, LastErrorCode, LastErrorMessage (sanitised, ≤ 1000), CreatedUtc, StartedUtc, FinishedUtc | (State, NextAttemptUtc), (EntryId, Seq). `Seq` is the action's position, for the order of §4.4. A claim writes a token of its own to `LockedBy`, and every state change names the run, its token and its state (ADR-0007). |
-| `jfbEmail` | Id PK (bigint), Kind (Action, Resume, Verification, Test, Report, Digest, Forward), EntryId FK null (set null), ActionRunId null, To, Cc, Bcc, ReplyTo, From, Subject, HtmlBody, TextBody, Attachments (JSON of file keys), Culture, RecipientKey null, State (Queued, Sending, Sent, Failed, Uncertain, Limited), Attempts, NextAttemptUtc, LockedUntilUtc, LockedBy, LastError, CreatedUtc, SentUtc, PurgeAfterUtc | (State, NextAttemptUtc), (PurgeAfterUtc), (RecipientKey, CreatedUtc). Sent mail is purged after N days (default 30). RecipientKey is the visitor-typed address, trimmed, case-folded in C# (SQLite's `LOWER` folds ASCII only) and without a `+tag` in its local part, so the per-address limits count every spelling of one mailbox. `Limited` is final: a mail those limits hold back is never claimed, sent or retried (ADR-0012). |
+| `jfbEmail` | Id PK (bigint), Kind (Action, Resume, Verification, Test, Report, Digest, Forward), EntryId FK null (set null), ActionRunId null, To, Cc, Bcc, ReplyTo, From, Subject, HtmlBody, TextBody, Attachments (JSON of file keys), Culture, RecipientKey null, State (Queued, Sending, Sent, Failed, Uncertain, Limited), Attempts, NextAttemptUtc, LockedUntilUtc, LockedBy, LastError, CreatedUtc, SentUtc, PurgeAfterUtc | (State, NextAttemptUtc), (PurgeAfterUtc), (RecipientKey, CreatedUtc). Sent, failed, uncertain and limited mail is purged after N days (default 30); `PurgeAfterUtc` is set when a mail reaches one of those states. RecipientKey is the visitor-typed address, trimmed, case-folded in C# (SQLite's `LOWER` folds ASCII only) and without a `+tag` in its local part, so the per-address limits count every spelling of one mailbox. `Limited` is final: a mail those limits hold back is never claimed, sent or retried (ADR-0012). |
 | `jfbOptionList` | Id PK, Key (unique), Alias (unique), Name, Kind (Manual, Content, DataType, Url, File, Countries, Code), Config (JSON), Items (JSON), CacheSeconds, ConcurrencyVersion, CreatedUtc, UpdatedUtc | |
-| `jfbTheme` | Id PK, Key (unique), Alias (unique, fixed once created), Name, BaseTheme, Tokens (JSON), CustomCss, IsDefault, ConcurrencyVersion, CreatedUtc, UpdatedUtc | |
-| `jfbEmailLayout` | Id PK, Key (unique), Alias (unique), Name, Layout (JSON: logo, colours, header and footer per culture), IsDefault, CreatedUtc, UpdatedUtc | |
+| `jfbTheme` | Id PK, Key (unique), Alias (unique, fixed once created), Name, BaseTheme, Tokens (JSON), CustomCss, ConcurrencyVersion, CreatedUtc, UpdatedUtc | The default theme is a General setting per site (ADR-0015), not a flag here. |
+| `jfbEmailLayout` | Id PK, Key (unique), Alias (unique), Name, Layout (JSON: logo, colours, header and footer per culture), CreatedUtc, UpdatedUtc | The default layout is an Email setting per site (§4.8), not a flag here. |
 | `jfbFormTemplate` | Id PK, Key (unique), Kind (Form, Group), Name, Description, Category, Definition (NVARCHARMAX), CreatedUtc, CreatedByUserKey | Templates saved by users: whole forms, and saved groups of fields that the designer inserts as copies with new keys. The built-in ones ship as embedded JSON. |
 | `jfbOptionCapacity` | FormId FK (cascade), FieldKey, OptionValue, Taken, UpdatedUtc | PK (FormId, FieldKey, OptionValue). The places taken on options with a limit; the limit itself lives in the definition. Taken with `UPDATE … SET Taken = Taken + 1 WHERE … AND Taken < @limit` after an `INSERT … WHERE NOT EXISTS`. |
 | `jfbUserSetting` | UserKey, Name, Json (NVARCHARMAX), UpdatedUtc | PK (UserKey, Name). A backoffice user's own choices, the same on every device: column sets, saved filters, export choices, the digest. |
@@ -835,10 +835,10 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | `GET forms/{key}/render?instance=&page=&contentKey=&culture=` | The published form as HTML in the page's theme and culture, for a runtime that got `form_changed` on a page that may come from a cache (ADR-0004). `page` must be a local path. `no-store`. |
 | `POST forms/{key}/challenge` | A signed challenge (form, time, and optionally a proof-of-work puzzle). Fetched on first interaction, so cached pages stay cacheable. The response also carries what cached markup cannot: the places left per option, and the member values that rules use (§4.3.3). |
 | `POST forms/{key}/uploads` | Upload one file before submitting (progress per file): `multipart/form-data` with the `challenge` part first, then the `file` part, streamed and checked on its first bytes (ADR-0006). Returns a signed upload token. Limits per form, file and IP; `413 payload_too_large` and `415 unsupported_media_type` close the connection. |
-| `POST forms/{key}/validate` | Validate one page's values on the server: `{revision, culture, pageKey, values, challenge}`; `422` with errors by alias (multi-page). |
-| `POST forms/{key}/entries` | Submit: `{submissionId, revision, culture, contentKey, values, uploads, context, challenge, captchaToken}` → `{receipt, outcome:{kind, html \| url, delaySeconds}}`. |
+| `POST forms/{key}/validate` | Validate one page's values on the server: `{revision, culture, contentKey, pageKey, values, uploads, context, challenge}`; `422` with errors by alias (multi-page). |
+| `POST forms/{key}/entries` | Submit: `{submissionId, revision, culture, contentKey, values, consents, uploads, context, challenge, captchaToken}` (`consents` holds the hash of each consent wording shown, ADR-0009) → `{receipt, outcome:{kind, html \| url, delaySeconds}}`. |
 | `POST forms/{key}/receipt` | Check an uncertain submission by `{submissionId, challenge}`: the receipt and the outcome when an entry with that submission id was made with that challenge, otherwise `404 not_found` for every miss (ADR-0012). |
-| `POST forms/{key}/drafts` | Save and resume: `{values, pageKey, email, challenge}` → the resume link is emailed; the response never contains it. |
+| `POST forms/{key}/drafts` | Save and resume: `{revision, culture, contentKey, pageKey, values, email, challenge}` → the resume link is emailed; the response never contains it. Files are not kept with a draft (an upload without an entry is removed after 24 hours, ADR-0009), so the resumed form asks for them again. |
 | `POST drafts/resume` | `{token}` → values and page. The token comes from the URL fragment (`#jfb-resume=…`), so it never reaches server logs. |
 | `GET verify?t=` and `POST verify` | Email verification. The GET only shows a confirm button, because mail scanners follow links; the POST confirms. |
 | `GET forms/{key}/options/{fieldKey}?parent=&culture=` | Cascading option lists. |
@@ -921,9 +921,9 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - default retention per state;
   - IP handling;
   - sensitive-field defaults;
-  - third-party captcha consent mode (explicit, Cookiebot category, CMP through the JS API);
+  - third-party captcha consent mode (explicit, Cookiebot category, CMP through the JS API, and `implicit` only when the host allows it);
   - the insights switch.
-- **Access:** which user groups get which Jiron Form Builder permissions, globally and per folder or form (when the host doesn't lock them). Stored in `jfbPermission` (ADR-0013), with the same locks, conflicts and audit as the sections. A folder or form can be **restricted**, so that only grants made on it or inside it count there (ADR-0013); `JironFormBuilder:Access:Grants` sets the global grants from host configuration.
+- **Access:** which user groups get which Jiron Form Builder permissions, globally and per folder or form (when the host doesn't lock them). Stored in `jfbPermission` (ADR-0013), with the same locks, conflicts and audit as the sections. A folder or form can be **restricted**, so that, below it, only the grants on the nearest restricted folder or form and on everything between it and the form count (ADR-0013); `JironFormBuilder:Access:Grants` sets the global grants from host configuration.
 - **Integrations:** webhook signing secret reference, Slack and Teams defaults, Umbraco webhook events on or off.
 
 Every setting has:
@@ -1013,7 +1013,7 @@ A settings change raises a notification and a cache refresher: the saving server
   - **no HTML from data in Umbraco's modals:** Umbraco's confirm modal renders its strings as HTML, and form names, entry values and file names are untrusted. Every confirm goes through one helper with a Lit template, and a source test fails on any direct use of the modal (Tandem 10.1);
   - **polls never keep a session alive:** badge counts and other polls pause while the user is idle and never renew an expired session (Tandem ADR-0051);
   - **the preview frame cannot reach the backoffice:** it is sandboxed without `allow-same-origin`, so a form's theme or scripts never get the backoffice session. Its requests therefore come from the opaque origin `null`, which the public API accepts only with a short-lived signed preview ticket bound to the form (a finding of Tandem's security review);
-  - every management endpoint is authorised by Jiron Form Builder permissions, with tests that call each endpoint as a user who can see the resource but lacks the permission (`403 forbidden`) and as one who holds nothing on it (`404`, ADR-0013); the form picker is the one listed exception, authorised by content access;
+  - every management endpoint is authorised by Jiron Form Builder permissions, with tests that call each endpoint as a user who can see the resource but lacks the permission (`403 forbidden`) and as one who holds nothing on it (`404`, ADR-0013); endpoints that any user of the section may call declare the section requirement and are tested with a user without the section; the form picker is the one listed exception, authorised by content access;
   - sensitive values are masked unless the user has "view sensitive data", and exports leave them out unless chosen and permitted;
   - the audit log records views of entries with sensitive data, exports, deletions, state changes, settings and permission changes.
 - **Logging:** logs never contain field values, email addresses, tokens, file names or IP addresses (ADR-0009). Tests capture the logs and check.
@@ -1581,7 +1581,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - save draft with a concurrency check;
     - publish: run the structural validation (4.2), update the field catalogue, and bump the public revision only when the public projection changed. Publishing is a pipeline that later steps extend: the form check joins in 9.5b, the mirror file in 12.5;
     - unpublish.
-  - **Versions:** list, diff, restore (as a new version), pin and comment, plus the draft-version cleanup job.
+  - **Versions:** list, diff, restore (as a new version), pin and comment, plus the draft-version cleanup, the first part of the retention job (D8, ADR-0007).
   - **Copies and moves:**
     - duplicate, with or without actions, remapping every key and every rule, action and outcome reference;
     - copy actions to another form, remapping fields by alias and reporting the unmapped ones;
@@ -1607,7 +1607,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the OpenAPI document `jfb`, with a snapshot test that writes `docs/api/jfb.json`;
     - the TypeScript client in the backoffice package, generated from that committed snapshot rather than from a running site, so the client and the demo never wait on each other.
   - **The first endpoints** (§4.7): forms and folders (tree, search, CRUD, publish, versions, trash) over the 4.5 services.
-  - **The permission matrix test:** it enumerates **every** management endpoint by reflection, asserts there is more than zero, asserts each one declares a Jiron Form Builder permission or is on the reviewed exception list (only the form picker, authorised by content access, ADR-0013; a test fails when the list grows), and calls each as a user who can see the resource but lacks that permission, expecting `403`, and, for routes on a form, folder or entry, as a user who holds nothing on it, expecting `404` (ADR-0013). It fills route parameters by type, because an `int` route given a GUID answers `404` before the permission check. Every later step that adds endpoints is covered by it automatically.
+  - **The permission matrix test:** it enumerates **every** management endpoint by reflection, asserts there is more than zero, asserts each one declares a Jiron Form Builder permission, or the Forms section requirement for what any user of the section may call (setup and health, the user's own settings), or is on the reviewed exception list (only the form picker, authorised by content access, ADR-0013; a test fails when the list grows). It calls each as a user who can see the resource but lacks that permission, expecting `403`; for routes on a form, folder or entry, as a user who holds nothing on it, expecting `404` (ADR-0013); and each endpoint with the section requirement as a user without the Forms section, expecting `403`. It fills route parameters by type, because an `int` route given a GUID answers `404` before the permission check. Every later step that adds endpoints is covered by it automatically.
   - Done when: the integration tests for the endpoints and the matrix test pass, and the client is generated and committed.
 - [ ] **4.8 Phase review**
   - A subagent reviews the Core diff for SOLID, naming, async and load-balancing safety (no static mutable state). Fix what it finds.
@@ -1640,7 +1640,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Implement the sources, filters and escaping contexts of §4.3.3, plus unknown-tag handling and the calculation parser and evaluator, with no `eval`, no reflection and documented rounding (the exact decimals of ADR-0005: division to 20 places and `round` half away from zero, `out_of_range` past 60 digits).
   - **Also:** answer recall (only fields above the text or on earlier pages, hidden fields empty), `entry.reference`, and the date functions `daysBetween` and `yearsBetween` (leap days and a daylight-saving change in the vectors).
   - Done when:
-    - the vectors pass in both runtimes, including answer recall, the date functions, and division and rounding at their edges (thirds, halves, negative halves, division by zero, out of range), a calculation result rounded to its decimals, and one too long to store as a number (stored as text only, ADR-0005);
+    - the vectors pass in both runtimes, including answer recall, the date functions, and division and rounding at their edges (thirds, halves, negative halves, division by zero, out of range), and a calculation result rounded to its decimals and read rounded by a rule (ADR-0005);
     - a fuzz test of 10,000 random templates and formulas never throws an unhandled exception and never takes longer than 50 ms per input;
     - an injection test shows that merge tags cannot produce HTML, URL or JSON breakouts.
 - [ ] **5.4 Field types (server side)** (server side)
@@ -1681,7 +1681,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - **Places on options** (§4.4): taken in the transaction, given back on reject, spam, delete and erase.
     - **Empty submissions are refused:** a submission with no answer at all fails validation with a form-level message.
     - **Values kept only until the actions have run** are stored only when an action run applies (§4.4; their deletion comes with the processor in 8.1).
-  - Done when: integration tests cover each endpoint built here for success; validation errors by alias; a replayed submission returning the same receipt and a changed one returning `409`; `form_changed`, `form_closed` and the entry limit; CORS allowed and denied; oversize bodies. The upload test of 1.4b is ported, with the ASP.NET temp folder watched: a 60 MB upload to a 50 MB field is cut off with nothing buffered, a renamed `.exe` is refused on its first bytes with nothing stored, and a declared length over the limit is refused before a byte is read. They also cover 50 parallel submissions for the last 10 places of an option (exactly 10 accepted), a rejected entry giving its place back, and an empty submission refused. A JSON body with an escaped lone surrogate answers `400`, not `500` (ADR-0005).
+  - Done when: integration tests cover each endpoint built here for success; validation errors by alias; a replayed submission returning the same receipt and a changed one returning `409`; `form_changed`, `form_closed` and the entry limit; CORS allowed and denied; oversize bodies. The upload test of 1.4b is ported, with the ASP.NET temp folder watched: a 60 MB upload to a 50 MB field is cut off with nothing buffered, a renamed `.exe` is refused on its first bytes with nothing stored, and a declared length over the limit is refused before a byte is read. They also cover 50 parallel submissions for the last 10 places of an option (exactly 10 accepted), a rejected entry giving its place back, and an empty submission refused. A JSON body with an escaped lone surrogate answers `400 invalid_request`, not `500` (ADR-0005). A consent posted with the hash of a wording that has changed since (through the dictionary) answers `form_changed` and stores nothing. A calculation result too long for a number is stored as text only, with `Number` null (ADR-0005).
 - [ ] **6.2 Razor rendering**
   - **Rendering:**
     - the view component and tag helpers (`<jfb-render>`, `<jfb-assets>`, included once per page automatically unless turned off), with the nonce option (`<jfb-assets nonce>` and `IFormBuilderCspNonceProvider`, ADR-0004);
@@ -1698,7 +1698,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **No-JS posts with files** (ADR-0006): the `?jfb-post=<key>.<instance>` marker in the action, the limits middleware before routing with its drain allowance, and the upload's file rules in the surface action. The message for a post that is too large is designed once, and a file that passed its checks is kept across a re-render for other errors, through a signed token in the form.
   - **The output cache rules of ADR-0004:** `no-store` on every response of the surface action and on every render that is per visitor, not a `GET`, or carries `jfb-sent`; the `IWebsiteOutputCacheVaryByProvider` for `jfb-sent`; never an `IWebsiteOutputCacheRequestFilter`.
   - **The `render` endpoint** of §4.6 (for `form_changed`), through the same view component.
-  - Done when: TestServer tests pass (including the compressed and cacheable asset responses), and Playwright with JavaScript **disabled** submits a valid form, an invalid one and a three-page one, with two forms on one page. With Umbraco's output cache on, tests also show: a cached page byte-identical for two visitors and holding nothing per visitor; `?jfb-sent` showing the outcome and never stored, for any value; no response to a post stored; the surface auto-route answering `400`; and `render` returning the published form with the given instance id. With JavaScript disabled, Playwright in Edge also shows a file that is too large reported at its field (not a reset connection), a valid file stored, a renamed `.exe` refused, and a valid file kept when another field fails (ADR-0006).
+  - Done when: TestServer tests pass (including the compressed and cacheable asset responses), and Playwright with JavaScript **disabled** submits a valid form, an invalid one and a three-page one, with two forms on one page. A no-JS post whose consent wording changed since the page was rendered shows the form again with that consent unticked and a notice. With Umbraco's output cache on, tests also show: a cached page byte-identical for two visitors and holding nothing per visitor; `?jfb-sent` showing the outcome and never stored, for any value; no response to a post stored; the surface auto-route answering `400`; and `render` returning the published form with the given instance id. With JavaScript disabled, Playwright in Edge also shows a file that is too large reported at its field (not a reset connection), a valid file stored, a renamed `.exe` refused, and a valid file kept when another field fails (ADR-0006).
 - [ ] **6.3 Themes**
   - **`default`:**
     - CSS custom properties and an opt-in dark scheme;
@@ -1722,7 +1722,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Submitting:**
     - fetch submission with an in-flight lock and a stable `submissionId`;
     - the error summary with focus management, and `aria-live` announcements;
-    - `form_changed` handling with answer restore (§3.1), through the `render` endpoint (ADR-0004);
+    - `form_changed` handling with answer restore (§3.1), through the `render` endpoint, leaving a consent whose wording changed unticked (ADR-0004);
     - a submission id that does not depend on `crypto.randomUUID()`, which exists only in secure contexts, and chunk file names with a content hash (ADR-0004).
   - **The developer surface and constraints:** the JS API and DOM events (§4.9), the CSP nonce, no cookies.
   - **Field behaviours:**
@@ -1730,7 +1730,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - The ranking field's move buttons with live announcements, and the grid's stacked layout on phones.
   - Done when:
     - Vitest covers the runtime;
-    - Playwright on the demo covers validation, rules, calculations, answer recall, submission, `form_changed` and every field type's interaction, with `form_changed` on a page served stale from the output cache (the published form swapped in, the answers kept);
+    - Playwright on the demo covers validation, rules, calculations, answer recall, submission, `form_changed` and every field type's interaction, with `form_changed` on a page served stale from the output cache (the published form swapped in, the answers kept, and a consent whose wording changed left unticked with a notice);
     - Playwright shows no CSP violation with `script-src 'self'` on a cached page and with a nonce on an uncached one, lazily loaded chunks included, and a submission from a plain-HTTP origin;
     - a **keyboard-only** run completes the kitchen-sink form;
     - Playwright shows an oversize file and a renamed `.exe` refused before any upload request is sent, and an upload cut off by the server reported as a failed upload with a retry;
@@ -1755,7 +1755,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The renderer:** `<jfb-form>` (packages/element) renders the default theme's markup from JSON with the same runtime.
   - **The Content Delivery API:** the form picker returns `{key, alias, name}`, and with expansion, the projection.
   - **Server-key submissions.**
-  - Done when: a static page on 5521 (cross-origin, allowlisted) renders and submits a multi-page form through the element; the Delivery API test passes; server-key tests pass.
+  - Done when: a static page on 5521 (cross-origin, allowlisted) renders and submits a multi-page form through the element, with the honeypot out of view and out of the accessibility tree; the Delivery API test passes; server-key tests pass.
 - [ ] **6.7 The form picker, blocks and "used on"**
   - **The data type "Jiron Form Builder form picker":** single or multiple, allowed folders or forms, optional theme override and redirect override. Plus the value converters and the UFM block-label component.
   - **"Create a form block for me":** an idempotent service that creates a "Form" element type and data type, and never changes existing types.
@@ -1774,7 +1774,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a honeypot whose name varies per public revision;
     - a minimum fill time from the signed challenge;
     - the `challenge` endpoint (§4.6) and its use by the runtime for JS posts, and as the first part of every upload, verified before the file is read (ADR-0006);
-    - no time signal on no-JS posts, because the markup is cache-safe (§3.4). They are scored on the honeypot, the blocked ranges and the content rules, and rate limited like every post (ADR-0012), and a test covers that case;
+    - no time signal on no-JS posts, because the markup of anonymous forms is cache-safe (§3.4). They are scored on the honeypot, the blocked ranges and the content rules, and rate limited like every post (ADR-0012), and a test covers that case;
     - the challenge id stored on the entry (unique per form), so a solved challenge can't be replayed.
   - **What cached markup cannot carry** (§4.6): the challenge response also brings the places left per option and the member values for rules. The runtime then shows the places ("3 places left", "full") and evaluates member conditions with them; the server has refused full options since 6.1 either way.
   - **Limits:** the ASP.NET Core rate limiter per IP, form and site, with bounded partitions; origin checks; member-bound challenges on members-only forms (ADR-0004); the blocked address ranges of the spam settings (§4.8).
@@ -1828,7 +1828,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The limits for visitor-addressed mail** (§4.10): per recipient address (counted on `RecipientKey`, §4.5), per site, and the "limited" delivery state.
   - Done when:
     - tests pass with the pickup folder, including one that shows an HTML mail as one `text/html` part and a plain-text mail as one `text/plain` part, and one that shows header values with line breaks arriving with spaces;
-    - a test shows that addresses differing only in case or by a `+tag` count as one recipient, and that a `Limited` mail is never sent or retried;
+    - a test shows that addresses differing only in case or by a `+tag` count as one recipient, and that a `Limited` mail is never sent or retried and is purged on time;
     - HTML snapshot tests pass;
     - every email is well-formed with inlined CSS (checked by a test);
     - a long unbroken word stays inside a 375 px wide rendering of every layout (Playwright on the `.eml` HTML);
@@ -1854,7 +1854,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Slack and Teams:** presets with formatted text.
   - **Umbraco webhook events:** registration (§4.4).
   - Done when: tests pass against the stub on 5560, the SSRF refusal tests pass, and the signature verification samples are tested.
-- [ ] **8.5 Content, state, verification and approval actions**
+- [ ] **8.5 Content and state actions, email verification and approval**
   - **Create or update content:**
     - document type, dynamic or picked parent, field-to-property mapping with type compatibility, publish or save;
     - uploaded files are not copied to media unless a mapping says so, and then into a chosen folder with the same file checks.
@@ -1867,7 +1867,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Manual approval:**
     - The approved and rejected triggers, with bulk and single changes.
   - Done when:
-    - tests pass, and E2E double opt-in works from the pickup email, including a simulated link-scanner GET that verifies nothing. A test shows that verification mail obeys the visitor-address limits (§4.10);
+    - tests pass, and E2E double opt-in works from the pickup email, including a simulated link-scanner GET that verifies nothing; no action runs before the confirmation, and after it the submitted actions run, then the verified ones. A test shows that verification mail obeys the visitor-address limits (§4.10);
     - tests cover the approved and rejected triggers, for single and bulk changes.
 - [ ] **8.6 Save and resume, and phase review**
   - **The flow:**
@@ -1878,7 +1878,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - drafts purged when they expire.
   - **Phase review:** write the handover note.
   - Done when:
-    - Playwright resumes a three-page form from the link in the pickup email, and tests cover expiry, a second resume, the submit that turns the draft into an entry, and the visitor-address limits for resume mail (§4.10);
+    - Playwright resumes a three-page form from the link in the pickup email, and tests cover expiry, a second resume, the submit that turns the draft into an entry, a resumed form asking again for the files it had, and the visitor-address limits for resume mail (§4.10);
     - pushed, with the phase-review gate.
 
 ### Phase 9: The backoffice I: section, form library and designer
@@ -1972,7 +1972,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - an outcome redirecting to an unpublished page;
     - a file field without limits;
     - a text that recalls a later field's answer (an error, §4.3.3);
-    - a consent text with a merge tag that differs per visitor (an error, ADR-0014);
+    - a consent text with a merge tag other than `form`, `page`, `site` or `dictionary` (an error, ADR-0014);
     - a redirect that puts answers into its URL (a warning: answers in URLs end up in logs and browser history);
     - labels or patterns that ask for card numbers or passwords (a warning, §1.4);
     - a required choice whose options can all become full;
@@ -2068,7 +2068,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - a comparison period, grouped by day, week or month;
     - a site-wide overview table.
   - **Charts** are small, accessible SVG components with a table view (no chart library).
-  - **Opt-out** per site and per form.
+  - **Opt-out** globally and per form (the privacy section is global, ADR-0008).
   - Done when: unit tests cover the aggregation, Playwright shows the beacons arriving and the charts filling on the demo (screenshots reviewed in `docs/ux/review-11.5.md`), and a test proves the stats hold no personal data (the `invalid` beacon included: a test posts a value with it and finds it nowhere).
 - [ ] **11.5b Answer summaries** (added in 1.1 from the feature study)
   - **What it shows,** in the form's Insights view, over a date range and the entry filters of 11.1:
@@ -2124,11 +2124,11 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 - [ ] **12.4a Global settings and access**
   - **Settings:** the sections of §4.8 with host locks, for the features that exist by now. The privacy section's retention and IP settings come with 13.1 and 13.3 ("Settings come with their feature").
   - **Access:** a permissions editor (a matrix of groups and permissions, with folder and form overrides).
-  - Done when: Playwright passes per section, the `403` matrix covers the new endpoints, and a test enumerates every setting and fails unless each has a screen (or is marked host-only) and is read by product code outside the settings module.
+  - Done when: Playwright passes per section, the permission matrix covers the new endpoints, and a test enumerates every setting and fails unless each has a screen (or is marked host-only) and is read by product code outside the settings module.
 - [ ] **12.4b Deliveries and the audit log**
-  - **Deliveries:** emails and webhook runs, with filters and retry. A retry of an `Uncertain` run asks first and says that it may deliver twice; while sending is paused, the screen says so once (§4.4).
+  - **Deliveries:** emails and webhook runs, with filters and retry. A retry of an `Uncertain` run asks first and says that it may deliver twice; a `Limited` mail offers no retry and says which limit held it back; while sending is paused, the screen says so once (§4.4).
   - **The audit log viewer,** with filters and export.
-  - Done when: Playwright passes for both screens, including the confirmation before an `Uncertain` retry and the paused notice, and the `403` matrix covers the new endpoints.
+  - Done when: Playwright passes for both screens, including the confirmation before an `Uncertain` retry and the paused notice, and the permission matrix covers the new endpoints.
 - [ ] **12.5 Forms as files, import and export**
   - **Import and export:** the JSON import UI, with "new copy" or "replace".
   - **Mirror mode (D25):** write on publish, import on start-up, and detect conflicts (both file and database changed: keep the database, warn in the health check). Documented.
@@ -2198,7 +2198,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - A workspace view on the member editor lists that member's entries, with permissions applied.
   - Done when:
     - tests and Playwright pass with the seeded members, including the entries view on the member;
-    - a members-only post with another member's challenge, without a challenge, or from a page on another origin is refused on both paths, and no Jiron Form Builder response sets a cookie.
+    - a members-only post with another member's challenge, without a challenge, with a challenge fetched without the member's cookie, or from a page on another origin is refused on both paths; a members-only page refuses to be framed by another origin; a repeated no-JS post leads to the first entry's outcome without a second entry, and an expired challenge renders the form again with its answers; no Jiron Form Builder response sets a cookie.
 - [ ] **14.4 Multi-site and phase review**
   - **Per-site settings:** sender, base URL, defaults and theme, resolved by the request's root or host. Links in emails follow the site.
   - **Phase review:** write the handover note.

@@ -1,6 +1,7 @@
 # 0008. The settings model
 
-- Status: accepted, the site of a request without content amended in 1.7b; host defaults and the validation status amended in 1.8
+- Status: accepted, the site of a request without content amended in 1.7b; host defaults and the validation status
+  amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.4 (the framework), each section in the step that builds its service, the
   screens in Phase 9 and later
@@ -41,10 +42,10 @@ change a migration of everything.
   allowed, so an invalid configuration stops start-up with a sentence a developer can act on. Lists start empty,
   because the binder appends to lists that already hold items, and defaults fill them afterwards.
 - It holds what belongs to the host or to security (§4.8): the public API's base path, allowed origins and server
-  keys; rendering switches; file roots and hard caps; privacy permissions (`AllowFullIp`, `AllowRetentionOff`, `AllowImplicitCaptchaConsent`); captcha
-  keys; webhook hosts; the pause switch; secrets; the definition mirror; limits; designer locks; `LockedSections`. It holds
-  no defaults for backoffice settings (the default theme, the captcha consent mode): those are backoffice values,
-  which the host can only restrict or lock.
+  keys; rendering switches; file roots and hard caps; privacy permissions (`AllowFullIp`, `AllowRetentionOff`,
+  `AllowImplicitCaptchaConsent`); captcha keys; webhook hosts; the pause switch; secrets; the definition mirror;
+  limits; designer locks; `LockedSections`. It holds no defaults for backoffice settings (the default theme, the
+  captcha consent mode): those are backoffice values, which the host can only restrict or lock.
 - **The IntelliSense schema** `appsettings-schema.Jiron.Umbraco.FormBuilder.json` is generated from the options
   classes and their XML docs by a test that fails when the committed file is stale. Its `$ref`s resolve within the
   file itself (Tandem 11.1b). The Core package ships it with a `buildTransitive` props file that adds it to

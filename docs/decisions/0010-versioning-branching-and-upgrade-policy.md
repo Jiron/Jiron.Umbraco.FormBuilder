@@ -60,11 +60,11 @@ and CI also runs against the latest 17.x.
 - host configuration keys.
 
 Within a major it changes only by addition. A replaced member carries `[Obsolete]` naming its replacement, keeps
-working for the rest of its major and the whole next one, and goes at the major after that at the earliest
-(deprecated in 17.x, removed in 19.0 at the earliest), so every deprecation lasts at least a full major (D21). Package validation (`EnablePackageValidation`,
-with a baseline from the first stable release on) and the public-surface snapshot (15.1) enforce it. A breaking change
-to the HTTP API is a new version (`/jfb/api/v2`) served beside the old one for at least the rest of the major and
-the whole next one.
+working for the rest of its major and the whole next one, and goes at the major after that at the earliest (deprecated
+in 17.x, removed in 19.0 at the earliest), so every deprecation lasts at least a full major (D21). Package validation
+(`EnablePackageValidation`, with a baseline from the first stable release on) and the public-surface snapshot (15.1)
+enforce it. A breaking change to the HTTP API is a new version (`/jfb/api/v2`) served beside the old one for at least
+the rest of the major and the whole next one.
 
 **The management API** (`/umbraco/jfb/management/api/v1`) belongs to the backoffice, which ships in the same
 package version. It changes by addition where it can, but it is not part of the guarantee; a change that could break

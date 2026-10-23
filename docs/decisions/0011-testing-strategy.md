@@ -116,10 +116,10 @@ integration project of its own.
   commercially licensed tools (CLAUDE.md rule 4).
 - **A bug fix comes with the test that would have caught it.**
 - **Security is first-class:** the permission matrix for every management endpoint (`403` where the user sees the
-  resource but lacks the permission, `404` where they hold nothing on it, ADR-0013; route parameters filled by type, so
-  a route never answers `404` for a malformed parameter before the permission check), escaping tests with hostile names and values in every
-  output (Razor, email, backoffice, exports), and log checks for every path that handles values, tokens or file
-  names (§4.10).
+  resource but lacks the permission, `404` where they hold nothing on it, ADR-0013; route parameters filled by type,
+  so a route never answers `404` for a malformed parameter before the permission check), escaping tests with hostile
+  names and values in every output (Razor, email, backoffice, exports), and log checks for every path that handles
+  values, email or IP addresses, tokens or file names (§4.10).
 - **Bodies, not only statuses:** error tests check the ProblemDetails `code`, because Umbraco's error handling can drop
   a refusal's body and keep its status.
 - **No real keys:** every outside service is a stub or a fake (D22). Real-key checks are OWNER-TODO items.

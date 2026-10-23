@@ -100,11 +100,11 @@ option 2 for no-JS posts.
     base the no-form feature. The action also removes the form value providers.
   - In order: a declared `Content-Length` over the field's limit plus 64 KB is refused with `413` before a byte is
     read; Kestrel's limit for the request is set to the same sum; the body must be `multipart/form-data` with a
-    boundary of at most 70 characters; the reader allows at most 8 headers and 4 KB of headers per part; the `challenge` part (at most
-    4 KB) must come first and is verified before the file's first byte is read; the first bytes of the `file` part
-    are sniffed, and the file is refused with `415` unless its extension is allowed for the field and the bytes match
-    that type, and always when they are an executable (PE, ELF, Mach-O or a `#!` script); the store then reads through
-    a stream that enforces the limit on every read and answers `413` past it.
+    boundary of at most 70 characters; the reader allows at most 8 headers and 4 KB of headers per part; the
+    `challenge` part (at most 4 KB) must come first and is verified before the file's first byte is read; the first
+    bytes of the `file` part are sniffed, and the file is refused with `415` unless its extension is allowed for the
+    field and the bytes match that type, and always when they are an executable (PE, ELF, Mach-O or a `#!` script);
+    the store then reads through a stream that enforces the limit on every read and answers `413` past it.
   - Refusals close the connection and are strict: the server never reads past the limit. The runtime checks size and
     type in the browser first, with the same signature table, so the server's refusal is for clients that skip it.
 - **No-JS posts with files:**

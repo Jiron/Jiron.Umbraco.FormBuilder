@@ -86,7 +86,8 @@ Option 3 for text, option 2 for patterns, exact decimals for numbers, and one JS
     (`too_many_digits`), so it is exact as a double (ADR-0003); comparisons are exact at any length;
   - a calculation's result is stored rounded half away from zero to its `format.decimals` (2 when unset, 0 to 15). A
     result that still has more than 15 digits is stored as text only (`Number` stays null, so it neither filters nor
-    sorts) and is never refused, because the visitor did not type it.
+    sorts) and is never refused, because the visitor did not type it. The rounded result is the field's value
+    everywhere: in rules, other calculations, merge tags and the stored entry.
 - **Dates and "today":**
   - "today" is the local date of the injected instant in the site's IANA time zone: `Intl.DateTimeFormat` with
     `formatToParts` in the browser, `TimeZoneInfo.FindSystemTimeZoneById` and `ConvertTime` on the server; an unknown
@@ -99,9 +100,8 @@ Option 3 for text, option 2 for patterns, exact decimals for numbers, and one JS
 - **Patterns:** the subset and its limits of the research note (500 code points, counts up to 1,000, at most 2,000
   characters once counted repeats are unrolled), parsed, compiled to a Thompson automaton and run over code points,
   the same algorithm in both runtimes. A pattern matches the whole value, is case-sensitive, and is normalised like a
-  value. Anything outside the subset is `unsafe_pattern`: publishing refuses it, and a draft keeps it while
-  the form check lists it (ADR-0002). Neither runtime's regular-expression
-  engine runs editors' patterns.
+  value. Anything outside the subset is `unsafe_pattern`: publishing refuses it, and a draft keeps it while the form
+  check lists it (ADR-0002). Neither runtime's regular-expression engine runs editors' patterns.
 - **Conditions and rules** are checked as a whole before they are evaluated, with the codes `unknown_field`,
   `unknown_operator`, `operator_not_for_kind`, `invalid_operand` and `unsafe_pattern`, so evaluation order never
   changes an outcome. The operator semantics (which kinds each takes, "some answer", "the first answer", exact

@@ -1,6 +1,7 @@
 # 0002. The form definition model, versions and the public projection
 
-- Status: accepted; theme alias, calculation decimals, consent and card defaults, unsafe patterns and verification amended in 1.8
+- Status: accepted; theme alias, calculation decimals, consent and card defaults, unsafe patterns and verification
+  amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2 (the model, the schema, upgraders, structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
@@ -234,11 +235,11 @@ to the action type. Secrets appear only as `$JironFormBuilder:Secrets:<Name>` re
 }
 ```
 
-Email verification is the `verification` setting only, never an action: its mail is a system mail (ADR-0007), and
-the actions on the `verified` trigger run once the visitor confirms. "Unique per form on a chosen field" shows under
-Availability in the designer and is stored as that field's
-`uniquePerForm` check. ADR-0012 fixes the protection levels and ADR-0009 the privacy values; their shape here is
-theirs to refine before v1 is fixed (below).
+Email verification is the `verification` setting only, never an action: its mail is a system mail (ADR-0007). While
+the entry is `Unverified` no action runs; confirming makes it `Submitted` and queues its `submitted` actions, then its
+`verified` ones. "Unique per form on a chosen field" shows under Availability in the designer and is stored as that
+field's `uniquePerForm` check. ADR-0012 fixes the protection levels and ADR-0009 the privacy values; their shape here
+is theirs to refine before v1 is fixed (below).
 
 **The built-in types' settings** (§4.3.2). Numbers that answers are compared with (min, max, step) are wire
 strings (ADR-0005); counts are JSON integers; relative dates use the operand form `{ "today": "+2d" }`.
@@ -299,12 +300,14 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
   unknown properties, wrong types, invalid keys, duplicate keys, an unknown or newer `schemaVersion`, the size limits
   (2 MB, the text lengths above) and the element limits of §4.3.1. Codes: `invalid_json`, `unknown_property`,
   `invalid_type`, `invalid_value`, `duplicate_key`, `unsupported_schema_version`, `limit_exceeded`.
-- **Publishing** also runs the structural validation of 4.2 and refuses every problem it finds: aliases (`alias_invalid`,
-  `alias_reserved`, `alias_duplicate`), references (`unknown_field` for a condition, check or option parent that names
-  no field, `unknown_type`), cycles in the graph of rules over fields, groups and pages (`cycle`), and the condition
-  checks both runtimes run (`unknown_operator`, `operator_not_for_kind`, `invalid_operand`, `unsafe_pattern`,
-  ADR-0005), the last also for the `pattern` checks of a field's `validation` list. The form check (9.5b) adds its errors (a missing label, an email action without an email field, a text
-  that recalls a later field, a consent text whose merge tags differ per visitor) and its warnings, which never block.
+- **Publishing** also runs the structural validation of 4.2 and refuses every problem it finds: aliases
+  (`alias_invalid`, `alias_reserved`, `alias_duplicate`), references (`unknown_field` for a condition, check or option
+  parent that names no field, `unknown_type`), cycles in the graph of rules over fields, groups and pages (`cycle`),
+  and the condition checks both runtimes run (`unknown_operator`, `operator_not_for_kind`, `invalid_operand`,
+  `unsafe_pattern`, ADR-0005), the last also for the `pattern` checks of a field's `validation` list. The form check
+  (9.5b) adds its errors (a missing label, an email action without an email field, a text that recalls a later field,
+  a consent text with a merge tag other than `form`, `page`, `site` or `dictionary`) and its warnings, which never
+  block.
 - **A draft keeps** what the editor did, and the form check lists every problem with a "fix it" link. Deleting a
   field that rules use says so and can be undone; it does not force the editor to rewrite the rules first. Drafts
   reach visitors only through the preview, which runs both runtimes' checks first and shows a broken rule as an issue
@@ -314,17 +317,17 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
 
 - **Every save appends a row to `jfbFormVersion`:** `Number` counts up per form; `Kind` is `Draft` or `Published`.
 - **Publishing** appends a `Published` row with the draft's definition, and in one transaction: upgrades the document
-  to the current `schemaVersion`, validates it, updates the field catalogue (new fields get rows; removed ones get
-  `LastVersionNumber`, ADR-0003), sets `PublishedVersionId`, and raises `FormPublishing` (cancelable) and
-  `FormPublished`. A cache refresher tells every server.
+  to the current `schemaVersion`, validates it, updates the field catalogue (new fields get rows, or their draft-only
+  row gets its `FirstVersionNumber`; removed ones get `LastVersionNumber`, ADR-0003), sets `PublishedVersionId`, and
+  raises `FormPublishing` (cancelable) and `FormPublished`. A cache refresher tells every server.
 - **The draft** stays the latest `Draft` row. "Unpublished changes" means the draft's `DefinitionHash` differs from the
   published one's.
 - **Unpublishing** clears `PublishedVersionId`; the versions and entries stay.
 - **Restoring** a version copies its definition into a new draft row ("restored from version N"); publishing it is a
   separate step.
 - **Pinning and comments:** a version can carry a comment and be pinned. The retention job (ADR-0007) keeps every
-  published version, every pinned one and every one an entry points at (preview entries point at drafts), plus the last 50
-  drafts and the drafts of the last 90 days.
+  published version, every pinned one and every one an entry points at (preview entries point at drafts), plus the
+  last 50 drafts and the drafts of the last 90 days.
 - **Concurrency:** every change to a form (save, publish, rename, move) raises `jfbForm.ConcurrencyVersion`. A save
   sends the value it read; a stale one gets `409 concurrency_conflict` with the current state.
 - **Diff** matches elements by key and reports elements added, removed and moved, and properties changed, per culture
@@ -371,15 +374,16 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
 - **"Older but compatible"** (§4.4, step 1): a submission against an older revision is validated against the current
   published version. When every error falls on a field that the posted revision also had, the answer is the usual
   `422 validation_failed`. When an error falls on a field the visitor never saw, when a field the visitor answered no
-  longer exists, or when a consent text the visitor agreed to has changed, the answer is `form_changed`, and the
-  runtime refreshes the form (ADR-0004). The server loads the posted revision's projection to decide.
+  longer exists, or when a consent text the visitor agreed to has changed (by the hash of the wording shown, which the
+  form posts, so a change through the dictionary, a page property or a link counts too), the answer is `form_changed`,
+  and the runtime refreshes the form (ADR-0004). The server loads the posted revision's projection to decide.
 
 ### Exports, templates and mirror files
 
 - **The export envelope** (`jfb-form-export/1`):
   `{ "format", "packageVersion", "exportedUtc", "form": { "key", "alias", "name" }, "definition", "optionLists" }`.
-  It includes the library option lists the form uses, so an import can reuse or create them. Themes, content, media
-  and member groups are named only by key; an import that cannot resolve one shows it in the form check.
+  It includes the library option lists the form uses, so an import can reuse or create them. Content, media and member
+  groups are named only by key, and themes by alias; an import that cannot resolve one shows it in the form check.
 - **Import** creates a new form with new keys, or, when the form's key exists and the user chooses it, a new draft of
   that form.
 - **Duplicating** gives every element a new key and remaps every reference (rules, checks, option parents, the

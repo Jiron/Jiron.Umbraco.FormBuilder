@@ -37,18 +37,19 @@ inline script or style. ADR-0002 fixed what the projection holds; ADR-0012 the h
 
 - **A theme** is registered in code through `IFormBuilderTheme`: an alias, a display name, a stylesheet (or none), a
   class map, its token defaults, whether it offers the dark scheme, and its view folder.
-- **Built in:** `default`; `unstyled` (no look and no extra classes, only the functional base rules below); `bootstrap5` (a class map onto Bootstrap's
-  classes and a small stylesheet for what Bootstrap lacks, such as the error summary and choice cards; Bootstrap
-  itself is the site's).
+- **Built in:** `default`; `unstyled` (no look and no extra classes, only the functional base rules below);
+  `bootstrap5` (a class map onto Bootstrap's classes and a small stylesheet for what Bootstrap lacks, such as the
+  error summary and choice cards; Bootstrap itself is the site's).
 - **Library themes** (`jfbTheme`, 12.2) are a base theme plus tokens and custom CSS. They add no views of their own; a
   site may still give one a view folder.
 - **The functional base rules** ship with every theme, `unstyled` included, in a small stylesheet that `<jfb-assets>`
-  always includes: the honeypot's container kept out of view, visually hidden text for screen readers, and `[hidden]`
-  honoured. They need no JavaScript, and no theme can leave them out.
+  and the headless element `<jfb-form>` always include: the honeypot's container kept out of view, visually hidden
+  text for screen readers, and `[hidden]` honoured. They need no JavaScript, and no theme can leave them out.
 - **A form's theme** is its `appearance.theme` alias (ADR-0002), else the default theme of the General section for the
-  form's site (ADR-0008), whose code default is `default`. A form picker can override it per placement (6.7). A theme's
-  alias is fixed once it exists (its name can change); a form whose theme is gone renders with `default`, and the form
-  check says so. The form row copies the published theme alias (`jfbForm.ThemeAlias`) for the library's "used by" list.
+  form's site (ADR-0008), whose code default is `default`. A form picker can override it per placement (6.7). A
+  theme's alias is fixed once it exists (its name can change); a form whose theme is gone renders with `default`, and
+  the form check says so. The form row copies the published theme alias (`jfbForm.ThemeAlias`) for the library's "used
+  by" list and its delete guard, which also counts the General defaults that name the theme.
 
 ### Views
 
@@ -96,9 +97,10 @@ What the runtime, the headless element and site CSS may rely on, in every theme:
 | Hidden by a rule | the element carries `hidden` and `data-jfb-hidden`; its controls are `disabled`, so they are never posted |
 | The error summary | `<div class="jfb-error-summary" data-jfb-summary role="alert" tabindex="-1">` with a heading and one link per error to the control's id |
 | Live messages | one `<div data-jfb-live aria-live="polite">` per form (places left, the changed form, saved drafts) |
-| Navigation | `<div class="jfb-navigation">` with `<button type="submit" name="jfb-nav" value="back|next|submit" data-jfb-nav="…">` |
+| Navigation | `<div class="jfb-navigation">` with `<button type="submit" name="jfb-nav" value="back\|next\|submit" data-jfb-nav="…">` |
 | The outcome | `<div class="jfb-outcome" data-jfb-outcome tabindex="-1">`, which receives focus |
 | The honeypot | `<div class="jfb-hp" aria-hidden="true">` with its label and input (ADR-0012) |
+| A consent field | its checkbox, plus `<input type="hidden" name="jfb-consent-<alias>" value="<hash>">` holding the SHA-256 of the wording shown, which is the same for every visitor (ADR-0009) |
 
 - **State lives in attributes** (`hidden`, `disabled`, `aria-invalid`, `aria-current="step"`, `data-jfb-busy`), so
   themes style states without classes the runtime would have to manage.

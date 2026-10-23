@@ -1,6 +1,7 @@
 # 0009. Privacy defaults
 
-- Status: accepted; consent texts, sensitive fields in mail, the global privacy section and context values amended in 1.8
+- Status: accepted; consent texts, sensitive fields in mail, the global privacy section and context values
+  amended in 1.8
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 4.1 (the columns), 6.1 (what a submission stores), 8.x (mail), 13.1 to 13.4
   (retention, data subject tools, sensitive data and IP addresses, the documentation) and 14.3 (members)
@@ -31,8 +32,8 @@ search text, events) shorter or out altogether.
 
 ## Decision
 
-**Option 2 as the default.** Options 1 and 3 stay reachable per form and globally, within the host's locks
-(ADR-0008): "never store" is a form setting, and turning retention off needs `JironFormBuilder:Privacy:AllowRetentionOff`.
+**Option 2 as the default.** Options 1 and 3 stay reachable per form and globally, within the host's locks (ADR-0008):
+"never store" is a form setting, and turning retention off needs `JironFormBuilder:Privacy:AllowRetentionOff`.
 
 **What a submission stores, by default:**
 
@@ -43,9 +44,9 @@ search text, events) shorter or out altogether.
 | The page | the path only, never the query or the referrer | – | – |
 | User agent, screen, location | never | – | – |
 | The member | the member's key, when a member is signed in (needed for "one entry per member" and the member's entries view) | – | – |
-| Context values | only the names the form lists (`developer.contextValues`), plus the name of the server key a server-to-server submission used (ADR-0012) | per form | – |
+| Context values | only the names the form lists (`developer.contextValues`), plus the name of the server key a server-to-server submission used, under the reserved name `jfbServerKey` (ADR-0012) | per form | – |
 | Duration | seconds from the first interaction to the submission (insights) | – | – |
-| Consent | `true` plus the hash of the exact text shown and its culture (`jfbConsentText`) | – | – |
+| Consent | `true` plus the hash of the exact text shown and its culture (`jfbConsentText`). The form posts the hash of the wording it showed, and a post whose hash differs from the current wording is answered as a changed form (ADR-0002), so the stored wording is always the one shown | – | – |
 | Search text | the normalised values of non-sensitive fields only | – | – |
 
 **Retention defaults** (the engine is 13.1; each starts from the entry's last state change):
@@ -61,7 +62,7 @@ search text, events) shorter or out altogether.
 | Entries waiting for email verification | when the verification link expires (7 days by default) |
 | Values kept only until the actions have run | as soon as every action run of the entry is final (§4.4) |
 | Uploaded files without an entry | 24 hours |
-| Sent mail (addresses and bodies) | 30 days; failed mail 30 days after its last attempt |
+| Mail (addresses and bodies) | sent mail 30 days; failed, uncertain and limited mail 30 days after the last attempt or the limit |
 | Action-run error messages | with their entry; sanitised and at most 1,000 characters (§4.5) |
 | The audit log (user and entity keys, never values) | 365 days |
 | Daily statistics (no personal data) | 3 years |
@@ -92,7 +93,8 @@ statistics kept); a site setting can choose deletion instead (14.3).
   stacks or the site's own font (CLAUDE.md rule 4). A third-party captcha loads only on forms that use it and only
   after consent (ADR-0012, §4.10).
 - **Insights** are counters per form and day with no identifiers (`jfbDailyStat`); the beacon carries the event, the
-  page key or the field key and the kind of error, nothing else. The switch is per form and global (the privacy section is global, ADR-0008).
+  page key or the field key and the kind of error, nothing else. The switch is per form and global (the privacy
+  section is global, ADR-0008).
 
 **Mail:**
 

@@ -41,7 +41,8 @@ checked them in Edge with JavaScript on and off, under `dotnet build` and after 
 **The no-JS post:**
 
 1. **`BeginUmbracoForm` with its antiforgery token** (Umbraco's default). The token and its cookie make every page
-   with a form uncacheable. Rejected for anonymous forms, and for members-only forms too, because D13 sets no cookies (below).
+   with a form uncacheable. Rejected for anonymous forms, and for members-only forms too, because D13 sets no cookies
+   (below).
 2. **`BeginUmbracoForm(…, antiforgery: false)`.** Cacheable, but with the limits above: no way back to the form after
    errors, a needless multipart encoding, a random id, and the wrong action when the form is rendered by the API.
 3. **Our own `<form>` with `Html.SurfaceControllerHiddenInput<T>()`.** The same encrypted route token and surface
@@ -68,8 +69,8 @@ Option 3 for the no-JS post, option 1 for the state after it, option 2 for `form
 - **One rendering for both paths.** A view component renders the form; the `<jfb-render>` tag helper and
   `Component.InvokeAsync` call it, and `<jfb-assets>` writes the stylesheet and the module script once per page.
   Instance ids are deterministic per request (`jfb-1`, `jfb-2`, …), and field ids are `<instance>-<alias>`, so two
-  forms on one page never collide. The markup holds nothing per visitor: no antiforgery token on anonymous forms, no
-  challenge, no nonce, no time stamp.
+  forms on one page never collide. The markup of an anonymous form holds nothing per visitor: no antiforgery token, no
+  challenge, no nonce, no time stamp (a members-only form's page is per member, below).
 - **The no-JS post:**
   - The form is `<form method="post" action="<page path>#<instance>" novalidate>` (with
     `?jfb-post=<key>.<instance>` before the fragment when the form has a file field, ADR-0006), with
@@ -86,9 +87,9 @@ Option 3 for the no-JS post, option 1 for the state after it, option 2 for `form
     view component shows the outcome for that instance. A redirect outcome goes straight to its target.
 - **The JavaScript path:** the public controller at `/jfb/api/v1` (§4.6), attribute-routed, anonymous, with
   ProblemDetails codes and `Cache-Control: no-store` on every response but the definition (`no-cache` with its `ETag`,
-  ADR-0012). The runtime fetches the challenge on the
-  visitor's first `focusin` or `input`, posts entries with a stable `submissionId`, loads its error display on
-  demand, renders the same summary and inline errors as the server, and moves focus to the summary or the outcome.
+  ADR-0012). The runtime fetches the challenge on the visitor's first `focusin` or `input`, posts entries with a
+  stable `submissionId`, loads its error display on demand, renders the same summary and inline errors as the server,
+  and moves focus to the summary or the outcome.
 - **The output cache rules** (Umbraco's website output cache, and any CDN that respects `Cache-Control`):
   - Jiron Form Builder never registers an `IWebsiteOutputCacheRequestFilter`, because that would replace the
     site's.
@@ -105,8 +106,10 @@ Option 3 for the no-JS post, option 1 for the state after it, option 2 for `form
 - **`form_changed`:** the runtime calls `GET /jfb/api/v1/forms/{key}/render?instance=&page=&contentKey=&culture=`,
   which renders the published form through the same view component, in the page's theme and culture, with the
   page's instance id. `page` must be a local path (it becomes the no-JS action); the response is `no-store`. The
-  runtime parses the HTML in a `<template>` (inert), copies the answers by field name, replaces the form, enhances
-  it again with the same `submissionId`, and moves focus to a notice that says the form has changed. The page is
+  runtime parses the HTML in a `<template>` (inert), copies the answers by field name, except consent fields whose
+  wording changed, which stay unticked, replaces the form, enhances it again with the same `submissionId`, and moves
+  focus to a notice that says the form has changed (and, when it applies, that a consent needs agreeing to again). A
+  no-JS post that meets `form_changed` renders the current form with the answers in the same way. The page is
   never reloaded. The headless element (6.6) fetches the definition (`GET forms/{keyOrAlias}`) instead.
 - **CSP:**
   - The runtime has no inline script, no event handler attributes, no `eval` and no style attributes; its CSS is a
@@ -117,13 +120,21 @@ Option 3 for the no-JS post, option 1 for the state after it, option 2 for `form
   - A nonce belongs only on uncached pages; the docs explain why with the spike's result, and how to exclude such
     pages from the cache.
 - **Members-only forms bind every post to the member** instead of using ASP.NET Core's antiforgery, whose cookie D13
-  rules out. Their pages are per member, so the view sends `Cache-Control: no-store`, which also keeps them out of
-  Umbraco's output cache. Their challenge (ADR-0012) holds the signed-in member's key: the runtime fetches it from the
-  same origin, so the browser sends the member's login cookie with it, and the no-JS form carries one rendered into the
-  page. Both paths accept a post only when the challenge names the member who is signed in now, and the origin checks
-  of every post apply as well. A page on another site cannot read such a challenge, because the public API never
-  allows credentials across origins (ADR-0012), so it cannot make a post for the member. Jiron Form Builder sets no
-  cookie of its own; the member's login cookie is Umbraco's.
+  rules out:
+  - Their pages are per member, so the view sends `Cache-Control: no-store`, which also keeps them out of Umbraco's
+    output cache, and `Content-Security-Policy: frame-ancestors 'self'` with `X-Frame-Options: SAMEORIGIN` unless the
+    response already has a framing policy, so no other site can frame the page and trick the member into sending it.
+    `render` does the same for such a form.
+  - Their challenge (ADR-0012) holds the signed-in member's key. The runtime fetches it from the same origin with
+    `credentials: 'same-origin'` (it never uses `'include'`), so the browser sends the member's login cookie, and the
+    no-JS form carries one rendered into the page.
+  - Both paths accept a post only when the challenge names the member who is signed in now, and the origin checks of
+    every post apply as well. Another origin cannot read such a challenge: the public API never allows credentials
+    across origins (ADR-0012), and the browser's same-origin policy protects the page. A site whose own CORS lets
+    another origin read its pages with credentials hands that origin the challenge too; the docs say so.
+  - Members-only forms therefore work only on the site's own origin: across origins and with server keys they answer
+    `member_required`.
+  - Jiron Form Builder sets no cookie of its own; the member's login cookie is Umbraco's.
 - **Assets:** the extension's static web assets under `/jfb/assets/` (`StaticWebAssetBasePath` `/`), the same under
   `dotnet run` and after `dotnet publish`; publishing also writes Brotli and gzip copies. Umbraco serves static files
   without compression or caching headers, so 6.2 serves them itself, as §3.4 and §4.12 already plan.
@@ -148,8 +159,8 @@ because a garbage collection fell into it.
   cover `script-src 'self'` on a cached page and a nonce on an uncached one, lazily loaded chunks included. The
   runtime does not rely on `crypto.randomUUID()`, which exists only in secure contexts, and names its chunks with a
   content hash, because the `?v=` of the entry module does not reach `import()`.
-- ADR-0012 takes as input that a no-JS post carries no challenge (it is fetched by script), and that on a cached
-  page the time since rendering is the cache's.
+- ADR-0012 takes as input that a no-JS post on an anonymous form carries no challenge (it is fetched by script), and
+  that on a cached page the time since rendering is the cache's.
 - ADR-0015 builds the markup contract on the instance ids, the `data-jfb-*` attributes and `novalidate`.
 - **Revisit** if Umbraco's website cache starts to vary by query string or to check the method, or if a later
   Umbraco adds a supported way to mark a response as not cacheable without `no-store`.

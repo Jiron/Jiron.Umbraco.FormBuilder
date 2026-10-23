@@ -301,10 +301,10 @@ erDiagram
   }
 ```
 
-Links to option lists, themes, layouts and templates are by key inside definitions and settings, not foreign keys.
-The rules every table follows (no NULL in keys, times on each database, atomic counters, the entry query shapes) are
-in §4.5 and [ADR-0003](decisions/0003-entry-storage.md); `docs/database.md` (4.1) gets the full diagram with every
-column, kept in sync with the DTOs by a test.
+Links to option lists, layouts and templates are by key, and to themes by alias, inside definitions and settings, not
+foreign keys. The rules every table follows (no NULL in keys, times on each database, atomic counters, the entry query
+shapes) are in §4.5 and [ADR-0003](decisions/0003-entry-storage.md); `docs/database.md` (4.1) gets the full diagram
+with every column, kept in sync with the DTOs by a test.
 
 ## 4. How a submission flows
 
@@ -360,10 +360,10 @@ codes, `no-store` except the definition, the OpenAPI document `jfb-public`
 - **Origins:** the same origin always; others only from `AllowedOrigins`; the preview's opaque origin only with a
   preview ticket.
 - **Members-only forms** bind the challenge to the signed-in member (`member_required` without one), with no cookie.
-- **Error codes:** `form_not_found`, `form_closed`, `form_changed`, `validation_failed`, `invalid_request`, `challenge_required`,
-  `captcha_failed`, `rate_limited`, `payload_too_large`, `unsupported_media_type`, `member_required`,
-  `duplicate_submission`, `entry_limit_reached`, `already_submitted`, `origin_denied`, `timeout`, `not_found`,
-  `server_error` (§4.6).
+- **Error codes:** `form_not_found`, `form_closed`, `form_changed`, `validation_failed`, `invalid_request`,
+  `challenge_required`, `captcha_failed`, `rate_limited`, `payload_too_large`, `unsupported_media_type`,
+  `member_required`, `duplicate_submission`, `entry_limit_reached`, `already_submitted`, `origin_denied`, `timeout`,
+  `not_found`, `server_error` (§4.6).
 - **The no-JS path** posts to the page through Umbraco's surface routing, not to this API (ADR-0004).
 
 ## 6. The management API
@@ -393,9 +393,10 @@ client committed from its snapshot. Areas (§4.7) and the permission each needs:
 | The form picker in content | any user who may edit content; names and keys only |
 
 What a user may not see answers `404`; what they may see but not do answers `403` with the permission's name. The
-permission matrix checks both answers on every endpoint; only the form picker is exempt, because content access
-authorises it (4.7, ADR-0011, ADR-0013). The management API is part of the backoffice, not of the public
-surface (ADR-0010).
+permission matrix checks every endpoint: `403` for a missing permission, `404` on routes for a form, folder or entry
+the user holds nothing on, and `403` without the Forms section for what any user of the section may call; only the
+form picker is exempt, because content access authorises it (4.7, ADR-0011, ADR-0013). The management API is part of
+the backoffice, not of the public surface (ADR-0010).
 
 ## 7. Settings
 
@@ -478,7 +479,7 @@ others in a cluster.
 | Spoofing | Someone posts as a member | a challenge bound to the signed-in member, readable only from the same origin, on members-only forms | ADR-0004, ADR-0012 | 14.3 |
 | Spoofing | A forged Host header steers links in mail | links only from the site's base URL | ADR-0008 | 8.2 |
 | Tampering | Posted values for hidden fields, member-prefilled hidden fields or calculations | hidden fields stripped, hide-mode prefill ignored, calculations recomputed on the server | §4.3.3, ADR-0005 | 6.1, 6.5 |
-| Tampering | A submission against an older definition | the compatibility rule: `form_changed` unless every error falls on a field the visitor saw | ADR-0002 | 6.1, 6.4 |
+| Tampering | A submission against an older definition | the compatibility rule: `form_changed` when an error falls on a field the visitor never saw, an answered field is gone, or a consent wording changed (by its posted hash) | ADR-0002 | 6.1, 6.4 |
 | Tampering | Two editors overwrite each other | concurrency versions on forms and settings | ADR-0002, ADR-0008 | 4.3, 4.5 |
 | Tampering | A disguised upload (renamed executable, polyglot, zip slip) | allowlist and blocklist, magic numbers, random names, safe ZIP paths | ADR-0006 | 7.3 |
 | Tampering | Hostile theme CSS or rich text | the sanitiser and its CSS parser on every output | §4.10, ADR-0015 | 6.3, 12.2 |

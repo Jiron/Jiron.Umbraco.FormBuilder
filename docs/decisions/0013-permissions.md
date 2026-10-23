@@ -2,8 +2,8 @@
 
 - Status: accepted
 - Date: 2026-10-23
-- Roadmap step: 1.7b (decided); built in 4.6 (the model and the handlers), 4.7 (the `403` matrix), 12.4a (the editor),
-  and used by every step that adds a management endpoint or a screen
+- Roadmap step: 1.7b (decided); built in 4.6 (the model and the handlers), 4.7 (the permission matrix), 12.4a (the
+  editor), and used by every step that adds a management endpoint or a screen
 
 ## Context
 
@@ -127,7 +127,7 @@ administrators unrestricted, because they could widen any group anyway.
 A restricted folder with its own grant to a separate group is part of the seed, so every list test also proves that
 the restriction holds.
 
-**Tests:** the `403` matrix calls every management endpoint as each persona and expects the documented answer
+**Tests:** the permission matrix calls every management endpoint as each persona and expects the documented answer
 (4.7, ADR-0011); unit tests cover the evaluation, including restrictions, dependencies, moves and administrators.
 
 ## Consequences

@@ -156,6 +156,9 @@ The spike took the second. With JavaScript disabled, the post itself re-renders 
 
 ## 9. Members-only forms keep antiforgery
 
+*Superseded in 1.8: members-only forms bind each post to the member through their challenge instead, because D13
+sets no cookies (ADR-0004).*
+
 The stand-in form carries an antiforgery token. ASP.NET Core's antiforgery then marks the page
 `Cache-Control: no-cache, no-store` and sets its cookie (`SameSite=Strict`, `HttpOnly`), so the page is never cached
 (H1). Both paths validate the token themselves (`IAntiforgery.ValidateRequestAsync`), because the actions ignore it
@@ -201,8 +204,8 @@ Screenshots are in `.local/sandbox/checks/shots/1.4a-*.png` (not committed).
 - **ADR-0012:** a no-JS post cannot carry the challenge, which is fetched by script. Its protection is the honeypot,
   the rate limits, the content rules and the time since the page was rendered; on a cached page that time is the
   cache's, so it can only make the check weaker, never refuse a real visitor.
-- **Load balancing:** `ufprt`, the challenge and the antiforgery token all use Data Protection, so every server needs
-  the same key ring. The install docs (17.x) say so.
+- **Load balancing:** `ufprt`, the challenge and the antiforgery token (superseded in 1.8, ADR-0004) all use Data
+  Protection, so every server needs the same key ring. The install docs (17.x) say so.
 
 ## 13. What changed in the roadmap
 

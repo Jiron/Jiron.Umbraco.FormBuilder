@@ -247,7 +247,7 @@ it is built.
 | Top origin pages, hour of day, unique members | in roadmap (11.5) |
 | The fields that fail validation most, and with which kind of error, counted without values | added (11.5) |
 | Answer summaries: counts per option, averages, the 0-to-10 recommendation score, free-text answers listed | added (11.5b) |
-| No cookies, no personal data, opt-out per site and per form | in roadmap (11.5, D13) |
+| No cookies, no personal data, opt-out globally and per form | in roadmap (11.5, D13) |
 | Plain-language hints from the numbers; a phone or desktop split | later (§7) |
 | The last field touched before leaving | later (§7, with partial-entry capture) |
 | Comparing answers between groups; public results | later (§7, quizzes and polls) |

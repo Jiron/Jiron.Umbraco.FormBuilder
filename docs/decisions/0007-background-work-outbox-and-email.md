@@ -83,8 +83,8 @@ woken through a channel, a distributed job, and a second processor with its own 
 Option 3 in each case.
 
 - **The tables** are `jfbActionRun` and `jfbEmail` of §4.5. `jfbActionRun` gains `Seq` (the action's position) and
-  `StopOnFailure`, indexed on (EntryId, Seq). `jfbEmail` gains `LockedBy`, the state `Uncertain`, and the final state `Limited` for mail
-  that the visitor-address limits hold back (ADR-0012), which is never claimed.
+  `StopOnFailure`, indexed on (EntryId, Seq). `jfbEmail` gains `LockedBy`, the state `Uncertain`, and the final state
+  `Limited` for mail that the visitor-address limits hold back (ADR-0012), which is never claimed.
 - **One state machine for both tables:**
   - **The claim:** `Pending` (`Queued` for mail) becomes `Running` (`Sending`) through
     `UPDATE … SET State = 'Running', LockedBy = @token, LockedUntilUtc = @until, Attempts = Attempts + 1 WHERE Id = @id AND State = 'Pending' AND NextAttemptUtc <= @now`,
@@ -116,11 +116,11 @@ Option 3 in each case.
 - **The job:** `Jiron.FormBuilder.Outbox`, an `IDistributedBackgroundJob` with a 1-minute period, only wakes its
   server's worker and returns. It picks up retries as they fall due, expired leases, and work that a stopped server
   left behind, each at most about a minute late.
-- **Every Jiron Form Builder job** (the outbox, retention with the draft-version cleanup of ADR-0002, stats roll-ups, abandoned-upload cleanup,
-  file-mirror sync)
-  returns from `ExecuteAsync` within 10 seconds, because the runner waits for it and holds every other distributed
-  job on its server meanwhile. Longer work goes in bounded, idempotent batches that continue on the next run. Periods
-  are a minute or longer, and each job first checks that Umbraco runs and that no migration is pending.
+- **Every Jiron Form Builder job** (the outbox, retention with the draft-version cleanup of ADR-0002, stats roll-ups,
+  abandoned-upload cleanup, file-mirror sync) returns from `ExecuteAsync` within 10 seconds, because the runner waits
+  for it and holds every other distributed job on its server meanwhile. Longer work goes in bounded, idempotent
+  batches that continue on the next run. Periods are a minute or longer, and each job first checks that Umbraco runs
+  and that no migration is pending.
 - **The pause switch:** while `JironFormBuilder:Actions:Paused` is on, passes claim nothing, so no attempt is used.
   Turning it off wakes the worker (`IOptionsMonitor.OnChange`).
 - **The database:** every unit of work goes through Umbraco's scopes and the database gate (D7), starts with a write

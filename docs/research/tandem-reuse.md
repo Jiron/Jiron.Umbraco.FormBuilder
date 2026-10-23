@@ -114,7 +114,7 @@ exit codes are 0 fine, 1 problems, 2 usage errors.
 | The save path | locks (Locked, Restricted, Clamped), validators that use host caps as their top, the row and the audit entry in one write, the cache cleared on every server through a payload cache refresher, a notification after the commit | 4.4 |
 | Host options | lists start empty and get defaults in `PostConfigure`; secrets as `$JironFormBuilder:Secrets:<Name>` references | 4.4 |
 | The generated reference | `docs/configuration.md` generated from the options, sections, XML docs and validator rules, with a test | 17.2b |
-| The settings API and workspace | one `GET|PUT settings/{section}?site=` and one workspace with a draft per section (section 5.4) | 12.4a |
+| The settings API and workspace | one `GET\|PUT settings/{section}?site=` and one workspace with a draft per section (section 5.4) | 12.4a |
 
 ### 4.3 Captcha
 

@@ -54,12 +54,12 @@ Option 2.
   - `Date` stays a `DateTime`, always written as a UTC `DateTime` parameter, never as a string, a `DateTimeOffset` or
     a SQL date function. SQLite then stores one text format, which sorts correctly. Values read back are given
     `DateTimeKind.Utc`.
-  - **`jfbEntryValue.FieldId`** refers to the field's row in the field catalogue `jfbFormField`, with no cascade
-    (SQL Server refuses a second cascade path, and the form service deletes entries before the form). A field gets
-    its catalogue row before its first value is stored: on publish for live fields, and on the first preview
-    submission for a field that exists only in the draft. Such a row has no `FirstVersionNumber` until a publish
-    includes the field, and the columns, filters and exports of real entries leave it out. The small tables that name a field (`jfbEntryFile`,
-    `jfbOptionCapacity`) keep `FieldKey`.
+  - **`jfbEntryValue.FieldId`** refers to the field's row in the field catalogue `jfbFormField`, with no cascade (SQL
+    Server refuses a second cascade path, and the form service deletes entries before the form). A field gets its
+    catalogue row before its first value is stored: on publish for live fields, and on the first preview submission
+    for a field that exists only in the draft. Such a row has no `FirstVersionNumber` until a publish includes the
+    field, and the columns, filters and exports of real entries leave it out. The small tables that name a field
+    (`jfbEntryFile`, `jfbOptionCapacity`) keep `FieldKey`.
 - **Indexes:**
   - `jfbEntryValue`: `(EntryId, FieldId)`, `(FieldId, TextKey, EntryId)`, `(FieldId, Number, EntryId)` and
     `(FieldId, Date, EntryId)`.
