@@ -145,7 +145,7 @@ expanders.
 | Screen | Content | Primary | Secondary |
 | --- | --- | --- | --- |
 | Create dialog | Umbraco's create dialog: Form ("a new, empty form"), Form from a template…, Import a form…, Folder…, and Draft a form with AI… with the add-on | – (choosing an option is the action) | – |
-| Template gallery (modal) | the built-in templates (contact, callback, newsletter, event registration, job application, feedback, quote request, support request, privacy request; 12.3) and the site's saved templates, as cards: name, one line on what it is for, a picture of the first page. A card opens its preview beside the gallery. | **Use template** | – |
+| Template gallery (modal) | the built-in templates (contact, callback, newsletter, event registration, job application, feedback, quote request, support request, privacy request; 12.3) and the site's saved templates, as cards: name and one line on what it is for. A card opens its preview beside the gallery; the preview shows the form, so the cards carry no picture of it. | **Use template** | – |
 | Import a form (sidebar) | choose a JSON file; the dialog says what it holds (pages, fields, actions) and what it cannot import | **Import as a new copy** | Cancel |
 | Draft a form with AI (sidebar, add-on) | a description, or the pasted text of an existing questionnaire | **Draft form** | Cancel |
 
@@ -175,8 +175,18 @@ their permissions allow (section 11). A form opens on Design for users with `des
 as visitors will see it.
 
 - **At 1024 px and wider,** the palette stays open beside the canvas, and both panels can be collapsed.
+- **Between 620 and 1024 px,** the palette stays open until an element is selected. Then it folds to a rail (its
+  search and "+", which open it over the canvas), so the canvas keeps its width beside the inspector; clearing the
+  selection opens the palette again. The wireframes of step 2.2 found that both panels open leave the canvas about
+  150 px at a 1024 px window.
+- **When the canvas has less room than the chosen width,** it shows the form as it reflows in that room, as a
+  visitor's narrow window would (columns stack), and "Narrowed to fit" beside the width switch says so. It never
+  scales the form down: text stays readable, and closing the inspector gives the canvas its width back.
 - **At 620 px,** the canvas takes the width. The palette opens over it from an insert point or a page's "Add field",
   and the inspector opens over it when an element is selected; Esc closes either.
+- **The header** keeps its name, state chip and link on one line; when room runs out, the views fold into "…" from
+  the last one, as Umbraco folds them, never the open view. If that isn't enough, the link ("Used on 3 pages") moves
+  into the form's "…".
 
 | Part | Content | Actions |
 | --- | --- | --- |
@@ -307,9 +317,10 @@ stop visitors most, with the kind of error; top pages; hour of day; unique membe
 ### 5.6 History
 
 A list of the published versions, newest first. Each row says when, who, and what changed against the version before
-("Changed: 2 fields, After sending"), with its comment and pin. History answers who changed what in a form, its
-settings included; the Audit log answers it for the site's settings and permissions, and for what was done with
-entries.
+("Changed: 2 fields, After sending"), with its comment and pin; the version visitors get carries a "Published" chip,
+so a form with pending changes shows which version they are pending against. History answers who changed what in a
+form, its settings included; the Audit log answers it for the site's settings and permissions, and for what was done
+with entries.
 
 - **Draft saves:** the switch "Show draft saves" adds them to the list. Settings › General says how long they are
   kept; published and pinned versions are kept for good.
@@ -436,7 +447,7 @@ Each item opens a list. A row opens the item's own workspace, with its name in t
 | --- | --- | --- | --- |
 | Option lists | name, kind, number of forms that use it; primary **Create option list**, which asks for the kind first (fixed options, content, a data type, a JSON address, or an upload) | the editor for its kind with a live preview of the options, CSV or TXT upload, and the cache setting | "Used by 2 forms" · "…": Duplicate · Delete… |
 | Themes | name, a swatch, and "Default" on the default theme; primary **Create theme**; "…": Import a theme… | colours (light and dark), type, spacing and corners, buttons and the focus ring, custom CSS under "More options", beside a live kitchen-sink form with the contrast checks in place | "Used by 5 forms" · "…": Duplicate · Export · Delete… |
-| Email layouts | name, a thumbnail, and "Default" on the default layout; primary **Create email layout** | logo, colours, header and footer per language, beside a preview with a sample entry in light and dark | "Used by 3 actions" · visible: Send test email · "…": Duplicate · Delete… |
+| Email layouts | name, a thumbnail, and "Default" on the default layout; primary **Create email layout** | logo, colours, header and footer per language, beside a preview with a sample entry in light and dark; Send test email sits with the preview, because it sends what the preview shows | "Used by 3 actions" · "…": Duplicate · Delete… |
 | Templates | the gallery of built-in and saved templates; no create button, because templates come from "Save as template" on a form or a group | none: a card opens its preview, with **Use template** | saved templates' "…": Rename… · Delete… |
 
 - **A field uses an option list** through "Options from" in the inspector's Essentials (5.1).
@@ -460,7 +471,7 @@ with its own value for the chosen site says so, and offers to use the value for 
 | Email | sender name and address, default layout, team recipients for system notices, team addresses that entries may be forwarded to | **Save** | site switch · Send test email (to the user who sends it) |
 | Spam protection | default level; content checks (blocked words, blocked email domains, the most links an entry may hold); blocked address ranges; provider keys status. At the default strictness, a blocked word or a blocked email domain is enough to send an entry to Spam; entries are never refused for what they say (D14). A form sets only how strict its checks are, and its Spam protection group says where the words are kept. | **Save** | – |
 | Files | allowed type groups; the largest size any file field may allow; scanner status. Each file field sets its own limit, up to this one, in its Essentials, whose help names this limit and, for users who may change it, opens it in a sidebar. | **Save** | – |
-| Access | a matrix of every user group and its permissions, globally. A group that can't open the Forms section yet is marked, with a link to Umbraco's user groups, where the section is added. Below it, the folders and forms with their own access or a restriction, each opening the tree's Permissions sidebar. | **Save** | Add folder or form… |
+| Access | a matrix of every user group and its permissions, globally; when the groups don't fit, it scrolls sideways inside its box with the permission column fixed, because a site can have any number of groups. A group that can't open the Forms section yet is named once, in a line above the matrix, with a link to Umbraco's user groups, where the section is added. Below it, the folders and forms with their own access or a restriction, each opening the tree's Permissions sidebar. | **Save** | Add folder or form… |
 | Integrations | webhook signing secret reference, Slack and Teams defaults, Umbraco webhook events on or off | **Save** | – |
 
 ## 9. Privacy and Activity

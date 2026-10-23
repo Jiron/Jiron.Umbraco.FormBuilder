@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Overview (the start page) · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 first-run@1440x900 warnings@1440x900 loading@1440x900 error@1440x900 no-access@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .ov-health { display: flex; align-items: flex-start; gap: var(--wf-space-3); }
+    .ov-health > :is(span, ul) { flex: 1; }
+    .ov-more { margin: calc(-1 * var(--wf-space-1)) 0; }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="admin" data-active="" data-role-no-access="none">
+  <!--
+    IA section 2. The section's only dashboard: no tab bar and no title (the top bar and the sidebar header already
+    name the section). It is for reading, so it has no primary action; its "…" sits at the right of the top row.
+  -->
+  <main class="wf-main">
+    <div class="wf-content">
+      <div class="wf-stack wf-stack--lg">
+
+
+        <!-- Setup checklist: until all five items are done (first run), and always for the user without access -->
+        <section class="wf-box" data-state="first-run no-access" aria-labelledby="checklist-title">
+          <div class="wf-box__head">
+            <h2 class="wf-box__title" id="checklist-title">Set up Forms</h2>
+            <span class="wf-box__end wf-muted" data-state="first-run">1 of 5 done</span>
+            <span class="wf-box__end wf-muted" data-state="no-access">3 of 5 done</span>
+          </div>
+          <ol class="wf-box__body wf-stack">
+            <li class="wf-row">
+              <i data-i="check" class="wf-i--20" style="color: var(--uui-color-positive)"></i>
+              <div><span class="wf-strong">Check email sending</span><p class="wf-muted">Done</p></div>
+            </li>
+            <li class="wf-row">
+              <i data-i="circle" class="wf-i--20" data-state="first-run"></i>
+              <i data-i="check" class="wf-i--20" data-state="no-access" style="color: var(--uui-color-positive)"></i>
+              <div><a href="#" class="wf-strong" data-state="first-run">Create a form from a template</a><span class="wf-strong" data-state="no-access">Create a form from a template</span><p class="wf-muted" data-state="first-run">A contact or sign-up template gives you a working form in a minute.</p><p class="wf-muted" data-state="no-access">Done</p></div>
+            </li>
+            <li class="wf-row">
+              <i data-i="circle" class="wf-i--20" data-state="first-run"></i>
+              <i data-i="check" class="wf-i--20" data-state="no-access" style="color: var(--uui-color-positive)"></i>
+              <div><a href="#" class="wf-strong" data-state="first-run">Preview and send a test entry</a><span class="wf-strong" data-state="no-access">Preview and send a test entry</span><p class="wf-muted" data-state="first-run">See the form as visitors will, and check what arrives.</p><p class="wf-muted" data-state="no-access">Done</p></div>
+            </li>
+            <li class="wf-row">
+              <i data-i="circle" class="wf-i--20"></i>
+              <div style="flex: 1">
+                <span class="wf-strong">Put the form on a page</span>
+                <p class="wf-muted">Pages show forms through a block. Create the block type once; then allow it on the pages where editors may add forms.</p>
+              </div>
+              <button class="wf-btn" data-state="first-run" data-wf-actions="checklist item 4">Create a form block type…</button>
+              <span class="wf-muted" data-state="no-access">needs an administrator</span>
+            </li>
+            <li class="wf-row">
+              <i data-i="circle" class="wf-i--20"></i>
+              <div style="flex: 1">
+                <a href="#" class="wf-strong" data-state="first-run">Choose who sees entries</a>
+                <span class="wf-strong" data-state="no-access">Choose who sees entries</span>
+                <p class="wf-muted">Give the teams that handle entries their permissions.</p>
+              </div>
+              <span class="wf-muted" data-state="no-access">needs an administrator</span>
+            </li>
+          </ol>
+        </section>
+
+        <!-- Health: one line, or one line per warning. Once the checklist is done, the overview's "…" sits at the end of
+             this top row, inside it, so every box keeps one right edge. -->
+        <div class="wf-note wf-note--positive ov-health" data-state="default first-run no-access loading error">
+          <i data-i="check" class="wf-note__icon"></i><span role="status">All checks pass</span>
+          <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ov-more" data-state="default loading error" data-wf-more aria-label="More actions for the overview"><i data-i="more"></i></button>
+        </div>
+        <section class="wf-box" data-state="warnings" aria-label="Health">
+          <div class="wf-box__body ov-health">
+            <ul class="wf-stack">
+              <li class="wf-row"><i data-i="alert" class="wf-note__icon"></i><span>2 emails couldn't be sent in the last 24 hours. <a href="#">Open Deliveries</a></span></li>
+              <li class="wf-row"><i data-i="alert" class="wf-note__icon"></i><span>Uploaded files are not scanned for viruses. Add a scanner to the site. <a href="#">Learn more</a></span></li>
+            </ul>
+            <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small ov-more" data-wf-more aria-label="More actions for the overview"><i data-i="more"></i></button>
+          </div>
+        </section>
+
+        <!-- Recent entries -->
+        <section class="wf-box" data-state="default warnings loading error" aria-labelledby="recent-title">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="recent-title">Recent entries</h2></div>
+          <div class="wf-box__body wf-box__body--flush" data-state="default warnings">
+            <table class="wf-table" style="border: 0">
+              <tbody>
+                <tr class="wf-unseen"><td><span class="wf-row"><span class="wf-dot"></span><a href="#">Anna Svensson, Nordlicht GmbH</a><span class="wf-sr">, unseen</span></span></td><td class="wf-muted">Contact us</td><td class="wf-col-end wf-muted">12 min ago</td></tr>
+                <tr class="wf-unseen"><td><span class="wf-row"><span class="wf-dot"></span><a href="#">Malik Haddad</a><span class="wf-sr">, unseen</span></span></td><td class="wf-muted">Summer fair sign-up</td><td class="wf-col-end wf-muted">38 min ago</td></tr>
+                <tr class="wf-unseen"><td><span class="wf-row"><span class="wf-dot"></span><a href="#">Chiara Ferri, Studio Ferri</a><span class="wf-sr">, unseen</span></span></td><td class="wf-muted">Contact us</td><td class="wf-col-end wf-muted">1 h ago</td></tr>
+                <tr><td><a href="#">Jakob Lindqvist</a></td><td class="wf-muted">Job application</td><td class="wf-col-end wf-muted">3 h ago</td></tr>
+                <tr><td><a href="#">Ines Duarte</a></td><td class="wf-muted">Callback request</td><td class="wf-col-end wf-muted">Today, 08:14</td></tr>
+                <tr><td><a href="#">Tobias Krämer, Krämer &amp; Söhne</a></td><td class="wf-muted">Contact us</td><td class="wf-col-end wf-muted">Yesterday, 17:52</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="wf-box__body wf-stack" data-state="loading" aria-busy="true">
+            <span class="wf-skel" style="width: 62%"></span><span class="wf-skel" style="width: 48%"></span><span class="wf-skel" style="width: 70%"></span><span class="wf-skel" style="width: 41%"></span>
+            <span class="wf-sr">Loading recent entries</span>
+          </div>
+          <div class="wf-box__body wf-row" data-state="error">
+            <span>Recent entries couldn't be loaded.</span>
+            <button class="wf-btn">Try again</button>
+          </div>
+        </section>
+
+        <!-- Forms at a glance -->
+        <section class="wf-box" data-state="default warnings loading error" aria-labelledby="glance-title">
+          <div class="wf-box__head">
+            <h2 class="wf-box__title" id="glance-title">Forms at a glance</h2>
+            <div class="wf-box__end"><span class="wf-select" style="width: 180px"><span>Last 30 days</span><i data-i="chevron-down"></i></span></div>
+          </div>
+          <div class="wf-box__body wf-box__body--flush" data-state="default warnings error">
+            <table class="wf-table" style="border: 0">
+              <thead><tr><th>Form</th><th class="wf-num">Views</th><th class="wf-num">Starts</th><th class="wf-num">Entries</th><th class="wf-num">Conversion</th></tr></thead>
+              <tbody>
+                <tr><td><a href="#">Contact us</a></td><td class="wf-num">4,812 <span class="wf-small wf-muted">+6%</span></td><td class="wf-num">1,307 <span class="wf-small wf-muted">+4%</span></td><td class="wf-num">389 <span class="wf-small wf-muted">+11%</span></td><td class="wf-num">8.1% <span class="wf-small wf-muted">+0.4 pts</span></td></tr>
+                <tr><td><a href="#">Summer fair sign-up</a></td><td class="wf-num">2,215 <span class="wf-small wf-muted">new</span></td><td class="wf-num">874 <span class="wf-small wf-muted">new</span></td><td class="wf-num">512 <span class="wf-small wf-muted">new</span></td><td class="wf-num">23.1% <span class="wf-small wf-muted">new</span></td></tr>
+                <tr><td><a href="#">Job application</a></td><td class="wf-num">1,096 <span class="wf-small wf-muted">-3%</span></td><td class="wf-num">302 <span class="wf-small wf-muted">-9%</span></td><td class="wf-num">47 <span class="wf-small wf-muted">-15%</span></td><td class="wf-num">4.3% <span class="wf-small wf-muted">-0.6 pts</span></td></tr>
+                <tr><td><a href="#">Callback request</a></td><td class="wf-num">733 <span class="wf-small wf-muted">+1%</span></td><td class="wf-num">118 <span class="wf-small wf-muted">+2%</span></td><td class="wf-num">64 <span class="wf-small wf-muted">+5%</span></td><td class="wf-num">8.7% <span class="wf-small wf-muted">+0.3 pts</span></td></tr>
+                <tr><td><a href="#">Newsletter sign-up</a></td><td class="wf-num">9,402 <span class="wf-small wf-muted">+2%</span></td><td class="wf-num">621 <span class="wf-small wf-muted">0%</span></td><td class="wf-num">598 <span class="wf-small wf-muted">+1%</span></td><td class="wf-num">6.4% <span class="wf-small wf-muted">-0.1 pts</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="wf-box__body wf-stack" data-state="loading" aria-busy="true">
+            <span class="wf-skel" style="width: 80%"></span><span class="wf-skel" style="width: 74%"></span><span class="wf-skel" style="width: 78%"></span>
+            <span class="wf-sr">Loading the forms</span>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+</body>
+</html>

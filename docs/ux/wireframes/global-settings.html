@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>General, Email and Data collection · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 site@1440x900 email@1440x900 locked@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .gs-own { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-3); margin-top: var(--wf-space-2); font-size: var(--wf-type-small); }
+    .gs-locked { display: flex; align-items: center; gap: var(--wf-space-2); margin-top: var(--wf-space-2); color: var(--wf-color-text-muted); font-size: var(--wf-type-small); }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="admin" data-active="general" data-active-email="email" data-active-locked="data-collection">
+  <!--
+    IA section 8: every settings item opens one screen, in groups of at most seven settings before "More options", each
+    setting with its help below it, and Save in the footer. General and Email start with a site switch ("All sites")
+    for the fields that can differ per site. A setting locked by host configuration shows the key that locks it.
+  -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main">
+        <h1 class="wf-head__title" data-state="default site">General</h1>
+        <h1 class="wf-head__title" data-state="email">Email</h1>
+        <h1 class="wf-head__title" data-state="locked">Data collection</h1>
+        <span class="wf-row" style="margin-left: auto" data-wf-actions="settings header" data-state="default site email">
+          <label class="wf-row" style="gap: var(--wf-space-3)"><span class="wf-muted">Site</span>
+            <span class="wf-select" style="width: 220px" data-state="default email" data-wf-field><span>All sites</span><i data-i="chevron-down"></i></span>
+            <span class="wf-select" style="width: 220px" data-state="site" data-wf-field><span>Nordwind Travel DE</span><i data-i="chevron-down"></i></span>
+          </label>
+          <button class="wf-btn" data-state="email"><i data-i="send"></i>Send test email</button>
+        </span>
+      </div>
+    </header>
+
+    <div class="wf-content wf-content--narrow">
+      <!-- General -->
+      <div class="wf-stack wf-stack--lg" data-state="default site">
+        <section class="wf-box" aria-labelledby="gs-defaults">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-defaults">Defaults for forms</h2></div>
+          <div class="wf-box__body">
+            <label class="wf-field" style="margin-top: 0">
+              <span class="wf-label">Default theme</span>
+              <span class="wf-select" style="max-width: 320px"><span>Site default</span><i data-i="chevron-down"></i></span>
+              <span class="wf-help">Forms use it unless their Appearance group picks another.</span>
+            </label>
+            <div class="wf-field" role="radiogroup" aria-labelledby="gs-marker">
+              <span class="wf-label" id="gs-marker">Mark</span>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="true" aria-labelledby="gs-m1"></span><span id="gs-m1">Optional fields, with "(optional)"</span></span>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="gs-m2"></span><span id="gs-m2">Required fields, with "*"</span></span>
+              <span class="wf-help">Most forms have more required fields than optional ones, so marking the few optional ones reads calmer.</span>
+            </div>
+            <label class="wf-field">
+              <span class="wf-label">Keep draft saves for</span>
+              <span class="wf-row"><span class="wf-input" style="width: 100px">90</span><span>days</span></span>
+              <span class="wf-help">A form's History keeps published and pinned versions for good.</span>
+            </label>
+            <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)"><i data-i="chevron-down"></i>More options</button>
+          </div>
+        </section>
+
+        <section class="wf-box" aria-labelledby="gs-site">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-site">Address and time</h2></div>
+          <div class="wf-box__body">
+            <label class="wf-field" style="margin-top: 0">
+              <span class="wf-label">Base URL</span>
+              <span class="wf-input" data-state="default">https://www.nordwind.example</span>
+              <span class="wf-input" data-state="site">https://www.nordwind.example/de</span>
+              <span class="wf-help">Links in emails start with it.</span>
+              <span class="gs-own" data-state="site"><i data-i="info"></i>This site has its own value. <button class="wf-btn wf-btn--text wf-btn--small">Use the value for all sites</button></span>
+            </label>
+            <label class="wf-field">
+              <span class="wf-label">Time zone</span>
+              <span class="wf-select" style="max-width: 320px"><span>Europe/Berlin</span><i data-i="chevron-down"></i></span>
+              <span class="wf-help">Dates in emails, exports and the summary email use it.</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="wf-box" aria-labelledby="gs-block">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-block">Putting forms on pages</h2></div>
+          <div class="wf-box__body">
+            <p>Pages show forms through the block type <span class="wf-strong">Form</span>, created on 3 Oct.</p>
+            <p class="wf-help">Allow it on a document type's block list or block grid where editors may add forms. <a href="#">Learn more about form blocks</a></p>
+          </div>
+        </section>
+      </div>
+
+      <!-- Email -->
+      <div class="wf-stack wf-stack--lg" data-state="email">
+        <section class="wf-box" aria-labelledby="gs-sender">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-sender">Sender</h2></div>
+          <div class="wf-box__body">
+            <label class="wf-field" style="margin-top: 0"><span class="wf-label">Name</span><span class="wf-input">Nordwind Travel</span></label>
+            <label class="wf-field"><span class="wf-label">Address</span><span class="wf-input">forms@nordwind.example</span><span class="wf-help">Use an address of the site's own domain, so mail servers trust it.</span></label>
+            <label class="wf-field"><span class="wf-label">Default layout</span><span class="wf-select" style="max-width: 320px"><span>Brand</span><i data-i="chevron-down"></i></span></label>
+          </div>
+        </section>
+        <section class="wf-box" aria-labelledby="gs-team">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-team">The team</h2></div>
+          <div class="wf-box__body">
+            <label class="wf-field" style="margin-top: 0"><span class="wf-label">System notices go to</span><span class="wf-input">web-team@nordwind.example</span><span class="wf-help">Failed deliveries and health warnings.</span></label>
+            <div class="wf-field">
+              <span class="wf-label">Addresses entries may be forwarded to</span>
+              <span class="wf-input">sales@nordwind.example, hr@nordwind.example</span>
+              <span class="wf-help">Besides backoffice users, Forward offers only these. Entries leave the site only to people it already trusts.</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Data collection, with a setting locked by configuration -->
+      <div class="wf-stack wf-stack--lg" data-state="locked">
+        <section class="wf-box" aria-labelledby="gs-ip">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-ip">Addresses and devices</h2></div>
+          <div class="wf-box__body">
+            <div class="wf-field" role="radiogroup" aria-labelledby="gs-iplabel" style="margin-top: 0">
+              <span class="wf-label" id="gs-iplabel">IP addresses</span>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-disabled="true" aria-labelledby="gs-ip1"></span><span id="gs-ip1" class="wf-muted">Don't store them</span></span>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="true" aria-disabled="true" aria-labelledby="gs-ip2"></span><span id="gs-ip2">Store them shortened</span></span>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-disabled="true" aria-labelledby="gs-ip3"></span><span id="gs-ip3" class="wf-muted">Store them in full</span></span>
+              <span class="gs-locked"><i data-i="lock"></i>Locked by configuration: <span class="wf-tag">JironFormBuilder:Privacy:AllowFullIp</span></span>
+            </div>
+            <div class="wf-field">
+              <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="gs-insights"></span><span class="wf-label" id="gs-insights">Insights</span></span>
+              <span class="wf-help">Counts views, starts and entries per form, without cookies and without storing who visited.</span>
+            </div>
+          </div>
+        </section>
+        <section class="wf-box" aria-labelledby="gs-sensitive">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="gs-sensitive">Sensitive fields</h2></div>
+          <div class="wf-box__body">
+            <div class="wf-field" style="margin-top: 0">
+              <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="gs-sens"></span><span class="wf-label" id="gs-sens">New date of birth and ID fields start as sensitive</span></span>
+              <span class="wf-help">Answers are masked in the backoffice and left out of emails and exports.</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <footer class="wf-foot"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Save</button></div></footer>
+  </main>
+</body>
+</html>

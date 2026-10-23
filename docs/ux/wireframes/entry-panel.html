@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Entry panel · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 timeline@1440x900 notes@1440x900 spam@1440x900 forward@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .ep { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(0, 1.6fr); height: 100%; }
+    .ep__list { overflow: auto; padding: var(--wf-space-6); }
+    .ep__panel { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--uui-color-border); background: var(--uui-color-background); }
+    .ep__head { display: flex; align-items: center; gap: var(--wf-space-4); flex: none; min-height: 60px; padding: 0 var(--wf-space-6); border-bottom: 1px solid var(--uui-color-border); background: var(--uui-color-surface); }
+    .ep__tabs { display: flex; gap: var(--wf-space-5); flex: none; padding: 0 var(--wf-space-6); border-bottom: 1px solid var(--uui-color-border); background: var(--uui-color-surface); }
+    .ep__tab { padding: var(--wf-space-4) 0 var(--wf-space-3); border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: var(--uui-color-interactive); }
+    .ep__tab[aria-selected='true'] { border-bottom-color: var(--uui-color-current); color: var(--uui-color-text); font-weight: 700; }
+    .ep__body { flex: 1; min-height: 0; overflow: auto; padding: var(--wf-space-6); }
+    .ep__answers { display: grid; grid-template-columns: minmax(96px, 1fr) minmax(0, 2fr); gap: var(--wf-space-3) var(--wf-space-5); }
+    .ep__answers dd { overflow-wrap: anywhere; }
+    .ep__answers dt { color: var(--wf-color-text-muted); }
+    .ep-event { display: grid; grid-template-columns: 20px minmax(0, 1fr) max-content; gap: var(--wf-space-3); align-items: start; padding: var(--wf-space-4) 0; }
+    .ep-event + .ep-event { border-top: 1px solid var(--uui-color-divider-standalone); }
+    .ep-note { padding: var(--wf-space-4); }
+    .ep-note + .ep-note { border-top: 1px solid var(--uui-color-divider-standalone); }
+    .wf-table tr td.ep-name { width: 100%; }
+    .ep__title-narrow { display: none; }
+    @media (max-width: 1000px) {
+      .ep { grid-template-columns: minmax(0, 1fr); position: relative; }
+      .ep__panel { position: absolute; inset: 0; border-left: 0; }
+      .ep__title-narrow { display: inline; }
+    }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="handler" data-active="inbox" data-role-spam="admin" data-active-spam="spam">
+  <!--
+    IA 6.3: the entry panel beside the Inbox. The list keeps its place and narrows to each row's name and time; the
+    panel shows what the row doesn't. At 620 px it covers the list, and its heading adds the entry's title.
+  -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main">
+        <h1 class="wf-head__title" data-state="default timeline notes forward">Inbox</h1>
+        <h1 class="wf-head__title" data-state="spam">Spam</h1>
+      </div>
+    </header>
+
+    <div class="wf-content wf-content--flush">
+      <div class="ep">
+        <div class="ep__list">
+          <div class="wf-toolbar">
+            <span class="wf-input wf-input--search" style="flex: 1"><i data-i="search"></i><span class="wf-placeholder">Search entries</span></span>
+            <button class="wf-btn wf-btn--icon" aria-label="Filter"><i data-i="filter"></i></button>
+          </div>
+          <section class="wf-box" aria-label="Entries" data-state="default timeline notes forward">
+            <table class="wf-table" style="border: 0">
+              <tbody>
+                <tr aria-current="true"><td class="ep-name"><a href="#">Jakob Lindqvist</a></td><td class="wf-col-end wf-muted">3 h ago</td></tr>
+                <tr class="wf-unseen"><td class="ep-name"><span class="wf-row"><span class="wf-dot"></span><a href="#">Anna Svensson</a><span class="wf-sr">, unseen</span></span></td><td class="wf-col-end wf-muted">12 min ago</td></tr>
+                <tr class="wf-unseen"><td class="ep-name"><span class="wf-row"><span class="wf-dot"></span><a href="#">Malik Haddad</a><span class="wf-sr">, unseen</span></span></td><td class="wf-col-end wf-muted">38 min ago</td></tr>
+                <tr><td class="ep-name"><a href="#">Ines Duarte</a></td><td class="wf-col-end wf-muted">Today, 08:14</td></tr>
+                <tr><td class="ep-name"><a href="#">Tobias Krämer</a></td><td class="wf-col-end wf-muted">Yesterday</td></tr>
+              </tbody>
+            </table>
+          </section>
+          <section class="wf-box" aria-label="Entries in Spam" data-state="spam">
+            <table class="wf-table" style="border: 0">
+              <tbody>
+                <tr aria-current="true"><td class="ep-name"><a href="#">Entry #1051</a></td><td class="wf-col-end wf-muted">1 h ago</td></tr>
+                <tr><td class="ep-name"><a href="#">Best Prices Online</a></td><td class="wf-col-end wf-muted">2 h ago</td></tr>
+                <tr><td class="ep-name"><a href="#">Marta Kowalska</a></td><td class="wf-col-end wf-muted">Yesterday</td></tr>
+                <tr><td class="ep-name"><a href="#">Entry #1047</a></td><td class="wf-col-end wf-muted">Yesterday</td></tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+
+        <!-- The panel -->
+        <section class="ep__panel" aria-labelledby="ep-title">
+          <header class="ep__head">
+            <h2 class="wf-title" id="ep-title" data-state="default timeline notes forward"><span class="ep__title-narrow">Jakob Lindqvist · </span>Job application · Entry #214</h2>
+            <h2 class="wf-title" id="ep-title-spam" data-state="spam">Contact us · Entry #1051</h2>
+            <span class="wf-chip wf-chip--warning" data-state="default timeline notes forward">Waiting for approval</span>
+            <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-frame style="margin-left: auto" aria-label="Close the entry"><i data-i="x"></i></button>
+          </header>
+          <div class="ep__tabs" role="tablist" aria-label="Entry">
+            <button class="ep__tab" role="tab" aria-selected="true" data-state="default spam forward">Answers</button><button class="ep__tab" role="tab" aria-selected="false" data-state="timeline notes">Answers</button>
+            <button class="ep__tab" role="tab" aria-selected="false" data-state="default notes spam forward">Timeline</button><button class="ep__tab" role="tab" aria-selected="true" data-state="timeline">Timeline</button>
+            <button class="ep__tab" role="tab" aria-selected="false" data-state="default timeline spam forward">Notes (1)</button><button class="ep__tab" role="tab" aria-selected="true" data-state="notes">Notes (1)</button>
+          </div>
+
+          <div class="ep__body">
+            <!-- Answers -->
+            <div class="wf-stack wf-stack--lg" data-state="default forward">
+              <div class="wf-row wf-row--between">
+                <p class="wf-muted">Sent from /careers/apply · English · 6 min to complete · <a href="#">More details</a></p>
+                <button class="wf-btn wf-btn--small"><i data-i="pencil"></i>Edit answers</button>
+              </div>
+              <section class="wf-box" aria-labelledby="ep-p1">
+                <div class="wf-box__head"><h3 class="wf-box__title" id="ep-p1">Your details</h3></div>
+                <dl class="wf-box__body ep__answers">
+                  <dt>Name</dt><dd>Jakob Lindqvist</dd>
+                  <dt>Email address</dt><dd>jakob.lindqvist@example.com</dd>
+                  <dt>Phone</dt><dd>+46 70 123 45 67</dd>
+                  <dt>Date of birth</dt><dd class="wf-muted"><i data-i="lock"></i> Hidden: sensitive</dd>
+                </dl>
+              </section>
+              <section class="wf-box" aria-labelledby="ep-p2">
+                <div class="wf-box__head"><h3 class="wf-box__title" id="ep-p2">Your application</h3></div>
+                <dl class="wf-box__body ep__answers">
+                  <dt>Position</dt><dd>Frontend developer</dd>
+                  <dt>CV</dt><dd><a href="#"><i data-i="paperclip"></i> cv-jakob-lindqvist.pdf</a> <span class="wf-muted">240 KB</span></dd>
+                  <dt>Why us?</dt><dd>I have followed your accessibility work for years, and I would like to help build the next version of your booking flow.</dd>
+                  <dt>Consent</dt><dd>Yes: "I agree that my application is kept for 6 months."</dd>
+                </dl>
+              </section>
+            </div>
+
+            <!-- Answers of an entry in Spam: the reasons first -->
+            <div class="wf-stack wf-stack--lg" data-state="spam">
+              <section class="wf-note wf-note--warning" aria-labelledby="ep-why" style="display: block">
+                <p class="wf-strong" id="ep-why">Why it is in Spam</p>
+                <ul style="margin-top: var(--wf-space-2)">
+                  <li>Contains a blocked word: "casino"</li>
+                  <li>Sent 2 seconds after the page loaded</li>
+                </ul>
+              </section>
+              <p class="wf-muted">Sent from /contact · English · <a href="#">More details</a></p>
+              <section class="wf-box" aria-label="Answers">
+                <dl class="wf-box__body ep__answers">
+                  <dt>Name</dt><dd class="wf-muted">none</dd>
+                  <dt>Email address</dt><dd>offers@example.net</dd>
+                  <dt>Date of birth</dt><dd><span class="wf-muted">••••••</span> <button class="wf-btn wf-btn--text wf-btn--small">Reveal</button></dd>
+                  <dt>Your message</dt><dd>Visit our casino for the best offers of the year.</dd>
+                </dl>
+              </section>
+            </div>
+
+            <!-- Timeline -->
+            <section class="wf-box" data-state="timeline" aria-label="Timeline">
+              <div class="wf-box__body">
+                <div class="ep-event"><i data-i="eye"></i><span>Opened by Jonas Berger</span><span class="wf-muted wf-small">3 h ago</span></div>
+                <div class="ep-event"><i data-i="mail"></i><span>Email the team: delivered to hr@example.com</span><span class="wf-muted wf-small">3 h ago</span></div>
+                <div class="ep-event"><i data-i="reply"></i><span>Confirm to the visitor: delivered to jakob.lindqvist@example.com</span><span class="wf-muted wf-small">3 h ago</span></div>
+                <div class="ep-event"><i data-i="inbox"></i><span>Received from /careers/apply, waiting for approval</span><span class="wf-muted wf-small">3 h ago</span></div>
+              </div>
+            </section>
+
+            <!-- Notes -->
+            <div class="wf-stack wf-stack--lg" data-state="notes">
+              <div class="wf-field" style="margin: 0">
+                <label class="wf-label" for="ep-new-note">New note</label>
+                <span class="wf-textarea" id="ep-new-note"><span class="wf-placeholder">Only your colleagues see notes.</span></span>
+                <button class="wf-btn" style="align-self: flex-start; margin-top: var(--wf-space-3)">Add note</button>
+              </div>
+              <section class="wf-box" aria-label="Notes">
+                <div class="ep-note">
+                  <p class="wf-row wf-row--between"><span class="wf-strong">Ana Novak</span><span class="wf-muted wf-small">2 h ago</span></p>
+                  <p style="margin-top: var(--wf-space-2)">Strong portfolio. Let's invite him for the first interview next week.</p>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <footer class="wf-sidebar__foot">
+            <div class="wf-sidebar__foot-start"><button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for this entry"><i data-i="more"></i></button></div>
+            <button class="wf-btn" data-state="default timeline notes forward">Forward…</button>
+            <button class="wf-btn" data-state="default timeline notes forward">Mark as spam</button>
+            <button class="wf-btn" data-state="default timeline notes forward">Reject</button>
+            <button class="wf-btn wf-btn--primary" data-state="default timeline notes forward">Approve</button>
+            <button class="wf-btn" data-state="spam">Delete…</button>
+            <button class="wf-btn wf-btn--primary" data-state="spam">Not spam</button>
+          </footer>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Forward… (IA 6.3): only people the site already trusts -->
+  <div class="wf-backdrop" data-state="forward"></div>
+  <aside class="wf-sidebar" data-state="forward" role="dialog" aria-labelledby="fw-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="fw-title">Forward entry #214</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-box"><div class="wf-box__body">
+        <label class="wf-field">
+          <span class="wf-label">To</span>
+          <span class="wf-select"><span>Ana Novak</span><i data-i="chevron-down"></i></span>
+          <span class="wf-help">A backoffice user, or one of the team addresses in Settings › Email.</span>
+        </label>
+        <label class="wf-field">
+          <span class="wf-label">Message <span class="wf-vf__optional">(optional)</span></span>
+          <span class="wf-textarea">Could you look at this one before Friday?</span>
+        </label>
+      </div></div>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary">Forward</button>
+    </footer>
+  </aside>
+</body>
+</html>

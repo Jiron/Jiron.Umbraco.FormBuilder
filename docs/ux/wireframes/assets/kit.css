@@ -1,0 +1,1566 @@
+/*
+ * The wireframe kit: Umbraco-like styling for Jiron Form Builder's backoffice wireframes (step 2.2), with no build
+ * step. Design documents only; never shipped.
+ *
+ * Tokens: the --uui-* values are Umbraco 17.7.1's light theme, read from the running backoffice, under Umbraco's
+ * own names, so the built screens can use the same names. The --wf-* tokens are the wireframes' own and are
+ * provisional until step 2.3 fixes the token file (docs/ux/tokens.md). Every rule below uses a token; the render
+ * script checks that every rendered colour, radius and shadow is one of them.
+ */
+
+:root {
+  /* Umbraco 17.7.1, light theme */
+  --uui-color-header-surface: #1b264f;
+  --uui-color-header-contrast: #ffffffcc;
+  --uui-color-header-contrast-emphasis: #ffffff;
+  --uui-color-current: #f5c1bc;
+  --uui-color-current-emphasis: #f8d6d3;
+  --uui-color-background: #f7f7f8;
+  --uui-color-surface: #ffffff;
+  --uui-color-surface-emphasis: #fafafa;
+  --uui-color-border: #d8d7d9;
+  --uui-color-border-standalone: #c2c2c2;
+  --uui-color-divider-standalone: #e9e9eb;
+  --uui-color-text: #060606;
+  --uui-color-interactive: #1b264f;
+  --uui-color-interactive-emphasis: #2d42ab;
+  --uui-color-selected: #283a97;
+  --uui-color-positive: #0b8152;
+  --uui-color-positive-standalone: #0a7349;
+  --uui-color-danger-standalone: #ae1e47;
+  --uui-color-warning: #fad634;
+  --uui-color-focus: #3879ff;
+  --uui-color-disabled-contrast: #c4c4c4;
+
+  /* The wireframes' own, provisional until 2.3 */
+  --wf-color-text-muted: #575757; /* UUI palette mine-grey-dimmed: 6.9:1 on the background */
+  --wf-color-control-border: #8d8d8d; /* UUI palette dusty-grey-dark: 3.3:1 on white, for WCAG 1.4.11 */
+  --wf-color-backdrop: #0000003d;
+  --wf-color-skeleton: #e9e9eb;
+  --wf-font: Lato, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --wf-font-mono: Consolas, 'Cascadia Mono', Menlo, monospace; /* merge tags, aliases, configuration keys */
+  --wf-type-small: 12px;
+  --wf-type-body: 14px;
+  --wf-type-title: 16px;
+  --wf-type-display: 20px;
+  --wf-space-1: 3px;
+  --wf-space-2: 6px;
+  --wf-space-3: 9px;
+  --wf-space-4: 12px;
+  --wf-space-5: 18px;
+  --wf-space-6: 24px;
+  --wf-space-7: 36px;
+  --wf-radius: 3px; /* Umbraco's --uui-border-radius: controls, boxes, cards, sidebars */
+  --wf-radius-round: 999px; /* badges, dots, chips, avatars, switches */
+  --wf-shadow: 0 6px 16px 0 #0000001a, 0 0 2px 0 #0000001a; /* the one shade: menus, sidebars, dialogs */
+  --wf-focus: 0 0 0 2px var(--uui-color-focus);
+  --wf-top-height: 60px;
+  --wf-head-height: 70px;
+  --wf-foot-height: 54px;
+  --wf-sidebar-width: 300px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font: var(--wf-type-body) / 1.5 var(--wf-font);
+  color: var(--uui-color-text);
+  background: var(--uui-color-background);
+}
+
+::selection {
+  background: var(--uui-color-current);
+  color: var(--uui-color-text);
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+ul,
+ol,
+dl,
+dd,
+figure {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-size: inherit;
+  font-weight: 700;
+}
+
+a {
+  color: var(--uui-color-interactive);
+  text-underline-offset: 2px;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--wf-focus);
+}
+
+.wf-i {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  vertical-align: -3px;
+}
+
+.wf-i--20 {
+  width: 20px;
+  height: 20px;
+  vertical-align: -5px;
+}
+
+.wf-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.wf-muted {
+  color: var(--wf-color-text-muted);
+}
+
+.wf-small {
+  font-size: var(--wf-type-small);
+}
+
+.wf-strong {
+  font-weight: 700;
+}
+
+.wf-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- The backoffice frame (kit.js builds the top bar and the sidebar) ---------- */
+
+.wf-app {
+  display: grid;
+  grid-template-rows: var(--wf-top-height) minmax(0, 1fr);
+  height: 100vh;
+  min-width: 920px;
+}
+
+.wf-top {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-2);
+  padding: 0 var(--wf-space-6) 0 var(--wf-space-5);
+  background: var(--uui-color-header-surface);
+  color: var(--uui-color-header-contrast);
+}
+
+.wf-top__logo {
+  width: 32px;
+  height: 32px;
+  margin-right: var(--wf-space-4);
+  border-radius: var(--wf-radius-round);
+  background: var(--uui-color-header-contrast-emphasis);
+}
+
+.wf-top__section {
+  display: flex;
+  align-items: center;
+  height: var(--wf-top-height);
+  padding: 0 var(--wf-space-3);
+  color: inherit;
+  font-size: var(--wf-type-title);
+  text-decoration: none;
+}
+
+.wf-top__section[aria-current='page'] {
+  color: var(--uui-color-header-contrast-emphasis);
+  box-shadow: inset 0 -4px 0 var(--uui-color-current);
+}
+
+.wf-top__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-5);
+  margin-left: auto;
+}
+
+.wf-top__avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--uui-color-header-contrast-emphasis);
+  border-radius: var(--wf-radius-round);
+  color: var(--uui-color-header-contrast-emphasis);
+  font-size: var(--wf-type-small);
+  font-weight: 700;
+}
+
+.wf-body {
+  display: grid;
+  grid-template-columns: var(--wf-sidebar-width) minmax(0, 1fr);
+  min-height: 0;
+}
+
+.wf-side {
+  overflow: auto;
+  padding-bottom: var(--wf-space-6);
+  border-right: 1px solid var(--uui-color-border);
+  background: var(--uui-color-surface);
+}
+
+.wf-side__head {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  margin: var(--wf-space-4) 0 var(--wf-space-2);
+  padding: 0 var(--wf-space-4) 0 var(--wf-space-6);
+  font-weight: 700;
+}
+
+.wf-side__head-actions {
+  display: flex;
+  gap: var(--wf-space-1);
+  margin-left: auto;
+}
+
+.wf-side__group {
+  margin: var(--wf-space-5) 0 var(--wf-space-2);
+  padding: var(--wf-space-3) var(--wf-space-6) var(--wf-space-1);
+  font-weight: 700;
+}
+
+.wf-item {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-2);
+  height: 36px;
+  padding: 0 var(--wf-space-4) 0 calc(var(--wf-space-6) + var(--depth, 0) * var(--wf-space-4));
+  color: var(--uui-color-text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.wf-item--tree {
+  padding-left: calc(var(--wf-space-4) + var(--depth, 0) * var(--wf-space-4));
+}
+
+.wf-item__chevron {
+  width: 12px;
+  height: 12px;
+}
+
+.wf-item__chevron--none {
+  visibility: hidden;
+}
+
+.wf-item[aria-current='page'] {
+  background: var(--uui-color-current);
+  font-weight: 700;
+}
+
+.wf-item--muted {
+  color: var(--wf-color-text-muted);
+  font-style: italic;
+}
+
+.wf-item__end {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-2);
+  margin-left: auto;
+}
+
+/* ---------- Workspaces ---------- */
+
+/* The workspace is a container: lists drop to their essential columns by the room the workspace has, not the window */
+.wf-main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  container: workspace / inline-size;
+}
+
+.wf-head {
+  display: flex;
+  align-items: stretch;
+  flex: none;
+  height: var(--wf-head-height);
+  border-bottom: 1px solid var(--uui-color-border);
+  background: var(--uui-color-surface);
+}
+
+.wf-head__main {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-4);
+  flex: 1;
+  min-width: 0;
+  padding: 0 var(--wf-space-6);
+}
+
+/* Nothing in a header wraps: when room runs out, the view tabs fold into "…" (kit.js) */
+.wf-head__main > a,
+.wf-head__main > .wf-chip {
+  flex: none;
+  white-space: nowrap;
+}
+
+.wf-head__title {
+  overflow: hidden;
+  font-size: var(--wf-type-title);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-head__name {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: 36px;
+  padding: 0 var(--wf-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--wf-radius);
+  font-size: var(--wf-type-title);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.wf-tabs {
+  display: flex;
+  align-items: stretch;
+}
+
+.wf-tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--wf-space-1);
+  min-width: 86px;
+  padding: 0 var(--wf-space-4);
+  border-left: 1px solid var(--uui-color-border);
+  color: var(--uui-color-text);
+  text-decoration: none;
+}
+
+.wf-tab[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  right: var(--wf-space-2);
+  bottom: 0;
+  left: var(--wf-space-2);
+  height: 4px;
+  border-radius: var(--wf-radius) var(--wf-radius) 0 0;
+  background: var(--uui-color-current);
+}
+
+.wf-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--wf-space-6);
+}
+
+.wf-content--flush {
+  padding: 0;
+}
+
+.wf-content--narrow > * {
+  max-width: 880px;
+}
+
+.wf-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-3);
+  flex: none;
+  height: var(--wf-foot-height);
+  padding: 0 var(--wf-space-6);
+  border-top: 1px solid var(--uui-color-border);
+  background: var(--uui-color-surface);
+}
+
+.wf-foot__end {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-3);
+  margin-left: auto;
+}
+
+.wf-crumbs {
+  display: flex;
+  gap: var(--wf-space-2);
+  font-size: var(--wf-type-small);
+}
+
+/* ---------- Boxes, cards, layout helpers ---------- */
+
+.wf-box {
+  border: 1px solid var(--uui-color-border);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+}
+
+.wf-box + .wf-box {
+  margin-top: var(--wf-space-6);
+}
+
+/* In a stack or a grid, the gap spaces the boxes */
+.wf-stack > .wf-box + .wf-box,
+.wf-grid-2 > .wf-box + .wf-box,
+[data-wf-grid] > .wf-box + .wf-box {
+  margin-top: 0;
+}
+
+.wf-box__head {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-4);
+  min-height: 48px;
+  padding: var(--wf-space-3) var(--wf-space-5);
+  border-bottom: 1px solid var(--uui-color-divider-standalone);
+}
+
+.wf-box__title {
+  font-weight: 700;
+}
+
+.wf-box__end {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-3);
+  margin-left: auto;
+}
+
+.wf-box__body {
+  padding: var(--wf-space-5);
+}
+
+.wf-box__body--flush {
+  padding: 0;
+}
+
+.wf-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wf-space-4);
+}
+
+.wf-stack--lg {
+  gap: var(--wf-space-6);
+}
+
+.wf-row {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-3);
+  flex-wrap: wrap;
+}
+
+.wf-row--between {
+  justify-content: space-between;
+}
+
+.wf-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--wf-space-6);
+}
+
+.wf-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--panel, 460px);
+  min-height: 100%;
+}
+
+.wf-title {
+  font-size: var(--wf-type-title);
+  font-weight: 700;
+}
+
+.wf-display {
+  font-size: var(--wf-type-display);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.wf-divider {
+  height: 1px;
+  margin: var(--wf-space-5) 0;
+  background: var(--uui-color-divider-standalone);
+}
+
+/* ---------- Toolbars and actions ---------- */
+
+.wf-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--wf-space-5);
+}
+
+.wf-toolbar__end {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-3);
+  margin-left: auto;
+}
+
+.wf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--wf-space-2);
+  height: 36px;
+  padding: 0 var(--wf-space-5);
+  border: 1px solid var(--uui-color-border-standalone);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+  color: var(--uui-color-interactive);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.wf-btn--primary {
+  border-color: var(--uui-color-positive);
+  background: var(--uui-color-positive);
+  color: var(--uui-color-surface);
+  font-weight: 700;
+}
+
+.wf-btn--danger {
+  border-color: var(--uui-color-danger-standalone);
+  background: var(--uui-color-danger-standalone);
+  color: var(--uui-color-surface);
+  font-weight: 700;
+}
+
+.wf-btn--text {
+  border-color: transparent;
+  background: transparent;
+}
+
+.wf-btn--link {
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-decoration: underline;
+}
+
+.wf-btn--icon {
+  width: 36px;
+  padding: 0;
+}
+
+.wf-btn--small {
+  height: 28px;
+  padding: 0 var(--wf-space-3);
+  font-size: var(--wf-type-small);
+}
+
+.wf-btn--icon.wf-btn--small {
+  width: 28px;
+}
+
+.wf-btn[aria-disabled='true'] {
+  border-color: var(--uui-color-border);
+  background: var(--uui-color-background);
+  color: var(--uui-color-disabled-contrast);
+}
+
+.wf-seg {
+  display: inline-flex;
+  border: 1px solid var(--uui-color-border-standalone);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+}
+
+.wf-seg > * {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 var(--wf-space-4);
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--uui-color-interactive);
+}
+
+.wf-seg > * + * {
+  border-left: 1px solid var(--uui-color-border);
+}
+
+.wf-seg > [aria-pressed='true'] {
+  background: var(--uui-color-selected);
+  color: var(--uui-color-surface);
+  font-weight: 700;
+}
+
+/* A popover menu, drawn open where the wireframe shows it */
+.wf-pop {
+  position: absolute;
+  z-index: 20;
+  min-width: 220px;
+  padding: var(--wf-space-2) 0;
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+  box-shadow: var(--wf-shadow);
+}
+
+.wf-pop__item {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-3);
+  height: 36px;
+  padding: 0 var(--wf-space-5);
+  white-space: nowrap;
+}
+
+.wf-pop__item--hover {
+  background: var(--uui-color-surface-emphasis);
+}
+
+.wf-pop__label {
+  padding: var(--wf-space-3) var(--wf-space-5) var(--wf-space-1);
+  font-size: var(--wf-type-small);
+  font-weight: 700;
+}
+
+.wf-pop__sep {
+  height: 1px;
+  margin: var(--wf-space-2) 0;
+  background: var(--uui-color-divider-standalone);
+}
+
+/* An option in a chooser (Umbraco's create dialog): icon, name, one line on what it does */
+.wf-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--wf-space-4);
+  padding: var(--wf-space-4);
+  color: var(--uui-color-text);
+  text-decoration: none;
+}
+
+.wf-option + .wf-option {
+  border-top: 1px solid var(--uui-color-divider-standalone);
+}
+
+.wf-option > span {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Form controls ---------- */
+
+.wf-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wf-space-2);
+}
+
+.wf-field + .wf-field {
+  margin-top: var(--wf-space-5);
+}
+
+.wf-label {
+  font-weight: 700;
+}
+
+.wf-help {
+  color: var(--wf-color-text-muted);
+}
+
+.wf-input,
+.wf-select,
+.wf-textarea {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 var(--wf-space-3);
+  border: 1px solid var(--wf-color-control-border);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+  color: var(--uui-color-text);
+}
+
+.wf-textarea {
+  align-items: flex-start;
+  min-height: 72px;
+  padding: var(--wf-space-2) var(--wf-space-3);
+}
+
+.wf-select {
+  justify-content: space-between;
+  gap: var(--wf-space-3);
+}
+
+.wf-placeholder {
+  color: var(--wf-color-text-muted);
+}
+
+.wf-input--search {
+  gap: var(--wf-space-2);
+  width: 260px;
+}
+
+.wf-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wf-space-3);
+}
+
+.wf-box-check {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--wf-color-control-border);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+  color: var(--uui-color-surface);
+}
+
+.wf-box-check[aria-checked='true'] {
+  border-color: var(--uui-color-selected);
+  background: var(--uui-color-selected);
+}
+
+.wf-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  border: 1px solid var(--wf-color-control-border);
+  border-radius: var(--wf-radius-round);
+  background: var(--uui-color-surface);
+  white-space: nowrap;
+}
+
+.wf-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--wf-radius-round);
+  background: var(--wf-color-control-border);
+}
+
+.wf-switch[aria-checked='true'] {
+  border-color: var(--uui-color-positive);
+  background: var(--uui-color-positive);
+}
+
+.wf-switch[aria-checked='true']::after {
+  left: 18px;
+  background: var(--uui-color-surface);
+}
+
+.wf-radio {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--wf-color-control-border);
+  border-radius: var(--wf-radius-round);
+  background: var(--uui-color-surface);
+}
+
+.wf-radio[aria-checked='true']::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: var(--wf-radius-round);
+  background: var(--uui-color-selected);
+}
+
+/* ---------- Marks: chips, badges, dots ---------- */
+
+.wf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wf-space-1);
+  height: 22px;
+  padding: 0 var(--wf-space-3);
+  border-radius: var(--wf-radius-round);
+  background: var(--uui-color-divider-standalone);
+  color: var(--uui-color-text);
+  font-size: var(--wf-type-small);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.wf-chip--positive {
+  background: var(--uui-color-positive);
+  color: var(--uui-color-surface);
+}
+
+.wf-chip--warning {
+  background: var(--uui-color-warning);
+  color: var(--uui-color-text);
+}
+
+.wf-chip--danger {
+  background: var(--uui-color-danger-standalone);
+  color: var(--uui-color-surface);
+}
+
+.wf-chip--selected {
+  background: var(--uui-color-selected);
+  color: var(--uui-color-surface);
+}
+
+.wf-chip--outline {
+  border: 1px solid var(--uui-color-border-standalone);
+  background: var(--uui-color-surface);
+  font-weight: 400;
+}
+
+/* A merge tag, an alias or a configuration key, as typed */
+.wf-tag {
+  padding: 0 var(--wf-space-1);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-background);
+  font-family: var(--wf-font-mono);
+  font-size: var(--wf-type-small);
+}
+
+.wf-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--wf-space-2);
+  border-radius: var(--wf-radius-round);
+  background: var(--uui-color-interactive);
+  color: var(--uui-color-surface);
+  font-size: var(--wf-type-small);
+  font-weight: 700;
+}
+
+.wf-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: var(--wf-radius-round);
+  background: var(--uui-color-selected);
+}
+
+.wf-dot--positive {
+  background: var(--uui-color-positive);
+}
+
+.wf-dot--danger {
+  background: var(--uui-color-danger-standalone);
+}
+
+.wf-dot--warning {
+  background: var(--uui-color-warning);
+}
+
+/* ---------- Tables (collections) ---------- */
+
+.wf-table {
+  width: 100%;
+  border: 1px solid var(--uui-color-border);
+  border-radius: var(--wf-radius);
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--uui-color-surface);
+}
+
+.wf-table th,
+.wf-table td {
+  height: 48px;
+  padding: 0 var(--wf-space-4);
+  border-bottom: 1px solid var(--uui-color-divider-standalone);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.wf-table th {
+  font-weight: 700;
+}
+
+.wf-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.wf-table .wf-col-check {
+  width: 44px;
+  padding-right: 0;
+}
+
+.wf-table .wf-col-end {
+  width: 1%;
+  text-align: right;
+}
+
+.wf-table .wf-cell-wrap {
+  white-space: normal;
+}
+
+/* Names in a list are links that open the item: underlined on hover and focus, as in Umbraco's collections */
+.wf-table td > a,
+.wf-table td > .wf-row > a {
+  text-decoration: none;
+}
+
+.wf-table td > a:is(:hover, :focus-visible),
+.wf-table td > .wf-row > a:is(:hover, :focus-visible) {
+  text-decoration: underline;
+}
+
+.wf-table tr[aria-current='true'] td {
+  background: var(--uui-color-current-emphasis);
+}
+
+/* A name and its unseen dot stay together on the first line; a long name wraps after them */
+.wf-table td:has(> .wf-row > .wf-dot) {
+  white-space: normal;
+}
+
+.wf-table .wf-row:has(> .wf-dot) {
+  flex-wrap: nowrap;
+  align-items: baseline;
+}
+
+.wf-table tr.wf-unseen td:first-child:not(.wf-col-check),
+.wf-table tr.wf-unseen td.wf-col-check + td {
+  font-weight: 700;
+}
+
+.wf-table th.wf-num,
+.wf-table td.wf-num {
+  text-align: right;
+}
+
+.wf-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--wf-space-4);
+  color: var(--wf-color-text-muted);
+}
+
+/* Umbraco's bulk bar: directly above the workspace footer while rows are selected */
+.wf-bulk {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-4);
+  flex: none;
+  height: var(--wf-foot-height);
+  padding: 0 var(--wf-space-6);
+  background: var(--uui-color-selected);
+  color: var(--uui-color-surface);
+}
+
+.wf-bulk .wf-btn {
+  border-color: var(--uui-color-surface);
+}
+
+/* ---------- Overlays: sidebars, dialogs, toasts ---------- */
+
+.wf-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: var(--wf-color-backdrop);
+}
+
+.wf-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  width: var(--wf-sidebar-size, 500px);
+  max-width: calc(100vw - 120px);
+  background: var(--uui-color-background);
+  box-shadow: var(--wf-shadow);
+}
+
+.wf-sidebar--medium {
+  --wf-sidebar-size: 800px;
+}
+
+.wf-sidebar__head {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-4);
+  flex: none;
+  height: var(--wf-head-height);
+  padding: 0 var(--wf-space-6);
+  border-bottom: 1px solid var(--uui-color-border);
+  background: var(--uui-color-surface);
+}
+
+.wf-sidebar__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--wf-space-6);
+}
+
+.wf-sidebar__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--wf-space-3);
+  flex: none;
+  height: var(--wf-foot-height);
+  padding: 0 var(--wf-space-6);
+  border-top: 1px solid var(--uui-color-border);
+  background: var(--uui-color-surface);
+}
+
+.wf-sidebar__foot-start {
+  display: flex;
+  gap: var(--wf-space-3);
+  margin-right: auto;
+}
+
+.wf-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 31;
+  width: var(--wf-dialog-size, 520px);
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+  box-shadow: var(--wf-shadow);
+  transform: translate(-50%, -50%);
+}
+
+.wf-dialog__head {
+  padding: var(--wf-space-6) var(--wf-space-6) var(--wf-space-3);
+}
+
+.wf-dialog__body {
+  padding: 0 var(--wf-space-6) var(--wf-space-6);
+}
+
+.wf-dialog__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--wf-space-3);
+  padding: var(--wf-space-4) var(--wf-space-6);
+  border-top: 1px solid var(--uui-color-divider-standalone);
+}
+
+.wf-toast {
+  position: fixed;
+  right: var(--wf-space-6);
+  bottom: calc(var(--wf-foot-height) + var(--wf-space-5));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-4);
+  max-width: 420px;
+  padding: var(--wf-space-4) var(--wf-space-5);
+  border: 1px solid var(--uui-color-border);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+  box-shadow: var(--wf-shadow);
+}
+
+/* ---------- States ---------- */
+
+.wf-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--wf-space-3);
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 66px var(--wf-space-6);
+  text-align: center;
+}
+
+.wf-empty__title {
+  font-size: var(--wf-type-title);
+  font-weight: 700;
+}
+
+.wf-empty__text {
+  color: var(--wf-color-text-muted);
+}
+
+.wf-skel {
+  display: block;
+  height: 12px;
+  border-radius: var(--wf-radius);
+  background: var(--wf-color-skeleton);
+}
+
+.wf-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--wf-space-3);
+  padding: var(--wf-space-4) var(--wf-space-5);
+  border: 1px solid var(--uui-color-border);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+}
+
+.wf-note--danger .wf-note__icon {
+  color: var(--uui-color-danger-standalone);
+}
+
+.wf-note--warning .wf-note__icon {
+  color: var(--uui-color-text);
+}
+
+.wf-note--positive .wf-note__icon {
+  color: var(--uui-color-positive);
+}
+
+/* ---------- Description lists (details) ---------- */
+
+.wf-dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--wf-space-3) var(--wf-space-6);
+}
+
+.wf-dl dt {
+  color: var(--wf-color-text-muted);
+}
+
+/* ---------- The designer ---------- */
+
+.wf-designer {
+  display: grid;
+  grid-template-columns: var(--wf-palette, 248px) minmax(0, 1fr) var(--wf-inspector, 320px);
+  height: 100%;
+}
+
+.wf-panel {
+  min-height: 0;
+  overflow: auto;
+  background: var(--uui-color-surface);
+}
+
+.wf-panel--left {
+  border-right: 1px solid var(--uui-color-border);
+}
+
+.wf-panel--right {
+  border-left: 1px solid var(--uui-color-border);
+}
+
+.wf-panel__head {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-3);
+  min-height: 48px;
+  padding: var(--wf-space-3) var(--wf-space-5);
+  border-bottom: 1px solid var(--uui-color-divider-standalone);
+}
+
+.wf-panel__section {
+  padding: var(--wf-space-4) var(--wf-space-5);
+  border-bottom: 1px solid var(--uui-color-divider-standalone);
+}
+
+.wf-panel__heading {
+  margin-bottom: var(--wf-space-2);
+  font-weight: 700;
+}
+
+.wf-pal-item {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-3);
+  width: 100%;
+  height: 32px;
+  padding: 0 var(--wf-space-2);
+  border: 0;
+  border-radius: var(--wf-radius);
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: grab;
+}
+
+.wf-disclosure {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-3);
+  min-height: 48px;
+  padding: var(--wf-space-3) var(--wf-space-5);
+  border-bottom: 1px solid var(--uui-color-divider-standalone);
+}
+
+.wf-disclosure__summary {
+  margin-left: auto;
+  color: var(--wf-color-text-muted);
+  text-align: right;
+}
+
+.wf-stage {
+  min-height: 0;
+  overflow: auto;
+  padding: var(--wf-space-5) var(--wf-space-6) var(--wf-space-7);
+  container: stage / inline-size;
+}
+
+.wf-stage__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--wf-space-3);
+  margin-bottom: var(--wf-space-5);
+}
+
+.wf-steps {
+  display: flex;
+  align-items: center;
+  gap: var(--wf-space-2);
+  flex-wrap: wrap;
+  margin: 0 auto var(--wf-space-5);
+}
+
+.wf-step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wf-space-2);
+  height: 32px;
+  padding: 0 var(--wf-space-4);
+  border: 1px solid var(--uui-color-border);
+  border-radius: var(--wf-radius-round);
+  background: var(--uui-color-surface);
+}
+
+.wf-step[aria-current='step'] {
+  border-color: var(--uui-color-selected);
+  background: var(--uui-color-selected);
+  color: var(--uui-color-surface);
+  font-weight: 700;
+}
+
+.wf-canvas {
+  position: relative;
+  max-width: var(--wf-canvas, 760px);
+  margin: 0 auto;
+  padding: var(--wf-space-7);
+  border: 1px solid var(--uui-color-border);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+}
+
+.wf-canvas--phone {
+  --wf-canvas: 375px;
+  padding: var(--wf-space-6) var(--wf-space-5);
+}
+
+/* The canvas shows the form as it reflows in the room it has, as a visitor's narrow window would: columns stack on a
+   phone, and when the stage would leave the canvas under 420 px of form, where "Narrowed to fit" beside the width
+   switch says so. A container query measures the stage's content box: 420 px of form plus the canvas's 36 px padding
+   on each side is 492 px. */
+.wf-canvas--phone .wf-cols {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.wf-fit {
+  display: none;
+}
+
+@container stage (max-width: 491px) {
+  .wf-canvas {
+    padding: var(--wf-space-5);
+  }
+
+  .wf-canvas .wf-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wf-fit {
+    display: inline;
+  }
+}
+
+.wf-el {
+  position: relative;
+  padding: var(--wf-space-3) var(--wf-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--wf-radius);
+}
+
+.wf-el + .wf-el,
+.wf-cols + .wf-el,
+.wf-el + .wf-cols {
+  margin-top: var(--wf-space-3);
+}
+
+.wf-cols > .wf-el + .wf-el {
+  margin-top: 0;
+}
+
+.wf-el--selected {
+  border: 2px solid var(--uui-color-selected);
+}
+
+.wf-el__bar {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  display: flex;
+  gap: var(--wf-space-1);
+  padding: var(--wf-space-1);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+  box-shadow: var(--wf-shadow);
+}
+
+.wf-insert {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 24px;
+  margin: var(--wf-space-1) 0;
+}
+
+.wf-insert::before {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: var(--uui-color-selected);
+}
+
+.wf-insert__plus {
+  position: absolute;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--wf-radius-round);
+  background: var(--uui-color-selected);
+  color: var(--uui-color-surface);
+  transform: translateX(-50%);
+}
+
+.wf-group {
+  padding: var(--wf-space-4);
+  border: 1px dashed var(--uui-color-border-standalone);
+  border-radius: var(--wf-radius);
+}
+
+.wf-group__title {
+  margin-bottom: var(--wf-space-3);
+  font-size: var(--wf-type-title);
+  font-weight: 700;
+}
+
+.wf-cols {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: var(--wf-space-4);
+}
+
+.wf-add-field {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--wf-space-2);
+  height: 44px;
+  margin-top: var(--wf-space-5);
+  border: 1px dashed var(--uui-color-border-standalone);
+  border-radius: var(--wf-radius);
+  color: var(--uui-color-interactive);
+}
+
+.wf-rule-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wf-space-1);
+  height: 22px;
+  margin-top: var(--wf-space-2);
+  padding: 0 var(--wf-space-3);
+  border: 1px solid var(--uui-color-border-standalone);
+  border-radius: var(--wf-radius-round);
+  background: var(--uui-color-surface);
+  font-size: var(--wf-type-small);
+}
+
+/* The visitor's field, as the canvas and the previews draw it (placeholder look until the 2.3 theme) */
+.wf-vf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wf-space-2);
+}
+
+.wf-vf__label {
+  font-weight: 700;
+}
+
+.wf-vf__optional {
+  color: var(--wf-color-text-muted);
+  font-weight: 400;
+}
+
+.wf-vf__control {
+  height: 40px;
+  border: 1px solid var(--wf-color-control-border);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+}
+
+.wf-vf__control--tall {
+  height: 96px;
+}
+
+.wf-vf__choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wf-space-2);
+}
+
+.wf-vf__submit {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  height: 44px;
+  padding: 0 var(--wf-space-6);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-interactive);
+  color: var(--uui-color-surface);
+  font-weight: 700;
+}
+
+/* ---------- Cards (template gallery, actions) ---------- */
+
+.wf-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card, 220px), 1fr));
+  gap: var(--wf-space-5);
+}
+
+.wf-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--uui-color-border);
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-surface);
+}
+
+.wf-card[aria-current='true'] {
+  border-color: var(--uui-color-selected);
+  outline: 1px solid var(--uui-color-selected);
+}
+
+.wf-card__thumb {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wf-space-2);
+  height: 120px;
+  padding: var(--wf-space-4);
+  border-bottom: 1px solid var(--uui-color-divider-standalone);
+  background: var(--uui-color-background);
+}
+
+.wf-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wf-space-1);
+  padding: var(--wf-space-4);
+}
+
+/* ---------- Charts (Insights) ---------- */
+
+.wf-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--wf-space-2);
+  height: 160px;
+  padding-top: var(--wf-space-4);
+  border-bottom: 1px solid var(--uui-color-border);
+}
+
+.wf-bars > span {
+  flex: 1;
+  height: var(--h);
+  border-radius: var(--wf-radius) var(--wf-radius) 0 0;
+  background: var(--uui-color-selected);
+}
+
+.wf-bars > span.wf-bar--prev {
+  background: var(--uui-color-border-standalone);
+}
+
+.wf-hbar {
+  display: grid;
+  grid-template-columns: minmax(96px, 200px) minmax(48px, 1fr) minmax(0, max-content);
+  align-items: center;
+  gap: var(--wf-space-4);
+}
+
+.wf-hbar__track {
+  height: 12px;
+}
+
+.wf-hbar__fill {
+  width: var(--w);
+  height: 100%;
+  border-radius: var(--wf-radius);
+  background: var(--uui-color-selected);
+}
+
+.wf-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wf-space-1);
+}
+
+.wf-stat__value {
+  font-size: var(--wf-type-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- The state switch: kit.js shows [data-state] parts only in their states ---------- */
+
+[data-state]:not(.wf-on) {
+  display: none !important;
+}

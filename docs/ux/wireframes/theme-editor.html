@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Theme editor · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 dark@1440x900 list@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .te { display: grid; grid-template-columns: 440px minmax(0, 1fr); height: 100%; }
+    .te__settings { overflow: auto; padding: var(--wf-space-6); border-right: 1px solid var(--uui-color-border); background: var(--uui-color-surface); }
+    .te__preview { overflow: auto; padding: var(--wf-space-6); }
+    .te-colour { display: grid; grid-template-columns: 120px 30px minmax(0, 1fr); gap: var(--wf-space-3); align-items: center; }
+    .te-colour + .te-colour { margin-top: var(--wf-space-4); }
+    .te-colour__check { grid-column: 2 / -1; font-size: var(--wf-type-small); color: var(--wf-color-text-muted); }
+    .te-colour__check--fail { color: var(--uui-color-danger-standalone); }
+    .te-swatch { width: 30px; height: 30px; border: 1px solid var(--wf-color-control-border); border-radius: var(--wf-radius); }
+    .te-group { display: flex; align-items: center; gap: var(--wf-space-3); width: 100%; padding: var(--wf-space-4) 0; border: 0; border-top: 1px solid var(--uui-color-divider-standalone); background: none; font: inherit; color: inherit; text-align: left; }
+    .te-group .wf-disclosure__summary { margin-left: auto; }
+
+    /* The kitchen-sink form, in the theme being edited (a visitor's look, not the backoffice) */
+    .ks { max-width: 620px; margin: 0 auto; padding: 36px; border-radius: 6px; background: #ffffff; color: #1d2433; font-family: Georgia, 'Times New Roman', serif; }
+    .ks--dark { background: #14181f; color: #e8eaee; }
+    .ks h3 { margin-bottom: 18px; font-size: 22px; }
+    .ks__field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+    .ks__label { font-weight: 700; }
+    .ks__input { height: 42px; border: 1px solid #c9ced6; border-radius: 6px; background: #ffffff; }
+    .ks--dark .ks__input { border-color: #9aa3b2; background: #1d232d; }
+    .ks__input--error { border: 2px solid #b3261e; }
+    .ks--dark .ks__input--error { border-color: #f2a59e; }
+    .ks__error { color: #b3261e; }
+    .ks--dark .ks__error { color: #f2a59e; }
+    .ks__placeholder { padding: 9px 12px; color: #5f6673; }
+    .ks__choice { display: flex; align-items: center; gap: 9px; }
+    .ks__box { width: 20px; height: 20px; border: 1px solid #c9ced6; border-radius: 4px; }
+    .ks__buttons { display: flex; gap: 12px; margin-top: 24px; }
+    .ks__primary { padding: 12px 24px; border-radius: 6px; background: #0f6e5c; color: #ffffff; font-weight: 700; }
+    .ks--dark .ks__primary { background: #5fd0b8; color: #0b1a17; }
+    .ks__secondary { padding: 12px 24px; border: 1px solid #0f6e5c; border-radius: 6px; color: #0f6e5c; }
+    .ks--dark .ks__secondary { border-color: #5fd0b8; color: #5fd0b8; }
+    .ks__focus { box-shadow: 0 0 0 3px #1a5fd1; }
+    .ks__flag { display: inline-flex; align-items: center; gap: 6px; margin-left: 9px; padding: 0 6px; border-radius: 999px; background: #fde8e7; color: #8c1d18; font-family: Lato, sans-serif; font-size: 12px; font-weight: 700; }
+    @media (max-width: 1000px) { .te { grid-template-columns: minmax(0, 1fr); } .te__preview { display: none; } }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="designer" data-active="themes">
+  <!--
+    IA section 7: colours (light and dark), type, spacing and corners, buttons and the focus ring, custom CSS under
+    "More options", beside a live kitchen-sink form with the contrast checks in place. The theme's own colours below are
+    an example theme; they are marked data-wf-sample because they are the visitor's look, not the backoffice's.
+    At 920 px the preview moves behind "Preview" in the header (not drawn).
+  -->
+  <main class="wf-main">
+    <!-- The list -->
+    <header class="wf-head" data-state="list">
+      <div class="wf-head__main">
+        <h1 class="wf-head__title">Themes</h1>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Themes"><i data-i="more"></i></button>
+      </div>
+    </header>
+    <div class="wf-content" data-state="list">
+      <section class="wf-box" aria-label="Themes">
+        <table class="wf-table" style="border: 0">
+          <thead><tr><th>Name</th><th class="wf-num">Used by</th></tr></thead>
+          <tbody>
+            <tr><td><span class="wf-row"><span class="te-swatch" data-wf-sample style="background: #1b264f"></span><a href="#">Site default</a> <a href="#" class="wf-chip wf-chip--outline">Default</a></span></td><td class="wf-num">12 forms</td></tr>
+            <tr><td><span class="wf-row"><span class="te-swatch" data-wf-sample style="background: #0f6e5c"></span><a href="#">Autumn campaign</a></span></td><td class="wf-num">5 forms</td></tr>
+            <tr><td><span class="wf-row"><span class="te-swatch" data-wf-sample style="background: #7a2e8e"></span><a href="#">Careers</a></span></td><td class="wf-num">1 form</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+    <footer class="wf-foot" data-state="list"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Create theme</button></div></footer>
+
+    <!-- One theme -->
+    <header class="wf-head" data-state="default dark">
+      <div class="wf-head__main">
+        <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Themes"><i data-i="arrow-left"></i></button>
+        <span class="wf-head__name">Autumn campaign</span>
+        <a href="#">Used by 5 forms</a>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Autumn campaign"><i data-i="more"></i></button>
+      </div>
+    </header>
+    <div class="wf-content wf-content--flush" data-state="default dark">
+      <div class="te">
+        <div class="te__settings">
+          <div class="wf-row wf-row--between" style="margin-bottom: var(--wf-space-5)">
+            <h2 class="wf-title">Colours</h2>
+            <div class="wf-seg" role="group" aria-label="Colour scheme" data-state="default"><button aria-pressed="true">Light</button><button aria-pressed="false">Dark</button></div>
+            <div class="wf-seg" role="group" aria-label="Colour scheme" data-state="dark"><button aria-pressed="false">Light</button><button aria-pressed="true">Dark</button></div>
+          </div>
+
+          <div data-state="default">
+            <div class="te-colour"><span>Accent</span><span class="te-swatch" data-wf-sample style="background: #0f6e5c"></span><span class="wf-input">#0F6E5C</span><span class="te-colour__check">6.2:1 with white text: passes</span></div>
+            <div class="te-colour"><span>Text</span><span class="te-swatch" data-wf-sample style="background: #1d2433"></span><span class="wf-input">#1D2433</span><span class="te-colour__check">15.1:1 on the background: passes</span></div>
+            <div class="te-colour"><span>Background</span><span class="te-swatch" data-wf-sample style="background: #ffffff"></span><span class="wf-input">#FFFFFF</span></div>
+            <div class="te-colour"><span>Control borders</span><span class="te-swatch" data-wf-sample style="background: #c9ced6"></span><span class="wf-input">#C9CED6</span><span class="te-colour__check te-colour__check--fail"><i data-i="alert"></i> 1.6:1: controls need 3:1. Try #6B7280.</span></div>
+            <div class="te-colour"><span>Placeholder</span><span class="te-swatch" data-wf-sample style="background: #5f6673"></span><span class="wf-input">#5F6673</span><span class="te-colour__check">5.9:1: passes</span></div>
+            <div class="te-colour"><span>Errors</span><span class="te-swatch" data-wf-sample style="background: #b3261e"></span><span class="wf-input">#B3261E</span><span class="te-colour__check">6.5:1: passes</span></div>
+            <div class="te-colour"><span>Focus ring</span><span class="te-swatch" data-wf-sample style="background: #1a5fd1"></span><span class="wf-input">#1A5FD1</span><span class="te-colour__check">5.6:1 against the background: passes</span></div>
+          </div>
+          <div data-state="dark">
+            <div class="te-colour"><span>Accent</span><span class="te-swatch" data-wf-sample style="background: #5fd0b8"></span><span class="wf-input">#5FD0B8</span><span class="te-colour__check">10.4:1 with dark text: passes</span></div>
+            <div class="te-colour"><span>Text</span><span class="te-swatch" data-wf-sample style="background: #e8eaee"></span><span class="wf-input">#E8EAEE</span><span class="te-colour__check">15.3:1 on the background: passes</span></div>
+            <div class="te-colour"><span>Background</span><span class="te-swatch" data-wf-sample style="background: #14181f"></span><span class="wf-input">#14181F</span></div>
+            <div class="te-colour"><span>Control borders</span><span class="te-swatch" data-wf-sample style="background: #9aa3b2"></span><span class="wf-input">#9AA3B2</span><span class="te-colour__check">7.1:1: passes for controls</span></div>
+            <div class="te-colour"><span>Errors</span><span class="te-swatch" data-wf-sample style="background: #f2a59e"></span><span class="wf-input">#F2A59E</span><span class="te-colour__check">9.6:1: passes</span></div>
+          </div>
+
+          <div style="margin-top: var(--wf-space-6)">
+            <button class="te-group" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Type</span><span class="wf-disclosure__summary">The site's serif, 17 px</span></button>
+            <button class="te-group" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Spacing and corners</span><span class="wf-disclosure__summary">Roomy, 6 px corners</span></button>
+            <button class="te-group" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Buttons and focus</span><span class="wf-disclosure__summary">Filled, 3 px ring</span></button>
+            <button class="te-group" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">More options</span><span class="wf-disclosure__summary">No custom CSS</span></button>
+          </div>
+        </div>
+
+        <!-- The live kitchen sink -->
+        <section class="te__preview" aria-label="Preview of the theme">
+          <div class="ks" data-wf-sample data-state="default">
+            <h3>Register for the autumn tasting</h3>
+            <div class="ks__field"><span class="ks__label">Name</span><span class="ks__input"></span></div>
+            <div class="ks__field"><span class="ks__label">Email address <span class="ks__flag"><i data-i="alert"></i>Borders 1.6:1</span></span><span class="ks__input"><span class="ks__placeholder" style="display: block">name@example.com</span></span></div>
+            <div class="ks__field"><span class="ks__label">Guests</span><span class="ks__input ks__input--error"></span><span class="ks__error">Enter a number between 1 and 4.</span></div>
+            <div class="ks__field"><span class="ks__choice"><span class="ks__box"></span>Vegetarian menu</span><span class="ks__choice"><span class="ks__box"></span>Wheelchair access needed</span></div>
+            <div class="ks__buttons"><span class="ks__primary ks__focus">Register</span><span class="ks__secondary">Back</span></div>
+          </div>
+          <div class="ks ks--dark" data-wf-sample data-state="dark">
+            <h3>Register for the autumn tasting</h3>
+            <div class="ks__field"><span class="ks__label">Name</span><span class="ks__input"></span></div>
+            <div class="ks__field"><span class="ks__label">Email address</span><span class="ks__input"></span></div>
+            <div class="ks__field"><span class="ks__label">Guests</span><span class="ks__input ks__input--error"></span><span class="ks__error">Enter a number between 1 and 4.</span></div>
+            <div class="ks__field"><span class="ks__choice"><span class="ks__box" style="border-color: #9aa3b2"></span>Vegetarian menu</span></div>
+            <div class="ks__buttons"><span class="ks__primary">Register</span><span class="ks__secondary">Back</span></div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <footer class="wf-foot" data-state="default dark"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Save</button></div></footer>
+  </main>
+</body>
+</html>

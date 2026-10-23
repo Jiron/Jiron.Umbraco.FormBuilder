@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Privacy tools (People, Retention) · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 results@1440x900 erase@1440x900 none@1440x900 retention@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .pt-find { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--wf-space-3); }
+    .pt-find .wf-field { flex: 1; min-width: 240px; margin: 0; }
+    .pt-erase { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: var(--wf-space-2) var(--wf-space-5); margin-top: var(--wf-space-4); }
+    .pt-ret { display: grid; grid-template-columns: minmax(0, 1fr) 120px; gap: var(--wf-space-3) var(--wf-space-5); align-items: center; }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="privacy" data-active="people" data-active-retention="retention">
+  <!--
+    IA section 9: People finds one person's entries in every form, restricted ones included, with their files and
+    emails; after Find, Export everything and Erase… appear. Erase… always shows its preview first. The privacy officer
+    reads Retention but can't change it (Manage settings does), so the screen says which permission changes it.
+    Find sits beside the field it acts on, as Umbraco's own search dashboards place it.
+  -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main">
+        <h1 class="wf-head__title" data-state="default results erase none">People</h1>
+        <h1 class="wf-head__title" data-state="retention">Retention</h1>
+      </div>
+    </header>
+
+    <div class="wf-content wf-content--narrow">
+      <!-- People -->
+      <div class="wf-stack wf-stack--lg" data-state="default results erase none">
+        <section class="wf-box" aria-labelledby="pt-find">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="pt-find">Find a person's data</h2></div>
+          <div class="wf-box__body">
+            <div class="pt-find">
+              <label class="wf-field">
+                <span class="wf-label">Email address</span>
+                <span class="wf-input" data-state="default"><span class="wf-placeholder">For example: name@example.com</span></span>
+                <span class="wf-input" data-state="results erase">lena@example.com</span>
+                <span class="wf-input" data-state="none">l.weber@example.com</span>
+              </label>
+              <button class="wf-btn wf-btn--primary">Find</button>
+            </div>
+            <p class="wf-help" style="margin-top: var(--wf-space-3)">Or <a href="#">choose a member</a>. Every form is searched, restricted ones included, and the search is recorded in the audit log.</p>
+          </div>
+        </section>
+
+        <section class="wf-box" data-state="results erase" aria-labelledby="pt-found">
+          <div class="wf-box__head">
+            <h2 class="wf-box__title" id="pt-found">6 entries in 3 forms</h2>
+            <div class="wf-box__end" data-wf-actions="results">
+              <button class="wf-btn wf-btn--small"><i data-i="download"></i>Export everything</button>
+              <button class="wf-btn wf-btn--small">Erase…</button>
+            </div>
+          </div>
+          <div class="wf-box__body wf-box__body--flush">
+            <table class="wf-table" style="border: 0">
+              <thead><tr><th>Entry</th><th>Form</th><th>Received</th><th class="wf-num">Files</th><th class="wf-num">Emails</th></tr></thead>
+              <tbody>
+                <tr><td class="wf-cell-wrap"><a href="#">Lena Weber</a></td><td class="wf-muted">Contact us</td><td class="wf-muted">2 Oct</td><td class="wf-num">none</td><td class="wf-num">2</td></tr>
+                <tr><td class="wf-cell-wrap"><a href="#">Lena Weber</a></td><td class="wf-muted">Contact us</td><td class="wf-muted">14 Aug</td><td class="wf-num">none</td><td class="wf-num">1</td></tr>
+                <tr><td class="wf-cell-wrap"><a href="#">Lena Weber, Marketing manager</a></td><td class="wf-muted">Job application</td><td class="wf-muted">3 Jun</td><td class="wf-num">2</td><td class="wf-num">1</td></tr>
+                <tr><td class="wf-cell-wrap"><a href="#">Entry #431</a></td><td class="wf-muted">Newsletter sign-up</td><td class="wf-muted">20 Jan</td><td class="wf-num">none</td><td class="wf-num">none</td></tr>
+                <tr><td class="wf-cell-wrap"><a href="#">Entry #398</a></td><td class="wf-muted">Newsletter sign-up</td><td class="wf-muted">5 Jan</td><td class="wf-num">none</td><td class="wf-num">none</td></tr>
+                <tr><td class="wf-cell-wrap"><a href="#">Entry #377</a></td><td class="wf-muted">Newsletter sign-up</td><td class="wf-muted">29 Dec 2025</td><td class="wf-num">none</td><td class="wf-num">none</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="wf-empty" data-state="none">
+          <p class="wf-empty__text">No entries found for l.weber@example.com. Entries sent while signed in are found through the member.</p>
+        </div>
+      </div>
+
+      <!-- Retention, read by the privacy officer -->
+      <div class="wf-stack wf-stack--lg" data-state="retention">
+        <p class="wf-note"><i data-i="lock" class="wf-note__icon"></i><span>Changing retention needs the "Manage settings" permission. An administrator can grant it in Settings › Access.</span></p>
+        <section class="wf-box" aria-labelledby="pt-keep">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="pt-keep">How long entries are kept</h2></div>
+          <div class="wf-box__body pt-ret">
+            <span>Submitted, waiting for approval</span><span>365 days</span>
+            <span>Approved</span><span>365 days</span>
+            <span>Rejected</span><span>90 days</span>
+            <span>Spam</span><span>30 days</span>
+          </div>
+        </section>
+        <section class="wf-box" aria-labelledby="pt-own">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="pt-own">Forms with their own retention</h2></div>
+          <div class="wf-box__body wf-box__body--flush">
+            <table class="wf-table" style="border: 0">
+              <tbody><tr><td>Job application</td><td class="wf-muted">Rejected: 180 days; Approved: 730 days</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="wf-box" aria-labelledby="pt-soon">
+          <div class="wf-box__head">
+            <h2 class="wf-box__title" id="pt-soon">What will be deleted</h2>
+            <div class="wf-box__end"><div class="wf-seg" role="group" aria-label="Span"><button aria-pressed="false">7 days</button><button aria-pressed="true">30 days</button><button aria-pressed="false">90 days</button></div></div>
+          </div>
+          <div class="wf-box__body wf-box__body--flush">
+            <table class="wf-table" style="border: 0">
+              <thead><tr><th>Form</th><th class="wf-num">Entries</th><th class="wf-num">Files</th></tr></thead>
+              <tbody>
+                <tr><td>Contact us</td><td class="wf-num">112</td><td class="wf-num">none</td></tr>
+                <tr><td>Callback request</td><td class="wf-num">23</td><td class="wf-num">none</td></tr>
+                <tr><td>Job application</td><td class="wf-num">9</td><td class="wf-num">17</td></tr>
+              </tbody>
+            </table>
+            <p class="wf-small wf-muted" style="padding: var(--wf-space-4)">Entries on legal hold stay. Nothing needs to be pressed: deleting happens by itself each night.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Erase… shows its preview first -->
+  <div class="wf-backdrop" data-state="erase"></div>
+  <div class="wf-dialog" style="--wf-dialog-size: 560px" data-state="erase" role="alertdialog" aria-labelledby="er-title" aria-describedby="er-text">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="er-title">Erase everything about lena@example.com?</h2></div>
+    <div class="wf-dialog__body">
+      <p id="er-text">6 entries in 3 forms, 2 uploaded files and 4 sent emails are erased. Statistics stay. You can't undo this.</p>
+      <div class="pt-erase">
+        <span>Contact us</span><span class="wf-muted">2 entries, 3 emails</span>
+        <span>Job application</span><span class="wf-muted">1 entry, 2 files, 1 email</span>
+        <span>Newsletter sign-up</span><span class="wf-muted">3 entries</span>
+      </div>
+    </div>
+    <div class="wf-dialog__foot">
+      <button class="wf-btn" style="box-shadow: var(--wf-focus)">Cancel</button>
+      <button class="wf-btn wf-btn--danger">Erase 6 entries</button>
+    </div>
+  </div>
+</body>
+</html>

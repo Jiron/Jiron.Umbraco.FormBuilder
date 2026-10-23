@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Form settings · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 outcome@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .fs-group-head { display: flex; align-items: center; gap: var(--wf-space-3); width: 100%; padding: var(--wf-space-4) var(--wf-space-5); border: 0; background: none; font: inherit; color: inherit; text-align: left; }
+    .fs-group-head .wf-disclosure__summary { margin-left: auto; }
+    .fs-labels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--wf-space-4); }
+    .fs-outcome { display: grid; grid-template-columns: 20px 24px minmax(0, 1fr) max-content; gap: var(--wf-space-3); align-items: center; padding: var(--wf-space-4); border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); color: inherit; text-decoration: none; }
+    .fs-outcome + .fs-outcome { margin-top: var(--wf-space-3); }
+    .rte { border: 1px solid var(--wf-color-control-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
+    .rte__bar { display: flex; gap: var(--wf-space-1); padding: var(--wf-space-1) var(--wf-space-2); border-bottom: 1px solid var(--uui-color-border); }
+    .rte__body { min-height: 120px; padding: var(--wf-space-3) var(--wf-space-4); }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="designer" data-active="form:contact">
+  <!-- IA 5.2: one page with the groups of ROADMAP 4.3.4. Submission and After sending open; the others closed with a summary. -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main">
+        <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms"><i data-i="arrow-left"></i></button>
+        <span class="wf-head__name">Contact us</span>
+        <span class="wf-chip wf-chip--warning">Published (pending changes)</span>
+        <a href="#" data-state="default outcome">Used on 3 pages</a>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Contact us"><i data-i="more"></i></button>
+      </div>
+      <nav class="wf-tabs" aria-label="Views">
+        <a class="wf-tab" href="#"><i data-i="pencil" class="wf-i--20"></i>Design</a>
+        <a class="wf-tab" href="#" aria-current="page"><i data-i="settings" class="wf-i--20"></i>Settings</a>
+        <a class="wf-tab" href="#"><i data-i="send" class="wf-i--20"></i>Actions</a>
+        <a class="wf-tab" href="#"><i data-i="history" class="wf-i--20"></i>History</a>
+      </nav>
+    </header>
+
+    <div class="wf-content wf-content--narrow">
+      <div class="wf-stack wf-stack--lg">
+
+        <!-- Submission (open) -->
+        <section class="wf-box" aria-labelledby="g-submission">
+          <h2><button class="fs-group-head" aria-expanded="true" id="g-submission"><i data-i="chevron-down"></i><span class="wf-strong">Submission</span></button></h2>
+          <div class="wf-box__body" style="border-top: 1px solid var(--uui-color-divider-standalone)">
+            <div class="wf-field">
+              <span class="wf-label">Button labels</span>
+              <div class="fs-labels">
+                <label class="wf-field"><span class="wf-help" style="margin: 0">On the last page</span><span class="wf-input">Send</span></label>
+                <label class="wf-field" style="margin: 0"><span class="wf-help" style="margin: 0">Next page</span><span class="wf-input">Next</span></label>
+                <label class="wf-field" style="margin: 0"><span class="wf-help" style="margin: 0">Previous page</span><span class="wf-input">Back</span></label>
+              </div>
+            </div>
+            <div class="wf-field">
+              <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="s-summary"></span><span class="wf-label" id="s-summary">Summary page</span></span>
+              <span class="wf-help">Visitors check their answers on one page before they send.</span>
+            </div>
+            <label class="wf-field">
+              <span class="wf-label">Progress</span>
+              <span class="wf-select" style="max-width: 280px"><span>Numbered steps</span><i data-i="chevron-down"></i></span>
+              <span class="wf-help">Shown only on forms with more than one page.</span>
+            </label>
+            <label class="wf-field">
+              <span class="wf-label">Store entries</span>
+              <span class="wf-select" style="max-width: 280px"><span>Always</span><i data-i="chevron-down"></i></span>
+              <span class="wf-help">"Never" runs the actions and keeps nothing. Retention in the Privacy group decides how long stored entries stay.</span>
+            </label>
+            <div class="wf-field">
+              <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="s-approval"></span><span class="wf-label" id="s-approval">Manual approval</span></span>
+              <span class="wf-help">Entries wait until someone approves or rejects them. Without it, every entry is approved as it arrives.</span>
+            </div>
+            <div class="wf-field">
+              <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="s-verify"></span><span class="wf-label" id="s-verify">Email verification</span></span>
+              <span class="wf-help">Visitors confirm their address through a link before any action runs. Use it for newsletters.</span>
+            </div>
+            <label class="wf-field">
+              <span class="wf-label">Entry title</span>
+              <span class="wf-input"><span><span class="wf-tag">{{ field.name }}</span>, <span class="wf-tag">{{ field.company }}</span></span></span>
+              <span class="wf-help">Names each entry in the lists. Sensitive fields are left out.</span>
+            </label>
+            <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)"><i data-i="chevron-down"></i>More options</button>
+          </div>
+        </section>
+
+        <!-- After sending (open): the outcomes -->
+        <section class="wf-box" aria-labelledby="g-after">
+          <h2><button class="fs-group-head" aria-expanded="true" id="g-after"><i data-i="chevron-down"></i><span class="wf-strong">After sending</span></button></h2>
+          <div class="wf-box__body" style="border-top: 1px solid var(--uui-color-divider-standalone)">
+            <p class="wf-help" style="margin: 0 0 var(--wf-space-4)">Visitors get the first outcome whose rule matches.</p>
+            <a class="fs-outcome" href="#">
+              <i data-i="grip" aria-label="Drag to reorder"></i>
+              <i data-i="external" class="wf-i--20"></i>
+              <span><span class="wf-strong">Redirect to /press/thanks</span><br><span class="wf-muted">When Topic is Press</span></span>
+              <i data-i="chevron-right"></i>
+            </a>
+            <a class="fs-outcome" href="#">
+              <i data-i="grip" aria-label="Drag to reorder"></i>
+              <i data-i="note" class="wf-i--20"></i>
+              <span><span class="wf-strong">Message: "Thank you, {{ field.firstName }}. We have received…"</span><br><span class="wf-muted">Otherwise</span></span>
+              <i data-i="chevron-right"></i>
+            </a>
+            <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)"><i data-i="plus"></i>Add outcome</button>
+          </div>
+        </section>
+
+        <!-- The closed groups, each with its summary -->
+        <section class="wf-box">
+          <h2><button class="fs-group-head" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Availability</span><span class="wf-disclosure__summary">Always open · No limit</span></button></h2>
+        </section>
+        <section class="wf-box">
+          <h2><button class="fs-group-head" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Spam protection</span><span class="wf-disclosure__summary">Site default: standard</span></button></h2>
+        </section>
+        <section class="wf-box">
+          <h2><button class="fs-group-head" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Privacy</span><span class="wf-disclosure__summary">Site defaults</span></button></h2>
+        </section>
+        <section class="wf-box">
+          <h2><button class="fs-group-head" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Appearance</span><span class="wf-disclosure__summary">Default theme · Optional fields marked</span></button></h2>
+        </section>
+        <section class="wf-box">
+          <h2><button class="fs-group-head" aria-expanded="false"><i data-i="chevron-right"></i><span class="wf-strong">Developer</span><span class="wf-disclosure__summary">Headless access off</span></button></h2>
+        </section>
+      </div>
+    </div>
+
+    <footer class="wf-foot">
+      <div class="wf-foot__end">
+        <button class="wf-btn">Preview</button>
+        <button class="wf-btn">Save draft</button>
+        <button class="wf-btn wf-btn--primary">Publish…</button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- The outcome's editor -->
+  <div class="wf-backdrop" data-state="outcome"></div>
+  <aside class="wf-sidebar wf-sidebar--medium" data-state="outcome" role="dialog" aria-labelledby="oc-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="oc-title">Outcome</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-box"><div class="wf-box__body">
+        <div class="wf-field" role="radiogroup" aria-labelledby="oc-kind">
+          <span class="wf-label" id="oc-kind">What visitors get</span>
+          <span class="wf-row" style="gap: var(--wf-space-6)">
+            <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="true" aria-labelledby="oc-k1"></span><span id="oc-k1">A message</span></span>
+            <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="oc-k2"></span><span id="oc-k2">A redirect</span></span>
+            <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-labelledby="oc-k3"></span><span id="oc-k3">A message, then a redirect</span></span>
+          </span>
+        </div>
+        <div class="wf-field">
+          <span class="wf-label" id="oc-message">Message</span>
+          <div class="rte" aria-labelledby="oc-message">
+            <div class="rte__bar" role="toolbar" aria-label="Formatting">
+              <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Bold"><i data-i="type"></i></button>
+              <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Link"><i data-i="link"></i></button>
+              <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Bulleted list"><i data-i="list"></i></button>
+              <button class="wf-btn wf-btn--text wf-btn--small" style="margin-left: auto"><span class="wf-tag">{{ }}</span>Insert merge tag</button>
+            </div>
+            <div class="rte__body"><p>Thank you, <span class="wf-tag">{{ field.firstName }}</span>. We have received your message and answer within two working days.</p></div>
+          </div>
+        </div>
+        <div class="wf-field">
+          <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="false" aria-labelledby="oc-copy"></span><span class="wf-label" id="oc-copy">Show a copy of the answers</span></span>
+          <span class="wf-help">Adds the answers below the message, with a print button and a link to fill in the form again.</span>
+        </div>
+        <div class="wf-field">
+          <span class="wf-label">Rule</span>
+          <span>Used when no earlier outcome applies · <a href="#">Add a rule</a></span>
+        </div>
+      </div></div>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary">Update</button>
+    </footer>
+  </aside>
+</body>
+</html>

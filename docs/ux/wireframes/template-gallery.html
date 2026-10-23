@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Template gallery · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 loading@1440x900 library@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .tg { display: grid; grid-template-columns: minmax(0, 1fr) 420px; height: 100%; }
+    .tg__list { overflow: auto; padding: var(--wf-space-6); }
+    .tg__preview { overflow: auto; border-left: 1px solid var(--uui-color-border); background: var(--uui-color-surface); }
+    .wf-card { text-align: left; font: inherit; color: inherit; padding: 0; }
+    /* At 920 px the preview covers the gallery, as the designer's inspector does (IA 5.1). */
+    @media (max-width: 1000px) {
+      .tg { grid-template-columns: minmax(0, 1fr); position: relative; }
+      .tg__preview { position: absolute; inset: 0; border-left: 0; }
+    }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="admin" data-active="folder:events" data-role-library="designer" data-active-library="templates">
+  <!--
+    IA section 4 (the template gallery, from Create › Form from a template…) and section 7 (Library › Templates, the
+    same gallery in a workspace, with no create button: templates come from "Save as template").
+  -->
+  <main class="wf-main">
+    <!-- What lies behind the modal: the Events folder -->
+    <header class="wf-head" data-state="default loading">
+      <div class="wf-head__main"><span class="wf-head__name">Events</span></div>
+    </header>
+    <div class="wf-content" data-state="default loading"></div>
+    <footer class="wf-foot" data-state="default loading"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary" tabindex="-1">Create form</button></div></footer>
+
+    <!-- Library › Templates -->
+    <header class="wf-head" data-state="library">
+      <div class="wf-head__main"><h1 class="wf-head__title">Templates</h1></div>
+    </header>
+    <div class="wf-content" data-state="library">
+      <div class="wf-stack wf-stack--lg">
+        <section aria-labelledby="lib-built-in">
+          <h2 class="wf-title" id="lib-built-in" style="margin-bottom: var(--wf-space-4)">Built in</h2>
+          <div class="wf-cards">
+            <div class="wf-card"><div class="wf-card__body"><a href="#" class="wf-strong">Contact</a><span class="wf-muted">Name, email and a message</span></div></div>
+            <div class="wf-card"><div class="wf-card__body"><a href="#" class="wf-strong">Callback</a><span class="wf-muted">A phone number and a good time to call</span></div></div>
+            <div class="wf-card"><div class="wf-card__body"><a href="#" class="wf-strong">Newsletter</a><span class="wf-muted">An email address, confirmed by the visitor</span></div></div>
+            <div class="wf-card"><div class="wf-card__body"><a href="#" class="wf-strong">Event registration</a><span class="wf-muted">Places with a limit, and a waiting list</span></div></div>
+          </div>
+        </section>
+        <section aria-labelledby="lib-saved">
+          <h2 class="wf-title" id="lib-saved" style="margin-bottom: var(--wf-space-4)">Saved on this site</h2>
+          <div class="wf-cards">
+            <div class="wf-card">
+              <div class="wf-card__body">
+                <span class="wf-row wf-row--between"><a href="#" class="wf-strong">Partner enquiry</a><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Partner enquiry"><i data-i="more"></i></button></span>
+                <span class="wf-muted">Saved by Lea Hoffmann from Contact us</span>
+              </div>
+            </div>
+            <div class="wf-card">
+              <div class="wf-card__body">
+                <span class="wf-row wf-row--between"><a href="#" class="wf-strong">Address group</a><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Address group"><i data-i="more"></i></button></span>
+                <span class="wf-muted">A group: street, postcode, town, country</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- The gallery, as a large sidebar over the folder -->
+  <div class="wf-backdrop" data-state="default loading"></div>
+  <aside class="wf-sidebar" style="--wf-sidebar-size: calc(100vw - 120px)" data-state="default loading" role="dialog" aria-labelledby="tg-title">
+    <header class="wf-sidebar__head">
+      <h2 class="wf-title" id="tg-title">Choose a template</h2>
+      <span class="wf-input wf-input--search" style="width: 280px; margin-left: auto"><i data-i="search"></i><span class="wf-placeholder">Search templates</span></span>
+    </header>
+    <div class="wf-sidebar__body" style="padding: 0">
+      <div class="tg">
+        <div class="tg__list">
+          <!-- Loading -->
+          <div class="wf-cards" data-state="loading" aria-busy="true">
+            <div class="wf-card"><div class="wf-card__body"><span class="wf-skel" style="width: 50%"></span><span class="wf-skel" style="width: 80%"></span></div></div>
+            <div class="wf-card"><div class="wf-card__body"><span class="wf-skel" style="width: 40%"></span><span class="wf-skel" style="width: 70%"></span></div></div>
+            <div class="wf-card"><div class="wf-card__body"><span class="wf-skel" style="width: 55%"></span><span class="wf-skel" style="width: 75%"></span></div></div>
+            <span class="wf-sr">Loading templates</span>
+          </div>
+
+          <div class="wf-stack wf-stack--lg" data-state="default">
+            <section aria-labelledby="tg-built-in">
+              <h3 class="wf-strong" id="tg-built-in" style="margin-bottom: var(--wf-space-4)">Built in</h3>
+              <div class="wf-cards">
+                <button class="wf-card" aria-current="true"><div class="wf-card__body"><span class="wf-strong">Contact</span><span class="wf-muted">Name, email and a message</span></div></button>
+                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Callback</span><span class="wf-muted">A phone number and a good time to call</span></div></button>
+                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Newsletter</span><span class="wf-muted">An email address, confirmed by the visitor</span></div></button>
+                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Event registration</span><span class="wf-muted">Places with a limit, and a waiting list</span></div></button>
+                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Job application</span><span class="wf-muted">Three pages, with a CV upload</span></div></button>
+                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Feedback</span><span class="wf-muted">A rating and an optional comment</span></div></button>
+                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Quote request</span><span class="wf-muted">What is needed, by when, and a budget</span></div></button>
+                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Support request</span><span class="wf-muted">A topic, a description and attachments</span></div></button>
+                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Privacy request</span><span class="wf-muted">Access, correction or erasure of data</span></div></button>
+              </div>
+            </section>
+            <section aria-labelledby="tg-saved">
+              <h3 class="wf-strong" id="tg-saved" style="margin-bottom: var(--wf-space-4)">Saved on this site</h3>
+              <div class="wf-cards">
+                <button class="wf-card"><div class="wf-card__body"><span class="wf-strong">Partner enquiry</span><span class="wf-muted">Saved by Lea Hoffmann from Contact us</span></div></button>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <!-- The preview of the chosen card -->
+        <section class="tg__preview" data-state="default" aria-labelledby="tg-preview-title">
+          <div class="wf-panel__head">
+            <h3 class="wf-title" id="tg-preview-title">Contact</h3>
+            <span class="wf-muted" style="margin-left: auto">1 page · 5 fields</span>
+          </div>
+          <div class="wf-stack" style="padding: var(--wf-space-5)">
+            <p class="wf-muted">Emails the team when an entry comes in, and thanks the visitor on the page.</p>
+            <div class="wf-vf"><span class="wf-vf__label">Name</span><span class="wf-vf__control"></span></div>
+            <div class="wf-vf"><span class="wf-vf__label">Email address</span><span class="wf-vf__control"></span></div>
+            <div class="wf-vf"><span class="wf-vf__label">Phone <span class="wf-vf__optional">(optional)</span></span><span class="wf-vf__control"></span></div>
+            <div class="wf-vf"><span class="wf-vf__label">Your message</span><span class="wf-vf__control wf-vf__control--tall"></span></div>
+            <span class="wf-check"><span class="wf-box-check" aria-hidden="true"></span><span>I agree that my details are stored to answer me.</span></span>
+            <span class="wf-vf__submit">Send</span>
+          </div>
+        </section>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary" data-state="default">Use template</button>
+      <button class="wf-btn wf-btn--primary" data-state="loading" aria-disabled="true">Use template</button>
+    </footer>
+  </aside>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Option list · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 list@1440x900 create@1440x900 empty@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .ol { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: var(--wf-space-6); align-items: start; }
+    .ol-row { display: grid; grid-template-columns: 20px minmax(0, 1.4fr) minmax(0, 1fr) 30px; gap: var(--wf-space-3); align-items: center; }
+    .ol-row + .ol-row { margin-top: var(--wf-space-3); }
+    .ol-row--head { color: var(--wf-color-text-muted); font-weight: 700; }
+    @media (max-width: 1000px) { .ol { grid-template-columns: minmax(0, 1fr); } }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="designer" data-active="option-lists">
+  <!--
+    IA section 7: Library › Option lists opens a list; a row opens the list's workspace (the editor for its kind with a
+    live preview), with its name in the header and Save in the footer. Create option list asks for the kind first.
+  -->
+  <main class="wf-main">
+    <!-- The list -->
+    <header class="wf-head" data-state="list create empty">
+      <div class="wf-head__main"><h1 class="wf-head__title">Option lists</h1></div>
+    </header>
+    <div class="wf-content" data-state="list create">
+      <section class="wf-box" aria-label="Option lists">
+        <table class="wf-table" style="border: 0">
+          <thead><tr><th>Name</th><th>Kind</th><th class="wf-num">Used by</th></tr></thead>
+          <tbody>
+            <tr><td><a href="#">Countries we ship to</a></td><td class="wf-muted">Fixed options</td><td class="wf-num">2 forms</td></tr>
+            <tr><td><a href="#">Departments</a></td><td class="wf-muted">Content</td><td class="wf-num">4 forms</td></tr>
+            <tr><td><a href="#">Event dates</a></td><td class="wf-muted">JSON address</td><td class="wf-num">1 form</td></tr>
+            <tr><td><a href="#">Job positions</a></td><td class="wf-muted">Upload</td><td class="wf-num">no forms</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+    <div class="wf-content" data-state="empty">
+      <div class="wf-empty"><p class="wf-empty__text">No option lists yet. Make one when several forms offer the same choices, so they change in one place.</p></div>
+    </div>
+    <footer class="wf-foot" data-state="list create empty"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Create option list</button></div></footer>
+
+    <!-- One option list -->
+    <header class="wf-head" data-state="default">
+      <div class="wf-head__main">
+        <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Option lists"><i data-i="arrow-left"></i></button>
+        <span class="wf-head__name">Countries we ship to</span>
+        <a href="#">Used by 2 forms</a>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Countries we ship to"><i data-i="more"></i></button>
+      </div>
+    </header>
+    <div class="wf-content" data-state="default">
+      <div class="ol" data-wf-grid>
+        <section class="wf-box" aria-labelledby="ol-options">
+          <div class="wf-box__head">
+            <h2 class="wf-box__title" id="ol-options">Options</h2>
+            <span class="wf-box__end wf-muted">Fixed options</span>
+          </div>
+          <div class="wf-box__body">
+            <div class="ol-row ol-row--head" aria-hidden="true"><span></span><span>Label</span><span>Value</span><span></span></div>
+            <div class="ol-row"><i data-i="grip" aria-label="Drag to reorder Germany"></i><span class="wf-input">Germany</span><span class="wf-input">de</span><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove Germany"><i data-i="x"></i></button></div>
+            <div class="ol-row"><i data-i="grip" aria-label="Drag to reorder Austria"></i><span class="wf-input">Austria</span><span class="wf-input">at</span><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove Austria"><i data-i="x"></i></button></div>
+            <div class="ol-row"><i data-i="grip" aria-label="Drag to reorder Switzerland"></i><span class="wf-input">Switzerland</span><span class="wf-input">ch</span><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove Switzerland"><i data-i="x"></i></button></div>
+            <div class="ol-row"><i data-i="grip" aria-label="Drag to reorder Other"></i><span class="wf-input">Other</span><span class="wf-input">other</span><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove Other"><i data-i="x"></i></button></div>
+            <div class="wf-row" style="margin-top: var(--wf-space-4)">
+              <button class="wf-btn wf-btn--text wf-btn--small"><i data-i="plus"></i>Add option</button>
+              <button class="wf-btn wf-btn--text wf-btn--small"><i data-i="upload"></i>Upload a CSV or TXT file…</button>
+            </div>
+          </div>
+        </section>
+        <section class="wf-box" aria-labelledby="ol-preview">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="ol-preview">Preview</h2></div>
+          <div class="wf-box__body wf-stack wf-stack--lg" data-wf-sample>
+            <div class="wf-stack"><span class="wf-small wf-muted" id="ol-as-select">As a dropdown</span><span class="wf-select"><span>Germany</span><i data-i="chevron-down"></i></span></div>
+            <div class="wf-stack"><span class="wf-small wf-muted" id="ol-as-radios">As radio buttons</span>
+            <div class="wf-vf__choices" role="radiogroup" aria-labelledby="ol-as-radios">
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="true" aria-label="Germany"></span>Germany</span>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Austria"></span>Austria</span>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Switzerland"></span>Switzerland</span>
+              <span class="wf-check"><span class="wf-radio" role="radio" aria-checked="false" aria-label="Other"></span>Other</span>
+            </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <footer class="wf-foot" data-state="default"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Save</button></div></footer>
+  </main>
+
+  <!-- Create option list asks for the kind first -->
+  <div class="wf-backdrop" data-state="create"></div>
+  <aside class="wf-sidebar" data-state="create" role="dialog" aria-labelledby="ok-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="ok-title">New option list</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-box">
+        <a class="wf-option" href="#"><i data-i="list" class="wf-i--20"></i><span><span class="wf-strong">Fixed options</span><span class="wf-muted">Type the options, or paste them</span></span></a>
+        <a class="wf-option" href="#"><i data-i="sitemap" class="wf-i--20"></i><span><span class="wf-strong">Content</span><span class="wf-muted">The children of a content page</span></span></a>
+        <a class="wf-option" href="#"><i data-i="database" class="wf-i--20"></i><span><span class="wf-strong">A data type</span><span class="wf-muted">The values of a dropdown or checkbox list data type</span></span></a>
+        <a class="wf-option" href="#"><i data-i="globe" class="wf-i--20"></i><span><span class="wf-strong">A JSON address</span><span class="wf-muted">Fetched from a web address and kept for a while</span></span></a>
+        <a class="wf-option" href="#"><i data-i="upload" class="wf-i--20"></i><span><span class="wf-strong">An upload</span><span class="wf-muted">From a CSV or TXT file</span></span></a>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot"><button class="wf-btn">Close</button></footer>
+  </aside>
+</body>
+</html>

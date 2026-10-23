@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Actions · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 added@1440x900 empty@1440x900 read-only@1440x900 loading@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .ac-trigger + .ac-trigger { margin-top: var(--wf-space-6); }
+    .ac-trigger__head { display: flex; align-items: baseline; gap: var(--wf-space-3); margin-bottom: var(--wf-space-3); }
+    .ac-card { display: grid; grid-template-columns: 20px 24px minmax(0, 1fr) max-content; gap: var(--wf-space-4); align-items: center; padding: var(--wf-space-4); border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
+    .ac-card + .ac-card { margin-top: var(--wf-space-3); }
+    .ac-card__lines { display: flex; flex-direction: column; gap: var(--wf-space-1); min-width: 0; }
+    .ac-card__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-3); }
+    .ac-off { padding: var(--wf-space-4); border: 1px dashed var(--uui-color-border-standalone); border-radius: var(--wf-radius); color: var(--wf-color-text-muted); }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="designer" data-active="form:contact">
+  <!--
+    IA 5.3: the actions grouped by trigger. Add action is the view's main action: the first button of its toolbar, in the
+    secondary style, because the workspace footer keeps the form's own primary (Publish…).
+  -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main">
+        <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms"><i data-i="arrow-left"></i></button>
+        <span class="wf-head__name">Contact us</span>
+        <span class="wf-chip wf-chip--warning">Published (pending changes)</span>
+        <a href="#" data-state="default added empty read-only loading">Used on 3 pages</a>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Contact us"><i data-i="more"></i></button>
+      </div>
+      <nav class="wf-tabs" aria-label="Views" data-state="default added empty read-only loading">
+        <a class="wf-tab" href="#"><i data-i="pencil" class="wf-i--20"></i>Design</a>
+        <a class="wf-tab" href="#"><i data-i="settings" class="wf-i--20"></i>Settings</a>
+        <a class="wf-tab" href="#" aria-current="page"><i data-i="send" class="wf-i--20"></i>Actions</a>
+        <a class="wf-tab" href="#"><i data-i="history" class="wf-i--20"></i>History</a>
+      </nav>
+    </header>
+
+    <div class="wf-content wf-content--narrow">
+      <div>
+        <div class="wf-toolbar" data-state="default added empty loading">
+          <button class="wf-btn"><i data-i="plus"></i>Add action</button>
+        </div>
+
+        <p class="wf-note" data-state="read-only" style="margin-bottom: var(--wf-space-5)"><i data-i="lock" class="wf-note__icon"></i><span>Changing actions needs the "Manage actions" permission. An administrator can grant it in Settings › Access.</span></p>
+
+        <!-- Empty -->
+        <div class="wf-empty" data-state="empty">
+          <p class="wf-empty__text">No actions yet. Most forms email the team when an entry comes in, and Add action starts with that.</p>
+        </div>
+
+        <!-- Loading -->
+        <div class="wf-stack" data-state="loading" aria-busy="true">
+          <span class="wf-skel" style="width: 20%"></span>
+          <div class="ac-card"><span></span><span></span><span class="wf-stack"><span class="wf-skel" style="width: 40%"></span><span class="wf-skel" style="width: 60%"></span></span><span></span></div>
+          <div class="ac-card"><span></span><span></span><span class="wf-stack"><span class="wf-skel" style="width: 35%"></span><span class="wf-skel" style="width: 55%"></span></span><span></span></div>
+          <span class="wf-sr">Loading the actions</span>
+        </div>
+
+        <div data-state="default added read-only">
+          <!-- Submitted -->
+          <section class="ac-trigger" aria-labelledby="t-submitted">
+            <div class="ac-trigger__head"><h2 class="wf-title" id="t-submitted">Submitted</h2><span class="wf-muted">when an entry comes in</span></div>
+            <div class="ac-card">
+              <i data-i="grip" aria-hidden="true" data-state="default added"></i><span data-state="read-only"></span>
+              <i data-i="mail" class="wf-i--20"></i>
+              <div class="ac-card__lines">
+                <a href="#" class="wf-strong">Email the team</a>
+                <span class="wf-muted">To sales@example.com and support@example.com</span>
+                <span class="ac-card__meta wf-small wf-muted"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--positive"></span>Delivered 2 hours ago</span></span>
+              </div>
+              <div class="wf-row" data-wf-actions="card: Email the team">
+                <span class="wf-switch" role="switch" aria-checked="true" aria-label="Email the team is on" data-state="default added"></span>
+                <span class="wf-muted" data-state="read-only">On</span>
+                <button class="wf-btn wf-btn--small" data-state="default added">Test</button>
+                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more data-state="default added" aria-label="More actions for Email the team"><i data-i="more"></i></button>
+              </div>
+            </div>
+            <div class="ac-card">
+              <i data-i="grip" aria-hidden="true" data-state="default added"></i><span data-state="read-only"></span>
+              <i data-i="reply" class="wf-i--20"></i>
+              <div class="ac-card__lines">
+                <a href="#" class="wf-strong">Confirm to the visitor</a>
+                <span class="wf-muted">To the answer of Email address</span>
+                <span class="ac-card__meta wf-small wf-muted"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--positive"></span>Delivered 2 hours ago</span></span>
+              </div>
+              <div class="wf-row" data-wf-actions="card: Confirm to the visitor">
+                <span class="wf-switch" role="switch" aria-checked="true" aria-label="Confirm to the visitor is on" data-state="default added"></span>
+                <span class="wf-muted" data-state="read-only">On</span>
+                <button class="wf-btn wf-btn--small" data-state="default added">Test</button>
+                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more data-state="default added" aria-label="More actions for Confirm to the visitor"><i data-i="more"></i></button>
+              </div>
+            </div>
+            <div class="ac-card">
+              <i data-i="grip" aria-hidden="true" data-state="default added"></i><span data-state="read-only"></span>
+              <i data-i="webhook" class="wf-i--20"></i>
+              <div class="ac-card__lines">
+                <a href="#" class="wf-strong">Send to the CRM</a>
+                <span class="wf-muted">Webhook to crm.example.com</span>
+                <span class="ac-card__meta wf-small">
+                  <span class="wf-rule-chip" style="margin: 0"><i data-i="split"></i>When Topic is Sales</span>
+                  <span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--danger"></span>Failed at 14:02. Next try at 14:30.</span>
+                </span>
+              </div>
+              <div class="wf-row" data-wf-actions="card: Send to the CRM">
+                <span class="wf-switch" role="switch" aria-checked="true" aria-label="Send to the CRM is on" data-state="default added"></span>
+                <span class="wf-muted" data-state="read-only">On</span>
+                <button class="wf-btn wf-btn--small" data-state="default added">Test</button>
+                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more data-state="default added" aria-label="More actions for Send to the CRM"><i data-i="more"></i></button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Approved -->
+          <section class="ac-trigger" aria-labelledby="t-approved">
+            <div class="ac-trigger__head"><h2 class="wf-title" id="t-approved">Approved</h2><span class="wf-muted">as each entry comes in, because this form has no manual approval</span></div>
+            <div class="ac-card">
+              <i data-i="grip" aria-hidden="true" data-state="default added"></i><span data-state="read-only"></span>
+              <i data-i="note" class="wf-i--20"></i>
+              <div class="ac-card__lines">
+                <a href="#" class="wf-strong">Post in #leads</a>
+                <span class="wf-muted">Slack message</span>
+                <span class="ac-card__meta wf-small wf-muted">Not run yet</span>
+              </div>
+              <div class="wf-row" data-wf-actions="card: Post in #leads">
+                <span class="wf-switch" role="switch" aria-checked="true" aria-label="Post in #leads is on" data-state="default added"></span>
+                <span class="wf-muted" data-state="read-only">On</span>
+                <button class="wf-btn wf-btn--small" data-state="default added">Test</button>
+                <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more data-state="default added" aria-label="More actions for Post in #leads"><i data-i="more"></i></button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Rejected and Verified: their settings are off -->
+          <section class="ac-trigger" aria-labelledby="t-rejected">
+            <div class="ac-trigger__head"><h2 class="wf-title" id="t-rejected">Rejected</h2></div>
+            <p class="ac-off">Runs when someone rejects an entry. It needs manual approval: <a href="#">turn it on in Settings</a>.</p>
+          </section>
+          <section class="ac-trigger" aria-labelledby="t-verified">
+            <div class="ac-trigger__head"><h2 class="wf-title" id="t-verified">Verified</h2></div>
+            <p class="ac-off">Runs when a visitor confirms their address. It needs email verification: <a href="#">turn it on in Settings</a>.</p>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <footer class="wf-foot">
+      <div class="wf-foot__end">
+        <button class="wf-btn">Preview</button>
+        <button class="wf-btn">Save draft</button>
+        <button class="wf-btn wf-btn--primary">Publish…</button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- After Add on a published form (copy.md, success) -->
+  <div class="wf-toast" data-state="added" role="status">
+    <span>Added. Visitors get it once you publish.</span>
+    <button class="wf-btn wf-btn--small">Publish…</button>
+  </div>
+</body>
+</html>

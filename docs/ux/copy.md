@@ -80,6 +80,34 @@ The CLAUDE.md vocabulary, and the words around it. Use these and only these; nev
 | entry number | `#1042`, unique per form | Nummer | ID |
 | entry reference | `REQ-2026-00042`, the format shown to visitors | Referenz | ticket |
 
+### State labels
+
+The chips in the lists and panels. The wireframes of step 2.2 use these words.
+
+| State | English | German |
+| --- | --- | --- |
+| an entry waits for approval (manual approval) | Waiting for approval | Wartet auf Genehmigung |
+| an entry waits for the visitor to confirm their address (email verification) | Waiting for confirmation | Wartet auf Bestätigung |
+| approved, by someone or automatically | Approved | Genehmigt |
+| rejected | Rejected | Abgelehnt |
+| an entry in Spam | no chip: the place says it | – |
+| a delivery that arrived | Delivered | Zugestellt |
+| a delivery that failed and may be tried again | Failed | Fehlgeschlagen |
+| a delivery cut off before the other server answered | Uncertain | Unklar |
+| a mail held back by a sending limit | Limited | Begrenzt |
+| a delivery waiting while sending is paused | Waiting | Wartet |
+| the version visitors get, in History | Published | Veröffentlicht |
+
+### Status lines
+
+One line that says where something stands, next to the thing it is about.
+
+| Where | English | German |
+| --- | --- | --- |
+| an action's card, after a failed delivery | Failed at 14:02. Next try at 14:30. | Fehlgeschlagen um 14:02. Nächster Versuch um 14:30. |
+| beside the canvas width switch, when the canvas has less room than the chosen width | Narrowed to fit | An den Platz angepasst |
+| above the permission matrix, for a user group without the section | Translators can't open Forms yet. Add the section to their user group | Übersetzer können Formulare noch nicht öffnen. Bereich zu ihrer Benutzergruppe hinzufügen |
+
 ## Buttons and actions
 
 Use Umbraco's own words where Umbraco has the same action, so the section feels native.
@@ -164,6 +192,7 @@ useful action. One sentence, plus a button or link where there is one.
 | filters match nothing | No entries match these filters. [Clear filters] | Keine Einträge passen zu diesen Filtern. [Filter zurücksetzen] |
 | a search finds nothing, and sensitive fields exist | No entries match "Jana". Sensitive fields aren't searched. | Keine Einträge passen zu „Jana“. Vertrauliche Felder werden nicht durchsucht. |
 | an empty folder (its footer holds Create form) | No forms here yet. Start from a template; it takes a minute. | Hier gibt es noch keine Formulare. Beginnen Sie mit einer Vorlage, das dauert eine Minute. |
+| no entries in any form (the Inbox) | No entries yet. They arrive here from every form you may view. | Noch keine Einträge. Hier kommen die Einträge aller Formulare an, die Sie sehen dürfen. |
 | no access to any form | You can't see any forms yet. An administrator can give your user group access in Settings › Access. | Sie sehen noch keine Formulare. Wer Administratorrechte hat, kann Ihre Benutzergruppe unter Einstellungen › Zugriff freischalten. |
 | nothing in Spam | No spam. Entries that look automated land here, and nothing in them is lost. | Kein Spam. Einträge, die automatisiert wirken, landen hier, und nichts davon geht verloren. |
 | no actions yet (Add action sits in the toolbar) | No actions yet. Most forms email the team when an entry comes in, and Add action starts with that. | Noch keine Aktionen. Die meisten Formulare benachrichtigen das Team per E-Mail, wenn ein Eintrag eingeht, und „Aktion hinzufügen“ beginnt damit. |

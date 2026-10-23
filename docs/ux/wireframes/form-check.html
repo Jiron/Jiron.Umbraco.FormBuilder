@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Form check · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 none@1440x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .fc-item { display: grid; grid-template-columns: 20px minmax(0, 1fr) max-content; gap: var(--wf-space-4); align-items: start; padding: var(--wf-space-4); }
+    .fc-item + .fc-item { border-top: 1px solid var(--uui-color-divider-standalone); }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="designer" data-active="form:contact">
+  <!-- IA 5.1, "The form check badge": a sidebar listing errors first, then warnings, each with Fix it. -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main">
+        <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms" tabindex="-1"><i data-i="arrow-left"></i></button>
+        <span class="wf-head__name">Contact us</span>
+        <span class="wf-chip wf-chip--warning">Published (pending changes)</span>
+      </div>
+      <nav class="wf-tabs" aria-label="Views">
+        <a class="wf-tab" href="#" aria-current="page" tabindex="-1"><i data-i="pencil" class="wf-i--20"></i>Design</a>
+        <a class="wf-tab" href="#" tabindex="-1"><i data-i="settings" class="wf-i--20"></i>Settings</a>
+        <a class="wf-tab" href="#" tabindex="-1"><i data-i="send" class="wf-i--20"></i>Actions</a>
+        <a class="wf-tab" href="#" tabindex="-1"><i data-i="history" class="wf-i--20"></i>History</a>
+      </nav>
+    </header>
+    <div class="wf-content">
+      <div class="wf-canvas">
+        <div class="wf-group">
+          <h3 class="wf-group__title">Your details</h3>
+          <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">First name</span><span class="wf-vf__control"></span></div></div>
+          <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">Email address <span class="wf-vf__optional">(optional)</span></span><span class="wf-vf__control"></span></div></div>
+        </div>
+      </div>
+    </div>
+    <footer class="wf-foot">
+      <div class="wf-foot__end">
+        <button class="wf-btn" tabindex="-1">Preview</button>
+        <button class="wf-btn" tabindex="-1">Save draft</button>
+        <button class="wf-btn wf-btn--primary" tabindex="-1">Publish…</button>
+      </div>
+    </footer>
+  </main>
+
+  <div class="wf-backdrop"></div>
+  <aside class="wf-sidebar" role="dialog" aria-labelledby="fc-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="fc-title">Form check</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-stack wf-stack--lg" data-state="default">
+        <section class="wf-box" aria-labelledby="fc-errors">
+          <div class="wf-box__head">
+            <h3 class="wf-box__title" id="fc-errors">1 error</h3>
+            <span class="wf-box__end wf-muted">Blocks publishing</span>
+          </div>
+          <div class="fc-item">
+            <i data-i="alert" class="wf-i--20" style="color: var(--uui-color-danger-standalone)"></i>
+            <div><p class="wf-strong">Order number</p><p class="wf-muted">Its rule uses the option "Delivery" of Topic, which no longer exists.</p></div>
+            <button class="wf-btn wf-btn--small">Fix it</button>
+          </div>
+        </section>
+        <section class="wf-box" aria-labelledby="fc-warnings">
+          <div class="wf-box__head">
+            <h3 class="wf-box__title" id="fc-warnings">1 warning</h3>
+          </div>
+          <div class="fc-item">
+            <i data-i="info" class="wf-i--20"></i>
+            <div><p class="wf-strong">Email address</p><p class="wf-muted">It is optional, but the confirmation email is sent to it. Visitors who leave it empty get no confirmation.</p></div>
+            <button class="wf-btn wf-btn--small">Fix it</button>
+          </div>
+        </section>
+      </div>
+      <div class="wf-empty" data-state="none">
+        <i data-i="check" class="wf-i--20" style="color: var(--uui-color-positive)"></i>
+        <p class="wf-empty__text">No problems. The form can be published.</p>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot"><button class="wf-btn">Close</button></footer>
+  </aside>
+</body>
+</html>

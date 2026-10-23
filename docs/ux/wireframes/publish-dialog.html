@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Publish dialog · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 errors@1440x900 published@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .pd-group + .pd-group { margin-top: var(--wf-space-5); }
+    .pd-group ul { display: flex; flex-direction: column; gap: var(--wf-space-1); margin-top: var(--wf-space-2); }
+    .pd-problem { display: grid; grid-template-columns: 20px minmax(0, 1fr) max-content; gap: var(--wf-space-3); align-items: start; }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="designer" data-active="form:contact">
+  <!--
+    IA 5.7: what changed since the published version, grouped; the form check's result, where errors block with Fix it; an
+    optional comment for the version. After publishing, the toast says what the user can't see (copy.md, success).
+  -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main">
+        <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms" tabindex="-1"><i data-i="arrow-left"></i></button>
+        <span class="wf-head__name">Contact us</span>
+        <span class="wf-chip wf-chip--warning" data-state="default errors">Published (pending changes)</span>
+        <span class="wf-chip wf-chip--positive" data-state="published">Published</span>
+      </div>
+      <nav class="wf-tabs" aria-label="Views">
+        <a class="wf-tab" href="#" aria-current="page"><i data-i="pencil" class="wf-i--20"></i>Design</a>
+        <a class="wf-tab" href="#"><i data-i="settings" class="wf-i--20"></i>Settings</a>
+        <a class="wf-tab" href="#"><i data-i="send" class="wf-i--20"></i>Actions</a>
+        <a class="wf-tab" href="#"><i data-i="history" class="wf-i--20"></i>History</a>
+      </nav>
+    </header>
+    <div class="wf-content">
+      <div class="wf-canvas">
+        <div class="wf-group">
+          <h3 class="wf-group__title">Your details</h3>
+          <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">First name</span><span class="wf-vf__control"></span></div></div>
+          <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">Email address</span><span class="wf-vf__control"></span></div></div>
+        </div>
+      </div>
+    </div>
+    <footer class="wf-foot">
+      <div class="wf-foot__end">
+        <button class="wf-btn">Preview</button>
+        <button class="wf-btn">Save draft</button>
+        <button class="wf-btn wf-btn--primary">Publish…</button>
+      </div>
+    </footer>
+  </main>
+
+  <div class="wf-backdrop" data-state="default errors"></div>
+  <div class="wf-dialog" style="--wf-dialog-size: 640px" data-state="default errors" role="dialog" aria-labelledby="pd-title">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="pd-title">Publish Contact us</h2></div>
+    <div class="wf-dialog__body">
+      <div class="wf-stack wf-stack--lg">
+        <!-- The form check -->
+        <p class="wf-note wf-note--positive" data-state="default"><i data-i="check" class="wf-note__icon"></i><span>The form check found no problems.</span></p>
+        <section class="wf-note wf-note--danger" data-state="errors" role="alert" aria-labelledby="pd-errors" style="display: block">
+          <p class="wf-strong" id="pd-errors" style="margin-bottom: var(--wf-space-3)">This form can't be published yet: 1 problem needs fixing.</p>
+          <div class="pd-problem">
+            <i data-i="alert" style="color: var(--uui-color-danger-standalone)"></i>
+            <span><span class="wf-strong">Order number:</span> its rule uses the option "Delivery" of Topic, which no longer exists.</span>
+            <button class="wf-btn wf-btn--small">Fix it</button>
+          </div>
+        </section>
+
+        <!-- What changed since the published version -->
+        <section aria-labelledby="pd-changes">
+          <h3 class="wf-strong" id="pd-changes" style="margin-bottom: var(--wf-space-3)">Changes since the published version</h3>
+          <div class="wf-box"><div class="wf-box__body">
+            <div class="pd-group">
+              <span class="wf-label">Fields</span>
+              <ul>
+                <li>Email address: the label is now "Your email"</li>
+                <li data-state="errors">Topic: removed the option "Delivery"</li>
+              </ul>
+            </div>
+            <div class="pd-group">
+              <span class="wf-label">Actions</span>
+              <ul><li>Added Post in #leads</li></ul>
+            </div>
+          </div></div>
+        </section>
+
+        <label class="wf-field" style="margin: 0">
+          <span class="wf-label">Comment <span class="wf-vf__optional">(optional)</span></span>
+          <span class="wf-input"><span class="wf-placeholder">What changed and why, for History</span></span>
+        </label>
+      </div>
+    </div>
+    <div class="wf-dialog__foot">
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary" data-state="default">Publish</button>
+      <button class="wf-btn wf-btn--primary" data-state="errors" aria-disabled="true">Publish</button>
+    </div>
+  </div>
+
+  <div class="wf-toast" data-state="published" role="status">
+    <i data-i="check" style="color: var(--uui-color-positive)"></i>
+    <span>Published. Visitors get the new version now.</span>
+  </div>
+</body>
+</html>

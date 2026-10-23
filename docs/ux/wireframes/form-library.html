@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Form library (folders and the Recycle Bin) · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 create@1440x900 empty@1440x900 loading@1440x900 error@1440x900 bin@1440x900 bin-confirm@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="admin" data-active="folder:events" data-active-empty="folder:campaigns" data-active-bin="bin" data-active-bin-confirm="bin">
+  <!--
+    IA section 3 (the forms tree: a folder's list and the Recycle Bin) and section 4 (Umbraco's create dialog).
+    A folder's list shows entries and changes only: the forms' states are the tree's marks, so the list doesn't repeat them.
+  -->
+  <main class="wf-main">
+
+    <!-- A folder -->
+    <header class="wf-head" data-state="default create empty loading error">
+      <div class="wf-head__main">
+        <span class="wf-head__name" data-state="default create loading error">Events</span>
+        <span class="wf-head__name" data-state="empty">Campaigns</span>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for this folder"><i data-i="more"></i></button>
+      </div>
+    </header>
+
+    <!-- The Recycle Bin -->
+    <header class="wf-head" data-state="bin bin-confirm">
+      <div class="wf-head__main"><h1 class="wf-head__title">Recycle Bin</h1></div>
+    </header>
+
+    <div class="wf-content">
+      <!-- The folder's list -->
+      <section class="wf-box" data-state="default create" aria-label="Forms in Events">
+        <table class="wf-table" style="border: 0">
+          <thead><tr><th>Name</th><th class="wf-num">Entries, last 30 days</th><th class="wf-col-end">Last changed</th></tr></thead>
+          <tbody>
+            <tr><td><span class="wf-row"><i data-i="form"></i><a href="#">Summer fair sign-up</a></span></td><td class="wf-num">512</td><td class="wf-col-end wf-muted">Yesterday, by Lea Hoffmann</td></tr>
+            <tr><td><span class="wf-row"><i data-i="form"></i><a href="#">Volunteer sign-up</a></span></td><td class="wf-num">none</td><td class="wf-col-end wf-muted">12 Oct, by Lea Hoffmann</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- An empty folder -->
+      <div class="wf-empty" data-state="empty">
+        <p class="wf-empty__text">No forms here yet. Start from a template; it takes a minute.</p>
+      </div>
+
+      <!-- Loading -->
+      <section class="wf-box" data-state="loading" aria-busy="true">
+        <div class="wf-box__body wf-stack">
+          <span class="wf-skel" style="width: 56%"></span><span class="wf-skel" style="width: 44%"></span>
+          <span class="wf-sr">Loading the folder</span>
+        </div>
+      </section>
+
+      <!-- Error -->
+      <div class="wf-note wf-note--danger" data-state="error" role="alert">
+        <i data-i="alert" class="wf-note__icon"></i>
+        <span>This folder couldn't be loaded.</span>
+        <button class="wf-btn wf-btn--small" style="margin-left: auto">Try again</button>
+      </div>
+
+      <!-- The Recycle Bin's list -->
+      <section class="wf-box" data-state="bin bin-confirm" aria-label="Trashed forms">
+        <table class="wf-table" style="border: 0">
+          <thead><tr><th>Name</th><th>Trashed</th><th class="wf-col-end"><span class="wf-sr">Actions</span></th></tr></thead>
+          <tbody>
+            <tr><td><span class="wf-row"><i data-i="form"></i>Spring raffle</span></td><td class="wf-muted">3 Oct, by Ana Novak</td><td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Spring raffle"><i data-i="more"></i></button></td></tr>
+            <tr><td><span class="wf-row"><i data-i="form"></i>Old contact form</span></td><td class="wf-muted">21 Sep, by Lea Hoffmann</td><td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Old contact form"><i data-i="more"></i></button></td></tr>
+            <tr><td><span class="wf-row"><i data-i="form"></i>Press accreditation 2025</span></td><td class="wf-muted">2 Sep, by Ana Novak</td><td class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" data-wf-more aria-label="More actions for Press accreditation 2025"><i data-i="more"></i></button></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <footer class="wf-foot" data-state="default create empty loading error">
+      <div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Create form</button></div>
+    </footer>
+    <footer class="wf-foot" data-state="bin bin-confirm">
+      <div class="wf-foot__end"><button class="wf-btn wf-btn--danger">Empty recycle bin…</button></div>
+    </footer>
+  </main>
+
+  <!-- Umbraco's create dialog, from the sidebar header's "+" or a folder's "+" -->
+  <div class="wf-backdrop" data-state="create"></div>
+  <aside class="wf-sidebar" data-state="create" aria-labelledby="create-title" role="dialog">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="create-title">Create in Events</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-box">
+        <a class="wf-option" href="#"><i data-i="form" class="wf-i--20"></i><span><span class="wf-strong">Form</span><span class="wf-muted">A new, empty form</span></span></a>
+        <a class="wf-option" href="#"><i data-i="layers" class="wf-i--20"></i><span><span class="wf-strong">Form from a template…</span><span class="wf-muted">A ready-made form to adjust</span></span></a>
+        <a class="wf-option" href="#"><i data-i="upload" class="wf-i--20"></i><span><span class="wf-strong">Import a form…</span><span class="wf-muted">From a file exported on another site</span></span></a>
+        <a class="wf-option" href="#"><i data-i="folder" class="wf-i--20"></i><span><span class="wf-strong">Folder…</span><span class="wf-muted">Keeps related forms together</span></span></a>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot"><button class="wf-btn">Close</button></footer>
+  </aside>
+
+  <!-- Emptying the Recycle Bin asks first (copy.md, confirmations); Cancel has the focus -->
+  <div class="wf-backdrop" data-state="bin-confirm"></div>
+  <div class="wf-dialog" data-state="bin-confirm" role="alertdialog" aria-labelledby="empty-title" aria-describedby="empty-text">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="empty-title">Empty the Recycle Bin?</h2></div>
+    <p class="wf-dialog__body" id="empty-text">3 forms and their 412 entries are deleted for good.</p>
+    <div class="wf-dialog__foot">
+      <button class="wf-btn" style="box-shadow: var(--wf-focus)">Cancel</button>
+      <button class="wf-btn wf-btn--danger">Empty recycle bin</button>
+    </div>
+  </div>
+</body>
+</html>

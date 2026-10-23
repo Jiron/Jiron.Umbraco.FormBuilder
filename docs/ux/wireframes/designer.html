@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Designer · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 inspector-closed@1440x900 phone@1440x900 insert@1440x900 new-form@1440x900 loading@1440x900 default@1024x900 narrow@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    /* At 620 px (Umbraco's 920 px minimum) the canvas takes the width and the inspector covers it (IA 5.1). */
+    html[data-wf-state='narrow'] .wf-designer { grid-template-columns: minmax(0, 1fr); position: relative; }
+    html[data-wf-state='narrow'] .wf-panel--right { position: absolute; inset: 0; border-left: 0; }
+    @media (max-width: 1000px) {
+      html:is([data-wf-state='default'], [data-wf-state='phone'], [data-wf-state='insert']) .wf-designer { grid-template-columns: minmax(0, 1fr); position: relative; }
+      html:is([data-wf-state='default'], [data-wf-state='phone'], [data-wf-state='insert']) .wf-panel--left { display: none !important; }
+      html:is([data-wf-state='default'], [data-wf-state='phone'], [data-wf-state='insert']) .wf-panel--right { position: absolute; inset: 0; border-left: 0; }
+    }
+    /* Below a 1024 px workspace (windows under 1324 px), selecting an element folds the palette to a rail, so the
+       canvas keeps its width; clearing the selection opens the palette again (IA 5.1). */
+    .dz-rail { display: none; flex-direction: column; align-items: center; gap: var(--wf-space-2); padding: var(--wf-space-4) 0; }
+    @media (min-width: 1001px) and (max-width: 1323px) {
+      html:is([data-wf-state='default'], [data-wf-state='phone'], [data-wf-state='insert']) .wf-designer { --wf-palette: 48px; }
+      html:is([data-wf-state='default'], [data-wf-state='phone'], [data-wf-state='insert']) .wf-panel--left:not(.dz-rail) { display: none !important; }
+      html:is([data-wf-state='default'], [data-wf-state='phone'], [data-wf-state='insert']) .dz-rail { display: flex; }
+    }
+    html[data-wf-state='inspector-closed'] .wf-designer,
+    html[data-wf-state='new-form'] .wf-designer,
+    html[data-wf-state='loading'] .wf-designer { --wf-inspector: 0px; }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="designer" data-active="form:contact" data-active-new-form="">
+  <!-- IA section 5 (header, views, footer) and 5.1 (Design). The designer persona sees Design, Settings, Actions and History (IA 11). -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main">
+        <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms"><i data-i="arrow-left"></i></button>
+        <span class="wf-head__name" data-state="default inspector-closed phone insert loading narrow">Contact us</span>
+        <span class="wf-head__name" data-state="new-form" style="border-color: var(--wf-color-control-border)"><span style="background: var(--uui-color-current)">Untitled form</span></span>
+        <span class="wf-chip wf-chip--warning" data-state="default inspector-closed phone insert loading narrow">Published (pending changes)</span>
+        <span class="wf-chip" data-state="new-form">Draft</span>
+        <a href="#" data-state="default inspector-closed phone insert loading">Used on 3 pages</a>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Contact us"><i data-i="more"></i></button>
+      </div>
+      <nav class="wf-tabs" aria-label="Views">
+        <a class="wf-tab" href="#" aria-current="page"><i data-i="pencil" class="wf-i--20"></i>Design</a>
+        <a class="wf-tab" href="#"><i data-i="settings" class="wf-i--20"></i>Settings</a>
+        <a class="wf-tab" href="#"><i data-i="send" class="wf-i--20"></i>Actions</a>
+        <a class="wf-tab" href="#"><i data-i="history" class="wf-i--20"></i>History</a>
+      </nav>
+    </header>
+
+    <div class="wf-content wf-content--flush">
+      <div class="wf-designer">
+
+        <!-- Palette (stays open at 1024 px and wider) -->
+        <aside class="wf-panel wf-panel--left" aria-label="Field palette" data-state="default inspector-closed phone insert new-form loading">
+          <div class="wf-panel__section">
+            <span class="wf-input wf-input--search" style="width: 100%"><i data-i="search"></i><span class="wf-placeholder">Search fields</span></span>
+          </div>
+          <div class="wf-panel__section">
+            <h3 class="wf-panel__heading">Recently used</h3>
+            <button class="wf-pal-item"><i data-i="text-input"></i>Short text</button>
+            <button class="wf-pal-item"><i data-i="mail"></i>Email</button>
+            <button class="wf-pal-item"><i data-i="chevron-down"></i>Dropdown</button>
+          </div>
+          <div class="wf-panel__section">
+            <h3 class="wf-panel__heading">Layout</h3>
+            <button class="wf-pal-item"><i data-i="columns"></i>Group</button>
+            <button class="wf-pal-item"><i data-i="split"></i>New page</button>
+          </div>
+          <div class="wf-panel__section">
+            <h3 class="wf-panel__heading">Text</h3>
+            <button class="wf-pal-item"><i data-i="text-input"></i>Short text</button>
+            <button class="wf-pal-item"><i data-i="align-left"></i>Long text</button>
+            <button class="wf-pal-item"><i data-i="mail"></i>Email</button>
+            <button class="wf-pal-item"><i data-i="calculator"></i>Number</button>
+            <button class="wf-pal-item"><i data-i="phone"></i>Phone</button>
+            <button class="wf-pal-item"><i data-i="link"></i>Web address</button>
+          </div>
+          <div class="wf-panel__section">
+            <h3 class="wf-panel__heading">Choices</h3>
+            <button class="wf-pal-item"><i data-i="chevron-down"></i>Dropdown</button>
+            <button class="wf-pal-item"><i data-i="circle"></i>Radio buttons</button>
+            <button class="wf-pal-item"><i data-i="checkbox"></i>Checkboxes</button>
+            <button class="wf-pal-item"><i data-i="globe"></i>Country</button>
+          </div>
+        </aside>
+
+        <!-- The palette folded to a rail: below a 1024 px workspace while an element is selected -->
+        <aside class="wf-panel wf-panel--left dz-rail" aria-label="Field palette, folded">
+          <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Search fields"><i data-i="search"></i></button>
+          <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Open the field palette"><i data-i="plus"></i></button>
+        </aside>
+
+        <!-- The stage: toolbar, steps and the canvas -->
+        <section class="wf-stage" aria-label="Canvas">
+          <div class="wf-stage__bar" data-wf-actions="design toolbar" data-state="default inspector-closed phone insert new-form narrow">
+            <div class="wf-seg" role="group" aria-label="Canvas width" data-state="default inspector-closed insert new-form narrow">
+              <button aria-pressed="false">Phone</button><button aria-pressed="false">Tablet</button><button aria-pressed="true">Desktop</button>
+            </div>
+            <div class="wf-seg" role="group" aria-label="Canvas width" data-state="phone">
+              <button aria-pressed="true">Phone</button><button aria-pressed="false">Tablet</button><button aria-pressed="false">Desktop</button>
+            </div>
+            <span class="wf-fit wf-small wf-muted">Narrowed to fit</span>
+            <button class="wf-btn" data-state="default inspector-closed phone insert narrow"><i data-i="alert"></i>2 problems</button>
+            <button class="wf-btn" data-state="new-form"><i data-i="check"></i>No problems</button>
+            <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More design actions" style="margin-left: auto"><i data-i="more"></i></button>
+          </div>
+
+          <!-- Steps: the pages, then Add page, then After sending -->
+          <nav class="wf-steps" aria-label="Pages" data-state="default inspector-closed phone insert narrow">
+            <span class="wf-step" aria-current="step">1 Your details</span>
+            <span class="wf-step">2 Your message</span>
+            <button class="wf-btn wf-btn--text wf-btn--small"><i data-i="plus"></i>Add page</button>
+            <span class="wf-step"><i data-i="flag"></i>After sending</span>
+          </nav>
+          <nav class="wf-steps" aria-label="Pages" data-state="new-form">
+            <span class="wf-step" aria-current="step">1 Page 1</span>
+            <button class="wf-btn wf-btn--text wf-btn--small"><i data-i="plus"></i>Add page</button>
+            <span class="wf-step"><i data-i="flag"></i>After sending</span>
+          </nav>
+
+          <div class="wf-canvas" data-state="default inspector-closed insert narrow">
+            <div class="wf-group">
+              <h3 class="wf-group__title">Your details</h3>
+              <div class="wf-cols" style="--cols: 2">
+                <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">First name</span><span class="wf-vf__control"></span></div></div>
+                <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">Last name</span><span class="wf-vf__control"></span></div></div>
+              </div>
+              <div class="wf-el wf-el--selected" data-state="default narrow" style="margin-top: var(--wf-space-7)">
+                <div class="wf-el__bar" data-state="default" data-wf-actions="selected element">
+                  <button class="wf-btn wf-btn--small wf-btn--text">Move to…</button>
+                  <button class="wf-btn wf-btn--small wf-btn--text">Duplicate</button>
+                  <button class="wf-btn wf-btn--small wf-btn--text">Delete</button>
+                  <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Email address"><i data-i="more"></i></button>
+                </div>
+                <div class="wf-vf"><span class="wf-vf__label">Email address</span><span class="wf-muted">We only use it to reply.</span><span class="wf-vf__control"></span></div>
+              </div>
+              <div class="wf-el" data-state="inspector-closed insert">
+                <div class="wf-vf"><span class="wf-vf__label">Email address</span><span class="wf-muted">We only use it to reply.</span><span class="wf-vf__control"></span></div>
+              </div>
+              <div class="wf-insert" data-state="insert" style="position: relative">
+                <span class="wf-insert__plus"><i data-i="plus"></i></span>
+                <div class="wf-pop" style="top: 30px; left: calc(50% - 110px)">
+                  <div class="wf-pop__item wf-pop__item--hover"><i data-i="plus"></i>Add a field here</div>
+                  <div class="wf-pop__item"><i data-i="split"></i>Start a new page here</div>
+                </div>
+              </div>
+              <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">Phone <span class="wf-vf__optional">(optional)</span></span><span class="wf-vf__control"></span></div></div>
+              <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">Country</span><span class="wf-vf__control"></span></div></div>
+              <div class="wf-el">
+                <div class="wf-vf"><span class="wf-vf__label">Which country?</span><span class="wf-vf__control"></span></div>
+                <span class="wf-rule-chip"><i data-i="split"></i>Shown when Country is Other</span>
+              </div>
+            </div>
+            <div class="wf-add-field"><i data-i="plus"></i>Add field</div>
+          </div>
+
+          <!-- Phone width: one column -->
+          <div class="wf-canvas wf-canvas--phone" data-state="phone">
+            <div class="wf-group">
+              <h3 class="wf-group__title">Your details</h3>
+              <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">First name</span><span class="wf-vf__control"></span></div></div>
+              <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">Last name</span><span class="wf-vf__control"></span></div></div>
+              <div class="wf-el wf-el--selected"><div class="wf-vf"><span class="wf-vf__label">Email address</span><span class="wf-muted">We only use it to reply.</span><span class="wf-vf__control"></span></div></div>
+              <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">Phone <span class="wf-vf__optional">(optional)</span></span><span class="wf-vf__control"></span></div></div>
+            </div>
+            <div class="wf-add-field"><i data-i="plus"></i>Add field</div>
+          </div>
+
+          <!-- A new, blank form -->
+          <div class="wf-canvas" data-state="new-form">
+            <div class="wf-empty" style="padding: var(--wf-space-7) 0">
+              <p class="wf-empty__text">Add your first field: pick a type on the left, or paste your questions.</p>
+            </div>
+            <div class="wf-add-field"><i data-i="plus"></i>Add field</div>
+          </div>
+
+          <!-- Loading -->
+          <div class="wf-canvas wf-stack" data-state="loading" aria-busy="true">
+            <span class="wf-skel" style="width: 30%; height: 18px"></span>
+            <span class="wf-skel" style="width: 100%; height: 40px"></span>
+            <span class="wf-skel" style="width: 100%; height: 40px"></span>
+            <span class="wf-skel" style="width: 60%; height: 40px"></span>
+            <span class="wf-sr">Loading the form</span>
+          </div>
+        </section>
+
+        <!-- Inspector (opens when an element is selected) -->
+        <aside class="wf-panel wf-panel--right" aria-label="Inspector" data-state="default phone insert narrow">
+          <div class="wf-panel__head">
+            <span class="wf-title">Email field</span>
+            <span class="wf-row" style="margin-left: auto" data-state="narrow" data-wf-actions="inspector head at 620 px">
+              <button class="wf-btn wf-btn--small wf-btn--text">Move to…</button>
+              <button class="wf-btn wf-btn--small wf-btn--text">Duplicate</button>
+              <button class="wf-btn wf-btn--small wf-btn--text">Delete</button>
+              <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Email address"><i data-i="more"></i></button>
+              <button class="wf-btn wf-btn--small wf-btn--icon wf-btn--text" data-wf-frame aria-label="Close the inspector"><i data-i="x"></i></button>
+            </span>
+          </div>
+          <div class="wf-disclosure"><i data-i="chevron-down"></i><span class="wf-strong">Essentials</span></div>
+          <div class="wf-panel__section" style="padding-bottom: var(--wf-space-6)">
+            <label class="wf-field"><span class="wf-label">Label</span><span class="wf-input">Email address</span></label>
+            <label class="wf-field"><span class="wf-label">Help text</span><span class="wf-textarea">We only use it to reply.</span></label>
+            <div class="wf-field">
+              <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-label="Required"></span><span class="wf-label">Required</span></span>
+            </div>
+            <label class="wf-field"><span class="wf-label">Placeholder</span><span class="wf-input"><span class="wf-placeholder">For example: name@example.com</span></span></label>
+          </div>
+          <div class="wf-disclosure"><i data-i="chevron-right"></i><span class="wf-strong">Validation</span><span class="wf-disclosure__summary">Must be an email address</span></div>
+          <div class="wf-disclosure"><i data-i="chevron-right"></i><span class="wf-strong">Rules</span><span class="wf-disclosure__summary">Always shown · <a href="#">Add a rule</a></span></div>
+          <div class="wf-disclosure"><i data-i="chevron-right"></i><span class="wf-strong">Appearance</span><span class="wf-disclosure__summary">Full width</span></div>
+          <div class="wf-disclosure"><i data-i="chevron-right"></i><span class="wf-strong">Advanced</span><span class="wf-disclosure__summary">Alias: email</span></div>
+        </aside>
+      </div>
+    </div>
+
+    <footer class="wf-foot">
+      <div class="wf-foot__end">
+        <button class="wf-btn">Preview</button>
+        <button class="wf-btn">Save draft</button>
+        <button class="wf-btn wf-btn--primary">Publish…</button>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>

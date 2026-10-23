@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Permissions (Settings › Access) · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 folder@1440x900 restrict@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .pm th.pm-group { white-space: normal; text-align: center; vertical-align: bottom; padding-top: var(--wf-space-3); padding-bottom: var(--wf-space-3); }
+    .pm td.pm-cell { text-align: center; }
+    /* A site can have any number of user groups, so the matrix scrolls sideways inside its box and the permission
+       column stays put. */
+    .pm-scroll { overflow-x: auto; }
+    .pm-scroll .pm th:first-child, .pm-scroll .pm td:first-child { position: sticky; left: 0; z-index: 1; background: var(--uui-color-surface); }
+    .pm th.pm-group, .pm td.pm-cell { padding-right: var(--wf-space-2); padding-left: var(--wf-space-2); }
+    .pm td:first-child { white-space: normal; }
+    .pm-lead { padding: var(--wf-space-4) var(--wf-space-5) 0; }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="admin" data-active="access" data-active-folder="folder:hr" data-active-restrict="folder:events">
+  <!--
+    IA section 8 (Access) and section 3 (Permissions… on a folder or form). The permissions are those of ADR-0013;
+    ticking one that needs another ticks that one too. Groups as columns keep the matrix inside the 620 px workspace.
+  -->
+  <main class="wf-main">
+    <header class="wf-head" data-state="default">
+      <div class="wf-head__main"><h1 class="wf-head__title">Access</h1></div>
+    </header>
+    <header class="wf-head" data-state="folder">
+      <div class="wf-head__main"><span class="wf-head__name">HR</span></div>
+    </header>
+    <header class="wf-head" data-state="restrict">
+      <div class="wf-head__main"><span class="wf-head__name">Events</span></div>
+    </header>
+
+    <div class="wf-content">
+      <div class="wf-stack wf-stack--lg" data-state="default">
+        <section class="wf-box" aria-labelledby="pm-global">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="pm-global">Every form</h2><span class="wf-box__end wf-muted">Folders and forms below can narrow or widen this</span></div>
+          <p class="pm-lead">Translators can't open Forms yet. <a href="#">Add the section to their user group</a></p>
+          <div class="wf-box__body wf-box__body--flush pm-scroll" tabindex="0" role="region" aria-label="Permissions of every user group">
+            <table class="wf-table pm" style="border: 0">
+              <thead>
+                <tr>
+                  <th>Permission</th>
+                  <th class="pm-group">Administrators</th>
+                  <th class="pm-group">Editors</th>
+                  <th class="pm-group">Customer service</th>
+                  <th class="pm-group">Privacy</th>
+                  <th class="pm-group">Translators</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Design forms</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Administrators: Design forms"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Editors: Design forms"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Customer service: Design forms"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Privacy: Design forms"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Translators: Design forms"></span></td></tr>
+                <tr><td>Manage actions</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Administrators: Manage actions"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Editors: Manage actions"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Customer service: Manage actions"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Privacy: Manage actions"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Translators: Manage actions"></span></td></tr>
+                <tr><td>View entries</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Administrators: View entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Editors: View entries"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Customer service: View entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Privacy: View entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Translators: View entries"></span></td></tr>
+                <tr><td>See sensitive values</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Administrators: See sensitive values"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Editors: See sensitive values"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Customer service: See sensitive values"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Privacy: See sensitive values"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Translators: See sensitive values"></span></td></tr>
+                <tr><td>Edit entries</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Administrators: Edit entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Editors: Edit entries"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Customer service: Edit entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Privacy: Edit entries"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Translators: Edit entries"></span></td></tr>
+                <tr><td>Delete entries</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Administrators: Delete entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Editors: Delete entries"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Customer service: Delete entries"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Privacy: Delete entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Translators: Delete entries"></span></td></tr>
+                <tr><td>Export entries</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Administrators: Export entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Editors: Export entries"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Customer service: Export entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Privacy: Export entries"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Translators: Export entries"></span></td></tr>
+                <tr><td>Manage the library</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Administrators: Manage the library"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Editors: Manage the library"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Customer service: Manage the library"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Privacy: Manage the library"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Translators: Manage the library"></span></td></tr>
+                <tr><td>Manage settings</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Administrators: Manage settings"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Editors: Manage settings"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Customer service: Manage settings"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Privacy: Manage settings"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Translators: Manage settings"></span></td></tr>
+                <tr><td>Manage permissions</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Administrators: Manage permissions"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Editors: Manage permissions"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Customer service: Manage permissions"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Privacy: Manage permissions"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Translators: Manage permissions"></span></td></tr>
+                <tr><td>Privacy tools</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Administrators: Privacy tools"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Editors: Privacy tools"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Customer service: Privacy tools"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Privacy: Privacy tools"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Translators: Privacy tools"></span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="wf-box" aria-labelledby="pm-own">
+          <div class="wf-box__head">
+            <h2 class="wf-box__title" id="pm-own">Folders and forms with their own access</h2>
+            <div class="wf-box__end"><button class="wf-btn wf-btn--small"><i data-i="plus"></i>Add folder or form…</button></div>
+          </div>
+          <div class="wf-box__body wf-box__body--flush">
+            <table class="wf-table" style="border: 0">
+              <tbody>
+                <tr><td><span class="wf-row"><i data-i="folder"></i><a href="#">HR</a></span></td><td class="wf-muted">Only these groups: HR team, Administrators</td><td class="wf-col-end"><i data-i="lock" aria-label="Restricted"></i></td></tr>
+                <tr><td><span class="wf-row"><i data-i="form"></i><a href="#">Quote request</a></span></td><td class="wf-muted">Also: Sales can view and edit entries</td><td class="wf-col-end"></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <footer class="wf-foot" data-state="default"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Save</button></div></footer>
+    <footer class="wf-foot" data-state="folder restrict"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary" tabindex="-1">Create form</button></div></footer>
+  </main>
+
+  <!-- Permissions… on a folder -->
+  <div class="wf-backdrop" data-state="folder restrict"></div>
+  <aside class="wf-sidebar wf-sidebar--medium" data-state="folder restrict" role="dialog" aria-labelledby="pf-title">
+    <header class="wf-sidebar__head">
+      <h2 class="wf-title" id="pf-title" data-state="folder">Permissions for HR</h2>
+      <h2 class="wf-title" id="pf-title-events" data-state="restrict">Permissions for Events</h2>
+    </header>
+    <div class="wf-sidebar__body">
+      <div class="wf-stack wf-stack--lg">
+        <div class="wf-box"><div class="wf-box__body">
+          <div class="wf-field" style="margin-top: 0">
+            <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="pf-only"></span><span class="wf-label" id="pf-only">Only these groups</span></span>
+            <span class="wf-help">Only the groups below, and administrators, see this folder's forms. Access given to every form or to a parent folder stops here.</span>
+          </div>
+        </div></div>
+
+        <section class="wf-box" aria-labelledby="pf-groups" data-state="folder">
+          <div class="wf-box__head">
+            <h3 class="wf-box__title" id="pf-groups">Groups with access here</h3>
+            <div class="wf-box__end"><button class="wf-btn wf-btn--small"><i data-i="plus"></i>Add user group</button></div>
+          </div>
+          <div class="wf-box__body wf-box__body--flush">
+            <table class="wf-table pm" style="border: 0">
+              <thead><tr><th>Permission</th><th class="pm-group">HR team <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove HR team"><i data-i="x"></i></button></th><th class="pm-group">Works council <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove Works council"><i data-i="x"></i></button></th></tr></thead>
+              <tbody>
+                <tr><td>Design forms</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="HR team: Design forms"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Works council: Design forms"></span></td></tr>
+                <tr><td>Manage actions</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="HR team: Manage actions"></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Works council: Manage actions"></span></td></tr>
+                <tr><td>View entries</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="HR team: View entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Works council: View entries"><i data-i="check"></i></span></td></tr>
+                <tr><td>See sensitive values</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="HR team: See sensitive values"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Works council: See sensitive values"></span></td></tr>
+                <tr><td>Edit entries</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="HR team: Edit entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Works council: Edit entries"></span></td></tr>
+                <tr><td>Delete entries</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="HR team: Delete entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Works council: Delete entries"></span></td></tr>
+                <tr><td>Export entries</td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="HR team: Export entries"><i data-i="check"></i></span></td><td class="pm-cell"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Works council: Export entries"></span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="wf-box" aria-labelledby="pf-none" data-state="restrict">
+          <div class="wf-box__head">
+            <h3 class="wf-box__title" id="pf-none">Groups with access here</h3>
+            <div class="wf-box__end"><button class="wf-btn wf-btn--small"><i data-i="plus"></i>Add user group</button></div>
+          </div>
+          <p class="wf-box__body wf-muted">None yet. Access given to every form reaches this folder.</p>
+        </section>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary">Save</button>
+    </footer>
+  </aside>
+
+  <!-- Restricting a folder without grants asks first (copy.md, confirmations) -->
+  <div class="wf-backdrop" data-state="restrict" style="z-index: 32"></div>
+  <div class="wf-dialog" data-state="restrict" style="z-index: 33" role="alertdialog" aria-labelledby="rs-title" aria-describedby="rs-text">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="rs-title">Restrict Events?</h2></div>
+    <p class="wf-dialog__body" id="rs-text">No user group has access of its own here yet, so only administrators will see its forms.</p>
+    <div class="wf-dialog__foot">
+      <button class="wf-btn" style="box-shadow: var(--wf-focus)">Cancel</button>
+      <button class="wf-btn wf-btn--danger">Restrict folder</button>
+    </div>
+  </div>
+</body>
+</html>

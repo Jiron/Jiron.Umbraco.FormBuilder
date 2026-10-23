@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Spam · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 bulk@1440x900 empty@1440x900 confirm@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    /* In a narrow workspace the reasons keep their room and the form column gives way */
+    @container workspace (max-width: 899px) { .sp-wide { display: none; } }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="admin" data-active="spam">
+  <!--
+    IA 6.2: the list without the state column, since everything here is in Spam. "Why" is a detail every entry has,
+    chosen in the column chooser. Spam has no badge in the sidebar, so it never draws attention to itself.
+  -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main"><h1 class="wf-head__title">Spam</h1></div>
+    </header>
+
+    <div class="wf-content">
+      <div class="wf-toolbar" data-state="default bulk confirm">
+        <span class="wf-input wf-input--search" style="width: 280px"><i data-i="search"></i><span class="wf-placeholder">Search spam</span></span>
+        <button class="wf-btn"><i data-i="filter"></i>Filter</button>
+        <button class="wf-btn"><i data-i="trash"></i>Empty spam…</button>
+      </div>
+
+      <section class="wf-box" data-state="default bulk confirm" aria-label="Entries in Spam">
+        <table class="wf-table" style="border: 0">
+          <thead><tr><th class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select all entries on this page"></span></th><th>Entry</th><th class="sp-wide">Form</th><th>Received</th><th>Why</th><th class="wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Choose columns"><i data-i="columns"></i></button></th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 1051" data-state="default confirm"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 1051" data-state="bulk"><i data-i="check"></i></span></td>
+              <td><a href="#">Entry #1051</a></td><td class="wf-muted sp-wide">Contact us</td><td class="wf-muted">1 h ago</td><td class="wf-muted wf-cell-wrap">Blocked word, sent too fast</td><td></td>
+            </tr>
+            <tr>
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 1049" data-state="default confirm"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 1049" data-state="bulk"><i data-i="check"></i></span></td>
+              <td><a href="#">Best Prices Online</a></td><td class="wf-muted sp-wide">Contact us</td><td class="wf-muted">2 h ago</td><td class="wf-muted wf-cell-wrap">Blocked email domain</td><td></td>
+            </tr>
+            <tr>
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 63"></span></td>
+              <td><a href="#">Marta Kowalska</a></td><td class="wf-muted sp-wide">Callback request</td><td class="wf-muted">Yesterday, 22:10</td><td class="wf-muted wf-cell-wrap">Captcha unavailable</td><td></td>
+            </tr>
+            <tr>
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 1047"></span></td>
+              <td><a href="#">Entry #1047</a></td><td class="wf-muted sp-wide">Contact us</td><td class="wf-muted">Yesterday, 03:41</td><td class="wf-muted wf-cell-wrap">12 links</td><td></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="wf-empty" data-state="empty">
+        <p class="wf-empty__text">No spam. Entries that look automated land here, and nothing in them is lost.</p>
+      </div>
+    </div>
+
+    <div class="wf-bulk" data-state="bulk" role="region" aria-label="Selected entries">
+      <span class="wf-strong">2 selected</span>
+      <div class="wf-row" data-wf-actions="bulk bar">
+        <button class="wf-btn">Not spam</button>
+        <button class="wf-btn">Delete…</button>
+      </div>
+      <button class="wf-btn wf-btn--icon" data-wf-frame style="margin-left: auto" aria-label="Clear the selection"><i data-i="x"></i></button>
+    </div>
+  </main>
+
+  <!-- Empty spam… asks first and names what is lost -->
+  <div class="wf-backdrop" data-state="confirm"></div>
+  <div class="wf-dialog" data-state="confirm" role="alertdialog" aria-labelledby="es-title" aria-describedby="es-text">
+    <div class="wf-dialog__head"><h2 class="wf-title" id="es-title">Delete 4 entries in Spam?</h2></div>
+    <p class="wf-dialog__body" id="es-text">This also deletes their timelines. You can't undo this.</p>
+    <div class="wf-dialog__foot">
+      <button class="wf-btn" style="box-shadow: var(--wf-focus)">Cancel</button>
+      <button class="wf-btn wf-btn--danger">Delete 4 entries</button>
+    </div>
+  </div>
+</body>
+</html>

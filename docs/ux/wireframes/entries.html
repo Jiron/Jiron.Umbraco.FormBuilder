@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>A form's entries · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 filtered@1440x900 bulk@1440x900 export@1440x900 empty@1440x900 no-results@1440x900 loading@1440x900 error@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .en-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-3); margin: calc(0px - var(--wf-space-2)) 0 var(--wf-space-5); }
+    .en-col-choose { width: 44px; }
+    @container workspace (max-width: 899px) { .en-wide { display: none; } }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="handler" data-active="form:job-application">
+  <!--
+    IA 5.4 and 6.1: a form's Entries view, the Inbox's list for one form, without the form column and with the form's
+    fields as filters and columns. The entry handler sees the views Entries and Insights, and no footer: the footer's
+    buttons are about designing the form (IA 11). Job application uses manual approval, so entries wait for a decision.
+  -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main">
+        <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms"><i data-i="arrow-left"></i></button>
+        <h1 class="wf-head__title">Job application</h1>
+        <span class="wf-chip wf-chip--positive">Published</span>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Job application"><i data-i="more"></i></button>
+      </div>
+      <nav class="wf-tabs" aria-label="Views">
+        <a class="wf-tab" href="#" aria-current="page"><i data-i="inbox" class="wf-i--20"></i>Entries</a>
+        <a class="wf-tab" href="#"><i data-i="chart" class="wf-i--20"></i>Insights</a>
+      </nav>
+    </header>
+
+    <div class="wf-content">
+      <div class="wf-toolbar" data-state="default filtered bulk export no-results loading error">
+        <span class="wf-input wf-input--search" style="width: 280px"><i data-i="search"></i><span class="wf-placeholder">Search entries</span></span>
+        <button class="wf-btn"><i data-i="filter"></i>Filter</button>
+        <button class="wf-btn"><i data-i="download"></i>Export…</button>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for these entries"><i data-i="more"></i></button>
+      </div>
+
+      <!-- Active filters: a row of their own under the toolbar -->
+      <div class="en-filters" data-state="filtered no-results" aria-label="Active filters">
+        <span class="wf-chip wf-chip--outline">State: waiting for approval <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove the filter State: waiting for approval"><i data-i="x"></i></button></span>
+        <span class="wf-chip wf-chip--outline" data-state="filtered">Position: Frontend developer <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove the filter Position: Frontend developer"><i data-i="x"></i></button></span>
+        <span class="wf-chip wf-chip--outline" data-state="no-results">Position: Accountant <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove the filter Position: Accountant"><i data-i="x"></i></button></span>
+        <button class="wf-btn wf-btn--text wf-btn--small">Save as…</button>
+        <button class="wf-btn wf-btn--text wf-btn--small">Clear filters</button>
+      </div>
+
+      <!-- The list -->
+      <section class="wf-box" data-state="default filtered bulk export" aria-label="Entries">
+        <table class="wf-table" style="border: 0">
+          <thead>
+            <tr>
+              <th class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select all entries on this page" data-state="default filtered export"></span><span class="wf-box-check" role="checkbox" aria-checked="mixed" aria-label="Select all entries on this page" data-state="bulk"><i data-i="check"></i></span></th>
+              <th>Entry</th><th>State</th><th>Received</th><th class="en-wide">Actions</th><th class="en-wide">Position</th>
+              <th class="en-col-choose wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Choose columns"><i data-i="columns"></i></button></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="wf-unseen">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 214" data-state="default filtered export"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 214" data-state="bulk"><i data-i="check"></i></span></td>
+              <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Jakob Lindqvist</a><span class="wf-sr">, unseen</span></span></td>
+              <td><span class="wf-chip wf-chip--warning">Waiting for approval</span></td>
+              <td class="wf-muted">3 h ago</td><td class="wf-muted en-wide">2/2 delivered</td><td class="en-wide">Frontend developer</td><td></td>
+            </tr>
+            <tr class="wf-unseen">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 213" data-state="default filtered export"></span><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Select entry 213" data-state="bulk"><i data-i="check"></i></span></td>
+              <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Amira Haddad</a><span class="wf-sr">, unseen</span></span></td>
+              <td><span class="wf-chip wf-chip--warning">Waiting for approval</span></td>
+              <td class="wf-muted">Today, 07:48</td><td class="wf-muted en-wide">2/2 delivered</td><td class="en-wide">Frontend developer</td><td></td>
+            </tr>
+            <tr data-state="default bulk export">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 212"></span></td>
+              <td><a href="#">Sofie Vermeulen</a></td>
+              <td><span class="wf-chip wf-chip--positive">Approved</span></td>
+              <td class="wf-muted">Yesterday, 18:02</td><td class="wf-muted en-wide">3/3 delivered</td><td class="en-wide">Office manager</td><td></td>
+            </tr>
+            <tr data-state="default bulk export">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 211"></span></td>
+              <td><a href="#">Ruben Castillo</a></td>
+              <td><span class="wf-chip">Rejected</span></td>
+              <td class="wf-muted">Yesterday, 11:15</td><td class="wf-muted en-wide">1/1 delivered</td><td class="en-wide">Backend developer</td><td></td>
+            </tr>
+            <tr data-state="default bulk export">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 210"></span></td>
+              <td><a href="#">Hanna Nieminen</a></td>
+              <td><span class="wf-chip wf-chip--warning">Waiting for approval</span></td>
+              <td class="wf-muted">20 Oct, 09:30</td><td class="en-wide"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--danger"></span>1 failed</span></td><td class="en-wide">Office manager</td><td></td>
+            </tr>
+            <tr data-state="default bulk export">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 209"></span></td>
+              <td><a href="#">Oskar Brandt</a></td>
+              <td><span class="wf-chip wf-chip--positive">Approved</span></td>
+              <td class="wf-muted">19 Oct, 16:44</td><td class="wf-muted en-wide">3/3 delivered</td><td class="en-wide">Backend developer</td><td></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <div class="wf-pager" data-state="default bulk export"><span>1 to 6 of 214</span><span class="wf-row"><button class="wf-btn wf-btn--small">Next</button></span></div>
+
+      <!-- First use -->
+      <div class="wf-empty" data-state="empty">
+        <p class="wf-empty__text">No entries yet. Share the form, or preview it and send a test entry.</p>
+      </div>
+      <!-- Filters match nothing -->
+      <div class="wf-empty" data-state="no-results">
+        <p class="wf-empty__text">No entries match these filters.</p>
+        <button class="wf-btn">Clear filters</button>
+      </div>
+      <!-- Loading: a skeleton of rows -->
+      <section class="wf-box" data-state="loading" aria-busy="true">
+        <div class="wf-box__body wf-stack">
+          <span class="wf-skel" style="width: 92%"></span><span class="wf-skel" style="width: 88%"></span><span class="wf-skel" style="width: 90%"></span><span class="wf-skel" style="width: 86%"></span><span class="wf-skel" style="width: 91%"></span>
+          <span class="wf-sr">Loading entries</span>
+        </div>
+      </section>
+      <!-- Failure -->
+      <div class="wf-empty" data-state="error" role="alert">
+        <p class="wf-empty__text">Entries couldn't be loaded.</p>
+        <button class="wf-btn">Try again</button>
+      </div>
+    </div>
+
+    <!-- Umbraco's bulk bar, once a row is selected -->
+    <div class="wf-bulk" data-state="bulk" role="region" aria-label="Selected entries">
+      <span class="wf-strong">2 selected</span>
+      <div class="wf-row" data-wf-actions="bulk bar">
+        <button class="wf-btn">Approve</button>
+        <button class="wf-btn">Reject</button>
+        <button class="wf-btn">Mark as spam</button>
+        <button class="wf-btn wf-btn--icon" data-wf-more aria-label="More actions for the selected entries"><i data-i="more"></i></button>
+      </div>
+      <button class="wf-btn wf-btn--icon" data-wf-frame style="margin-left: auto" aria-label="Clear the selection"><i data-i="x"></i></button>
+    </div>
+  </main>
+
+  <!-- Export (IA 6.4) -->
+  <div class="wf-backdrop" data-state="export"></div>
+  <aside class="wf-sidebar" data-state="export" role="dialog" aria-labelledby="ex-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="ex-title">Export</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-box"><div class="wf-box__body">
+        <label class="wf-field">
+          <span class="wf-label">Format</span>
+          <span class="wf-select"><span>Excel</span><i data-i="chevron-down"></i></span>
+        </label>
+        <div class="wf-field">
+          <span class="wf-label">Entries</span>
+          <span>All 214 entries, no filters</span>
+        </div>
+        <div class="wf-field" role="group" aria-labelledby="ex-fields">
+          <span class="wf-label" id="ex-fields">Fields</span>
+          <span class="wf-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="All fields"><i data-i="check"></i></span><span>All fields (12)</span></span>
+          <span class="wf-help">Sensitive fields are left out.</span>
+        </div>
+        <button class="wf-btn wf-btn--text wf-btn--small" style="margin-top: var(--wf-space-4)"><i data-i="chevron-down"></i>More options</button>
+      </div></div>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary">Export 214 entries</button>
+    </footer>
+  </aside>
+</body>
+</html>

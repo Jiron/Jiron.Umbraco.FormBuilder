@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Audit log · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 detail@1440x900 no-results@1440x900 loading@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .al-diff { width: 100%; border-collapse: collapse; }
+    .al-diff th, .al-diff td { padding: var(--wf-space-2) var(--wf-space-3); border-bottom: 1px solid var(--uui-color-divider-standalone); text-align: left; vertical-align: top; }
+    @container workspace (max-width: 899px) { .al-wide { display: none; } }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="admin" data-active="audit-log">
+  <!--
+    IA section 9: who did what, when, on which form or setting. A screen for reading, so it has no primary action. A row
+    opens its details with the values before and after; a form's save or publish links to that version in History,
+    where the changes are listed.
+  -->
+  <main class="wf-main">
+    <header class="wf-head"><div class="wf-head__main"><h1 class="wf-head__title">Audit log</h1></div></header>
+
+    <div class="wf-content">
+      <div class="wf-toolbar" data-state="default detail no-results loading">
+        <span class="wf-input wf-input--search" style="width: 280px" data-state="default detail loading"><i data-i="search"></i><span class="wf-placeholder">Search people, forms and settings</span></span>
+        <span class="wf-input wf-input--search" style="width: 280px" data-state="no-results"><i data-i="search"></i><span>retention</span></span>
+        <button class="wf-btn"><i data-i="filter"></i>Filter</button>
+        <button class="wf-btn"><i data-i="download"></i>Export</button>
+      </div>
+      <div class="wf-row" data-state="no-results" style="margin: calc(0px - var(--wf-space-2)) 0 var(--wf-space-5)">
+        <span class="wf-chip wf-chip--outline">Who: Paul Okafor <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove the filter Who: Paul Okafor"><i data-i="x"></i></button></span>
+        <button class="wf-btn wf-btn--text wf-btn--small">Clear filters</button>
+      </div>
+
+      <section class="wf-box" data-state="default detail" aria-label="Events">
+        <table class="wf-table" style="border: 0">
+          <thead><tr><th>When</th><th>Who</th><th>What</th><th class="al-wide">Where</th></tr></thead>
+          <tbody>
+            <tr data-state="default"><td class="wf-muted">14:12</td><td>Ana Novak</td><td><a href="#">Changed IP addresses</a></td><td class="al-wide wf-muted">Privacy › Data collection</td></tr>
+            <tr data-state="detail" aria-current="true"><td class="wf-muted">14:12</td><td>Ana Novak</td><td><a href="#">Changed IP addresses</a></td><td class="al-wide wf-muted">Privacy › Data collection</td></tr>
+            <tr><td class="wf-muted">14:02</td><td>Lea Hoffmann</td><td><a href="#">Published version 3</a></td><td class="al-wide wf-muted">Summer fair sign-up</td></tr>
+            <tr><td class="wf-muted">11:48</td><td>Mira Sandberg</td><td><a href="#">Revealed Date of birth in entry #212</a></td><td class="al-wide wf-muted">Job application</td></tr>
+            <tr><td class="wf-muted">10:05</td><td>Jonas Berger</td><td><a href="#">Exported 214 entries</a></td><td class="al-wide wf-muted">Job application</td></tr>
+            <tr><td class="wf-muted">Yesterday, 16:30</td><td>Mira Sandberg</td><td><a href="#">Erased 6 entries of one person</a></td><td class="al-wide wf-muted">Privacy › People</td></tr>
+            <tr><td class="wf-muted">Yesterday, 09:12</td><td>Ana Novak</td><td><a href="#">Restricted HR</a></td><td class="al-wide wf-muted">Settings › Access</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="wf-empty" data-state="no-results">
+        <p class="wf-empty__text">No events match these filters.</p>
+        <button class="wf-btn">Clear filters</button>
+      </div>
+      <section class="wf-box" data-state="loading" aria-busy="true">
+        <div class="wf-box__body wf-stack"><span class="wf-skel" style="width: 90%"></span><span class="wf-skel" style="width: 86%"></span><span class="wf-skel" style="width: 88%"></span><span class="wf-sr">Loading the audit log</span></div>
+      </section>
+    </div>
+  </main>
+
+  <div class="wf-backdrop" data-state="detail"></div>
+  <aside class="wf-sidebar" data-state="detail" role="dialog" aria-labelledby="ad-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="ad-title">Changed IP addresses</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-stack wf-stack--lg">
+        <dl class="wf-dl">
+          <dt>Who</dt><dd>Ana Novak</dd>
+          <dt>When</dt><dd>Today, 14:12:08 (Europe/Berlin)</dd>
+          <dt>Where</dt><dd><a href="#">Privacy › Data collection</a></dd>
+        </dl>
+        <section class="wf-box" aria-label="Before and after">
+          <div class="wf-box__body">
+            <table class="al-diff">
+              <thead><tr><th>Setting</th><th>Before</th><th>After</th></tr></thead>
+              <tbody><tr><td>IP addresses</td><td>Don't store them</td><td>Store them shortened</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot"><button class="wf-btn">Close</button></footer>
+  </aside>
+</body>
+</html>

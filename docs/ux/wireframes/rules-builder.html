@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Rules builder · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 new@1440x900 groups@1440x900 overview@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .rb-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-space-3); }
+    .rb-group { padding: var(--wf-space-4); border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
+    .rb-group + .rb-join { margin: var(--wf-space-3) 0; }
+    .rb-cond { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.3fr) 30px; gap: var(--wf-space-3); align-items: center; }
+    .rb-cond + .rb-cond { margin-top: var(--wf-space-3); }
+    .rb-row-link { display: flex; align-items: center; gap: var(--wf-space-3); padding: var(--wf-space-4); border-top: 1px solid var(--uui-color-divider-standalone); }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="designer" data-active="form:contact">
+  <!--
+    IA 5.1: the rules builder (a sidebar from the inspector's "Add a rule", a rule chip, or the rules overview) and the
+    rules overview (from the toolbar's "…" and from the form check). Behind it: the designer, as designer.html draws it.
+  -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main">
+        <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms" tabindex="-1"><i data-i="arrow-left"></i></button>
+        <span class="wf-head__name">Contact us</span>
+        <span class="wf-chip wf-chip--warning">Published (pending changes)</span>
+      </div>
+      <nav class="wf-tabs" aria-label="Views">
+        <a class="wf-tab" href="#" aria-current="page" tabindex="-1"><i data-i="pencil" class="wf-i--20"></i>Design</a>
+        <a class="wf-tab" href="#" tabindex="-1"><i data-i="settings" class="wf-i--20"></i>Settings</a>
+        <a class="wf-tab" href="#" tabindex="-1"><i data-i="send" class="wf-i--20"></i>Actions</a>
+        <a class="wf-tab" href="#" tabindex="-1"><i data-i="history" class="wf-i--20"></i>History</a>
+      </nav>
+    </header>
+    <div class="wf-content">
+      <div class="wf-canvas">
+        <div class="wf-group">
+          <h3 class="wf-group__title">Your details</h3>
+          <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">Email address</span><span class="wf-vf__control"></span></div></div>
+          <div class="wf-el"><div class="wf-vf"><span class="wf-vf__label">Country</span><span class="wf-vf__control"></span></div></div>
+          <div class="wf-el wf-el--selected"><div class="wf-vf"><span class="wf-vf__label">Which country?</span><span class="wf-vf__control"></span></div></div>
+        </div>
+      </div>
+    </div>
+    <footer class="wf-foot">
+      <div class="wf-foot__end">
+        <button class="wf-btn" tabindex="-1">Preview</button>
+        <button class="wf-btn" tabindex="-1">Save draft</button>
+        <button class="wf-btn wf-btn--primary" tabindex="-1">Publish…</button>
+      </div>
+    </footer>
+  </main>
+
+  <div class="wf-backdrop"></div>
+
+  <!-- The rules builder -->
+  <aside class="wf-sidebar wf-sidebar--medium" data-state="default new groups" role="dialog" aria-labelledby="rb-title">
+    <header class="wf-sidebar__head">
+      <h2 class="wf-title" id="rb-title" data-state="default groups">Rule</h2>
+      <h2 class="wf-title" id="rb-title-new" data-state="new">New rule</h2>
+    </header>
+    <div class="wf-sidebar__body">
+      <div class="wf-stack wf-stack--lg">
+        <!-- The first line: what the rule does, to which element -->
+        <div class="rb-sentence">
+          <span class="wf-select" style="width: 120px"><span>Show</span><i data-i="chevron-down"></i></span>
+          <span class="wf-select" style="width: 260px"><span>this field: Which country?</span><i data-i="chevron-down"></i></span>
+          <span>when</span>
+        </div>
+
+        <!-- One group (default, new) -->
+        <section class="rb-group" data-state="default new" aria-label="Conditions">
+          <div class="rb-sentence" style="margin-bottom: var(--wf-space-4)">
+            <span class="wf-select" style="width: 90px"><span>all</span><i data-i="chevron-down"></i></span>
+            <span>of these are true</span>
+          </div>
+          <div class="rb-cond" data-state="default">
+            <span class="wf-select"><span>Country</span><i data-i="chevron-down"></i></span>
+            <span class="wf-select"><span>is</span><i data-i="chevron-down"></i></span>
+            <span class="wf-select"><span>Other</span><i data-i="chevron-down"></i></span>
+            <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove this condition"><i data-i="x"></i></button>
+          </div>
+          <div class="rb-cond" data-state="new">
+            <span class="wf-select"><span class="wf-placeholder">Choose a field</span><i data-i="chevron-down"></i></span>
+            <span class="wf-select"><span>is</span><i data-i="chevron-down"></i></span>
+            <span class="wf-select"><span class="wf-placeholder">Choose a value</span><i data-i="chevron-down"></i></span>
+            <span></span>
+          </div>
+          <div class="wf-row" style="margin-top: var(--wf-space-4)" data-wf-actions="group actions">
+            <button class="wf-btn wf-btn--text wf-btn--small"><i data-i="plus"></i>Add condition</button>
+            <button class="wf-btn wf-btn--text wf-btn--small"><i data-i="plus"></i>Add group</button>
+          </div>
+        </section>
+
+        <!-- Two groups, joined by "any" -->
+        <div data-state="groups">
+          <div class="rb-sentence" style="margin-bottom: var(--wf-space-4)">
+            <span class="wf-select" style="width: 90px"><span>any</span><i data-i="chevron-down"></i></span>
+            <span>of these groups is true</span>
+          </div>
+          <section class="rb-group" aria-label="Group 1">
+            <div class="rb-sentence" style="margin-bottom: var(--wf-space-4)">
+              <span class="wf-select" style="width: 90px"><span>all</span><i data-i="chevron-down"></i></span>
+              <span>of these are true</span>
+              <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" style="margin-left: auto" aria-label="Remove group 1"><i data-i="x"></i></button>
+            </div>
+            <div class="rb-cond">
+              <span class="wf-select"><span>Country</span><i data-i="chevron-down"></i></span>
+              <span class="wf-select"><span>is</span><i data-i="chevron-down"></i></span>
+              <span class="wf-select"><span>Other</span><i data-i="chevron-down"></i></span>
+              <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove this condition"><i data-i="x"></i></button>
+            </div>
+            <div class="rb-cond">
+              <span class="wf-select"><span>Phone</span><i data-i="chevron-down"></i></span>
+              <span class="wf-select"><span>is empty</span><i data-i="chevron-down"></i></span>
+              <span></span>
+              <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove this condition"><i data-i="x"></i></button>
+            </div>
+            <div class="wf-row" style="margin-top: var(--wf-space-4)"><button class="wf-btn wf-btn--text wf-btn--small"><i data-i="plus"></i>Add condition</button></div>
+          </section>
+          <p class="rb-join wf-muted" style="margin: var(--wf-space-3) 0">or</p>
+          <section class="rb-group" aria-label="Group 2">
+            <div class="rb-sentence" style="margin-bottom: var(--wf-space-4)">
+              <span class="wf-select" style="width: 90px"><span>all</span><i data-i="chevron-down"></i></span>
+              <span>of these are true</span>
+              <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" style="margin-left: auto" aria-label="Remove group 2"><i data-i="x"></i></button>
+            </div>
+            <div class="rb-cond">
+              <span class="wf-select"><span>Topic</span><i data-i="chevron-down"></i></span>
+              <span class="wf-select"><span>is one of</span><i data-i="chevron-down"></i></span>
+              <span class="wf-select"><span>Shipping, Customs</span><i data-i="chevron-down"></i></span>
+              <button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Remove this condition"><i data-i="x"></i></button>
+            </div>
+            <div class="wf-row" style="margin-top: var(--wf-space-4)"><button class="wf-btn wf-btn--text wf-btn--small"><i data-i="plus"></i>Add condition</button></div>
+          </section>
+          <div class="wf-row" style="margin-top: var(--wf-space-4)"><button class="wf-btn wf-btn--text wf-btn--small"><i data-i="plus"></i>Add group</button></div>
+        </div>
+
+        <div class="wf-field" data-state="default groups">
+          <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="rb-on"></span><span class="wf-label" id="rb-on">Rule is on</span></span>
+          <span class="wf-help">Turn it off to keep the rule without using it. The field then always shows.</span>
+        </div>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary" data-state="default groups">Update</button>
+      <button class="wf-btn wf-btn--primary" data-state="new">Add</button>
+    </footer>
+  </aside>
+
+  <!-- The rules overview -->
+  <aside class="wf-sidebar" data-state="overview" role="dialog" aria-labelledby="ro-title">
+    <header class="wf-sidebar__head">
+      <h2 class="wf-title" id="ro-title">Rules</h2>
+      <button class="wf-btn" style="margin-left: auto"><i data-i="plus"></i>Add rule</button>
+    </header>
+    <div class="wf-sidebar__body">
+      <div class="wf-stack wf-stack--lg">
+        <section class="wf-box" aria-labelledby="ro-p1">
+          <div class="wf-box__head"><h3 class="wf-box__title" id="ro-p1">1 Your details</h3></div>
+          <a class="rb-row-link" href="#" style="border-top: 0"><i data-i="split"></i><span><span class="wf-strong">Which country?</span><br><span class="wf-muted">Shown when Country is Other</span></span></a>
+        </section>
+        <section class="wf-box" aria-labelledby="ro-p2">
+          <div class="wf-box__head"><h3 class="wf-box__title" id="ro-p2">2 Your message</h3></div>
+          <a class="rb-row-link" href="#" style="border-top: 0"><i data-i="split"></i><span><span class="wf-strong">Order number</span><br><span class="wf-muted">Required when Topic is Delivery</span></span></a>
+          <a class="rb-row-link" href="#"><i data-i="split"></i><span><span class="wf-strong">Attachment</span><br><span class="wf-muted">Hidden when Topic is Press</span></span></a>
+        </section>
+        <section class="wf-box" aria-labelledby="ro-after">
+          <div class="wf-box__head"><h3 class="wf-box__title" id="ro-after">After sending</h3></div>
+          <a class="rb-row-link" href="#" style="border-top: 0"><i data-i="split"></i><span><span class="wf-strong">Redirect to /press/thanks</span><br><span class="wf-muted">Used when Topic is Press</span></span></a>
+        </section>
+      </div>
+    </div>
+    <footer class="wf-sidebar__foot"><button class="wf-btn">Close</button></footer>
+  </aside>
+</body>
+</html>

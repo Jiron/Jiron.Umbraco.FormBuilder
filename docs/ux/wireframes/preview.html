@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Preview · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 phone@1440x900 menu@1440x900 sent@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .pv { display: flex; flex-direction: column; height: 100%; }
+    .pv__stage { flex: 1; min-height: 0; overflow: auto; padding: var(--wf-space-6); background: var(--uui-color-background); }
+    .pv__frame { max-width: 760px; margin: 0 auto; padding: var(--wf-space-7); border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); background: var(--uui-color-surface); }
+    .pv__frame--phone { max-width: 375px; padding: var(--wf-space-5); }
+    .pv__progress { display: flex; gap: var(--wf-space-5); margin-bottom: var(--wf-space-6); padding-bottom: var(--wf-space-4); border-bottom: 1px solid var(--uui-color-divider-standalone); }
+    .pv__progress span[aria-current] { font-weight: 700; }
+    .pv__frame h2 { margin-bottom: var(--wf-space-5); font-size: var(--wf-type-display); }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-frame="none" data-role="designer">
+  <!--
+    IA 5.7: the draft rendered by its theme in a frame, as a full-screen modal. Sending it makes a test entry, which runs
+    no actions unless "Run actions for test entries" is on (in "…").
+  -->
+  <main class="wf-main pv">
+    <header class="wf-head">
+      <div class="wf-head__main">
+        <h1 class="wf-head__title">Preview of Contact us</h1>
+        <span class="wf-muted">the draft</span>
+        <div class="wf-row" style="margin-left: auto; position: relative" data-wf-actions="preview toolbar">
+          <div class="wf-seg" role="group" aria-label="Width" data-state="default menu sent">
+            <button aria-pressed="false">Phone</button><button aria-pressed="false">Tablet</button><button aria-pressed="true">Desktop</button>
+          </div>
+          <div class="wf-seg" role="group" aria-label="Width" data-state="phone">
+            <button aria-pressed="true">Phone</button><button aria-pressed="false">Tablet</button><button aria-pressed="false">Desktop</button>
+          </div>
+          <button class="wf-btn" data-state="default phone menu"><i data-i="wand"></i>Fill with sample answers</button>
+          <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More preview options" aria-expanded="false" data-state="default phone sent"><i data-i="more"></i></button>
+          <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More preview options" aria-expanded="true" data-state="menu"><i data-i="more"></i></button>
+          <div class="wf-pop" data-state="menu" style="top: 44px; right: 0; width: 300px" role="menu" aria-label="Preview options">
+            <span class="wf-pop__item" role="menuitem"><i data-i="monitor"></i>Light or dark: light</span>
+            <span class="wf-pop__item" role="menuitem"><i data-i="globe"></i>Language: English</span>
+            <span class="wf-pop__sep"></span>
+            <span class="wf-pop__item" role="menuitemcheckbox" aria-checked="false"><span class="wf-box-check" aria-hidden="true"></span>Run actions for test entries</span>
+          </div>
+        </div>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-frame aria-label="Close the preview"><i data-i="x"></i></button>
+      </div>
+    </header>
+
+    <div class="pv__stage">
+      <p class="wf-muted" style="max-width: 760px; margin: 0 auto var(--wf-space-4)" data-state="default phone menu">Entries sent here are test entries. They run no actions.</p>
+
+      <div class="pv__frame" data-state="default menu" aria-label="The form as visitors see it">
+        <div class="pv__progress"><span aria-current="step">1 Your details</span><span class="wf-muted">2 Your message</span></div>
+        <h2>Your details</h2>
+        <div class="wf-stack wf-stack--lg">
+          <div class="wf-grid-2">
+            <div class="wf-vf"><span class="wf-vf__label">First name</span><span class="wf-vf__control"></span></div>
+            <div class="wf-vf"><span class="wf-vf__label">Last name</span><span class="wf-vf__control"></span></div>
+          </div>
+          <div class="wf-vf"><span class="wf-vf__label">Email address</span><span class="wf-muted">We only use it to reply.</span><span class="wf-vf__control"></span></div>
+          <div class="wf-vf"><span class="wf-vf__label">Phone <span class="wf-vf__optional">(optional)</span></span><span class="wf-vf__control"></span></div>
+          <div class="wf-vf"><span class="wf-vf__label">Country</span><span class="wf-vf__control"></span></div>
+          <span class="wf-vf__submit">Next</span>
+        </div>
+      </div>
+
+      <div class="pv__frame pv__frame--phone" data-state="phone" aria-label="The form as visitors see it on a phone">
+        <div class="pv__progress"><span aria-current="step">Page 1 of 2</span></div>
+        <h2>Your details</h2>
+        <div class="wf-stack wf-stack--lg">
+          <div class="wf-vf"><span class="wf-vf__label">First name</span><span class="wf-vf__control"></span></div>
+          <div class="wf-vf"><span class="wf-vf__label">Last name</span><span class="wf-vf__control"></span></div>
+          <div class="wf-vf"><span class="wf-vf__label">Email address</span><span class="wf-muted">We only use it to reply.</span><span class="wf-vf__control"></span></div>
+          <div class="wf-vf"><span class="wf-vf__label">Phone <span class="wf-vf__optional">(optional)</span></span><span class="wf-vf__control"></span></div>
+          <span class="wf-vf__submit">Next</span>
+        </div>
+      </div>
+
+      <div class="wf-stack" data-state="sent" style="max-width: 760px; margin: 0 auto">
+        <p class="wf-note wf-note--positive" role="status"><i data-i="check" class="wf-note__icon"></i><span>Saved as test entry #1044. No actions ran.</span></p>
+        <div class="pv__frame" aria-label="The outcome as visitors see it">
+          <h2>Thank you, Alex.</h2>
+          <p>We have received your message and answer within two working days.</p>
+        </div>
+        <button class="wf-btn" style="align-self: flex-start"><i data-i="retry"></i>Start again</button>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

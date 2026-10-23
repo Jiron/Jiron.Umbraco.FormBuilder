@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Insights · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 answers@1440x900 table@1440x900 empty@1440x900 off@1440x900 loading@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    /* One strip, not four cards: the numbers share a box and are split by dividers. */
+    .is-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .is-stats > * { padding: var(--wf-space-5); }
+    .is-stats > * + * { border-left: 1px solid var(--uui-color-divider-standalone); }
+    .is-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--wf-space-5); }
+    .is-legend { display: flex; gap: var(--wf-space-5); margin-top: var(--wf-space-3); color: var(--wf-color-text-muted); font-size: var(--wf-type-small); }
+    .is-key { display: inline-block; width: 12px; height: 12px; margin-right: var(--wf-space-2); border-radius: var(--wf-radius); vertical-align: -1px; }
+    .is-axis { display: flex; justify-content: space-between; margin-top: var(--wf-space-2); color: var(--wf-color-text-muted); font-size: var(--wf-type-small); }
+    .wf-bars--pairs { gap: var(--wf-space-1); }
+    .wf-hbar + .wf-hbar { margin-top: var(--wf-space-3); }
+    @media (max-width: 1000px) {
+      .is-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .is-stats > :nth-child(3) { border-left: 0; }
+      .is-stats > :nth-child(n + 3) { border-top: 1px solid var(--uui-color-divider-standalone); }
+      .is-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="handler" data-active="form:contact">
+  <!--
+    IA 5.5. Toolbar: the date range (its popover also holds Group by), the switch "Compare with the previous period",
+    and the segmented switch Overview · Answers. Every chart has a table view. Changes are said in words and numbers,
+    not in red and green, so a drop reads as a fact rather than an alarm.
+  -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main">
+        <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Forms"><i data-i="arrow-left"></i></button>
+        <h1 class="wf-head__title">Contact us</h1>
+        <span class="wf-chip wf-chip--warning">Published (pending changes)</span>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Contact us"><i data-i="more"></i></button>
+      </div>
+      <nav class="wf-tabs" aria-label="Views">
+        <a class="wf-tab" href="#"><i data-i="inbox" class="wf-i--20"></i>Entries</a>
+        <a class="wf-tab" href="#" aria-current="page"><i data-i="chart" class="wf-i--20"></i>Insights</a>
+      </nav>
+    </header>
+
+    <div class="wf-content">
+      <div class="wf-toolbar" data-state="default answers table empty loading">
+        <button class="wf-btn"><i data-i="calendar"></i>Last 30 days<i data-i="chevron-down"></i></button>
+        <span class="wf-check"><span class="wf-switch" role="switch" aria-checked="true" aria-labelledby="is-compare"></span><span id="is-compare">Compare with the previous period</span></span>
+        <div class="wf-seg" role="group" aria-label="View" style="margin-left: auto">
+          <button aria-pressed="true" data-state="default table empty loading">Overview</button><button aria-pressed="false" data-state="answers">Overview</button><button aria-pressed="false" data-state="default table empty loading">Answers</button><button aria-pressed="true" data-state="answers">Answers</button>
+        </div>
+      </div>
+
+      <!-- Insights off -->
+      <p class="wf-note" data-state="off"><i data-i="info" class="wf-note__icon"></i><span>Insights are off for this site. An administrator can turn them on in Privacy › Data collection.</span></p>
+
+      <!-- No data yet -->
+      <div class="wf-empty" data-state="empty">
+        <p class="wf-empty__text">No data yet. Numbers appear after the first visit to a page with this form.</p>
+      </div>
+
+      <!-- Loading -->
+      <div class="wf-stack wf-stack--lg" data-state="loading" aria-busy="true">
+        <div class="wf-box is-stats">
+          <div class="wf-stack"><span class="wf-skel" style="width: 40%"></span><span class="wf-skel" style="width: 60%; height: 24px"></span></div>
+          <div class="wf-stack"><span class="wf-skel" style="width: 40%"></span><span class="wf-skel" style="width: 60%; height: 24px"></span></div>
+          <div class="wf-stack"><span class="wf-skel" style="width: 40%"></span><span class="wf-skel" style="width: 60%; height: 24px"></span></div>
+          <div class="wf-stack"><span class="wf-skel" style="width: 40%"></span><span class="wf-skel" style="width: 60%; height: 24px"></span></div>
+        </div>
+        <div class="wf-box"><div class="wf-box__body"><span class="wf-skel" style="height: 160px"></span></div></div>
+        <span class="wf-sr">Loading insights</span>
+      </div>
+
+      <!-- Overview -->
+      <div class="wf-stack wf-stack--lg" data-state="default table">
+        <dl class="wf-box is-stats">
+          <div class="wf-stat"><dt class="wf-muted">Views</dt><dd class="wf-stat__value">4,812</dd><dd class="wf-small wf-muted">up 6% from 4,540</dd></div>
+          <div class="wf-stat"><dt class="wf-muted">Starts</dt><dd class="wf-stat__value">1,307</dd><dd class="wf-small wf-muted">up 4% from 1,257</dd></div>
+          <div class="wf-stat"><dt class="wf-muted">Entries</dt><dd class="wf-stat__value">389</dd><dd class="wf-small wf-muted">up 11% from 350</dd></div>
+          <div class="wf-stat"><dt class="wf-muted">Conversion</dt><dd class="wf-stat__value">8.1%</dd><dd class="wf-small wf-muted">up 0.4 points from 7.7%</dd></div>
+        </dl>
+
+        <section class="wf-box" aria-labelledby="is-per-day">
+          <div class="wf-box__head">
+            <h2 class="wf-box__title" id="is-per-day">Entries per day</h2>
+            <div class="wf-box__end">
+              <button class="wf-btn wf-btn--small" data-state="default"><i data-i="list"></i>Show as table</button>
+              <button class="wf-btn wf-btn--small" data-state="table"><i data-i="chart"></i>Show as chart</button>
+            </div>
+          </div>
+          <div class="wf-box__body" data-state="default">
+            <div class="wf-bars wf-bars--pairs" role="img" aria-label="Entries per day for the last 30 days, compared with the 30 days before: 389 against 350. The table view lists every day.">
+              <span class="wf-bar--prev" style="--h: 40%"></span><span style="--h: 52%"></span>
+              <span class="wf-bar--prev" style="--h: 48%"></span><span style="--h: 44%"></span>
+              <span class="wf-bar--prev" style="--h: 30%"></span><span style="--h: 38%"></span>
+              <span class="wf-bar--prev" style="--h: 22%"></span><span style="--h: 26%"></span>
+              <span class="wf-bar--prev" style="--h: 54%"></span><span style="--h: 66%"></span>
+              <span class="wf-bar--prev" style="--h: 60%"></span><span style="--h: 72%"></span>
+              <span class="wf-bar--prev" style="--h: 44%"></span><span style="--h: 58%"></span>
+              <span class="wf-bar--prev" style="--h: 36%"></span><span style="--h: 40%"></span>
+              <span class="wf-bar--prev" style="--h: 58%"></span><span style="--h: 62%"></span>
+              <span class="wf-bar--prev" style="--h: 66%"></span><span style="--h: 80%"></span>
+              <span class="wf-bar--prev" style="--h: 50%"></span><span style="--h: 64%"></span>
+              <span class="wf-bar--prev" style="--h: 28%"></span><span style="--h: 34%"></span>
+              <span class="wf-bar--prev" style="--h: 24%"></span><span style="--h: 30%"></span>
+              <span class="wf-bar--prev" style="--h: 62%"></span><span style="--h: 70%"></span>
+              <span class="wf-bar--prev" style="--h: 70%"></span><span style="--h: 92%"></span>
+            </div>
+            <div class="is-axis"><span>24 Sep</span><span>8 Oct</span><span>23 Oct</span></div>
+            <div class="is-legend"><span><span class="is-key" style="background: var(--uui-color-selected)"></span>Last 30 days</span><span><span class="is-key" style="background: var(--uui-color-border-standalone)"></span>The 30 days before</span></div>
+          </div>
+          <div class="wf-box__body wf-box__body--flush" data-state="table">
+            <table class="wf-table" style="border: 0">
+              <thead><tr><th>Day</th><th class="wf-num">Entries</th><th class="wf-num">The same day of the period before</th></tr></thead>
+              <tbody>
+                <tr><td>Thu 23 Oct</td><td class="wf-num">23</td><td class="wf-num">18</td></tr>
+                <tr><td>Wed 22 Oct</td><td class="wf-num">18</td><td class="wf-num">16</td></tr>
+                <tr><td>Tue 21 Oct</td><td class="wf-num">8</td><td class="wf-num">6</td></tr>
+                <tr><td>Mon 20 Oct</td><td class="wf-num">9</td><td class="wf-num">7</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="is-grid" data-state="default" data-wf-grid>
+          <section class="wf-box" aria-labelledby="is-dropoff">
+            <div class="wf-box__head"><h2 class="wf-box__title" id="is-dropoff">Who reaches each page</h2><div class="wf-box__end"><button class="wf-btn wf-btn--small"><i data-i="list"></i>Show as table</button></div></div>
+            <div class="wf-box__body">
+              <div class="wf-hbar"><span>1 Your details</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 100%; display: block"></span></span><span class="wf-num">1,307</span></div>
+              <div class="wf-hbar"><span>2 Your message</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 46%; display: block"></span></span><span class="wf-num">601</span></div>
+              <div class="wf-hbar"><span>Sent</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 30%; display: block"></span></span><span class="wf-num">389</span></div>
+              <p class="wf-muted" style="margin-top: var(--wf-space-4)">Half of a typical visit takes 2 min 40 s.</p>
+            </div>
+          </section>
+          <section class="wf-box" aria-labelledby="is-stops">
+            <div class="wf-box__head"><h2 class="wf-box__title" id="is-stops">Fields that stop visitors most</h2><div class="wf-box__end"><button class="wf-btn wf-btn--small"><i data-i="list"></i>Show as table</button></div></div>
+            <div class="wf-box__body">
+              <div class="wf-hbar"><span>Email address</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 100%; display: block"></span></span><span class="wf-num">212 errors, mostly the format</span></div>
+              <div class="wf-hbar"><span>Phone</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 34%; display: block"></span></span><span class="wf-num">72, mostly too short</span></div>
+              <div class="wf-hbar"><span>Your message</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 12%; display: block"></span></span><span class="wf-num">25, left empty</span></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Answers: a summary per field -->
+      <div class="is-grid" data-state="answers" data-wf-grid>
+        <section class="wf-box" aria-labelledby="is-topic">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="is-topic">Topic</h2><span class="wf-box__end wf-muted">389 answers</span></div>
+          <div class="wf-box__body">
+            <div class="wf-hbar"><span>Sales</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 42%; display: block"></span></span><span class="wf-num">42%</span></div>
+            <div class="wf-hbar"><span>Support</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 31%; display: block"></span></span><span class="wf-num">31%</span></div>
+            <div class="wf-hbar"><span>Delivery</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 19%; display: block"></span></span><span class="wf-num">19%</span></div>
+            <div class="wf-hbar"><span>Press</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 8%; display: block"></span></span><span class="wf-num">8%</span></div>
+          </div>
+        </section>
+        <section class="wf-box" aria-labelledby="is-country">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="is-country">Country</h2><span class="wf-box__end wf-muted">381 answers</span></div>
+          <div class="wf-box__body">
+            <div class="wf-hbar"><span>Germany</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 48%; display: block"></span></span><span class="wf-num">48%</span></div>
+            <div class="wf-hbar"><span>Austria</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 21%; display: block"></span></span><span class="wf-num">21%</span></div>
+            <div class="wf-hbar"><span>Switzerland</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 17%; display: block"></span></span><span class="wf-num">17%</span></div>
+            <div class="wf-hbar"><span>Other</span><span class="wf-hbar__track"><span class="wf-hbar__fill" style="--w: 14%; display: block"></span></span><span class="wf-num">14%</span></div>
+          </div>
+        </section>
+        <section class="wf-box" aria-labelledby="is-message">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="is-message">Your message</h2><span class="wf-box__end wf-muted">389 answers</span></div>
+          <div class="wf-box__body"><p>Free text: 64 words on average. <a href="#">Read the answers in Entries</a></p></div>
+        </section>
+        <section class="wf-box" aria-labelledby="is-phone">
+          <div class="wf-box__head"><h2 class="wf-box__title" id="is-phone">Phone</h2><span class="wf-box__end wf-muted">optional</span></div>
+          <div class="wf-box__body"><p>Answered in 58% of entries.</p></div>
+        </section>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

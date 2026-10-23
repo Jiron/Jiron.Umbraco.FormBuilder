@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Email layout · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 dark@1440x900 list@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .el { display: grid; grid-template-columns: 440px minmax(0, 1fr); height: 100%; }
+    .el__settings { overflow: auto; padding: var(--wf-space-6); border-right: 1px solid var(--uui-color-border); background: var(--uui-color-surface); }
+    .el__preview { overflow: auto; padding: var(--wf-space-6); }
+    .el-logo { display: flex; align-items: center; gap: var(--wf-space-4); padding: var(--wf-space-3); border: 1px dashed var(--uui-color-border-standalone); border-radius: var(--wf-radius); }
+    .el-thumb { width: 48px; height: 32px; border: 1px solid var(--uui-color-border); border-radius: var(--wf-radius); }
+    .el-swatch { width: 30px; height: 30px; border: 1px solid var(--wf-color-control-border); border-radius: var(--wf-radius); }
+    .el-colour { display: grid; grid-template-columns: 120px 30px minmax(0, 1fr); gap: var(--wf-space-3); align-items: center; }
+    .el-colour + .el-colour { margin-top: var(--wf-space-3); }
+
+    /* The email, in the layout being edited (an email's look, not the backoffice) */
+    .mail { max-width: 600px; margin: 0 auto; background: #eef0f3; padding: 24px; font-family: Arial, Helvetica, sans-serif; color: #1f2933; }
+    .mail--dark { background: #0f1115; color: #e6e8eb; }
+    .mail__card { border-radius: 6px; background: #ffffff; overflow: hidden; }
+    .mail--dark .mail__card { background: #1a1d23; }
+    .mail__head { display: flex; align-items: center; gap: 12px; padding: 18px 24px; background: #8a1538; color: #ffffff; font-weight: 700; }
+    .mail__logo { width: 28px; height: 28px; border-radius: 6px; background: #ffffff; }
+    .mail__body { padding: 24px; line-height: 1.5; }
+    .mail__body p + p { margin-top: 12px; }
+    .mail__answers { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin-top: 18px; padding: 12px; border-radius: 6px; background: #f4f5f7; }
+    .mail--dark .mail__answers { background: #23272f; }
+    .mail__muted { color: #52606d; }
+    .mail--dark .mail__muted { color: #aab4c0; }
+    .mail__foot { padding: 18px 24px; font-size: 12px; color: #52606d; }
+    .mail--dark .mail__foot { color: #aab4c0; }
+    @media (max-width: 1000px) { .el { grid-template-columns: minmax(0, 1fr); } .el__preview { display: none; } }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="designer" data-active="email-layouts">
+  <!--
+    IA section 7: logo, colours, header and footer per language, beside a preview with a sample entry in light and dark.
+    Header: "Used by 3 actions" and "…" (Duplicate · Delete…), as on every library item. Send test email sits with the
+    preview, because it sends what the preview shows. The email's own colours are an example layout, marked
+    data-wf-sample.
+  -->
+  <main class="wf-main">
+    <!-- The list -->
+    <header class="wf-head" data-state="list"><div class="wf-head__main"><h1 class="wf-head__title">Email layouts</h1></div></header>
+    <div class="wf-content" data-state="list">
+      <section class="wf-box" aria-label="Email layouts">
+        <table class="wf-table" style="border: 0">
+          <thead><tr><th>Name</th><th class="wf-num">Used by</th></tr></thead>
+          <tbody>
+            <tr><td><span class="wf-row"><span class="el-thumb" data-wf-sample style="background: linear-gradient(#8a1538 0 30%, #ffffff 30%)"></span><a href="#">Brand</a> <a href="#" class="wf-chip wf-chip--outline">Default</a></span></td><td class="wf-num">3 actions</td></tr>
+            <tr><td><span class="wf-row"><span class="el-thumb" data-wf-sample style="background: linear-gradient(#e5e7eb 0 30%, #ffffff 30%)"></span><a href="#">Plain</a></span></td><td class="wf-num">7 actions</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+    <footer class="wf-foot" data-state="list"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Create email layout</button></div></footer>
+
+    <!-- One layout -->
+    <header class="wf-head" data-state="default dark">
+      <div class="wf-head__main">
+        <button class="wf-btn wf-btn--icon wf-btn--text" aria-label="Back to Email layouts"><i data-i="arrow-left"></i></button>
+        <span class="wf-head__name">Brand</span>
+        <a href="#">Used by 3 actions</a>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for Brand"><i data-i="more"></i></button>
+      </div>
+    </header>
+    <div class="wf-content wf-content--flush" data-state="default dark">
+      <div class="el">
+        <div class="el__settings">
+          <div class="wf-field" style="margin-top: 0">
+            <span class="wf-label">Logo</span>
+            <div class="el-logo"><span class="el-thumb" data-wf-sample style="background: #8a1538"></span><span>logo-white.png <span class="wf-muted">· 12 KB</span></span><button class="wf-btn wf-btn--small" style="margin-left: auto">Change…</button></div>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">Colours</span>
+            <div class="el-colour"><span>Header</span><span class="el-swatch" data-wf-sample style="background: #8a1538"></span><span class="wf-input">#8A1538</span></div>
+            <div class="el-colour"><span>Links</span><span class="el-swatch" data-wf-sample style="background: #8a1538"></span><span class="wf-input">#8A1538</span></div>
+            <div class="el-colour"><span>Page</span><span class="el-swatch" data-wf-sample style="background: #eef0f3"></span><span class="wf-input">#EEF0F3</span></div>
+            <span class="wf-help">Dark mail apps get the colours of the dark preview, worked out from these.</span>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">Language</span>
+            <span class="wf-select"><span>English</span><i data-i="chevron-down"></i></span>
+            <span class="wf-help">The header and the footer have a text per language.</span>
+          </div>
+          <label class="wf-field">
+            <span class="wf-label">Header text</span>
+            <span class="wf-input">Nordwind Travel</span>
+          </label>
+          <label class="wf-field">
+            <span class="wf-label">Footer text</span>
+            <span class="wf-textarea">Nordwind Travel GmbH · Hafenstraße 12 · 20457 Hamburg. You get this email because of an entry on our website.</span>
+          </label>
+        </div>
+        <section class="el__preview" aria-labelledby="el-preview">
+          <div class="wf-row wf-row--between" style="margin-bottom: var(--wf-space-4)">
+            <h2 class="wf-strong" id="el-preview">Preview with a sample entry</h2>
+            <div class="wf-row" data-wf-actions="preview">
+              <div class="wf-seg" role="group" aria-label="Colour scheme" data-state="default"><button aria-pressed="true">Light</button><button aria-pressed="false">Dark</button></div>
+              <div class="wf-seg" role="group" aria-label="Colour scheme" data-state="dark"><button aria-pressed="false">Light</button><button aria-pressed="true">Dark</button></div>
+              <button class="wf-btn"><i data-i="send"></i>Send test email</button>
+            </div>
+          </div>
+          <div class="mail" data-wf-sample data-state="default">
+            <div class="mail__card">
+              <div class="mail__head"><span class="mail__logo"></span>Nordwind Travel</div>
+              <div class="mail__body">
+                <p>Alex Sample sent a message from /contact.</p>
+                <div class="mail__answers"><span class="mail__muted">Name</span><span>Alex Sample</span><span class="mail__muted">Email address</span><span>alex@example.com</span><span class="mail__muted">Your message</span><span>A sample message, as long as a real one usually is.</span></div>
+              </div>
+            </div>
+            <p class="mail__foot">Nordwind Travel GmbH · Hafenstraße 12 · 20457 Hamburg. You get this email because of an entry on our website.</p>
+          </div>
+          <div class="mail mail--dark" data-wf-sample data-state="dark">
+            <div class="mail__card">
+              <div class="mail__head"><span class="mail__logo"></span>Nordwind Travel</div>
+              <div class="mail__body">
+                <p>Alex Sample sent a message from /contact.</p>
+                <div class="mail__answers"><span class="mail__muted">Name</span><span>Alex Sample</span><span class="mail__muted">Email address</span><span>alex@example.com</span><span class="mail__muted">Your message</span><span>A sample message, as long as a real one usually is.</span></div>
+              </div>
+            </div>
+            <p class="mail__foot">Nordwind Travel GmbH · Hafenstraße 12 · 20457 Hamburg. You get this email because of an entry on our website.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+    <footer class="wf-foot" data-state="default dark"><div class="wf-foot__end"><button class="wf-btn wf-btn--primary">Save</button></div></footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Inbox (all entries) · Forms wireframe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="wf-shots" content="default@1440x900 filter@1440x900 columns@1440x900 sensitive-search@1440x900 empty@1440x900 loading@1440x900 default@920x900">
+  <link rel="stylesheet" href="assets/kit.css">
+  <style>
+    .in-col-choose { width: 44px; }
+    /* Entry names wrap, so a long one never pushes the table past its box */
+    .in-table td:nth-child(2) { white-space: normal; }
+    @container workspace (max-width: 899px) { .in-wide { display: none; } }
+  </style>
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/kit.js" defer></script>
+</head>
+<body data-role="handler" data-active="inbox">
+  <!--
+    IA 6.1: every form the user may view, with a form column, unseen entries first and then the newest. The unseen count
+    is the sidebar badge's; the screen doesn't repeat it.
+  -->
+  <main class="wf-main">
+    <header class="wf-head">
+      <div class="wf-head__main"><h1 class="wf-head__title">Inbox</h1></div>
+    </header>
+
+    <div class="wf-content">
+      <div class="wf-toolbar" style="position: relative">
+        <span class="wf-input wf-input--search" style="width: 280px" data-state="default filter columns empty loading"><i data-i="search"></i><span class="wf-placeholder">Search entries</span></span>
+        <span class="wf-input wf-input--search" style="width: 280px" data-state="sensitive-search"><i data-i="search"></i><span>Jana</span></span>
+        <button class="wf-btn" aria-expanded="false" data-state="default columns sensitive-search empty loading"><i data-i="filter"></i>Filter</button>
+        <button class="wf-btn" aria-expanded="true" data-state="filter"><i data-i="filter"></i>Filter</button>
+        <button class="wf-btn"><i data-i="download"></i>Export…</button>
+        <button class="wf-btn wf-btn--icon wf-btn--text" data-wf-more aria-label="More actions for the Inbox"><i data-i="more"></i></button>
+
+        <!-- The filter menu -->
+        <div class="wf-pop" data-state="filter" style="top: 44px; left: 288px; width: 300px" role="menu" aria-label="Filter">
+          <span class="wf-pop__item wf-pop__item--hover" role="menuitem"><i data-i="form"></i>Form<i data-i="chevron-right" style="margin-left: auto"></i></span>
+          <span class="wf-pop__item" role="menuitem"><i data-i="circle"></i>State<i data-i="chevron-right" style="margin-left: auto"></i></span>
+          <span class="wf-pop__item" role="menuitem"><i data-i="calendar"></i>Received<i data-i="chevron-right" style="margin-left: auto"></i></span>
+          <span class="wf-pop__sep"></span>
+          <span class="wf-pop__label">Saved</span>
+          <span class="wf-pop__item" role="menuitem">Waiting, Job application</span>
+          <span class="wf-pop__item" role="menuitem">This week's callbacks, Callback request</span>
+          <span class="wf-pop__item" role="menuitem">Unseen, any form</span>
+        </div>
+      </div>
+
+      <section class="wf-box" data-state="default filter columns" aria-label="Entries">
+        <table class="wf-table in-table" style="border: 0">
+          <thead>
+            <tr>
+              <th class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select all entries on this page"></span></th>
+              <th>Entry</th><th>Form</th><th class="in-wide">State</th><th>Received</th><th class="in-wide">Actions</th>
+              <th class="in-col-choose wf-col-end"><button class="wf-btn wf-btn--icon wf-btn--text wf-btn--small" aria-label="Choose columns"><i data-i="columns"></i></button></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="wf-unseen">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 1043"></span></td>
+              <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Anna Svensson, Nordlicht GmbH</a><span class="wf-sr">, unseen</span></span></td>
+              <td class="wf-muted">Contact us</td><td class="in-wide"><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">12 min ago</td><td class="wf-muted in-wide">2/2 delivered</td><td></td>
+            </tr>
+            <tr class="wf-unseen">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 512"></span></td>
+              <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Malik Haddad</a><span class="wf-sr">, unseen</span></span></td>
+              <td class="wf-muted">Summer fair sign-up</td><td class="in-wide"><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">38 min ago</td><td class="wf-muted in-wide">1/1 delivered</td><td></td>
+            </tr>
+            <tr class="wf-unseen">
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 214"></span></td>
+              <td><span class="wf-row"><span class="wf-dot"></span><a href="#">Jakob Lindqvist</a><span class="wf-sr">, unseen</span></span></td>
+              <td class="wf-muted">Job application</td><td class="in-wide"><span class="wf-chip wf-chip--warning">Waiting for approval</span></td><td class="wf-muted">3 h ago</td><td class="wf-muted in-wide">2/2 delivered</td><td></td>
+            </tr>
+            <tr>
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 64"></span></td>
+              <td><a href="#">Ines Duarte</a></td>
+              <td class="wf-muted">Callback request</td><td class="in-wide"><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">Today, 08:14</td><td class="in-wide"><span class="wf-row" style="gap: var(--wf-space-1)"><span class="wf-dot wf-dot--danger"></span>1 failed</span></td><td></td>
+            </tr>
+            <tr>
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 1042"></span></td>
+              <td><a href="#">Tobias Krämer, Krämer &amp; Söhne</a></td>
+              <td class="wf-muted">Contact us</td><td class="in-wide"><span class="wf-chip wf-chip--positive">Approved</span></td><td class="wf-muted">Yesterday, 17:52</td><td class="wf-muted in-wide">2/2 delivered</td><td></td>
+            </tr>
+            <tr>
+              <td class="wf-col-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Select entry 598"></span></td>
+              <td><a href="#">Entry #598</a></td>
+              <td class="wf-muted">Newsletter sign-up</td><td class="in-wide"><span class="wf-chip">Waiting for confirmation</span></td><td class="wf-muted">Yesterday, 09:03</td><td class="wf-muted in-wide">none</td><td></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <div class="wf-pager" data-state="default filter columns"><span>1 to 6 of 1,284</span><span class="wf-row"><button class="wf-btn wf-btn--small">Next</button></span></div>
+
+      <!-- A search that finds nothing, while sensitive fields exist -->
+      <div class="wf-empty" data-state="sensitive-search">
+        <p class="wf-empty__text">No entries match "Jana". Sensitive fields aren't searched.</p>
+      </div>
+      <!-- First use -->
+      <div class="wf-empty" data-state="empty">
+        <p class="wf-empty__text">No entries yet. They arrive here from every form you may view.</p>
+      </div>
+      <!-- Loading -->
+      <section class="wf-box" data-state="loading" aria-busy="true">
+        <div class="wf-box__body wf-stack">
+          <span class="wf-skel" style="width: 92%"></span><span class="wf-skel" style="width: 88%"></span><span class="wf-skel" style="width: 90%"></span><span class="wf-skel" style="width: 86%"></span>
+          <span class="wf-sr">Loading entries</span>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- The column chooser -->
+  <div class="wf-backdrop" data-state="columns"></div>
+  <aside class="wf-sidebar" data-state="columns" role="dialog" aria-labelledby="cc-title">
+    <header class="wf-sidebar__head"><h2 class="wf-title" id="cc-title">Columns</h2></header>
+    <div class="wf-sidebar__body">
+      <div class="wf-box"><div class="wf-box__body wf-stack" role="group" aria-label="Details every entry has">
+        <span class="wf-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Form"><i data-i="check"></i></span><span>Form</span></span>
+        <span class="wf-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="State"><i data-i="check"></i></span><span>State</span></span>
+        <span class="wf-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Received"><i data-i="check"></i></span><span>Received</span></span>
+        <span class="wf-check"><span class="wf-box-check" role="checkbox" aria-checked="true" aria-label="Actions"><i data-i="check"></i></span><span>Actions</span></span>
+        <span class="wf-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Number"></span><span>Number</span></span>
+        <span class="wf-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Sent from"></span><span>Sent from</span></span>
+        <span class="wf-check"><span class="wf-box-check" role="checkbox" aria-checked="false" aria-label="Language"></span><span>Language</span></span>
+      </div></div>
+      <p class="wf-muted" style="margin-top: var(--wf-space-4)">Filter by a form to choose its fields as columns.</p>
+    </div>
+    <footer class="wf-sidebar__foot">
+      <button class="wf-btn">Cancel</button>
+      <button class="wf-btn wf-btn--primary">Update</button>
+    </footer>
+  </aside>
+</body>
+</html>
