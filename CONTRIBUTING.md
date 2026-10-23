@@ -50,6 +50,21 @@ apart from real ones. Real keys never go into the repository, not even in tests.
 `test:`, `chore:` and so on), one change per commit, with docs updated in the same commit as the code they
 describe.
 
+**The client** (`src/Jiron.Umbraco.FormBuilder.Web/Client`, an npm workspace) is built before a pack:
+
+```
+cd src/Jiron.Umbraco.FormBuilder.Web/Client
+npm ci
+npm run lint
+npm test
+npm run build
+npm run size
+```
+
+`node scripts/pack.mjs` builds the client for the version it packs and writes the packages to
+`.local/nuget-feed`. A plain `dotnet pack` refuses client assets that are missing, stale or built for
+another version (`JFB001`).
+
 **Before you push**, format and check everything:
 
 ```
