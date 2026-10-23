@@ -74,6 +74,16 @@ node --test "scripts/tests/*.test.mjs"
 
 From step 3.5 of the roadmap on, `scripts/ci-local.ps1` runs the whole gate that CI runs.
 
+**The demo site** (`demo/`, Umbraco on SQLite at http://127.0.0.1:5500) is started, stopped and reset only with
+`scripts/demo.ps1`, which generates its accounts into the git-ignored `.local/credentials.json`;
+[demo/README.md](demo/README.md) says what it holds.
+
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\demo.ps1 start
+node scripts/demo-check.mjs
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\demo.ps1 stop
+```
+
 ## Where things are
 
 - [ROADMAP.md](ROADMAP.md): the plan, worked through in order.
