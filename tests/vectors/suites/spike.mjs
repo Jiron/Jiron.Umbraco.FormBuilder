@@ -1,0 +1,227 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
+// The vectors of the logic spike (ROADMAP 1.5, ADR-0005): 163 cases over text, choices, numbers, dates, "today",
+// context conditions, checking, patterns, rules and calculations. 5.2 and 5.3 grow them into the suites of
+// ROADMAP section 4.3.3. Special characters are built from code points, so this file and the JSON it becomes stay
+// ASCII (build.mjs). In patterns "~" stands for a backslash.
+const u = (...codePoints) => String.fromCodePoint(...codePoints);
+const BS = String.fromCharCode(92);
+const p = (pattern) => pattern.replaceAll('~', BS);
+
+const defaults = {
+  context: {
+    now: '2026-06-15T10:00:00Z',
+    timeZone: 'Europe/Zurich',
+    culture: 'de-CH',
+    member: { signedIn: false, groups: [] },
+    query: {},
+    hidden: [],
+  },
+};
+
+const fields = {
+  name: 'text',
+  message: 'text',
+  plan: 'choice',
+  topics: 'choices',
+  agree: 'checkbox',
+  attachments: 'files',
+  amount: 'number',
+  arrival: 'date',
+  departure: 'date',
+  start: 'time',
+  appointment: 'dateTime',
+  phone: 'text',
+};
+
+const cond = (field, op, value) => (value === undefined ? { field, op } : { field, op, value });
+const ctx = (context, op, value) => (value === undefined ? { context, op } : { context, op, value });
+const NINES = '9'.repeat(15);
+/** k factors of 999,999,999,999,999 multiplied left to right. */
+const product = (k) => (k === 1 ? NINES : { op: 'mul', args: [product(k - 1), NINES] });
+
+const cases = [
+  // ---- Text: one comparison in both runtimes (NFC, an explicit trim set, simple case folding) ----
+  { id: 'text-equals-ignores-case', values: { name: ['Anna'] }, condition: cond('name', 'equals', 'anna'), expect: true },
+  { id: 'text-equals-normalises-nfc', description: 'a decomposed umlaut equals the composed one', values: { name: ['Zoe' + u(0x308)] }, condition: cond('name', 'equals', 'Zo' + u(0xeb)), expect: true },
+  { id: 'text-equals-trims-bom-and-nbsp', description: 'U+FEFF and U+00A0 are trimmed in both runtimes', values: { name: [u(0xfeff) + 'Anna' + u(0xa0)] }, condition: cond('name', 'equals', 'anna'), expect: true },
+  { id: 'text-equals-no-sharp-s-expansion', description: 'simple case folding: no full mapping of sharp s to ss', values: { name: ['Stra' + u(0xdf) + 'e'] }, condition: cond('name', 'equals', 'STRASSE'), expect: false },
+  { id: 'text-equals-dotted-capital-i', description: 'U+0130 folds to i (its simple mapping)', values: { name: [u(0x130) + 'stanbul'] }, condition: cond('name', 'equals', 'istanbul'), expect: true },
+  { id: 'text-equals-greek-capitals', description: 'capital sigma folds to medial sigma', values: { name: [u(0x39f, 0x394, 0x39f, 0x3a3)] }, condition: cond('name', 'equals', u(0x3bf, 0x3b4, 0x3bf, 0x3c3)), expect: true },
+  { id: 'text-equals-final-sigma', description: 'final sigma folds like medial sigma (upper, then lower, one character at a time)', values: { name: [u(0x39f, 0x394, 0x39f, 0x3a3)] }, condition: cond('name', 'equals', u(0x3bf, 0x3b4, 0x3bf, 0x3c2)), expect: true },
+  { id: 'text-equals-dotless-i', description: 'both Turkish i forms fold to i', values: { name: ['Isparta'] }, condition: cond('name', 'equals', u(0x131) + 'sparta'), expect: true },
+  { id: 'text-equals-micro-sign', description: 'the micro sign folds to Greek mu', values: { name: [u(0xb5) + 'g'] }, condition: cond('name', 'equals', u(0x3bc) + 'G'), expect: true },
+  { id: 'text-equals-other-scripts-compare-exactly', description: 'only Latin, Greek, Cyrillic, Armenian and full-width Latin fold; Deseret capital and small long i stay different', values: { name: [u(0x10400)] }, condition: cond('name', 'equals', u(0x10428)), expect: false },
+  { id: 'text-noncharacter-becomes-replacement', description: 'U+FFFE (which .NET cannot normalise) is cleaned to U+FFFD', values: { name: ['A' + u(0xfffe)] }, condition: cond('name', 'equals', 'a' + u(0xfffd)), expect: true },
+  { id: 'text-contains-ignores-case', values: { message: ['This is URGENT!'] }, condition: cond('message', 'contains', 'urgent'), expect: true },
+  { id: 'text-not-contains-on-empty', description: 'a negation is the exact opposite, also when empty', values: {}, condition: cond('message', 'notContains', 'urgent'), expect: true },
+  { id: 'text-starts-with', values: { name: ['  Dr. Lin'] }, condition: cond('name', 'startsWith', 'dr.'), expect: true },
+  { id: 'text-ends-with', values: { name: ['Lin AG'] }, condition: cond('name', 'endsWith', 'ag'), expect: true },
+  { id: 'text-contains-folds-the-operand', values: { message: ['this is urgent'] }, condition: cond('message', 'contains', 'URGENT'), expect: true },
+  { id: 'text-starts-with-only-at-the-start', values: { name: ['Lin Dr.'] }, condition: cond('name', 'startsWith', 'dr.'), expect: false },
+  { id: 'text-ends-with-only-at-the-end', values: { name: ['AG Lin'] }, condition: cond('name', 'endsWith', 'ag'), expect: false },
+  { id: 'text-is-empty-false-with-a-value', values: { name: ['Anna'] }, condition: cond('name', 'isEmpty'), expect: false },
+  { id: 'operand-list-is-not-one-operand', condition: cond('name', 'equals', ['a', 'b']), expect: { error: 'invalid_operand' } },
+  { id: 'text-is-empty-whitespace-only', values: { name: [' ' + u(9) + ' '] }, condition: cond('name', 'isEmpty'), expect: true },
+  { id: 'text-is-not-empty-with-one-real-value', values: { topics: ['', 'design'] }, condition: cond('topics', 'isNotEmpty'), expect: true },
+
+  // ---- Choices and checkboxes: option keys compare exactly ----
+  { id: 'choice-equals-is-exact', values: { plan: ['Pro'] }, condition: cond('plan', 'equals', 'pro'), expect: false },
+  { id: 'choices-is-one-of', values: { topics: ['billing', 'design'] }, condition: cond('topics', 'isOneOf', ['support', 'design']), expect: true },
+  { id: 'choices-is-none-of-when-empty', values: {}, condition: cond('topics', 'isNoneOf', ['support']), expect: true },
+  { id: 'choices-count-at-least', values: { topics: ['billing', 'design'] }, condition: cond('topics', 'countAtLeast', '2'), expect: true },
+  { id: 'files-count-at-most', values: { attachments: ['t1', 't2'] }, condition: cond('attachments', 'countAtMost', '1'), expect: false },
+  { id: 'files-count-at-most-is-inclusive', values: { attachments: ['t1'] }, condition: cond('attachments', 'countAtMost', '1'), expect: true },
+  { id: 'count-with-leading-zero-refused', values: { topics: ['a'] }, condition: cond('topics', 'countAtLeast', '01'), expect: { error: 'invalid_operand' } },
+  { id: 'checkbox-is-checked', values: { agree: ['true'] }, condition: cond('agree', 'isChecked'), expect: true },
+  { id: 'checkbox-is-not-checked-when-unchecked', description: 'an unchecked box has no value; "not checked" must still match', values: {}, condition: cond('agree', 'isNotChecked'), expect: true },
+  { id: 'choices-is-checked-option', values: { topics: ['design'] }, condition: cond('topics', 'isChecked', 'design'), expect: true },
+
+  // ---- Numbers: decimal strings, compared by value ----
+  { id: 'number-equals-by-value', values: { amount: ['10.5'] }, condition: cond('amount', 'equals', '10.50'), expect: true },
+  { id: 'number-greater-than-negative', values: { amount: ['-1.5'] }, condition: cond('amount', 'greaterThan', '-2'), expect: true },
+  { id: 'number-not-compared-as-text', values: { amount: ['9'] }, condition: cond('amount', 'greaterThan', '10'), expect: false },
+  { id: 'number-between-is-inclusive', values: { amount: ['10'] }, condition: cond('amount', 'between', ['1', '10']), expect: true },
+  { id: 'number-between-includes-the-low-end', values: { amount: ['1'] }, condition: cond('amount', 'between', ['1', '10']), expect: true },
+  { id: 'number-greater-than-equal-is-false', values: { amount: ['10'] }, condition: cond('amount', 'greaterThan', '10.0'), expect: false },
+  { id: 'number-compares-the-first-value', values: { amount: ['5', '50'] }, condition: cond('amount', 'greaterThan', '10'), expect: false },
+  { id: 'number-exponent-is-not-a-number', description: 'no exponents on the wire: never matches a comparison', values: { amount: ['1e3'] }, condition: cond('amount', 'greaterThan', '5'), expect: false },
+  { id: 'number-comma-is-not-a-number', description: 'no culture separators on the wire', values: { amount: ['1,5'] }, condition: cond('amount', 'equals', '1.5'), expect: false },
+  { id: 'number-fifteen-digits-compare-exactly', description: 'two 15-digit values one unit apart', values: { amount: ['0.123456789012346'] }, condition: cond('amount', 'greaterThan', '0.123456789012345'), expect: true },
+
+  // ---- Dates and times: ISO strings, compared as calendar values ----
+  { id: 'date-compare-two-answers', values: { arrival: ['2026-07-01'], departure: ['2026-07-03'] }, condition: cond('departure', 'greaterThan', { field: 'arrival' }), expect: true },
+  { id: 'date-across-month', values: { arrival: ['2026-02-01'] }, condition: cond('arrival', 'greaterThan', '2026-01-31'), expect: true },
+  { id: 'date-invalid-calendar-date', description: 'February 30 is not a date: never matches', values: { arrival: ['2028-02-30'] }, condition: cond('arrival', 'greaterThan', '2000-01-01'), expect: false },
+  { id: 'date-leap-day-valid', values: { arrival: ['2028-02-29'] }, condition: cond('arrival', 'greaterThan', '2028-02-28'), expect: true },
+  { id: 'date-leap-century-valid', description: 'divisible by 400: a leap year', values: { arrival: ['2000-02-29'] }, condition: cond('arrival', 'greaterThan', '2000-02-28'), expect: true },
+  { id: 'date-century-not-leap', description: 'divisible by 100 but not 400: no 29 February', values: { arrival: ['2100-02-29'] }, condition: cond('arrival', 'greaterThan', '2000-01-01'), expect: false },
+  { id: 'date-year-zero-invalid', values: { arrival: ['0000-01-01'] }, condition: cond('arrival', 'lessThan', '2000-01-01'), expect: false },
+  { id: 'time-less-than', values: { start: ['09:05'] }, condition: cond('start', 'lessThan', '10:00'), expect: true },
+  { id: 'time-without-leading-zero-is-invalid', values: { start: ['9:05'] }, condition: cond('start', 'lessThan', '10:00'), expect: false },
+  { id: 'time-less-than-equal-is-false', description: 'seconds are optional: 10:00 and 10:00:00 are the same time', values: { start: ['10:00'] }, condition: cond('start', 'lessThan', '10:00:00'), expect: false },
+  { id: 'time-hour-24-is-invalid', values: { start: ['24:00'] }, condition: cond('start', 'greaterThan', '00:00'), expect: false },
+  { id: 'date-time-compare', values: { appointment: ['2026-03-29T02:30'] }, condition: cond('appointment', 'greaterThan', '2026-03-29T02:15:59'), expect: true },
+
+  // ---- "today" in the site's time zone, from the injected instant ----
+  { id: 'today-zurich-before-spring-change', description: '23:30Z on 28 March is 00:30 on 29 March in Zurich (UTC+1)', context: { now: '2026-03-28T23:30:00Z' }, condition: ctx('today', 'equals', '2026-03-29'), expect: true },
+  { id: 'today-zurich-after-spring-change', description: '22:30Z on 29 March is 00:30 on 30 March (UTC+2 since 01:00Z)', context: { now: '2026-03-29T22:30:00Z' }, condition: ctx('today', 'equals', '2026-03-30'), expect: true },
+  { id: 'today-zurich-after-autumn-change', description: '22:30Z on 25 October is 23:30 on 25 October (back to UTC+1)', context: { now: '2026-10-25T22:30:00Z' }, condition: ctx('today', 'equals', '2026-10-25'), expect: true },
+  { id: 'today-new-york-after-spring-change', description: '04:30Z on 9 March is 00:30 EDT; with EST it would still be 8 March', context: { now: '2026-03-09T04:30:00Z', timeZone: 'America/New_York' }, condition: ctx('today', 'equals', '2026-03-09'), expect: true },
+  { id: 'today-auckland-ahead-of-utc', context: { now: '2026-01-01T11:30:00Z', timeZone: 'Pacific/Auckland' }, condition: ctx('today', 'equals', '2026-01-02'), expect: true },
+  { id: 'relative-date-tomorrow', context: { now: '2026-03-29T10:00:00Z' }, values: { arrival: ['2026-03-31'] }, condition: cond('arrival', 'greaterThan', { today: '+1d' }), expect: true },
+  { id: 'relative-date-week', values: { arrival: ['2026-06-22'] }, condition: cond('arrival', 'equals', { today: '+1w' }), expect: true },
+  { id: 'relative-date-year-from-leap-day', description: 'adding a year to 29 February ends on 28 February', context: { now: '2028-02-29T12:00:00Z' }, values: { arrival: ['2029-02-28'] }, condition: cond('arrival', 'equals', { today: '+1y' }), expect: true },
+  { id: 'relative-date-month-clamps', description: '31 March minus a month is 28 February', context: { now: '2026-03-31T12:00:00Z' }, values: { arrival: ['2026-02-28'] }, condition: cond('arrival', 'equals', { today: '-1m' }), expect: true },
+  { id: 'relative-date-steps-in-written-order', description: '31 January +1m (28 February) +1d is 1 March', context: { now: '2026-01-31T12:00:00Z' }, values: { arrival: ['2026-03-01'] }, condition: cond('arrival', 'equals', { today: '+1m+1d' }), expect: true },
+
+  // ---- Context conditions ----
+  { id: 'context-culture-starts-with', condition: ctx('culture', 'startsWith', 'de'), expect: true },
+  { id: 'context-member-group', context: { member: { signedIn: true, groups: ['Partners'] } }, condition: ctx('memberGroup', 'isOneOf', ['Partners']), expect: true },
+  { id: 'context-anonymous-not-signed-in', condition: ctx('memberSignedIn', 'isNotChecked'), expect: true },
+  { id: 'context-query-value', context: { query: { ref: 'web' } }, condition: ctx('query.ref', 'equals', 'web'), expect: true },
+  { id: 'context-unknown-time-zone', context: { timeZone: 'Mars/Olympus_Mons' }, condition: ctx('today', 'equals', '2026-06-15'), expect: { error: 'unknown_time_zone' } },
+
+  // ---- Checked before evaluated: the same error whatever the evaluation order ----
+  { id: 'operator-unknown', values: { name: ['Anna'] }, condition: cond('name', 'resembles', 'Ana'), expect: { error: 'unknown_operator' } },
+  { id: 'operator-not-for-kind', description: 'greaterThan compares numbers, dates and times, not text', values: { name: ['9'] }, condition: cond('name', 'greaterThan', '5'), expect: { error: 'operator_not_for_kind' } },
+  { id: 'operand-missing', condition: cond('name', 'equals'), expect: { error: 'invalid_operand' } },
+  { id: 'operand-relative-date-malformed', condition: cond('arrival', 'equals', { today: 'tomorrow' }), expect: { error: 'invalid_operand' } },
+  { id: 'operand-checkbox-takes-none', values: { agree: ['true'] }, condition: cond('agree', 'isChecked', 'yes'), expect: { error: 'invalid_operand' } },
+  { id: 'operand-unknown-field', condition: cond('departure', 'greaterThan', { field: 'nope' }), expect: { error: 'unknown_field' } },
+  { id: 'rule-error-after-a-match-is-still-reported', description: 'an "any" rule whose first condition matches still reports its broken second condition', values: { plan: ['pro'] }, rule: { effect: 'show', enabled: true, match: 'any', conditions: [cond('plan', 'equals', 'pro'), cond('phone', 'matches', '(?=x)')] }, expect: { error: 'unsafe_pattern' } },
+
+  // ---- Safe patterns: one meaning in both engines ----
+  { id: 'pattern-ascii-digits', values: { phone: ['2026'] }, condition: cond('phone', 'matches', p('~d{4}')), expect: true },
+  { id: 'pattern-digit-class-is-ascii', description: 'Arabic-Indic digits are not ~d in either runtime', values: { phone: [u(0x661, 0x662, 0x663)] }, condition: cond('phone', 'matches', p('~d{3}')), expect: false },
+  { id: 'pattern-dot-excludes-carriage-return', values: { phone: ['a' + u(13) + 'c'] }, condition: cond('phone', 'matches', 'a.c'), expect: false },
+  { id: 'pattern-is-a-full-match', values: { phone: ['12345'] }, condition: cond('phone', 'matches', p('~d{4}')), expect: false },
+  { id: 'pattern-value-is-trimmed', description: 'values are trimmed before matching, as before every comparison', values: { phone: ['1234' + u(10)] }, condition: cond('phone', 'matches', p('~d{4}$')), expect: true },
+  { id: 'pattern-line-break-inside-is-kept', values: { phone: ['12' + u(10) + '34'] }, condition: cond('phone', 'matches', p('~d+~s~d+')), expect: true },
+  { id: 'pattern-space-class-is-ascii', description: 'a no-break space is not ~s in either runtime', values: { phone: ['12' + u(0xa0) + '34'] }, condition: cond('phone', 'matches', p('~d+~s~d+')), expect: false },
+  { id: 'pattern-counts-characters', description: 'patterns read code points: an emoji is one character', values: { phone: ['a' + u(0x1f600) + 'b'] }, condition: cond('phone', 'matches', '.{3}'), expect: true },
+  { id: 'pattern-emoji-is-not-two-characters', values: { phone: ['a' + u(0x1f600) + 'b'] }, condition: cond('phone', 'matches', '.{4}'), expect: false },
+  { id: 'pattern-backreference-refused', values: { phone: ['aa'] }, condition: cond('phone', 'matches', p('(a)~1')), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-lookahead-refused', values: { phone: ['a'] }, condition: cond('phone', 'matches', '(?=a)a'), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-named-group-refused', values: { phone: ['a'] }, condition: cond('phone', 'matches', '(?<n>a)'), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-word-boundary-refused', values: { phone: ['ab'] }, condition: cond('phone', 'matches', p('~bab')), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-unicode-property-refused', values: { phone: ['ab'] }, condition: cond('phone', 'matches', p('~p{L}+')), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-lone-brace-refused', description: 'a "{" that does not start a count must be escaped', values: { phone: ['a{'] }, condition: cond('phone', 'matches', 'a{'), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-lone-closing-brace-refused', values: { phone: ['a}'] }, condition: cond('phone', 'matches', 'a}'), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-count-over-limit-refused', values: { phone: ['a'] }, condition: cond('phone', 'matches', 'a{1001}'), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-empty-class-refused', values: { phone: ['a'] }, condition: cond('phone', 'matches', '[]a'), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-hyphen-inside-class-refused', values: { phone: ['b'] }, condition: cond('phone', 'matches', '[a-c-e]'), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-negated-set-in-class', values: { phone: ['ab'] }, condition: cond('phone', 'matches', p('[~D]+')), expect: true },
+  { id: 'pattern-negated-set-in-class-excludes', values: { phone: ['a5'] }, condition: cond('phone', 'matches', p('[~D]+')), expect: false },
+  { id: 'pattern-emoji-range', description: 'ranges are over code points, so a range of emoji works', values: { phone: [u(0x1f601)] }, condition: cond('phone', 'matches', '[' + u(0x1f600) + '-' + u(0x1f602) + ']'), expect: true },
+  { id: 'pattern-surrogate-escape-refused', values: { phone: ['a'] }, condition: cond('phone', 'matches', p('~ud83d')), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-too-long-refused', values: { phone: ['a'] }, condition: cond('phone', 'matches', 'a'.repeat(501)), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-nested-counts-refused', description: 'unrolled, (a{50}){50} would be 2,500 units: over the limit of 2,000', values: { phone: ['a'] }, condition: cond('phone', 'matches', '(a{50}){50}'), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-nested-counts-allowed', values: { phone: ['a'.repeat(1600)] }, condition: cond('phone', 'matches', '(a{40}){40}'), expect: true },
+  { id: 'pattern-class-range', values: { phone: ['c3'] }, condition: cond('phone', 'matches', '[a-f0-9]{2}'), expect: true },
+  { id: 'pattern-escaped-dot-matches-dot', values: { phone: ['12.50'] }, condition: cond('phone', 'matches', p('~d+~.~d{2}')), expect: true },
+  { id: 'pattern-escaped-dot-is-literal', values: { phone: ['12x50'] }, condition: cond('phone', 'matches', p('~d+~.~d{2}')), expect: false },
+  { id: 'pattern-unicode-escape', values: { phone: ['caf' + u(0xe9)] }, condition: cond('phone', 'matches', p('caf~u00e9')), expect: true },
+  { id: 'pattern-is-case-sensitive', values: { phone: ['Abc'] }, condition: cond('phone', 'matches', '[a-z]+'), expect: false },
+  { id: 'pattern-any-value-matches', values: { phone: ['n/a', '044 000 00 00'] }, condition: cond('phone', 'matches', p('[0-9 ]+')), expect: true },
+  { id: 'pattern-nested-repeats-run-in-linear-time', description: 'a backtracking engine takes exponential time here; the automaton does not', values: { phone: ['a'.repeat(5000) + 'b'] }, condition: cond('phone', 'matches', '(a+)+'), expect: false },
+  { id: 'pattern-overlapping-alternatives-run-in-linear-time', values: { phone: ['a'.repeat(5000)] }, condition: cond('phone', 'matches', '(a|aa)*c'), expect: false },
+  { id: 'pattern-empty-repeat-terminates', values: { phone: ['aab'] }, condition: cond('phone', 'matches', '(a*)*b'), expect: true },
+  { id: 'pattern-alternation-is-a-whole-match', values: { phone: ['catdog'] }, condition: cond('phone', 'matches', 'cat|dog'), expect: false },
+  { id: 'pattern-alternation', values: { phone: ['dog'] }, condition: cond('phone', 'matches', 'cat|dog'), expect: true },
+  { id: 'pattern-count-range-upper-bound', values: { phone: ['12345'] }, condition: cond('phone', 'matches', '[0-9]{2,4}'), expect: false },
+  { id: 'pattern-count-range-within', values: { phone: ['123'] }, condition: cond('phone', 'matches', '[0-9]{2,4}'), expect: true },
+  { id: 'pattern-count-at-least', values: { phone: ['12'] }, condition: cond('phone', 'matches', '[0-9]{3,}'), expect: false },
+  { id: 'pattern-lazy-quantifier-matches-the-same', values: { phone: ['123'] }, condition: cond('phone', 'matches', p('~d+?')), expect: true },
+  { id: 'pattern-stacked-quantifiers-refused', values: { phone: ['a'] }, condition: cond('phone', 'matches', 'a**'), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-unclosed-group-refused', values: { phone: ['a'] }, condition: cond('phone', 'matches', '(a'), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-unopened-group-refused', values: { phone: ['a'] }, condition: cond('phone', 'matches', 'a)'), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-is-normalised', description: 'a pattern typed with a combining accent matches the composed value', values: { phone: ['caf' + u(0xe9)] }, condition: cond('phone', 'matches', 'cafe' + u(0x301)), expect: true },
+  { id: 'pattern-caret-only-at-the-start', values: { phone: ['ab'] }, condition: cond('phone', 'matches', 'a^b'), expect: false },
+  { id: 'pattern-dollar-only-at-the-end', values: { phone: ['ab'] }, condition: cond('phone', 'matches', 'a$b'), expect: false },
+  { id: 'pattern-count-out-of-order-refused', values: { phone: ['a'] }, condition: cond('phone', 'matches', 'a{3,2}'), expect: { error: 'unsafe_pattern' } },
+  { id: 'pattern-not-digit-excludes-zero', values: { phone: ['0'] }, condition: cond('phone', 'matches', p('~D')), expect: false },
+  { id: 'pattern-not-digit-excludes-nine', values: { phone: ['9'] }, condition: cond('phone', 'matches', p('~D')), expect: false },
+  { id: 'pattern-not-digit-includes-neighbours', values: { phone: ['/:'] }, condition: cond('phone', 'matches', p('~D~D')), expect: true },
+  { id: 'pattern-alternation-needs-an-option', values: { phone: ['x'] }, condition: cond('phone', 'matches', '(cat|dog)x'), expect: false },
+  { id: 'pattern-optional-group', values: { phone: ['+41 44'] }, condition: cond('phone', 'matches', p('(~+~d{2} )?~d{2}')), expect: true },
+
+  // ---- Rules: all, any, nesting, switched off, hidden fields ----
+  { id: 'rule-all', values: { name: ['Anna'], plan: ['pro'] }, rule: { effect: 'show', enabled: true, match: 'all', conditions: [cond('name', 'isNotEmpty'), cond('plan', 'equals', 'pro')] }, expect: true },
+  { id: 'rule-any', values: { plan: ['basic'] }, rule: { effect: 'show', enabled: true, match: 'any', conditions: [cond('plan', 'equals', 'pro'), cond('plan', 'equals', 'basic')] }, expect: true },
+  { id: 'rule-nested-group', values: { plan: ['pro'], topics: [] }, rule: { effect: 'show', enabled: true, match: 'all', conditions: [cond('plan', 'equals', 'pro'), { match: 'any', conditions: [cond('topics', 'isOneOf', ['a']), cond('topics', 'countAtLeast', '1')] }] }, expect: false },
+  { id: 'rule-switched-off-is-ignored', values: { plan: ['pro'] }, rule: { effect: 'hide', enabled: false, match: 'all', conditions: [cond('plan', 'equals', 'pro')] }, expect: null },
+  { id: 'rule-empty-all-matches', rule: { effect: 'show', enabled: true, match: 'all', conditions: [] }, expect: true },
+  { id: 'rule-empty-any-does-not-match', rule: { effect: 'show', enabled: true, match: 'any', conditions: [] }, expect: false },
+  { id: 'rule-hidden-field-is-empty', description: 'a rule that depends on a hidden field sees it as empty', context: { hidden: ['phone'] }, values: { phone: ['079 000 00 00'] }, rule: { effect: 'require', enabled: true, match: 'all', conditions: [cond('phone', 'isEmpty')] }, expect: true },
+  { id: 'rule-unknown-field', rule: { effect: 'show', enabled: true, match: 'all', conditions: [cond('nope', 'isEmpty')] }, expect: { error: 'unknown_field' } },
+
+  // ---- Numbers on the wire and decimal arithmetic for calculations ----
+  { id: 'number-canonical-form', number: '-0.50', expect: '-0.5' },
+  { id: 'number-negative-zero', number: '-0', expect: '0' },
+  { id: 'number-sixteen-digits-refused', number: '1234567890123456', expect: { error: 'too_many_digits' } },
+  { id: 'number-sixteen-decimals-refused', number: '0.1234567890123456', expect: { error: 'too_many_digits' } },
+  { id: 'number-sixteen-places-refused', description: 'one digit, but sixteen places after the point', number: '0.0000000000000001', expect: { error: 'too_many_digits' } },
+  { id: 'number-leading-zero-refused', number: '007', expect: { error: 'not_a_number' } },
+  { id: 'number-trailing-point-refused', number: '5.', expect: { error: 'not_a_number' } },
+  { id: 'number-exponent-refused', number: '1e3', expect: { error: 'not_a_number' } },
+  { id: 'calc-add-exact', calc: { op: 'add', args: ['0.1', '0.2'] }, expect: '0.3' },
+  { id: 'calc-subtract-exact', calc: { op: 'sub', args: ['1', '0.9'] }, expect: '0.1' },
+  { id: 'calc-multiply-exact', calc: { op: 'mul', args: ['1.1', '1.1'] }, expect: '1.21' },
+  { id: 'calc-divide-twenty-places', calc: { op: 'div', args: ['1', '3'] }, expect: '0.33333333333333333333' },
+  { id: 'calc-divide-then-multiply', calc: { op: 'mul', args: [{ op: 'div', args: ['1', '3'] }, '3'] }, expect: '0.99999999999999999999' },
+  { id: 'calc-round-half-away-from-zero', description: 'a binary double would round 2.675 down', calc: { op: 'round', args: ['2.675'], scale: 2 }, expect: '2.68' },
+  { id: 'calc-round-negative-half', calc: { op: 'round', args: ['-2.5'], scale: 0 }, expect: '-3' },
+  { id: 'calc-round-not-to-even', calc: { op: 'round', args: ['0.125'], scale: 2 }, expect: '0.13' },
+  { id: 'calc-round-thirds', calc: { op: 'round', args: [{ op: 'div', args: ['2', '3'] }], scale: 2 }, expect: '0.67' },
+  { id: 'calc-divide-by-zero', calc: { op: 'div', args: ['1', '0'] }, expect: { error: 'division_by_zero' } },
+  { id: 'calc-store-refuses-too-many-digits', calc: { op: 'store', args: [{ op: 'mul', args: ['123456789012345', '1000'] }] }, expect: { error: 'too_many_digits' } },
+  { id: 'calc-sixty-digits-in-range', calc: product(4), expect: ((10n ** 15n - 1n) ** 4n).toString() },
+  { id: 'calc-over-sixty-digits-out-of-range', calc: product(5), expect: { error: 'out_of_range' } },
+  { id: 'calc-unknown-operator', calc: { op: 'pow', args: ['2', '3'] }, expect: { error: 'unknown_operator' } },
+  { id: 'calc-round-needs-a-scale', calc: { op: 'round', args: ['2.5'] }, expect: { error: 'invalid_operand' } },
+  { id: 'calc-round-scale-at-most-twenty', calc: { op: 'round', args: ['1'], scale: 21 }, expect: { error: 'invalid_operand' } },
+  { id: 'calc-binary-takes-two', calc: { op: 'add', args: ['1', '2', '3'] }, expect: { error: 'invalid_operand' } },
+  { id: 'calc-constant-not-a-number', calc: { op: 'add', args: ['1', '.5'] }, expect: { error: 'not_a_number' } },
+];
+
+export default { suite: 'spike', defaults, fields, cases };

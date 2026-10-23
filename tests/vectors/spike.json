@@ -1,0 +1,2431 @@
+{
+  "format": "jfb-vectors/1",
+  "suite": "spike",
+  "defaults": {
+    "context": {
+      "now": "2026-06-15T10:00:00Z",
+      "timeZone": "Europe/Zurich",
+      "culture": "de-CH",
+      "member": {
+        "signedIn": false,
+        "groups": []
+      },
+      "query": {},
+      "hidden": []
+    }
+  },
+  "fields": {
+    "name": "text",
+    "message": "text",
+    "plan": "choice",
+    "topics": "choices",
+    "agree": "checkbox",
+    "attachments": "files",
+    "amount": "number",
+    "arrival": "date",
+    "departure": "date",
+    "start": "time",
+    "appointment": "dateTime",
+    "phone": "text"
+  },
+  "cases": [
+    {
+      "id": "text-equals-ignores-case",
+      "values": {
+        "name": [
+          "Anna"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "equals",
+        "value": "anna"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-equals-normalises-nfc",
+      "description": "a decomposed umlaut equals the composed one",
+      "values": {
+        "name": [
+          "Zoe\u0308"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "equals",
+        "value": "Zo\u00eb"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-equals-trims-bom-and-nbsp",
+      "description": "U+FEFF and U+00A0 are trimmed in both runtimes",
+      "values": {
+        "name": [
+          "\ufeffAnna\u00a0"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "equals",
+        "value": "anna"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-equals-no-sharp-s-expansion",
+      "description": "simple case folding: no full mapping of sharp s to ss",
+      "values": {
+        "name": [
+          "Stra\u00dfe"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "equals",
+        "value": "STRASSE"
+      },
+      "expect": false
+    },
+    {
+      "id": "text-equals-dotted-capital-i",
+      "description": "U+0130 folds to i (its simple mapping)",
+      "values": {
+        "name": [
+          "\u0130stanbul"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "equals",
+        "value": "istanbul"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-equals-greek-capitals",
+      "description": "capital sigma folds to medial sigma",
+      "values": {
+        "name": [
+          "\u039f\u0394\u039f\u03a3"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "equals",
+        "value": "\u03bf\u03b4\u03bf\u03c3"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-equals-final-sigma",
+      "description": "final sigma folds like medial sigma (upper, then lower, one character at a time)",
+      "values": {
+        "name": [
+          "\u039f\u0394\u039f\u03a3"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "equals",
+        "value": "\u03bf\u03b4\u03bf\u03c2"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-equals-dotless-i",
+      "description": "both Turkish i forms fold to i",
+      "values": {
+        "name": [
+          "Isparta"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "equals",
+        "value": "\u0131sparta"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-equals-micro-sign",
+      "description": "the micro sign folds to Greek mu",
+      "values": {
+        "name": [
+          "\u00b5g"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "equals",
+        "value": "\u03bcG"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-equals-other-scripts-compare-exactly",
+      "description": "only Latin, Greek, Cyrillic, Armenian and full-width Latin fold; Deseret capital and small long i stay different",
+      "values": {
+        "name": [
+          "\ud801\udc00"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "equals",
+        "value": "\ud801\udc28"
+      },
+      "expect": false
+    },
+    {
+      "id": "text-noncharacter-becomes-replacement",
+      "description": "U+FFFE (which .NET cannot normalise) is cleaned to U+FFFD",
+      "values": {
+        "name": [
+          "A\ufffe"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "equals",
+        "value": "a\ufffd"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-contains-ignores-case",
+      "values": {
+        "message": [
+          "This is URGENT!"
+        ]
+      },
+      "condition": {
+        "field": "message",
+        "op": "contains",
+        "value": "urgent"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-not-contains-on-empty",
+      "description": "a negation is the exact opposite, also when empty",
+      "values": {},
+      "condition": {
+        "field": "message",
+        "op": "notContains",
+        "value": "urgent"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-starts-with",
+      "values": {
+        "name": [
+          "  Dr. Lin"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "startsWith",
+        "value": "dr."
+      },
+      "expect": true
+    },
+    {
+      "id": "text-ends-with",
+      "values": {
+        "name": [
+          "Lin AG"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "endsWith",
+        "value": "ag"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-contains-folds-the-operand",
+      "values": {
+        "message": [
+          "this is urgent"
+        ]
+      },
+      "condition": {
+        "field": "message",
+        "op": "contains",
+        "value": "URGENT"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-starts-with-only-at-the-start",
+      "values": {
+        "name": [
+          "Lin Dr."
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "startsWith",
+        "value": "dr."
+      },
+      "expect": false
+    },
+    {
+      "id": "text-ends-with-only-at-the-end",
+      "values": {
+        "name": [
+          "AG Lin"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "endsWith",
+        "value": "ag"
+      },
+      "expect": false
+    },
+    {
+      "id": "text-is-empty-false-with-a-value",
+      "values": {
+        "name": [
+          "Anna"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "isEmpty"
+      },
+      "expect": false
+    },
+    {
+      "id": "operand-list-is-not-one-operand",
+      "condition": {
+        "field": "name",
+        "op": "equals",
+        "value": [
+          "a",
+          "b"
+        ]
+      },
+      "expect": {
+        "error": "invalid_operand"
+      }
+    },
+    {
+      "id": "text-is-empty-whitespace-only",
+      "values": {
+        "name": [
+          " \t "
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "isEmpty"
+      },
+      "expect": true
+    },
+    {
+      "id": "text-is-not-empty-with-one-real-value",
+      "values": {
+        "topics": [
+          "",
+          "design"
+        ]
+      },
+      "condition": {
+        "field": "topics",
+        "op": "isNotEmpty"
+      },
+      "expect": true
+    },
+    {
+      "id": "choice-equals-is-exact",
+      "values": {
+        "plan": [
+          "Pro"
+        ]
+      },
+      "condition": {
+        "field": "plan",
+        "op": "equals",
+        "value": "pro"
+      },
+      "expect": false
+    },
+    {
+      "id": "choices-is-one-of",
+      "values": {
+        "topics": [
+          "billing",
+          "design"
+        ]
+      },
+      "condition": {
+        "field": "topics",
+        "op": "isOneOf",
+        "value": [
+          "support",
+          "design"
+        ]
+      },
+      "expect": true
+    },
+    {
+      "id": "choices-is-none-of-when-empty",
+      "values": {},
+      "condition": {
+        "field": "topics",
+        "op": "isNoneOf",
+        "value": [
+          "support"
+        ]
+      },
+      "expect": true
+    },
+    {
+      "id": "choices-count-at-least",
+      "values": {
+        "topics": [
+          "billing",
+          "design"
+        ]
+      },
+      "condition": {
+        "field": "topics",
+        "op": "countAtLeast",
+        "value": "2"
+      },
+      "expect": true
+    },
+    {
+      "id": "files-count-at-most",
+      "values": {
+        "attachments": [
+          "t1",
+          "t2"
+        ]
+      },
+      "condition": {
+        "field": "attachments",
+        "op": "countAtMost",
+        "value": "1"
+      },
+      "expect": false
+    },
+    {
+      "id": "files-count-at-most-is-inclusive",
+      "values": {
+        "attachments": [
+          "t1"
+        ]
+      },
+      "condition": {
+        "field": "attachments",
+        "op": "countAtMost",
+        "value": "1"
+      },
+      "expect": true
+    },
+    {
+      "id": "count-with-leading-zero-refused",
+      "values": {
+        "topics": [
+          "a"
+        ]
+      },
+      "condition": {
+        "field": "topics",
+        "op": "countAtLeast",
+        "value": "01"
+      },
+      "expect": {
+        "error": "invalid_operand"
+      }
+    },
+    {
+      "id": "checkbox-is-checked",
+      "values": {
+        "agree": [
+          "true"
+        ]
+      },
+      "condition": {
+        "field": "agree",
+        "op": "isChecked"
+      },
+      "expect": true
+    },
+    {
+      "id": "checkbox-is-not-checked-when-unchecked",
+      "description": "an unchecked box has no value; \"not checked\" must still match",
+      "values": {},
+      "condition": {
+        "field": "agree",
+        "op": "isNotChecked"
+      },
+      "expect": true
+    },
+    {
+      "id": "choices-is-checked-option",
+      "values": {
+        "topics": [
+          "design"
+        ]
+      },
+      "condition": {
+        "field": "topics",
+        "op": "isChecked",
+        "value": "design"
+      },
+      "expect": true
+    },
+    {
+      "id": "number-equals-by-value",
+      "values": {
+        "amount": [
+          "10.5"
+        ]
+      },
+      "condition": {
+        "field": "amount",
+        "op": "equals",
+        "value": "10.50"
+      },
+      "expect": true
+    },
+    {
+      "id": "number-greater-than-negative",
+      "values": {
+        "amount": [
+          "-1.5"
+        ]
+      },
+      "condition": {
+        "field": "amount",
+        "op": "greaterThan",
+        "value": "-2"
+      },
+      "expect": true
+    },
+    {
+      "id": "number-not-compared-as-text",
+      "values": {
+        "amount": [
+          "9"
+        ]
+      },
+      "condition": {
+        "field": "amount",
+        "op": "greaterThan",
+        "value": "10"
+      },
+      "expect": false
+    },
+    {
+      "id": "number-between-is-inclusive",
+      "values": {
+        "amount": [
+          "10"
+        ]
+      },
+      "condition": {
+        "field": "amount",
+        "op": "between",
+        "value": [
+          "1",
+          "10"
+        ]
+      },
+      "expect": true
+    },
+    {
+      "id": "number-between-includes-the-low-end",
+      "values": {
+        "amount": [
+          "1"
+        ]
+      },
+      "condition": {
+        "field": "amount",
+        "op": "between",
+        "value": [
+          "1",
+          "10"
+        ]
+      },
+      "expect": true
+    },
+    {
+      "id": "number-greater-than-equal-is-false",
+      "values": {
+        "amount": [
+          "10"
+        ]
+      },
+      "condition": {
+        "field": "amount",
+        "op": "greaterThan",
+        "value": "10.0"
+      },
+      "expect": false
+    },
+    {
+      "id": "number-compares-the-first-value",
+      "values": {
+        "amount": [
+          "5",
+          "50"
+        ]
+      },
+      "condition": {
+        "field": "amount",
+        "op": "greaterThan",
+        "value": "10"
+      },
+      "expect": false
+    },
+    {
+      "id": "number-exponent-is-not-a-number",
+      "description": "no exponents on the wire: never matches a comparison",
+      "values": {
+        "amount": [
+          "1e3"
+        ]
+      },
+      "condition": {
+        "field": "amount",
+        "op": "greaterThan",
+        "value": "5"
+      },
+      "expect": false
+    },
+    {
+      "id": "number-comma-is-not-a-number",
+      "description": "no culture separators on the wire",
+      "values": {
+        "amount": [
+          "1,5"
+        ]
+      },
+      "condition": {
+        "field": "amount",
+        "op": "equals",
+        "value": "1.5"
+      },
+      "expect": false
+    },
+    {
+      "id": "number-fifteen-digits-compare-exactly",
+      "description": "two 15-digit values one unit apart",
+      "values": {
+        "amount": [
+          "0.123456789012346"
+        ]
+      },
+      "condition": {
+        "field": "amount",
+        "op": "greaterThan",
+        "value": "0.123456789012345"
+      },
+      "expect": true
+    },
+    {
+      "id": "date-compare-two-answers",
+      "values": {
+        "arrival": [
+          "2026-07-01"
+        ],
+        "departure": [
+          "2026-07-03"
+        ]
+      },
+      "condition": {
+        "field": "departure",
+        "op": "greaterThan",
+        "value": {
+          "field": "arrival"
+        }
+      },
+      "expect": true
+    },
+    {
+      "id": "date-across-month",
+      "values": {
+        "arrival": [
+          "2026-02-01"
+        ]
+      },
+      "condition": {
+        "field": "arrival",
+        "op": "greaterThan",
+        "value": "2026-01-31"
+      },
+      "expect": true
+    },
+    {
+      "id": "date-invalid-calendar-date",
+      "description": "February 30 is not a date: never matches",
+      "values": {
+        "arrival": [
+          "2028-02-30"
+        ]
+      },
+      "condition": {
+        "field": "arrival",
+        "op": "greaterThan",
+        "value": "2000-01-01"
+      },
+      "expect": false
+    },
+    {
+      "id": "date-leap-day-valid",
+      "values": {
+        "arrival": [
+          "2028-02-29"
+        ]
+      },
+      "condition": {
+        "field": "arrival",
+        "op": "greaterThan",
+        "value": "2028-02-28"
+      },
+      "expect": true
+    },
+    {
+      "id": "date-leap-century-valid",
+      "description": "divisible by 400: a leap year",
+      "values": {
+        "arrival": [
+          "2000-02-29"
+        ]
+      },
+      "condition": {
+        "field": "arrival",
+        "op": "greaterThan",
+        "value": "2000-02-28"
+      },
+      "expect": true
+    },
+    {
+      "id": "date-century-not-leap",
+      "description": "divisible by 100 but not 400: no 29 February",
+      "values": {
+        "arrival": [
+          "2100-02-29"
+        ]
+      },
+      "condition": {
+        "field": "arrival",
+        "op": "greaterThan",
+        "value": "2000-01-01"
+      },
+      "expect": false
+    },
+    {
+      "id": "date-year-zero-invalid",
+      "values": {
+        "arrival": [
+          "0000-01-01"
+        ]
+      },
+      "condition": {
+        "field": "arrival",
+        "op": "lessThan",
+        "value": "2000-01-01"
+      },
+      "expect": false
+    },
+    {
+      "id": "time-less-than",
+      "values": {
+        "start": [
+          "09:05"
+        ]
+      },
+      "condition": {
+        "field": "start",
+        "op": "lessThan",
+        "value": "10:00"
+      },
+      "expect": true
+    },
+    {
+      "id": "time-without-leading-zero-is-invalid",
+      "values": {
+        "start": [
+          "9:05"
+        ]
+      },
+      "condition": {
+        "field": "start",
+        "op": "lessThan",
+        "value": "10:00"
+      },
+      "expect": false
+    },
+    {
+      "id": "time-less-than-equal-is-false",
+      "description": "seconds are optional: 10:00 and 10:00:00 are the same time",
+      "values": {
+        "start": [
+          "10:00"
+        ]
+      },
+      "condition": {
+        "field": "start",
+        "op": "lessThan",
+        "value": "10:00:00"
+      },
+      "expect": false
+    },
+    {
+      "id": "time-hour-24-is-invalid",
+      "values": {
+        "start": [
+          "24:00"
+        ]
+      },
+      "condition": {
+        "field": "start",
+        "op": "greaterThan",
+        "value": "00:00"
+      },
+      "expect": false
+    },
+    {
+      "id": "date-time-compare",
+      "values": {
+        "appointment": [
+          "2026-03-29T02:30"
+        ]
+      },
+      "condition": {
+        "field": "appointment",
+        "op": "greaterThan",
+        "value": "2026-03-29T02:15:59"
+      },
+      "expect": true
+    },
+    {
+      "id": "today-zurich-before-spring-change",
+      "description": "23:30Z on 28 March is 00:30 on 29 March in Zurich (UTC+1)",
+      "context": {
+        "now": "2026-03-28T23:30:00Z"
+      },
+      "condition": {
+        "context": "today",
+        "op": "equals",
+        "value": "2026-03-29"
+      },
+      "expect": true
+    },
+    {
+      "id": "today-zurich-after-spring-change",
+      "description": "22:30Z on 29 March is 00:30 on 30 March (UTC+2 since 01:00Z)",
+      "context": {
+        "now": "2026-03-29T22:30:00Z"
+      },
+      "condition": {
+        "context": "today",
+        "op": "equals",
+        "value": "2026-03-30"
+      },
+      "expect": true
+    },
+    {
+      "id": "today-zurich-after-autumn-change",
+      "description": "22:30Z on 25 October is 23:30 on 25 October (back to UTC+1)",
+      "context": {
+        "now": "2026-10-25T22:30:00Z"
+      },
+      "condition": {
+        "context": "today",
+        "op": "equals",
+        "value": "2026-10-25"
+      },
+      "expect": true
+    },
+    {
+      "id": "today-new-york-after-spring-change",
+      "description": "04:30Z on 9 March is 00:30 EDT; with EST it would still be 8 March",
+      "context": {
+        "now": "2026-03-09T04:30:00Z",
+        "timeZone": "America/New_York"
+      },
+      "condition": {
+        "context": "today",
+        "op": "equals",
+        "value": "2026-03-09"
+      },
+      "expect": true
+    },
+    {
+      "id": "today-auckland-ahead-of-utc",
+      "context": {
+        "now": "2026-01-01T11:30:00Z",
+        "timeZone": "Pacific/Auckland"
+      },
+      "condition": {
+        "context": "today",
+        "op": "equals",
+        "value": "2026-01-02"
+      },
+      "expect": true
+    },
+    {
+      "id": "relative-date-tomorrow",
+      "context": {
+        "now": "2026-03-29T10:00:00Z"
+      },
+      "values": {
+        "arrival": [
+          "2026-03-31"
+        ]
+      },
+      "condition": {
+        "field": "arrival",
+        "op": "greaterThan",
+        "value": {
+          "today": "+1d"
+        }
+      },
+      "expect": true
+    },
+    {
+      "id": "relative-date-week",
+      "values": {
+        "arrival": [
+          "2026-06-22"
+        ]
+      },
+      "condition": {
+        "field": "arrival",
+        "op": "equals",
+        "value": {
+          "today": "+1w"
+        }
+      },
+      "expect": true
+    },
+    {
+      "id": "relative-date-year-from-leap-day",
+      "description": "adding a year to 29 February ends on 28 February",
+      "context": {
+        "now": "2028-02-29T12:00:00Z"
+      },
+      "values": {
+        "arrival": [
+          "2029-02-28"
+        ]
+      },
+      "condition": {
+        "field": "arrival",
+        "op": "equals",
+        "value": {
+          "today": "+1y"
+        }
+      },
+      "expect": true
+    },
+    {
+      "id": "relative-date-month-clamps",
+      "description": "31 March minus a month is 28 February",
+      "context": {
+        "now": "2026-03-31T12:00:00Z"
+      },
+      "values": {
+        "arrival": [
+          "2026-02-28"
+        ]
+      },
+      "condition": {
+        "field": "arrival",
+        "op": "equals",
+        "value": {
+          "today": "-1m"
+        }
+      },
+      "expect": true
+    },
+    {
+      "id": "relative-date-steps-in-written-order",
+      "description": "31 January +1m (28 February) +1d is 1 March",
+      "context": {
+        "now": "2026-01-31T12:00:00Z"
+      },
+      "values": {
+        "arrival": [
+          "2026-03-01"
+        ]
+      },
+      "condition": {
+        "field": "arrival",
+        "op": "equals",
+        "value": {
+          "today": "+1m+1d"
+        }
+      },
+      "expect": true
+    },
+    {
+      "id": "context-culture-starts-with",
+      "condition": {
+        "context": "culture",
+        "op": "startsWith",
+        "value": "de"
+      },
+      "expect": true
+    },
+    {
+      "id": "context-member-group",
+      "context": {
+        "member": {
+          "signedIn": true,
+          "groups": [
+            "Partners"
+          ]
+        }
+      },
+      "condition": {
+        "context": "memberGroup",
+        "op": "isOneOf",
+        "value": [
+          "Partners"
+        ]
+      },
+      "expect": true
+    },
+    {
+      "id": "context-anonymous-not-signed-in",
+      "condition": {
+        "context": "memberSignedIn",
+        "op": "isNotChecked"
+      },
+      "expect": true
+    },
+    {
+      "id": "context-query-value",
+      "context": {
+        "query": {
+          "ref": "web"
+        }
+      },
+      "condition": {
+        "context": "query.ref",
+        "op": "equals",
+        "value": "web"
+      },
+      "expect": true
+    },
+    {
+      "id": "context-unknown-time-zone",
+      "context": {
+        "timeZone": "Mars/Olympus_Mons"
+      },
+      "condition": {
+        "context": "today",
+        "op": "equals",
+        "value": "2026-06-15"
+      },
+      "expect": {
+        "error": "unknown_time_zone"
+      }
+    },
+    {
+      "id": "operator-unknown",
+      "values": {
+        "name": [
+          "Anna"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "resembles",
+        "value": "Ana"
+      },
+      "expect": {
+        "error": "unknown_operator"
+      }
+    },
+    {
+      "id": "operator-not-for-kind",
+      "description": "greaterThan compares numbers, dates and times, not text",
+      "values": {
+        "name": [
+          "9"
+        ]
+      },
+      "condition": {
+        "field": "name",
+        "op": "greaterThan",
+        "value": "5"
+      },
+      "expect": {
+        "error": "operator_not_for_kind"
+      }
+    },
+    {
+      "id": "operand-missing",
+      "condition": {
+        "field": "name",
+        "op": "equals"
+      },
+      "expect": {
+        "error": "invalid_operand"
+      }
+    },
+    {
+      "id": "operand-relative-date-malformed",
+      "condition": {
+        "field": "arrival",
+        "op": "equals",
+        "value": {
+          "today": "tomorrow"
+        }
+      },
+      "expect": {
+        "error": "invalid_operand"
+      }
+    },
+    {
+      "id": "operand-checkbox-takes-none",
+      "values": {
+        "agree": [
+          "true"
+        ]
+      },
+      "condition": {
+        "field": "agree",
+        "op": "isChecked",
+        "value": "yes"
+      },
+      "expect": {
+        "error": "invalid_operand"
+      }
+    },
+    {
+      "id": "operand-unknown-field",
+      "condition": {
+        "field": "departure",
+        "op": "greaterThan",
+        "value": {
+          "field": "nope"
+        }
+      },
+      "expect": {
+        "error": "unknown_field"
+      }
+    },
+    {
+      "id": "rule-error-after-a-match-is-still-reported",
+      "description": "an \"any\" rule whose first condition matches still reports its broken second condition",
+      "values": {
+        "plan": [
+          "pro"
+        ]
+      },
+      "rule": {
+        "effect": "show",
+        "enabled": true,
+        "match": "any",
+        "conditions": [
+          {
+            "field": "plan",
+            "op": "equals",
+            "value": "pro"
+          },
+          {
+            "field": "phone",
+            "op": "matches",
+            "value": "(?=x)"
+          }
+        ]
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-ascii-digits",
+      "values": {
+        "phone": [
+          "2026"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\d{4}"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-digit-class-is-ascii",
+      "description": "Arabic-Indic digits are not ~d in either runtime",
+      "values": {
+        "phone": [
+          "\u0661\u0662\u0663"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\d{3}"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-dot-excludes-carriage-return",
+      "values": {
+        "phone": [
+          "a\rc"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "a.c"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-is-a-full-match",
+      "values": {
+        "phone": [
+          "12345"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\d{4}"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-value-is-trimmed",
+      "description": "values are trimmed before matching, as before every comparison",
+      "values": {
+        "phone": [
+          "1234\n"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\d{4}$"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-line-break-inside-is-kept",
+      "values": {
+        "phone": [
+          "12\n34"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\d+\\s\\d+"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-space-class-is-ascii",
+      "description": "a no-break space is not ~s in either runtime",
+      "values": {
+        "phone": [
+          "12\u00a034"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\d+\\s\\d+"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-counts-characters",
+      "description": "patterns read code points: an emoji is one character",
+      "values": {
+        "phone": [
+          "a\ud83d\ude00b"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": ".{3}"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-emoji-is-not-two-characters",
+      "values": {
+        "phone": [
+          "a\ud83d\ude00b"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": ".{4}"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-backreference-refused",
+      "values": {
+        "phone": [
+          "aa"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "(a)\\1"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-lookahead-refused",
+      "values": {
+        "phone": [
+          "a"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "(?=a)a"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-named-group-refused",
+      "values": {
+        "phone": [
+          "a"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "(?<n>a)"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-word-boundary-refused",
+      "values": {
+        "phone": [
+          "ab"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\bab"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-unicode-property-refused",
+      "values": {
+        "phone": [
+          "ab"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\p{L}+"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-lone-brace-refused",
+      "description": "a \"{\" that does not start a count must be escaped",
+      "values": {
+        "phone": [
+          "a{"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "a{"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-lone-closing-brace-refused",
+      "values": {
+        "phone": [
+          "a}"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "a}"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-count-over-limit-refused",
+      "values": {
+        "phone": [
+          "a"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "a{1001}"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-empty-class-refused",
+      "values": {
+        "phone": [
+          "a"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "[]a"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-hyphen-inside-class-refused",
+      "values": {
+        "phone": [
+          "b"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "[a-c-e]"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-negated-set-in-class",
+      "values": {
+        "phone": [
+          "ab"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "[\\D]+"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-negated-set-in-class-excludes",
+      "values": {
+        "phone": [
+          "a5"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "[\\D]+"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-emoji-range",
+      "description": "ranges are over code points, so a range of emoji works",
+      "values": {
+        "phone": [
+          "\ud83d\ude01"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "[\ud83d\ude00-\ud83d\ude02]"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-surrogate-escape-refused",
+      "values": {
+        "phone": [
+          "a"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\ud83d"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-too-long-refused",
+      "values": {
+        "phone": [
+          "a"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-nested-counts-refused",
+      "description": "unrolled, (a{50}){50} would be 2,500 units: over the limit of 2,000",
+      "values": {
+        "phone": [
+          "a"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "(a{50}){50}"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-nested-counts-allowed",
+      "values": {
+        "phone": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "(a{40}){40}"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-class-range",
+      "values": {
+        "phone": [
+          "c3"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "[a-f0-9]{2}"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-escaped-dot-matches-dot",
+      "values": {
+        "phone": [
+          "12.50"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\d+\\.\\d{2}"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-escaped-dot-is-literal",
+      "values": {
+        "phone": [
+          "12x50"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\d+\\.\\d{2}"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-unicode-escape",
+      "values": {
+        "phone": [
+          "caf\u00e9"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "caf\\u00e9"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-is-case-sensitive",
+      "values": {
+        "phone": [
+          "Abc"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "[a-z]+"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-any-value-matches",
+      "values": {
+        "phone": [
+          "n/a",
+          "044 000 00 00"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "[0-9 ]+"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-nested-repeats-run-in-linear-time",
+      "description": "a backtracking engine takes exponential time here; the automaton does not",
+      "values": {
+        "phone": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "(a+)+"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-overlapping-alternatives-run-in-linear-time",
+      "values": {
+        "phone": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "(a|aa)*c"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-empty-repeat-terminates",
+      "values": {
+        "phone": [
+          "aab"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "(a*)*b"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-alternation-is-a-whole-match",
+      "values": {
+        "phone": [
+          "catdog"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "cat|dog"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-alternation",
+      "values": {
+        "phone": [
+          "dog"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "cat|dog"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-count-range-upper-bound",
+      "values": {
+        "phone": [
+          "12345"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "[0-9]{2,4}"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-count-range-within",
+      "values": {
+        "phone": [
+          "123"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "[0-9]{2,4}"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-count-at-least",
+      "values": {
+        "phone": [
+          "12"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "[0-9]{3,}"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-lazy-quantifier-matches-the-same",
+      "values": {
+        "phone": [
+          "123"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\d+?"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-stacked-quantifiers-refused",
+      "values": {
+        "phone": [
+          "a"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "a**"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-unclosed-group-refused",
+      "values": {
+        "phone": [
+          "a"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "(a"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-unopened-group-refused",
+      "values": {
+        "phone": [
+          "a"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "a)"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-is-normalised",
+      "description": "a pattern typed with a combining accent matches the composed value",
+      "values": {
+        "phone": [
+          "caf\u00e9"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "cafe\u0301"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-caret-only-at-the-start",
+      "values": {
+        "phone": [
+          "ab"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "a^b"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-dollar-only-at-the-end",
+      "values": {
+        "phone": [
+          "ab"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "a$b"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-count-out-of-order-refused",
+      "values": {
+        "phone": [
+          "a"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "a{3,2}"
+      },
+      "expect": {
+        "error": "unsafe_pattern"
+      }
+    },
+    {
+      "id": "pattern-not-digit-excludes-zero",
+      "values": {
+        "phone": [
+          "0"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\D"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-not-digit-excludes-nine",
+      "values": {
+        "phone": [
+          "9"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\D"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-not-digit-includes-neighbours",
+      "values": {
+        "phone": [
+          "/:"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "\\D\\D"
+      },
+      "expect": true
+    },
+    {
+      "id": "pattern-alternation-needs-an-option",
+      "values": {
+        "phone": [
+          "x"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "(cat|dog)x"
+      },
+      "expect": false
+    },
+    {
+      "id": "pattern-optional-group",
+      "values": {
+        "phone": [
+          "+41 44"
+        ]
+      },
+      "condition": {
+        "field": "phone",
+        "op": "matches",
+        "value": "(\\+\\d{2} )?\\d{2}"
+      },
+      "expect": true
+    },
+    {
+      "id": "rule-all",
+      "values": {
+        "name": [
+          "Anna"
+        ],
+        "plan": [
+          "pro"
+        ]
+      },
+      "rule": {
+        "effect": "show",
+        "enabled": true,
+        "match": "all",
+        "conditions": [
+          {
+            "field": "name",
+            "op": "isNotEmpty"
+          },
+          {
+            "field": "plan",
+            "op": "equals",
+            "value": "pro"
+          }
+        ]
+      },
+      "expect": true
+    },
+    {
+      "id": "rule-any",
+      "values": {
+        "plan": [
+          "basic"
+        ]
+      },
+      "rule": {
+        "effect": "show",
+        "enabled": true,
+        "match": "any",
+        "conditions": [
+          {
+            "field": "plan",
+            "op": "equals",
+            "value": "pro"
+          },
+          {
+            "field": "plan",
+            "op": "equals",
+            "value": "basic"
+          }
+        ]
+      },
+      "expect": true
+    },
+    {
+      "id": "rule-nested-group",
+      "values": {
+        "plan": [
+          "pro"
+        ],
+        "topics": []
+      },
+      "rule": {
+        "effect": "show",
+        "enabled": true,
+        "match": "all",
+        "conditions": [
+          {
+            "field": "plan",
+            "op": "equals",
+            "value": "pro"
+          },
+          {
+            "match": "any",
+            "conditions": [
+              {
+                "field": "topics",
+                "op": "isOneOf",
+                "value": [
+                  "a"
+                ]
+              },
+              {
+                "field": "topics",
+                "op": "countAtLeast",
+                "value": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": false
+    },
+    {
+      "id": "rule-switched-off-is-ignored",
+      "values": {
+        "plan": [
+          "pro"
+        ]
+      },
+      "rule": {
+        "effect": "hide",
+        "enabled": false,
+        "match": "all",
+        "conditions": [
+          {
+            "field": "plan",
+            "op": "equals",
+            "value": "pro"
+          }
+        ]
+      },
+      "expect": null
+    },
+    {
+      "id": "rule-empty-all-matches",
+      "rule": {
+        "effect": "show",
+        "enabled": true,
+        "match": "all",
+        "conditions": []
+      },
+      "expect": true
+    },
+    {
+      "id": "rule-empty-any-does-not-match",
+      "rule": {
+        "effect": "show",
+        "enabled": true,
+        "match": "any",
+        "conditions": []
+      },
+      "expect": false
+    },
+    {
+      "id": "rule-hidden-field-is-empty",
+      "description": "a rule that depends on a hidden field sees it as empty",
+      "context": {
+        "hidden": [
+          "phone"
+        ]
+      },
+      "values": {
+        "phone": [
+          "079 000 00 00"
+        ]
+      },
+      "rule": {
+        "effect": "require",
+        "enabled": true,
+        "match": "all",
+        "conditions": [
+          {
+            "field": "phone",
+            "op": "isEmpty"
+          }
+        ]
+      },
+      "expect": true
+    },
+    {
+      "id": "rule-unknown-field",
+      "rule": {
+        "effect": "show",
+        "enabled": true,
+        "match": "all",
+        "conditions": [
+          {
+            "field": "nope",
+            "op": "isEmpty"
+          }
+        ]
+      },
+      "expect": {
+        "error": "unknown_field"
+      }
+    },
+    {
+      "id": "number-canonical-form",
+      "number": "-0.50",
+      "expect": "-0.5"
+    },
+    {
+      "id": "number-negative-zero",
+      "number": "-0",
+      "expect": "0"
+    },
+    {
+      "id": "number-sixteen-digits-refused",
+      "number": "1234567890123456",
+      "expect": {
+        "error": "too_many_digits"
+      }
+    },
+    {
+      "id": "number-sixteen-decimals-refused",
+      "number": "0.1234567890123456",
+      "expect": {
+        "error": "too_many_digits"
+      }
+    },
+    {
+      "id": "number-sixteen-places-refused",
+      "description": "one digit, but sixteen places after the point",
+      "number": "0.0000000000000001",
+      "expect": {
+        "error": "too_many_digits"
+      }
+    },
+    {
+      "id": "number-leading-zero-refused",
+      "number": "007",
+      "expect": {
+        "error": "not_a_number"
+      }
+    },
+    {
+      "id": "number-trailing-point-refused",
+      "number": "5.",
+      "expect": {
+        "error": "not_a_number"
+      }
+    },
+    {
+      "id": "number-exponent-refused",
+      "number": "1e3",
+      "expect": {
+        "error": "not_a_number"
+      }
+    },
+    {
+      "id": "calc-add-exact",
+      "calc": {
+        "op": "add",
+        "args": [
+          "0.1",
+          "0.2"
+        ]
+      },
+      "expect": "0.3"
+    },
+    {
+      "id": "calc-subtract-exact",
+      "calc": {
+        "op": "sub",
+        "args": [
+          "1",
+          "0.9"
+        ]
+      },
+      "expect": "0.1"
+    },
+    {
+      "id": "calc-multiply-exact",
+      "calc": {
+        "op": "mul",
+        "args": [
+          "1.1",
+          "1.1"
+        ]
+      },
+      "expect": "1.21"
+    },
+    {
+      "id": "calc-divide-twenty-places",
+      "calc": {
+        "op": "div",
+        "args": [
+          "1",
+          "3"
+        ]
+      },
+      "expect": "0.33333333333333333333"
+    },
+    {
+      "id": "calc-divide-then-multiply",
+      "calc": {
+        "op": "mul",
+        "args": [
+          {
+            "op": "div",
+            "args": [
+              "1",
+              "3"
+            ]
+          },
+          "3"
+        ]
+      },
+      "expect": "0.99999999999999999999"
+    },
+    {
+      "id": "calc-round-half-away-from-zero",
+      "description": "a binary double would round 2.675 down",
+      "calc": {
+        "op": "round",
+        "args": [
+          "2.675"
+        ],
+        "scale": 2
+      },
+      "expect": "2.68"
+    },
+    {
+      "id": "calc-round-negative-half",
+      "calc": {
+        "op": "round",
+        "args": [
+          "-2.5"
+        ],
+        "scale": 0
+      },
+      "expect": "-3"
+    },
+    {
+      "id": "calc-round-not-to-even",
+      "calc": {
+        "op": "round",
+        "args": [
+          "0.125"
+        ],
+        "scale": 2
+      },
+      "expect": "0.13"
+    },
+    {
+      "id": "calc-round-thirds",
+      "calc": {
+        "op": "round",
+        "args": [
+          {
+            "op": "div",
+            "args": [
+              "2",
+              "3"
+            ]
+          }
+        ],
+        "scale": 2
+      },
+      "expect": "0.67"
+    },
+    {
+      "id": "calc-divide-by-zero",
+      "calc": {
+        "op": "div",
+        "args": [
+          "1",
+          "0"
+        ]
+      },
+      "expect": {
+        "error": "division_by_zero"
+      }
+    },
+    {
+      "id": "calc-store-refuses-too-many-digits",
+      "calc": {
+        "op": "store",
+        "args": [
+          {
+            "op": "mul",
+            "args": [
+              "123456789012345",
+              "1000"
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "too_many_digits"
+      }
+    },
+    {
+      "id": "calc-sixty-digits-in-range",
+      "calc": {
+        "op": "mul",
+        "args": [
+          {
+            "op": "mul",
+            "args": [
+              {
+                "op": "mul",
+                "args": [
+                  "999999999999999",
+                  "999999999999999"
+                ]
+              },
+              "999999999999999"
+            ]
+          },
+          "999999999999999"
+        ]
+      },
+      "expect": "999999999999996000000000000005999999999999996000000000000001"
+    },
+    {
+      "id": "calc-over-sixty-digits-out-of-range",
+      "calc": {
+        "op": "mul",
+        "args": [
+          {
+            "op": "mul",
+            "args": [
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "op": "mul",
+                    "args": [
+                      "999999999999999",
+                      "999999999999999"
+                    ]
+                  },
+                  "999999999999999"
+                ]
+              },
+              "999999999999999"
+            ]
+          },
+          "999999999999999"
+        ]
+      },
+      "expect": {
+        "error": "out_of_range"
+      }
+    },
+    {
+      "id": "calc-unknown-operator",
+      "calc": {
+        "op": "pow",
+        "args": [
+          "2",
+          "3"
+        ]
+      },
+      "expect": {
+        "error": "unknown_operator"
+      }
+    },
+    {
+      "id": "calc-round-needs-a-scale",
+      "calc": {
+        "op": "round",
+        "args": [
+          "2.5"
+        ]
+      },
+      "expect": {
+        "error": "invalid_operand"
+      }
+    },
+    {
+      "id": "calc-round-scale-at-most-twenty",
+      "calc": {
+        "op": "round",
+        "args": [
+          "1"
+        ],
+        "scale": 21
+      },
+      "expect": {
+        "error": "invalid_operand"
+      }
+    },
+    {
+      "id": "calc-binary-takes-two",
+      "calc": {
+        "op": "add",
+        "args": [
+          "1",
+          "2",
+          "3"
+        ]
+      },
+      "expect": {
+        "error": "invalid_operand"
+      }
+    },
+    {
+      "id": "calc-constant-not-a-number",
+      "calc": {
+        "op": "add",
+        "args": [
+          "1",
+          ".5"
+        ]
+      },
+      "expect": {
+        "error": "not_a_number"
+      }
+    }
+  ]
+}
