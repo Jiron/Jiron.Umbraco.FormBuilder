@@ -26,7 +26,9 @@ When this document and an ADR disagree, the ADR decides and this document is fix
 ## 1. Modules
 
 Four packages, one Testing project that is never packed, the samples, the tests and the demo
-([ADR-0001](decisions/0001-solution-structure-and-packages.md)).
+([ADR-0001](decisions/0001-solution-structure-and-packages.md)). The demo references the meta package and the Testing
+project, everything in it off, so the browser tests run the demo as their host
+([ADR-0029](decisions/0029-testing-project.md), [ADR-0031](decisions/0031-browser-harness.md)).
 
 ```mermaid
 flowchart TB

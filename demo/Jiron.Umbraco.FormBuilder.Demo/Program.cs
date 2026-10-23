@@ -14,9 +14,12 @@ if (string.IsNullOrEmpty(builder.Configuration["Umbraco:CMS:Imaging:HMACSecretKe
         "Start the demo with scripts/demo.ps1: it passes the generated imaging key and admin through the environment.");
 }
 
+// The Content Delivery API is registered as the template's "use Delivery API" option does, and stays off until
+// Umbraco:CMS:DeliveryApi:Enabled turns it on (the browser tests run the host both ways; headless forms, 6.6).
 builder.CreateUmbracoBuilder()
     .AddBackOffice()
     .AddWebsite()
+    .AddDeliveryApi()
     .AddComposers()
     .Build();
 

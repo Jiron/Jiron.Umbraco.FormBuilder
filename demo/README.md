@@ -29,6 +29,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\demo.ps1 start
 The port comes from `Umbraco:CMS:WebRouting:UmbracoApplicationUrl` in `appsettings.json`, and the script refuses
 ports outside 5500 to 5599. The site's output goes to `.local/demo/demo.log`.
 
+## The Testing project and the Delivery API
+
+The demo references the Testing project, so the browser tests run this build as their host on port 5520
+([tests/e2e/README.md](../tests/e2e/README.md)). Everything in it stays off unless the `JironFormBuilderTesting`
+section turns it on, which `scripts/demo.ps1` never does ([ADR-0029](../docs/decisions/0029-testing-project.md)).
+The Content Delivery API is registered, as the template's "use Delivery API" option does, and stays off until
+`Umbraco:CMS:DeliveryApi:Enabled` turns it on ([ADR-0031](../docs/decisions/0031-browser-harness.md)).
+
 ## Accounts and mail
 
 The first `start` generates these into `.local/credentials.json` under `demo` (git-ignored, never printed):

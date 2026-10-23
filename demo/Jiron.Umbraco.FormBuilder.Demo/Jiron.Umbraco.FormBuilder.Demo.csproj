@@ -25,6 +25,11 @@
   <ItemGroup>
     <!-- The meta package, as sites install it. -->
     <ProjectReference Include="..\..\src\Jiron.Umbraco.FormBuilder\Jiron.Umbraco.FormBuilder.csproj" />
+    <!--
+      The test-only services (ADR-0029), so the browser tests run this build as their host (tests/e2e). Everything in
+      it is off unless the host's JironFormBuilderTesting section turns it on, which scripts/demo.ps1 never does.
+    -->
+    <ProjectReference Include="..\..\tests\Jiron.Umbraco.FormBuilder.Testing\Jiron.Umbraco.FormBuilder.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
