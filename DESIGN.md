@@ -41,13 +41,15 @@ illustration, no decorative gradients and no decorative icons.
 - Tall controls with corners derived from one radius.
 - One ink-tinted shade, used only by card-style groups.
 - Drawn checkboxes, radios and switches on native inputs, so keyboards and screen readers work as ever.
-- A light scheme by default and an opt-in dark scheme with the same token names.
+- A light scheme by default and an opt-in dark scheme with the same token names. A form without a scheme class
+  that lands on a dark ground takes the dark scheme anyway, so its text never sits dark on dark (ADR-0022).
 
 ### The backoffice
 
 The backoffice (the Forms section in Umbraco) uses Umbraco's own UUI components and tokens, by their UUI names, so
 the screens feel native to Umbraco and follow the editor's light, dark or high-contrast theme. The few tokens of our
-own (`--jfb-bo-*`) fill gaps UUI does not cover. Both sets are listed in the backoffice section of
+own (`--jfb-bo-*`) fill gaps UUI does not cover, mixed from UUI's tokens so they follow the theme too. Both sets are
+listed in the backoffice section of
 [`docs/ux/tokens.md`](docs/ux/tokens.md#the-backoffice). The rest of this file is about the website form only.
 
 ## Colors
@@ -194,7 +196,11 @@ little.
 - **Link button:** accent text, underlined, for small actions such as "Change" and "Remove". Its underline thickens on hover.
 - **Icon button:** a transparent square target for move up, move down and remove, always with a text alternative.
 - **Pressed:** every button sinks by one small step (`--jfb-motion-fast`, `--jfb-motion-ease`).
-- **Disabled:** muted text, no fill, dashed edge.
+- **Busy:** while the answers are on their way, the primary button keeps its size and place, its label gives way to
+  a small turning ring in `--jfb-color-on-accent`, and the live region says what is happening. A second press does
+  nothing. With reduced motion the ring pulses slowly instead of turning.
+- **Disabled:** muted text, no fill, dashed edge. A button that only cannot act yet (the last "move down" of a
+  ranking) is `aria-disabled`: it looks the same but stays in the tab order.
 - **Focus:** the focus ring, outside the button.
 
 ### Choices
@@ -213,8 +219,10 @@ little.
 - **Card group:** panel corners, surface fill, the one shade, a transparent border, padding of `--jfb-space-5`
   (`--jfb-space-4` on a narrow form). On a wide form it keeps its frame inside the form and aligns only its field
   column with every other group's (ADR-0022).
-- **Notice:** shown in place of a closed form or one not yet open. Panel corners, surface fill, hairline border, no
-  shade.
+- **Notice:** panel corners, surface fill, hairline border, no shade. It stands in place of the form (closed, not
+  yet open, full, members only, sent before, an expired link), above it (the form has changed, welcome back) or just
+  above the buttons, lined up with them (not sent, save for later, saved). A send that did not go through uses the
+  error variant: error wash and a heavier error border, like the error summary.
 - **File row:** surface fill, hairline border, card corners, a thumbnail or file icon, then the name, its state and
   a remove button. A refused file takes the error edge.
 
@@ -228,17 +236,22 @@ little.
 - **Focus:** the focus ring, just outside the control. The edge itself does not change.
 - **Error:** the edge turns error red and doubles with an inset ring; the message below is bold, red and led by the
   alert icon. It comes in with a short fade and drop (`--jfb-motion-base`).
-- **Disabled and read-only:** muted text, wash fill, dashed edge.
+- **Disabled:** muted text, wash fill, dashed edge, and the not-allowed cursor.
+- **Read-only:** full ink text on the wash, with the ordinary edge, so it reads as an answer that is kept, not one
+  that is switched off.
+- **Other:** the text an "Other" choice asks for sits under that choice, lined up with the choice labels.
 
 ### Navigation
 
 - **Step progress:** a row of equal bars across the form, each with its step name in the small size. Steps not
   reached use the hairline colour and muted text; the current and done steps take the accent bar and ink text; the
-  current step is bold and done steps carry a tick. On a narrow form the names hide and "Step 2 of 3" leads the bars.
+  current step is bold and done steps carry a tick. On a narrow form, with seven steps or more, or when a step name
+  would have to break inside a word, the names hide and "Step 2 of 6" leads short bars, and the page title shows.
 - **Bar progress:** "Step 3 of 4" beside a pill bar on the hairline track, filled with the accent.
 - **Form navigation:** the primary button first, then Back as a secondary button with a back chevron. On a narrow form
   every button takes the full width.
-- **Pages moving:** the new page fades in from a few pixels on the side the visitor moved towards.
+- **Pages moving:** the new page fades in from a few pixels on the side the visitor moved towards; with reduced
+  motion it only fades.
 
 ### Error Summary
 
@@ -251,7 +264,9 @@ and takes the visitor to it. The same words repeat under the field. It takes foc
 - **Summary:** each section follows the ledger; each answer is a row under a hairline with the question in bold, the
   answer, and a "Change" link. An empty answer is muted.
 - **Outcome:** a check mark on a tint disc, the title-size heading, the editor's message, and the reference on its own
-  line in tabular figures. The answers follow below it, once.
+  line in tabular figures. The answers follow below it, once, in the same rows as the summary without "Change". While
+  the visitor must still confirm their address, a letter takes the check mark's place. A redirect after a delay says
+  where it goes and when, with "Go now" and "Stay here".
 
 ### Upload and Signature
 
@@ -259,7 +274,10 @@ and takes the visitor to it. The same words repeat under the field. It takes foc
   it takes the tint and an accent edge. On touch screens the frame and drop text go away and only "Choose files" and
   "Take a photo" remain.
 - **Signature pad:** a bounded pad with card corners and one baseline hairline to sign on, plus a typed-name
-  alternative for keyboards and screen readers.
+  alternative for keyboards and screen readers. "Clear" turns into "Undo clear" until the next stroke.
+- **Without JavaScript** the upload's frame is solid and its drop text hidden, since nothing can be dropped on it.
+- **Loading** (the headless element only): a skeleton of hairline-coloured bars in the shape of the form, which pulses
+  unless motion is reduced.
 
 ## Do's and Don'ts
 
@@ -287,4 +305,5 @@ and takes the visitor to it. The same words repeat under the field. It takes foc
 - **Don't** add a second shade, or put the shade on anything but a card-style group.
 - **Don't** add illustration, decorative gradients or decorative icons.
 - **Don't** pick a colour, corner, size or space by hand; a value off the tokens or off the spacing grid is a finding.
-- **Don't** animate with reduced motion on: both durations drop to zero.
+- **Don't** move anything with reduced motion on: distances and the duration of movement drop to zero, while fades
+  and colour changes stay.

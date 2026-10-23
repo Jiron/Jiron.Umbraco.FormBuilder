@@ -95,3 +95,45 @@ seven type, two size, one focus and three motion tokens). The site's font and si
   browsers ROADMAP §4.12 supports; where `@starting-style` is missing, things simply appear without moving.
 - Revisit if sites find the ledger wrong for their layouts (a per-form "one column" option is cheap to add), or if the
   `bootstrap5` theme of ADR-0015 needs a structure this one cannot share.
+
+## Amendment (2026-10-23, step 2.4)
+
+The design critique of step 2.4 (`docs/ux/critique-2.md`) found gaps that change or extend the decision above.
+
+- **The ground check.** A form with no `jfb-scheme-*` class takes the light tokens. On a dark site that did not opt
+  in, its labels sat at about 1.15:1 on the page. After layout, the runtime (6.4) reads the first opaque background
+  behind the form; when it is dark and no scheme class is set, it adds `jfb-scheme-dark`. The site's own choice
+  always wins: a class set by the site is never changed. Without JavaScript the class must be set, which the theme
+  editor and the docs say. A Playwright check in 6.4 covers it.
+- **Reduced motion stops movement, not feedback.** The theme moves things by two private distances (`--_rise` 4 px,
+  `--_slide` 8 px) over `--_move`. With `prefers-reduced-motion: reduce` those three become zero, so an error or a
+  new page fades in where it ends, a pressed button or a switch's knob jumps instead of gliding, and colour changes
+  keep their timing. The first
+  version set every duration to zero, which also removed fades that move nothing.
+- **Sending.** The primary button carries `data-jfb-busy` and `aria-disabled="true"` while the answers are on their
+  way: it keeps its size and focus, its label gives way to a turning ring (a slow pulse with reduced motion), and the
+  live region says "Sending your answers". A refused or failed send (`rate_limited`, `server_error`, `timeout`) puts
+  an error notice just above the buttons with `role="alert"` and moves the focus to it; every answer stays.
+  `form_changed` puts a notice in the error summary's place (ADR-0004). A choice that filled up meanwhile is an
+  ordinary error: on the summary page the error summary links to that answer's "Change".
+- **Notices** have three places: instead of the form (closed, not yet open, full, members only, sent before, an
+  expired link), above it (the form has changed, welcome back), or just above the buttons, lined up with them (not
+  sent, save for later, saved). `jfb-notice-error` is the variant for a send that did not go through.
+- **The verification page** that `GET verify?t=` serves (8.5) is a plain page of the package's own, outside the
+  site's templates: the system font, the site's name, the form's theme with `jfb-scheme-auto`, one button that posts
+  the confirmation, and on an expired link one button that sends a new one (`assets/standalone.css` in the mocks).
+- **Step folding.** Step names show from 480 px for up to four steps and from 720 px for up to six; seven or more
+  always fold into "Step 2 of 7" with short bars. The browser cannot always hyphenate (headless Edge has no German
+  dictionary), so a long compound broke inside a word; the runtime therefore also sets `data-jfb-compact` when a word
+  of a step name is wider than its step, after layout and on every resize. The title shows whenever the names fold.
+- **Read-only is not disabled:** read-only answers keep full ink on the wash with the ordinary edge; disabled ones are
+  muted with a dashed edge.
+- **New parts of the markup contract:** `jfb-other` (the text an "Other" choice asks for), `jfb-captcha` (the consent
+  notice and "Load the check" for a third-party captcha in the `explicit` mode of §4.10), `jfb-skeleton` (the
+  headless element's placeholder while the definition loads, with `aria-busy` on the form), `data-jfb-pending` on
+  the outcome (a letter instead of the tick while the address is unconfirmed), and the redirect notice with "Go now"
+  and "Stay here" (WCAG 2.2.1). A move button that cannot act is `aria-disabled`, so it stays in the tab order.
+- **Right to left** is shown on an Arabic page (`book-rtl.html`), since English text set right to left showed the
+  mirroring wrongly.
+- **Shots** are taken at 375, 768 and 1440 px, as §4.13 asks, and the checker measures every state at 480, 600, 720
+  and 1024 px as well.

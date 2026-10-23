@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Book a workshop, page 2: your workshop (website form mock)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="jfb-shots" content="default">
+  <meta name="jfb-shots" content="default errors guests">
   <link rel="stylesheet" href="assets/site.css">
   <link rel="stylesheet" href="assets/base.css">
   <link rel="stylesheet" href="assets/theme.css">
@@ -13,7 +13,10 @@
 <body>
   <!--
     Page 2 of the booking: choice cards with place limits (one option full), a row of radio buttons, a card-style
-    group with a repeater row, and an optional text area with its character counter.
+    group with a repeater row, an optional text area with its character counter, and a dropdown.
+    States: default; errors (Next with no workshop chosen: the cards take the error's colour); guests (the repeater at
+    its limit of two, so "Add a guest" is gone; the help already says how many). The same page right to left is
+    book-rtl.html.
   -->
   <header class="site-head">
     <div class="site-wrap">
@@ -39,19 +42,26 @@
         </ol>
       </div>
 
+      <div class="jfb-error-summary" data-jfb-summary role="alert" tabindex="-1" aria-labelledby="jfb-1-summary" data-mock-state="errors">
+        <h2 id="jfb-1-summary">This answer needs a change</h2>
+        <ul>
+          <li><a href="#jfb-1-workshop">Choose a workshop</a></li>
+        </ul>
+      </div>
+
       <section class="jfb-page" data-jfb-page="p2">
         <h2 class="jfb-title">Your workshop</h2>
 
         <fieldset class="jfb-group" data-jfb-group="g3" aria-describedby="jfb-1-g3-help">
-          <legend>Choose a workshop</legend>
-          <p class="jfb-help" id="jfb-1-g3-help">All workshops are on Saturday 14 November, in the library.</p>
+          <legend>Saturday 14 November</legend>
+          <p class="jfb-help" id="jfb-1-g3-help">All workshops are in the library.</p>
           <div class="jfb-fields">
             <div class="jfb-field jfb-field-radio" data-jfb-field="f8" data-jfb-alias="workshop" data-jfb-type="radio">
-              <fieldset>
+              <fieldset data-mock-invalid="jfb-1-workshop-error">
                 <legend class="jfb-label">Workshop</legend>
                 <div class="jfb-choices jfb-choices-cards">
                   <div class="jfb-choice">
-                    <input type="radio" id="jfb-1-workshop" name="workshop" value="bikes" checked>
+                    <input type="radio" id="jfb-1-workshop" name="workshop" value="bikes" checked data-mock-clear="errors">
                     <label for="jfb-1-workshop">Bike repair basics <span class="jfb-places">3 places left</span></label>
                   </div>
                   <div class="jfb-choice">
@@ -63,6 +73,7 @@
                     <label for="jfb-1-workshop-3">Small electricals <span class="jfb-places" id="jfb-1-workshop-3-full">Full</span></label>
                   </div>
                 </div>
+                <p class="jfb-error" id="jfb-1-workshop-error" data-jfb-error data-mock-state="errors">Choose a workshop</p>
               </fieldset>
             </div>
             <div class="jfb-field jfb-field-radio" data-jfb-field="f9" data-jfb-alias="session" data-jfb-type="radio">
@@ -106,7 +117,27 @@
                       </div>
                     </div>
                   </fieldset>
-                  <button type="submit" class="jfb-button" name="jfb-nav" value="add:guests"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>Add a guest</button>
+                  <fieldset class="jfb-row" data-mock-state="guests">
+                    <legend>Guest 2</legend>
+                    <button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="remove:guests:1">Remove<span class="jfb-visually-hidden"> guest 2</span></button>
+                    <div class="jfb-fields jfb-columns-2">
+                      <div class="jfb-field jfb-field-text" data-jfb-alias="guests[1].name" data-jfb-type="text">
+                        <label class="jfb-label" for="jfb-1-guests-1-name">Name</label>
+                        <input class="jfb-control" id="jfb-1-guests-1-name" name="guests[1].name" value="Ada Okafor" autocomplete="off">
+                      </div>
+                      <div class="jfb-field jfb-field-dropdown" data-jfb-alias="guests[1].age" data-jfb-type="dropdown">
+                        <label class="jfb-label" for="jfb-1-guests-1-age">Age</label>
+                        <div class="jfb-select">
+                          <select class="jfb-control" id="jfb-1-guests-1-age" name="guests[1].age">
+                            <option value="">Choose one</option>
+                            <option>Under 16</option>
+                            <option selected>16 or over</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </fieldset>
+                  <button type="submit" class="jfb-button" name="jfb-nav" value="add:guests" data-mock-not="guests"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>Add a guest</button>
                 </div>
               </fieldset>
             </div>
@@ -121,6 +152,18 @@
               <p class="jfb-help" id="jfb-1-notes-help">For example, access needs or allergies.</p>
               <textarea class="jfb-control" id="jfb-1-notes" name="notes" rows="4" maxlength="500" aria-describedby="jfb-1-notes-help jfb-1-notes-count">I use a wheelchair. Is the courtyard step-free?</textarea>
               <p class="jfb-counter" id="jfb-1-notes-count">453 characters left</p>
+            </div>
+            <div class="jfb-field jfb-field-dropdown" data-jfb-field="f7" data-jfb-alias="heardFrom" data-jfb-type="dropdown">
+              <label class="jfb-label" for="jfb-1-heardFrom">How did you hear about the workshops? <span class="jfb-mark">(optional)</span></label>
+              <div class="jfb-select">
+                <select class="jfb-control" id="jfb-1-heardFrom" name="heardFrom">
+                  <option value="">Choose one</option>
+                  <option selected>A poster in the library</option>
+                  <option>The library newsletter</option>
+                  <option>A friend</option>
+                  <option>Social media</option>
+                </select>
+              </div>
             </div>
           </div>
         </fieldset>

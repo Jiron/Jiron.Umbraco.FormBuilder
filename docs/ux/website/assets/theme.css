@@ -60,6 +60,11 @@
   --_base: var(--jfb-motion-base, 200ms);
   --_ease: var(--jfb-motion-ease, cubic-bezier(.23, 1, .32, 1));
 
+  /* How far things move, and how fast a thumb or a pressed button moves; reduced motion stops only the movement */
+  --_rise: 4px;
+  --_slide: 8px;
+  --_move: var(--_fast);
+
   /* Icons, drawn as masks so that they take the text colour */
   --_i-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
   --_i-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4M12 17h.01'/%3E%3C/svg%3E");
@@ -74,6 +79,7 @@
   --_i-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 6v6l4 2'/%3E%3C/svg%3E");
   --_i-print: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6'/%3E%3Crect width='12' height='8' x='6' y='14' rx='1'/%3E%3C/svg%3E");
   --_i-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z'/%3E%3C/svg%3E");
+  --_i-mail: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7'/%3E%3Crect x='2' y='4' width='20' height='16' rx='2'/%3E%3C/svg%3E");
   --_i-star-full: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z'/%3E%3C/svg%3E");
 
   container: jfb-form / inline-size;
@@ -120,10 +126,12 @@
   }
 }
 
+/* Reduced motion: nothing slides, rises or travels; fades and colour changes stay, since they move nothing. */
 @media (prefers-reduced-motion: reduce) {
   .jfb-form {
-    --_fast: 0s;
-    --_base: 0s;
+    --_rise: 0px;
+    --_slide: 0px;
+    --_move: 0s;
   }
 }
 
@@ -136,7 +144,7 @@
   box-sizing: border-box;
 }
 
-.jfb-form :where(h2, h3, h4, p, dl, dd, figure, fieldset, ul, ol) {
+.jfb-form :where(h1, h2, h3, h4, p, dl, dd, figure, fieldset, ul, ol) {
   margin: 0;
 }
 
@@ -155,7 +163,8 @@
   margin: 0;
 }
 
-.jfb-form :where(h2, h3, h4) {
+.jfb-form :where(h1, h2, h3, h4) {
+  font-size: inherit;
   font-weight: var(--_bold);
   line-height: 1.25;
   color: inherit;
@@ -317,7 +326,9 @@
     margin-block-start: 0;
   }
 
-  .jfb-form:has(> .jfb-page:not([hidden]) > .jfb-group > legend, > .jfb-page:not([hidden]) .jfb-summary) > .jfb-navigation {
+  /* The buttons, and a notice just above them, line up with the fields. */
+  .jfb-form:has(> .jfb-page:not([hidden]) > .jfb-group > legend, > .jfb-page:not([hidden]) .jfb-summary) > :is(.jfb-navigation, .jfb-page ~ .jfb-notice) {
+    max-inline-size: none;
     margin-inline-start: calc((100% - var(--_s7)) / 3 + var(--_s7));
   }
 
@@ -383,6 +394,9 @@
 }
 
 .jfb-form .jfb-counter[data-jfb-over] {
+  display: flex;
+  gap: var(--_s2);
+  justify-content: end;
   font-weight: var(--_bold);
   color: var(--_error);
 }
@@ -396,12 +410,13 @@
 
   @starting-style {
     opacity: 0;
-    translate: 0 -4px;
+    translate: 0 calc(-1 * var(--_rise));
   }
 }
 
 .jfb-form .jfb-error::before,
-.jfb-form .jfb-error-summary > h2::before {
+.jfb-form .jfb-counter[data-jfb-over]::before,
+.jfb-form :is(.jfb-error-summary, .jfb-notice-error) > h2::before {
   content: "";
   flex: none;
   inline-size: 1.25em;
@@ -459,6 +474,17 @@
   padding: var(--_s1);
 }
 
+/* A list of several choices: its options on the grid, a chosen one in the accent (the gradient makes every browser paint it). */
+.jfb-form select.jfb-control[multiple] option {
+  padding: var(--_s1) var(--_s2);
+  border-radius: var(--_r-tag);
+}
+
+.jfb-form select.jfb-control[multiple] option:checked {
+  color: var(--_on-accent);
+  background: var(--_accent) linear-gradient(var(--_accent), var(--_accent));
+}
+
 /* A single dropdown wears the theme's chevron instead of the browser's arrow. */
 .jfb-form .jfb-select {
   position: relative;
@@ -493,14 +519,16 @@
   box-shadow: inset 0 0 0 1px var(--_error);
 }
 
-.jfb-form .jfb-control:is(:disabled, [readonly]) {
+/* Disabled is dashed and muted; read-only keeps its text at full strength on a quiet fill, since it is still read. */
+.jfb-form .jfb-control:disabled {
   color: var(--_muted);
   background: var(--_wash);
   border-style: dashed;
+  cursor: not-allowed;
 }
 
-.jfb-form .jfb-control:disabled {
-  cursor: not-allowed;
+.jfb-form .jfb-control[readonly] {
+  background: var(--_wash);
 }
 
 /* Prefix and suffix text, such as a currency or a unit */
@@ -639,11 +667,13 @@
 }
 
 .jfb-form input:is([type="checkbox"], [type="radio"])[aria-invalid="true"]:not(:checked),
-.jfb-form [aria-invalid="true"] > .jfb-choices input:not(:checked) {
+.jfb-form [aria-invalid="true"] > .jfb-choices input:not(:checked, :disabled) {
   border-color: var(--_error);
 }
 
-.jfb-form [aria-invalid="true"] > :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > label {
+.jfb-form [aria-invalid="true"] > :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > label,
+.jfb-form [aria-invalid="true"] > .jfb-choices-cards > .jfb-choice:not(:has(> :disabled)),
+.jfb-form [aria-invalid="true"] .jfb-signature-pad {
   border-color: var(--_error);
   box-shadow: inset 0 0 0 1px var(--_error);
 }
@@ -668,6 +698,11 @@
   display: flex;
   flex-wrap: wrap;
   column-gap: var(--_s5);
+}
+
+/* The text an "Other" choice asks for, lined up with the choice labels */
+.jfb-form .jfb-other {
+  padding-inline-start: calc(24px + var(--_s3));
 }
 
 /* Cards: the whole card is the target; a chosen card takes the accent; a full one is dashed but still readable. */
@@ -890,7 +925,7 @@
   background: none;
   mask: none;
   visibility: visible;
-  transition: translate var(--_fast) var(--_ease);
+  transition: translate var(--_move) var(--_ease);
 }
 
 .jfb-form input.jfb-switch:checked::before {
@@ -956,8 +991,13 @@
   white-space: nowrap;
 }
 
+.jfb-form .jfb-matrix > fieldset > .jfb-choices > .jfb-choice {
+  align-items: center;
+  min-block-size: 44px;
+}
+
 .jfb-form .jfb-matrix .jfb-choice > input {
-  margin-block: 10px;
+  margin: 0;
 }
 
 @container jfb-form (max-width: 599px) {
@@ -976,6 +1016,7 @@
   }
 
   .jfb-form .jfb-matrix > fieldset > .jfb-choices > .jfb-choice {
+    align-items: flex-start;
     justify-content: start;
     text-align: start;
   }
@@ -1040,6 +1081,12 @@
   grid-column: 1 / -1;
 }
 
+@container jfb-form (max-width: 479px) {
+  .jfb-form .jfb-parts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* ---------------------------------------------------------------------------------------------------------------
  * Buttons: one primary per page, filled with the accent; the others outlined; links for small actions.
  * They sink a pixel when pressed.
@@ -1062,10 +1109,10 @@
   border: 1px solid var(--_border);
   border-radius: var(--_r-control);
   cursor: pointer;
-  transition: background-color var(--_fast) ease, border-color var(--_fast) ease, transform var(--_fast) var(--_ease);
+  transition: background-color var(--_fast) ease, border-color var(--_fast) ease, transform var(--_move) var(--_ease);
 }
 
-.jfb-form .jfb-button:active:not(:disabled) {
+.jfb-form .jfb-button:active:not(:disabled, [aria-disabled="true"]) {
   transform: translateY(1px);
 }
 
@@ -1096,34 +1143,77 @@
   background: transparent;
 }
 
-.jfb-form .jfb-button:disabled {
+/*
+ * A button that cannot be used now: disabled, or aria-disabled where it stays in the tab order (a move button at the
+ * end of its list), but not a busy one.
+ */
+.jfb-form .jfb-button:is(:disabled, [aria-disabled="true"]:not([data-jfb-busy])) {
   color: var(--_muted);
   background: transparent;
   border-style: dashed;
   cursor: not-allowed;
 }
 
-.jfb-form .jfb-button-icon:disabled {
+.jfb-form .jfb-button-icon:is(:disabled, [aria-disabled="true"]) {
   border-color: transparent;
 }
 
+/* Busy while the answers are on their way: the label gives way to a turning ring, so the button keeps its size. */
+.jfb-form .jfb-button-primary[data-jfb-busy] {
+  position: relative;
+  color: transparent;
+  cursor: progress;
+}
+
+.jfb-form .jfb-button-primary[data-jfb-busy]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  inline-size: 1.25em;
+  block-size: 1.25em;
+  margin: auto;
+  border: 2px solid var(--_on-accent);
+  border-block-start-color: transparent;
+  border-radius: 50%;
+  animation: jfb-turn .7s linear infinite;
+}
+
+@keyframes jfb-turn {
+  to {
+    rotate: 1turn;
+  }
+}
+
+@keyframes jfb-pulse {
+  to {
+    opacity: .4;
+  }
+}
+
+/* With reduced motion the ring stays still and fades in and out instead. */
+@media (prefers-reduced-motion: reduce) {
+  .jfb-form .jfb-button-primary[data-jfb-busy]::after {
+    animation: jfb-pulse 1.4s ease-in-out infinite alternate;
+  }
+}
+
 @media (hover: hover) {
-  .jfb-form .jfb-button:hover:not(:disabled) {
+  .jfb-form .jfb-button:hover:not(:disabled, [aria-disabled="true"]) {
     background: var(--_wash);
     border-color: var(--_border-strong);
   }
 
-  .jfb-form .jfb-button-primary:hover:not(:disabled) {
+  .jfb-form .jfb-button-primary:hover:not(:disabled, [aria-disabled="true"]) {
     background: var(--_accent-strong);
     border-color: var(--_accent-strong);
   }
 
-  .jfb-form .jfb-button-link:hover:not(:disabled) {
+  .jfb-form .jfb-button-link:hover:not(:disabled, [aria-disabled="true"]) {
     background: none;
     text-decoration-thickness: 2px;
   }
 
-  .jfb-form .jfb-button-icon:hover:not(:disabled) {
+  .jfb-form .jfb-button-icon:hover:not(:disabled, [aria-disabled="true"]) {
     border-color: transparent;
   }
 }
@@ -1156,6 +1246,8 @@
 .jfb-form .jfb-progress-steps > ol > li {
   display: flex;
   gap: var(--_s1);
+  overflow-wrap: anywhere;
+  hyphens: auto;
   padding-block-start: var(--_s2);
   font-size: var(--_small);
   color: var(--_muted);
@@ -1184,8 +1276,13 @@
   display: none;
 }
 
+/*
+ * The step names stand in for the page title while they have room: from 480 px with up to four steps, from 720 px
+ * with up to six. A narrower form, or more steps, shows "Step 2 of 6" with short bars instead, and the title. The
+ * runtime also folds them (data-jfb-compact) when a step name would break inside a word, as long compounds do.
+ */
 @container jfb-form (min-width: 480px) {
-  .jfb-form:has(> .jfb-progress-steps) > .jfb-page > .jfb-title {
+  .jfb-form:has(> .jfb-progress-steps:not([data-jfb-compact]) li:last-child:nth-child(-n + 4)) > .jfb-page > .jfb-title {
     position: absolute;
     inline-size: 1px;
     block-size: 1px;
@@ -1194,7 +1291,22 @@
     white-space: nowrap;
   }
 
-  .jfb-form:has(> .jfb-progress-steps) > .jfb-page > .jfb-intro {
+  .jfb-form:has(> .jfb-progress-steps:not([data-jfb-compact]) li:last-child:nth-child(-n + 4)) > .jfb-page > .jfb-intro {
+    margin-block-start: 0;
+  }
+}
+
+@container jfb-form (min-width: 720px) {
+  .jfb-form:has(> .jfb-progress-steps:not([data-jfb-compact]) li:last-child:nth-child(-n + 6)) > .jfb-page > .jfb-title {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .jfb-form:has(> .jfb-progress-steps:not([data-jfb-compact]) li:last-child:nth-child(-n + 6)) > .jfb-page > .jfb-intro {
     margin-block-start: 0;
   }
 }
@@ -1205,19 +1317,73 @@
     grid-template-columns: auto minmax(0, 1fr);
     gap: var(--_s3);
     align-items: center;
-  }
 
-  .jfb-form .jfb-progress-steps > .jfb-progress-text {
+    & > .jfb-progress-text {
+      display: block;
+      order: -1;
+    }
+
+    & > ol > li {
+      padding: 0;
+    }
+
+    & > ol > li > *,
+    & > ol > li::before {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+}
+
+@container jfb-form (max-width: 719px) {
+  .jfb-form .jfb-progress-steps:has(> ol > :nth-child(5)) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--_s3);
+    align-items: center;
+
+    & > .jfb-progress-text {
+      display: block;
+      order: -1;
+    }
+
+    & > ol > li {
+      padding: 0;
+    }
+
+    & > ol > li > *,
+    & > ol > li::before {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+}
+
+.jfb-form .jfb-progress-steps:is([data-jfb-compact], :has(> ol > :nth-child(7))) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--_s3);
+  align-items: center;
+
+  & > .jfb-progress-text {
     display: block;
     order: -1;
   }
 
-  .jfb-form .jfb-progress-steps > ol > li {
+  & > ol > li {
     padding: 0;
   }
 
-  .jfb-form .jfb-progress-steps > ol > li > *,
-  .jfb-form .jfb-progress-steps > ol > li::before {
+  & > ol > li > *,
+  & > ol > li::before {
     position: absolute;
     inline-size: 1px;
     block-size: 1px;
@@ -1280,22 +1446,22 @@
   }
 }
 
-.jfb-form .jfb-error-summary:focus {
+.jfb-form :is(.jfb-error-summary, .jfb-notice):focus {
   outline: 0;
 }
 
-.jfb-form .jfb-error-summary:focus-visible {
+.jfb-form :is(.jfb-error-summary, .jfb-notice):focus-visible {
   outline: var(--_ring);
   outline-offset: 2px;
 }
 
-.jfb-form .jfb-error-summary > h2 {
+.jfb-form :is(.jfb-error-summary, .jfb-notice-error) > h2 {
   display: flex;
   gap: var(--_s2);
   font-size: var(--_large);
 }
 
-.jfb-form .jfb-error-summary > h2::before {
+.jfb-form :is(.jfb-error-summary, .jfb-notice-error) > h2::before {
   block-size: 1.25em;
   color: var(--_error);
 }
@@ -1333,6 +1499,15 @@
 .jfb-form .jfb-upload[data-jfb-drop] {
   background: var(--_tint);
   border-color: var(--_accent);
+}
+
+.jfb-form .jfb-upload:has([aria-invalid="true"]) {
+  border-color: var(--_error);
+}
+
+/* Without JavaScript nothing can be dropped on the frame, so it is drawn solid and says nothing about dragging. */
+.jfb-form .jfb-upload:not([data-jfb-enhanced]) {
+  border-style: solid;
 }
 
 .jfb-form .jfb-upload > .jfb-icon {
@@ -1386,7 +1561,7 @@
   white-space: nowrap;
 }
 
-.jfb-form .jfb-upload:not([data-jfb-enhanced]) label,
+.jfb-form .jfb-upload:not([data-jfb-enhanced]) :is(label, p),
 .jfb-form .jfb-upload-camera {
   display: none;
 }
@@ -1436,7 +1611,7 @@
 }
 
 .jfb-form .jfb-file > :first-child {
-  grid-row: span 2;
+  grid-row: span 3;
   inline-size: 48px;
   block-size: 48px;
   object-fit: cover;
@@ -1453,12 +1628,14 @@
 }
 
 .jfb-form .jfb-file > .jfb-button {
-  grid-row: 1 / span 2;
+  grid-row: 1 / span 3;
   grid-column: 3;
 }
 
-.jfb-form .jfb-file > :is(.jfb-help, .jfb-error, progress) {
+.jfb-form .jfb-file > :is(.jfb-help, .jfb-error, progress, .jfb-button-link) {
+  grid-row: auto;
   grid-column: 2;
+  justify-self: start;
   margin: 0;
 }
 
@@ -1489,6 +1666,15 @@
   column-gap: var(--_s5);
 }
 
+/* The help sits under the legend at the same distance as any field's help. */
+.jfb-form .jfb-field > fieldset > .jfb-signature {
+  margin-block-start: var(--_s1);
+}
+
+.jfb-form .jfb-signature > .jfb-help {
+  margin: 0;
+}
+
 /* Repeater rows: entries under a hairline, like the groups, never a box inside the form's boxes */
 .jfb-form .jfb-repeater {
   display: grid;
@@ -1508,7 +1694,7 @@
 
   @starting-style {
     opacity: 0;
-    translate: 0 -4px;
+    translate: 0 calc(-1 * var(--_rise));
   }
 }
 
@@ -1600,6 +1786,10 @@
   color: var(--_muted);
 }
 
+.jfb-form .jfb-summary dd > .jfb-error {
+  margin-block-start: var(--_s1);
+}
+
 @container jfb-form (max-width: 479px) {
   .jfb-form .jfb-summary dl > div {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -1643,22 +1833,34 @@
   mask: var(--_i-check) center / 28px no-repeat;
 }
 
+/* Waiting for the visitor to confirm their address: a letter, not a tick */
+.jfb-form .jfb-outcome[data-jfb-pending]::after {
+  mask-image: var(--_i-mail);
+  mask-size: 24px;
+}
+
 .jfb-form .jfb-reference strong {
   font-weight: var(--_bold);
   font-variant-numeric: tabular-nums;
 }
 
-.jfb-form .jfb-outcome :where(h2) {
+.jfb-form .jfb-outcome :where(h1, h2) {
   font-size: var(--_title);
 }
 
 .jfb-form .jfb-outcome > .jfb-navigation {
+  justify-self: stretch;
   padding: 0;
 }
 
-.jfb-form .jfb-notice {
+/*
+ * A notice stands in place of the form, above it (the form has changed, welcome back) or above its buttons (not
+ * sent, save for later). The captcha's notice shares its look.
+ */
+.jfb-form :is(.jfb-notice, .jfb-captcha) {
   display: grid;
   gap: var(--_s2);
+  justify-items: start;
   max-inline-size: 65ch;
   padding: var(--_s5);
   background: var(--_surface);
@@ -1666,8 +1868,56 @@
   border-radius: var(--_r-panel);
 }
 
-.jfb-form .jfb-notice > h2 {
+.jfb-form .jfb-notice > :is(h1, h2) {
   font-size: var(--_large);
+}
+
+.jfb-form .jfb-notice-error {
+  background: var(--_error-wash);
+  border: 2px solid var(--_error);
+}
+
+.jfb-form :is(.jfb-notice, .jfb-captcha) > :is(.jfb-field, .jfb-navigation, .jfb-button, form) {
+  margin-block-start: var(--_s2);
+}
+
+.jfb-form .jfb-notice > :is(.jfb-field, .jfb-navigation) {
+  justify-self: stretch;
+}
+
+/* While a headless form loads: shapes where its first fields will be, pulsing gently unless motion is reduced */
+.jfb-form .jfb-skeleton {
+  display: grid;
+  gap: var(--_s5);
+}
+
+.jfb-form .jfb-skeleton > div {
+  display: grid;
+  gap: var(--_s2);
+}
+
+.jfb-form .jfb-skeleton span {
+  display: block;
+  block-size: var(--_control);
+  background: var(--_rule);
+  border-radius: var(--_r-control);
+  animation: jfb-pulse 1.4s ease-in-out infinite alternate;
+}
+
+.jfb-form .jfb-skeleton > div > :first-child {
+  inline-size: 30%;
+  block-size: 1em;
+  border-radius: var(--_r-tag);
+}
+
+.jfb-form .jfb-skeleton > span {
+  inline-size: 8em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jfb-form .jfb-skeleton span {
+    animation: none;
+  }
 }
 
 /* ---------------------------------------------------------------------------------------------------------------
@@ -1678,25 +1928,25 @@
 
   @starting-style {
     opacity: 0;
-    translate: 8px 0;
+    translate: var(--_slide) 0;
   }
 }
 
 .jfb-form[data-jfb-direction="back"] > .jfb-page {
   @starting-style {
-    translate: -8px 0;
+    translate: calc(-1 * var(--_slide)) 0;
   }
 }
 
 .jfb-form[data-jfb-direction]:dir(rtl) > .jfb-page {
   @starting-style {
-    translate: -8px 0;
+    translate: calc(-1 * var(--_slide)) 0;
   }
 }
 
 .jfb-form[data-jfb-direction="back"]:dir(rtl) > .jfb-page {
   @starting-style {
-    translate: 8px 0;
+    translate: var(--_slide) 0;
   }
 }
 
@@ -1706,7 +1956,8 @@
 @media (forced-colors: active) {
   .jfb-form .jfb-icon,
   .jfb-form .jfb-error::before,
-  .jfb-form .jfb-error-summary > h2::before,
+  .jfb-form .jfb-counter[data-jfb-over]::before,
+  .jfb-form :is(.jfb-error-summary, .jfb-notice-error) > h2::before,
   .jfb-form .jfb-outcome::after,
   .jfb-form .jfb-select::after,
   .jfb-form .jfb-control::-webkit-calendar-picker-indicator,
@@ -1730,6 +1981,18 @@
 
   .jfb-form .jfb-progress-steps > ol > li:is([aria-current="step"], [data-jfb-done]) {
     border-color: Highlight;
+  }
+
+  .jfb-form .jfb-button-primary[data-jfb-busy] {
+    forced-color-adjust: none;
+    color: transparent;
+    background: ButtonFace;
+    border-color: ButtonText;
+  }
+
+  .jfb-form .jfb-button-primary[data-jfb-busy]::after {
+    border-color: ButtonText;
+    border-block-start-color: transparent;
   }
 }
 

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Confirm your email address: Lindenhall Library (website form mock)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="jfb-shots" content="default confirmed expired">
+  <link rel="stylesheet" href="assets/standalone.css">
+  <link rel="stylesheet" href="assets/base.css">
+  <link rel="stylesheet" href="assets/theme.css">
+  <script src="assets/mock.js" defer></script>
+</head>
+<body>
+  <!--
+    The page the link in the verification email opens (ROADMAP 8.5, ADR-0012). The package serves it itself, outside
+    the site's templates, so it is a plain page (assets/standalone.css) with the site's name and the form's theme.
+    Mail scanners follow links, so opening the page confirms nothing: it shows one button, and only the POST
+    confirms. The form follows the visitor's light or dark setting (jfb-scheme-auto), since there is no site design
+    around it to follow.
+    States: default (confirm), confirmed (after the POST: the outcome's tick and the way back to the site), expired
+    (the link is older than 7 days: one button sends a new link to the address given, within the limits for mail to
+    visitors' addresses).
+  -->
+  <main class="jfb-standalone">
+    <p class="jfb-standalone-site">Lindenhall Library</p>
+
+    <div class="jfb-form jfb-theme-default jfb-scheme-auto" id="jfb-v" data-jfb-contract="1" lang="en" dir="ltr">
+      <div class="jfb-notice" data-mock-state="default">
+        <h1>Confirm your email address</h1>
+        <p>Confirm it to finish your booking for &ldquo;Book a Saturday workshop&rdquo;.</p>
+        <form method="post" action="/jfb/api/v1/verify">
+          <input type="hidden" name="t" value="mock-token">
+          <button type="submit" class="jfb-button jfb-button-primary">Confirm my address</button>
+        </form>
+      </div>
+
+      <div class="jfb-outcome" data-jfb-outcome tabindex="-1" data-mock-state="confirmed">
+        <h1>Your address is confirmed</h1>
+        <p>Thank you, Mira. Your place in Bike repair basics is booked, and the confirmation is on its way to you.</p>
+        <a class="jfb-button jfb-button-link" href="#">Back to Lindenhall Library</a>
+      </div>
+
+      <div class="jfb-notice" data-mock-state="expired">
+        <h1>This link has expired</h1>
+        <p>Links to confirm an address work for 7 days. We can send a new one to the address you gave.</p>
+        <form method="post" action="/jfb/api/v1/verify">
+          <input type="hidden" name="t" value="mock-token">
+          <input type="hidden" name="resend" value="true">
+          <button type="submit" class="jfb-button jfb-button-primary">Send me a new link</button>
+        </form>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

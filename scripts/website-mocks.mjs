@@ -2,13 +2,17 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 /**
  * Renders the website form designs of ROADMAP 2.3 (`docs/ux/website/*.html`) to PNG with Playwright in Edge, at
- * 375 px (as a phone) and 1440 px, in the host site's light and dark design, and checks them.
+ * 375 px (as a phone), 768 px (a tablet) and 1440 px, in the host site's light and dark design, and checks them.
  *
  *   node scripts/website-mocks.mjs [filter]          render every shot into docs/ux/website/png/
  *   node scripts/website-mocks.mjs --check [filter]  render, then check every shot and the theme's stylesheets
+ *   node scripts/website-mocks.mjs --widths=480,720 [filter]
+ *                                                   check every state of every page at those widths in both
+ *                                                   designs, without writing PNGs (the widths between the
+ *                                                   rendered ones); a width under 768 px is a touch phone
  *
  * `filter` keeps only pages whose file name contains it. A page lists its states in
- * `<meta name="jfb-shots" content="default errors">` (without it, `default`); each state is rendered at both widths
+ * `<meta name="jfb-shots" content="default errors">` (without it, `default`); each state is rendered at each width
  * in both designs, through `?state=<state>&scheme=light|dark`. `<meta name="jfb-forced" content="default">` adds a
  * 1440 px shot of those states with forced colours (a Windows contrast theme), rendered but not measured.
  *
@@ -37,22 +41,27 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const WEBSITE = join(ROOT, 'docs', 'ux', 'website');
 export const OUT = join(WEBSITE, 'png');
 export const THEME_FILES = ['assets/base.css', 'assets/theme.css'];
-export const WIDTHS = [375, 1440];
+export const WIDTHS = [375, 768, 1440];
 export const SCHEMES = ['light', 'dark'];
 export const BUDGET = 10 * 1024;
 export const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
-/** Parses the command line. Returns { check, filter } or { error }. */
+/** Parses the command line. Returns { check, filter, widths } or { error }. `--widths` implies `--check`. */
 export function parseArgs(argv) {
   let check = false;
   let filter = '';
+  let widths = [];
   for (const arg of argv) {
     if (arg === '--check') check = true;
-    else if (arg.startsWith('-')) return { error: `unknown option ${arg}` };
+    else if (arg.startsWith('--widths=')) {
+      widths = arg.slice('--widths='.length).split(',').map(Number);
+      if (!widths.length || widths.some((w) => !Number.isInteger(w) || w < 320 || w > 3840)) return { error: `bad widths in ${arg}` };
+      check = true;
+    } else if (arg.startsWith('-')) return { error: `unknown option ${arg}` };
     else if (filter) return { error: 'only one filter is allowed' };
     else filter = arg;
   }
-  return { check, filter };
+  return { check, filter, widths };
 }
 
 /** Reads a page's states from a meta tag (`jfb-shots` or `jfb-forced`); `fallback` when the tag is missing. */
@@ -64,13 +73,16 @@ export function parseStates(html, name = 'jfb-shots', fallback = ['default']) {
   return states;
 }
 
-/** The shots of a page: each state at each width in each design, then the forced-colours shots at 1440 px. */
-export function plannedShots(states, forced = []) {
+/**
+ * The shots of a page: each state at each width in each design, then the forced-colours shots at 1440 px. With
+ * `widths` (a width sweep), each state at those widths in both designs, and no forced-colours shots.
+ */
+export function plannedShots(states, forced = [], widths = []) {
   const shots = [];
   for (const state of states) {
-    for (const width of WIDTHS) for (const scheme of SCHEMES) shots.push({ state, width, scheme, forced: false });
+    for (const width of widths.length ? widths : WIDTHS) for (const scheme of SCHEMES) shots.push({ state, width, scheme, forced: false });
   }
-  for (const state of forced) shots.push({ state, width: 1440, scheme: 'light', forced: true });
+  if (!widths.length) for (const state of forced) shots.push({ state, width: 1440, scheme: 'light', forced: true });
   return shots;
 }
 
@@ -299,7 +311,7 @@ export function measure(tokens) {
 
   const addText = (fgValue, bg, el, sample) => {
     const fg = parse(fgValue);
-    if (!fg) return;
+    if (!fg || fg[3] === 0) return; // text made transparent on purpose (a busy button's label) is not read
     const s = getComputedStyle(el);
     const needs = isLarge(parseFloat(s.fontSize), Number(s.fontWeight)) ? 3 : 4.5;
     const r = ratio(over(fg, bg), bg);
@@ -475,7 +487,7 @@ export function measure(tokens) {
     }
 
     // Containers that something runs past, and button labels that wrap on a desktop.
-    const BOXES = '.jfb-form, .jfb-page, .jfb-group, .jfb-fields, .jfb-field, .jfb-choices, .jfb-choice, .jfb-navigation, .jfb-progress, .jfb-error-summary, .jfb-summary dl > div, .jfb-file, .jfb-row, .jfb-upload, .jfb-matrix > fieldset, .jfb-ranking > li, .jfb-outcome, .jfb-notice, .jfb-parts, .jfb-affix';
+    const BOXES = '.jfb-form, .jfb-page, .jfb-group, .jfb-fields, .jfb-field, .jfb-choices, .jfb-choice, .jfb-navigation, .jfb-progress, .jfb-progress-steps > ol > li, .jfb-error-summary, .jfb-summary dl > div, .jfb-file, .jfb-row, .jfb-upload, .jfb-matrix > fieldset, .jfb-ranking > li, .jfb-outcome, .jfb-notice, .jfb-captcha, .jfb-parts, .jfb-affix';
     for (const el of [form, ...form.querySelectorAll(BOXES)]) {
       if (visible(el) && el.scrollWidth > el.clientWidth + 1) overflows.push(`${describe(el)} "${textOf(el).slice(0, 40)}" by ${el.scrollWidth - el.clientWidth} px`);
     }
@@ -536,7 +548,7 @@ export function stylesheetFindings(files) {
 async function main(argv) {
   const args = parseArgs(argv);
   if (args.error) {
-    console.error(`website-mocks: ${args.error}\nusage: node scripts/website-mocks.mjs [--check] [filter]`);
+    console.error(`website-mocks: ${args.error}\nusage: node scripts/website-mocks.mjs [--check | --widths=480,...] [filter]`);
     return 2;
   }
   const pages = listPages(WEBSITE, args.filter);
@@ -559,7 +571,7 @@ async function main(argv) {
   const tokens = tokenNames(sheets.map(([, css]) => css).join('\n'));
 
   mkdirSync(OUT, { recursive: true });
-  if (!args.filter) {
+  if (!args.filter && !args.widths.length) {
     // A full run replaces every PNG, so a removed shot leaves no stale picture behind.
     for (const f of readdirSync(OUT)) if (f.endsWith('.png')) rmSync(join(OUT, f));
   }
@@ -569,7 +581,7 @@ async function main(argv) {
     for (const page of pages) {
       const file = join(WEBSITE, `${page}.html`);
       const html = readFileSync(file, 'utf8');
-      for (const shot of plannedShots(parseStates(html), parseStates(html, 'jfb-forced', []))) {
+      for (const shot of plannedShots(parseStates(html), parseStates(html, 'jfb-forced', []), args.widths)) {
         const phone = shot.width < 768;
         const context = await browser.newContext({
           viewport: { width: shot.width, height: phone ? 812 : 900 },
@@ -586,8 +598,14 @@ async function main(argv) {
         await tab.goto(`${pathToFileURL(file).href}?state=${shot.state}&scheme=${shot.scheme}`);
         await tab.waitForSelector('html[data-mock-ready="true"]', { timeout: 15000 });
         await tab.evaluate(() => document.fonts.ready);
+        // Fades that start on load (an error, a notice) run even with reduced motion: wait for them to end.
+        await tab.evaluate(() => Promise.all(document.getAnimations()
+          .filter((a) => a.effect && a.effect.getTiming().iterations !== Infinity)
+          .map((a) => a.finished.catch(() => null))));
         const name = shotName(page, shot);
-        if (phone) {
+        if (args.widths.length) {
+          // A width sweep only measures: the committed PNGs stay the pages' own shots.
+        } else if (phone) {
           // A full-page capture drops the touch emulation, so the page would be drawn as for a mouse; a viewport as
           // tall as the page keeps (pointer: coarse) and (hover: none) true.
           const height = await tab.evaluate(() => document.documentElement.scrollHeight);

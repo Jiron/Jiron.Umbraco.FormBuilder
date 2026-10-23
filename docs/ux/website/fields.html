@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Field specimen: every field type and state (website form mock)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="jfb-shots" content="default">
+  <meta name="jfb-shots" content="default alternate">
   <meta name="jfb-forced" content="default">
   <link rel="stylesheet" href="assets/site.css">
   <link rel="stylesheet" href="assets/base.css">
@@ -14,8 +14,12 @@
 <body>
   <!--
     The specimen: every field type of the default theme in one form, grouped the way an editor would, with the
-    states a field can be in (disabled, read-only, invalid, over the length limit). Below it, a second form shows
-    the other way of marking questions: an asterisk on required ones, with the note that explains it.
+    states a field can be in (disabled, read-only, invalid, over the length limit, a list still loading). Below it,
+    a second form shows the other way of marking questions: an asterisk on required ones, with the note that
+    explains it; it is German and has six pages, so its long step names show how the steps wrap and fold.
+    States: default; alternate (the other state of the parts that have two: the floor plan upload as it is without
+    JavaScript, a file dragged over the photo upload, a cascading list with nothing to offer, and the captcha after
+    a check that did not go through).
     Also rendered with Windows forced colours (a contrast theme), the "forced" shots.
   -->
   <header class="site-head">
@@ -53,8 +57,8 @@
             <div class="jfb-field jfb-field-url" data-jfb-field="f4" data-jfb-alias="website" data-jfb-type="url">
               <label class="jfb-label" for="jfb-3-website">Website <span class="jfb-mark">(optional)</span></label>
               <div class="jfb-affix">
-                <span aria-hidden="true">https://</span>
-                <input class="jfb-control" id="jfb-3-website" name="website" inputmode="url" autocomplete="url" spellcheck="false" aria-label="Website, without https://" value="knitters.example">
+                <span id="jfb-3-website-prefix">https://</span>
+                <input class="jfb-control" id="jfb-3-website" name="website" inputmode="url" autocomplete="url" spellcheck="false" aria-describedby="jfb-3-website-prefix" value="knitters.example">
               </div>
             </div>
             <div class="jfb-field jfb-field-textarea" data-jfb-field="f5" data-jfb-alias="about" data-jfb-type="textarea">
@@ -90,6 +94,11 @@
             <div class="jfb-field jfb-field-time" data-jfb-field="f9" data-jfb-alias="start" data-jfb-type="time">
               <label class="jfb-label" for="jfb-3-start">Start time</label>
               <input class="jfb-control" type="time" id="jfb-3-start" name="start" value="18:30">
+            </div>
+            <div class="jfb-field jfb-field-datetime jfb-span-2" data-jfb-field="f9b" data-jfb-alias="keyPickup" data-jfb-type="datetime">
+              <label class="jfb-label" for="jfb-3-keyPickup">When will you collect the key?</label>
+              <p class="jfb-help" id="jfb-3-keyPickup-help">The library desk is open from 9:00 to 18:00.</p>
+              <input class="jfb-control" type="datetime-local" id="jfb-3-keyPickup" name="keyPickup" value="2026-11-26T16:30" aria-describedby="jfb-3-keyPickup-help">
             </div>
             <div class="jfb-field jfb-field-slider jfb-span-2" data-jfb-field="f10" data-jfb-alias="hours" data-jfb-type="slider">
               <label class="jfb-label" for="jfb-3-hours">How many hours?</label>
@@ -170,6 +179,28 @@
                 </div>
               </fieldset>
             </div>
+            <div class="jfb-field jfb-field-checkboxes jfb-span-2" data-jfb-field="f14b" data-jfb-alias="ready" data-jfb-type="checkboxes">
+              <fieldset>
+                <legend class="jfb-label">What should be ready in the room? <span class="jfb-mark">(optional)</span></legend>
+                <div class="jfb-choices jfb-choices-cards">
+                  <div class="jfb-choice">
+                    <img src="assets/placeholder.svg" alt="" width="600" height="400">
+                    <input type="checkbox" id="jfb-3-ready" name="ready" value="flipchart" checked>
+                    <label for="jfb-3-ready">A flip chart</label>
+                  </div>
+                  <div class="jfb-choice">
+                    <img src="assets/placeholder.svg" alt="" width="600" height="400">
+                    <input type="checkbox" id="jfb-3-ready-2" name="ready" value="kitchen">
+                    <label for="jfb-3-ready-2">The tea kitchen</label>
+                  </div>
+                  <div class="jfb-choice">
+                    <img src="assets/placeholder.svg" alt="" width="600" height="400">
+                    <input type="checkbox" id="jfb-3-ready-3" name="ready" value="stage" checked>
+                    <label for="jfb-3-ready-3">A small stage</label>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
             <div class="jfb-field jfb-field-radio" data-jfb-field="f15" data-jfb-alias="payment" data-jfb-type="radio">
               <fieldset>
                 <legend class="jfb-label">How will you pay?</legend>
@@ -220,7 +251,7 @@
             <div class="jfb-field jfb-field-checkbox jfb-span-2" data-jfb-field="f20" data-jfb-alias="newsletter" data-jfb-type="checkbox">
               <div class="jfb-choice">
                 <input type="checkbox" id="jfb-3-newsletter" name="newsletter" value="true">
-                <label for="jfb-3-newsletter">Send me the library newsletter <span class="jfb-mark">(optional)</span></label>
+                <label for="jfb-3-newsletter">Send me the library newsletter</label>
               </div>
             </div>
           </div>
@@ -269,9 +300,9 @@
                 <legend class="jfb-label">What matters most in a room?</legend>
                 <p class="jfb-help" id="jfb-3-priorities-help">Put the most important first.</p>
                 <ol class="jfb-ranking">
-                  <li><span>1</span><span>Daylight</span><button type="button" class="jfb-button jfb-button-icon" disabled><span class="jfb-icon jfb-icon-up" aria-hidden="true"></span><span class="jfb-visually-hidden">Move Daylight up</span></button><button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-down" aria-hidden="true"></span><span class="jfb-visually-hidden">Move Daylight down</span></button></li>
+                  <li><span>1</span><span>Daylight</span><button type="button" class="jfb-button jfb-button-icon" aria-disabled="true"><span class="jfb-icon jfb-icon-up" aria-hidden="true"></span><span class="jfb-visually-hidden">Move Daylight up</span></button><button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-down" aria-hidden="true"></span><span class="jfb-visually-hidden">Move Daylight down</span></button></li>
                   <li><span>2</span><span>Step-free access</span><button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-up" aria-hidden="true"></span><span class="jfb-visually-hidden">Move Step-free access up</span></button><button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-down" aria-hidden="true"></span><span class="jfb-visually-hidden">Move Step-free access down</span></button></li>
-                  <li><span>3</span><span>A quiet street</span><button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-up" aria-hidden="true"></span><span class="jfb-visually-hidden">Move A quiet street up</span></button><button type="button" class="jfb-button jfb-button-icon" disabled><span class="jfb-icon jfb-icon-down" aria-hidden="true"></span><span class="jfb-visually-hidden">Move A quiet street down</span></button></li>
+                  <li><span>3</span><span>A quiet street</span><button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-up" aria-hidden="true"></span><span class="jfb-visually-hidden">Move A quiet street up</span></button><button type="button" class="jfb-button jfb-button-icon" aria-disabled="true"><span class="jfb-icon jfb-icon-down" aria-hidden="true"></span><span class="jfb-visually-hidden">Move A quiet street down</span></button></li>
                 </ol>
               </fieldset>
             </div>
@@ -309,6 +340,121 @@
                   </div>
                 </div>
               </fieldset>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group jfb-columns-2" data-jfb-group="g6b">
+          <legend>Lists</legend>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-country" data-jfb-field="f24b" data-jfb-alias="country" data-jfb-type="country">
+              <label class="jfb-label" for="jfb-3-country">Where is your group based?</label>
+              <div class="jfb-select">
+                <select class="jfb-control" id="jfb-3-country" name="country" autocomplete="country">
+                  <option value="">Choose a country</option>
+                  <option value="AT">Austria</option>
+                  <option value="DK">Denmark</option>
+                  <option value="DE" selected>Germany</option>
+                  <option value="NL">Netherlands</option>
+                  <option value="CH">Switzerland</option>
+                </select>
+              </div>
+            </div>
+            <div class="jfb-field jfb-field-dropdown" data-jfb-field="f24c" data-jfb-alias="days" data-jfb-type="dropdown">
+              <label class="jfb-label" for="jfb-3-days">Which days could suit you?</label>
+              <p class="jfb-help" id="jfb-3-days-help">Choose one or more: hold Ctrl, or Cmd on a Mac, while you click.</p>
+              <select class="jfb-control" id="jfb-3-days" name="days" multiple size="4" aria-describedby="jfb-3-days-help">
+                <option selected>Tuesday</option>
+                <option>Wednesday</option>
+                <option selected>Thursday</option>
+                <option>Friday</option>
+                <option>Saturday</option>
+              </select>
+            </div>
+            <div class="jfb-field jfb-field-dropdown" data-jfb-field="f24d" data-jfb-alias="region" data-jfb-type="dropdown">
+              <label class="jfb-label" for="jfb-3-region">Region</label>
+              <div class="jfb-select">
+                <select class="jfb-control" id="jfb-3-region" name="region" data-mock-fill="Hill estates">
+                  <option value="">Choose one</option>
+                  <option selected>Riverside</option>
+                  <option>Old town</option>
+                  <option>Hill estates</option>
+                </select>
+              </div>
+            </div>
+            <div class="jfb-field jfb-field-dropdown" data-jfb-field="f24e" data-jfb-alias="branch" data-jfb-type="dropdown" data-mock-not="alternate">
+              <label class="jfb-label" for="jfb-3-branch">Library branch</label>
+              <div class="jfb-select">
+                <select class="jfb-control" id="jfb-3-branch" name="branch" disabled aria-busy="true">
+                  <option>Loading the branches&hellip;</option>
+                </select>
+              </div>
+            </div>
+            <div class="jfb-field jfb-field-dropdown" data-jfb-field="f24e" data-jfb-alias="branch" data-jfb-type="dropdown" data-mock-state="alternate">
+              <label class="jfb-label" for="jfb-3-branch-none">Library branch</label>
+              <div class="jfb-select">
+                <select class="jfb-control" id="jfb-3-branch-none" name="branch" disabled>
+                  <option>No branches in this region</option>
+                </select>
+              </div>
+            </div>
+            <div class="jfb-field jfb-field-radio jfb-span-2" data-jfb-field="f24f" data-jfb-alias="heardFrom" data-jfb-type="radio">
+              <fieldset>
+                <legend class="jfb-label">How did you hear about the rooms?</legend>
+                <div class="jfb-choices">
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-heardFrom" name="heardFrom" value="website"><label for="jfb-3-heardFrom">The library's website</label></div>
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-heardFrom-2" name="heardFrom" value="friend"><label for="jfb-3-heardFrom-2">A friend</label></div>
+                  <div class="jfb-choice"><input type="radio" id="jfb-3-heardFrom-3" name="heardFrom" value="other" checked><label for="jfb-3-heardFrom-3">Other</label></div>
+                  <div class="jfb-other">
+                    <label class="jfb-visually-hidden" for="jfb-3-heardFrom-other">How else did you hear about the rooms?</label>
+                    <input class="jfb-control" id="jfb-3-heardFrom-other" name="heardFrom.other" value="A leaflet at the town hall">
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group" data-jfb-group="g6c">
+          <legend>Files</legend>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-file" data-jfb-field="f24g" data-jfb-alias="plan" data-jfb-type="file" data-mock-not="alternate">
+              <label class="jfb-label" for="jfb-3-plan">Floor plan</label>
+              <p class="jfb-help" id="jfb-3-plan-help">A PDF or an image, up to 10 MB.</p>
+              <div class="jfb-upload" data-jfb-dropzone data-jfb-enhanced>
+                <span class="jfb-icon jfb-icon-upload" aria-hidden="true"></span>
+                <p>Drag a file here, or</p>
+                <div class="jfb-upload-actions">
+                  <input type="file" id="jfb-3-plan" name="plan" accept=".pdf,image/*" aria-describedby="jfb-3-plan-help">
+                  <label class="jfb-button" for="jfb-3-plan">Choose a file</label>
+                  <input type="file" class="jfb-upload-camera" id="jfb-3-plan-camera" accept="image/*" capture="environment" aria-describedby="jfb-3-plan-help">
+                  <label class="jfb-button jfb-upload-camera" for="jfb-3-plan-camera">Take a photo</label>
+                </div>
+              </div>
+            </div>
+            <div class="jfb-field jfb-field-file" data-jfb-field="f24g" data-jfb-alias="plan" data-jfb-type="file" data-mock-state="alternate">
+              <label class="jfb-label" for="jfb-3-plan-plain">Floor plan</label>
+              <p class="jfb-help" id="jfb-3-plan-plain-help">A PDF or an image, up to 10 MB.</p>
+              <div class="jfb-upload" data-jfb-dropzone>
+                <span class="jfb-icon jfb-icon-upload" aria-hidden="true"></span>
+                <div class="jfb-upload-actions">
+                  <input type="file" id="jfb-3-plan-plain" name="plan" accept=".pdf,image/*" aria-describedby="jfb-3-plan-plain-help">
+                </div>
+              </div>
+            </div>
+            <div class="jfb-field jfb-field-file" data-jfb-field="f24h" data-jfb-alias="photos" data-jfb-type="file">
+              <label class="jfb-label" for="jfb-3-photos">Photos of past events <span class="jfb-mark">(optional)</span></label>
+              <p class="jfb-help" id="jfb-3-photos-help">Images, up to 10 MB each. We may use them in the events guide.</p>
+              <div class="jfb-upload" data-jfb-dropzone data-jfb-enhanced data-mock-drop="alternate">
+                <span class="jfb-icon jfb-icon-upload" aria-hidden="true"></span>
+                <p>Drag files here, or</p>
+                <div class="jfb-upload-actions">
+                  <input type="file" id="jfb-3-photos" name="photos" multiple accept="image/*" aria-describedby="jfb-3-photos-help">
+                  <label class="jfb-button" for="jfb-3-photos">Choose files</label>
+                  <input type="file" class="jfb-upload-camera" id="jfb-3-photos-camera" accept="image/*" capture="environment" aria-describedby="jfb-3-photos-help">
+                  <label class="jfb-button jfb-upload-camera" for="jfb-3-photos-camera">Take a photo</label>
+                </div>
+              </div>
             </div>
           </div>
         </fieldset>
@@ -352,7 +498,7 @@
             </div>
             <div class="jfb-field jfb-field-image" data-jfb-field="f31" data-jfb-type="image">
               <figure class="jfb-image">
-                <img src="assets/placeholder.svg" alt="The reading room set out with tables for a group" width="600" height="400">
+                <img src="assets/placeholder.svg" alt="Six long tables with chairs under three tall windows" width="600" height="400">
                 <figcaption>The reading room, set out with tables.</figcaption>
               </figure>
             </div>
@@ -365,6 +511,18 @@
             </div>
           </div>
         </fieldset>
+
+        <div class="jfb-group" data-jfb-group="g9">
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-captcha" data-jfb-field="f33" data-jfb-type="captcha">
+              <div class="jfb-captcha" data-jfb-captcha="hcaptcha">
+                <p>Before you send, a check from hCaptcha makes sure you are a person. It loads only when you ask for it, and hCaptcha may store cookies. <a href="#">How hCaptcha uses your data</a></p>
+                <p class="jfb-error" id="jfb-3-captcha-error" data-jfb-error data-mock-state="alternate">The check didn't go through. Load it again, then send.</p>
+                <button type="button" class="jfb-button" aria-describedby="jfb-3-captcha-error">Load the check</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <div class="jfb-navigation">
@@ -379,25 +537,39 @@
     </form>
 
     <h2 class="site-section">Marking required questions instead</h2>
-    <p class="site-lede">When most questions are optional, an editor can mark the required ones with an asterisk. The form then explains the mark once, above the first question.</p>
+    <p class="site-lede">When most questions are optional, an editor can mark the required ones with an asterisk; the form then explains the mark once, above the first question. This form is German and has six pages. Its step names are long, and where one would have to break inside a word, the steps fold into "Schritt 1 von 6" with short bars, and the page title shows.</p>
 
-    <form class="jfb-form jfb-theme-default" id="jfb-4" data-jfb-form="7e2b4a90" data-jfb-revision="1" data-jfb-api="/jfb/api/v1" data-jfb-contract="1" lang="en" dir="ltr" method="post" novalidate>
-      <script type="application/json" data-jfb-model>{"pages":1}</script>
-      <p class="jfb-help">Questions marked <span aria-hidden="true">*</span><span class="jfb-visually-hidden">with an asterisk</span> need an answer.</p>
+    <form class="jfb-form jfb-theme-default" id="jfb-4" data-jfb-form="7e2b4a90" data-jfb-revision="1" data-jfb-api="/jfb/api/v1" data-jfb-contract="1" lang="de" dir="ltr" method="post" novalidate>
+      <script type="application/json" data-jfb-model>{"pages":6}</script>
+
+      <div class="jfb-progress jfb-progress-steps">
+        <p class="jfb-progress-text">Schritt 1 von 6</p>
+        <ol aria-label="Fortschritt">
+          <li aria-current="step"><span>Ihre Angaben</span></li>
+          <li><span>Veranstaltung</span></li>
+          <li><span>Raum und Ausstattung</span></li>
+          <li><span>Teilnahmebedingungen</span></li>
+          <li><span>Rechnungsadresse</span></li>
+          <li><span>Angaben pr&uuml;fen</span></li>
+        </ol>
+      </div>
+
+      <p class="jfb-help">Fragen mit <span aria-hidden="true">*</span><span class="jfb-visually-hidden">Sternchen</span> m&uuml;ssen beantwortet werden.</p>
 
       <section class="jfb-page" data-jfb-page="p1">
+        <h2 class="jfb-title">Ihre Angaben</h2>
         <div class="jfb-group jfb-columns-2" data-jfb-group="g1">
           <div class="jfb-fields">
             <div class="jfb-field jfb-field-text" data-jfb-field="f1" data-jfb-alias="name" data-jfb-type="text">
-              <label class="jfb-label" for="jfb-4-name">Your name <span class="jfb-mark" aria-hidden="true">*</span></label>
+              <label class="jfb-label" for="jfb-4-name">Ihr Name <span class="jfb-mark" aria-hidden="true">*</span></label>
               <input class="jfb-control" id="jfb-4-name" name="name" autocomplete="name" required>
             </div>
             <div class="jfb-field jfb-field-email" data-jfb-field="f2" data-jfb-alias="email" data-jfb-type="email">
-              <label class="jfb-label" for="jfb-4-email">Email address <span class="jfb-mark" aria-hidden="true">*</span></label>
+              <label class="jfb-label" for="jfb-4-email">E-Mail-Adresse <span class="jfb-mark" aria-hidden="true">*</span></label>
               <input class="jfb-control" type="email" id="jfb-4-email" name="email" autocomplete="email" spellcheck="false" required>
             </div>
             <div class="jfb-field jfb-field-textarea jfb-span-2" data-jfb-field="f3" data-jfb-alias="idea" data-jfb-type="textarea">
-              <label class="jfb-label" for="jfb-4-idea">An idea for a new event</label>
+              <label class="jfb-label" for="jfb-4-idea">Eine Idee f&uuml;r eine neue Veranstaltung</label>
               <textarea class="jfb-control" id="jfb-4-idea" name="idea" rows="3"></textarea>
             </div>
           </div>
@@ -405,12 +577,12 @@
       </section>
 
       <div class="jfb-navigation">
-        <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="submit" data-jfb-nav="submit">Send</button>
+        <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="next" data-jfb-nav="next">Weiter</button>
       </div>
 
       <div data-jfb-live aria-live="polite"></div>
       <div class="jfb-hp" aria-hidden="true">
-        <label for="jfb-4-hp">Leave this field empty</label>
+        <label for="jfb-4-hp">Dieses Feld leer lassen</label>
         <input id="jfb-4-hp" name="jfb-hp-5d03" tabindex="-1" autocomplete="off">
       </div>
     </form>

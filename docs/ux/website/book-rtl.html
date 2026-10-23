@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>Book a workshop, page 2, right to left (website form mock)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="jfb-shots" content="default">
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/base.css">
+  <link rel="stylesheet" href="assets/theme.css">
+  <script src="assets/mock.js" defer></script>
+</head>
+<body>
+  <!--
+    Page 2 of the booking (book-session.html) on an Arabic site, laid out right to left, to show what the theme
+    mirrors through logical properties alone (ADR-0015): the steps run from the right, the ledger's headings sit on
+    the right and the fields on the left, the cards' radio buttons, the repeater's Remove, the dropdown's arrow and
+    the counter change sides, the switch's thumb starts on the right, and the Back arrow points right. Arabic is not
+    one of the seven languages the visitor texts ship in (D20); an editor writes these texts, as on any site whose
+    language is not among them.
+  -->
+  <header class="site-head">
+    <div class="site-wrap">
+      <a class="site-brand" href="#">مكتبة ليندنهال</a>
+      <nav class="site-nav" aria-label="الموقع"><a href="#">زيارة</a><a href="#">الفعاليات</a><a href="#">الانضمام</a></nav>
+    </div>
+  </header>
+  <main class="site-main">
+    <h1>احجز ورشة يوم السبت</h1>
+    <p class="site-lede">تعلّم إصلاح أغراضك مع متطوعي مقهى الإصلاح. الورش مجانية، والأماكن محدودة.</p>
+
+    <form class="jfb-form jfb-theme-default" id="jfb-5" data-jfb-form="8d1f0c2e" data-jfb-revision="4" data-jfb-api="/jfb/api/v1" data-jfb-contract="1" lang="ar" dir="rtl" method="post" novalidate>
+      <script type="application/json" data-jfb-model>{"pages":3}</script>
+      <!-- The default button: Enter in a field means Next, not the first Remove or Add button below. -->
+      <button type="submit" class="jfb-visually-hidden" name="jfb-nav" value="next" tabindex="-1" aria-hidden="true">التالي</button>
+
+      <div class="jfb-progress jfb-progress-steps">
+        <p class="jfb-progress-text">الخطوة 2 من 3</p>
+        <ol aria-label="التقدم">
+          <li data-jfb-done><span><span class="jfb-visually-hidden">تمت: </span>بياناتك</span></li>
+          <li aria-current="step"><span>ورشتك</span></li>
+          <li><span>راجع إجاباتك</span></li>
+        </ol>
+      </div>
+
+      <section class="jfb-page" data-jfb-page="p2">
+        <h2 class="jfb-title">ورشتك</h2>
+
+        <fieldset class="jfb-group" data-jfb-group="g3" aria-describedby="jfb-5-g3-help">
+          <legend>السبت 14 نوفمبر</legend>
+          <p class="jfb-help" id="jfb-5-g3-help">تقام جميع الورش في المكتبة.</p>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-radio" data-jfb-field="f8" data-jfb-alias="workshop" data-jfb-type="radio">
+              <fieldset>
+                <legend class="jfb-label">الورشة</legend>
+                <div class="jfb-choices jfb-choices-cards">
+                  <div class="jfb-choice">
+                    <input type="radio" id="jfb-5-workshop" name="workshop" value="bikes" checked>
+                    <label for="jfb-5-workshop">أساسيات إصلاح الدراجات <span class="jfb-places">بقي 3 أماكن</span></label>
+                  </div>
+                  <div class="jfb-choice">
+                    <input type="radio" id="jfb-5-workshop-2" name="workshop" value="mending">
+                    <label for="jfb-5-workshop-2">إصلاح الملابس <span class="jfb-places">بقي 12 مكانًا</span></label>
+                  </div>
+                  <div class="jfb-choice">
+                    <input type="radio" id="jfb-5-workshop-3" name="workshop" value="electricals" disabled aria-describedby="jfb-5-workshop-3-full">
+                    <label for="jfb-5-workshop-3">الأجهزة الكهربائية الصغيرة <span class="jfb-places" id="jfb-5-workshop-3-full">مكتملة</span></label>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+            <div class="jfb-field jfb-field-radio" data-jfb-field="f9" data-jfb-alias="session" data-jfb-type="radio">
+              <fieldset>
+                <legend class="jfb-label">الفترة</legend>
+                <div class="jfb-choices jfb-choices-horizontal">
+                  <div class="jfb-choice"><input type="radio" id="jfb-5-session" name="session" value="am" checked><label for="jfb-5-session">صباحًا، من 10:00 إلى 12:30</label></div>
+                  <div class="jfb-choice"><input type="radio" id="jfb-5-session-2" name="session" value="pm"><label for="jfb-5-session-2">بعد الظهر، من 14:00 إلى 16:30</label></div>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group jfb-group-card" data-jfb-group="g4" aria-describedby="jfb-5-g4-help">
+          <legend>من سيحضر</legend>
+          <p class="jfb-help" id="jfb-5-g4-help">يحضر الضيوف دون السادسة عشرة مع شخص بالغ.</p>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-repeater" data-jfb-field="f10" data-jfb-alias="guests" data-jfb-type="repeater">
+              <fieldset aria-describedby="jfb-5-guests-help">
+                <legend class="jfb-label">الضيوف <span class="jfb-mark">(اختياري)</span></legend>
+                <p class="jfb-help" id="jfb-5-guests-help">يمكنك إضافة ضيفين على الأكثر.</p>
+                <div class="jfb-repeater">
+                  <fieldset class="jfb-row">
+                    <legend>الضيف 1</legend>
+                    <button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="remove:guests:0">إزالة<span class="jfb-visually-hidden"> الضيف 1</span></button>
+                    <div class="jfb-fields jfb-columns-2">
+                      <div class="jfb-field jfb-field-text" data-jfb-alias="guests[0].name" data-jfb-type="text">
+                        <label class="jfb-label" for="jfb-5-guests-0-name">الاسم</label>
+                        <input class="jfb-control" id="jfb-5-guests-0-name" name="guests[0].name" value="سامي أوكافور" autocomplete="off">
+                      </div>
+                      <div class="jfb-field jfb-field-dropdown" data-jfb-alias="guests[0].age" data-jfb-type="dropdown">
+                        <label class="jfb-label" for="jfb-5-guests-0-age">العمر</label>
+                        <div class="jfb-select">
+                          <select class="jfb-control" id="jfb-5-guests-0-age" name="guests[0].age">
+                            <option value="">اختر</option>
+                            <option selected>دون السادسة عشرة</option>
+                            <option>السادسة عشرة أو أكثر</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </fieldset>
+                  <button type="submit" class="jfb-button" name="jfb-nav" value="add:guests"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>أضف ضيفًا</button>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="jfb-group" data-jfb-group="g5">
+          <legend>أمور أخرى</legend>
+          <div class="jfb-fields">
+            <div class="jfb-field jfb-field-textarea" data-jfb-field="f11" data-jfb-alias="notes" data-jfb-type="textarea">
+              <label class="jfb-label" for="jfb-5-notes">هل هناك ما ينبغي أن نعرفه؟ <span class="jfb-mark">(اختياري)</span></label>
+              <p class="jfb-help" id="jfb-5-notes-help">مثل احتياجات الوصول أو الحساسية من بعض الأطعمة.</p>
+              <textarea class="jfb-control" id="jfb-5-notes" name="notes" rows="4" maxlength="500" aria-describedby="jfb-5-notes-help jfb-5-notes-count">أستخدم كرسيًا متحركًا. هل يمكن الوصول إلى الفناء دون درج؟</textarea>
+              <p class="jfb-counter" id="jfb-5-notes-count">بقي 443 حرفًا</p>
+            </div>
+            <div class="jfb-field jfb-field-yesno" data-jfb-field="f12" data-jfb-alias="reminder" data-jfb-type="yesno">
+              <div class="jfb-choice">
+                <input type="checkbox" role="switch" class="jfb-switch" id="jfb-5-reminder" name="reminder" value="true" checked aria-describedby="jfb-5-reminder-help">
+                <label for="jfb-5-reminder">ذكّرني برسالة نصية قبل يوم</label>
+              </div>
+              <p class="jfb-help" id="jfb-5-reminder-help">نرسلها إلى رقم الهاتف المحمول الذي أدخلته.</p>
+            </div>
+          </div>
+        </fieldset>
+      </section>
+
+      <div class="jfb-navigation">
+        <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="next" data-jfb-nav="next">التالي</button>
+        <button type="submit" class="jfb-button" name="jfb-nav" value="back" data-jfb-nav="back"><span class="jfb-icon jfb-icon-back" aria-hidden="true"></span>رجوع</button>
+      </div>
+
+      <div data-jfb-live aria-live="polite"></div>
+      <div class="jfb-hp" aria-hidden="true">
+        <label for="jfb-5-hp">اترك هذا الحقل فارغًا</label>
+        <input id="jfb-5-hp" name="jfb-hp-7c2a" tabindex="-1" autocomplete="off">
+      </div>
+    </form>
+  </main>
+  <footer class="site-foot"><p>مكتبة ليندنهال، شارع السوق. مفتوحة من الثلاثاء إلى السبت.</p></footer>
+</body>
+</html>

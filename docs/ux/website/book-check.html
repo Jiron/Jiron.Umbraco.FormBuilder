@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Book a workshop, page 3: check your answers (website form mock)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="jfb-shots" content="default errors">
+  <meta name="jfb-shots" content="default errors sending failed limited changed full">
   <link rel="stylesheet" href="assets/site.css">
   <link rel="stylesheet" href="assets/base.css">
   <link rel="stylesheet" href="assets/theme.css">
@@ -14,7 +14,13 @@
   <!--
     The summary page: the answers by page, each with a "Change" button that goes back to its page and keeps every
     answer; an unanswered question reads "Not answered". The consent comes last, before Send.
-    States: default, and errors (Send without the consent ticked).
+    States: default; errors (Send without the consent ticked); sending (Send is busy, its label gives way to a turning
+    ring, and the live region says "Sending your answers"); failed (the connection dropped) and limited (too many
+    attempts from the visitor's network), each a notice above the buttons that takes the focus and says the answers
+    are kept; changed (form_changed: the form was published again while the visitor filled it in, so the runtime
+    re-rendered it with the answers, and the consent, whose wording changed, is no longer ticked: the notice sits
+    where the error summary goes and takes the focus); full (the chosen workshop filled up meanwhile: the error links
+    to that answer's Change button and shows in its row).
   -->
   <header class="site-head">
     <div class="site-wrap">
@@ -41,10 +47,20 @@
       </div>
 
       <div class="jfb-error-summary" data-jfb-summary role="alert" tabindex="-1" aria-labelledby="jfb-1-summary" data-mock-state="errors">
-        <h2 id="jfb-1-summary">Check this answer</h2>
+        <h2 id="jfb-1-summary">This answer needs a change</h2>
         <ul>
           <li><a href="#jfb-1-consent">Tick the box to agree to how we use your details</a></li>
         </ul>
+      </div>
+      <div class="jfb-error-summary" data-jfb-summary role="alert" tabindex="-1" aria-labelledby="jfb-1-summary-full" data-mock-state="full">
+        <h2 id="jfb-1-summary-full">This answer needs a change</h2>
+        <ul>
+          <li><a href="#jfb-1-change-workshop">Bike repair basics is now full. Choose another workshop</a></li>
+        </ul>
+      </div>
+      <div class="jfb-notice" data-jfb-notice="form_changed" role="alert" tabindex="-1" aria-labelledby="jfb-1-changed" data-mock-state="changed" data-mock-focus="changed">
+        <h2 id="jfb-1-changed">This form was updated while you filled it in</h2>
+        <p>Your answers are kept. The agreement at the end has new wording, so it is no longer ticked: read it again before you send.</p>
       </div>
 
       <section class="jfb-page" data-jfb-page="summary">
@@ -58,16 +74,16 @@
               <div><dt>Email address</dt><dd>mira.okafor@example.com</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p1:email">Change<span class="jfb-visually-hidden"> email address</span></button></dd></div>
               <div><dt>Mobile number</dt><dd data-jfb-empty>Not answered</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p1:phone">Change<span class="jfb-visually-hidden"> mobile number</span></button></dd></div>
               <div><dt>Library card</dt><dd>Yes, card 2002 4417 9083</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p1:hasCard">Change<span class="jfb-visually-hidden"> library card</span></button></dd></div>
-              <div><dt>How you heard about the workshops</dt><dd>A poster in the library</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p1:heardFrom">Change<span class="jfb-visually-hidden"> how you heard about the workshops</span></button></dd></div>
             </dl>
           </section>
           <section aria-labelledby="jfb-1-sum-p2">
             <h3 id="jfb-1-sum-p2">Your workshop</h3>
             <dl>
-              <div><dt>Workshop</dt><dd>Bike repair basics</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p2:workshop">Change<span class="jfb-visually-hidden"> workshop</span></button></dd></div>
+              <div><dt>Workshop</dt><dd>Bike repair basics<p class="jfb-error" id="jfb-1-workshop-error" data-jfb-error data-mock-state="full">Bike repair basics is now full. Choose another workshop</p></dd><dd><button type="submit" class="jfb-button jfb-button-link" id="jfb-1-change-workshop" name="jfb-nav" value="goto:p2:workshop" aria-describedby="jfb-1-workshop-error">Change<span class="jfb-visually-hidden"> workshop</span></button></dd></div>
               <div><dt>Session</dt><dd>Morning, 10:00 to 12:30</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p2:session">Change<span class="jfb-visually-hidden"> session</span></button></dd></div>
               <div><dt>Guests</dt><dd>Sam Okafor, under 16</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p2:guests">Change<span class="jfb-visually-hidden"> guests</span></button></dd></div>
               <div><dt>Anything we should know</dt><dd>I use a wheelchair. Is the courtyard step-free?</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p2:notes">Change<span class="jfb-visually-hidden"> anything we should know</span></button></dd></div>
+              <div><dt>How you heard about the workshops</dt><dd>A poster in the library</dd><dd><button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="goto:p2:heardFrom">Change<span class="jfb-visually-hidden"> how you heard about the workshops</span></button></dd></div>
             </dl>
           </section>
         </div>
@@ -76,8 +92,8 @@
           <div class="jfb-fields">
             <div class="jfb-field jfb-field-consent" data-jfb-field="f12" data-jfb-alias="consent" data-jfb-type="consent">
               <div class="jfb-choice">
-                <input type="checkbox" id="jfb-1-consent" name="consent" value="true" required data-mock-invalid="jfb-1-consent-error">
-                <label for="jfb-1-consent">I agree that Lindenhall Library keeps these details until a month after the workshop, as described in the <a href="#">privacy notice</a>.</label>
+                <input type="checkbox" id="jfb-1-consent" name="consent" value="true" required data-mock-invalid="jfb-1-consent-error" data-mock-check data-mock-clear="errors changed">
+                <label for="jfb-1-consent">I agree that Lindenhall Library keeps these details until <span data-mock-not="changed">a month</span><span data-mock-state="changed">three months</span> after the workshop, as described in the <a href="#">privacy notice</a>.</label>
               </div>
               <input type="hidden" name="jfb-consent-consent" value="3f9c51">
               <p class="jfb-error" id="jfb-1-consent-error" data-jfb-error data-mock-state="errors">Tick the box to agree to how we use your details</p>
@@ -86,12 +102,21 @@
         </div>
       </section>
 
+      <div class="jfb-notice jfb-notice-error" data-jfb-notice="send_failed" role="alert" tabindex="-1" aria-labelledby="jfb-1-failed" data-mock-state="failed" data-mock-focus="failed">
+        <h2 id="jfb-1-failed">Your answers weren't sent</h2>
+        <p>Check your connection, then send again. Your answers are kept.</p>
+      </div>
+      <div class="jfb-notice jfb-notice-error" data-jfb-notice="rate_limited" role="alert" tabindex="-1" aria-labelledby="jfb-1-limited" data-mock-state="limited" data-mock-focus="limited">
+        <h2 id="jfb-1-limited">Your answers weren't sent</h2>
+        <p>Too many attempts from your network. Your answers are kept; send again in 2 minutes.</p>
+      </div>
+
       <div class="jfb-navigation">
-        <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="submit" data-jfb-nav="submit">Send</button>
+        <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="submit" data-jfb-nav="submit" data-mock-busy="sending">Send</button>
         <button type="submit" class="jfb-button" name="jfb-nav" value="back" data-jfb-nav="back"><span class="jfb-icon jfb-icon-back" aria-hidden="true"></span>Back</button>
       </div>
 
-      <div data-jfb-live aria-live="polite"></div>
+      <div data-jfb-live aria-live="polite"><span data-mock-state="sending">Sending your answers</span></div>
       <div class="jfb-hp" aria-hidden="true">
         <label for="jfb-1-hp">Leave this field empty</label>
         <input id="jfb-1-hp" name="jfb-hp-7c2a" tabindex="-1" autocomplete="off">

@@ -39,13 +39,21 @@ const clean = {
 
 describe('parseArgs', () => {
   test('reads --check and one filter', () => {
-    assert.deepEqual(parseArgs([]), { check: false, filter: '' });
-    assert.deepEqual(parseArgs(['--check', 'book']), { check: true, filter: 'book' });
+    assert.deepEqual(parseArgs([]), { check: false, filter: '', widths: [] });
+    assert.deepEqual(parseArgs(['--check', 'book']), { check: true, filter: 'book', widths: [] });
   });
 
-  test('refuses unknown options and a second filter', () => {
+  test('reads a width sweep, which implies --check', () => {
+    assert.deepEqual(parseArgs(['--widths=768', 'fields']), { check: true, filter: 'fields', widths: [768] });
+    assert.deepEqual(parseArgs(['--widths=375,768,1440']).widths, [375, 768, 1440]);
+  });
+
+  test('refuses unknown options, a second filter and bad widths', () => {
     assert.match(parseArgs(['--fast']).error, /unknown option/);
     assert.match(parseArgs(['a', 'b']).error, /one filter/);
+    assert.match(parseArgs(['--widths=tablet']).error, /bad widths/);
+    assert.match(parseArgs(['--widths=768,']).error, /bad widths/);
+    assert.match(parseArgs(['--widths=100']).error, /bad widths/);
   });
 });
 
@@ -68,12 +76,23 @@ describe('parseStates', () => {
 });
 
 describe('plannedShots', () => {
-  test('takes each state at both widths in both designs, then the forced-colours shots', () => {
+  test('a width sweep takes each state at those widths in both designs, without forced colours', () => {
+    assert.deepEqual(plannedShots(['default', 'errors'], ['default'], [768]), [
+      { state: 'default', width: 768, scheme: 'light', forced: false },
+      { state: 'default', width: 768, scheme: 'dark', forced: false },
+      { state: 'errors', width: 768, scheme: 'light', forced: false },
+      { state: 'errors', width: 768, scheme: 'dark', forced: false },
+    ]);
+  });
+
+  test('takes each state at each width in both designs, then the forced-colours shots', () => {
     const shots = plannedShots(['default', 'errors'], ['default']);
-    assert.equal(shots.length, 2 * 2 * 2 + 1);
-    assert.deepEqual(shots.slice(0, 4), [
+    assert.equal(shots.length, 2 * 3 * 2 + 1);
+    assert.deepEqual(shots.slice(0, 6), [
       { state: 'default', width: 375, scheme: 'light', forced: false },
       { state: 'default', width: 375, scheme: 'dark', forced: false },
+      { state: 'default', width: 768, scheme: 'light', forced: false },
+      { state: 'default', width: 768, scheme: 'dark', forced: false },
       { state: 'default', width: 1440, scheme: 'light', forced: false },
       { state: 'default', width: 1440, scheme: 'dark', forced: false },
     ]);

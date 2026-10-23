@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Hire a room, page 3: documents and agreement (website form mock)</title>
+  <title>Hire a room, page 3: before we confirm (website form mock)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="jfb-shots" content="default typed">
+  <meta name="jfb-shots" content="default typed errors save saved resumed expired">
   <link rel="stylesheet" href="assets/site.css">
   <link rel="stylesheet" href="assets/base.css">
   <link rel="stylesheet" href="assets/theme.css">
@@ -13,8 +13,14 @@
 <body>
   <!--
     Page 3 of 4 of a room hire form, progress as a bar. Files: the drop zone with the runtime's buttons ("Take a
-    photo" only on touch screens), then one uploaded image, one upload in progress and one refused file.
-    Signature: the pad with a drawn signature (default), or the typed name instead (typed).
+    photo" only on touch screens), then one uploaded image, one upload in progress (its share in words as well as in
+    the bar), one refused file and one upload that stopped, which the visitor can try again (ADR-0006).
+    Signature: the pad with a drawn signature, or the typed name instead.
+    States: default (drawn); typed (the name typed instead); errors (Next with five files where four are allowed and
+    no signature); save (the visitor chose "Save and continue later": a panel takes the buttons' place, asks where
+    to send the link and says what is not kept); saved (the link is on its way); resumed (the visitor came back
+    through the link: the answers are back, the files and the signature are not, and a notice says so); expired (the
+    link is older than 7 days: a notice in place of the form, with one way on).
   -->
   <header class="site-head">
     <div class="site-wrap">
@@ -26,6 +32,7 @@
     <h1>Hire a community room</h1>
     <p class="site-lede">The first-floor rooms seat up to 40 people. We need a floor plan of your layout and proof of insurance before we confirm a booking.</p>
 
+    <div data-mock-not="expired">
     <form class="jfb-form jfb-theme-default" id="jfb-2" data-jfb-form="51b7aa90" data-jfb-revision="2" data-jfb-api="/jfb/api/v1" data-jfb-contract="1" lang="en" dir="ltr" method="post" enctype="multipart/form-data" novalidate>
       <script type="application/json" data-jfb-model>{"pages":4}</script>
       <!-- The default button: Enter in a field means Next. -->
@@ -36,8 +43,20 @@
         <progress max="4" value="3" aria-labelledby="jfb-2-progress">Step 3 of 4</progress>
       </div>
 
+      <div class="jfb-error-summary" data-jfb-summary role="alert" tabindex="-1" aria-labelledby="jfb-2-summary" data-mock-state="errors">
+        <h2 id="jfb-2-summary">These answers need a change</h2>
+        <ul>
+          <li><a href="#jfb-2-documents">Choose at most 4 files. Remove 1 of the 5</a></li>
+          <li><a href="#jfb-2-signature-type">Add your signature, or type your name instead</a></li>
+        </ul>
+      </div>
+      <div class="jfb-notice" data-jfb-notice="resumed" role="status" tabindex="-1" aria-labelledby="jfb-2-resumed" data-mock-state="resumed" data-mock-focus="resumed">
+        <h2 id="jfb-2-resumed">Welcome back</h2>
+        <p>Your answers are back, on the page where you left off. Add your files and your signature again: they are not kept with saved answers.</p>
+      </div>
+
       <section class="jfb-page" data-jfb-page="p3">
-        <h2 class="jfb-title">Documents and agreement</h2>
+        <h2 class="jfb-title">Before we confirm</h2>
 
         <fieldset class="jfb-group" data-jfb-group="g7" aria-describedby="jfb-2-g7-help">
           <legend>Documents</legend>
@@ -50,32 +69,71 @@
                 <span class="jfb-icon jfb-icon-upload" aria-hidden="true"></span>
                 <p>Drag files here, or</p>
                 <div class="jfb-upload-actions">
-                  <input type="file" id="jfb-2-documents" name="documents" multiple accept=".pdf,image/*" aria-describedby="jfb-2-documents-help">
+                  <input type="file" id="jfb-2-documents" name="documents" multiple accept=".pdf,image/*" aria-describedby="jfb-2-documents-help" data-mock-invalid="jfb-2-documents-error">
                   <label class="jfb-button" for="jfb-2-documents">Choose files</label>
                   <input type="file" class="jfb-upload-camera" id="jfb-2-documents-camera" accept="image/*" capture="environment" aria-describedby="jfb-2-documents-help">
                   <label class="jfb-button jfb-upload-camera" for="jfb-2-documents-camera">Take a photo</label>
                 </div>
               </div>
-              <ul class="jfb-files" aria-label="Your files">
-                <li class="jfb-file">
+              <ul class="jfb-files" aria-label="Your files" data-mock-not="resumed">
+                <li class="jfb-file" data-mock-not="errors">
                   <img src="assets/placeholder.svg" alt="">
-                  <strong>hall-floor-plan.jpg</strong>
+                  <strong>room-layout.jpg</strong>
                   <p class="jfb-help">1.2 MB</p>
-                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Remove hall-floor-plan.jpg</span></button>
+                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Remove room-layout.jpg</span></button>
                 </li>
-                <li class="jfb-file" data-jfb-busy>
+                <li class="jfb-file" data-jfb-busy data-mock-not="errors">
                   <span class="jfb-icon jfb-icon-file" aria-hidden="true"></span>
                   <strong>insurance-certificate.pdf</strong>
-                  <progress max="100" value="60" aria-label="Uploading insurance-certificate.pdf">60 %</progress>
+                  <p class="jfb-help">60% uploaded</p>
+                  <progress max="100" value="60" aria-hidden="true"></progress>
                   <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Stop uploading insurance-certificate.pdf</span></button>
                 </li>
-                <li class="jfb-file" data-jfb-error>
+                <li class="jfb-file" data-jfb-error data-mock-not="errors">
                   <span class="jfb-icon jfb-icon-file" aria-hidden="true"></span>
-                  <strong>room-photos.zip</strong>
+                  <strong>hall-floor-plan.pdf</strong>
                   <p class="jfb-error">This file is larger than 10 MB. Choose a smaller one.</p>
-                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Remove room-photos.zip</span></button>
+                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Remove hall-floor-plan.pdf</span></button>
+                </li>
+                <li class="jfb-file" data-jfb-error data-mock-not="errors">
+                  <span class="jfb-icon jfb-icon-file" aria-hidden="true"></span>
+                  <strong>fire-exits.pdf</strong>
+                  <p class="jfb-error">The upload stopped before it finished.</p>
+                  <button type="button" class="jfb-button jfb-button-link">Try again<span class="jfb-visually-hidden"> to upload fire-exits.pdf</span></button>
+                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Remove fire-exits.pdf</span></button>
+                </li>
+                <li class="jfb-file" data-mock-state="errors">
+                  <img src="assets/placeholder.svg" alt="">
+                  <strong>room-layout.jpg</strong>
+                  <p class="jfb-help">1.2 MB</p>
+                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Remove room-layout.jpg</span></button>
+                </li>
+                <li class="jfb-file" data-mock-state="errors">
+                  <span class="jfb-icon jfb-icon-file" aria-hidden="true"></span>
+                  <strong>insurance-certificate.pdf</strong>
+                  <p class="jfb-help">240 KB</p>
+                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Remove insurance-certificate.pdf</span></button>
+                </li>
+                <li class="jfb-file" data-mock-state="errors">
+                  <span class="jfb-icon jfb-icon-file" aria-hidden="true"></span>
+                  <strong>hall-floor-plan.pdf</strong>
+                  <p class="jfb-help">2.1 MB</p>
+                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Remove hall-floor-plan.pdf</span></button>
+                </li>
+                <li class="jfb-file" data-mock-state="errors">
+                  <span class="jfb-icon jfb-icon-file" aria-hidden="true"></span>
+                  <strong>fire-exits.pdf</strong>
+                  <p class="jfb-help">180 KB</p>
+                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Remove fire-exits.pdf</span></button>
+                </li>
+                <li class="jfb-file" data-mock-state="errors">
+                  <img src="assets/placeholder.svg" alt="">
+                  <strong>chair-plan.png</strong>
+                  <p class="jfb-help">640 KB</p>
+                  <button type="button" class="jfb-button jfb-button-icon"><span class="jfb-icon jfb-icon-remove" aria-hidden="true"></span><span class="jfb-visually-hidden">Remove chair-plan.png</span></button>
                 </li>
               </ul>
+              <p class="jfb-error" id="jfb-2-documents-error" data-jfb-error data-mock-state="errors">Choose at most 4 files. Remove 1 of the 5</p>
             </div>
           </div>
         </fieldset>
@@ -84,14 +142,14 @@
           <legend>Agreement</legend>
           <div class="jfb-fields">
             <div class="jfb-field jfb-field-signature jfb-span-2" data-jfb-field="f21" data-jfb-alias="signature" data-jfb-type="signature">
-              <fieldset>
+              <fieldset data-mock-invalid="jfb-2-signature-error">
                 <legend class="jfb-label">Your signature</legend>
                 <div class="jfb-signature" data-mock-not="typed">
-                  <p class="jfb-help">Sign with your finger or the mouse.</p>
-                  <canvas class="jfb-signature-pad" width="900" height="300" role="img" aria-label="Your signature, drawn" data-mock-signature></canvas>
+                  <p class="jfb-help">Sign with your finger or the mouse, or type your name instead.</p>
+                  <canvas class="jfb-signature-pad" width="900" height="300" role="img" aria-label="Your signature, drawn" data-mock-signature data-mock-blank="errors resumed"></canvas>
                   <div class="jfb-signature-tools">
-                    <button type="button" class="jfb-button jfb-button-link">Clear</button>
-                    <button type="button" class="jfb-button jfb-button-link">Type your name instead</button>
+                    <button type="button" class="jfb-button jfb-button-link" data-mock-not="errors resumed">Clear</button>
+                    <button type="button" class="jfb-button jfb-button-link" id="jfb-2-signature-type">Type your name instead</button>
                   </div>
                 </div>
                 <div class="jfb-signature" data-mock-state="typed">
@@ -102,6 +160,7 @@
                     <button type="button" class="jfb-button jfb-button-link">Sign by hand instead</button>
                   </div>
                 </div>
+                <p class="jfb-error" id="jfb-2-signature-error" data-jfb-error data-mock-state="errors">Add your signature, or type your name instead</p>
               </fieldset>
             </div>
             <div class="jfb-field jfb-field-date" data-jfb-field="f22" data-jfb-alias="signedOn" data-jfb-type="date">
@@ -118,9 +177,27 @@
         </fieldset>
       </section>
 
-      <div class="jfb-navigation">
+      <div class="jfb-notice" data-jfb-save role="group" aria-labelledby="jfb-2-save" data-mock-state="save">
+        <h2 id="jfb-2-save">Save and continue later</h2>
+        <p>We email you a link back to this page, valid for 7 days. Files and your signature are not kept, so you add them again when you come back.</p>
+        <div class="jfb-field">
+          <label class="jfb-label" for="jfb-2-save-email">Email address</label>
+          <input class="jfb-control" type="email" id="jfb-2-save-email" name="jfb-save-email" autocomplete="email" spellcheck="false" value="daniel@fernandes.example" data-mock-focus="save">
+        </div>
+        <div class="jfb-navigation">
+          <button type="button" class="jfb-button jfb-button-primary">Send the link</button>
+          <button type="button" class="jfb-button">Cancel</button>
+        </div>
+      </div>
+      <div class="jfb-notice" data-jfb-notice="saved" role="status" tabindex="-1" aria-labelledby="jfb-2-saved" data-mock-state="saved" data-mock-focus="saved">
+        <h2 id="jfb-2-saved">We have emailed you a link</h2>
+        <p>It went to daniel@fernandes.example and works until 30 October. You can close this page now, or carry on.</p>
+      </div>
+
+      <div class="jfb-navigation" data-mock-not="save">
         <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="next" data-jfb-nav="next">Next</button>
         <button type="submit" class="jfb-button" name="jfb-nav" value="back" data-jfb-nav="back"><span class="jfb-icon jfb-icon-back" aria-hidden="true"></span>Back</button>
+        <button type="button" class="jfb-button jfb-button-link" data-jfb-nav="save">Save and continue later</button>
       </div>
 
       <div data-jfb-live aria-live="polite"></div>
@@ -129,6 +206,17 @@
         <input id="jfb-2-hp" name="jfb-hp-e41d" tabindex="-1" autocomplete="off">
       </div>
     </form>
+    </div>
+
+    <div data-mock-state="expired">
+      <div class="jfb-form jfb-theme-default" id="jfb-2-expired" data-jfb-form="51b7aa90" data-jfb-contract="1" lang="en" dir="ltr">
+        <div class="jfb-notice" data-jfb-notice="resume_expired">
+          <h2>This link has expired</h2>
+          <p>Saved answers are kept for 7 days, and these were saved on 9 October, so they are gone now.</p>
+          <a class="jfb-button jfb-button-primary" href="#">Start again</a>
+        </div>
+      </div>
+    </div>
   </main>
   <footer class="site-foot"><p>Lindenhall Library, Market Street. Open Tuesday to Saturday.</p></footer>
 </body>

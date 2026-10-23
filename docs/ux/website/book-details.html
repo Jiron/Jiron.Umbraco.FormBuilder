@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Book a workshop, page 1: your details (website form mock)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="jfb-shots" content="default errors focus answered">
+  <meta name="jfb-shots" content="default errors focus answered loading">
   <link rel="stylesheet" href="assets/site.css">
   <link rel="stylesheet" href="assets/base.css">
   <link rel="stylesheet" href="assets/theme.css">
@@ -13,8 +13,10 @@
 <body>
   <!--
     Page 1 of a three-page booking form, progress as steps, optional questions marked "(optional)".
-    States: default (a fresh form), errors (after "Next" with three problems), focus (the keyboard on the email field),
-    answered (every answer given: "Yes" chosen, so a rule shows the card number field).
+    States: default (a fresh form), errors (after "Next" with three problems: a name missing, an email address cut
+    short, no answer about the card), focus (the keyboard on the email field), answered (every answer given: "Yes"
+    chosen, so a rule shows the card number field), loading (the headless element of 6.6 before the form's definition
+    arrives: shapes where the first fields will be, still when motion is reduced, and a status for screen readers).
   -->
   <header class="site-head">
     <div class="site-wrap">
@@ -26,6 +28,7 @@
     <h1>Book a Saturday workshop</h1>
     <p class="site-lede">Learn to mend what you own, with the volunteers of the repair café. The workshops are free, and places are limited.</p>
 
+    <div data-mock-not="loading">
     <form class="jfb-form jfb-theme-default" id="jfb-1" data-jfb-form="8d1f0c2e" data-jfb-revision="4" data-jfb-api="/jfb/api/v1" data-jfb-contract="1" lang="en" dir="ltr" method="post" novalidate>
       <script type="application/json" data-jfb-model>{"pages":3}</script>
 
@@ -39,10 +42,10 @@
       </div>
 
       <div class="jfb-error-summary" data-jfb-summary role="alert" tabindex="-1" aria-labelledby="jfb-1-summary" data-mock-state="errors">
-        <h2 id="jfb-1-summary">Check these answers</h2>
+        <h2 id="jfb-1-summary">These answers need a change</h2>
         <ul>
           <li><a href="#jfb-1-firstName">Enter your first name</a></li>
-          <li><a href="#jfb-1-email">Enter your email address, for example name@example.com</a></li>
+          <li><a href="#jfb-1-email">Enter a complete email address, for example name@example.com</a></li>
           <li><a href="#jfb-1-hasCard">Choose whether you have a library card</a></li>
         </ul>
       </div>
@@ -51,7 +54,7 @@
         <h2 class="jfb-title">Your details</h2>
 
         <fieldset class="jfb-group jfb-columns-2" data-jfb-group="g1" aria-describedby="jfb-1-g1-help">
-          <legend>About you</legend>
+          <legend>How we reach you</legend>
           <p class="jfb-help" id="jfb-1-g1-help">We use these to confirm your place, and to tell you if a workshop moves.</p>
           <div class="jfb-fields">
             <div class="jfb-field jfb-field-text" data-jfb-field="f1" data-jfb-alias="firstName" data-jfb-type="text">
@@ -67,7 +70,7 @@
               <label class="jfb-label" for="jfb-1-email">Email address</label>
               <p class="jfb-help" id="jfb-1-email-help">We send the confirmation here.</p>
               <input class="jfb-control" type="email" id="jfb-1-email" name="email" autocomplete="email" spellcheck="false" required aria-describedby="jfb-1-email-help" data-mock-fill="mira.okafor@" data-mock-answer="mira.okafor@example.com" data-mock-invalid="jfb-1-email-error" data-mock-focus="focus">
-              <p class="jfb-error" id="jfb-1-email-error" data-jfb-error data-mock-state="errors">Enter your email address, for example name@example.com</p>
+              <p class="jfb-error" id="jfb-1-email-error" data-jfb-error data-mock-state="errors">Enter a complete email address, for example name@example.com</p>
             </div>
             <div class="jfb-field jfb-field-phone jfb-span-2" data-jfb-field="f4" data-jfb-alias="phone" data-jfb-type="phone">
               <label class="jfb-label" for="jfb-1-phone">Mobile number <span class="jfb-mark">(optional)</span></label>
@@ -95,18 +98,6 @@
               <label class="jfb-label" for="jfb-1-cardNumber">Card number</label>
               <input class="jfb-control" id="jfb-1-cardNumber" name="cardNumber" inputmode="numeric" autocomplete="off" disabled data-mock-answer="2002 4417 9083">
             </div>
-            <div class="jfb-field jfb-field-dropdown" data-jfb-field="f7" data-jfb-alias="heardFrom" data-jfb-type="dropdown">
-              <label class="jfb-label" for="jfb-1-heardFrom">How did you hear about the workshops? <span class="jfb-mark">(optional)</span></label>
-              <div class="jfb-select">
-                <select class="jfb-control" id="jfb-1-heardFrom" name="heardFrom" data-mock-answer="A poster in the library">
-                  <option value="">Choose one</option>
-                  <option>A poster in the library</option>
-                  <option>The library newsletter</option>
-                  <option>A friend</option>
-                  <option>Social media</option>
-                </select>
-              </div>
-            </div>
           </div>
         </fieldset>
       </section>
@@ -121,6 +112,22 @@
         <input id="jfb-1-hp" name="jfb-hp-7c2a" tabindex="-1" autocomplete="off">
       </div>
     </form>
+    </div>
+
+    <!-- The headless element (6.6) while it fetches the definition: the theme's skeleton, then the form above. -->
+    <div data-mock-state="loading">
+      <jfb-form form="8d1f0c2e" culture="en">
+        <div class="jfb-form jfb-theme-default" id="jfb-1-loading" aria-busy="true">
+          <div class="jfb-skeleton" aria-hidden="true">
+            <div><span></span><span></span></div>
+            <div><span></span><span></span></div>
+            <div><span></span><span></span></div>
+            <span></span>
+          </div>
+          <p class="jfb-visually-hidden" role="status">Loading the form</p>
+        </div>
+      </jfb-form>
+    </div>
   </main>
   <footer class="site-foot"><p>Lindenhall Library, Market Street. Open Tuesday to Saturday.</p></footer>
 </body>

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Book a workshop: closed (website form mock)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="jfb-shots" content="default opens">
+  <meta name="jfb-shots" content="default opens full members sent-before">
   <link rel="stylesheet" href="assets/site.css">
   <link rel="stylesheet" href="assets/base.css">
   <link rel="stylesheet" href="assets/theme.css">
@@ -12,9 +12,11 @@
 </head>
 <body>
   <!--
-    A notice in place of the form (Notice.cshtml): default shows the closed message an editor wrote; "opens" shows
-    a form that is not open yet, with the time it opens. Full, members only and "the form has changed" use the
-    same notice.
+    A notice in place of the form (Notice.cshtml), with the message an editor wrote or the default one:
+    default (closed), opens (not open yet, with the time it opens), full (entry_limit_reached: every place taken),
+    members (member_required: for signed-in members only, with the way to sign in as its one action) and sent-before
+    (already_submitted: one entry per member, and this member has sent theirs). The notice that the form has changed
+    sits above the form instead (book-check, state "changed").
   -->
   <header class="site-head">
     <div class="site-wrap">
@@ -27,13 +29,26 @@
     <p class="site-lede">Learn to mend what you own, with the volunteers of the repair café. The workshops are free, and places are limited.</p>
 
     <div class="jfb-form jfb-theme-default" id="jfb-1" data-jfb-form="8d1f0c2e" data-jfb-contract="1" lang="en" dir="ltr">
-      <div class="jfb-notice" data-mock-not="opens">
+      <div class="jfb-notice" data-mock-state="default">
         <h2>Bookings have closed</h2>
-        <p>The November workshops are full. Dates for the new year go online on 1 December; the <a href="#">library newsletter</a> has them first.</p>
+        <p>Bookings for the November workshops closed on 13 November. Dates for the new year go online on 1 December; the <a href="#">library newsletter</a> has them first.</p>
       </div>
       <div class="jfb-notice" data-mock-state="opens">
         <h2>Bookings open on 1 December at 9:00</h2>
         <p>Come back then to choose a workshop for January.</p>
+      </div>
+      <div class="jfb-notice" data-mock-state="full">
+        <h2>All places are taken</h2>
+        <p>Every place in the November workshops is booked. Ask at the library desk to join the waiting list.</p>
+      </div>
+      <div class="jfb-notice" data-mock-state="members">
+        <h2>Sign in to book</h2>
+        <p>The workshops are for library members. Sign in with your library card, and the booking form appears here.</p>
+        <a class="jfb-button jfb-button-primary" href="#">Sign in</a>
+      </div>
+      <div class="jfb-notice" data-mock-state="sent-before">
+        <h2>You have already booked</h2>
+        <p>You booked a place on 3 November, and each member can book one workshop a month. To change your booking, write to <a href="#">events@lindenhall.example</a>.</p>
       </div>
     </div>
   </main>

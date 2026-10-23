@@ -128,7 +128,11 @@ Three steps around the site's own size, so the scale follows the site. What the 
 | `--jfb-motion-ease` | `cubic-bezier(.23, 1, .32, 1)` | every movement (colour changes use `ease`) |
 
 Targets are at least 44 by 44 px (§4.13): every button, choice label and standalone link. This is a floor, not a
-token. With `prefers-reduced-motion: reduce`, both durations are 0 s.
+token. With `prefers-reduced-motion: reduce`, nothing travels: the theme's private distances (`--_rise` 4 px,
+`--_slide` 8 px) become 0 and so does the duration of movement (`--_move`), so an error or a new page only fades in,
+and a pressed button or a switch's knob jumps to its place instead of gliding there. Fades and colour changes keep
+their durations, since they help without moving anything. The busy button's turning ring becomes a slow pulse, and
+the skeleton stops pulsing.
 
 ### Layout widths
 
@@ -137,18 +141,32 @@ behaves like a form on a phone:
 
 | Form width | What changes |
 | --- | --- |
-| under 480 px | one column of fields; navigation buttons take the full width; step progress shows "Step 2 of 3" beside short bars |
-| 480 px and more | step progress shows each step's name, and the current step's name stands in for the page title |
+| under 480 px | one column of fields, name and address parts included; navigation buttons take the full width; step progress shows "Step 2 of 3" beside short bars |
+| 480 px and more | step progress shows each step's name for up to four steps, and the current step's name stands in for the page title |
 | under 540 px | a scale of 8 points or more wraps into even rows, its two end words in one row below |
 | under 600 px | a grid (matrix) stacks: each statement above its own choices |
-| 720 px and more | the ledger: a titled group's heading and help in the first third, its fields in the other two; a card group's fields start on the same line |
+| 720 px and more | the ledger: a titled group's heading and help in the first third, its fields in the other two; a card group's fields start on the same line; step names show for up to six steps |
+| any width | seven steps or more show "Step 2 of 7", and so does a form where a word of a step name is wider than its step (the runtime sets `data-jfb-compact`) |
 
 ### Icons
 
 Lucide icons (ISC licence), stroke 2, drawn as CSS masks so they take the text colour and survive forced colours:
-check, alert, back, up, down, add, remove, upload, file, print, star, and calendar and clock for the date and time
-pickers (which replace the browser's own icons where the browser allows it). Icons only ever sit next to words or
+check, alert, back, up, down, add, remove, upload, file, print, star, mail (an outcome that waits for the visitor to
+confirm their address), and calendar and clock for the date and time pickers (which replace the browser's own icons
+where the browser allows it). Icons only ever sit next to words or
 carry a text alternative; no icon is decoration.
+
+### The package's own page
+
+The page that confirms an email address (`GET verify?t=`, 8.5) is served by the package outside the site's
+templates (`docs/ux/website/assets/standalone.css` in the mocks). It is not a theme: the form part inside it uses the
+default theme with `jfb-scheme-auto`, and the page around it needs only a font, a text colour and a ground:
+
+| What | Light | Dark (`prefers-color-scheme: dark`) |
+| --- | --- | --- |
+| Font | `system-ui` and the platform fonts after it, 17 px, line height 1.5 | the same |
+| Text | `#1d2433`, the theme's ink: 14.5:1 on the ground | `#e8eaee`: 14.8:1 on the ground |
+| Ground | `#f6f7f9` | `#14181f` |
 
 ## The backoffice
 
@@ -199,12 +217,17 @@ Merge tags, aliases and configuration keys use a monospace stack (`Consolas, "Ca
 
 UUI's semantic colours (`--uui-color-text`, `-surface`, `-background`, `-border`, `-interactive`, `-selected`,
 `-positive`, `-danger`, `-warning`, `-focus`) carry every meaning, and UUI's components keep their own look. Two
-colours are ours, for what UUI does not cover at AA:
+colours are ours, for what UUI does not cover at AA. Both are mixed from UUI's own text and emphasis border, so they
+follow Umbraco's light, dark and high-contrast themes without knowing which one is on (the theme leaves no mark on
+the page that we could read):
 
 | Token | Value | Why |
 | --- | --- | --- |
-| `--jfb-bo-color-text-muted` | `#575757` (UUI palette "mine grey dimmed") | secondary text at 6.9:1 on the background |
-| `--jfb-bo-color-control-border` | `#8d8d8d` (UUI palette "dusty grey dark") | the boundary of controls we draw ourselves (the designer canvas, the rules builder), 3.3:1 on white for WCAG 1.4.11; UUI's own inputs keep UUI's border |
+| `--jfb-bo-color-text-muted` | `color-mix(in srgb, var(--uui-color-text) 50%, var(--uui-color-border-emphasis))` | secondary text. Light theme `#545454`: 7.6:1 on the surface, 7.1:1 on the background; dark theme `#a8aeb5`: 5.7:1 and 6.8:1; high contrast: black |
+| `--jfb-bo-color-control-border` | `color-mix(in srgb, var(--uui-color-text) 20%, var(--uui-color-border-emphasis))` | the boundary of controls we draw ourselves (the designer canvas, the rules builder), for WCAG 1.4.11. Light theme `#828282`: 3.8:1 on the surface, 3.6:1 on the background; dark theme `#7e8892`: 3.5:1 and 4.2:1; high contrast: black. UUI's own inputs keep UUI's border |
+
+The ratios come from the UUI values of Umbraco 17.7.1 (`light.css`, `dark.css`, `high-contrast.css` in
+`Umbraco.Cms.StaticAssets`). Step 9.1 checks them again in all three themes with axe, since UUI may change them.
 
 The wireframes of 2.2 (`docs/ux/wireframes/assets/kit.css`) used these values under provisional `--wf-*` names; the
 backoffice code in Phases 9 to 14 uses the names above.

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Book a workshop: booked (website form mock)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="jfb-shots" content="default">
+  <meta name="jfb-shots" content="default verify redirect">
   <link rel="stylesheet" href="assets/site.css">
   <link rel="stylesheet" href="assets/base.css">
   <link rel="stylesheet" href="assets/theme.css">
@@ -13,8 +13,12 @@
 <body>
   <!--
     The outcome: the editor's message (with answer recall), the entry's reference on its own line, then the copy of
-    the answers the outcome can offer (6.5), with a print button and a "fill in again" link. Each fact shows once:
-    the message leaves the workshop and the email address to the copy. The outcome receives the focus.
+    the answers the outcome can offer (6.5): the same rows as the summary page, without Change, with a print button
+    and a "fill in again" link. Each fact shows once: the message leaves the workshop, the time and the email address
+    to the copy. The outcome receives the focus.
+    States: default; verify (the form asks visitors to confirm their address: a letter instead of the tick, and what
+    to do next); redirect (a message, then another page after a delay: the countdown says where to, and "Stay here"
+    stops it, so nobody is moved on before they have read it, WCAG 2.2.1).
   -->
   <header class="site-head">
     <div class="site-wrap">
@@ -27,25 +31,45 @@
     <p class="site-lede">Learn to mend what you own, with the volunteers of the repair café. The workshops are free, and places are limited.</p>
 
     <div class="jfb-form jfb-theme-default" id="jfb-1" data-jfb-form="8d1f0c2e" data-jfb-contract="1" lang="en" dir="ltr">
-      <div class="jfb-outcome" data-jfb-outcome tabindex="-1">
+      <div class="jfb-outcome" data-jfb-outcome tabindex="-1" data-mock-not="verify">
         <h2>Thank you, Mira. Your place is booked.</h2>
-        <p>See you on Saturday 14 November at 10:00, in the library. We have sent a confirmation to your email address.</p>
+        <p>See you on Saturday 14 November in the library. We have sent a confirmation to your email address.</p>
+        <p class="jfb-reference">Your reference is <strong>REQ-2026-00042</strong></p>
+        <p data-mock-state="redirect">Taking you to the workshop programme in 8 seconds.</p>
+        <div class="jfb-navigation" data-mock-state="redirect">
+          <a class="jfb-button" href="#">Go now</a>
+          <button type="button" class="jfb-button jfb-button-link">Stay here</button>
+        </div>
+      </div>
+      <div class="jfb-outcome" data-jfb-outcome data-jfb-pending tabindex="-1" data-mock-state="verify">
+        <h2>Check your inbox, Mira</h2>
+        <p>We have sent you a link. Open it within 7 days to confirm your email address; then your place is booked.</p>
         <p class="jfb-reference">Your reference is <strong>REQ-2026-00042</strong></p>
       </div>
 
-      <div class="jfb-summary">
-        <section aria-labelledby="jfb-1-copy">
-          <h3 id="jfb-1-copy">Your answers</h3>
+      <div class="jfb-summary" data-mock-not="redirect">
+        <section aria-labelledby="jfb-1-copy-p1">
+          <h3 id="jfb-1-copy-p1">Your details</h3>
           <dl>
             <div><dt>Name</dt><dd>Mira Okafor</dd></div>
             <div><dt>Email address</dt><dd>mira.okafor@example.com</dd></div>
-            <div><dt>Workshop</dt><dd>Bike repair basics, morning</dd></div>
+            <div><dt>Mobile number</dt><dd data-jfb-empty>Not answered</dd></div>
+            <div><dt>Library card</dt><dd>Yes, card 2002 4417 9083</dd></div>
+          </dl>
+        </section>
+        <section aria-labelledby="jfb-1-copy-p2">
+          <h3 id="jfb-1-copy-p2">Your workshop</h3>
+          <dl>
+            <div><dt>Workshop</dt><dd>Bike repair basics</dd></div>
+            <div><dt>Session</dt><dd>Morning, 10:00 to 12:30</dd></div>
             <div><dt>Guests</dt><dd>Sam Okafor, under 16</dd></div>
+            <div><dt>Anything we should know</dt><dd>I use a wheelchair. Is the courtyard step-free?</dd></div>
+            <div><dt>How you heard about the workshops</dt><dd>A poster in the library</dd></div>
           </dl>
         </section>
       </div>
 
-      <div class="jfb-navigation">
+      <div class="jfb-navigation" data-mock-not="redirect">
         <button type="button" class="jfb-button"><span class="jfb-icon jfb-icon-print" aria-hidden="true"></span>Print your answers</button>
         <a class="jfb-button jfb-button-link" href="#">Book another workshop</a>
       </div>
