@@ -36,6 +36,7 @@ import { createRequire } from 'node:module';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { launchOptions } from './lib/browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const WEBSITE = join(ROOT, 'docs', 'ux', 'website');
@@ -575,7 +576,7 @@ async function main(argv) {
     // A full run replaces every PNG, so a removed shot leaves no stale picture behind.
     for (const f of readdirSync(OUT)) if (f.endsWith('.png')) rmSync(join(OUT, f));
   }
-  const browser = await chromium.launch({ channel: 'msedge' });
+  const browser = await chromium.launch(launchOptions());
   let shots = 0;
   try {
     for (const page of pages) {

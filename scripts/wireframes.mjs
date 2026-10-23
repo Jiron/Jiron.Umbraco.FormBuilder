@@ -34,6 +34,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:f
 import { createRequire } from 'node:module';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { launchOptions } from './lib/browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const WIREFRAMES = join(ROOT, 'docs', 'ux', 'wireframes');
@@ -293,7 +294,7 @@ async function main(argv) {
     for (const f of readdirSync(OUT)) if (f.endsWith('.png')) rmSync(join(OUT, f));
   }
   const tokens = tokenNames(readFileSync(join(WIREFRAMES, 'assets', 'kit.css'), 'utf8'));
-  const browser = await chromium.launch({ channel: 'msedge' });
+  const browser = await chromium.launch(launchOptions());
   let shots = 0;
   let failed = 0;
   try {

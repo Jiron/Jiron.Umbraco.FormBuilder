@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import { gzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
+import { launchOptions } from '../lib/browser.mjs';
 import {
   contrast,
   gzipSize,
@@ -210,7 +211,7 @@ describe('judge', () => {
   });
 });
 
-// One real render: the measurement on a small broken form, in Edge, as the script runs it.
+// One real render: the measurement on a small broken form, in Edge (Chromium in CI), as the script runs it.
 describe('measure, in the browser', () => {
   test('finds weak contrast, missing rings, small targets, off-token values, dashes, wraps and overflows', async () => {
     const require = createRequire(import.meta.url);
@@ -248,7 +249,7 @@ describe('measure, in the browser', () => {
         <div class="jfb-field"><div style="width: 160px">wide</div></div>
         <div class="jfb-upload"><button type="button" class="jfb-button">Choose files</button></div>
       </form></body></html>`);
-    const browser = await chromium.launch({ channel: 'msedge' });
+    const browser = await chromium.launch(launchOptions());
     try {
       const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
       await page.goto(pathToFileURL(join(dir, 'page.html')).href);

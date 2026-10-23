@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { launchOptions } from '../lib/browser.mjs';
 import { judge, listPages, measure, parseArgs, parseShots, plannedShots, shotName, tokenNames } from '../wireframes.mjs';
 
 const clean = {
@@ -138,7 +139,7 @@ describe('judge', () => {
   });
 });
 
-// One real render: the measurement on a small page, in Edge, as the script runs it.
+// One real render: the measurement on a small page, in Edge (Chromium in CI), as the script runs it.
 describe('measure, in the browser', () => {
   test('counts primaries per layer, secondary actions per group, dashes, overflows and off-token values', async () => {
     const require = createRequire(import.meta.url);
@@ -162,7 +163,7 @@ describe('measure, in the browser', () => {
         <div class="wf-box"><div style="width: 260px">wide</div></div>
         <div data-wf-sample><p style="color: rgb(9, 8, 7); padding: 5px">a visitor's theme</p></div>
       </main></body></html>`);
-    const browser = await chromium.launch({ channel: 'msedge' });
+    const browser = await chromium.launch(launchOptions());
     try {
       const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
       await page.goto(pathToFileURL(join(dir, 'page.html')).href);

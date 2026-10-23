@@ -22,6 +22,7 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { launchOptions } from './lib/browser.mjs';
 
 export const DEMO = 'demo/Jiron.Umbraco.FormBuilder.Demo';
 export const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
@@ -101,7 +102,7 @@ async function main(root) {
   const origin = new URL(url).origin;
   const foreign = new Set();
 
-  const browser = await chromium.launch({ channel: 'msedge' });
+  const browser = await chromium.launch(launchOptions());
   try {
     const visitor = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     visitor.on('request', (request) => {
