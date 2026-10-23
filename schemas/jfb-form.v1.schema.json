@@ -1,0 +1,498 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:jiron:form-builder:schema:jfb-form:v1",
+  "title": "Jiron Form Builder form definition, schema version 1",
+  "description": "One version of a form (ADR-0002, ADR-0034). A null property means the same as an absent one, and so does an empty list or object. A save also refuses what this schema cannot say: two elements with one key, a property named twice, a span wider than its group, a culture named twice in two letter cases, an instant on a date that does not exist, a number written with a fraction or an exponent, and the element limits of the site. Jiron Form Builder counts the length of a text in UTF-16 code units, so a text with characters outside the Basic Multilingual Plane may be refused although this schema allows it.",
+  "$ref": "#/$defs/FormDefinition",
+  "$defs": {
+    "FormDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "schemaVersion", "key" ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "key": { "$ref": "#/$defs/Key" },
+        "settings": { "anyOf": [ { "$ref": "#/$defs/FormSettings" }, { "type": "null" } ] },
+        "pages": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FormPage" } },
+        "validationRules": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FormValidationRule" } },
+        "actions": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FormAction" } },
+        "outcomes": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FormOutcome" } }
+      }
+    },
+    "FormSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "submission": { "anyOf": [ { "$ref": "#/$defs/FormSubmissionSettings" }, { "type": "null" } ] },
+        "availability": { "anyOf": [ { "$ref": "#/$defs/FormAvailabilitySettings" }, { "type": "null" } ] },
+        "protection": { "anyOf": [ { "$ref": "#/$defs/FormProtectionSettings" }, { "type": "null" } ] },
+        "privacy": { "anyOf": [ { "$ref": "#/$defs/FormPrivacySettings" }, { "type": "null" } ] },
+        "appearance": { "anyOf": [ { "$ref": "#/$defs/FormAppearanceSettings" }, { "type": "null" } ] },
+        "developer": { "anyOf": [ { "$ref": "#/$defs/FormDeveloperSettings" }, { "type": "null" } ] }
+      }
+    },
+    "FormSubmissionSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "submitLabel": { "$ref": "#/$defs/LocalizedLine" },
+        "nextLabel": { "$ref": "#/$defs/LocalizedLine" },
+        "backLabel": { "$ref": "#/$defs/LocalizedLine" },
+        "summaryPage": { "type": [ "boolean", "null" ] },
+        "progress": { "anyOf": [ { "$ref": "#/$defs/ProgressIndicator" }, { "type": "null" } ] },
+        "store": { "anyOf": [ { "$ref": "#/$defs/EntryStorage" }, { "type": "null" } ] },
+        "storeDays": { "type": [ "integer", "null" ], "minimum": 1, "maximum": 36500 },
+        "approval": { "anyOf": [ { "$ref": "#/$defs/ApprovalMode" }, { "type": "null" } ] },
+        "verification": { "anyOf": [ { "$ref": "#/$defs/EmailVerification" }, { "type": "null" } ] },
+        "resume": { "anyOf": [ { "$ref": "#/$defs/SaveAndResume" }, { "type": "null" } ] },
+        "entryTitle": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
+        "entryReference": { "anyOf": [ { "$ref": "#/$defs/EntryReferenceFormat" }, { "type": "null" } ] }
+      },
+      "if": { "required": [ "store" ], "properties": { "store": { "const": "days" } } },
+      "then": { "required": [ "storeDays" ], "properties": { "storeDays": { "type": "integer" } } },
+      "else": { "properties": { "storeDays": { "type": "null" } } }
+    },
+    "EmailVerification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "emailField" ],
+      "properties": {
+        "emailField": { "$ref": "#/$defs/Key" },
+        "days": { "type": [ "integer", "null" ], "minimum": 1, "maximum": 90 }
+      }
+    },
+    "SaveAndResume": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "days": { "type": [ "integer", "null" ], "minimum": 1, "maximum": 365 }
+      }
+    },
+    "EntryReferenceFormat": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "prefix": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
+        "year": { "type": [ "boolean", "null" ] },
+        "digits": { "type": [ "integer", "null" ], "minimum": 1, "maximum": 10 }
+      }
+    },
+    "FormAvailabilitySettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "opensAt": { "$ref": "#/$defs/Instant" },
+        "closesAt": { "$ref": "#/$defs/Instant" },
+        "maxEntries": { "type": [ "integer", "null" ], "minimum": 1, "maximum": 2147483647 },
+        "closedMessage": { "$ref": "#/$defs/LocalizedHtml" },
+        "members": { "anyOf": [ { "$ref": "#/$defs/MemberAccess" }, { "type": "null" } ] },
+        "memberGroups": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/Key" } },
+        "onePerMember": { "type": [ "boolean", "null" ] }
+      }
+    },
+    "FormProtectionSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": { "anyOf": [ { "$ref": "#/$defs/ProtectionLevel" }, { "type": "null" } ] },
+        "captcha": { "anyOf": [ { "$ref": "#/$defs/CaptchaChoice" }, { "type": "null" } ] },
+        "contentRules": { "anyOf": [ { "$ref": "#/$defs/ContentRuleLevel" }, { "type": "null" } ] }
+      }
+    },
+    "CaptchaChoice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "provider" ],
+      "properties": {
+        "provider": { "$ref": "#/$defs/SingleLine", "type": "string", "maxLength": 128 },
+        "settings": { "$ref": "#/$defs/SettingsOrNull" }
+      }
+    },
+    "FormPrivacySettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "retentionDays": { "anyOf": [ { "$ref": "#/$defs/RetentionDaysByState" }, { "type": "null" } ] },
+        "ip": { "anyOf": [ { "$ref": "#/$defs/IpHandling" }, { "type": "null" } ] },
+        "insights": { "type": [ "boolean", "null" ] }
+      }
+    },
+    "RetentionDaysByState": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "submitted": { "type": [ "integer", "null" ], "minimum": 1, "maximum": 36500 },
+        "approved": { "type": [ "integer", "null" ], "minimum": 1, "maximum": 36500 },
+        "rejected": { "type": [ "integer", "null" ], "minimum": 1, "maximum": 36500 },
+        "spam": { "type": [ "integer", "null" ], "minimum": 1, "maximum": 36500 }
+      }
+    },
+    "FormAppearanceSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "theme": { "$ref": "#/$defs/SingleLine", "maxLength": 64 },
+        "requiredMarker": { "anyOf": [ { "$ref": "#/$defs/RequiredMarker" }, { "type": "null" } ] },
+        "validationSummary": { "type": [ "boolean", "null" ] },
+        "choiceLayout": { "anyOf": [ { "$ref": "#/$defs/ChoiceLayout" }, { "type": "null" } ] },
+        "cssClass": { "$ref": "#/$defs/SingleLine", "maxLength": 500 }
+      }
+    },
+    "FormDeveloperSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "headless": { "type": [ "boolean", "null" ] },
+        "queryValues": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/SingleLine", "type": "string", "maxLength": 500 } },
+        "contextValues": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/SingleLine", "type": "string", "maxLength": 500 } }
+      }
+    },
+    "FormPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "key" ],
+      "properties": {
+        "key": { "$ref": "#/$defs/Key" },
+        "title": { "$ref": "#/$defs/LocalizedLine" },
+        "description": { "$ref": "#/$defs/LocalizedHtml" },
+        "rules": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FormRule" } },
+        "groups": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FormGroup" } }
+      }
+    },
+    "FormGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "key" ],
+      "properties": {
+        "key": { "$ref": "#/$defs/Key" },
+        "title": { "$ref": "#/$defs/LocalizedLine" },
+        "description": { "$ref": "#/$defs/LocalizedHtml" },
+        "columns": { "type": [ "integer", "null" ], "minimum": 1, "maximum": 4 },
+        "style": { "anyOf": [ { "$ref": "#/$defs/GroupStyle" }, { "type": "null" } ] },
+        "rules": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FormRule" } },
+        "fields": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FormField" } }
+      }
+    },
+    "FormField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "key", "type" ],
+      "properties": {
+        "key": { "$ref": "#/$defs/Key" },
+        "type": { "$ref": "#/$defs/SingleLine", "type": "string", "maxLength": 128 },
+        "alias": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
+        "formerAliases": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/SingleLine", "type": "string", "maxLength": 500 } },
+        "span": { "type": [ "integer", "null" ], "minimum": 1, "maximum": 4 },
+        "label": { "$ref": "#/$defs/LocalizedLine" },
+        "hideLabel": { "type": [ "boolean", "null" ] },
+        "help": { "$ref": "#/$defs/LocalizedPlain" },
+        "placeholder": { "$ref": "#/$defs/LocalizedLine" },
+        "required": { "type": [ "boolean", "null" ] },
+        "messages": { "anyOf": [ { "$ref": "#/$defs/FieldMessages" }, { "type": "null" } ] },
+        "defaultValue": { "$ref": "#/$defs/DefaultValue" },
+        "prefill": { "anyOf": [ { "$ref": "#/$defs/FieldPrefill" }, { "type": "null" } ] },
+        "sensitive": { "type": [ "boolean", "null" ] },
+        "includeInEmails": { "type": [ "boolean", "null" ] },
+        "keep": { "anyOf": [ { "$ref": "#/$defs/FieldKeep" }, { "type": "null" } ] },
+        "autocomplete": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
+        "cssClass": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
+        "validation": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FieldCheck" } },
+        "rules": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FormRule" } },
+        "options": { "anyOf": [ { "$ref": "#/$defs/FieldOptions" }, { "type": "null" } ] },
+        "rows": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/GridRow" } },
+        "fields": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FormField" } },
+        "settings": { "$ref": "#/$defs/SettingsOrNull" }
+      }
+    },
+    "FieldMessages": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": { "$ref": "#/$defs/LocalizedLine" },
+        "invalid": { "$ref": "#/$defs/LocalizedLine" },
+        "minLength": { "$ref": "#/$defs/LocalizedLine" },
+        "maxLength": { "$ref": "#/$defs/LocalizedLine" },
+        "minWords": { "$ref": "#/$defs/LocalizedLine" },
+        "maxWords": { "$ref": "#/$defs/LocalizedLine" },
+        "min": { "$ref": "#/$defs/LocalizedLine" },
+        "max": { "$ref": "#/$defs/LocalizedLine" },
+        "step": { "$ref": "#/$defs/LocalizedLine" },
+        "dateWindow": { "$ref": "#/$defs/LocalizedLine" },
+        "selections": { "$ref": "#/$defs/LocalizedLine" },
+        "fileType": { "$ref": "#/$defs/LocalizedLine" },
+        "fileSize": { "$ref": "#/$defs/LocalizedLine" },
+        "fileCount": { "$ref": "#/$defs/LocalizedLine" },
+        "full": { "$ref": "#/$defs/LocalizedLine" }
+      }
+    },
+    "FieldPrefill": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "query": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
+        "member": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
+        "memberMode": { "anyOf": [ { "$ref": "#/$defs/PrefillMemberMode" }, { "type": "null" } ] }
+      }
+    },
+    "FieldOptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": { "anyOf": [ { "$ref": "#/$defs/OptionSource" }, { "type": "null" } ] },
+        "items": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FieldOption" } },
+        "list": { "$ref": "#/$defs/KeyOrNull" },
+        "config": { "$ref": "#/$defs/SettingsOrNull" },
+        "parent": { "$ref": "#/$defs/KeyOrNull" }
+      }
+    },
+    "FieldOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "value" ],
+      "properties": {
+        "value": { "$ref": "#/$defs/SingleLine", "type": "string", "minLength": 1, "maxLength": 200 },
+        "label": { "$ref": "#/$defs/LocalizedLine" },
+        "description": { "$ref": "#/$defs/LocalizedPlain" },
+        "image": { "$ref": "#/$defs/KeyOrNull" },
+        "places": { "type": [ "integer", "null" ], "minimum": 0, "maximum": 1000000 },
+        "parentValues": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/SingleLine", "type": "string", "minLength": 1, "maxLength": 200 } }
+      }
+    },
+    "GridRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "key" ],
+      "properties": {
+        "key": { "$ref": "#/$defs/Key" },
+        "label": { "$ref": "#/$defs/LocalizedLine" },
+        "required": { "type": [ "boolean", "null" ] }
+      }
+    },
+    "FieldCheck": {
+      "description": "A check no field type owns, chosen by its kind.",
+      "oneOf": [ { "$ref": "#/$defs/PatternCheck" }, { "$ref": "#/$defs/MatchesFieldCheck" }, { "$ref": "#/$defs/UniquePerFormCheck" } ]
+    },
+    "PatternCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "kind", "pattern" ],
+      "properties": {
+        "kind": { "const": "pattern" },
+        "pattern": { "type": "string", "maxLength": 2000 },
+        "message": { "$ref": "#/$defs/LocalizedLine" }
+      }
+    },
+    "MatchesFieldCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "kind", "field" ],
+      "properties": {
+        "kind": { "const": "matchesField" },
+        "field": { "$ref": "#/$defs/Key" },
+        "message": { "$ref": "#/$defs/LocalizedLine" }
+      }
+    },
+    "UniquePerFormCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "kind" ],
+      "properties": {
+        "kind": { "const": "uniquePerForm" },
+        "message": { "$ref": "#/$defs/LocalizedLine" }
+      }
+    },
+    "FormRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "key", "effect" ],
+      "properties": {
+        "key": { "$ref": "#/$defs/Key" },
+        "effect": { "$ref": "#/$defs/RuleEffect" },
+        "enabled": { "type": [ "boolean", "null" ] },
+        "match": { "anyOf": [ { "$ref": "#/$defs/RuleMatch" }, { "type": "null" } ] },
+        "conditions": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/RuleItem" } }
+      }
+    },
+    "RuleItem": {
+      "description": "A condition, or a nested group: an object with match or conditions.",
+      "oneOf": [ { "$ref": "#/$defs/RuleCondition" }, { "$ref": "#/$defs/RuleGroup" } ]
+    },
+    "RuleCondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "op" ],
+      "properties": {
+        "field": { "$ref": "#/$defs/KeyOrNull" },
+        "context": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
+        "op": { "$ref": "#/$defs/SingleLine", "type": "string", "maxLength": 500 },
+        "value": { "$ref": "#/$defs/Operand" }
+      }
+    },
+    "RuleGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [ { "required": [ "match" ] }, { "required": [ "conditions" ] } ],
+      "properties": {
+        "match": { "anyOf": [ { "$ref": "#/$defs/RuleMatch" }, { "type": "null" } ] },
+        "conditions": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/RuleItem" } }
+      }
+    },
+    "FormValidationRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "key", "field" ],
+      "properties": {
+        "key": { "$ref": "#/$defs/Key" },
+        "enabled": { "type": [ "boolean", "null" ] },
+        "field": { "$ref": "#/$defs/Key" },
+        "message": { "$ref": "#/$defs/LocalizedLine" },
+        "match": { "anyOf": [ { "$ref": "#/$defs/RuleMatch" }, { "type": "null" } ] },
+        "conditions": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/RuleItem" } }
+      }
+    },
+    "FormAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "key", "type" ],
+      "properties": {
+        "key": { "$ref": "#/$defs/Key" },
+        "type": { "$ref": "#/$defs/SingleLine", "type": "string", "maxLength": 128 },
+        "name": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
+        "enabled": { "type": [ "boolean", "null" ] },
+        "trigger": { "anyOf": [ { "$ref": "#/$defs/ActionTrigger" }, { "type": "null" } ] },
+        "stopOnFailure": { "type": [ "boolean", "null" ] },
+        "rules": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FormRule" } },
+        "settings": { "$ref": "#/$defs/SettingsOrNull" }
+      }
+    },
+    "FormOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "key" ],
+      "properties": {
+        "key": { "$ref": "#/$defs/Key" },
+        "kind": { "anyOf": [ { "$ref": "#/$defs/OutcomeKind" }, { "type": "null" } ] },
+        "message": { "$ref": "#/$defs/LocalizedHtml" },
+        "showAnswers": { "type": [ "boolean", "null" ] },
+        "redirect": { "anyOf": [ { "$ref": "#/$defs/OutcomeRedirect" }, { "type": "null" } ] },
+        "rules": { "type": [ "array", "null" ], "items": { "$ref": "#/$defs/FormRule" } }
+      }
+    },
+    "OutcomeRedirect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "content": { "$ref": "#/$defs/KeyOrNull" },
+        "url": { "$ref": "#/$defs/SingleLine", "maxLength": 2000 },
+        "delaySeconds": { "type": [ "integer", "null" ], "minimum": 0, "maximum": 600 }
+      }
+    },
+    "Key": {
+      "description": "A GUID in lowercase, not the empty one.",
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "not": { "const": "00000000-0000-0000-0000-000000000000" }
+    },
+    "KeyOrNull": { "anyOf": [ { "$ref": "#/$defs/Key" }, { "type": "null" } ] },
+    "Instant": {
+      "description": "An instant in UTC, whole seconds.",
+      "type": [ "string", "null" ],
+      "minLength": 20,
+      "maxLength": 20,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "SingleLine": {
+      "description": "Text without a line break (CR, LF, NEL, or the line or paragraph separator); null where the property is optional.",
+      "type": [ "string", "null" ],
+      "not": { "type": "string", "pattern": "[\\r\\n\\u0085\\u2028\\u2029]" }
+    },
+    "LocalizedLine": {
+      "description": "A text that renders on one line, per culture; \"\" is the default text, which every text has.",
+      "type": [ "object", "null" ],
+      "propertyNames": { "$ref": "#/$defs/Culture" },
+      "additionalProperties": { "$ref": "#/$defs/SingleLine", "type": "string", "maxLength": 500 },
+      "if": { "type": "object", "minProperties": 1 },
+      "then": { "required": [ "" ] }
+    },
+    "LocalizedPlain": {
+      "description": "A plain text that may span lines, per culture.",
+      "type": [ "object", "null" ],
+      "propertyNames": { "$ref": "#/$defs/Culture" },
+      "additionalProperties": { "type": "string", "maxLength": 2000 },
+      "if": { "type": "object", "minProperties": 1 },
+      "then": { "required": [ "" ] }
+    },
+    "LocalizedHtml": {
+      "description": "Rich text per culture, sanitised on every output.",
+      "type": [ "object", "null" ],
+      "propertyNames": { "$ref": "#/$defs/Culture" },
+      "additionalProperties": { "type": "string", "maxLength": 50000 },
+      "if": { "type": "object", "minProperties": 1 },
+      "then": { "required": [ "" ] }
+    },
+    "Culture": {
+      "description": "\"\" for the default text, or a culture name such as de, de-CH or sr-Latn-RS.",
+      "$ref": "#/$defs/SingleLine",
+      "type": "string",
+      "pattern": "^([A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*)?$"
+    },
+    "DefaultValue": {
+      "description": "One text, or a list of texts for a type with several answers.",
+      "anyOf": [
+        { "type": "string", "maxLength": 2000 },
+        { "type": "array", "items": { "type": "string", "maxLength": 2000 } },
+        { "type": "null" }
+      ]
+    },
+    "Operand": {
+      "description": "A text, another answer, a date relative to today, or a list of those.",
+      "anyOf": [
+        { "$ref": "#/$defs/OperandItem" },
+        { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/OperandItem" } },
+        { "type": "null" }
+      ]
+    },
+    "OperandItem": {
+      "anyOf": [
+        { "type": "string", "maxLength": 2000 },
+        { "type": "object", "additionalProperties": false, "required": [ "field" ], "properties": { "field": { "$ref": "#/$defs/Key" } } },
+        { "type": "object", "additionalProperties": false, "required": [ "today" ], "properties": { "today": { "$ref": "#/$defs/SingleLine", "type": "string", "maxLength": 500 } } }
+      ]
+    },
+    "Settings": {
+      "description": "The settings of a field type, action type, option source or captcha provider; numbers are integers of at most 15 digits.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/SettingsValue" }
+    },
+    "SettingsOrNull": { "anyOf": [ { "$ref": "#/$defs/Settings" }, { "type": "null" } ] },
+    "SettingsValue": { "anyOf": [ { "$ref": "#/$defs/SettingsItem" }, { "type": "null" } ] },
+    "SettingsItem": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "boolean" },
+        { "type": "integer", "minimum": -999999999999999, "maximum": 999999999999999 },
+        { "type": "array", "items": { "$ref": "#/$defs/SettingsItem" } },
+        { "$ref": "#/$defs/Settings" }
+      ]
+    },
+    "GroupStyle": { "enum": [ "plain", "card" ] },
+    "FieldKeep": { "enum": [ "always", "untilActionsRun" ] },
+    "PrefillMemberMode": { "enum": [ "show", "hide" ] },
+    "OptionSource": { "enum": [ "items", "list", "content", "dataType", "url", "file", "countries", "code" ] },
+    "RuleEffect": { "enum": [ "show", "hide", "require", "run", "use" ] },
+    "RuleMatch": { "enum": [ "all", "any" ] },
+    "ActionTrigger": { "enum": [ "submitted", "approved", "rejected", "verified" ] },
+    "OutcomeKind": { "enum": [ "message", "redirect" ] },
+    "ProgressIndicator": { "enum": [ "steps", "bar", "none" ] },
+    "EntryStorage": { "enum": [ "always", "never", "days" ] },
+    "ApprovalMode": { "enum": [ "automatic", "manual" ] },
+    "MemberAccess": { "enum": [ "anyone", "members", "groups" ] },
+    "ProtectionLevel": { "enum": [ "inherit", "standard", "proofOfWork", "captcha" ] },
+    "ContentRuleLevel": { "enum": [ "inherit", "off", "normal", "strict" ] },
+    "IpHandling": { "enum": [ "inherit", "none", "anonymised", "full" ] },
+    "RequiredMarker": { "enum": [ "inherit", "required", "optional", "none" ] },
+    "ChoiceLayout": { "enum": [ "vertical", "horizontal", "cards" ] }
+  }
+}

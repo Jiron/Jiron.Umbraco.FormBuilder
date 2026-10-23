@@ -102,7 +102,7 @@ database connection of its own. Its areas:
 ## 2. The definition model
 
 A form definition is one JSON document per version; [ADR-0002](decisions/0002-form-definition-model-versions-and-public-projection.md)
-has every property, its default and each built-in type's settings, and `schemas/jfb-form.v1.schema.json` (4.2) is its
+has every property, its default and each built-in type's settings, and `schemas/jfb-form.v1.schema.json` (4.2a) is its
 machine-readable form. The outline:
 
 ```text
@@ -134,8 +134,12 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   raises the public revision when the projection changed. Drafts keep what publishing refuses; the form check lists it.
 - **The public projection** is built from an allowlist and carries no actions, outcomes, recipients, option-source
   configuration or privacy settings. Its TypeScript types and schema ship in `schemas/` (6.6).
-- **Upgrades:** stored versions are never rewritten; upgraders run when they are read; v1 is fixed at the first
-  prerelease.
+- **Reading and writing** ([ADR-0034](decisions/0034-definition-model-reading-and-writing.md)): the records are
+  public in `Jiron.Umbraco.FormBuilder.Core.Definitions`; Core's internal serializer reads strictly, reporting every
+  problem with a code and a JSON path, and writes the canonical form, whose SHA-256 is `DefinitionHash`. The limits
+  are `DefinitionLimits`, which the site can lower (4.4).
+- **Upgrades:** stored versions are never rewritten; upgraders run when they are read, one per schema version; v1 is
+  fixed at the first prerelease.
 
 ## 3. The data model
 
@@ -368,7 +372,7 @@ others in a cluster.
 | Repudiation | An editor denies a change, export, deletion or reveal | the audit log with user, entity and changed fields, never values | §4.10, ADR-0013 | 4.3, 12.4b |
 | Repudiation | A visitor disputes a consent | the exact consent text's hash and culture with the entry | ADR-0009 | 6.1 |
 | Repudiation | Nobody knows whether a mail went out | runs and mail with states, `Uncertain` and the deliveries log | ADR-0007 | 8.1, 8.2 |
-| Information disclosure | The projection leaks recipients, secrets or option sources | an allowlisted projection and a property-style test | ADR-0002 | 4.2 |
+| Information disclosure | The projection leaks recipients, secrets or option sources | an allowlisted projection and a property-style test | ADR-0002 | 4.2b |
 | Information disclosure | XSS through names or values in the backoffice, Razor, mail or exports | escaping contexts, one confirm helper, the formula guard | ADR-0014, §4.10 | 5.3, 9.1, 11.4 |
 | Information disclosure | Personal data in logs or job errors | no values, email or IP addresses, tokens or file names in logs; exception types only | §4.10, ADR-0009 | every step with captured logs |
 | Information disclosure | Users see forms or entries they should not | permissions, restricted folders and forms, `404` for what they cannot see, database-side filters | ADR-0013 | 4.6, 4.7 |
