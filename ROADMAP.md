@@ -1617,7 +1617,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Globalization** (ADR-0005): start-up refuses invariant globalization, which turns normalisation off and loses IANA time zones on Windows.
   - **The IntelliSense schema:** ship a JSON schema for `appsettings` (with a `!` exception in `.gitignore`), and test that its `$ref`s resolve from the file itself (Tandem's first one resolved them from the options class, Tandem 11.1b).
   - Done when: unit tests cover every host validator and default; a lowered `Limits:Definitions` limit refuses a definition that the default allows; an invalid host config fails start-up with a clear message; a site with invariant globalization fails start-up with a clear message. Both start-up failures are also shown in a real host process.
-- [ ] **4.4b The backoffice settings sections** (port the pattern, §3.3)
+- [x] **4.4b The backoffice settings sections** (port the pattern, §3.3) (2026-10-24, f873d90)
   - **Model:** typed sections (§4.8) with defaults, validators and JSON schema versions with migrations, plus global and per-site scope.
   - **Host rules:** locks win over the backoffice: `LockedSections` and the rules of ADR-0008 (locked, restricted, clamped), applied where a value is used, without rewriting stored rows.
   - **Runtime:** a cached reader invalidated by a cache refresher, and a `SettingsSaved` notification.
