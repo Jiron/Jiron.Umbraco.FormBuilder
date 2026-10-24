@@ -36,18 +36,20 @@ folder `mail/` and the log `host.log`. The teardown stops it with its whole proc
 
 Every run generates new passwords into `.local/credentials.json` under `e2e`; they are never printed.
 
-| Persona          | User groups                            | Sections         |
-| ---------------- | -------------------------------------- | ---------------- |
-| `admin`          | the unattended install's administrator | Umbraco's        |
-| `designer`       | `jfbDesigners`                         | Content, Forms   |
-| `entryHandler`   | `jfbEntryHandlers`                     | Forms            |
-| `viewer`         | `jfbViewers`                           | Forms            |
-| `privacyOfficer` | `jfbPrivacyOfficers`                   | Forms            |
-| `noAccess`       | `jfbNoAccess`                          | Forms, no grants |
-| `outsider`       | Umbraco's `writer`                     | Content          |
+| Persona          | User groups                            | Sections       | Jiron Form Builder permissions (ADR-0013)                       |
+| ---------------- | -------------------------------------- | -------------- | --------------------------------------------------------------- |
+| `admin`          | the unattended install's administrator | Umbraco's      | everything                                                      |
+| `designer`       | `jfbDesigners`                         | Content, Forms | `design`, `manageActions`, `manageLibrary`                      |
+| `entryHandler`   | `jfbEntryHandlers`                     | Forms          | `viewEntries`, `editEntries`, `export`                          |
+| `viewer`         | `jfbViewers`                           | Forms          | `viewEntries`                                                   |
+| `privacyOfficer` | `jfbPrivacyOfficers`                   | Forms          | `privacyTools`, `viewEntries`, `viewSensitive`, `deleteEntries` |
+| `noAccess`       | `jfbNoAccess`                          | Forms          | none                                                            |
+| `hr`             | `jfbHrTeam`                            | Forms          | `viewEntries`, `editEntries` in the restricted folder `HR`      |
+| `outsider`       | Umbraco's `writer`                     | Content        | none, without the Forms section                                 |
 
-Step 4.6 gives the groups their Jiron Form Builder permissions (ADR-0013). Two members, in the demo's member group,
-may open the members area.
+The host seeds the grants and the restricted folder `HR` at the root on every start (`support/users.ts`, ADR-0049);
+`specs/smoke/access.spec.ts` reads every persona's effective permissions from `/jfb-testing/access`. Two members, in
+the demo's member group, may open the members area.
 
 ## Fixtures
 
@@ -70,7 +72,7 @@ config with its first spec.
 
 | Project   | What it checks                                                                                                                                                                                                                                                                 |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `smoke`   | the site in both languages, every persona's sign-in and groups, the members area, the mail pickup, the test host (status, stub, Delivery API switch) and the form helpers                                                                                                      |
+| `smoke`   | the site in both languages, every persona's sign-in, groups and grants, the members area, the mail pickup, the test host (status, stub, Delivery API switch) and the form helpers                                                                                              |
 | `startup` | sites that must not start: an invalid host configuration and invariant globalization each stop the demo with a message that says what to change (ADR-0042). No browser: each test runs the demo in a process of its own on 5521 or 5522, without a database, and reads its log |
 
 ## Checks and output

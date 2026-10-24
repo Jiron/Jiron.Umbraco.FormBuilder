@@ -26,8 +26,8 @@ npx playwright test --project=smoke
 
 | Project | What it holds |
 | --- | --- |
-| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), the form service (`Forms/`, below) and the access service (`Access/`, below). |
+| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the authorization policies (`ManagementApi/`, with the access tests below), and the Testing project's own tests. |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), the form service (`Forms/`, below) and the access service with the authorization policies (`Access/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -94,7 +94,7 @@ coverage, schema and fixture tests fail.
 | Folder | What it gives |
 | --- | --- |
 | `Time/` | `TestTimeProvider` (a clock moved by hand), `ManualTimers` (timers that fire when told) and `TestClock` (the real time plus an offset, for test hosts). |
-| `People/` | `TestPeople` creates user groups, users, member groups and members, and `NewPassword()` makes passwords per run; `TestPeopleSeeder` creates a host's configured people at start-up. |
+| `People/` | `TestPeople` creates user groups, users, member groups and members, and `NewPassword()` makes passwords per run; `TestAccess` gives a group its global grants and creates a restricted folder for it; `TestPeopleSeeder` creates a host's configured people, grants and restricted folders at start-up. |
 | `Mail/` | `TestMailbox` reads and waits for the `.eml` files in a host's mail pickup folder. |
 | `Stub/` | `StubServer`, the local HTTP stub: webhooks, captcha verification (`StubCaptcha` tokens) and scripted answers, with every call recorded. |
 | `Endpoints/` | The test-only endpoints under `/jfb-testing/`. |
@@ -104,11 +104,12 @@ A host turns these on in the `JironFormBuilderTesting` section; everything is of
 
 | Setting | Effect |
 | --- | --- |
-| `Endpoints` | Answers `/jfb-testing/status` and `/jfb-testing/clock`, only in Development and only for requests from this machine. |
+| `Endpoints` | Answers `/jfb-testing/status`, `/jfb-testing/clock` and `/jfb-testing/access` (each backoffice user's effective permissions, globally, at the root and in each root folder), only in Development and only for requests from this machine. |
 | `Clock` | Runs the host on `TestClock`. |
 | `StubPort` | Starts the stub on that port (5560 for the browser tests' host), only in Development. |
 | `StartupMarker` | Logs `Jiron Form Builder test host: indexes rebuilt` after each rebuild of Umbraco's indexes. |
-| `UserGroups`, `Users`, `Members` | The people the host creates at start-up; their passwords come from the environment only. |
+| `UserGroups`, `Users`, `Members` | The people the host creates at start-up, each group with its global `Permissions`; their passwords come from the environment only. |
+| `RestrictedFolders` | Root folders the host restricts at start-up, each to one group (`Name`, `Group`, `Permissions`); a folder of that name in the trash is left there and a new one made. |
 
 ## The schema tests
 
@@ -275,6 +276,18 @@ follows every change: it gives the site a runtime cache, the recording server me
 `HookedPermissionRepository`, which lets another server change a grant while the snapshot loads or a change writes.
 `AccessLockTests` locks the section, and `HostGrantsBootTests` boots a site whose host sets the global grants.
 
+The authorization policies ([ADR-0049](../docs/decisions/0049-authorization-policies.md)) are tested twice.
+`Tests.Unit/ManagementApi/FormBuilderAuthorizationTests` covers their names, scheme and requirements, the resources
+and denials, and both handlers against a substitute access service: the section first, then what is held, and a
+folder or form the user cannot see answering as not found. `Tests.Integration/Access/AccessPolicyTests` signs each
+persona in through Umbraco as an API user with a client secret (`Support/BackOfficeApiUsers`) and has
+`AccessProbeController`, a controller of the test assembly, authorize every policy globally, at the root, on folders
+(the restricted one, and one inside it that another group holds on its own) and on forms, against a table written
+out by hand; it also calls actions guarded by `[Authorize(Policy = ...)]` without a token and as personas with and
+without the section or the permission. `Testing/TestPeopleTests` seeds the grants and restricted folders, again,
+next to a folder of that name in the trash or inside another, for one of Umbraco's groups alone and with broken
+settings, and `Testing/TestAccessEndpointTests` reads them back through `/jfb-testing/access`.
+
 ## Writing tests
 
 - Name C# tests `Method_Situation_Expected` and assert with NUnit's constraint model.
@@ -286,4 +299,7 @@ follows every change: it gives the site a runtime cache, the recording server me
   `builder.Config`: the test host chains one configuration into every fixture's site, so the key would reach every
   fixture that runs later, and `Support/SharedConfigurationTests` fails on it. Capture logs with
   `builder.Services.AddLogCapture()`.
+- A test server fixture that calls the Management API derives from `Support/FormBuilderTestServerTestBase` and boots
+  the runtime (`[UmbracoTest(Boot = true)]`): it runs Jiron Form Builder's migration plan after the host starts, and
+  its `ConfigureHost` sets the configuration before the host is built.
 - Read files of the repository in place through `RepositoryRoot.Path(...)`.

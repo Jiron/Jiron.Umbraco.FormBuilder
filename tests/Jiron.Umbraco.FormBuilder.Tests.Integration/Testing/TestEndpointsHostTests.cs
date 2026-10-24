@@ -93,21 +93,7 @@ public sealed class TestEndpointsDevelopmentHostTests : UmbracoTestServerTestBas
         TestEndpointsHost.AddSiteStandIn(services);
     }
 
-    // The host environment the gate reads, registered inside Umbraco's own service set-up, after the host's. The web
-    // host registers its IWebHostEnvironment (Umbraco's "Tests") again later, so that one is left alone.
-    protected override void CustomTestSetup(IUmbracoBuilder builder) =>
-        builder.Services.AddSingleton<IHostEnvironment>(new DevelopmentEnvironment());
-
-    private sealed class DevelopmentEnvironment : IHostEnvironment
-    {
-        public string EnvironmentName { get; set; } = Environments.Development;
-
-        public string ApplicationName { get; set; } = "Jiron.Umbraco.FormBuilder.Tests.Integration";
-
-        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
-
-        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
-    }
+    protected override void CustomTestSetup(IUmbracoBuilder builder) => TestEndpointsHost.UseDevelopment(builder);
 }
 
 /// <summary>What both fixtures share.</summary>
@@ -130,6 +116,13 @@ internal static class TestEndpointsHost
     /// </summary>
     public static void AddSiteStandIn(IServiceCollection services) => services.AddTransient<IStartupFilter, SiteStandIn>();
 
+    /// <summary>
+    /// Runs the site in the Development environment, which the gate reads: registered inside Umbraco's own service
+    /// set-up, after the host's. The web host registers its IWebHostEnvironment (Umbraco's "Tests") again later, so
+    /// that one is left alone.
+    /// </summary>
+    public static void UseDevelopment(IUmbracoBuilder builder) => builder.Services.AddSingleton<IHostEnvironment>(new DevelopmentEnvironment());
+
     /// <summary>A <c>GET</c> straight into the test server, from the given remote address.</summary>
     public static async Task<HttpContext> FromAsync(TestServer server, string path, IPAddress remote)
     {
@@ -140,6 +133,17 @@ internal static class TestEndpointsHost
             request.Connection.RemoteIpAddress = remote;
         });
         return context;
+    }
+
+    private sealed class DevelopmentEnvironment : IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = Environments.Development;
+
+        public string ApplicationName { get; set; } = "Jiron.Umbraco.FormBuilder.Tests.Integration";
+
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }
 
     /// <summary>Registered after the Testing composer's filter, so its middleware runs after the test-only endpoints.</summary>

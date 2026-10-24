@@ -30,6 +30,14 @@ internal sealed class AccessPersonas(TestPeople people, IUserService users, IFor
     /// <summary>Every persona: those of <see cref="Groups"/>, the administrator and the outsider.</summary>
     public static readonly string[] Roles = ["admin", .. Groups.Select(group => group.Role), "outsider"];
 
+    /// <summary>The alias of the group a persona's user is in: its own, Umbraco's administrators, or Umbraco's writers.</summary>
+    public static string GroupOf(string role) => role switch
+    {
+        "admin" => Constants.Security.AdminGroupAlias,
+        "outsider" => "writer",
+        _ => Groups.Single(group => group.Role == role).Group,
+    };
+
     /// <summary>Creates the groups with their grants and a user per persona, and reads each user back as the evaluation sees them.</summary>
     public async Task<Personas> CreateAsync()
     {
@@ -44,14 +52,10 @@ internal sealed class AccessPersonas(TestPeople people, IUserService users, IFor
             }
         }
 
-        var memberships = Groups.ToDictionary(group => group.Role, group => group.Group);
-        memberships["admin"] = Constants.Security.AdminGroupAlias;
-        memberships["outsider"] = "writer";
-
         var accessUsers = new Dictionary<string, AccessUser>();
         foreach (var role in Roles)
         {
-            var created = await people.EnsureUserAsync(new TestUser { Email = $"{role}@jfb.test", Name = role, Password = TestPeople.NewPassword(), Groups = { memberships[role] } });
+            var created = await people.EnsureUserAsync(new TestUser { Email = $"{role}@jfb.test", Name = role, Password = TestPeople.NewPassword(), Groups = { GroupOf(role) } });
             var user = await users.GetAsync(created.Key) ?? throw new InvalidOperationException($"The user of {role} is missing.");
             accessUsers[role] = AccessUser.Of(user);
         }

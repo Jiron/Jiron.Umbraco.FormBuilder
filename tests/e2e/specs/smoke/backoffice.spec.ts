@@ -50,7 +50,7 @@ test('every persona signs in through the Management API with exactly its groups 
     expect(user.userGroupIds.map((group) => aliasById.get(group.id)).sort(), role).toEqual(
       [...PEOPLE[role].groups].sort(),
     );
-    // Every persona but the outsider has the Forms section; Step 4.6 adds what each may do there.
+    // Every persona but the outsider has the Forms section; access.spec.ts checks what each may do there.
     if (role !== 'admin') expect(user.allowedSections.includes(FORMS_SECTION), role).toBe(role !== 'outsider');
   }
 });
