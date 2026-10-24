@@ -81,6 +81,7 @@ and the public projection ([ADR-0035](../docs/decisions/0035-structural-validati
 | `FieldTypeSupportTests` | §4.3.2 restated apart from the code: each built-in type refuses exactly the common properties, checks, rules and messages it does not support. |
 | `RedirectUrlTests` | The redirects that could leave the editor's site, and those that stay on it. |
 | `ProjectionTests` | 500 generated definitions with a marker in every private place project without it; the projection names only allowlisted properties; `fixtures/definitions/v1-full.public.json` is the reviewed projection of the fixture; which changes move `PublicHash` and which do not. |
+| `DefinitionDiffTests` | The comparison of two versions ([ADR-0045](../docs/decisions/0045-versions-comparison-and-draft-cleanup.md)): texts per culture, a type's settings one by one, option items by value and grid rows by key with their order, moves to another parent and the fewest moves within one, rules whose order means nothing, settings groups by name, the order of the changes. Then 100 generated definitions, each changed by `DefinitionMutator` as editors change them: the comparison swapped mirrors it, names each element once, and each changed element's property changes rebuild its newer properties from its older ones. |
 
 A new property of the model needs the record, the schema, the generator and the fixture: until all four agree, the
 coverage, schema and fixture tests fail.
@@ -220,7 +221,15 @@ unpublish, rename and move, the trash, cancelling and failing handlers, the orde
 entries, and a change refused inside a unit of work or an Umbraco scope. `FormNotificationRecorder` records every
 notification and whether a unit was open, and cancels, fails or changes the form when a test says so;
 `TestPublishCheck` is a second publish check whose problems a test sets. `FormServiceLimitTests` lowers the pages a
-definition may have, so a form saved before still opens and its save returns `limit_exceeded`.
+definition may have, so a form saved before still opens and its save returns `limit_exceeded`, as does a restore of a
+version above the limit.
+
+`FormVersionServiceTests` covers a form's versions (ADR-0045) on a history of six versions: the History of publishes
+or of every version with what changed into each, paged, one version, two compared either way, a restore that creates a
+new version (or writes nothing when the draft holds it already) with its notifications and audit entry, pins and
+comments that leave the form's row alone, and every refusal. `Tests.Integration/Retention/` runs the draft-version
+cleanup by the history settings, with the versions it must keep, its rounds, its deadline and its audit entries, and the
+retention job that runs it; `Tests.Unit/Retention/` covers the job's own rules without a host.
 
 ## Writing tests
 
