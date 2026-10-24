@@ -1612,7 +1612,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - integration tests cover storing, reading and deleting files, with a failed or cut-off save leaving nothing behind (ADR-0006), and CRUD for the audit and stats repositories;
     - tests prove there are no field values in audit details, and that counters are correct under parallel increments.
-- [ ] **4.4a Host options and start-up checks** (4.4 split in two, WORKLOG 2026-10-24; port the pattern, §3.3)
+- [x] **4.4a Host options and start-up checks** (2026-10-24, f066f70; 4.4 split in two, WORKLOG 2026-10-24; port the pattern, §3.3)
   - **Host options** (ADR-0008, ADR-0042): one `JironFormBuilder` tree, bound and validated at start (`ValidateOnStart`), which takes in the `Files` of 4.3f. It holds the definition limits of 4.2a (`Limits:Definitions`), which the reader and the structural validation already take, `Designer:SettingLocks` (applied by 5.1 and 8.1) and `LockedSections` (applied by 4.4b). Every message names the key and what is allowed, and an unknown key is refused. A lowered limit never makes a stored definition unreadable: the site reads what it stored with the highest limits a host may set.
   - **Globalization** (ADR-0005): start-up refuses invariant globalization, which turns normalisation off and loses IANA time zones on Windows.
   - **The IntelliSense schema:** ship a JSON schema for `appsettings` (with a `!` exception in `.gitignore`), and test that its `$ref`s resolve from the file itself (Tandem's first one resolved them from the options class, Tandem 11.1b).
