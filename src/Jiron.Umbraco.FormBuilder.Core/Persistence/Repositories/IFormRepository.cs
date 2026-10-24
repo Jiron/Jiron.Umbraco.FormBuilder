@@ -85,6 +85,11 @@ internal sealed record FormVersionInfo(
     DateTimeOffset? PublishedUtc,
     Guid? PublishedByUserKey);
 
+/// <summary>A draft version the cleanup may remove (ADR-0045).</summary>
+/// <param name="FormId">The form's id.</param>
+/// <param name="Number">The version's number.</param>
+internal sealed record DraftToPrune(int FormId, int Number);
+
 /// <summary>A version with its definition.</summary>
 /// <param name="Info">The version.</param>
 /// <param name="Definition">The definition's JSON, as stored (never rewritten, ADR-0002).</param>
@@ -262,11 +267,34 @@ internal interface IFormRepository
     /// <summary>A version by its row's id, or null.</summary>
     Task<StoredFormVersion?> GetVersionByIdAsync(int versionId, CancellationToken cancellationToken = default);
 
-    /// <summary>A page of a form's versions without their definitions, newest first.</summary>
-    Task<Page<FormVersionInfo>> ListVersionsAsync(int formId, PageRequest page, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// The versions of a form with these numbers, newest first, at most <see cref="FormRepository.MaxVersionsAtOnce"/>;
+    /// the numbers it does not have are left out.
+    /// </summary>
+    Task<IReadOnlyList<StoredFormVersion>> GetVersionsAsync(int formId, IReadOnlyCollection<int> numbers, CancellationToken cancellationToken = default);
 
-    /// <summary>Sets a version's comment and pin. Null when it does not exist.</summary>
-    Task<FormVersionInfo?> UpdateVersionAsync(int formId, int number, string? comment, bool isPinned, CancellationToken cancellationToken = default);
+    /// <summary>A page of a form's versions without their definitions, newest first, of one kind or, when null, of both.</summary>
+    Task<Page<FormVersionInfo>> ListVersionsAsync(int formId, FormVersionKind? kind, PageRequest page, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Pins or unpins a version. The form's row stays as it is (ADR-0045). Null when the version does not exist. Refused
+    /// with <see cref="FormBuilderConflict.Trashed"/> while the form is in the trash.
+    /// </summary>
+    Task<FormVersionInfo?> PinVersionAsync(int formId, int number, bool isPinned, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets a version's comment, or clears it with null. The form's row stays as it is (ADR-0045). Null when the version
+    /// does not exist. Refused with <see cref="FormBuilderConflict.Trashed"/> while the form is in the trash.
+    /// </summary>
+    Task<FormVersionInfo?> CommentVersionAsync(int formId, int number, string? comment, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Nominates up to <paramref name="take"/> draft versions for the cleanup (ADR-0045), by form and number: drafts past
+    /// the newest <paramref name="keepNewest"/> draft versions of their form, saved before
+    /// <paramref name="createdBefore"/>, not pinned, not a form's draft and without entries. Each is removed with
+    /// <see cref="PruneDraftAsync"/>, which checks again what may have changed since.
+    /// </summary>
+    Task<IReadOnlyList<DraftToPrune>> ListDraftsToPruneAsync(DateTimeOffset createdBefore, int keepNewest, int take, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a draft version the retention job may remove (ADR-0002): not pinned, not the form's draft, and no entry

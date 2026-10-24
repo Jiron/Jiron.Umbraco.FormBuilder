@@ -66,8 +66,8 @@ database connection of its own. Its areas:
 
 | Area | Holds | Decided in |
 | --- | --- | --- |
-| Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions | ADR-0002 |
-| Forms | the form service: create from blank, save, publish, unpublish, rename and move, each a unit of work of its own; aliases from names, the publish checks, the field catalogue, the form notifications and the one mapping from a refusal to its code | ADR-0002, ADR-0044 |
+| Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions and their comparison | ADR-0002, ADR-0045 |
+| Forms | the form service: create from blank, save, publish, unpublish, rename and move, and a form's versions (the History with what changed, one version, two compared, restore, pins and comments), each change a unit of work of its own; aliases from names, the publish checks, the field catalogue, the form notifications and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045 |
 | Fields and options | the field type registry, the built-in types, option sources and lists, places on options | ADR-0002, §4.3.2 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
@@ -75,6 +75,7 @@ database connection of its own. Its areas:
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
 | Files | the file store contract and the physical store, whose root is checked against the web root at start-up, scanning | ADR-0006, ADR-0041 |
 | Privacy | retention, holds, data subject tools, masking, IP handling | ADR-0009 |
+| Retention | the hourly retention job and its parts, so far the draft-version cleanup | ADR-0007, ADR-0045 |
 | Permissions | grants, restrictions, evaluation | ADR-0013 |
 | Settings | host options and their start-up checks; the backoffice sections with their validators, migrations and host rules, the cached reader, the save and the cache refresher | ADR-0008, ADR-0042, ADR-0043 |
 | Persistence | NPoco DTOs, repositories, the entries query builder, the outbox, the audit log and daily statistics, the migration plan, the database gate and units of work ([database.md](database.md#access)) | ADR-0003, ADR-0007, ADR-0033, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0041, D7 |
@@ -134,6 +135,11 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
 - **Versions:** every save that changes the definition appends a version row; publishing appends a published one,
   updates the field catalogue and raises the public revision when the projection changed
   ([ADR-0044](decisions/0044-form-service.md)). Drafts keep what publishing refuses; the form check lists it.
+- **The History** ([ADR-0045](decisions/0045-versions-comparison-and-draft-cleanup.md)) lists the publishes, or every
+  version, newest first, each with what changed since the version before it (a publish since the publish before).
+  The comparison matches elements by key, settings groups by name, and gives each change its path of properties with
+  both values, and the fewest moves that explain a new order. A restore saves an older definition as a new draft; a
+  pin or a comment changes only the version, so no editor's open draft becomes stale.
 - **Publishing** ([ADR-0035](decisions/0035-structural-validation-and-public-projection.md)) runs the save checks and
   then the structural validation: aliases, names and option values, references, what each field type supports (its
   traits, from the field-type registry from 5.1 on), rule effects, cycles of visibility through rules and containment,
@@ -304,9 +310,10 @@ Two layers ([ADR-0008](decisions/0008-settings-model.md)):
   never what the site stored. An IntelliSense schema generated from the options ships with the Core package.
 - **Backoffice sections** in `jfbSetting` ([ADR-0043](decisions/0043-backoffice-settings-sections.md)): one immutable
   record each, whose initializers are the defaults, with a validator, its schema migrations and a host rule, each
-  arriving with the step that builds what it configures (so far `general` with the time zone and the new-form
-  defaults). `general` and `email` are per site: a site row holds the top-level fields the site overrides (`null`
-  meaning the default), and a `[GlobalOnly]` field, such as `general.newForms`, is shared by every site. `protection`, `files`, `privacy` and `integrations` are global;
+  arriving with the step that builds what it configures (so far `general` with the time zone, the new-form defaults
+  and how long draft saves stay in the History). `general` and `email` are per site: a site row holds the top-level
+  fields the site overrides (`null` meaning the default), and a `[GlobalOnly]` field, such as `general.newForms` or
+  `general.history`, is shared by every site. `protection`, `files`, `privacy` and `integrations` are global;
   Access is stored in `jfbPermission`.
 
 Effective value = code default, then the global row, then the site row, then the host rules (switch off only, clamp,
@@ -342,8 +349,10 @@ Registries are collections, so a site can add, replace or remove entries.
 | `jfbFieldPreview` manifest and workspace views | the designer preview of a custom field, extra form views | 15.1 |
 
 **Notifications:** `FormSaving`/`Saved`, `FormPublishing`/`Published`, `FormUnpublishing`/`Unpublished`,
-`FormRenaming`/`Renamed`, `FormMoving`/`Moved` (the first of each pair cancelable, the second once the change
-committed, [ADR-0044](decisions/0044-form-service.md)), `FormTrashing`/`Deleted`; `EntrySubmitting`
+`FormRenaming`/`Renamed`, `FormMoving`/`Moved`, `FormVersionUpdating`/`Updated` for a version's pin or comment (the
+first of each pair cancelable, the second once the change committed, [ADR-0044](decisions/0044-form-service.md),
+[ADR-0045](decisions/0045-versions-comparison-and-draft-cleanup.md); a restore is a `FormSaving`/`Saved` with
+`RestoredFromVersion`), `FormTrashing`/`Deleted`; `EntrySubmitting`
 (cancelable, can add field errors), `EntrySubmitted`, `EntryStateChanged`, `EntryDeleting`;
 `ActionRunning`/`ActionRunCompleted`/`ActionRunFailed`; `ExportCompleted`; `SettingsSaved`. Umbraco's webhook system
 receives entry events too.
@@ -364,8 +373,9 @@ receives entry events too.
 - **One worker per server** claims due action runs and mail by token, woken after each commit and by the outbox job;
   passes never overlap on a server, and servers share the work through their claims.
 - **Distributed jobs**, each returning within 10 seconds and working in bounded batches, a minute apart or more:
-  `Jiron.FormBuilder.Outbox` (wakes the worker), retention (ADR-0009), statistics roll-ups, abandoned uploads, draft
-  version cleanup (ADR-0002) and the file mirror (D25).
+  `Jiron.FormBuilder.Outbox` (wakes the worker), `Jiron.FormBuilder.Retention` (hourly, its parts in order within
+  8 seconds: the draft-version cleanup, ADR-0045, then entries, mail and files, ADR-0009), statistics roll-ups,
+  abandoned uploads and the file mirror (D25).
 - **Mail** goes through `IEmailSender` with the email type `JironFormBuilder`, gated by `CanSendRequiredEmail()`, one
   body per mail, capped for addresses visitors typed (ADR-0012).
 - **The pause switch** `JironFormBuilder:Actions:Paused` stops all claims and loses nothing.

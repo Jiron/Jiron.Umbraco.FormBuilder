@@ -1,3 +1,4 @@
+using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Logic;
 
@@ -47,6 +48,15 @@ internal sealed class SettingsErrors(string section)
 
     /// <summary>Adds an error for a field of this section, given by its path within the section.</summary>
     public void Add(string field, string code, string message) => _errors.Add(new SettingsError($"{section}.{field}", code, message));
+
+    /// <summary>A whole number from <paramref name="min"/> to <paramref name="max"/>; otherwise a <see cref="Range"/> error.</summary>
+    public void Between(string field, int value, int min, int max)
+    {
+        if (value < min || value > max)
+        {
+            Add(field, Range, string.Create(CultureInfo.InvariantCulture, $"Must be a whole number from {min} to {max}."));
+        }
+    }
 
     /// <summary>
     /// An IANA time zone this server resolves, as "today" looks it up (ADR-0005, ADR-0030), spelled as the server spells

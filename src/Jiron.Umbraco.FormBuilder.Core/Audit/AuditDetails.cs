@@ -64,6 +64,14 @@ internal sealed class AuditDetails
         return Set(name, List(values.Select(value => JsonValue.Create(Identifier(value)))));
     }
 
+    /// <summary>Adds a list of numbers, for example the versions a cleanup removed.</summary>
+    /// <exception cref="ArgumentException">There are more than 200.</exception>
+    public AuditDetails AddNumbers(string name, IEnumerable<long> values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        return Set(name, List(values.Select(value => JsonValue.Create(value))));
+    }
+
     /// <summary>Adds a list of keys, for example the fields a change touched.</summary>
     /// <exception cref="ArgumentException">There are more than 200.</exception>
     public AuditDetails AddKeys(string name, IEnumerable<Guid> keys)

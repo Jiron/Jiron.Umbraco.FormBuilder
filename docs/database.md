@@ -88,6 +88,10 @@ Every read and write goes through `FormBuilderDatabase` and the repositories in 
   values, times and identifiers; a view is recorded once per user, item and window by one `INSERT … WHERE NOT EXISTS`.
   A count is an update, then an insert where the form exists and the row does not, then an update again, so counters
   stay right when servers count at once and a late count never brings back the statistics of a deleted form.
+- **Versions** ([ADR-0045](decisions/0045-versions-comparison-and-draft-cleanup.md)): a pin or a comment is one
+  update that a form in the trash refuses, and leaves the form's row alone. The draft cleanup's read only nominates
+  versions without locks; each delete checks the pin, the form's draft and published versions and the entries again
+  with a locking read.
 - **Guards are locking reads.** A check whose answer must hold until the unit ends (a row that must stay, or rows that
   must not appear) reads with `UPDLOCK, HOLDLOCK` on SQL Server, so a writer at the same moment meets the repository's
   refusal, not a foreign key's error, also under read-committed snapshot (ADR-0038).
@@ -454,7 +458,7 @@ copies the published version's theme, for the theme library's "used by" list (AD
 
 Every save of a form adds a version: drafts, and the published versions entries are submitted with. The definition is
 stored whole, with the hash of its text and of its public projection. Published versions are never pruned; old draft
-saves are, except pinned ones and any an entry points at.
+saves are, by `general.history`, except pinned ones, the form's draft and any an entry points at (ADR-0045).
 
 - `IX_jfbFormVersion_formId_number`: unique; the history of a form in order.
 

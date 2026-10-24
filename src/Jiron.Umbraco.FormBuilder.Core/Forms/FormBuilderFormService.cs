@@ -76,6 +76,50 @@ internal interface IFormBuilderFormService
     /// <exception cref="FormBuilderConflictException">The folder is missing or in the trash, or the form is in the trash.</exception>
     /// <exception cref="FormBuilderCancelledException">A handler cancelled the change.</exception>
     Task<FormInfo?> MoveAsync(Guid key, int expectedConcurrencyVersion, Guid? folderKey, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// A page of a form's versions, newest first: the publishes, and the draft saves too when <paramref name="includeDrafts"/>,
+    /// each with what changed (ADR-0045). Null when the form does not exist.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The page holds more than <see cref="FormBuilderFormService.MaxVersionsPerPage"/> versions.</exception>
+    Task<Page<FormVersionEntry>?> ListVersionsAsync(Guid key, bool includeDrafts, PageRequest page, CancellationToken cancellationToken = default);
+
+    /// <summary>A version of a form with its definition, or null when the form or the version does not exist.</summary>
+    Task<FormVersionDocument?> GetVersionAsync(Guid key, int number, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// What changed from one version of a form to another, both read and upgraded first (ADR-0045). Null when the form or
+    /// a version does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">A stored version cannot be read.</exception>
+    Task<FormComparison?> CompareAsync(Guid key, int fromNumber, int toNumber, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Copies a version's definition into a new draft; the current draft stays in the History (ADR-0045). A version whose
+    /// definition is the draft's writes nothing. Null when the form or the version does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderConcurrencyException">Someone changed the form meanwhile.</exception>
+    /// <exception cref="FormBuilderValidationException">A save refuses the version's definition, for example above a lowered limit.</exception>
+    /// <exception cref="FormBuilderConflictException">The form is in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the save.</exception>
+    Task<FormVersionResult?> RestoreVersionAsync(Guid key, int expectedConcurrencyVersion, int number, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Pins or unpins a version, so the cleanup keeps it. The form's concurrency version stays as it is (ADR-0045). Null
+    /// when the form or the version does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderConflictException">The form is in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the change.</exception>
+    Task<FormVersion?> PinVersionAsync(Guid key, int number, bool isPinned, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets a version's comment; null, empty or blank clears it. The form's concurrency version stays as it is
+    /// (ADR-0045). Null when the form or the version does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">The comment is longer than 500 characters.</exception>
+    /// <exception cref="FormBuilderConflictException">The form is in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the change.</exception>
+    Task<FormVersion?> CommentVersionAsync(Guid key, int number, string? comment, Guid? userKey, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />

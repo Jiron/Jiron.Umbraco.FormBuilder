@@ -7,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.Composing;
@@ -20,7 +21,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Composing;
 /// Registers Jiron Form Builder's core services with Umbraco, which discovers this composer automatically: the host
 /// configuration and the start-up checks (ADR-0042), the database migration plan (ADR-0033), the pending-migration
 /// state, the definition services, the persistence (ADR-0036), the file store (ADR-0041), the backoffice settings
-/// (ADR-0043) and the form service (ADR-0044).
+/// (ADR-0043), the form service (ADR-0044) and the retention job (ADR-0045).
 /// </summary>
 public sealed class FormBuilderCoreComposer : IComposer
 {
@@ -73,5 +74,8 @@ public sealed class FormBuilderCoreComposer : IComposer
 
         // The form service (ADR-0044): create, save, publish and the other changes, with their notifications.
         builder.AddFormBuilderForms();
+
+        // The retention job (ADR-0045): the draft-version cleanup so far.
+        builder.AddFormBuilderRetention();
     }
 }

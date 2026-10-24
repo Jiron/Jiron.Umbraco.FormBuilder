@@ -109,7 +109,7 @@ public sealed class GeneralSettingsTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(JsonNode.DeepEquals(JsonNode.Parse(json), JsonNode.Parse("""{"timeZone":"UTC","newForms":{"consent":{"label":{"":"I agree","de":"Ich stimme zu"},"text":{"":"<p>Yes.</p>"}}}}""")), Is.True, json);
+            Assert.That(JsonNode.DeepEquals(JsonNode.Parse(json), JsonNode.Parse("""{"timeZone":"UTC","newForms":{"consent":{"label":{"":"I agree","de":"Ich stimme zu"},"text":{"":"<p>Yes.</p>"}}},"history":{"draftDays":90,"draftCount":50}}""")), Is.True, json);
             Assert.That(read.NewForms.Consent!.Label, Is.EqualTo(section.NewForms.Consent!.Label));
             Assert.That(read.NewForms.Consent.Text, Is.EqualTo(section.NewForms.Consent.Text));
         });
@@ -148,6 +148,35 @@ public sealed class GeneralSettingsTests
             Assert.That(DefinitionSaveChecks.CheckText(new LocalizedText("Yes." + (char)10 + "Really."), html: false).Select(problem => problem.Code), Is.EqualTo(new[] { "invalid_value" }));
             Assert.That(() => DefinitionSaveChecks.CheckText(null!, html: false), Throws.ArgumentNullException);
         });
+    }
+
+    [Test]
+    public void TheHistory_KeepsNinetyDaysAndFiftyDraftSaves_ForEverySiteAtOnce()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(new GeneralSettings().History, Is.EqualTo(new HistorySettings { DraftDays = 90, DraftCount = 50 }));
+            Assert.That(SettingsSectionJson.FieldNames<GeneralSettings>(), Does.Contain("history"));
+            Assert.That(SettingsSectionJson.SiteFieldNames<GeneralSettings>(), Does.Not.Contain("history"), "the cleanup runs for every form at once");
+            Assert.That(Errors(new GeneralSettings { History = null! }), Is.Empty, "a section without it keeps the defaults");
+        });
+    }
+
+    [TestCase(1, 0)]
+    [TestCase(90, 50)]
+    [TestCase(3650, 1000)]
+    public void AHistoryWithinItsRanges_Passes(int days, int count) =>
+        Assert.That(Errors(new GeneralSettings { History = new HistorySettings { DraftDays = days, DraftCount = count } }), Is.Empty);
+
+    [TestCase(0, 50, "draftDays", "Must be a whole number from 1 to 3650.")]
+    [TestCase(3651, 50, "draftDays", "Must be a whole number from 1 to 3650.")]
+    [TestCase(90, -1, "draftCount", "Must be a whole number from 0 to 1000.")]
+    [TestCase(90, 1001, "draftCount", "Must be a whole number from 0 to 1000.")]
+    public void AHistoryOutsideItsRanges_CannotBeSaved(int days, int count, string field, string message)
+    {
+        var errors = Errors(new GeneralSettings { History = new HistorySettings { DraftDays = days, DraftCount = count } });
+
+        Assert.That(errors.Select(error => (error.Field, error.Code, error.Message)), Is.EqualTo(new[] { ("general.history." + field, "range", message) }));
     }
 
     private static NewFormConsent Consent(IReadOnlyDictionary<string, string> label, IReadOnlyDictionary<string, string> text) => new() { Label = label, Text = text };

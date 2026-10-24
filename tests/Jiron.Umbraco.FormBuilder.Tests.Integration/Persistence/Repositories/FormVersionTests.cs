@@ -128,8 +128,8 @@ public sealed class FormVersionTests : RepositoryTestBase
             version = (await Forms.SaveDraftAsync(form.Id, version, Document($$"""{"n":{{i}}}"""), $"save {i}", Editor))!.Form.ConcurrencyVersion;
         }
 
-        var first = await Forms.ListVersionsAsync(form.Id, new PageRequest(0, 2));
-        var last = await Forms.ListVersionsAsync(form.Id, new PageRequest(4, 2));
+        var first = await Forms.ListVersionsAsync(form.Id, null, new PageRequest(0, 2));
+        var last = await Forms.ListVersionsAsync(form.Id, null, new PageRequest(4, 2));
 
         Assert.Multiple(async () =>
         {
@@ -137,26 +137,29 @@ public sealed class FormVersionTests : RepositoryTestBase
             Assert.That(first.Items.Select(info => info.Comment), Is.EqualTo(new[] { "save 3", "save 2" }));
             Assert.That(last.Items.Select(info => info.Number), Is.EqualTo(new[] { 1 }));
             Assert.That(new[] { first.Total, last.Total }, Is.All.EqualTo(5));
-            Assert.That((await Forms.ListVersionsAsync(-1, PageRequest.First(10))).Total, Is.Zero);
+            Assert.That((await Forms.ListVersionsAsync(-1, null, PageRequest.First(10))).Total, Is.Zero);
         });
     }
 
     [Test]
-    public async Task AVersion_TakesAComment_AndAPin_WithoutChangingTheForm()
+    public async Task AVersion_TakesAComment_AndAPin_EachOnItsOwn_WithoutChangingTheForm()
     {
         var form = await CreateFormAsync();
 
-        var pinned = await Forms.UpdateVersionAsync(form.Id, 1, "Approved by legal", true);
-        var cleared = await Forms.UpdateVersionAsync(form.Id, 1, null, false);
+        var commented = await Forms.CommentVersionAsync(form.Id, 1, "Approved by legal");
+        var pinned = await Forms.PinVersionAsync(form.Id, 1, true);
+        var cleared = await Forms.CommentVersionAsync(form.Id, 1, null);
+        var unpinned = await Forms.PinVersionAsync(form.Id, 1, false);
 
         Assert.Multiple(async () =>
         {
-            Assert.That(pinned?.Comment, Is.EqualTo("Approved by legal"));
-            Assert.That(pinned?.IsPinned, Is.True);
-            Assert.That(cleared?.Comment, Is.Null);
-            Assert.That(cleared?.IsPinned, Is.False);
+            Assert.That((commented?.Comment, commented?.IsPinned), Is.EqualTo(("Approved by legal", (bool?)false)));
+            Assert.That((pinned?.Comment, pinned?.IsPinned), Is.EqualTo(("Approved by legal", (bool?)true)), "a pin keeps the comment");
+            Assert.That((cleared?.Comment, cleared?.IsPinned), Is.EqualTo(((string?)null, (bool?)true)), "a comment keeps the pin");
+            Assert.That(unpinned?.IsPinned, Is.False);
             Assert.That(await Forms.GetByIdAsync(form.Id), Is.EqualTo(form), "no change to the form's row");
-            Assert.That(await Forms.UpdateVersionAsync(form.Id, 9, null, true), Is.Null);
+            Assert.That(await Forms.PinVersionAsync(form.Id, 9, true), Is.Null);
+            Assert.That(await Forms.CommentVersionAsync(-1, 1, "x"), Is.Null);
         });
     }
 
@@ -172,7 +175,7 @@ public sealed class FormVersionTests : RepositoryTestBase
 
         // 1 is unused, 2 is pinned, 3 has an entry (a preview), 5 is the draft, 6 is published.
         var published = (await Forms.PublishAsync(form.Id, version, Document(), null, null, Editor))!;
-        await Forms.UpdateVersionAsync(form.Id, 2, null, true);
+        await Forms.PinVersionAsync(form.Id, 2, true);
         await AddEntryAsync(form.Id, (await Forms.GetVersionAsync(form.Id, 3))!.Info.Id);
         var draftNumber = (await Forms.GetVersionByIdAsync(published.Form.DraftVersionId!.Value))!.Info.Number;
 
@@ -185,6 +188,96 @@ public sealed class FormVersionTests : RepositoryTestBase
             Assert.That(await Forms.PruneDraftAsync(form.Id, draftNumber), Is.False, "the form's draft");
             Assert.That(await Forms.PruneDraftAsync(form.Id, published.Version.Info.Number), Is.False, "published");
             Assert.That(Count(FormBuilderTables.FormVersion, $"{Q("formId")} = @0", form.Id), Is.EqualTo(5));
+        });
+    }
+
+    [Test]
+    public async Task SeveralVersions_AreReadInOneGo_NewestFirst_LeavingOutTheMissing()
+    {
+        var form = await CreateFormAsync();
+        var other = await CreateFormAsync("other");
+        var version = form.ConcurrencyVersion;
+        for (var i = 0; i < 3; i++)
+        {
+            version = (await Forms.SaveDraftAsync(form.Id, version, Document($$"""{"n":{{i}}}"""), null, Editor))!.Form.ConcurrencyVersion;
+        }
+
+        var read = await Forms.GetVersionsAsync(form.Id, [9, 3, 3, 1]);
+        var log = new CommandLog();
+        var none = await WatchedAsync(log, () => Forms.GetVersionsAsync(form.Id, []));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(read, Is.EqualTo(new[] { await Forms.GetVersionAsync(form.Id, 3), await Forms.GetVersionAsync(form.Id, 1) }), "with their definitions");
+            Assert.That(none, Is.Empty);
+            Assert.That(log.Texts, Is.Empty, "no numbers, no statement");
+            Assert.That((await Forms.GetVersionsAsync(other.Id, [1, 2, 3])).Select(stored => (stored.Info.FormId, stored.Info.Number)), Is.EqualTo(new[] { (other.Id, 1) }), "only the form's own");
+            Assert.That(await Forms.GetVersionsAsync(form.Id, Enumerable.Range(1, 200).ToList()), Has.Count.EqualTo(4), "as many as one read takes");
+        });
+    }
+
+    [Test]
+    public async Task TheVersionList_TakesOneKind_WhenAsked()
+    {
+        var form = await CreateFormAsync();
+        var first = (await Forms.PublishAsync(form.Id, form.ConcurrencyVersion, Document(), null, null, Editor))!;
+        var saved = (await Forms.SaveDraftAsync(form.Id, first.Form.ConcurrencyVersion, Document("""{"pages":[1]}"""), null, Editor))!;
+        await Forms.PublishAsync(form.Id, saved.Form.ConcurrencyVersion, Document("""{"pages":[1]}"""), null, null, Editor);
+
+        var published = await Forms.ListVersionsAsync(form.Id, FormVersionKind.Published, PageRequest.First(10));
+        var drafts = await Forms.ListVersionsAsync(form.Id, FormVersionKind.Draft, new PageRequest(1, 10));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((published.Items.Select(info => info.Number), published.Total), Is.EqualTo((new[] { 4, 2 }, 2L)));
+            Assert.That((drafts.Items.Select(info => info.Number), drafts.Total), Is.EqualTo((new[] { 1 }, 2L)));
+        });
+    }
+
+    [Test]
+    public async Task AFormInTheTrash_KeepsItsVersionsAsTheyAre()
+    {
+        var form = await CreateFormAsync();
+        await Forms.CommentVersionAsync(form.Id, 1, "Before the trash");
+        await Forms.TrashAsync(form.Id, form.ConcurrencyVersion, Editor);
+
+        AssertRefused(() => Forms.PinVersionAsync(form.Id, 1, true), FormBuilderConflict.Trashed, "a pin");
+        AssertRefused(() => Forms.CommentVersionAsync(form.Id, 1, null), FormBuilderConflict.Trashed, "a comment");
+        Assert.Multiple(async () =>
+        {
+            Assert.That((await Forms.GetVersionAsync(form.Id, 1))!.Info, Has.Property("Comment").EqualTo("Before the trash").And.Property("IsPinned").False);
+            Assert.That(await Forms.PinVersionAsync(form.Id, 2, true), Is.Null, "a version it does not have");
+        });
+    }
+
+    [Test]
+    public async Task TheCleanup_IsOffered_OldDraftsPastTheNewest_ThatNothingNeeds_InTheOrderOfTheForms()
+    {
+        // Form A: drafts 1 to 6 a day apart, 3 pinned, 4 with an entry, 6 its draft, then a publish, 7. Form B: drafts 1
+        // and 2, the second its draft.
+        var a = await CreateFormAsync();
+        var b = await CreateFormAsync("other");
+        var version = a.ConcurrencyVersion;
+        for (var i = 2; i <= 6; i++)
+        {
+            Clock.Advance(TimeSpan.FromDays(1));
+            version = (await Forms.SaveDraftAsync(a.Id, version, Document($$"""{"n":{{i}}}"""), null, Editor))!.Form.ConcurrencyVersion;
+        }
+
+        Clock.Advance(TimeSpan.FromDays(1));
+        await Forms.PublishAsync(a.Id, version, Document(), null, null, Editor);
+        await Forms.SaveDraftAsync(b.Id, b.ConcurrencyVersion, Document("""{"n":2}"""), null, Editor);
+        await Forms.PinVersionAsync(a.Id, 3, true);
+        await AddEntryAsync(a.Id, (await Forms.GetVersionAsync(a.Id, 4))!.Info.Id);
+        var later = Now.AddDays(30);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Forms.ListDraftsToPruneAsync(later, 0, 50), Is.EqualTo(new[] { new DraftToPrune(a.Id, 1), new(a.Id, 2), new(a.Id, 5), new(b.Id, 1) }));
+            Assert.That(await Forms.ListDraftsToPruneAsync(later, 2, 50), Is.EqualTo(new[] { new DraftToPrune(a.Id, 1), new(a.Id, 2) }), "past each form's two newest draft saves; a publish is none");
+            Assert.That(await Forms.ListDraftsToPruneAsync(Now.AddDays(1), 0, 50), Is.EqualTo(new[] { new DraftToPrune(a.Id, 1), new(b.Id, 1) }), "saved before the time, not at it");
+            Assert.That(await Forms.ListDraftsToPruneAsync(later, 0, 1), Is.EqualTo(new[] { new DraftToPrune(a.Id, 1) }));
+            Assert.That(await Forms.ListDraftsToPruneAsync(Now, 0, 50), Is.Empty);
         });
     }
 }

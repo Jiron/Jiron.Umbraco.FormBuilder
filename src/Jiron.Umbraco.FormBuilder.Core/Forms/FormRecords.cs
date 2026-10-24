@@ -1,4 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
@@ -58,6 +60,51 @@ internal sealed record FormDraft(
 /// <param name="FolderKey">A folder outside the trash, or null for the root.</param>
 /// <param name="UserKey">Who creates it, or null when Jiron Form Builder does.</param>
 internal sealed record NewFormRequest(string Name, string? Alias = null, Guid? FolderKey = null, Guid? UserKey = null);
+
+/// <summary>A version of a form, named by its number (ADR-0045).</summary>
+/// <param name="Number">Its number, counting up per form from 1.</param>
+/// <param name="Kind">A draft save or a publish.</param>
+/// <param name="PublicRevision">The public revision a publish gave visitors, or null for a draft save.</param>
+/// <param name="Comment">The editor's comment, or null.</param>
+/// <param name="IsPinned">Whether it is pinned, so the cleanup keeps it.</param>
+/// <param name="CreatedUtc">When it was saved.</param>
+/// <param name="CreatedByUserKey">Who saved it, or null when Jiron Form Builder did.</param>
+/// <param name="PublishedUtc">When it was published, or null for a draft save.</param>
+/// <param name="PublishedByUserKey">Who published it, or null.</param>
+/// <param name="IsDraft">Whether it is the form's draft.</param>
+/// <param name="IsLive">Whether it is the version visitors get.</param>
+internal sealed record FormVersion(
+    int Number,
+    FormVersionKind Kind,
+    int? PublicRevision,
+    string? Comment,
+    bool IsPinned,
+    DateTimeOffset CreatedUtc,
+    Guid? CreatedByUserKey,
+    DateTimeOffset? PublishedUtc,
+    Guid? PublishedByUserKey,
+    bool IsDraft,
+    bool IsLive);
+
+/// <summary>A version as the History lists it, with what changed (ADR-0045).</summary>
+/// <param name="Version">The version.</param>
+/// <param name="Changes">
+/// What changed: for a publish, since the publish before it; for a draft save, since the version before it. Null for the
+/// first of either, and when one of the two cannot be read.
+/// </param>
+internal sealed record FormVersionEntry(FormVersion Version, IReadOnlyList<DefinitionChangeSummary>? Changes);
+
+/// <summary>A version with its definition.</summary>
+/// <param name="Version">The version.</param>
+/// <param name="Definition">Its definition, read with the highest limits a host may set and upgraded; null when it cannot be read.</param>
+/// <param name="Problems">Why restoring it would be refused now, or why it cannot be read; usually empty.</param>
+internal sealed record FormVersionDocument(FormVersion Version, FormDefinition? Definition, IReadOnlyList<DefinitionProblem> Problems);
+
+/// <summary>What changed from one version of a form to another (ADR-0045).</summary>
+/// <param name="FromVersion">The older version's number.</param>
+/// <param name="ToVersion">The newer version's number.</param>
+/// <param name="Changes">The elements that differ.</param>
+internal sealed record FormComparison(int FromVersion, int ToVersion, IReadOnlyList<DefinitionChange> Changes);
 
 /// <summary>What a save or a publish did.</summary>
 /// <param name="Form">The form after it.</param>

@@ -4,7 +4,8 @@
   amended in 1.8; the save codes, unsupported properties and the outcome limit amended by
   [ADR-0034](0034-definition-model-reading-and-writing.md) in 4.2a; the publish codes and what the projection and its
   hash hold amended by [ADR-0035](0035-structural-validation-and-public-projection.md) in 4.2b; saves and publishes
-  that change nothing amended by [ADR-0044](0044-form-service.md) in 4.5a
+  that change nothing amended by [ADR-0044](0044-form-service.md) in 4.5a; restore, pins, comments, the diff and the
+  draft cleanup amended by [ADR-0045](0045-versions-comparison-and-draft-cleanup.md) in 4.5b
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2a (the model, the schema, upgraders), 4.2b (structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
@@ -331,15 +332,16 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
 - **The draft** stays the latest `Draft` row. "Unpublished changes" means the draft's `DefinitionHash` differs from the
   published one's.
 - **Unpublishing** clears `PublishedVersionId`; the versions and entries stay.
-- **Restoring** a version copies its definition into a new draft row ("restored from version N"); publishing it is a
-  separate step.
-- **Pinning and comments:** a version can carry a comment and be pinned. The retention job (ADR-0007) keeps every
-  published version, every pinned one and every one an entry points at (preview entries point at drafts), plus the
-  last 50 drafts and the drafts of the last 90 days.
-- **Concurrency:** every change to a form (save, publish, rename, move) raises `jfbForm.ConcurrencyVersion`. A save
+- **Restoring** a version copies its definition into a new draft row; publishing it is a separate step. "Restored from
+  version N" is in the audit entry and the save notifications, not in the row (ADR-0045).
+- **Pinning and comments:** a version can carry a comment and be pinned; neither changes the form's
+  `ConcurrencyVersion` (ADR-0045). The retention job (ADR-0007) keeps every published version, every pinned one and
+  every one an entry points at (preview entries point at drafts), plus the form's draft, its newest 50 draft saves and
+  the draft saves of the last 90 days, both set in `general.history` (ADR-0045).
+- **Concurrency:** every change to a form (save, publish, restore, rename, move) raises `jfbForm.ConcurrencyVersion`. A save
   sends the value it read; a stale one gets `409 concurrency_conflict` with the current state.
 - **Diff** matches elements by key and reports elements added, removed and moved, and properties changed, per culture
-  for texts.
+  for texts (ADR-0045 has the details).
 
 ### Schema versions and upgraders
 

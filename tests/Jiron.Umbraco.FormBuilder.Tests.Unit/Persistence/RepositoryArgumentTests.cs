@@ -104,7 +104,7 @@ public sealed class RepositoryArgumentTests
             Assert.That(() => repository.UpdateAsync(new FormUpdate(1, 1, alias, "Name", null, false, null)), Throws.ArgumentException);
             Assert.That(() => repository.UpdateAsync(new FormUpdate(1, 1, "contact", name, null, false, null)), Throws.ArgumentException);
             Assert.That(() => repository.SaveDraftAsync(1, 1, Document(), comment, null), Throws.ArgumentException);
-            Assert.That(() => repository.UpdateVersionAsync(1, 1, comment, false), Throws.ArgumentException);
+            Assert.That(() => repository.CommentVersionAsync(1, 1, comment), Throws.ArgumentException);
             Assert.That(() => repository.PublishAsync(1, 1, Document(), string.Empty, null, null), Throws.ArgumentException);
             Assert.That(() => repository.PublishAsync(1, 1, Document(), alias, null, null), Throws.ArgumentException);
         });
@@ -123,6 +123,21 @@ public sealed class RepositoryArgumentTests
             Assert.That(() => repository.SaveDraftAsync(1, 1, Document() with { DefinitionHash = Hash[1..] }, null, null), Throws.ArgumentException, "64 characters");
             Assert.That(() => repository.PublishAsync(1, 1, Document() with { PublicHash = "g" + Hash[1..] }, null, null, null), Throws.ArgumentException, "hex");
             Assert.That(() => repository.CreateAsync(NewForm() with { Draft = Document() with { PublicHash = string.Empty } }), Throws.ArgumentException);
+        });
+    }
+
+    [Test]
+    public void Forms_RefuseVersionReadsBeyondTheirBounds()
+    {
+        var repository = new FormRepository(_database);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(() => repository.GetVersionsAsync(1, null!), Throws.ArgumentNullException);
+            Assert.That(() => repository.GetVersionsAsync(1, Enumerable.Range(1, FormRepository.MaxVersionsAtOnce + 1).ToList()), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(() => repository.ListDraftsToPruneAsync(DateTimeOffset.UnixEpoch, -1, 10), Throws.InstanceOf<ArgumentOutOfRangeException>(), "a negative count to keep");
+            Assert.That(() => repository.ListDraftsToPruneAsync(DateTimeOffset.UnixEpoch, 0, 0), Throws.InstanceOf<ArgumentOutOfRangeException>(), "nothing to take");
+            Assert.That(() => repository.ListDraftsToPruneAsync(DateTimeOffset.UnixEpoch, 0, PageRequest.MaxTake + 1), Throws.InstanceOf<ArgumentOutOfRangeException>(), "more than a page");
         });
     }
 

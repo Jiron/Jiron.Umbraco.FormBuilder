@@ -1,3 +1,4 @@
+using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
 
@@ -8,6 +9,9 @@ internal sealed partial class FormRepository
 {
     /// <summary>The longest comment the column holds.</summary>
     public const int MaxCommentLength = 500;
+
+    /// <summary>The most versions <see cref="GetVersionsAsync"/> reads at once.</summary>
+    public const int MaxVersionsAtOnce = 200;
 
     /// <summary>The length of a SHA-256 in hex.</summary>
     private const int HashLength = 64;
@@ -111,44 +115,57 @@ internal sealed partial class FormRepository
             cancellationToken);
 
     /// <inheritdoc />
-    public Task<Page<FormVersionInfo>> ListVersionsAsync(int formId, PageRequest page, CancellationToken cancellationToken = default) =>
+    public Task<IReadOnlyList<StoredFormVersion>> GetVersionsAsync(int formId, IReadOnlyCollection<int> numbers, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(numbers);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(numbers.Count, MaxVersionsAtOnce, nameof(numbers));
+        if (numbers.Count == 0)
+        {
+            return Task.FromResult<IReadOnlyList<StoredFormVersion>>([]);
+        }
+
+        var wanted = numbers.ToArray();
+        return database.ReadAsync<IReadOnlyList<StoredFormVersion>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var rows = await db.FetchListAsync<FormVersionDto>(
+                    $"SELECT * FROM {n.T(FormBuilderTables.FormVersion)} WHERE {n.C("formId")} = @0 AND {n.C("number")} IN ({Parameters(1, wanted.Length)}) ORDER BY {n.C("number")} DESC",
+                    [formId, .. wanted.Cast<object>()]);
+                return rows.Select(VersionFromDto).ToList();
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<Page<FormVersionInfo>> ListVersionsAsync(int formId, FormVersionKind? kind, PageRequest page, CancellationToken cancellationToken = default) =>
         database.ReadAsync(
             async db =>
             {
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.FormVersion);
-                var total = await db.ScalarAsync<long>($"SELECT COUNT(*) FROM {table} WHERE {n.C("formId")} = @0", formId);
+                var where = kind is null ? $"{n.C("formId")} = @0" : $"{n.C("formId")} = @0 AND {n.C("kind")} = @1";
+                var kindName = kind?.ToString();
+                var total = await db.ScalarAsync<long>($"SELECT COUNT(*) FROM {table} WHERE {where}", formId, kindName);
                 var rows = total <= page.Skip
                     ? new List<FormVersionDto>()
                     : await db.FetchListAsync<FormVersionDto>(
-                        $"SELECT {InfoColumns(n)} FROM {table} WHERE {n.C("formId")} = @0 ORDER BY {n.C("number")} DESC {n.Page(page.Skip, page.Take)}",
-                        formId);
+                        $"SELECT {InfoColumns(n)} FROM {table} WHERE {where} ORDER BY {n.C("number")} DESC {n.Page(page.Skip, page.Take)}",
+                        formId,
+                        kindName);
                 return new Page<FormVersionInfo>(rows.Select(InfoFromDto).ToList(), total);
             },
             cancellationToken);
 
     /// <inheritdoc />
-    public Task<FormVersionInfo?> UpdateVersionAsync(int formId, int number, string? comment, bool isPinned, CancellationToken cancellationToken = default)
+    public Task<FormVersionInfo?> PinVersionAsync(int formId, int number, bool isPinned, CancellationToken cancellationToken = default) =>
+        UpdateVersionAsync(formId, number, "isPinned", isPinned, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<FormVersionInfo?> CommentVersionAsync(int formId, int number, string? comment, CancellationToken cancellationToken = default)
     {
         CheckComment(comment);
-        return database.WriteAsync(
-            async db =>
-            {
-                var n = new SqlNames(db);
-                var table = n.T(FormBuilderTables.FormVersion);
-                await db.ExecAsync(
-                    $"UPDATE {table} SET {n.C("comment")} = @0, {n.C("isPinned")} = @1 WHERE {n.C("formId")} = @2 AND {n.C("number")} = @3",
-                    comment,
-                    isPinned,
-                    formId,
-                    number);
-                var row = await db.FirstOrNullAsync<FormVersionDto>(
-                    $"SELECT {InfoColumns(n)} FROM {table} WHERE {n.C("formId")} = @0 AND {n.C("number")} = @1",
-                    formId,
-                    number);
-                return row is null ? null : InfoFromDto(row);
-            },
-            cancellationToken);
+        return UpdateVersionAsync(formId, number, "comment", comment, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -174,6 +191,41 @@ internal sealed partial class FormRepository
                 return deleted == 1;
             },
             cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<DraftToPrune>> ListDraftsToPruneAsync(DateTimeOffset createdBefore, int keepNewest, int take, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(keepNewest);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(take);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(take, PageRequest.MaxTake);
+        return database.ReadAsync<IReadOnlyList<DraftToPrune>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var versions = n.T(FormBuilderTables.FormVersion);
+                var form = n.T(FormBuilderTables.Form);
+
+                // A nomination only: every delete checks the pin, the form's versions and the entries again with a locking
+                // read (ADR-0045), so this read takes no locks.
+                var rows = await db.FetchListAsync<FormVersionDto>(
+                    $"""
+                    SELECT d.{n.C("formId")}, d.{n.C("number")} FROM (
+                    SELECT v.{n.C("id")}, v.{n.C("formId")}, v.{n.C("number")}, v.{n.C("isPinned")}, v.{n.C("createdUtc")}, ROW_NUMBER() OVER (PARTITION BY v.{n.C("formId")} ORDER BY v.{n.C("number")} DESC) AS {n.C("place")}
+                    FROM {versions} v WHERE v.{n.C("kind")} = @0) d
+                    INNER JOIN {form} f ON f.{n.C("id")} = d.{n.C("formId")}
+                    WHERE d.{n.C("place")} > @1 AND d.{n.C("isPinned")} = @2 AND d.{n.C("createdUtc")} < @3
+                    AND (f.{n.C("draftVersionId")} IS NULL OR f.{n.C("draftVersionId")} <> d.{n.C("id")})
+                    AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Entry)} e WHERE e.{n.C("formVersionId")} = d.{n.C("id")})
+                    ORDER BY d.{n.C("formId")}, d.{n.C("number")} {n.Page(0, take)}
+                    """,
+                    nameof(FormVersionKind.Draft),
+                    keepNewest,
+                    false,
+                    FormBuilderDbTime.Write(createdBefore));
+                return rows.Select(row => new DraftToPrune(row.FormId, row.Number)).ToList();
+            },
+            cancellationToken);
+    }
 
     internal static FormVersionInfo InfoFromDto(FormVersionDto d) => new(
         d.Id,
@@ -234,6 +286,39 @@ internal sealed partial class FormRepository
     }
 
     private static string InfoColumns(SqlNames n) => string.Join(", ", InfoColumnNames.Select(column => n.C(column)));
+
+    /// <summary>The parameter list <c>@first, @first+1, ...</c> of <paramref name="count"/> parameters.</summary>
+    private static string Parameters(int first, int count) =>
+        string.Join(", ", Enumerable.Range(first, count).Select(i => "@" + i.ToString(CultureInfo.InvariantCulture)));
+
+    /// <summary>
+    /// Sets one column of a version: one statement, which a form in the trash refuses (ADR-0045). The form's row stays as
+    /// it is, so the change never makes another editor's save stale. Only when it changed nothing does it read, to say why.
+    /// </summary>
+    private Task<FormVersionInfo?> UpdateVersionAsync(int formId, int number, string column, object? value, CancellationToken cancellationToken) =>
+        database.WriteAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var table = n.T(FormBuilderTables.FormVersion);
+                var form = n.T(FormBuilderTables.Form);
+                var updated = await db.ExecAsync(
+                    $"UPDATE {table} SET {n.C(column)} = @0 WHERE {n.C("formId")} = @1 AND {n.C("number")} = @2 AND EXISTS (SELECT 1 FROM {form} f{n.LockingRead} WHERE f.{n.C("id")} = @1 AND f.{n.C("trashedUtc")} IS NULL)",
+                    value,
+                    formId,
+                    number);
+                var row = await db.FirstOrNullAsync<FormVersionDto>(
+                    $"SELECT {InfoColumns(n)} FROM {table} WHERE {n.C("formId")} = @0 AND {n.C("number")} = @1",
+                    formId,
+                    number);
+                if (updated == 0 && row is not null)
+                {
+                    throw new FormBuilderConflictException(FormBuilderConflict.Trashed, "The form is in the trash; restore it first.");
+                }
+
+                return row is null ? null : InfoFromDto(row);
+            },
+            cancellationToken);
 
     private static void CheckDocument(VersionDocument document)
     {

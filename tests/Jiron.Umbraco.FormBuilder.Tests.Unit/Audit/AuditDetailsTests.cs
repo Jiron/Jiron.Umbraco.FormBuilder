@@ -30,9 +30,10 @@ public sealed class AuditDetailsTests
             .AddIdentifier("absent", null)
             .AddIdentifiers("paths", ["defaults.labels[0].text", "privacy.retention-days"])
             .AddKeys("fieldKeys", [Key, Other])
+            .AddNumbers("versions", [3, 7])
             .ToJson();
 
-        Assert.That(json, Is.EqualTo("""{"formKey":"4b1e1c8e-6a51-4f0e-9a0e-2a8d7c4b9f10","version":3,"sensitive":true,"state":"manual","untilUtc":"2027-01-02T01:04:05.0000000Z","section":"general","paths":["defaults.labels[0].text","privacy.retention-days"],"fieldKeys":["4b1e1c8e-6a51-4f0e-9a0e-2a8d7c4b9f10","0d2f6b7a-1c3e-4a5b-8c9d-0e1f2a3b4c5d"]}"""));
+        Assert.That(json, Is.EqualTo("""{"formKey":"4b1e1c8e-6a51-4f0e-9a0e-2a8d7c4b9f10","version":3,"sensitive":true,"state":"manual","untilUtc":"2027-01-02T01:04:05.0000000Z","section":"general","paths":["defaults.labels[0].text","privacy.retention-days"],"fieldKeys":["4b1e1c8e-6a51-4f0e-9a0e-2a8d7c4b9f10","0d2f6b7a-1c3e-4a5b-8c9d-0e1f2a3b4c5d"],"versions":[3,7]}"""));
     }
 
     [Test]
@@ -88,10 +89,13 @@ public sealed class AuditDetailsTests
             Assert.That(() => new AuditDetails().AddIdentifiers("values", Enumerable.Repeat("a", 200)), Throws.Nothing);
             Assert.That(() => new AuditDetails().AddIdentifiers("values", Enumerable.Repeat("a", 201)), Throws.ArgumentException);
             Assert.That(() => new AuditDetails().AddKeys("keys", Enumerable.Repeat(Key, 201)), Throws.ArgumentException);
+            Assert.That(() => new AuditDetails().AddNumbers("numbers", Enumerable.Repeat(1L, 200)), Throws.Nothing);
+            Assert.That(() => new AuditDetails().AddNumbers("numbers", Enumerable.Repeat(1L, 201)), Throws.ArgumentException);
             Assert.That(() => new AuditDetails().Add("attributes", FileAttributes.ReadOnly | FileAttributes.Hidden), Throws.ArgumentException, "a combination of flags");
             Assert.That(() => new AuditDetails().Add("state", (ApprovalMode)99), Throws.ArgumentException, "no defined value");
             Assert.That(() => new AuditDetails().AddIdentifiers("values", null!), Throws.ArgumentNullException);
             Assert.That(() => new AuditDetails().AddKeys("keys", null!), Throws.ArgumentNullException);
+            Assert.That(() => new AuditDetails().AddNumbers("numbers", null!), Throws.ArgumentNullException);
         });
     }
 
@@ -120,6 +124,7 @@ public sealed class AuditDetailsTests
             "public AddIdentifier(String, String)",
             "public AddIdentifiers(String, IEnumerable<String>)",
             "public AddKeys(String, IEnumerable<Guid>)",
+            "public AddNumbers(String, IEnumerable<Int64>)",
             "public ToJson()",
             "public get_IsEmpty()",
             "public static IsIdentifier(String)",

@@ -98,6 +98,9 @@ public sealed class FormSavingNotification : FormCancelableNotification
     /// <summary>True when the save creates the form.</summary>
     public bool IsNew { get; }
 
+    /// <summary>The number of the version a restore copies into the draft, or null for any other save (ADR-0045).</summary>
+    public int? RestoredFromVersion { get; init; }
+
     private static FormDefinition ArgumentOrThrow(FormDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -127,6 +130,9 @@ public sealed class FormSavedNotification : FormNotification
 
     /// <summary>True when the save created the form.</summary>
     public bool IsNew { get; }
+
+    /// <summary>The number of the version a restore copied into the draft, or null for any other save (ADR-0045).</summary>
+    public int? RestoredFromVersion { get; init; }
 }
 
 /// <summary>A form's draft is about to be published, after it passed every publish check.</summary>
@@ -314,4 +320,63 @@ public sealed class FormMovedNotification : FormNotification
 
     /// <summary>The folder it was in, or null for the root.</summary>
     public Guid? PreviousFolderKey { get; }
+}
+
+/// <summary>A version of a form is about to be pinned, unpinned or given another comment (ADR-0045).</summary>
+public sealed class FormVersionUpdatingNotification : FormCancelableNotification
+{
+    /// <summary>Creates the notification.</summary>
+    /// <param name="formKey">The form's key.</param>
+    /// <param name="alias">The form's alias.</param>
+    /// <param name="name">The form's name.</param>
+    /// <param name="version">The version's number.</param>
+    /// <param name="comment">The comment it will have, or null for none.</param>
+    /// <param name="isPinned">Whether it will be pinned.</param>
+    /// <param name="userKey">The backoffice user, or null when Jiron Form Builder changes it.</param>
+    /// <param name="messages">Where a handler's message goes.</param>
+    public FormVersionUpdatingNotification(Guid formKey, string alias, string name, int version, string? comment, bool isPinned, Guid? userKey, EventMessages messages)
+        : base(formKey, alias, name, userKey, messages)
+    {
+        Version = version;
+        Comment = comment;
+        IsPinned = isPinned;
+    }
+
+    /// <summary>The version's number.</summary>
+    public int Version { get; }
+
+    /// <summary>The comment it will have, or null for none.</summary>
+    public string? Comment { get; }
+
+    /// <summary>Whether it will be pinned.</summary>
+    public bool IsPinned { get; }
+}
+
+/// <summary>A version of a form was pinned, unpinned or given another comment (ADR-0045).</summary>
+public sealed class FormVersionUpdatedNotification : FormNotification
+{
+    /// <summary>Creates the notification.</summary>
+    /// <param name="formKey">The form's key.</param>
+    /// <param name="alias">The form's alias.</param>
+    /// <param name="name">The form's name.</param>
+    /// <param name="version">The version's number.</param>
+    /// <param name="comment">Its comment, or null for none.</param>
+    /// <param name="isPinned">Whether it is pinned.</param>
+    /// <param name="userKey">The backoffice user, or null when Jiron Form Builder changed it.</param>
+    public FormVersionUpdatedNotification(Guid formKey, string alias, string name, int version, string? comment, bool isPinned, Guid? userKey)
+        : base(formKey, alias, name, userKey)
+    {
+        Version = version;
+        Comment = comment;
+        IsPinned = isPinned;
+    }
+
+    /// <summary>The version's number.</summary>
+    public int Version { get; }
+
+    /// <summary>Its comment, or null for none.</summary>
+    public string? Comment { get; }
+
+    /// <summary>Whether it is pinned.</summary>
+    public bool IsPinned { get; }
 }
