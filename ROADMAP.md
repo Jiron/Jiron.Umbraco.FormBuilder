@@ -905,9 +905,9 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 
 **Backoffice settings** (typed sections in `jfbSetting`, ADR-0008; `global` scope, plus per-site overrides where marked). A site is a root content node, and the site of a request is the root of the content the form is shown on or submitted from; without content, the root whose Umbraco domain matches the request's host (14.4); otherwise the global values apply.
 
-- **General** (each field can be set per site):
+- **General** (each field can be set per site, except where it says otherwise):
   - default theme, the required-marker style, default labels;
-  - new-form defaults (consent field, notify-the-creator action);
+  - new-form defaults (consent field, notify-the-creator action), for every site at once, since a new form belongs to no site (ADR-0044);
   - how long draft saves stay in a form's History, for every site at once (the version cleanup of 10.3; by default the last 50 and those of the last 90 days, §4.5);
   - per site: the base URL (by default the site's first `https` domain in Umbraco, otherwise Umbraco's application URL, never the request's Host header) and the **time zone** (an IANA id, used for "today", opening dates and relative dates; saving refuses an id the server cannot resolve, ADR-0005).
 - **Email** (each field can be set per site):
@@ -1623,29 +1623,38 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Runtime:** a cached reader invalidated by a cache refresher, and a `SettingsSaved` notification.
   - **Globalization** (ADR-0005): saving a time zone the server cannot resolve is refused.
   - Done when: unit tests cover every validator and default; migrating an old payload works; a lock overrides the backoffice value; an unknown time zone cannot be saved.
-- [ ] **4.5 The form service**
-  - **Create:**
-    - from blank, with the configured new-form defaults;
-    - from a template: ship the built-in "Contact" template now, as embedded JSON (12.3 adds the others);
-    - by import.
+- [ ] **4.5a The form service: create, save and publish** (4.5 split in four, WORKLOG 2026-10-24)
+  - **Create from blank,** with the configured new-form defaults: the consent field, a `general` setting for every site at once, since a new form belongs to no site (§4.8). The notify-the-creator default needs the email action, so it comes with it (8.3).
   - **Save and publish:**
     - save draft with a concurrency check;
     - publish: run the structural validation (4.2b), update the field catalogue, and bump the public revision only when the public projection changed. Publishing is a pipeline that later steps extend: the form check joins in 9.5b, the mirror file in 12.5;
-    - unpublish.
-  - **Versions:** list, diff, restore (as a new version), pin and comment, plus the draft-version cleanup, the first part of the retention job (D8, ADR-0007).
-  - **Copies and moves:**
-    - duplicate, with or without actions, remapping every key and every rule, action and outcome reference;
-    - copy actions to another form, remapping fields by alias and reporting the unmapped ones;
-    - move.
+    - unpublish;
+    - rename and move (the move of "Copies and moves").
   - **Reading:** the service reads stored versions with `ReadStored`, so a host that lowers a definition limit never makes a stored form unreadable; saving or publishing it is refused until it fits (ADR-0042).
-  - **Trash and delete:** trash, restore, delete permanently (cascading entries, files, versions, permissions, references and daily stats; references and stats name the form without a foreign key, ADR-0033), empty trash. The delete removes the form's row before its daily stats, in the same unit, so a count that waited for the row counts nothing (ADR-0041).
-  - **Folders**, and notifications for every lifecycle event. Trashing a folder takes the folders and forms in it to the trash with it, and restoring it brings back what went with it (the repository of 4.3a marks one row at a time, ADR-0036). Its new statements follow the guard rule of ADR-0038: every check of other rows is a locking read on SQL Server, which `SqlGuardTests` enforces.
+  - **Notifications** for these lifecycle events, and an audit entry for each change in the unit that makes it. Its new statements follow the guard rule of ADR-0038: every check of other rows is a locking read on SQL Server, which `SqlGuardTests` enforces.
   - Done when: unit and integration tests cover each operation, including:
-    - "restore creates a new version";
-    - "duplicate remaps rule references";
-    - "delete removes the files from the file store";
-    - "delete leaves no reference or daily stat of the form";
     - "a form above a lowered definition limit still opens, and saving it returns `limit_exceeded`";
+    - "a stale save returns `concurrency_conflict`".
+- [ ] **4.5b Versions**
+  - **Versions:** list, diff, restore (as a new version), pin and comment.
+  - **The draft-version cleanup,** the first part of the retention job (D8, ADR-0007), with its `general` setting: how long draft saves stay in a form's History, for every site at once (§4.8).
+  - **Notifications** for these lifecycle events and audit entries; new statements follow the guard rule of ADR-0038 (`SqlGuardTests`).
+  - Done when: unit and integration tests cover each operation, including "restore creates a new version".
+- [ ] **4.5c Copies, templates and import**
+  - **Create from a template:** ship the built-in "Contact" template now, as embedded JSON (12.3 adds the others).
+  - **Create by import.**
+  - **Copies:**
+    - duplicate, with or without actions, remapping every key and every rule, action and outcome reference;
+    - copy actions to another form, remapping fields by alias and reporting the unmapped ones.
+  - **Notifications** for these lifecycle events and audit entries; new statements follow the guard rule of ADR-0038 (`SqlGuardTests`).
+  - Done when: unit and integration tests cover each operation, including "duplicate remaps rule references".
+- [ ] **4.5d Trash, delete and folders**
+  - **Trash and delete:** trash, restore, delete permanently (cascading entries, files, versions, permissions, references and daily stats; references and stats name the form without a foreign key, ADR-0033), empty trash. The delete removes the form's row before its daily stats, in the same unit, so a count that waited for the row counts nothing (ADR-0041).
+  - **Folders.** Trashing a folder takes the folders and forms in it to the trash with it, and restoring it brings back what went with it (the repository of 4.3a marks one row at a time, ADR-0036).
+  - **Notifications for every lifecycle event** and audit entries. Its new statements follow the guard rule of ADR-0038: every check of other rows is a locking read on SQL Server, which `SqlGuardTests` enforces.
+  - Done when: unit and integration tests cover each operation, including:
+    - "delete removes the files from the file store";
+    - "delete leaves no reference or daily stat of the form".
     - "a stale save returns `concurrency_conflict`".
 - [ ] **4.6 Permissions**
   - **The model** (ADR-0013):
@@ -1678,7 +1687,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [ ] **5.1 The field type framework**
   - **The registry:** a collection builder with `FormBuilderFieldTypeBase<TSettings>`, and settings schemas from attributes (exposed to the backoffice as JSON).
   - **Field values:**
-    - mapping from storage kinds to `jfbEntryValue` columns;
+    - mapping from storage kinds to `jfbEntryValue` columns, each type declaring the storage kind that the field catalogue records from 4.5a on (ADR-0044);
     - the parse and validate contract;
     - an availability check ("not configured: …").
   - **Changing types:** a "change type" compatibility map.
@@ -1741,7 +1750,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - **Values kept only until the actions have run** are stored only when an action run applies (§4.4; their deletion comes with the processor in 8.1).
     - **Redirect outcomes** (ADR-0035): the rendered URL is checked again by the publish rule, and one that fails it is not followed; the visitor gets the default thank-you message and the site logs a warning without the answers.
     - **The site's time zone** (ADR-0043): the opening and closing times, the rules' `today` and relative dates read `general.timeZone` of the request's site through the settings service (§4.8; the host-name fallback comes with 14.4). A stored zone the server cannot resolve (a site moved to a server without it) counts as UTC, and the site logs a warning that names the setting. The public answer carries the zone for the browser's `today`, the first setting visitors see, so this step adds the allowlist test of ADR-0008: it fills every section and checks the public output against the allowlist.
-  - Done when: integration tests cover each endpoint built here for success; validation errors by alias; a replayed submission returning the same receipt (also once the form has closed, its entry limit is reached or the option it took is full) and a changed one returning `409`; `form_changed`, `form_closed` and the entry limit; CORS allowed and denied; oversize bodies. The upload test of 1.4b is ported, with the ASP.NET temp folder watched: a 60 MB upload to a 50 MB field is cut off with nothing buffered, a renamed `.exe` is refused on its first bytes with nothing stored, and a declared length over the limit is refused before a byte is read. They also cover 50 parallel submissions for the last 10 places of an option (exactly 10 accepted), a rejected entry giving its place back, and an empty submission refused. A JSON body with an escaped lone surrogate answers `400 invalid_request`, not `500` (ADR-0005). A consent posted with the hash of a wording that has changed since (through the dictionary) answers `form_changed` and stores nothing. A calculation result too long for a number is stored as text only, with `Number` null (ADR-0005). While the migrations are pending, every public endpoint answers `503 migrations_pending` and stores nothing (ADR-0033). A redirect outcome whose merge tags render `//` and another host is not followed (ADR-0035). With `general.timeZone` set to `Pacific/Auckland`, a form open until a local midnight takes a submission a minute before it and answers `form_closed` a minute after it by the test clock, a date field whose minimum is today accepts the local date there, and a stored zone the server cannot resolve counts as UTC with a warning; the allowlist test passes (ADR-0043).
+  - **Published forms** (ADR-0044): the form endpoint reads a form's published version through the form service, cached on each server and refreshed on every server through a form cache refresher, which the service's publish, unpublish, rename, trash, restore and delete raise. A trashed form is answered as a missing one and takes no submission.
+  - Done when: integration tests cover each endpoint built here for success; validation errors by alias; a replayed submission returning the same receipt (also once the form has closed, its entry limit is reached or the option it took is full) and a changed one returning `409`; `form_changed`, `form_closed` and the entry limit; CORS allowed and denied; oversize bodies. The upload test of 1.4b is ported, with the ASP.NET temp folder watched: a 60 MB upload to a 50 MB field is cut off with nothing buffered, a renamed `.exe` is refused on its first bytes with nothing stored, and a declared length over the limit is refused before a byte is read. They also cover 50 parallel submissions for the last 10 places of an option (exactly 10 accepted), a rejected entry giving its place back, and an empty submission refused. A JSON body with an escaped lone surrogate answers `400 invalid_request`, not `500` (ADR-0005). A consent posted with the hash of a wording that has changed since (through the dictionary) answers `form_changed` and stores nothing. A calculation result too long for a number is stored as text only, with `Number` null (ADR-0005). While the migrations are pending, every public endpoint answers `503 migrations_pending` and stores nothing (ADR-0033). A redirect outcome whose merge tags render `//` and another host is not followed (ADR-0035). With `general.timeZone` set to `Pacific/Auckland`, a form open until a local midnight takes a submission a minute before it and answers `form_closed` a minute after it by the test clock, a date field whose minimum is today accepts the local date there, and a stored zone the server cannot resolve counts as UTC with a warning; the allowlist test passes (ADR-0043). A publish on one server reaches the other server's cached form through the refresher, and a trashed form answers like a missing one and stores nothing (ADR-0044).
 - [ ] **6.2 Razor rendering**
   - **Rendering:**
     - the view component and tag helpers (`<jfb-render>`, `<jfb-assets>`, included once per page automatically unless turned off), with the nonce option (`<jfb-assets nonce>` and `IFormBuilderCspNonceProvider`, ADR-0004);
@@ -1911,7 +1921,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - attachments;
     - a Razor view option (`Views/JironFormBuilder/Emails/*.cshtml`).
   - **Presets** ("Notify the team", "Confirm to the sender").
-  - Done when: tests pass, and an E2E run submits the demo contact form and finds two emails in the pickup folder with the right content, escaping and language. An abuse test also passes: a submission that puts a stranger's address in the email field and a link in the message gets the confirmation through only within the limits, and the link is not clickable in it. A test shows the recipient map choosing the address and the mapped addresses absent from the public projection.
+  - **The new-form default "notify the creator"** (§4.8; moved here from 4.5 because it needs this action, ADR-0044): a `general` setting for every site at once, which makes a form created from blank start with an email action to the form's creator.
+  - Done when: tests pass, and an E2E run submits the demo contact form and finds two emails in the pickup folder with the right content, escaping and language. An abuse test also passes: a submission that puts a stranger's address in the email field and a link in the message gets the confirmation through only within the limits, and the link is not clickable in it. A test shows the recipient map choosing the address and the mapped addresses absent from the public projection. A form created from blank starts with the action to its creator while the new-form default is on, and without it while it is off.
 - [ ] **8.4 Webhook, Slack and Teams**
   - **The webhook:**
     - JSON, form-encoded or XML;
