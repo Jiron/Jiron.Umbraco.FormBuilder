@@ -1656,7 +1656,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - "delete removes the files from the file store";
     - "delete leaves no reference or daily stat of the form".
     - "a stale save returns `concurrency_conflict`".
-- [ ] **4.6a The permission model and its evaluation** (4.6 split in two, WORKLOG 2026-10-24)
+- [x] **4.6a The permission model and its evaluation** (4.6 split in two, WORKLOG 2026-10-24) (2026-10-25, ea94a41)
   - **The model** (ADR-0013, ADR-0048):
     - permissions: design forms, manage actions, view entries, view sensitive data, edit entries, delete entries, export, manage library, manage settings, manage permissions, use privacy tools, as flags with stable names and values;
     - granted per user group globally, per folder or per form, combined as a union within the restriction boundary of ADR-0013; a grant without its dependency, and a global-only permission on a folder or form, are refused;
