@@ -1635,7 +1635,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when: unit and integration tests cover each operation, including:
     - "a form above a lowered definition limit still opens, and saving it returns `limit_exceeded`";
     - "a stale save returns `concurrency_conflict`".
-- [ ] **4.5b Versions**
+- [x] **4.5b Versions** (2026-10-24, 119aa26)
   - **Versions:** list, diff, restore (as a new version), pin and comment.
   - **The draft-version cleanup,** the first part of the retention job (D8, ADR-0007), with its `general` setting: how long draft saves stay in a form's History, for every site at once (§4.8).
   - **Notifications** for these lifecycle events and audit entries; new statements follow the guard rule of ADR-0038 (`SqlGuardTests`).
