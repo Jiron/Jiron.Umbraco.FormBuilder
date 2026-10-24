@@ -23,6 +23,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Composition;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
 {
+    /// <summary>The configuration of every test's site, as a host passes it in its environment.</summary>
+    public FormBuilderBootTests() => InMemoryConfiguration[FormBuilderTestingOptions.SectionName + ":Clock"] = "true";
+
     [Test]
     public void Boot_WithTheComposers_ReachesTheRunLevel()
     {
@@ -68,8 +71,6 @@ public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
 
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
-        // Before the composers run, as a host passes it in its environment.
-        builder.Config[FormBuilderTestingOptions.SectionName + ":Clock"] = "true";
         builder.AddComposers();
         builder.Services.AddLogCapture();
     }

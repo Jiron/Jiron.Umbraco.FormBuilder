@@ -15,6 +15,13 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Configuration;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public sealed class HostOptionsBootTests : UmbracoIntegrationTest
 {
+    /// <summary>The host configuration of every test's site, as a host passes it in its appsettings.json or environment.</summary>
+    public HostOptionsBootTests()
+    {
+        InMemoryConfiguration[FormBuilderOptions.SectionName + ":Limits:Definitions:MaxPages"] = "1";
+        InMemoryConfiguration[FormBuilderOptions.SectionName + ":LockedSections:0"] = "privacy";
+    }
+
     private static string Full => File.ReadAllText(RepositoryRoot.Path(typeof(HostOptionsBootTests).Assembly, "tests", "fixtures", "definitions", "v1-full.json"));
 
     [Test]
@@ -45,11 +52,5 @@ public sealed class HostOptionsBootTests : UmbracoIntegrationTest
     }
 
     /// <inheritdoc />
-    protected override void CustomTestSetup(IUmbracoBuilder builder)
-    {
-        // Before the composers run, as a host passes it in its appsettings.json or environment.
-        builder.Config[FormBuilderOptions.SectionName + ":Limits:Definitions:MaxPages"] = "1";
-        builder.Config[FormBuilderOptions.SectionName + ":LockedSections:0"] = "privacy";
-        builder.AddComposers();
-    }
+    protected override void CustomTestSetup(IUmbracoBuilder builder) => builder.AddComposers();
 }

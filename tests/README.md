@@ -189,7 +189,9 @@ the hints are empty on SQLite, so no database test here can tell.
 - No sleeps to wait for state: poll with a deadline, as `TestMailbox.WaitForAsync` does, and use the fake clocks where
   time matters.
 - Generate passwords with `TestPeople.NewPassword()`; test values that look like secrets carry the marker `JFB_FAKE`.
-- Integration fixtures set configuration on `builder.Config` in `CustomTestSetup` (an `UmbracoIntegrationTest`) or on
-  `InMemoryConfiguration` before `base.Setup()` (an `UmbracoTestServerTestBase`), and capture logs with
+- Integration fixtures set their site's configuration on `InMemoryConfiguration`: in the constructor of an
+  `UmbracoIntegrationTest`, before `base.Setup()` in an `UmbracoTestServerTestBase`. Never set a key on
+  `builder.Config`: the test host chains one configuration into every fixture's site, so the key would reach every
+  fixture that runs later, and `Support/SharedConfigurationTests` fails on it. Capture logs with
   `builder.Services.AddLogCapture()`.
 - Read files of the repository in place through `RepositoryRoot.Path(...)`.

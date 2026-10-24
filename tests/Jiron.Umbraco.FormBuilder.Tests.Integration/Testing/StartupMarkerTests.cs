@@ -15,6 +15,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Testing;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public sealed class StartupMarkerTests : UmbracoIntegrationTest
 {
+    /// <summary>The configuration of every test's site, as the browser tests' host passes it in its environment.</summary>
+    public StartupMarkerTests() => InMemoryConfiguration[FormBuilderTestingOptions.SectionName + ":" + nameof(FormBuilderTestingOptions.StartupMarker)] = "true";
+
     [Test]
     public void Boot_WithTheMarkerOn_RegistersItAfterUmbracosPopulators()
     {
@@ -44,8 +47,6 @@ public sealed class StartupMarkerTests : UmbracoIntegrationTest
 
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
-        // Before the composers run, as the browser tests' host passes it in its environment.
-        builder.Config[FormBuilderTestingOptions.SectionName + ":" + nameof(FormBuilderTestingOptions.StartupMarker)] = "true";
         builder.AddComposers();
         builder.Services.AddLogCapture();
     }
