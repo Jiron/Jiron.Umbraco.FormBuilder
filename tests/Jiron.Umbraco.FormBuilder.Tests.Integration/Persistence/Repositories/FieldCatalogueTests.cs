@@ -72,7 +72,7 @@ public sealed class FieldCatalogueTests : RepositoryTestBase
         var form = await CreateFormAsync();
         var free = (await Forms.AddFieldAsync(form.Id, Field("free")))!;
         var answered = (await Forms.AddFieldAsync(form.Id, Field("answered")))!;
-        AddValue(AddEntry(form.Id, form.DraftVersionId!.Value), answered.Id);
+        await AddValueAsync(await AddEntryAsync(form.Id, form.DraftVersionId!.Value), answered.Id);
 
         Assert.Multiple(async () =>
         {

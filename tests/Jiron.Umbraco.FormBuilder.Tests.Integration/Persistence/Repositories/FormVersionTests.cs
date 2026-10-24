@@ -154,7 +154,7 @@ public sealed class FormVersionTests : RepositoryTestBase
         // 1 is unused, 2 is pinned, 3 has an entry (a preview), 5 is the draft, 6 is published.
         var published = (await Forms.PublishAsync(form.Id, version, Document(), null, null, Editor))!;
         await Forms.UpdateVersionAsync(form.Id, 2, null, true);
-        AddEntry(form.Id, (await Forms.GetVersionAsync(form.Id, 3))!.Info.Id);
+        await AddEntryAsync(form.Id, (await Forms.GetVersionAsync(form.Id, 3))!.Info.Id);
         var draftNumber = (await Forms.GetVersionByIdAsync(published.Form.DraftVersionId!.Value))!.Info.Number;
 
         Assert.Multiple(async () =>

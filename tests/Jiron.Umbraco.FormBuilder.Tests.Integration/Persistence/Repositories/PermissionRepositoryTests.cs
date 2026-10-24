@@ -1,7 +1,5 @@
-using System.Data.Common;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using NPoco;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
@@ -165,14 +163,4 @@ public sealed class PermissionRepositoryTests : RepositoryTestBase
             async () => await Permissions.ChangeAsync(change),
             Throws.InstanceOf<FormBuilderConcurrencyException>().With.Property(nameof(Exception.InnerException)).Null,
             why);
-
-    // Records how many parameters each statement of a unit carries.
-    private sealed class ParameterCounter(List<int> statements) : IExecutingInterceptor
-    {
-        public void OnExecutingCommand(IDatabase database, DbCommand cmd) => statements.Add(cmd.Parameters.Count);
-
-        public void OnExecutedCommand(IDatabase database, DbCommand cmd)
-        {
-        }
-    }
 }

@@ -51,6 +51,7 @@ public sealed class PersistenceHelperTests
         {
             Assert.That(names.IsSqlite, Is.EqualTo(sqlite));
             Assert.That(names.InsertOnceHint, Is.EqualTo(insertOnceHint), "inserts that must happen once lock the checked range on SQL Server");
+            Assert.That(names.LockingRead, Is.EqualTo(insertOnceHint), "so do the checks whose answer must hold until the unit ends (ADR-0038)");
             Assert.That(names.WithRecursive, Is.EqualTo(withRecursive));
         });
     }

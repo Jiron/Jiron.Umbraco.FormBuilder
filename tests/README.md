@@ -112,9 +112,12 @@ the diff gets read and committed):
 `Tests.Integration/Persistence/Repositories/` migrates a fresh database per test, with a clock that stands still
 (`RepositoryTestBase`). The tests cover:
 
-- each repository's reads and writes, and every refusal, with nothing written. A refusal must come from the
-  statement's own condition: `AssertRefused` fails when the unique index refused instead;
-- writers at the same moment: of ten saves from one version, exactly one gets through;
+- each repository's reads and writes, and every refusal, with nothing written (for entries, the number too). A
+  refusal must come from the statement's own condition: `AssertRefused` fails when the unique index refused instead;
+- the unique index as the backstop: `CommandRewriter` (in `StatementInterceptors`) takes the condition out of one
+  statement, so the test shows the index's refusal classified as the condition's would be;
+- writers at the same moment: of ten saves from one version, exactly one gets through; fifty entries stored at once get
+  the numbers 1 to 50, each once, and ten retries of one submission store one entry;
 - what option lists, themes and email layouts share, written once in `AliasedLibraryRepositoryTests` and run for each
   of the three;
 - units of work that commit or roll back together;
@@ -124,9 +127,13 @@ The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made 
 
 - a commit that fails on its way, a lost connection, and the waits between attempts;
 - the arguments each repository refuses;
+- the entry text key against the rule vectors of `tests/vectors`: two texts share a key exactly when an `equals`
+  vector says they match (`EntryTextKeyTests`);
 - the product rows against the migration's snapshots.
 
 `Architecture/CoreDatabaseConnectionTests` reads Core's IL and fails on any connection of Core's own (ADR-0036).
+`Architecture/SqlGuardTests` reads the repositories' source and fails on a guard without a locking read (ADR-0038):
+the hints are empty on SQLite, so no database test here can tell.
 
 ## Writing tests
 

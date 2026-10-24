@@ -4,13 +4,12 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
-using Schema = Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations.CreateSchemaV1;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
 
 /// <summary>
 /// A migrated database per test with a clock that stands still (ADR-0011), the repositories, and builders for the rows
-/// the tests need. Entries and their values are written as raw rows, as their repositories arrive in 4.3c.
+/// the tests need.
 /// </summary>
 public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
 {
@@ -41,6 +40,12 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
     private protected IFormTemplateRepository Templates => Repo<IFormTemplateRepository>();
 
     private protected IPermissionRepository Permissions => Repo<IPermissionRepository>();
+
+    private protected IEntryRepository Entries => Repo<IEntryRepository>();
+
+    private protected IEntryEventRepository EntryEvents => Repo<IEntryEventRepository>();
+
+    private protected IEntryNoteRepository EntryNotes => Repo<IEntryNoteRepository>();
 
     [SetUp]
     public async Task MigrateAsync()
@@ -73,32 +78,40 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
     private protected async Task<StoredFolder> CreateFolderAsync(string name = "Folder", int? parentId = null, int sortOrder = 0) =>
         await Folders.CreateAsync(new NewFolder(Guid.NewGuid(), parentId, name, sortOrder, UserKey: Editor));
 
-    /// <summary>An entry of a form, pointing at one of its versions.</summary>
-    private protected long AddEntry(int formId, int versionId)
+    /// <summary>An entry to store for a form, pointing at one of its versions, with a fresh key and submission id.</summary>
+    private protected static NewEntry NewEntry(int formId, int versionId, params NewEntryValue[] values) => new()
     {
-        var now = Now.UtcDateTime;
-        var entry = new Schema.EntryDto
-        {
-            Key = Guid.NewGuid(),
-            FormId = formId,
-            FormVersionId = versionId,
-            Number = Count(FormBuilderTables.Entry, $"{Q("formId")} = @0", formId) + 1,
-            State = "New",
-            SubmissionId = Guid.NewGuid(),
-            Digest = Hex(32),
-            Culture = "en-US",
-            SpamReasons = "[]",
-            SubmittedUtc = now,
-            UpdatedUtc = now,
-            StateChangedUtc = now,
-        };
-        Write(db => db.Insert(entry));
-        return entry.Id;
-    }
+        Key = Guid.NewGuid(),
+        FormId = formId,
+        FormVersionId = versionId,
+        SubmissionId = Guid.NewGuid(),
+        Digest = Hex(32),
+        Culture = "en-US",
+        Values = values,
+    };
+
+    /// <summary>An entry of a form, pointing at one of its versions; its id.</summary>
+    private protected async Task<long> AddEntryAsync(int formId, int versionId) =>
+        (await Entries.CreateAsync(NewEntry(formId, versionId)))!.Id;
 
     /// <summary>A value of an entry, for a field of the catalogue.</summary>
-    private protected void AddValue(long entryId, int fieldId) =>
-        Write(db => db.Insert(new Schema.EntryValueDto { EntryId = entryId, FieldId = fieldId, ValueIndex = 0, Text = "JFB_TEST" }));
+    private protected Task AddValueAsync(long entryId, int fieldId) =>
+        Entries.ReplaceValuesAsync(entryId, [fieldId], [new NewEntryValue(fieldId, "JFB_TEST")], string.Empty);
+
+    /// <summary>Runs <paramref name="work"/> as one unit of work with <paramref name="interceptor"/> watching its statements.</summary>
+    private protected Task<T> WatchedAsync<T>(NPoco.IInterceptor interceptor, Func<Task<T>> work) =>
+        Database.WriteAsync(async db =>
+        {
+            db.Interceptors.Add(interceptor);
+            try
+            {
+                return await work();
+            }
+            finally
+            {
+                db.Interceptors.Remove(interceptor);
+            }
+        });
 
     /// <summary>
     /// Asserts that a change is refused with <paramref name="conflict"/> by the condition of its own statement, not by a

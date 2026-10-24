@@ -253,8 +253,9 @@ public sealed class FormRepositoryTests : RepositoryTestBase
         var form = await CreateFormAsync();
         var published = (await Forms.PublishAsync(form.Id, form.ConcurrencyVersion, Document(), null, null, Editor))!;
         await Forms.AddFieldAsync(form.Id, Field("email"));
-        var used = await CreateFormAsync();
-        AddEntry(used.Id, used.DraftVersionId!.Value);
+        var created = await CreateFormAsync();
+        await AddEntryAsync(created.Id, created.DraftVersionId!.Value);
+        var used = (await Forms.GetByIdAsync(created.Id))!;
 
         Assert.Multiple(async () =>
         {
