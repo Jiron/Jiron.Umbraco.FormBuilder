@@ -1602,7 +1602,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a filter for `straße` does not find `strasse`, nor the reverse, on SQLite and in the SQL Server job, and a filter for a text longer than its key finds only the entries with that full text;
     - on SQLite, `EXPLAIN QUERY PLAN` tests show every shape of the query builder on its index, with and without planner statistics: no `SCAN` of `jfbEntryValue` and no temporary b-tree for a sort by a value (ADR-0003);
     - a statement past its time budget is interrupted and answered with `query_timeout`, and a submission made meanwhile still succeeds; a search with more than 1,000 matches reports "more than 1,000".
-- [ ] **4.3e The outbox repositories: action runs and emails**
+- [x] **4.3e The outbox repositories: action runs and emails** (2026-10-24, d5cae4c)
   - **Repositories:** action runs and emails (the processor is 8.1, the mail queue 8.2).
   - **Every state change** of an action run or an email is one conditional statement that names the row, its token and its state, and no repository reads and then writes in one transaction (ADR-0007): the claim with its order condition, the outcomes, expired leases, the late finisher and stopping the rest.
   - Done when: integration tests cover CRUD for both repositories and every state change, and a change with a stale token or state changes nothing (ADR-0007).
