@@ -1,0 +1,11 @@
+<Project>
+
+  <!--
+    Adds Jiron Form Builder's appsettings schema to the site's IntelliSense (ADR-0008, ADR-0042): Umbraco's build copies
+    every UmbracoJsonSchemaFiles item into the site's project folder and references it from appsettings-schema.json.
+  -->
+  <ItemGroup>
+    <UmbracoJsonSchemaFiles Include="$(MSBuildThisFileDirectory)../appsettings-schema.Jiron.Umbraco.FormBuilder.json" Weight="100" />
+  </ItemGroup>
+
+</Project>

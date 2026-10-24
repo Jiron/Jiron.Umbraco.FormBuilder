@@ -75,7 +75,7 @@ database connection of its own. Its areas:
 | Files | the file store contract and the physical store, whose root is checked against the web root at start-up, scanning | ADR-0006, ADR-0041 |
 | Privacy | retention, holds, data subject tools, masking, IP handling | ADR-0009 |
 | Permissions | grants, restrictions, evaluation | ADR-0013 |
-| Settings | sections, host options, locks, the cache | ADR-0008 |
+| Settings | sections, host options and their start-up checks, locks, the cache | ADR-0008, ADR-0042 |
 | Persistence | NPoco DTOs, repositories, the entries query builder, the outbox, the audit log and daily statistics, the migration plan, the database gate and units of work ([database.md](database.md#access)) | ADR-0003, ADR-0007, ADR-0033, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0041, D7 |
 | Platform | jobs, notifications, the audit log's details (keys, numbers, flags, enum values, times and identifiers only), the HTML and CSS sanitiser | ADR-0007, ADR-0041, §4.10 |
 
@@ -295,8 +295,11 @@ Two layers ([ADR-0008](decisions/0008-settings-model.md)):
 
 - **Host configuration** (`JironFormBuilder` in `appsettings.json`): base paths, origins, server keys, file roots and
   caps, privacy permissions, captcha keys, webhook hosts, the pause switch, secrets, the mirror, limits, designer locks,
-  host grants and locked sections. Validated at start-up with messages that name the key; an IntelliSense schema ships
-  with the package.
+  host grants and locked sections, each key arriving with the step that builds what it configures. One options tree
+  (`FormBuilderOptions`), bound and read once, so a change takes effect at the next start. Start-up checks every key,
+  a misspelt one included, with messages that name the key, and refuses a runtime without ICU
+  ([ADR-0042](decisions/0042-host-configuration-and-start-up-checks.md)). A lowered definition limit refuses saves,
+  never what the site stored. An IntelliSense schema generated from the options ships with the Core package.
 - **Backoffice sections** in `jfbSetting`: `general` and `email` (both per site, field by field), `protection`,
   `files`, `privacy` and `integrations` (global); Access is stored in `jfbPermission`.
 

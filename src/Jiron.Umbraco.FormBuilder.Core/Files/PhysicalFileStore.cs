@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -11,7 +12,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Files;
 /// <c>&lt;id&gt;.deleted-&lt;random&gt;</c> before it deletes it, so the id reads as missing at once, even on a system
 /// that keeps a file a download holds open under its name until the download ends.
 /// </summary>
-internal sealed partial class PhysicalFileStore(IOptions<FormBuilderFilesOptions> options, IHostFolders folders, ILogger<PhysicalFileStore> logger) : IFormBuilderFileStore
+internal sealed partial class PhysicalFileStore(IOptions<FormBuilderOptions> options, IHostFolders folders, ILogger<PhysicalFileStore> logger) : IFormBuilderFileStore
 {
     /// <summary>What a save writes to until the file is complete.</summary>
     public const string PartialSuffix = ".partial";
@@ -22,7 +23,7 @@ internal sealed partial class PhysicalFileStore(IOptions<FormBuilderFilesOptions
     private const int BufferSize = 81920;
 
     /// <summary>The full path of the folder the files are in.</summary>
-    public string Root { get; } = FileStoreRoot.Resolve(options.Value.Root, folders);
+    public string Root { get; } = FileStoreRoot.Resolve(options.Value.Files.Root, folders);
 
     /// <inheritdoc />
     public async Task SaveAsync(string id, Stream content, CancellationToken cancellationToken = default)

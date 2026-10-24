@@ -60,6 +60,8 @@ npm-debug.log*
 # Generated schemas (Jiron Form Builder's own shipped schemas get a ! exception)
 # =====================================================================
 **/appsettings-schema*.json
+# Jiron Form Builder's own schema, generated from its options and shipped in the Core package (ADR-0042).
+!src/Jiron.Umbraco.FormBuilder.Core/appsettings-schema.Jiron.Umbraco.FormBuilder.json
 **/umbraco-package-schema.json
 
 # =====================================================================

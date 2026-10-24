@@ -23,7 +23,8 @@ internal sealed record DefinitionReadResult(FormDefinition? Definition, IReadOnl
 /// <summary>
 /// Reads and writes form definitions (ADR-0002, ADR-0034). Reading is strict and refuses, with a code and a JSON path
 /// for each problem, everything that makes a document unreadable; older schema versions are upgraded in memory first.
-/// Writing produces the canonical form, whose SHA-256 is the version's <c>DefinitionHash</c>.
+/// Writing produces the canonical form, whose SHA-256 is the version's <c>DefinitionHash</c>. Documents from outside
+/// and saves meet the site's limits; what the site stored is read with the highest limits (ADR-0042).
 /// </summary>
 internal sealed class FormDefinitionSerializer
 {
@@ -44,12 +45,16 @@ internal sealed class FormDefinitionSerializer
 
     private readonly FormDefinitionUpgrades _upgrades;
     private readonly DefinitionLimits _limits;
+    private FormDefinitionSerializer? _stored;
 
     public FormDefinitionSerializer(FormDefinitionUpgrades upgrades, DefinitionLimits limits)
     {
         _upgrades = upgrades;
         _limits = limits;
     }
+
+    // A second reader of the same chain, made once it is first needed; two made at the same time read alike.
+    private FormDefinitionSerializer Stored => _stored ??= _limits == DefinitionLimits.Ceiling ? this : new(_upgrades, DefinitionLimits.Ceiling);
 
     /// <summary>The SHA-256 of canonical UTF-8 bytes, in lowercase hex.</summary>
     public static string Hash(ReadOnlySpan<byte> canonical) => Convert.ToHexStringLower(SHA256.HashData(canonical));
@@ -75,6 +80,12 @@ internal sealed class FormDefinitionSerializer
 
         return Read(bytes);
     }
+
+    /// <summary>
+    /// Reads a definition the site stored, with <see cref="DefinitionLimits.Ceiling"/> instead of the site's limits: a
+    /// host that lowers a limit refuses to save a form above it, but the form keeps reading (ADR-0042).
+    /// </summary>
+    public DefinitionReadResult ReadStored(string json) => Stored.Read(json);
 
     /// <summary>Reads a definition from UTF-8 bytes.</summary>
     public DefinitionReadResult Read(ReadOnlySpan<byte> utf8)

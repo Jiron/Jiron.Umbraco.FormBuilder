@@ -1,12 +1,13 @@
 namespace Jiron.Umbraco.FormBuilder.Core.Files;
 
 /// <summary>
-/// The host configuration of uploaded files (section 4.8, <c>JironFormBuilder:Files</c>). The upload steps add the
-/// limits; this step adds where the default store keeps the files (ADR-0006, ADR-0041).
+/// The host configuration of uploaded files (section 4.8, <c>JironFormBuilder:Files</c>), part of
+/// <see cref="Configuration.FormBuilderOptions"/> (ADR-0042). The upload steps add the limits; 4.3f added where the
+/// default store keeps the files (ADR-0006, ADR-0041).
 /// </summary>
 public sealed class FormBuilderFilesOptions
 {
-    /// <summary>The configuration section the options bind to.</summary>
+    /// <summary>The configuration key of these options.</summary>
     public const string SectionName = "JironFormBuilder:Files";
 
     /// <summary>The folder of the default store unless the host sets another.</summary>

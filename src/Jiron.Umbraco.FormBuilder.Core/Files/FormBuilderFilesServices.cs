@@ -1,7 +1,5 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Files;
 
@@ -9,13 +7,11 @@ namespace Jiron.Umbraco.FormBuilder.Core.Files;
 internal static class FormBuilderFilesServices
 {
     /// <summary>
-    /// Binds <see cref="FormBuilderFilesOptions"/> and checks its root when the site starts, and registers the physical
-    /// store unless the site registered a store of its own first. Web supplies the <see cref="IHostFolders"/>.
+    /// Registers the physical store unless the site registered a store of its own first. Its root is part of the host
+    /// configuration, which checks it when the site starts (ADR-0042); Web supplies the <see cref="IHostFolders"/>.
     /// </summary>
-    public static IServiceCollection AddFormBuilderFiles(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddFormBuilderFiles(this IServiceCollection services)
     {
-        services.AddOptions<FormBuilderFilesOptions>().Bind(configuration.GetSection(FormBuilderFilesOptions.SectionName)).ValidateOnStart();
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderFilesOptions>, FormBuilderFilesOptionsValidation>());
         services.TryAddSingleton<IFormBuilderFileStore, PhysicalFileStore>();
         return services;
     }

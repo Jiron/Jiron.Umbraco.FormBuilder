@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.Options;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Files;
 
@@ -152,23 +151,3 @@ internal static class FileStoreRoot
         Path.EndsInDirectorySeparator(path) ? path : path + Path.DirectorySeparatorChar;
 }
 
-/// <summary>
-/// Checks <see cref="FormBuilderFilesOptions.Root"/> when the site starts (ADR-0041), so a site whose files would lie in
-/// its web root does not start and its log says why.
-/// </summary>
-internal sealed class FormBuilderFilesOptionsValidation(IHostFolders folders) : IValidateOptions<FormBuilderFilesOptions>
-{
-    /// <inheritdoc />
-    public ValidateOptionsResult Validate(string? name, FormBuilderFilesOptions options)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        if (name is not null && name != Options.DefaultName)
-        {
-            return ValidateOptionsResult.Skip;
-        }
-
-        return FileStoreRoot.TryResolve(options.Root, folders, out _, out var problem)
-            ? ValidateOptionsResult.Success
-            : ValidateOptionsResult.Fail(problem);
-    }
-}

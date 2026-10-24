@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Upgrades;
 using Jiron.Umbraco.FormBuilder.Core.Files;
@@ -14,9 +15,9 @@ using Umbraco.Extensions;
 namespace Jiron.Umbraco.FormBuilder.Core.Composing;
 
 /// <summary>
-/// Registers Jiron Form Builder's core services with Umbraco, which discovers this composer automatically: the
-/// database migration plan (ADR-0033), the pending-migration state, the definition services, the persistence (ADR-0036) and
-/// the file store (ADR-0041).
+/// Registers Jiron Form Builder's core services with Umbraco, which discovers this composer automatically: the host
+/// configuration and the start-up checks (ADR-0042), the database migration plan (ADR-0033), the pending-migration
+/// state, the definition services, the persistence (ADR-0036) and the file store (ADR-0041).
 /// </summary>
 public sealed class FormBuilderCoreComposer : IComposer
 {
@@ -26,15 +27,17 @@ public sealed class FormBuilderCoreComposer : IComposer
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.TryAddSingleton(TimeProvider.System);
 
+        // The host configuration, checked with the runtime when the site starts (ADR-0042).
+        builder.Services.AddFormBuilderOptions(builder.Config);
+
         // Umbraco also finds the plan by type scanning; its collection keeps one of each type.
         builder.PackageMigrationPlans().Add<FormBuilderMigrationPlan>();
         builder.Services.TryAddSingleton<IFormBuilderMigrationState, FormBuilderMigrationState>();
         builder.AddNotificationHandler<MigrationPlansExecutedNotification, FormBuilderMigrationsExecutedHandler>();
 
-        // Form definitions (ADR-0002, ADR-0034): the upgrader chain (no upgraders while v1 is the only schema), the
-        // limits (bound from host configuration in 4.4) and the reader and writer.
+        // Form definitions (ADR-0002, ADR-0034): the upgrader chain (no upgraders while v1 is the only schema) and the
+        // reader and writer, with the limits of the host configuration.
         builder.Services.TryAddSingleton<FormDefinitionUpgrades>();
-        builder.Services.TryAddSingleton(new DefinitionLimits());
         builder.Services.TryAddSingleton<FormDefinitionSerializer>();
 
         // The one way to the database (ADR-0007, ADR-0036): the gate, the unit of work and the repositories. All are
@@ -59,7 +62,7 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<IAuditRepository, AuditRepository>();
         builder.Services.TryAddSingleton<IDailyStatRepository, DailyStatRepository>();
 
-        // The file store (ADR-0006, ADR-0041): the physical default, whose root is checked when the site starts.
-        builder.Services.AddFormBuilderFiles(builder.Config);
+        // The file store (ADR-0006, ADR-0041): the physical default, whose root the host configuration checks.
+        builder.Services.AddFormBuilderFiles();
     }
 }
