@@ -50,6 +50,10 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
 
     private protected IEntryQueryRepository EntryQueries => Repo<IEntryQueryRepository>();
 
+    private protected IActionRunRepository ActionRuns => Repo<IActionRunRepository>();
+
+    private protected IEmailRepository Emails => Repo<IEmailRepository>();
+
     [SetUp]
     public async Task MigrateAsync()
     {

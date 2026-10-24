@@ -127,12 +127,17 @@ the diff gets read and committed):
   pages, the counts, and a list past its time budget while a submission comes in;
 - SQLite's plans of every shape the query builder writes, with and without planner statistics: no scan of entries
   or values, and no temporary b-tree for a sort by a value (`EntryQueryPlanTests`), with a walk stripped of its
-  unary plus that the check must catch.
+  unary plus that the check must catch;
+- the outbox (`ActionRunRepositoryTests`, `EmailRepositoryTests`): every state change, a claim once (ten claims at
+  once, which SQLite's gate takes in turn; the two-processor test is 8.1's), a token of each claim's own, outcomes
+  only with the claim's token and from the states they need, the order of a batch and "stop the rest" within it,
+  leases that run out and the late finisher, retries from the log, undo, the purge and an entry's deletion
+  (ADR-0007, ADR-0040).
 
 The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made to do on cue:
 
 - a commit that fails on its way, a lost connection, and the waits between attempts;
-- the arguments each repository refuses;
+- the arguments each repository refuses, and how the outbox cuts and stores errors and attachments;
 - the entry text key against the rule vectors of `tests/vectors`: two texts share a key exactly when an `equals`
   vector says they match (`EntryTextKeyTests`);
 - the query builder's statements and refusals (`EntryQuerySqlTests`), and the time budget of a read: a timeout that
