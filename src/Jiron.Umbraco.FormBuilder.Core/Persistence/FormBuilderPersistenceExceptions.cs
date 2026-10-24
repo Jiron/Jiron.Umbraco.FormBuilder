@@ -69,8 +69,11 @@ internal enum FormBuilderConflict
     /// <summary>The form version an entry names does not exist or belongs to another form.</summary>
     MissingVersion,
 
-    /// <summary>The form is in the trash: only a restore, an unpublish or a delete applies to it (ADR-0044).</summary>
+    /// <summary>The form or folder is in the trash: only a restore, an unpublish or a delete applies to it (ADR-0044, ADR-0047).</summary>
     Trashed,
+
+    /// <summary>The form or folder is outside the trash: only one in the trash is deleted for good (ADR-0047).</summary>
+    NotTrashed,
 }
 
 /// <summary>

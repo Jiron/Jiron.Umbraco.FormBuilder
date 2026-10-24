@@ -231,10 +231,11 @@ public sealed class FormRepositoryTests : RepositoryTestBase
         Assert.Multiple(async () =>
         {
             Assert.That(trashed.TrashedUtc, Is.EqualTo(Now.AddMinutes(3)));
+            Assert.That(trashed.TrashKey, Is.Not.Null.And.Not.EqualTo(trashedToo.TrashKey), "a trash key of its own");
             Assert.That(trashed.FolderId, Is.EqualTo(live.Id));
             Assert.That(trashed.ConcurrencyVersion, Is.EqualTo(inLive.ConcurrencyVersion + 1));
             Assert.That(again, Is.EqualTo(trashed), "a trashed form stays as it is");
-            Assert.That(restored.TrashedUtc, Is.Null);
+            Assert.That((restored.TrashedUtc, restored.TrashKey), Is.EqualTo(((DateTimeOffset?)null, (Guid?)null)));
             Assert.That(restored.FolderId, Is.EqualTo(live.Id), "back into its folder");
             Assert.That(restored.ConcurrencyVersion, Is.EqualTo(trashed.ConcurrencyVersion + 1));
             Assert.That(outside, Is.EqualTo(restored), "a form outside the trash stays as it is");
@@ -248,21 +249,27 @@ public sealed class FormRepositoryTests : RepositoryTestBase
     }
 
     [Test]
-    public async Task Deleting_RemovesTheFormWithItsVersionsAndCatalogue_OnlyWithoutEntries()
+    public async Task Deleting_RemovesAFormInTheTrash_AtItsVersion_WithItsVersionsAndCatalogue_OnlyWithoutEntries()
     {
         var form = await CreateFormAsync();
         var published = (await Forms.PublishAsync(form.Id, form.ConcurrencyVersion, Document(), null, null, Editor))!;
         await Forms.AddFieldAsync(form.Id, Field("email"));
+        var doomed = (await Forms.TrashAsync(form.Id, published.Form.ConcurrencyVersion, Editor))!;
         var created = await CreateFormAsync();
         await AddEntryAsync(created.Id, created.DraftVersionId!.Value);
-        var used = (await Forms.GetByIdAsync(created.Id))!;
+        var used = (await Forms.TrashAsync(created.Id, (await Forms.GetByIdAsync(created.Id))!.ConcurrencyVersion, Editor))!;
+        var live = await CreateFormAsync();
 
         Assert.Multiple(async () =>
         {
-            AssertConflict(() => Forms.DeleteAsync(used.Id), FormBuilderConflict.InUse);
+            AssertConflict(() => Forms.DeleteAsync(used.Id, used.ConcurrencyVersion), FormBuilderConflict.InUse);
+            AssertConflict(() => Forms.DeleteAsync(live.Id, live.ConcurrencyVersion), FormBuilderConflict.NotTrashed);
+            Assert.That(async () => await Forms.DeleteAsync(doomed.Id, doomed.ConcurrencyVersion - 1), Throws.InstanceOf<FormBuilderConcurrencyException>(), "a stale delete says so first");
             Assert.That(await Forms.GetByIdAsync(used.Id), Is.EqualTo(used), "the refused delete changed nothing");
-            Assert.That(await Forms.DeleteAsync(published.Form.Id), Is.True);
-            Assert.That(await Forms.DeleteAsync(published.Form.Id), Is.False, "deleted already");
+            Assert.That(await Forms.GetByIdAsync(live.Id), Is.EqualTo(live));
+            Assert.That(await Forms.GetByIdAsync(doomed.Id), Is.EqualTo(doomed));
+            Assert.That(await Forms.DeleteAsync(doomed.Id, doomed.ConcurrencyVersion), Is.True);
+            Assert.That(await Forms.DeleteAsync(doomed.Id, doomed.ConcurrencyVersion), Is.False, "deleted already");
             Assert.That(await Forms.GetByIdAsync(form.Id), Is.Null);
             Assert.That(Count(FormBuilderTables.FormVersion, $"{Q("formId")} = @0", form.Id), Is.Zero);
             Assert.That(Count(FormBuilderTables.FormField, $"{Q("formId")} = @0", form.Id), Is.Zero);

@@ -10,8 +10,8 @@ internal static class ExpectedSchemaV1
     public static readonly IReadOnlyDictionary<string, string> Columns = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["jfbKeyValue"] = "key, value?, updatedUtc",
-        ["jfbFolder"] = "id, key, parentId?, name, sortOrder, isRestricted, trashedUtc?, createdUtc, updatedUtc, createdByUserKey?, updatedByUserKey?",
-        ["jfbForm"] = "id, key, folderId?, alias, name, draftVersionId?, publishedVersionId?, publicRevision, concurrencyVersion, lastEntryNumber, themeAlias?, isRestricted, trashedUtc?, createdUtc, updatedUtc, createdByUserKey?, updatedByUserKey?",
+        ["jfbFolder"] = "id, key, parentId?, name, sortOrder, isRestricted, trashedUtc?, trashKey?, createdUtc, updatedUtc, createdByUserKey?, updatedByUserKey?",
+        ["jfbForm"] = "id, key, folderId?, alias, name, draftVersionId?, publishedVersionId?, publicRevision, concurrencyVersion, lastEntryNumber, themeAlias?, isRestricted, trashedUtc?, trashKey?, createdUtc, updatedUtc, createdByUserKey?, updatedByUserKey?",
         ["jfbFormVersion"] = "id, formId, number, kind, schemaVersion, definition, definitionHash, publicHash, publicRevision?, comment?, isPinned, createdUtc, createdByUserKey?, publishedUtc?, publishedByUserKey?",
         ["jfbFormField"] = "id, formId, fieldKey, alias, label, type, storageKind, isSensitive, sortOrder, firstVersionNumber?, lastVersionNumber?, parentFieldKey?",
         ["jfbEntry"] = "id, key, formId, formVersionId, number, state, isTest, submissionId, digest, culture, contentKey?, pageUrl?, memberKey?, ipAddress?, spamScore, spamReasons, searchText, context, durationSeconds?, submittedUtc, updatedUtc, stateChangedUtc, stateChangedByUserKey?, firstSeenUtc?, verifiedUtc?, resumeTokenHash?, resumeExpiresUtc?, currentPageKey?, challengeId?, holdUntilUtc?, holdReason?, purgeAfterUtc?",

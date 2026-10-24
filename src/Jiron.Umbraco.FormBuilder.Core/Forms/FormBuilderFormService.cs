@@ -78,6 +78,33 @@ internal interface IFormBuilderFormService
     Task<FormInfo?> MoveAsync(Guid key, int expectedConcurrencyVersion, Guid? folderKey, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Puts a form in the trash on its own (ADR-0047). Its published version stays, and the website answers it as
+    /// missing until a restore. A form in the trash already stays as it is. Null when it does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderConcurrencyException">Someone changed the form meanwhile.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the change.</exception>
+    Task<FormInfo?> TrashAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Takes a form out of the trash on its own, back into its folder, or to the root when the folder is in the trash
+    /// (ADR-0047). A form outside the trash stays as it is. Null when it does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderConcurrencyException">Someone changed the form meanwhile.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the change.</exception>
+    Task<FormInfo?> RestoreAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes a form in the trash for good, with its entries and their files, versions, grants, the references of
+    /// content to it and its statistics (ADR-0047). A large form goes in many short units of work; a delete that stops
+    /// part way leaves the form in the trash with fewer entries, and deleting it again finishes the job. Null when it
+    /// does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderConcurrencyException">Someone changed the form meanwhile.</exception>
+    /// <exception cref="FormBuilderConflictException">The form is outside the trash (<c>not_trashed</c>), or entries kept arriving.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the delete.</exception>
+    Task<FormDeletion?> DeleteAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// A page of a form's versions, newest first: the publishes, and the draft saves too when <paramref name="includeDrafts"/>,
     /// each with what changed (ADR-0045). Null when the form does not exist.
     /// </summary>
@@ -187,6 +214,7 @@ internal sealed partial class FormBuilderFormService(
     FieldTypeCatalog types,
     IEnumerable<IFormPublishCheck> publishChecks,
     IFormBuilderSettingsService settings,
+    FormRemoval removal,
     IEventAggregator eventAggregator,
     ILogger<FormBuilderFormService> logger)
     : IFormBuilderFormService
@@ -325,26 +353,8 @@ internal sealed partial class FormBuilderFormService(
         }
     }
 
-    // A form's name: 1 to 255 characters once trimmed, not only white space, on one line. The path is where a refusal
-    // points: the request's name, or the name in an export file.
-    private static string CheckName(string name, string path = "name")
-    {
-        ArgumentNullException.ThrowIfNull(name);
-        var trimmed = name.Trim();
-        if (trimmed.Length == 0)
-        {
-            throw FormBuilderValidationException.For(DefinitionErrors.InvalidValue, path, "A form needs a name that is not only white space.");
-        }
-
-        if (trimmed.Length > FormRepository.MaxNameLength)
-        {
-            throw FormBuilderValidationException.For(DefinitionErrors.LimitExceeded, path, $"A form name has at most {FormRepository.MaxNameLength} characters.");
-        }
-
-        return trimmed.Any(char.IsControl) || !StrictStringConverter.IsWellFormed(trimmed)
-            ? throw FormBuilderValidationException.For(DefinitionErrors.InvalidValue, path, "A form name is one line of text, without control characters.")
-            : trimmed;
-    }
+    // A form's name (ADR-0044). The path is where a refusal points: the request's name, or the name in an export file.
+    private static string CheckName(string name, string path = "name") => LibraryNames.Check(name, "form", FormRepository.MaxNameLength, path);
 
     private static void CheckAlias(string? alias)
     {

@@ -65,6 +65,7 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<IEmailRepository, EmailRepository>();
         builder.Services.TryAddSingleton<IAuditRepository, AuditRepository>();
         builder.Services.TryAddSingleton<IDailyStatRepository, DailyStatRepository>();
+        builder.Services.TryAddSingleton<IReferenceRepository, ReferenceRepository>();
 
         // The file store (ADR-0006, ADR-0041): the physical default, whose root the host configuration checks.
         builder.Services.AddFormBuilderFiles();

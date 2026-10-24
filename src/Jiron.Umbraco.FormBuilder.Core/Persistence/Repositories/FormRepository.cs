@@ -224,59 +224,6 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
             },
             cancellationToken);
 
-    /// <inheritdoc />
-    public Task<StoredForm?> TrashAsync(int formId, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default) =>
-        database.WriteAsync(
-            db =>
-            {
-                var n = new SqlNames(db);
-                return ChangeAsync(db, n, formId, expectedConcurrencyVersion, $"{n.C("trashedUtc")} = @0", $"{n.C("trashedUtc")} IS NULL", userKey);
-            },
-            cancellationToken);
-
-    /// <inheritdoc />
-    public Task<StoredForm?> RestoreAsync(int formId, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default) =>
-        database.WriteAsync(
-            db =>
-            {
-                var n = new SqlNames(db);
-                var folders = n.T(FormBuilderTables.Folder);
-                var folderLives = $"EXISTS (SELECT 1 FROM {folders} p{n.LockingRead} WHERE p.{n.C("id")} = {n.T(FormBuilderTables.Form)}.{n.C("folderId")} AND p.{n.C("trashedUtc")} IS NULL)";
-                return ChangeAsync(
-                    db,
-                    n,
-                    formId,
-                    expectedConcurrencyVersion,
-                    $"{n.C("trashedUtc")} = NULL, {n.C("folderId")} = CASE WHEN {folderLives} THEN {n.C("folderId")} ELSE NULL END",
-                    $"{n.C("trashedUtc")} IS NOT NULL",
-                    userKey);
-            },
-            cancellationToken);
-
-    /// <inheritdoc />
-    public Task<bool> DeleteAsync(int formId, CancellationToken cancellationToken = default) =>
-        database.WriteAsync(
-            async db =>
-            {
-                var n = new SqlNames(db);
-                var table = n.T(FormBuilderTables.Form);
-                var noEntries = $"NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Entry)} e{n.LockingRead} WHERE e.{n.C("formId")} = @0)";
-
-                // The form's row points at two of its versions, which the delete cascades to: let go of them first.
-                var released = await db.ExecAsync(
-                    $"UPDATE {table} SET {n.C("draftVersionId")} = NULL, {n.C("publishedVersionId")} = NULL WHERE {n.C("id")} = @0 AND {noEntries}",
-                    formId);
-                if (released == 0)
-                {
-                    return await FindAsync(db, "id", formId) is null
-                        ? false
-                        : throw new FormBuilderConflictException(FormBuilderConflict.InUse, "The form still has entries.");
-                }
-
-                return await db.ExecAsync($"DELETE FROM {table} WHERE {n.C("id")} = @0 AND {noEntries}", formId) == 1;
-            },
-            cancellationToken);
-
     internal static StoredForm FromDto(FormDto d) => new(
         d.Id,
         d.Key,
@@ -291,6 +238,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
         d.ThemeAlias,
         d.IsRestricted,
         FormBuilderDbTime.Read(d.TrashedUtc),
+        d.TrashKey,
         FormBuilderDbTime.Read(d.CreatedUtc),
         FormBuilderDbTime.Read(d.UpdatedUtc),
         d.CreatedByUserKey,
@@ -316,18 +264,16 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
     }
 
     /// <summary>
-    /// Raises the concurrency version and applies <paramref name="set"/> (where <c>@0</c> is the time) when the form is
-    /// fresh and <paramref name="needed"/> holds. A form for which <paramref name="needed"/> does not hold needs no change
-    /// and comes back as it is.
+    /// Raises the concurrency version and applies <paramref name="set"/> (where <c>@0</c> is the time and <c>@4</c> is
+    /// <paramref name="value"/>) when the form is fresh and <paramref name="needed"/> holds. A form for which
+    /// <paramref name="needed"/> does not hold needs no change and comes back as it is.
     /// </summary>
-    private async Task<StoredForm?> ChangeAsync(IUmbracoDatabase db, SqlNames n, int formId, int expected, string set, string needed, Guid? userKey)
+    private async Task<StoredForm?> ChangeAsync(IUmbracoDatabase db, SqlNames n, int formId, int expected, string set, string needed, Guid? userKey, object? value = null)
     {
+        object?[] args = value is null ? [database.UtcNow, userKey, formId, expected] : [database.UtcNow, userKey, formId, expected, value];
         var changed = await db.ExecAsync(
             $"UPDATE {n.T(FormBuilderTables.Form)} SET {set}, {Raise(n)}, {n.C("updatedUtc")} = @0, {n.C("updatedByUserKey")} = @1 WHERE {n.C("id")} = @2 AND {n.C("concurrencyVersion")} = @3 AND {needed}",
-            database.UtcNow,
-            userKey,
-            formId,
-            expected);
+            args);
         var current = await FindAsync(db, "id", formId);
         if (changed == 0 && current is not null)
         {

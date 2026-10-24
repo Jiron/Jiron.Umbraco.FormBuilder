@@ -55,6 +55,12 @@ internal sealed record FormDraft(
     int? PublishedVersion,
     bool HasUnpublishedChanges);
 
+/// <summary>What a form's permanent delete removed (ADR-0047).</summary>
+/// <param name="Key">The form's key.</param>
+/// <param name="Entries">How many entries went with it.</param>
+/// <param name="Files">How many files went with it, the uploads that waited for an entry included.</param>
+internal sealed record FormDeletion(Guid Key, long Entries, long Files);
+
 /// <summary>A form to create from blank (ADR-0044).</summary>
 /// <param name="Name">Its name: 1 to 255 characters, not only white space.</param>
 /// <param name="Alias">Its alias, or null to take one from the name.</param>

@@ -1,7 +1,8 @@
 # 0036. The database gate, units of work and the repositories
 
 - Status: accepted; amends [ADR-0007](0007-background-work-outbox-and-email.md) (which errors a unit of work runs
-  again after)
+  again after); the folder rules (creates and moves only below folders outside the trash, a trash and a restore of
+  the whole tree, a delete only from the trash) amended by [ADR-0047](0047-trash-delete-and-folders.md) in 4.5d
 - Date: 2026-10-23
 - Roadmap step: 4.3a (decided and built); 4.3b to 4.3f build the other repositories on it, 4.4 and 4.5 the
   services on top

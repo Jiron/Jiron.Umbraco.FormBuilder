@@ -11,6 +11,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 /// <param name="SortOrder">Its place among its siblings.</param>
 /// <param name="IsRestricted">Whether only the grants on it and below count below it (ADR-0013).</param>
 /// <param name="TrashedUtc">When it went to the trash, or null.</param>
+/// <param name="TrashKey">The trash operation that put it there, the same for everything that went with it (ADR-0047), or null.</param>
 /// <param name="CreatedUtc">When it was created.</param>
 /// <param name="UpdatedUtc">When it last changed.</param>
 /// <param name="CreatedByUserKey">Who created it, or null when Jiron Form Builder did.</param>
@@ -23,6 +24,7 @@ internal sealed record StoredFolder(
     int SortOrder,
     bool IsRestricted,
     DateTimeOffset? TrashedUtc,
+    Guid? TrashKey,
     DateTimeOffset CreatedUtc,
     DateTimeOffset UpdatedUtc,
     Guid? CreatedByUserKey,
@@ -37,15 +39,23 @@ internal sealed record StoredFolder(
 /// <param name="UserKey">Who creates it, or null when Jiron Form Builder does.</param>
 internal sealed record NewFolder(Guid Key, int? ParentId, string Name, int SortOrder = 0, bool IsRestricted = false, Guid? UserKey = null);
 
+/// <summary>What a folder's trash or restore changed (ADR-0047).</summary>
+/// <param name="TrashKey">The trash key: the new one of a trash, or the one a restore brought back (null for a folder trashed without one).</param>
+/// <param name="Folders">The folders it changed, as they are now: the folder first, then those below it by sort order and name.</param>
+internal sealed record FolderTreeChange(Guid? TrashKey, IReadOnlyList<StoredFolder> Folders);
+
 /// <summary>
 /// The folders of the form library in <c>jfbFolder</c>. A change that the tree's state refuses throws a
-/// <see cref="FormBuilderConflictException"/> and writes nothing; a missing folder gives null or false.
+/// <see cref="FormBuilderConflictException"/> and writes nothing; a missing folder gives null or false. Nothing lives
+/// below a folder in the trash (ADR-0047): folders are created and moved only below folders outside it, and a trash
+/// takes everything below the folder with it.
 /// </summary>
 internal interface IFolderRepository
 {
     /// <summary>
-    /// Creates a folder. Refused with <see cref="FormBuilderConflict.DuplicateKey"/>,
-    /// <see cref="FormBuilderConflict.MissingFolder"/> (the parent) or <see cref="FormBuilderConflict.FolderTooDeep"/>.
+    /// Creates a folder, at the root or in a folder outside the trash. Refused with
+    /// <see cref="FormBuilderConflict.DuplicateKey"/>, <see cref="FormBuilderConflict.MissingFolder"/> (the parent is
+    /// missing or in the trash) or <see cref="FormBuilderConflict.FolderTooDeep"/>.
     /// </summary>
     Task<StoredFolder> CreateAsync(NewFolder folder, CancellationToken cancellationToken = default);
 
@@ -65,23 +75,37 @@ internal interface IFolderRepository
     Task<StoredFolder?> UpdateAsync(int id, string name, int sortOrder, bool isRestricted, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Moves a folder into <paramref name="parentId"/> (null: the root), with everything in it. Null when it does not
-    /// exist. Refused with <see cref="FormBuilderConflict.MissingFolder"/>, <see cref="FormBuilderConflict.FolderIntoItself"/>
-    /// or <see cref="FormBuilderConflict.FolderTooDeep"/>.
+    /// Renames a folder and leaves the rest as it is, so a rename never undoes a restriction set meanwhile. Null when it
+    /// does not exist.
+    /// </summary>
+    Task<StoredFolder?> RenameAsync(int id, string name, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Moves a folder outside the trash into <paramref name="parentId"/> (null: the root), with everything in it. Null
+    /// when it does not exist. Refused with <see cref="FormBuilderConflict.Trashed"/> for a folder in the trash, and with
+    /// <see cref="FormBuilderConflict.MissingFolder"/> (the target is missing or in the trash),
+    /// <see cref="FormBuilderConflict.FolderIntoItself"/> or <see cref="FormBuilderConflict.FolderTooDeep"/>.
     /// </summary>
     Task<StoredFolder?> MoveAsync(int id, int? parentId, Guid? userKey, CancellationToken cancellationToken = default);
 
-    /// <summary>Puts a folder in the trash; a trashed one stays as it is. Null when it does not exist.</summary>
-    Task<StoredFolder?> TrashAsync(int id, Guid? userKey, CancellationToken cancellationToken = default);
-
     /// <summary>
-    /// Takes a folder out of the trash, back into its parent, or to the root when the parent is in the trash itself.
-    /// A folder outside the trash stays as it is. Null when it does not exist.
+    /// Puts a folder in the trash with every folder below it, all with one new trash key (ADR-0047). The forms in them
+    /// are the form repository's to trash with that key, in the same unit of work. Null when the folder does not exist
+    /// or is in the trash already.
     /// </summary>
-    Task<StoredFolder?> RestoreAsync(int id, Guid? userKey, CancellationToken cancellationToken = default);
+    Task<FolderTreeChange?> TrashAsync(int id, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes an empty folder. False when it does not exist. Refused with <see cref="FormBuilderConflict.FolderNotEmpty"/>
+    /// Takes a folder out of the trash, back into its parent or to the root when the parent is in the trash, with the
+    /// folders below it that went to the trash with it: those with its trash key, reached only through such folders
+    /// (ADR-0047). The forms in them are the form repository's to restore, in the same unit of work. Null when the folder
+    /// does not exist or is outside the trash.
+    /// </summary>
+    Task<FolderTreeChange?> RestoreAsync(int id, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes an empty folder in the trash. False when it does not exist. Refused with
+    /// <see cref="FormBuilderConflict.NotTrashed"/> outside the trash, and with <see cref="FormBuilderConflict.FolderNotEmpty"/>
     /// while it holds folders or forms.
     /// </summary>
     Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);
@@ -115,10 +139,11 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
                 var newKey = $"NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {n.C("key")} = @0)";
                 object?[] args = [folder.Key, folder.ParentId, folder.Name, folder.SortOrder, folder.IsRestricted, now, folder.UserKey];
 
-                // One statement: the parent must exist and leave room for one more level (ADR-0036).
+                // One statement: the parent must be outside the trash and leave room for one more level (ADR-0036,
+                // ADR-0047).
                 var sql = folder.ParentId is null
                     ? $"INSERT INTO {table} ({columns}) SELECT {values} WHERE {newKey}"
-                    : $"{n.WithRecursive} {Up(n, "@1")} INSERT INTO {table} ({columns}) SELECT {values} WHERE {newKey} AND EXISTS (SELECT 1 FROM up WHERE id = @1) AND (SELECT MAX(depth) FROM up) < {MaxDepth}";
+                    : $"{n.WithRecursive} {Up(n, "@1")} INSERT INTO {table} ({columns}) SELECT {values} WHERE {newKey} AND {Lives(n, "@1")} AND (SELECT MAX(depth) FROM up) < {MaxDepth}";
                 if (await db.ExecAsync(sql, args) == 0)
                 {
                     throw await RefusedCreateAsync(db, n, folder);
@@ -154,15 +179,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
 
     /// <inheritdoc />
     public Task<IReadOnlyList<StoredFolder>> ListAllAsync(CancellationToken cancellationToken = default) =>
-        database.ReadAsync<IReadOnlyList<StoredFolder>>(
-            async db =>
-            {
-                var n = new SqlNames(db);
-                var rows = await db.FetchListAsync<FolderDto>(
-                    $"SELECT * FROM {n.T(FormBuilderTables.Folder)} ORDER BY {n.C("sortOrder")}, {n.C("name")}, {n.C("id")}");
-                return rows.Select(FromDto).ToList();
-            },
-            cancellationToken);
+        database.ReadAsync<IReadOnlyList<StoredFolder>>(db => AllAsync(db, new SqlNames(db)), cancellationToken);
 
     /// <inheritdoc />
     public Task<StoredFolder?> UpdateAsync(int id, string name, int sortOrder, bool isRestricted, Guid? userKey, CancellationToken cancellationToken = default)
@@ -186,58 +203,114 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
     }
 
     /// <inheritdoc />
+    public Task<StoredFolder?> RenameAsync(int id, string name, Guid? userKey, CancellationToken cancellationToken = default)
+    {
+        CheckName(name);
+        return database.WriteAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                await db.ExecAsync(
+                    $"UPDATE {n.T(FormBuilderTables.Folder)} SET {n.C("name")} = @0, {n.C("updatedUtc")} = @1, {n.C("updatedByUserKey")} = @2 WHERE {n.C("id")} = @3",
+                    name,
+                    database.UtcNow,
+                    userKey,
+                    id);
+                return await FindAsync(db, "id", id);
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<StoredFolder?> MoveAsync(int id, int? parentId, Guid? userKey, CancellationToken cancellationToken = default) =>
         database.WriteAsync(
             async db =>
             {
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.Folder);
-                var set = $"UPDATE {table} SET {n.C("parentId")} = @0, {n.C("updatedUtc")} = @1, {n.C("updatedByUserKey")} = @2 WHERE {n.C("id")} = @3";
+                var set = $"UPDATE {table} SET {n.C("parentId")} = @0, {n.C("updatedUtc")} = @1, {n.C("updatedByUserKey")} = @2 WHERE {n.C("id")} = @3 AND {n.C("trashedUtc")} IS NULL";
 
-                // One statement (ADR-0036): the parent exists, is neither the folder nor below it, and the folder's
-                // deepest level stays within MaxDepth. The walks lock what they read on SQL Server, so two moves that
-                // would make a ring together wait for each other instead.
+                // One statement (ADR-0036, ADR-0047): the folder is outside the trash, the parent too and neither the
+                // folder nor below it, and the folder's deepest level stays within MaxDepth. The walks lock what they
+                // read on SQL Server, so two moves that would make a ring together wait for each other instead.
                 var sql = parentId is null
                     ? $"{n.WithRecursive} {Down(n)} {set} AND (SELECT MAX(depth) FROM down) <= {MaxDepth}"
-                    : $"{n.WithRecursive} {Up(n, "@0")}, {Down(n)} {set} AND EXISTS (SELECT 1 FROM up WHERE id = @0) AND NOT EXISTS (SELECT 1 FROM up WHERE id = @3) AND (SELECT MAX(depth) FROM up) + (SELECT MAX(depth) FROM down) <= {MaxDepth}";
+                    : $"{n.WithRecursive} {Up(n, "@0")}, {Down(n)} {set} AND {Lives(n, "@0")} AND NOT EXISTS (SELECT 1 FROM up WHERE id = @3) AND (SELECT MAX(depth) FROM up) + (SELECT MAX(depth) FROM down) <= {MaxDepth}";
                 if (await db.ExecAsync(sql, parentId, database.UtcNow, userKey, id) == 1)
                 {
                     return await FindAsync(db, "id", id);
                 }
 
-                return await FindAsync(db, "id", id) is null ? null : throw await RefusedMoveAsync(db, n, id, parentId);
+                return await FindAsync(db, "id", id) is { } current ? throw await RefusedMoveAsync(db, n, current, parentId) : null;
             },
             cancellationToken);
 
     /// <inheritdoc />
-    public Task<StoredFolder?> TrashAsync(int id, Guid? userKey, CancellationToken cancellationToken = default) =>
+    public Task<FolderTreeChange?> TrashAsync(int id, Guid? userKey, CancellationToken cancellationToken = default) =>
         database.WriteAsync(
             async db =>
             {
                 var n = new SqlNames(db);
-                await db.ExecAsync(
-                    $"UPDATE {n.T(FormBuilderTables.Folder)} SET {n.C("trashedUtc")} = @0, {n.C("updatedUtc")} = @0, {n.C("updatedByUserKey")} = @1 WHERE {n.C("id")} = @2 AND {n.C("trashedUtc")} IS NULL",
+                var trashKey = Guid.NewGuid();
+
+                // One statement: the folder and every folder below it, reached only through folders outside the trash
+                // (none is below one in it). The walk locks what it reads on SQL Server, so a folder created in the
+                // tree or moved into it meanwhile waits for the trash and is then refused.
+                var walk = $"live(id, depth) AS (SELECT {n.C("id")}, 1 FROM {n.T(FormBuilderTables.Folder)}{n.LockingRead} WHERE {n.C("id")} = @3 AND {n.C("trashedUtc")} IS NULL "
+                    + $"UNION ALL SELECT f.{n.C("id")}, live.depth + 1 FROM {n.T(FormBuilderTables.Folder)} f{n.LockingRead} JOIN live ON f.{n.C("parentId")} = live.id WHERE f.{n.C("trashedUtc")} IS NULL AND live.depth <= {MaxDepth})";
+                var trashed = await db.ExecAsync(
+                    $"{n.WithRecursive} {walk} UPDATE {n.T(FormBuilderTables.Folder)} SET {n.C("trashedUtc")} = @0, {n.C("trashKey")} = @1, {n.C("updatedUtc")} = @0, {n.C("updatedByUserKey")} = @2 WHERE {n.C("id")} IN (SELECT id FROM live)",
                     database.UtcNow,
+                    trashKey,
                     userKey,
                     id);
-                return await FindAsync(db, "id", id);
+                if (trashed == 0)
+                {
+                    return null;
+                }
+
+                var rows = await db.FetchListAsync<FolderDto>(
+                    $"SELECT * FROM {n.T(FormBuilderTables.Folder)} WHERE {n.C("trashKey")} = @0 ORDER BY {n.C("sortOrder")}, {n.C("name")}, {n.C("id")}",
+                    trashKey);
+                return new FolderTreeChange(trashKey, TopFirst(rows.Select(FromDto), id));
             },
             cancellationToken);
 
     /// <inheritdoc />
-    public Task<StoredFolder?> RestoreAsync(int id, Guid? userKey, CancellationToken cancellationToken = default) =>
+    public Task<FolderTreeChange?> RestoreAsync(int id, Guid? userKey, CancellationToken cancellationToken = default) =>
         database.WriteAsync(
             async db =>
             {
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.Folder);
+
+                // Held first, so its trash key stays the one read next until the unit ends.
+                if (await db.ExecAsync($"UPDATE {table} SET {n.C("updatedUtc")} = {n.C("updatedUtc")} WHERE {n.C("id")} = @0 AND {n.C("trashedUtc")} IS NOT NULL", id) == 0)
+                {
+                    return null;
+                }
+
+                var trashKey = (await FindAsync(db, "id", id))!.TrashKey;
+
+                // What went to the trash with it: the folders below it with its key, reached only through such folders.
+                // The walk locks what it reads, and the restore walks the same rows. The leading semicolon keeps NPoco
+                // from putting a select of its own before a query that starts with WITH; both databases skip it.
+                var walk = $"back(id, depth) AS (SELECT {n.C("id")}, 1 FROM {table}{n.LockingRead} WHERE {n.C("id")} = @0 "
+                    + $"UNION ALL SELECT f.{n.C("id")}, back.depth + 1 FROM {table} f{n.LockingRead} JOIN back ON f.{n.C("parentId")} = back.id WHERE f.{n.C("trashKey")} = @1 AND back.depth <= {MaxDepth})";
+                var ids = (await db.FetchListAsync<int>($";{n.WithRecursive} {walk} SELECT id FROM back", id, trashKey)).ToHashSet();
+
+                // The folder goes back into its parent while that is outside the trash; those below it keep theirs.
                 var parentLives = $"EXISTS (SELECT 1 FROM {table} p{n.LockingRead} WHERE p.{n.C("id")} = {table}.{n.C("parentId")} AND p.{n.C("trashedUtc")} IS NULL)";
                 await db.ExecAsync(
-                    $"UPDATE {table} SET {n.C("trashedUtc")} = NULL, {n.C("parentId")} = CASE WHEN {parentLives} THEN {n.C("parentId")} ELSE NULL END, {n.C("updatedUtc")} = @0, {n.C("updatedByUserKey")} = @1 WHERE {n.C("id")} = @2 AND {n.C("trashedUtc")} IS NOT NULL",
+                    $"{n.WithRecursive} {walk} UPDATE {table} SET {n.C("trashedUtc")} = NULL, {n.C("trashKey")} = NULL, {n.C("parentId")} = CASE WHEN {table}.{n.C("id")} <> @0 OR {parentLives} THEN {n.C("parentId")} ELSE NULL END, {n.C("updatedUtc")} = @2, {n.C("updatedByUserKey")} = @3 WHERE {n.C("id")} IN (SELECT id FROM back)",
+                    id,
+                    trashKey,
                     database.UtcNow,
-                    userKey,
-                    id);
-                return await FindAsync(db, "id", id);
+                    userKey);
+
+                // A library holds few folders, so the tree is read whole.
+                var restored = (await AllAsync(db, n)).Where(folder => ids.Contains(folder.Id));
+                return new FolderTreeChange(trashKey, TopFirst(restored, id));
             },
             cancellationToken);
 
@@ -249,16 +322,19 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.Folder);
                 var deleted = await db.ExecAsync(
-                    $"DELETE FROM {table} WHERE {n.C("id")} = @0 AND NOT EXISTS (SELECT 1 FROM {table} c{n.LockingRead} WHERE c.{n.C("parentId")} = @0) AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)} f{n.LockingRead} WHERE f.{n.C("folderId")} = @0)",
+                    $"DELETE FROM {table} WHERE {n.C("id")} = @0 AND {n.C("trashedUtc")} IS NOT NULL AND NOT EXISTS (SELECT 1 FROM {table} c{n.LockingRead} WHERE c.{n.C("parentId")} = @0) AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)} f{n.LockingRead} WHERE f.{n.C("folderId")} = @0)",
                     id);
                 if (deleted == 1)
                 {
                     return true;
                 }
 
-                return await FindAsync(db, "id", id) is null
-                    ? false
-                    : throw new FormBuilderConflictException(FormBuilderConflict.FolderNotEmpty, "The folder still holds folders or forms.");
+                return await FindAsync(db, "id", id) switch
+                {
+                    null => false,
+                    { TrashedUtc: null } => throw new FormBuilderConflictException(FormBuilderConflict.NotTrashed, "Only a folder in the trash is deleted; put it in the trash first."),
+                    _ => throw new FormBuilderConflictException(FormBuilderConflict.FolderNotEmpty, "The folder still holds folders or forms."),
+                };
             },
             cancellationToken);
 
@@ -270,6 +346,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
         d.SortOrder,
         d.IsRestricted,
         FormBuilderDbTime.Read(d.TrashedUtc),
+        d.TrashKey,
         FormBuilderDbTime.Read(d.CreatedUtc),
         FormBuilderDbTime.Read(d.UpdatedUtc),
         d.CreatedByUserKey,
@@ -286,6 +363,21 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
         $"down(id, depth) AS (SELECT {n.C("id")}, 1 FROM {n.T(FormBuilderTables.Folder)}{n.InsertOnceHint} WHERE {n.C("id")} = @3 "
         + $"UNION ALL SELECT f.{n.C("id")}, down.depth + 1 FROM {n.T(FormBuilderTables.Folder)} f{n.InsertOnceHint} JOIN down ON f.{n.C("parentId")} = down.id WHERE down.depth <= {MaxDepth})";
 
+    // The folder that the parameter names exists and is outside the trash, read with a lock.
+    private static string Lives(SqlNames n, string folder) =>
+        $"EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Folder)} p{n.LockingRead} WHERE p.{n.C("id")} = {folder} AND p.{n.C("trashedUtc")} IS NULL)";
+
+    // The folder with this id first, then the others in their order.
+    private static List<StoredFolder> TopFirst(IEnumerable<StoredFolder> folders, int id) =>
+        [.. folders.Where(folder => folder.Id == id), .. folders.Where(folder => folder.Id != id)];
+
+    private static async Task<IReadOnlyList<StoredFolder>> AllAsync(IUmbracoDatabase db, SqlNames n)
+    {
+        var rows = await db.FetchListAsync<FolderDto>(
+            $"SELECT * FROM {n.T(FormBuilderTables.Folder)} ORDER BY {n.C("sortOrder")}, {n.C("name")}, {n.C("id")}");
+        return rows.Select(FromDto).ToList();
+    }
+
     private static async Task<StoredFolder?> FindAsync(IUmbracoDatabase db, string column, object value)
     {
         var n = new SqlNames(db);
@@ -301,41 +393,40 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
             return new FormBuilderConflictException(FormBuilderConflict.DuplicateKey, "Another folder already has this key.");
         }
 
-        var parents = await ParentsAsync(db, n);
-        return parents.ContainsKey(folder.ParentId!.Value)
+        var tree = (await AllAsync(db, n)).ToDictionary(row => row.Id);
+        return tree.TryGetValue(folder.ParentId!.Value, out var parent) && parent.TrashedUtc is null
             ? new FormBuilderConflictException(FormBuilderConflict.FolderTooDeep, $"A folder can be at most {MaxDepth} levels deep.")
-            : new FormBuilderConflictException(FormBuilderConflict.MissingFolder, "The parent folder does not exist.");
+            : new FormBuilderConflictException(FormBuilderConflict.MissingFolder, "The parent folder does not exist or is in the trash.");
     }
 
-    private static async Task<FormBuilderConflictException> RefusedMoveAsync(IUmbracoDatabase db, SqlNames n, int id, int? parentId)
+    private static async Task<FormBuilderConflictException> RefusedMoveAsync(IUmbracoDatabase db, SqlNames n, StoredFolder folder, int? parentId)
     {
-        var parents = await ParentsAsync(db, n);
-        if (parentId is { } parent)
+        if (folder.TrashedUtc is not null)
         {
-            if (!parents.ContainsKey(parent))
+            return new FormBuilderConflictException(FormBuilderConflict.Trashed, "The folder is in the trash; restore it first.");
+        }
+
+        var tree = (await AllAsync(db, n)).ToDictionary(row => row.Id);
+        if (parentId is { } target)
+        {
+            if (!tree.TryGetValue(target, out var parent) || parent.TrashedUtc is not null)
             {
-                return new FormBuilderConflictException(FormBuilderConflict.MissingFolder, "The target folder does not exist.");
+                return new FormBuilderConflictException(FormBuilderConflict.MissingFolder, "The target folder does not exist or is in the trash.");
             }
 
-            int? current = parent;
+            int? current = target;
             for (var steps = 0; current is { } at && steps <= MaxDepth; steps++)
             {
-                if (at == id)
+                if (at == folder.Id)
                 {
                     return new FormBuilderConflictException(FormBuilderConflict.FolderIntoItself, "A folder cannot move into itself or into a folder below it.");
                 }
 
-                current = parents.GetValueOrDefault(at);
+                current = tree.GetValueOrDefault(at)?.ParentId;
             }
         }
 
         return new FormBuilderConflictException(FormBuilderConflict.FolderTooDeep, $"A folder can be at most {MaxDepth} levels deep.");
-    }
-
-    private static async Task<Dictionary<int, int?>> ParentsAsync(IUmbracoDatabase db, SqlNames n)
-    {
-        var rows = await db.FetchListAsync<FolderDto>($"SELECT {n.C("id")}, {n.C("parentId")} FROM {n.T(FormBuilderTables.Folder)}");
-        return rows.ToDictionary(row => row.Id, row => row.ParentId);
     }
 
     private static void CheckName(string name)

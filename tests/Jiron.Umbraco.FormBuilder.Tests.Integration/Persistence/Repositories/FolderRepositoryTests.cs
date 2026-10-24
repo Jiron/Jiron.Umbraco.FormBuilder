@@ -132,46 +132,165 @@ public sealed class FolderRepositoryTests : RepositoryTestBase
     }
 
     [Test]
-    public async Task Trashing_KeepsTheFolderInPlace_AndRestoring_ReturnsItToItsParentOrTheRoot()
+    public async Task ARename_ChangesOnlyTheName()
     {
-        var parent = await CreateFolderAsync("Parent");
-        var child = await CreateFolderAsync("Child", parent.Id);
-        Clock.Advance(TimeSpan.FromMinutes(1));
+        var folder = await Folders.CreateAsync(new NewFolder(Guid.NewGuid(), null, "Old name", 3, IsRestricted: true, UserKey: Editor));
+        var other = Guid.NewGuid();
+        Clock.Advance(TimeSpan.FromMinutes(2));
 
-        var trashedChild = await Folders.TrashAsync(child.Id, Editor);
-        Clock.Advance(TimeSpan.FromMinutes(1));
-        var again = await Folders.TrashAsync(child.Id, Guid.NewGuid());
-        var restored = await Folders.RestoreAsync(child.Id, Editor);
-        await Folders.TrashAsync(child.Id, Editor);
-        await Folders.TrashAsync(parent.Id, Editor);
-        var toRoot = await Folders.RestoreAsync(child.Id, Editor);
-        var notTrashed = await Folders.RestoreAsync(child.Id, Editor);
+        var renamed = await Folders.RenameAsync(folder.Id, "New name", other);
 
         Assert.Multiple(async () =>
         {
-            Assert.That(trashedChild?.TrashedUtc, Is.EqualTo(Now.AddMinutes(1)));
-            Assert.That(trashedChild?.ParentId, Is.EqualTo(parent.Id), "trash keeps the tree");
-            Assert.That(again, Is.EqualTo(trashedChild), "a trashed folder stays as it is");
-            Assert.That(restored?.TrashedUtc, Is.Null);
-            Assert.That(restored?.ParentId, Is.EqualTo(parent.Id), "back into its parent");
-            Assert.That(toRoot?.ParentId, Is.Null, "the root, as its parent is in the trash");
-            Assert.That(notTrashed, Is.EqualTo(toRoot), "a folder outside the trash stays as it is");
+            Assert.That(renamed, Is.EqualTo(folder with { Name = "New name", UpdatedUtc = Now.AddMinutes(2), UpdatedByUserKey = other }), "the order and the restriction stay");
+            Assert.That(await Folders.RenameAsync(-1, "New name", other), Is.Null);
+            Assert.That(() => Folders.RenameAsync(folder.Id, string.Empty, other), Throws.ArgumentException);
+        });
+    }
+
+    [Test]
+    public async Task Trashing_TakesEveryFolderBelow_WithOneNewKey_AndKeepsTheTree()
+    {
+        var parent = await CreateFolderAsync("Parent");
+        var child = await CreateFolderAsync("Child", parent.Id);
+        var grandchild = await CreateFolderAsync("Grandchild", child.Id);
+        var earlier = await CreateFolderAsync("Earlier", parent.Id);
+        var below = await CreateFolderAsync("Below earlier", earlier.Id);
+        var other = await CreateFolderAsync("Other");
+        var before = (await Folders.TrashAsync(earlier.Id, Editor))!;
+        var other2 = Guid.NewGuid();
+        Clock.Advance(TimeSpan.FromMinutes(1));
+
+        var trashed = (await Folders.TrashAsync(parent.Id, other2))!;
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(trashed.Folders.Select(f => f.Id), Is.EqualTo(new[] { parent.Id, child.Id, grandchild.Id }), "the folder first, then in the tree's order");
+            Assert.That(trashed.TrashKey, Is.Not.Null.And.Not.EqualTo(before.TrashKey));
+            Assert.That(trashed.Folders.Select(f => f.TrashKey), Has.All.EqualTo(trashed.TrashKey));
+            Assert.That(trashed.Folders.Select(f => f.TrashedUtc), Has.All.EqualTo(Now.AddMinutes(1)));
+            Assert.That(trashed.Folders.Select(f => f.UpdatedByUserKey), Has.All.EqualTo(other2));
+            Assert.That(trashed.Folders.Select(f => f.ParentId), Is.EqualTo(new int?[] { null, parent.Id, child.Id }), "the trash keeps the tree");
+            Assert.That(before.Folders.Select(f => f.Id), Is.EqualTo(new[] { earlier.Id, below.Id }));
+            Assert.That(await Folders.GetByIdAsync(earlier.Id), Is.EqualTo(before.Folders[0]), "a folder trashed before keeps its own key");
+            Assert.That(await Folders.GetByIdAsync(below.Id), Is.EqualTo(before.Folders[1]));
+            Assert.That((await Folders.GetByIdAsync(other.Id))!.TrashedUtc, Is.Null);
+            Assert.That(await Folders.TrashAsync(parent.Id, Editor), Is.Null, "in the trash already");
+            Assert.That(await Folders.TrashAsync(child.Id, Editor), Is.Null);
             Assert.That(await Folders.TrashAsync(-1, Editor), Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task Restoring_BringsBackWhatWentWithIt_IntoItsParent()
+    {
+        var top = await CreateFolderAsync("Top");
+        var parent = await CreateFolderAsync("Parent", top.Id);
+        var child = await CreateFolderAsync("Child", parent.Id);
+        var grandchild = await CreateFolderAsync("Grandchild", child.Id);
+        var earlier = await CreateFolderAsync("Earlier", parent.Id);
+        var below = await CreateFolderAsync("Below earlier", earlier.Id);
+        await Folders.TrashAsync(earlier.Id, Editor);
+        var trashed = (await Folders.TrashAsync(parent.Id, Editor))!;
+        var other = Guid.NewGuid();
+        Clock.Advance(TimeSpan.FromMinutes(1));
+
+        var restored = (await Folders.RestoreAsync(parent.Id, other))!;
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(restored.TrashKey, Is.EqualTo(trashed.TrashKey));
+            Assert.That(restored.Folders.Select(f => f.Id), Is.EqualTo(new[] { parent.Id, child.Id, grandchild.Id }));
+            Assert.That(restored.Folders.Select(f => (f.TrashedUtc, f.TrashKey)), Has.All.EqualTo(((DateTimeOffset?)null, (Guid?)null)));
+            Assert.That(restored.Folders.Select(f => (f.UpdatedUtc, f.UpdatedByUserKey)), Has.All.EqualTo((Now.AddMinutes(1), (Guid?)other)));
+            Assert.That(restored.Folders.Select(f => f.ParentId), Is.EqualTo(new int?[] { top.Id, parent.Id, child.Id }), "back into its parent, the tree as it was");
+            Assert.That(restored.Folders, Is.EqualTo(new[] { await Folders.GetByIdAsync(parent.Id), await Folders.GetByIdAsync(child.Id), await Folders.GetByIdAsync(grandchild.Id) }), "as stored");
+            Assert.That((await Folders.GetByIdAsync(earlier.Id))!.TrashedUtc, Is.Not.Null, "a folder trashed before stays in the trash");
+            Assert.That((await Folders.GetByIdAsync(below.Id))!.TrashedUtc, Is.Not.Null, "with what went with it");
+            Assert.That(await Folders.RestoreAsync(parent.Id, Editor), Is.Null, "outside the trash");
             Assert.That(await Folders.RestoreAsync(-1, Editor), Is.Null);
         });
     }
 
     [Test]
-    public async Task OnlyAnEmptyFolder_IsDeleted()
+    public async Task Restoring_KeepsTheFoldersBelowInTheirPlace_AlsoOneMadeBeforeItsParent()
+    {
+        // The older folder has the lower id, so a database that changes the rows in id order and lets a statement see
+        // its own changes meets it while its parent is still in the trash; SQL Server's statements never see their
+        // own changes.
+        var top = await CreateFolderAsync("Top");
+        var older = await CreateFolderAsync("Older");
+        var parent = await CreateFolderAsync("Parent", top.Id);
+        await Folders.MoveAsync(older.Id, parent.Id, Editor);
+        await Folders.TrashAsync(top.Id, Editor);
+
+        var restored = (await Folders.RestoreAsync(top.Id, Editor))!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(older.Id, Is.LessThan(parent.Id));
+            Assert.That(restored.Folders.Select(f => (f.Id, f.ParentId)), Is.EquivalentTo(new[] { (top.Id, (int?)null), (parent.Id, top.Id), (older.Id, parent.Id) }), "only the folder itself can go to the root");
+        });
+    }
+
+    [Test]
+    public async Task AFolderRestoredOnItsOwn_GoesToTheRoot_WithWhatWentWithItBelowIt()
+    {
+        var parent = await CreateFolderAsync("Parent");
+        var child = await CreateFolderAsync("Child", parent.Id);
+        var grandchild = await CreateFolderAsync("Grandchild", child.Id);
+        var sibling = await CreateFolderAsync("Sibling", parent.Id);
+        var trashed = (await Folders.TrashAsync(parent.Id, Editor))!;
+
+        var restored = (await Folders.RestoreAsync(child.Id, Editor))!;
+        var later = (await Folders.RestoreAsync(parent.Id, Editor))!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(restored.TrashKey, Is.EqualTo(trashed.TrashKey));
+            Assert.That(restored.Folders.Select(f => (f.Id, f.ParentId)), Is.EqualTo(new[] { (child.Id, (int?)null), (grandchild.Id, child.Id) }), "the root, as its parent is in the trash");
+            Assert.That(later.Folders.Select(f => (f.Id, f.ParentId)), Is.EqualTo(new[] { (parent.Id, (int?)null), (sibling.Id, parent.Id) }), "the rest comes back with the parent");
+        });
+    }
+
+    [Test]
+    public async Task NothingIsCreatedOrMovedBelowAFolderInTheTrash_AndAFolderInTheTrashDoesNotMove()
+    {
+        var trashed = await CreateFolderAsync("Trashed");
+        var inside = await CreateFolderAsync("Inside", trashed.Id);
+        var live = await CreateFolderAsync("Live");
+        await Folders.TrashAsync(trashed.Id, Editor);
+
+        Assert.Multiple(async () =>
+        {
+            AssertRefused(() => Folders.CreateAsync(new NewFolder(Guid.NewGuid(), trashed.Id, "New")), FormBuilderConflict.MissingFolder);
+            AssertRefused(() => Folders.CreateAsync(new NewFolder(Guid.NewGuid(), inside.Id, "New")), FormBuilderConflict.MissingFolder);
+            AssertRefused(() => Folders.MoveAsync(live.Id, trashed.Id, Editor), FormBuilderConflict.MissingFolder);
+            AssertRefused(() => Folders.MoveAsync(trashed.Id, live.Id, Editor), FormBuilderConflict.Trashed);
+            AssertRefused(() => Folders.MoveAsync(inside.Id, null, Editor), FormBuilderConflict.Trashed);
+            Assert.That(Count(FormBuilderTables.Folder), Is.EqualTo(3), "nothing was written");
+            Assert.That((await Folders.GetByIdAsync(live.Id))!.ParentId, Is.Null);
+            Assert.That((await Folders.GetByIdAsync(inside.Id))!.ParentId, Is.EqualTo(trashed.Id));
+        });
+    }
+
+    [Test]
+    public async Task OnlyAnEmptyFolderInTheTrash_IsDeleted()
     {
         var withFolder = await CreateFolderAsync("With a folder");
         var inside = await CreateFolderAsync("Inside", withFolder.Id);
         var withForm = await CreateFolderAsync("With a form");
         await CreateFormAsync(folderId: withForm.Id);
         var empty = await CreateFolderAsync("Empty");
+        var live = await CreateFolderAsync("Live");
+        foreach (var folder in new[] { withFolder, withForm, empty })
+        {
+            await Folders.TrashAsync(folder.Id, Editor);
+        }
 
         Assert.Multiple(async () =>
         {
+            AssertConflict(() => Folders.DeleteAsync(live.Id), FormBuilderConflict.NotTrashed);
             AssertConflict(() => Folders.DeleteAsync(withFolder.Id), FormBuilderConflict.FolderNotEmpty);
             AssertConflict(() => Folders.DeleteAsync(withForm.Id), FormBuilderConflict.FolderNotEmpty);
             Assert.That(await Folders.DeleteAsync(empty.Id), Is.True);
@@ -179,6 +298,7 @@ public sealed class FolderRepositoryTests : RepositoryTestBase
             Assert.That(await Folders.DeleteAsync(inside.Id), Is.True);
             Assert.That(await Folders.DeleteAsync(withFolder.Id), Is.True, "empty now");
             Assert.That(await Folders.GetByIdAsync(withForm.Id), Is.Not.Null);
+            Assert.That(await Folders.GetByIdAsync(live.Id), Is.Not.Null);
         });
     }
 

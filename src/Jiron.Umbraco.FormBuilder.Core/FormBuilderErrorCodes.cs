@@ -48,6 +48,7 @@ internal static class FormBuilderErrorCodes
         FormBuilderConflict.MissingField => "field_missing",
         FormBuilderConflict.MissingVersion => "version_missing",
         FormBuilderConflict.Trashed => "trashed",
+        FormBuilderConflict.NotTrashed => "not_trashed",
         _ => throw new ArgumentOutOfRangeException(nameof(conflict), conflict, "A conflict without a code."),
     };
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
@@ -258,6 +259,35 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
             },
             cancellationToken);
 
+    /// <inheritdoc />
+    public Task<int> DeleteUnsentAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entryIds);
+        var ids = entryIds.Distinct().Order().ToArray();
+        if (ids.Length == 0)
+        {
+            return Task.FromResult(0);
+        }
+
+        return database.WriteAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var deleted = 0;
+                foreach (var chunk in ids.Chunk(EntryRepository.IdsPerStatement))
+                {
+                    // Held first, so no mail can be queued for the entries until the unit that deletes them ends.
+                    object?[] args = [.. chunk.Cast<object?>()];
+                    var list = Parameters(chunk.Length);
+                    await db.ExecAsync($"UPDATE {n.T(FormBuilderTables.Entry)} SET {n.C("updatedUtc")} = {n.C("updatedUtc")} WHERE {n.C("id")} IN ({list})", args);
+                    deleted += await db.ExecAsync($"DELETE FROM {n.T(FormBuilderTables.Email)} WHERE {n.C("entryId")} IN ({list}) AND {n.C("state")} <> '{Sent}'", args);
+                }
+
+                return deleted;
+            },
+            cancellationToken);
+    }
+
     internal static StoredEmail FromDto(EmailDto d) => new(
         d.Id,
         Enum.Parse<EmailKind>(d.Kind),
@@ -305,6 +335,10 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
     /// <summary>The attachments as the column holds them: a JSON array of file keys.</summary>
     internal static string AttachmentsText(IReadOnlyList<Guid> keys) =>
         "[" + string.Join(",", keys.Select(key => "\"" + key.ToString("D") + "\"")) + "]";
+
+    // The parameters @0 to @(count - 1), for a list of ids.
+    private static string Parameters(int count) =>
+        string.Join(", ", Enumerable.Range(0, count).Select(i => "@" + i.ToString(CultureInfo.InvariantCulture)));
 
     private static Guid[] Attachments(string text)
     {

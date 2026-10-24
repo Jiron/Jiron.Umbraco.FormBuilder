@@ -64,6 +64,11 @@ internal sealed partial class CreateSchemaV1
         [NullSetting(NullSetting = NullSettings.Null)]
         public DateTime? TrashedUtc { get; set; }
 
+        // The trash operation that put the folder in the trash: the same for everything that went with it (ADR-0047).
+        [Column("trashKey")]
+        [NullSetting(NullSetting = NullSettings.Null)]
+        public Guid? TrashKey { get; set; }
+
         [Column("createdUtc")]
         public DateTime CreatedUtc { get; set; }
 
@@ -147,6 +152,11 @@ internal sealed partial class CreateSchemaV1
         [NullSetting(NullSetting = NullSettings.Null)]
         [Index(IndexTypes.NonClustered, Name = "IX_jfbForm_trashedUtc")]
         public DateTime? TrashedUtc { get; set; }
+
+        // The trash operation that put the form in the trash: its own, or its folder's (ADR-0047).
+        [Column("trashKey")]
+        [NullSetting(NullSetting = NullSettings.Null)]
+        public Guid? TrashKey { get; set; }
 
         [Column("createdUtc")]
         public DateTime CreatedUtc { get; set; }

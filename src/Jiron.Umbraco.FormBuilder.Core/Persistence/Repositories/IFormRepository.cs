@@ -31,6 +31,7 @@ internal sealed record VersionDocument(int SchemaVersion, string Definition, str
 /// <param name="ThemeAlias">The published version's theme, or null.</param>
 /// <param name="IsRestricted">Whether only the grants on it count below its folders (ADR-0013).</param>
 /// <param name="TrashedUtc">When it went to the trash, or null.</param>
+/// <param name="TrashKey">The trash operation that put it there, its own or its folder's (ADR-0047), or null.</param>
 /// <param name="CreatedUtc">When it was created.</param>
 /// <param name="UpdatedUtc">When it last changed.</param>
 /// <param name="CreatedByUserKey">Who created it, or null when Jiron Form Builder did.</param>
@@ -49,6 +50,7 @@ internal sealed record StoredForm(
     string? ThemeAlias,
     bool IsRestricted,
     DateTimeOffset? TrashedUtc,
+    Guid? TrashKey,
     DateTimeOffset CreatedUtc,
     DateTimeOffset UpdatedUtc,
     Guid? CreatedByUserKey,
@@ -246,20 +248,52 @@ internal interface IFormRepository
     /// </summary>
     Task<StoredForm?> UnpublishAsync(int formId, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default);
 
-    /// <summary>Puts a form in the trash; a trashed one stays as it is. Null when it does not exist.</summary>
+    /// <summary>
+    /// Puts a form in the trash with a trash key of its own (ADR-0047); a trashed one stays as it is. Null when it does
+    /// not exist.
+    /// </summary>
     Task<StoredForm?> TrashAsync(int formId, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Takes a form out of the trash, back into its folder, or to the root when the folder is in the trash. A form
-    /// outside the trash stays as it is. Null when it does not exist.
+    /// Takes a form out of the trash on its own, back into its folder, or to the root when the folder is in the trash. A
+    /// form outside the trash stays as it is. Null when it does not exist.
     /// </summary>
     Task<StoredForm?> RestoreAsync(int formId, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a form with its versions and catalogue. False when it does not exist. Refused with
-    /// <see cref="FormBuilderConflict.InUse"/> while it has entries, which the service deletes first.
+    /// Puts the forms in these folders that are outside the trash in the trash with the folders' trash key, in the unit
+    /// of work that trashed the folders (ADR-0047); each one's concurrency version goes up. The forms it trashed.
     /// </summary>
-    Task<bool> DeleteAsync(int formId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<StoredForm>> TrashInFoldersAsync(IReadOnlyCollection<int> folderIds, Guid trashKey, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Takes the forms in these folders that carry <paramref name="trashKey"/> out of the trash, in the unit of work that
+    /// restored the folders (ADR-0047); they stay in their folders, and each one's concurrency version goes up. The forms
+    /// it restored.
+    /// </summary>
+    Task<IReadOnlyList<StoredForm>> RestoreInFoldersAsync(IReadOnlyCollection<int> folderIds, Guid trashKey, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The forms directly in these folders, in the trash or not, by name: what a change of the folders takes with it
+    /// (ADR-0047).
+    /// </summary>
+    Task<IReadOnlyList<StoredForm>> ListInFoldersAsync(IReadOnlyCollection<int> folderIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The first write of a unit that deletes a batch of a form's entries (ADR-0047): it changes nothing, but holds the
+    /// form's row until the unit ends, while the form is in the trash at the version the caller read. Null when it does
+    /// not exist. Refused with <see cref="FormBuilderConcurrencyException"/> when it changed meanwhile, and with
+    /// <see cref="FormBuilderConflict.NotTrashed"/> outside the trash.
+    /// </summary>
+    Task<StoredForm?> HoldTrashedAsync(int formId, int expectedConcurrencyVersion, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes a form in the trash at the version the caller read, with its versions, catalogue and option places. False
+    /// when it does not exist. Refused with <see cref="FormBuilderConcurrencyException"/> when it changed meanwhile, with
+    /// <see cref="FormBuilderConflict.NotTrashed"/> outside the trash, and with <see cref="FormBuilderConflict.InUse"/>
+    /// while it has entries, which the service deletes first (ADR-0047).
+    /// </summary>
+    Task<bool> DeleteAsync(int formId, int expectedConcurrencyVersion, CancellationToken cancellationToken = default);
 
     /// <summary>A version by its number, or null.</summary>
     Task<StoredFormVersion?> GetVersionAsync(int formId, int number, CancellationToken cancellationToken = default);

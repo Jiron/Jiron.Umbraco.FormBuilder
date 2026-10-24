@@ -363,9 +363,30 @@ internal interface IEntryRepository
 
     /// <summary>
     /// Deletes an entry with its values, files, events and notes. True when it existed. The file store's bytes are the
-    /// service's to delete (<see cref="ListFilesAsync"/> first, ADR-0006).
+    /// service's to delete (<see cref="ListFilesAsync(long, CancellationToken)"/> first, ADR-0006).
     /// </summary>
     Task<bool> DeleteAsync(long entryId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The ids of up to <paramref name="take"/> (at most <see cref="EntryRepository.IdsPerStatement"/>) entries of a form,
+    /// lowest number first: a batch of the form's permanent delete (ADR-0047).
+    /// </summary>
+    Task<IReadOnlyList<long>> ListIdsAsync(int formId, int take, CancellationToken cancellationToken = default);
+
+    /// <summary>The files of these entries, by entry and in the order they were uploaded.</summary>
+    Task<IReadOnlyList<StoredEntryFile>> ListFilesAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes these entries with their values, files, events, notes and action runs; how many existed. The file store's
+    /// bytes are the service's to delete (<see cref="ListFilesAsync(IReadOnlyCollection{long}, CancellationToken)"/> first).
+    /// </summary>
+    Task<int> DeleteAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Up to <paramref name="take"/> (at most <see cref="EntryRepository.IdsPerStatement"/>) uploads of a form that wait
+    /// for an entry, oldest first: the next ones the form's permanent delete removes (ADR-0047).
+    /// </summary>
+    Task<IReadOnlyList<StoredEntryFile>> ListUploadsAsync(int formId, int take, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Records an upload that waits for its entry; null when the form does not exist. Refused with

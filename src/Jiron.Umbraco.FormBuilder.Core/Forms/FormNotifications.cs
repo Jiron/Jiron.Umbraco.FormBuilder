@@ -420,3 +420,123 @@ public sealed class FormVersionUpdatedNotification : FormNotification
     /// <summary>Whether it is pinned.</summary>
     public bool IsPinned { get; }
 }
+
+/// <summary>
+/// A form is about to go to the trash on its own. Its published version stays, and the website answers it as missing
+/// until a restore brings it back as it was. A form that goes with its folder is named by
+/// <see cref="FolderTrashingNotification"/> instead.
+/// </summary>
+public sealed class FormTrashingNotification : FormCancelableNotification
+{
+    /// <summary>Creates the notification.</summary>
+    /// <param name="formKey">The form's key.</param>
+    /// <param name="alias">The form's alias.</param>
+    /// <param name="name">The form's name.</param>
+    /// <param name="userKey">The backoffice user, or null when Jiron Form Builder trashes it.</param>
+    /// <param name="messages">Where a handler's message goes.</param>
+    public FormTrashingNotification(Guid formKey, string alias, string name, Guid? userKey, EventMessages messages)
+        : base(formKey, alias, name, userKey, messages)
+    {
+    }
+}
+
+/// <summary>A form went to the trash on its own; a form that went with its folder is named by <see cref="FolderTrashedNotification"/>.</summary>
+public sealed class FormTrashedNotification : FormNotification
+{
+    /// <summary>Creates the notification.</summary>
+    /// <param name="formKey">The form's key.</param>
+    /// <param name="alias">The form's alias.</param>
+    /// <param name="name">The form's name.</param>
+    /// <param name="userKey">The backoffice user, or null when Jiron Form Builder trashed it.</param>
+    public FormTrashedNotification(Guid formKey, string alias, string name, Guid? userKey)
+        : base(formKey, alias, name, userKey)
+    {
+    }
+}
+
+/// <summary>
+/// A form is about to come out of the trash on its own, back into its folder, or to the root when the folder is in the
+/// trash. Forms that come back with their folder are named by <see cref="FolderRestoringNotification"/> instead.
+/// </summary>
+public sealed class FormRestoringNotification : FormCancelableNotification
+{
+    /// <summary>Creates the notification.</summary>
+    /// <param name="formKey">The form's key.</param>
+    /// <param name="alias">The form's alias.</param>
+    /// <param name="name">The form's name.</param>
+    /// <param name="folderKey">The folder it goes back to, or null for the root.</param>
+    /// <param name="userKey">The backoffice user, or null when Jiron Form Builder restores it.</param>
+    /// <param name="messages">Where a handler's message goes.</param>
+    public FormRestoringNotification(Guid formKey, string alias, string name, Guid? folderKey, Guid? userKey, EventMessages messages)
+        : base(formKey, alias, name, userKey, messages)
+    {
+        FolderKey = folderKey;
+    }
+
+    /// <summary>The folder it goes back to, or null for the root.</summary>
+    public Guid? FolderKey { get; }
+}
+
+/// <summary>A form came out of the trash on its own.</summary>
+public sealed class FormRestoredNotification : FormNotification
+{
+    /// <summary>Creates the notification.</summary>
+    /// <param name="formKey">The form's key.</param>
+    /// <param name="alias">The form's alias.</param>
+    /// <param name="name">The form's name.</param>
+    /// <param name="folderKey">The folder it went back to, or null for the root.</param>
+    /// <param name="userKey">The backoffice user, or null when Jiron Form Builder restored it.</param>
+    public FormRestoredNotification(Guid formKey, string alias, string name, Guid? folderKey, Guid? userKey)
+        : base(formKey, alias, name, userKey)
+    {
+        FolderKey = folderKey;
+    }
+
+    /// <summary>The folder it went back to, or null for the root.</summary>
+    public Guid? FolderKey { get; }
+}
+
+/// <summary>
+/// A form in the trash is about to be deleted for good, with its entries, files, versions, grants, the references of
+/// content to it and its statistics. Forms deleted with their folder or by emptying the trash are named by
+/// <see cref="FolderDeletingNotification"/> and <see cref="TrashEmptyingNotification"/> instead.
+/// </summary>
+public sealed class FormDeletingNotification : FormCancelableNotification
+{
+    /// <summary>Creates the notification.</summary>
+    /// <param name="formKey">The form's key.</param>
+    /// <param name="alias">The form's alias.</param>
+    /// <param name="name">The form's name.</param>
+    /// <param name="userKey">The backoffice user, or null when Jiron Form Builder deletes it.</param>
+    /// <param name="messages">Where a handler's message goes.</param>
+    public FormDeletingNotification(Guid formKey, string alias, string name, Guid? userKey, EventMessages messages)
+        : base(formKey, alias, name, userKey, messages)
+    {
+    }
+}
+
+/// <summary>A form was deleted for good, with everything of it.</summary>
+public sealed class FormDeletedNotification : FormNotification
+{
+    /// <summary>Creates the notification.</summary>
+    /// <param name="formKey">The form's key.</param>
+    /// <param name="alias">The form's alias.</param>
+    /// <param name="name">The form's name.</param>
+    /// <param name="entryCount">How many entries went with it.</param>
+    /// <param name="fileCount">How many files went with it.</param>
+    /// <param name="userKey">The backoffice user, or null when Jiron Form Builder deleted it.</param>
+    public FormDeletedNotification(Guid formKey, string alias, string name, long entryCount, long fileCount, Guid? userKey)
+        : base(formKey, alias, name, userKey)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(entryCount);
+        ArgumentOutOfRangeException.ThrowIfNegative(fileCount);
+        EntryCount = entryCount;
+        FileCount = fileCount;
+    }
+
+    /// <summary>How many entries went with it.</summary>
+    public long EntryCount { get; }
+
+    /// <summary>How many files went with it.</summary>
+    public long FileCount { get; }
+}

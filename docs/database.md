@@ -122,6 +122,7 @@ erDiagram
         int sortOrder
         bool isRestricted
         datetime trashedUtc "null"
+        guid trashKey "null"
         datetime createdUtc
         datetime updatedUtc
         guid createdByUserKey "null"
@@ -141,6 +142,7 @@ erDiagram
         string(64) themeAlias "null"
         bool isRestricted
         datetime trashedUtc "null"
+        guid trashKey "null"
         datetime createdUtc
         datetime updatedUtc
         guid createdByUserKey "null"
@@ -437,7 +439,10 @@ definition files. No indexes besides the primary key on `key`.
 ### `jfbFolder`
 
 The folders of the forms tree. A folder in the trash keeps its place, so a restore puts it back under its parent, or
-at the root when the parent is gone. `isRestricted` makes only the grants on it, and on what lies below it, count inside it (ADR-0013).
+at the root when the parent is in the trash too. `trashKey` names the trash operation that put it there, the same
+for a folder and everything that went to the trash with it, so a restore brings back exactly that (ADR-0047).
+Nothing lives below a folder in the trash, and a folder is deleted only from the trash, once nothing is left in it.
+`isRestricted` makes only the grants on it, and on what lies below it, count inside it (ADR-0013).
 
 - `IX_jfbFolder_key`: unique.
 - `IX_jfbFolder_parentId`: the children of a folder, and the check that refuses to delete a folder that has any.
@@ -448,7 +453,8 @@ One row per form. The name, alias and folder live here rather than in the defini
 never renames or moves a form. `draftVersionId` and `publishedVersionId` point at its current versions;
 `publicRevision` rises only when what visitors see changes (ADR-0002). `concurrencyVersion` rises with every save, and
 a save based on an older one is refused. `lastEntryNumber` hands out entry numbers with one atomic update. `themeAlias`
-copies the published version's theme, for the theme library's "used by" list (ADR-0015).
+copies the published version's theme, for the theme library's "used by" list (ADR-0015). `trashKey` names the trash
+operation that put the form in the trash: its own, or its folder's (ADR-0047).
 
 - `IX_jfbForm_key`, `IX_jfbForm_alias`: unique; the alias without regard to case, trashed forms included.
 - `IX_jfbForm_folderId`: the forms of a folder.

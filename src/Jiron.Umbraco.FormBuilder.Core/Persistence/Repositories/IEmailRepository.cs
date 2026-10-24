@@ -197,4 +197,10 @@ internal interface IEmailRepository
     /// log, and deleting the entry clears its link.
     /// </summary>
     Task<int> DeleteUnsentAsync(long entryId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes the mail of these entries that was not sent, as the first part of the unit that deletes them (ADR-0047);
+    /// how many. It holds the entries' rows first, so no mail is queued for them until that unit ends.
+    /// </summary>
+    Task<int> DeleteUnsentAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default);
 }

@@ -49,6 +49,9 @@ internal sealed class FolderDto
     [Column("trashedUtc")]
     public DateTime? TrashedUtc { get; set; }
 
+    [Column("trashKey")]
+    public Guid? TrashKey { get; set; }
+
     [Column("createdUtc")]
     public DateTime CreatedUtc { get; set; }
 
@@ -106,6 +109,9 @@ internal sealed class FormDto
 
     [Column("trashedUtc")]
     public DateTime? TrashedUtc { get; set; }
+
+    [Column("trashKey")]
+    public Guid? TrashKey { get; set; }
 
     [Column("createdUtc")]
     public DateTime CreatedUtc { get; set; }

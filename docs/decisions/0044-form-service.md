@@ -2,7 +2,8 @@
 
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (a save that
   changes nothing writes no version); the new-form defaults for forms from a template amended by
-  [ADR-0046](0046-copies-templates-and-import.md) in 4.5c
+  [ADR-0046](0046-copies-templates-and-import.md) in 4.5c; the trash, the permanent delete and the folder service
+  added by [ADR-0047](0047-trash-delete-and-folders.md) in 4.5d
 - Date: 2026-10-24
 - Roadmap step: 4.5a (decided and built); 4.5b to 4.5d add versions, copies and the trash on the same rules, 4.7
   maps the refusals to the API, 5.1 takes over the storage kinds, 6.1 adds the published-form cache, 8.3 the
@@ -103,7 +104,7 @@ the repositories:
 | --- | --- |
 | `FormBuilderConcurrencyException` | `concurrency_conflict` |
 | `FormBuilderValidationException` | the first problem's code, such as `limit_exceeded` or `alias_invalid`; every problem keeps its code, path and message |
-| `FormBuilderConflictException` | `alias_taken`, `key_taken`, `folder_missing`, `folder_into_itself`, `folder_too_deep`, `folder_not_empty`, `in_use`, `trashed`, `duplicate_submission`, `challenge_used`, `file_missing`, `field_missing`, `version_missing` |
+| `FormBuilderConflictException` | `alias_taken`, `key_taken`, `folder_missing`, `folder_into_itself`, `folder_too_deep`, `folder_not_empty`, `in_use`, `trashed`, `not_trashed`, `duplicate_submission`, `challenge_used`, `file_missing`, `field_missing`, `version_missing` |
 | `FormBuilderCancelledException` | `cancelled`, with the messages the handlers gave |
 
 A missing form is no refusal: the service returns null or false, and the API answers `404`. A validation problem's

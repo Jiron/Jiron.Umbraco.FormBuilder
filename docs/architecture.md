@@ -67,7 +67,7 @@ database connection of its own. Its areas:
 | Area | Holds | Decided in |
 | --- | --- | --- |
 | Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions and their comparison, and the exchange of forms (`Exchange`: element keys and their remap, copied actions, the export envelope) | ADR-0002, ADR-0045, ADR-0046 |
-| Forms | the form service: create from blank or a template, import and export, duplicate, copy actions to another form, save, publish, unpublish, rename and move, and a form's versions (the History with what changed, one version, two compared, restore, pins and comments), each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form notifications and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046 |
+| Forms | the form service: create from blank or a template, import and export, duplicate, copy actions to another form, save, publish, unpublish, rename and move, a form's versions (the History with what changed, one version, two compared, restore, pins and comments), the trash and the permanent delete; the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047 |
 | Fields and options | the field type registry, the built-in types, option sources and lists, places on options | ADR-0002, §4.3.2 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
@@ -146,6 +146,11 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   report the rest, which publishing refuses. An export is the `jfb-form-export/1` envelope of the draft or a
   version with the library option lists it names; an import reuses the site's lists and theme where it can and
   says what it could not.
+- **The trash** ([ADR-0047](decisions/0047-trash-delete-and-folders.md)): every trash gives the rows it marks one
+  new key, so a folder's restore brings back exactly the folders and forms that went with it, and nothing lives
+  below a folder in the trash. A permanent delete works only from the trash: the entries go in batches of 100, each
+  a short unit that holds the form at the version the editor confirmed, then the waiting uploads, then the form's
+  own rows with its grants, references and daily statistics; the bytes of the files go after each commit.
 - **Publishing** ([ADR-0035](decisions/0035-structural-validation-and-public-projection.md)) runs the save checks and
   then the structural validation: aliases, names and option values, references, what each field type supports (its
   traits, from the field-type registry from 5.1 on), rule effects, cycles of visibility through rules and containment,
@@ -359,13 +364,17 @@ Registries are collections, so a site can add, replace or remove entries.
 first of each pair cancelable, the second once the change committed, [ADR-0044](decisions/0044-form-service.md),
 [ADR-0045](decisions/0045-versions-comparison-and-draft-cleanup.md); a restore is a `FormSaving`/`Saved` with
 `RestoredFromVersion`, a new form one with `CreatedFrom` and `SourceKey`, copied actions one with `ActionsCopiedFrom`,
-[ADR-0046](decisions/0046-copies-templates-and-import.md)), `FormTrashing`/`Deleted`; `EntrySubmitting`
+[ADR-0046](decisions/0046-copies-templates-and-import.md)), `FormTrashing`/`Trashed`, `FormRestoring`/`Restored`,
+`FormDeleting`/`Deleted`, and for folders `FolderCreating`/`Created`, `FolderRenaming`/`Renamed`,
+`FolderMoving`/`Moved`, `FolderTrashing`/`Trashed`, `FolderRestoring`/`Restored`, `FolderDeleting`/`Deleted` and
+`TrashEmptying`/`Emptied`, which name the folders and forms a change takes with it
+([ADR-0047](decisions/0047-trash-delete-and-folders.md)); `EntrySubmitting`
 (cancelable, can add field errors), `EntrySubmitted`, `EntryStateChanged`, `EntryDeleting`;
 `ActionRunning`/`ActionRunCompleted`/`ActionRunFailed`; `ExportCompleted`; `SettingsSaved`. Umbraco's webhook system
 receives entry events too.
 
-**Services:** `IFormBuilderFormService`, `IFormBuilderEntryService`, `IFormBuilderEntryReader`,
-`IFormBuilderRenderer`, `IFormBuilderMergeTagService`.
+**Services:** `IFormBuilderFormService`, `IFormBuilderFolderService`, `IFormBuilderEntryService`,
+`IFormBuilderEntryReader`, `IFormBuilderRenderer`, `IFormBuilderMergeTagService`.
 
 **The website:** the tag helpers and view component, the theme views and the markup contract (ADR-0015),
 `window.JironFormBuilder` (`init`, `get`, `consent`), the DOM events `jfb:ready`, `jfb:page`, `jfb:invalid`,
