@@ -42,6 +42,9 @@ internal static class DefinitionErrors
     /// <summary>The document's schema version is newer than this package reads, or older than any upgrader.</summary>
     public const string UnsupportedSchemaVersion = "unsupported_schema_version";
 
+    /// <summary>An export file is of a format this package does not read, such as one a newer version wrote (ADR-0046).</summary>
+    public const string UnsupportedFormat = "unsupported_format";
+
     /// <summary>The document, a text or a list is larger than its limit.</summary>
     public const string LimitExceeded = "limit_exceeded";
 

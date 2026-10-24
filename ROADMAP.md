@@ -1706,10 +1706,12 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [ ] **5.3 Merge tags and calculations** (C# and `packages/logic`)
   - Implement the sources, filters and escaping contexts of §4.3.3, plus unknown-tag handling and the calculation parser and evaluator, with no `eval`, no reflection and documented rounding (the exact decimals of ADR-0005: division to 20 places and `round` half away from zero, `out_of_range` past 60 digits).
   - **Also:** answer recall (only fields above the text or on earlier pages, hidden fields empty), `entry.reference`, the date functions `daysBetween` and `yearsBetween` (leap days and a daylight-saving change in the vectors), and a limit on how deeply calculations nest (ADR-0030). Publishing refuses a calculation that names no field or depends on itself (ADR-0035).
+  - **Copied actions** (added in 4.5c, ADR-0046): the report of copying actions to another form also lists each merge tag in a copied action that names a field the target lacks, with its path.
   - Done when:
     - the vectors pass in both runtimes, including answer recall, the date functions, and division and rounding at their edges (thirds, halves, negative halves, division by zero, out of range), and a calculation result rounded to its decimals and read rounded by a rule (ADR-0005);
     - a fuzz test of 10,000 random templates and formulas never throws an unhandled exception and never takes longer than 50 ms per input;
-    - an injection test shows that merge tags cannot produce HTML, URL or JSON breakouts.
+    - an injection test shows that merge tags cannot produce HTML, URL or JSON breakouts;
+    - a test copies an action whose subject names a field the target lacks and finds that tag, with its path, in the copy's report.
 - [ ] **5.4 Field types (server side)** (server side)
   - Implement the types of §4.3.2 from Text to Country: parsing, validation, storage, "Other" options, consent text hashing into `jfbConsentText`, and country names from .NET culture data.
     - **Grid and ranking** (added in 1.1): each grid row has its own key and is stored like a child field (`ParentFieldKey` = the grid, §4.5), so it filters, sorts and exports like any field; a ranking stores one value per position (`ValueIndex`). With the required-rows rule and unique positions.
@@ -1734,9 +1736,11 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - code (`IFormBuilderOptionSource`);
     - **presets** (added in 1.1): months, weekdays, agreement and satisfaction scales, and "yes, no, not sure", in English and German (14.2 adds the other five), with month and day names from culture data.
   - **Behaviour:** per-culture labels, caching with invalidation on content publish, and cascading parents.
+  - **Lists from an import** (added in 4.5c, ADR-0046): an import creates the lists its envelope carries and the site lacks, through the kind's own checks (allowed hosts, file contents), and only for a user who may manage the library; for anyone else, and for a list the checks refuse, it keeps the key and reports `option_list_missing`.
   - **Phase review:** write the handover note.
   - Done when:
     - tests per kind pass, including SSRF refusal for URL lists, cache invalidation on publish, and the presets in English and German;
+    - an import test creates a carried manual list for a library manager, reports it for a user who may not manage the library, and reports a carried URL list whose host is not allowed without creating it;
     - pushed, with the phase-review gate.
 
 ### Phase 6: Rendering, the website runtime and headless
@@ -1890,6 +1894,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The model:** a registry with `FormBuilderActionTypeBase<TSettings>`, triggers, rules, order and "stop the rest if this fails". Publishing refuses an action type the site lacks (`unknown_type` at `actions[n].type`, ADR-0035) and runs each type's check of its own settings.
   - **The processor** (ADR-0007): one worker per server, woken after each commit through a scoped notification and a bounded channel of one, with claims by token, leases, back-off, the late finisher and the `Uncertain` state. The distributed job only wakes its server's worker and returns.
   - **Designer locks** of action settings, as 5.1 applies them to field settings (ADR-0042).
+  - **Imported actions** (added in 4.5c, ADR-0046): a type says which site configuration it needs (such as a Slack address); an import switches off an action whose configuration this site lacks and adds a note with its path.
   - **The pause switch** (§4.4): while `JironFormBuilder:Actions:Paused` is on, the processor claims nothing, and the kick does nothing.
   - **Values kept only until the actions have run** (§4.4): deleted, with the entry event, once no trigger can still fire for the entry and every run is final.
   - **The retry API,** which refuses to retry an `Uncertain` run without an explicit confirmation (§4.4).
@@ -1898,7 +1903,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - webhooks send to the configured URL with `X-Jfb-Test: true` after a confirmation;
     - content actions create nothing (a dry run that shows what would be created).
   - Fill in the CI load-balancing job.
-  - Done when: tests cover ordering, retries with fake time, lease expiry turning into `Uncertain`, the late finisher, and **no double execution** with two processors on one database. The two-processor test injects the faults of 1.6 and fails against a claim without its state condition (a mutant), so it is known to catch doubles. A test shows that every Jiron Form Builder job returns within 10 s, and does nothing while the migrations are pending (ADR-0033). The `loadbalancing` job definition is shown. Tests also show that nothing runs while sending is paused and every queued run goes out once it is not, that a retry of an `Uncertain` run without the confirmation is refused, that a value kept only until the actions have run is still there while a run is retrying and gone once no trigger can still fire for the entry and every run is final, and that a designer lock of an action setting refuses a save with another value and wins at run time.
+  - Done when: tests cover ordering, retries with fake time, lease expiry turning into `Uncertain`, the late finisher, and **no double execution** with two processors on one database. The two-processor test injects the faults of 1.6 and fails against a claim without its state condition (a mutant), so it is known to catch doubles. A test shows that every Jiron Form Builder job returns within 10 s, and does nothing while the migrations are pending (ADR-0033). The `loadbalancing` job definition is shown. Tests also show that nothing runs while sending is paused and every queued run goes out once it is not, that a retry of an `Uncertain` run without the confirmation is refused, that a value kept only until the actions have run is still there while a run is retrying and gone once no trigger can still fire for the entry and every run is final, that a designer lock of an action setting refuses a save with another value and wins at run time, and that an imported action whose site configuration is missing arrives switched off with its note.
 - [ ] **8.2 Email infrastructure**
   - **Sending:** the outbox and sender job through `IEmailSender`, with `CanSendRequiredEmail()` gating so no retries are burnt while email is not configured (Umbraco would drop the mail silently). Queuing wakes the sender at once (D8). The sender also honours the pause switch (§4.4).
   - **Content:** responsive HTML layouts that work in dark mode, one body per mail as ADR-0007 decided (HTML, or plain text when the action chooses it, with the text version always generated), header sanitising, attachment caps, the per-site sender, a test email, and retention purge. The layouts follow the client rules of §3.3: inline styles on table cells, `<!--[if mso]>` tables for Outlook, and no styles on `<body>`.
@@ -1921,8 +1926,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - attachments;
     - a Razor view option (`Views/JironFormBuilder/Emails/*.cshtml`).
   - **Presets** ("Notify the team", "Confirm to the sender").
-  - **The new-form default "notify the creator"** (§4.8; moved here from 4.5 because it needs this action, ADR-0044): a `general` setting for every site at once, which makes a form created from blank start with an email action to the form's creator.
-  - Done when: tests pass, and an E2E run submits the demo contact form and finds two emails in the pickup folder with the right content, escaping and language. An abuse test also passes: a submission that puts a stranger's address in the email field and a link in the message gets the confirmation through only within the limits, and the link is not clickable in it. A test shows the recipient map choosing the address and the mapped addresses absent from the public projection. A form created from blank starts with the action to its creator while the new-form default is on, and without it while it is off.
+  - **The new-form default "notify the creator"** (§4.8; moved here from 4.5 because it needs this action, ADR-0044): a `general` setting for every site at once, which makes a form created from blank or from a template (ADR-0046) start with an email action to the form's creator, unless a template has one already.
+  - Done when: tests pass, and an E2E run submits the demo contact form and finds two emails in the pickup folder with the right content, escaping and language. An abuse test also passes: a submission that puts a stranger's address in the email field and a link in the message gets the confirmation through only within the limits, and the link is not clickable in it. A test shows the recipient map choosing the address and the mapped addresses absent from the public projection. A form created from blank or from the Contact template starts with the action to its creator while the new-form default is on, and without it while it is off.
 - [ ] **8.4 Webhook, Slack and Teams**
   - **The webhook:**
     - JSON, form-encoded or XML;
@@ -1997,11 +2002,11 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **The tree:** folders, and create from blank or from the template gallery (a modal with previews; it shows the templates that exist, which are "Contact" from 4.5 until 12.3 adds the rest).
   - **Entity actions:**
     - rename, move;
-    - duplicate (with or without actions), copy actions to another form;
-    - import as a new copy, export JSON (12.5 adds "replace" and the mirror).
+    - duplicate (with or without actions; for a restricted form the dialog says that the copy takes its folder's access instead, ADR-0046), copy actions to another form (the result lists the references it could not map, each with a link to fix it);
+    - import as a new copy (the result shows the import's notes: a theme or option list the site lacks), export JSON (12.5 adds "replace" and the mirror).
   - **Trash:** trash, restore, empty trash. The delete confirmation names the pages that use the form (6.7).
   - **Search:** forms by name and alias, and fields across all forms by label or alias (from the field catalogue, §4.5).
-  - Done when: Playwright journeys for each action pass, including finding a form by one of its field labels, and the client stores have unit tests.
+  - Done when: Playwright journeys for each action pass, including finding a form by one of its field labels, the Duplicate dialog of a restricted form saying what the copy's access will be, and an import whose notes are shown, and the client stores have unit tests.
 - [ ] **9.3a The designer: workspace and editor model**
   - **The workspace:** the form workspace with the views Design, Settings, Actions, Entries, Insights and History (views without content yet show a short "coming with …" empty state, replaced by their steps). The name and status are in the header; Save draft and Publish in the footer.
   - **The editor model** is pure TypeScript with unit tests (the Ligata.Forms lesson, §3.1):

@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
@@ -110,3 +111,72 @@ internal sealed record FormComparison(int FromVersion, int ToVersion, IReadOnlyL
 /// <param name="Form">The form after it.</param>
 /// <param name="Version">The number of the version it wrote, or null when it wrote nothing because nothing changed.</param>
 internal sealed record FormVersionResult(FormInfo Form, int? Version);
+
+/// <summary>A copy of a form to create from its draft (ADR-0046).</summary>
+/// <param name="Name">The copy's name: 1 to 255 characters, not only white space.</param>
+/// <param name="IncludeActions">Whether the copy gets the form's actions; the caller always chooses.</param>
+/// <param name="Alias">The copy's alias, or null to take one from the name.</param>
+/// <param name="FolderKey">A folder outside the trash, or null for the root.</param>
+/// <param name="UserKey">Who duplicates the form, or null when Jiron Form Builder does.</param>
+internal sealed record DuplicateFormRequest(string Name, bool IncludeActions, string? Alias = null, Guid? FolderKey = null, Guid? UserKey = null);
+
+/// <summary>A form to create from a built-in or saved template (ADR-0046).</summary>
+/// <param name="TemplateKey">The template.</param>
+/// <param name="Name">The form's name, or null for the template's.</param>
+/// <param name="Alias">Its alias, or null to take one from the name.</param>
+/// <param name="FolderKey">A folder outside the trash, or null for the root.</param>
+/// <param name="UserKey">Who creates it, or null when Jiron Form Builder does.</param>
+internal sealed record TemplateFormRequest(Guid TemplateKey, string? Name = null, string? Alias = null, Guid? FolderKey = null, Guid? UserKey = null);
+
+/// <summary>A form to create from an export file, always with new keys (ADR-0046).</summary>
+/// <param name="Json">The file's text.</param>
+/// <param name="Name">The form's name, or null for the one in the file.</param>
+/// <param name="Alias">
+/// Its alias, or null for the one in the file (or one from the name when the file's is not valid), with the next free
+/// number when another form has it.
+/// </param>
+/// <param name="FolderKey">A folder outside the trash, or null for the root.</param>
+/// <param name="UserKey">Who imports it, or null when Jiron Form Builder does.</param>
+internal sealed record ImportFormRequest(string Json, string? Name = null, string? Alias = null, Guid? FolderKey = null, Guid? UserKey = null);
+
+/// <summary>What an import made, and what it changed or could not resolve (ADR-0046).</summary>
+/// <param name="Form">The new form.</param>
+/// <param name="Notes">What the backoffice tells the editor, in file order; empty when everything came along.</param>
+internal sealed record FormImport(FormInfo Form, IReadOnlyList<FormImportNote> Notes);
+
+/// <summary>Something an import changed or could not resolve.</summary>
+/// <param name="Code">One of <see cref="FormImportNotes"/>.</param>
+/// <param name="Path">Where it is in the file.</param>
+/// <param name="Alias">The alias of the theme or option list it is about, or null when the file does not name one.</param>
+internal sealed record FormImportNote(string Code, string Path, string? Alias);
+
+/// <summary>The codes of an import's notes (ADR-0046).</summary>
+internal static class FormImportNotes
+{
+    /// <summary>The site has no theme with the file's alias, so the form uses the default theme.</summary>
+    public const string ThemeMissing = "theme_missing";
+
+    /// <summary>The site's option list with the same alias and options takes the place of the file's list.</summary>
+    public const string OptionListReused = "option_list_reused";
+
+    /// <summary>The site has no such option list: the fields keep its key until 5.5 creates it.</summary>
+    public const string OptionListMissing = "option_list_missing";
+}
+
+/// <summary>An export file (ADR-0046).</summary>
+/// <param name="FileName">Its name: the form's alias with <c>.json</c>.</param>
+/// <param name="Json">Its text.</param>
+internal sealed record FormExport(string FileName, string Json);
+
+/// <summary>Actions to copy from one form's draft to another's (ADR-0046).</summary>
+/// <param name="SourceKey">The form the actions come from.</param>
+/// <param name="TargetKey">The form they go to.</param>
+/// <param name="ExpectedConcurrencyVersion">The target's concurrency version the copy is based on.</param>
+/// <param name="ActionKeys">The source's actions to copy, or null for all; the copies keep the source's order.</param>
+/// <param name="UserKey">Who copies them, or null when Jiron Form Builder does.</param>
+internal sealed record CopyActionsRequest(Guid SourceKey, Guid TargetKey, int ExpectedConcurrencyVersion, IReadOnlyList<Guid>? ActionKeys = null, Guid? UserKey = null);
+
+/// <summary>What copying actions did (ADR-0046).</summary>
+/// <param name="Target">The target after the copy; its version is null when there was nothing to copy.</param>
+/// <param name="Actions">Each copy, with the references it keeps because the target has nothing that matches them.</param>
+internal sealed record FormActionsCopy(FormVersionResult Target, IReadOnlyList<CopiedAction> Actions);

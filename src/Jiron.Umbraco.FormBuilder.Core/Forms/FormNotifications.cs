@@ -75,6 +75,22 @@ public abstract class FormCancelableNotification : CancelableNotification
     public Guid? UserKey { get; }
 }
 
+/// <summary>Where a new form's definition came from (ADR-0046).</summary>
+public enum FormSource
+{
+    /// <summary>A blank form, with the new-form defaults.</summary>
+    Blank,
+
+    /// <summary>A built-in or saved template, with the new-form defaults.</summary>
+    Template,
+
+    /// <summary>An export file, as it was exported.</summary>
+    Import,
+
+    /// <summary>The draft of another form, as it is.</summary>
+    Duplicate,
+}
+
 /// <summary>A form is about to be created, or its draft about to be saved.</summary>
 public sealed class FormSavingNotification : FormCancelableNotification
 {
@@ -100,6 +116,18 @@ public sealed class FormSavingNotification : FormCancelableNotification
 
     /// <summary>The number of the version a restore copies into the draft, or null for any other save (ADR-0045).</summary>
     public int? RestoredFromVersion { get; init; }
+
+    /// <summary>Where a new form's definition comes from, or null for a save of a form that exists (ADR-0046).</summary>
+    public FormSource? CreatedFrom { get; init; }
+
+    /// <summary>
+    /// The template, the form duplicated, or the form key in the imported file; null for a blank form and every other
+    /// save (ADR-0046).
+    /// </summary>
+    public Guid? SourceKey { get; init; }
+
+    /// <summary>The form whose actions the save copies into this one, or null for every other save (ADR-0046).</summary>
+    public Guid? ActionsCopiedFrom { get; init; }
 
     private static FormDefinition ArgumentOrThrow(FormDefinition definition)
     {
@@ -133,6 +161,18 @@ public sealed class FormSavedNotification : FormNotification
 
     /// <summary>The number of the version a restore copied into the draft, or null for any other save (ADR-0045).</summary>
     public int? RestoredFromVersion { get; init; }
+
+    /// <summary>Where a new form's definition came from, or null for a save of a form that exists (ADR-0046).</summary>
+    public FormSource? CreatedFrom { get; init; }
+
+    /// <summary>
+    /// The template, the form duplicated, or the form key in the imported file; null for a blank form and every other
+    /// save (ADR-0046).
+    /// </summary>
+    public Guid? SourceKey { get; init; }
+
+    /// <summary>The form whose actions the save copied into this one, or null for every other save (ADR-0046).</summary>
+    public Guid? ActionsCopiedFrom { get; init; }
 }
 
 /// <summary>A form's draft is about to be published, after it passed every publish check.</summary>

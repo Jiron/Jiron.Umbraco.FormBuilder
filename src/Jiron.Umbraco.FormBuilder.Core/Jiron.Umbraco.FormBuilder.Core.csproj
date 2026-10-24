@@ -33,4 +33,10 @@
     <None Include="buildTransitive/Jiron.Umbraco.FormBuilder.Core.props" Pack="true" PackagePath="buildTransitive" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The built-in templates, as export envelopes inside the assembly (ADR-0046). -->
+    <None Remove="Forms/Templates/*.json" />
+    <EmbeddedResource Include="Forms/Templates/*.json" LogicalName="Jiron.Umbraco.FormBuilder.Core.Forms.Templates.%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>

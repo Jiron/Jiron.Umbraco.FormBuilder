@@ -1,8 +1,8 @@
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
-using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Umbraco.Cms.Core.Events;
@@ -24,35 +24,7 @@ internal sealed partial class FormBuilderFormService
         CheckAlias(request.Alias);
         var folder = await LiveFolderAsync(request.FolderKey, cancellationToken);
         var definition = await BlankAsync(cancellationToken);
-        var document = Document(definition);
-        var wanted = request.Alias ?? FormAliases.FromName(name);
-        for (var attempt = 1; ; attempt++)
-        {
-            var alias = request.Alias ?? FormAliases.FirstFree(wanted, await forms.ListAliasesAsync(wanted, cancellationToken));
-            await CancelableAsync(new FormSavingNotification(definition, alias, name, isNew: true, request.UserKey, new EventMessages()));
-            SavedVersion created;
-            try
-            {
-                created = await database.WriteAsync(
-                    async _ =>
-                    {
-                        var saved = await forms.CreateAsync(new NewForm(definition.Key, folder?.Id, alias, name, document, UserKey: request.UserKey), cancellationToken);
-                        var details = new AuditDetails().AddIdentifier("alias", alias).Add("version", saved.Version.Info.Number).Add("folder", folder?.Key);
-                        await audit.AddAsync(Entry(CreatedAction, saved.Form, request.UserKey, details), cancellationToken);
-                        return saved;
-                    },
-                    cancellationToken);
-            }
-            catch (FormBuilderConflictException exception) when (exception.Conflict == FormBuilderConflict.DuplicateAlias && request.Alias is null && attempt < AliasAttempts)
-            {
-                // A create at the same moment took the alias: the next free one, announced again.
-                continue;
-            }
-
-            var info = Info(created.Form, folder?.Key);
-            await PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, created.Version.Info.Number, isNew: true, request.UserKey));
-            return info;
-        }
+        return await CreateFormAsync(definition, name, request.Alias, FormAliases.FromName(name), folder, request.UserKey, new Creation(FormSource.Blank, null, CreatedAction), cancellationToken);
     }
 
     /// <inheritdoc />
@@ -72,14 +44,9 @@ internal sealed partial class FormBuilderFormService
             throw FormBuilderValidationException.For(DefinitionErrors.InvalidValue, JsonPaths.Property(JsonPaths.Root, "key"), "The definition's key is not the form's.");
         }
 
-        var problems = serializer.CheckSave(definition);
-        if (problems.Count > 0)
-        {
-            throw new FormBuilderValidationException(problems);
-        }
-
+        CheckSaveable(definition);
         var document = Document(definition);
-        var draft = form.DraftVersionId is { } draftId ? await forms.GetVersionByIdAsync(draftId, cancellationToken) : null;
+        var draft = await DraftOfAsync(form, cancellationToken);
         if (draft is { Info.SchemaVersion: FormDefinition.CurrentSchemaVersion } && draft.Info.DefinitionHash == document.DefinitionHash)
         {
             return new FormVersionResult(await InfoAsync(form, cancellationToken), null);
@@ -314,18 +281,27 @@ internal sealed partial class FormBuilderFormService
 
     // A form from blank: one page with one group, and one outcome without text, which shows the built-in thank-you
     // message in the visitor's language; the group starts with the consent field of the new-form defaults.
-    private async Task<FormDefinition> BlankAsync(CancellationToken cancellationToken)
+    private Task<FormDefinition> BlankAsync(CancellationToken cancellationToken) =>
+        WithNewFormDefaultsAsync(
+            new FormDefinition
+            {
+                Key = Guid.NewGuid(),
+                Pages = [new FormPage { Key = Guid.NewGuid(), Groups = [new FormGroup { Key = Guid.NewGuid() }] }],
+                Outcomes = [new FormOutcome { Key = Guid.NewGuid() }],
+            },
+            cancellationToken);
+
+    // A new design with the new-form defaults (ADR-0044, ADR-0046): while the consent default is set, the consent field
+    // at the end of the last group, unless the form has a consent field or a field with its alias already.
+    private async Task<FormDefinition> WithNewFormDefaultsAsync(FormDefinition definition, CancellationToken cancellationToken)
     {
-        var blank = new FormDefinition
-        {
-            Key = Guid.NewGuid(),
-            Pages = [new FormPage { Key = Guid.NewGuid(), Groups = [new FormGroup { Key = Guid.NewGuid() }] }],
-            Outcomes = [new FormOutcome { Key = Guid.NewGuid() }],
-        };
         var general = await settings.GetAsync<GeneralSettings>(cancellationToken: cancellationToken);
-        if (general.Value.NewForms?.Consent is not { } consent)
+        if (general.Value.NewForms?.Consent is not { } consent
+            || definition.Pages.Count == 0
+            || definition.Pages[^1].Groups.Count == 0
+            || DefinitionKeys.Fields(definition).Any(field => field.Type == ConsentType || string.Equals(field.Alias, NewFormConsent.FieldAlias, StringComparison.OrdinalIgnoreCase)))
         {
-            return blank;
+            return definition;
         }
 
         // The settings save validates the texts; a row written another way may hold what a definition refuses, and a new
@@ -340,11 +316,15 @@ internal sealed partial class FormBuilderFormService
             field = null;
         }
 
-        var withConsent = field is null ? null : blank with { Pages = [blank.Pages[0] with { Groups = [blank.Pages[0].Groups[0] with { Fields = [field] }] }] };
+        var page = definition.Pages[^1];
+        var group = page.Groups[^1];
+        var withConsent = field is null
+            ? null
+            : definition with { Pages = [.. definition.Pages.SkipLast(1), page with { Groups = [.. page.Groups.SkipLast(1), group with { Fields = [.. group.Fields, field] }] }] };
         if (withConsent is null || serializer.CheckSave(withConsent).Count > 0)
         {
-            LogConsentSkipped(logger, blank.Key);
-            return blank;
+            LogConsentSkipped(logger, definition.Key);
+            return definition;
         }
 
         return withConsent;

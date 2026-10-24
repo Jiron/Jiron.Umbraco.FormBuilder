@@ -106,14 +106,9 @@ internal sealed partial class FormBuilderFormService
             throw FormBuilderValidationException.For(DefinitionErrors.InvalidValue, JsonPaths.Property(JsonPaths.Root, "key"), "The version's key is not the form's.");
         }
 
-        var problems = serializer.CheckSave(definition);
-        if (problems.Count > 0)
-        {
-            throw new FormBuilderValidationException(problems);
-        }
-
+        CheckSaveable(definition);
         var document = Document(definition);
-        var draft = form.DraftVersionId is { } draftId ? await forms.GetVersionByIdAsync(draftId, cancellationToken) : null;
+        var draft = await DraftOfAsync(form, cancellationToken);
         if (draft is { Info.SchemaVersion: FormDefinition.CurrentSchemaVersion } && draft.Info.DefinitionHash == document.DefinitionHash)
         {
             return new FormVersionResult(await InfoAsync(form, cancellationToken), null);

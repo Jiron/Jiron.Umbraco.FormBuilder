@@ -1,7 +1,8 @@
 # 0044. The form service: lifecycle, refusals, notifications and the field catalogue
 
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (a save that
-  changes nothing writes no version)
+  changes nothing writes no version); the new-form defaults for forms from a template amended by
+  [ADR-0046](0046-copies-templates-and-import.md) in 4.5c
 - Date: 2026-10-24
 - Roadmap step: 4.5a (decided and built); 4.5b to 4.5d add versions, copies and the trash on the same rules, 4.7
   maps the refusals to the API, 5.1 takes over the storage kinds, 6.1 adds the published-form cache, 8.3 the

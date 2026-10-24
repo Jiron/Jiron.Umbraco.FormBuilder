@@ -56,6 +56,9 @@ internal sealed class FormDefinitionSerializer
     // A second reader of the same chain, made once it is first needed; two made at the same time read alike.
     private FormDefinitionSerializer Stored => _stored ??= _limits == DefinitionLimits.Ceiling ? this : new(_upgrades, DefinitionLimits.Ceiling);
 
+    /// <summary>The limits this reader applies.</summary>
+    public DefinitionLimits Limits => _limits;
+
     /// <summary>The SHA-256 of canonical UTF-8 bytes, in lowercase hex.</summary>
     public static string Hash(ReadOnlySpan<byte> canonical) => Convert.ToHexStringLower(SHA256.HashData(canonical));
 

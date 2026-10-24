@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:jiron:form-builder:schema:jfb-form-export:v1",
+  "title": "Jiron Form Builder export file, format jfb-form-export/1",
+  "description": "A form as Jiron Form Builder exports it, with the library option lists its definition names (ADR-0002, ADR-0046). An import also refuses what this schema cannot say: a definition whose key is not the form's, two option lists with one key, a file larger than four times the site's definition limit, and everything a save refuses in the definition. A definition of an older schema version is upgraded when it is read.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [ "format", "packageVersion", "exportedUtc", "form", "definition" ],
+  "properties": {
+    "format": { "description": "The format; a newer one is refused with unsupported_format.", "const": "jfb-form-export/1" },
+    "packageVersion": { "description": "The version of Jiron Form Builder that wrote the file.", "type": "string", "minLength": 1, "maxLength": 64 },
+    "exportedUtc": { "description": "When the file was written, as an ISO 8601 date and time.", "type": "string", "format": "date-time" },
+    "form": {
+      "description": "The form where it was exported. An import takes its name and alias unless it is given others, and always gives the new form new keys.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "key", "alias", "name" ],
+      "properties": {
+        "key": { "$ref": "#/$defs/Key" },
+        "alias": { "type": "string" },
+        "name": { "type": "string" }
+      }
+    },
+    "definition": { "$ref": "urn:jiron:form-builder:schema:jfb-form:v1" },
+    "optionLists": {
+      "description": "The library option lists the definition names by key that the exporting site had.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/OptionList" }
+    }
+  },
+  "$defs": {
+    "Key": {
+      "description": "A GUID in lowercase, not the empty one.",
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "not": { "const": "00000000-0000-0000-0000-000000000000" }
+    },
+    "OptionList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "key", "alias", "name", "kind", "config", "items", "cacheSeconds" ],
+      "properties": {
+        "key": { "$ref": "#/$defs/Key" },
+        "alias": { "type": "string" },
+        "name": { "type": "string" },
+        "kind": { "description": "Where the options come from, such as Manual.", "type": "string" },
+        "config": { "description": "The source's configuration, which its kind checks.", "type": "object" },
+        "items": { "description": "The items of a manual or uploaded list.", "type": "array" },
+        "cacheSeconds": { "type": "integer", "minimum": 0, "maximum": 2147483647 }
+      }
+    }
+  }
+}

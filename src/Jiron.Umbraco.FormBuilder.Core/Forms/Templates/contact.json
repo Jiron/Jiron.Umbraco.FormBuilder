@@ -1,0 +1,57 @@
+{
+  "format": "jfb-form-export/1",
+  "packageVersion": "17.0.0",
+  "exportedUtc": "2026-10-24T00:00:00.000Z",
+  "form": {
+    "key": "66c2bf3e-fe43-41cc-8470-f446c2f01a89",
+    "alias": "contact",
+    "name": "Contact"
+  },
+  "definition": {
+    "schemaVersion": 1,
+    "key": "66c2bf3e-fe43-41cc-8470-f446c2f01a89",
+    "pages": [
+      {
+        "key": "d173acc6-310d-4108-a70e-6825d44e6914",
+        "groups": [
+          {
+            "key": "56c5ad40-7007-4b20-8e01-8ad8ac42baf3",
+            "fields": [
+              {
+                "key": "1ada2174-3291-4533-baad-c2e6c9664582",
+                "type": "text",
+                "alias": "name",
+                "label": { "": "Name", "de": "Name" },
+                "required": true,
+                "autocomplete": "name"
+              },
+              {
+                "key": "9bc90731-ab09-4af3-8fd0-668cebded39c",
+                "type": "email",
+                "alias": "email",
+                "label": { "": "Email address", "de": "E-Mail-Adresse" },
+                "required": true,
+                "autocomplete": "email"
+              },
+              {
+                "key": "4e2e46a4-84e8-4dc6-8a92-849a3a6d6efe",
+                "type": "textarea",
+                "alias": "message",
+                "label": { "": "Message", "de": "Nachricht" },
+                "required": true,
+                "settings": { "rows": 6 }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outcomes": [
+      {
+        "key": "7e41560e-a3d0-4dda-b78a-4116ae3bab79",
+        "kind": "message"
+      }
+    ]
+  },
+  "optionLists": []
+}

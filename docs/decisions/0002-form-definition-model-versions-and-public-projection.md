@@ -5,7 +5,9 @@
   [ADR-0034](0034-definition-model-reading-and-writing.md) in 4.2a; the publish codes and what the projection and its
   hash hold amended by [ADR-0035](0035-structural-validation-and-public-projection.md) in 4.2b; saves and publishes
   that change nothing amended by [ADR-0044](0044-form-service.md) in 4.5a; restore, pins, comments, the diff and the
-  draft cleanup amended by [ADR-0045](0045-versions-comparison-and-draft-cleanup.md) in 4.5b
+  draft cleanup amended by [ADR-0045](0045-versions-comparison-and-draft-cleanup.md) in 4.5b; how copies find
+  references, the envelope's limits and layout, `unsupported_format` and when an import creates option lists amended
+  by [ADR-0046](0046-copies-templates-and-import.md) in 4.5c
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2a (the model, the schema, upgraders), 4.2b (structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
@@ -304,7 +306,8 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
   unknown and missing properties, a property named twice, wrong types, invalid keys, two elements with one key, an
   unknown or newer `schemaVersion`, the size limits (2 MB, the text lengths above) and the element limits of §4.3.1
   with 50 outcomes per form. Codes: `invalid_json`, `unknown_property`, `missing_property`, `duplicate_property`,
-  `invalid_type`, `invalid_value`, `duplicate_key`, `unsupported_schema_version`, `limit_exceeded` (ADR-0034).
+  `invalid_type`, `invalid_value`, `duplicate_key`, `unsupported_schema_version`, `limit_exceeded` (ADR-0034). An
+  import refuses an envelope of another `format` first, with `unsupported_format` (ADR-0046).
 - **Publishing** also runs the structural validation of 4.2b and refuses every problem it finds: aliases, names and
   option values (`alias_invalid`, `alias_reserved`, `alias_duplicate`, and so on), references (`unknown_field`,
   `invalid_reference`, `unknown_type`), cycles in the graph of rules and containment over fields, groups and pages
@@ -397,13 +400,16 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
 
 - **The export envelope** (`jfb-form-export/1`):
   `{ "format", "packageVersion", "exportedUtc", "form": { "key", "alias", "name" }, "definition", "optionLists" }`.
-  It includes the library option lists the form uses, so an import can reuse or create them. Content, media and member
-  groups are named only by key, and themes by alias; an import that cannot resolve one shows it in the form check.
-- **Import** creates a new form with new keys, or, when the form's key exists and the user chooses it, a new draft of
-  that form.
+  It includes the library option lists the form uses, so an import can reuse them, or create them from 5.5 on. Content,
+  media and member groups are named only by key, and themes by alias; an import clears a theme the site lacks, and
+  the form check shows the content, media and member groups it lacks. The file is indented and ASCII-escaped, and at
+  most four times the definition limit (ADR-0046).
+- **Import** creates a new form with new keys (4.5c), or, from 12.5 on, when the form's key exists and the user
+  chooses it, a new draft of that form.
 - **Duplicating** gives every element a new key and remaps every reference (rules, checks, option parents, the
-  verification field). **Copying actions to another form** maps the fields they name by alias and lists the ones it
-  cannot map.
+  verification field, and type settings that name an element by key: ADR-0046 finds them by a walk over the
+  canonical JSON). **Copying actions to another form** maps the fields they name by alias and lists the ones it
+  cannot map, which publishing refuses until they are fixed.
 - **Templates** (`jfbFormTemplate`): a form template holds a definition, a group template one group; both are
   inserted as copies with new keys. Built-in templates ship as embedded envelopes.
 - **Mirror files** (D25) are envelopes of the published definition with `"published": { "number", "hash" }` added,

@@ -120,12 +120,67 @@ internal interface IFormBuilderFormService
     /// <exception cref="FormBuilderConflictException">The form is in the trash.</exception>
     /// <exception cref="FormBuilderCancelledException">A handler cancelled the change.</exception>
     Task<FormVersion?> CommentVersionAsync(Guid key, int number, string? comment, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a copy of a form's draft, with or without its actions, in which every element has a new key that the
+    /// references follow (ADR-0046). Entries, versions, grants and the restriction stay with the form. Null when the
+    /// form does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">
+    /// The name or the alias is not allowed, or the draft cannot be read or is above a lowered limit.
+    /// </exception>
+    /// <exception cref="FormBuilderConflictException">The alias is taken, the folder is missing or in the trash, or the form is in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the create.</exception>
+    Task<FormInfo?> DuplicateAsync(Guid key, DuplicateFormRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Appends copies of a form's actions to another form's draft as a draft save: the fields they name map by alias,
+    /// and what has no match is kept and reported (ADR-0046). Nothing to copy writes nothing. Null when either form
+    /// does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderConcurrencyException">Someone changed the target meanwhile.</exception>
+    /// <exception cref="FormBuilderValidationException">
+    /// An action key is not the source's, a draft cannot be read, or a save refuses the target with the copies.
+    /// </exception>
+    /// <exception cref="FormBuilderConflictException">The source or the target is in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the save.</exception>
+    Task<FormActionsCopy?> CopyActionsAsync(CopyActionsRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a form from a built-in or saved form template, with new keys and the new-form defaults (ADR-0046). Null
+    /// when no form template has the key.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">The name or the alias is not allowed, or a save refuses the template.</exception>
+    /// <exception cref="FormBuilderConflictException">The alias is taken, or the folder is missing or in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the create.</exception>
+    Task<FormInfo?> CreateFromTemplateAsync(TemplateFormRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a form from an export file, always with new keys, and says what it changed or could not resolve
+    /// (ADR-0046).
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">
+    /// The name or the alias is not allowed, or the file is refused, with every problem and its path in the file.
+    /// </exception>
+    /// <exception cref="FormBuilderConflictException">The alias is taken, or the folder is missing or in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the create.</exception>
+    Task<FormImport> ImportAsync(ImportFormRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The export file of a form's draft, or of the version with this number (ADR-0046), with the library option lists
+    /// it names. Null when the form or the version does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">The stored version cannot be read.</exception>
+    Task<FormExport?> ExportAsync(Guid key, int? version = null, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
 internal sealed partial class FormBuilderFormService(
     IFormRepository forms,
     IFolderRepository folders,
+    IOptionListRepository optionLists,
+    IThemeRepository themes,
+    IFormTemplateRepository templates,
     IAuditRepository audit,
     FormBuilderDatabase database,
     FormDefinitionSerializer serializer,
@@ -247,7 +302,16 @@ internal sealed partial class FormBuilderFormService(
             throw new FormBuilderConcurrencyException($"The form was changed by someone else meanwhile (version {form.ConcurrencyVersion}, not {expectedConcurrencyVersion}).");
         }
 
-        if (form.TrashedUtc is not null && !inTrash)
+        if (!inTrash)
+        {
+            CheckOutsideTrash(form);
+        }
+    }
+
+    // Only a restore, an unpublish or a delete applies to a form in the trash; copies of it wait for its restore too.
+    private static void CheckOutsideTrash(StoredForm form)
+    {
+        if (form.TrashedUtc is not null)
         {
             throw new FormBuilderConflictException(FormBuilderConflict.Trashed, "The form is in the trash; restore it first.");
         }
@@ -261,23 +325,24 @@ internal sealed partial class FormBuilderFormService(
         }
     }
 
-    // A form's name: 1 to 255 characters once trimmed, not only white space, on one line.
-    private static string CheckName(string name)
+    // A form's name: 1 to 255 characters once trimmed, not only white space, on one line. The path is where a refusal
+    // points: the request's name, or the name in an export file.
+    private static string CheckName(string name, string path = "name")
     {
         ArgumentNullException.ThrowIfNull(name);
         var trimmed = name.Trim();
         if (trimmed.Length == 0)
         {
-            throw FormBuilderValidationException.For(DefinitionErrors.InvalidValue, "name", "A form needs a name that is not only white space.");
+            throw FormBuilderValidationException.For(DefinitionErrors.InvalidValue, path, "A form needs a name that is not only white space.");
         }
 
         if (trimmed.Length > FormRepository.MaxNameLength)
         {
-            throw FormBuilderValidationException.For(DefinitionErrors.LimitExceeded, "name", $"A form name has at most {FormRepository.MaxNameLength} characters.");
+            throw FormBuilderValidationException.For(DefinitionErrors.LimitExceeded, path, $"A form name has at most {FormRepository.MaxNameLength} characters.");
         }
 
         return trimmed.Any(char.IsControl) || !StrictStringConverter.IsWellFormed(trimmed)
-            ? throw FormBuilderValidationException.For(DefinitionErrors.InvalidValue, "name", "A form name is one line of text, without control characters.")
+            ? throw FormBuilderValidationException.For(DefinitionErrors.InvalidValue, path, "A form name is one line of text, without control characters.")
             : trimmed;
     }
 
