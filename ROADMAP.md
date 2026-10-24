@@ -1606,7 +1606,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Repositories:** action runs and emails (the processor is 8.1, the mail queue 8.2).
   - **Every state change** of an action run or an email is one conditional statement that names the row, its token and its state, and no repository reads and then writes in one transaction (ADR-0007): the claim with its order condition, the outcomes, expired leases, the late finisher and stopping the rest.
   - Done when: integration tests cover CRUD for both repositories and every state change, and a change with a stale token or state changes nothing (ADR-0007).
-- [ ] **4.3f The file store, the audit log and daily stats**
+- [x] **4.3f The file store, the audit log and daily stats** (2026-10-24, 7f3acd3)
   - **The file store:** the physical `IFormBuilderFileStore` per ADR-0006, in a folder that is not web-accessible. Uploads arrive in 6.1, hardening in 7.3.
   - **The audit log and daily stats:** port the pattern (§3.3), with their repositories.
   - Done when:
