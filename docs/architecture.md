@@ -76,7 +76,7 @@ database connection of its own. Its areas:
 | Files | the file store contract and the physical store, whose root is checked against the web root at start-up, scanning | ADR-0006, ADR-0041 |
 | Privacy | retention, holds, data subject tools, masking, IP handling | ADR-0009 |
 | Retention | the hourly retention job and its parts, so far the draft-version cleanup | ADR-0007, ADR-0045 |
-| Permissions | grants, restrictions, evaluation | ADR-0013 |
+| Access | the permission model (the flags, what each needs and where it may be granted), the evaluation from one cached snapshot per server with its refresher, the lists' filter, grants and restrictions with their audit entries, host grants and the access lock, and the grants of a user group Umbraco deletes | ADR-0013, ADR-0048 |
 | Settings | host options and their start-up checks; the backoffice sections with their validators, migrations and host rules, the cached reader, the save and the cache refresher | ADR-0008, ADR-0042, ADR-0043 |
 | Persistence | NPoco DTOs, repositories, the entries query builder, the outbox, the audit log and daily statistics, the migration plan, the database gate and units of work ([database.md](database.md#access)) | ADR-0003, ADR-0007, ADR-0033, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0041, D7 |
 | Platform | jobs, notifications, the audit log's details (keys, numbers, flags, enum values, times and identifiers only), the HTML and CSS sanitiser | ADR-0007, ADR-0041, §4.10 |
@@ -308,6 +308,17 @@ the user holds nothing on, and `403` without the Forms section for what any user
 form picker is exempt, because content access authorises it (4.7, ADR-0011, ADR-0013). The management API is part of
 the backoffice, not of the public surface (ADR-0010).
 
+**The evaluation** ([ADR-0048](decisions/0048-permission-evaluation-and-visibility-filter.md)) works from one snapshot
+per server: every grant, the folder tree and the host's global grants by group, cached for an hour and dropped by every
+committed change of a grant, a restriction, a folder, a permanent delete or a user group, at once on the server that
+made it and through a cache refresher on the others. A user without the Forms section holds nothing, and an
+administrator holds everything. Globally a user holds what their groups are granted globally; a folder holds its own
+grants and, unless it is restricted, its parent's (for a top-level folder the global grants that work in folders); a
+form holds its own and, unless it is restricted, its folder's. An unknown folder holds only its own grants, so the
+evaluation fails closed. Lists filter in their query, before paging and counting: a form list keeps the forms whose
+folder (or the root) the user holds something on and the forms granted to them on their own; a folder list keeps the
+folders on the way to those. A move that gives a group more than it held needs `managePermissions` (4.7).
+
 ## 7. Settings
 
 Two layers ([ADR-0008](decisions/0008-settings-model.md)):
@@ -325,7 +336,9 @@ Two layers ([ADR-0008](decisions/0008-settings-model.md)):
   and how long draft saves stay in the History). `general` and `email` are per site: a site row holds the top-level
   fields the site overrides (`null` meaning the default), and a `[GlobalOnly]` field, such as `general.newForms` or
   `general.history`, is shared by every site. `protection`, `files`, `privacy` and `integrations` are global;
-  Access is stored in `jfbPermission`.
+  access is stored in `jfbPermission`. The host can set the global grants itself (`Access:Grants`, user groups by
+  alias): they replace the stored ones and lock them, while folder and form grants stay the editors'. `access` in
+  `LockedSections` locks every grant and restriction.
 
 Effective value = code default, then the global row, then the site row, then the host rules (switch off only, clamp,
 lock), applied where the value is read, so a lock added later never rewrites a row. A form's `inherit` takes the

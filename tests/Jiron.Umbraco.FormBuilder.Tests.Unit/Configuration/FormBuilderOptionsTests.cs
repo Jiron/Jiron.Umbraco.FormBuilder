@@ -242,7 +242,7 @@ public sealed class FormBuilderOptionsTests
     public void EverySection_CanBeLocked_InAnyCase()
     {
         var options = new FormBuilderOptions();
-        foreach (var section in FormBuilderSettingsSections.All)
+        foreach (var section in FormBuilderSettingsSections.Lockable)
         {
             options.LockedSections.Add(section);
             options.LockedSections.Add(section.ToUpperInvariant());
@@ -251,6 +251,7 @@ public sealed class FormBuilderOptionsTests
         Assert.Multiple(() =>
         {
             Assert.That(FormBuilderSettingsSections.All, Is.EqualTo(new[] { "general", "email", "protection", "files", "privacy", "integrations" }));
+            Assert.That(FormBuilderSettingsSections.Lockable, Is.EqualTo(new[] { "general", "email", "protection", "files", "privacy", "access", "integrations" }));
             Assert.That(HostOptions.Failures(options), Is.Empty);
         });
     }
@@ -260,7 +261,7 @@ public sealed class FormBuilderOptionsTests
     {
         Assert.That(
             HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:LockedSections:0"] = "privacy", [$"{Root}:LockedSections:1"] = "spam" }),
-            Is.EqualTo(new[] { $"{Root}:LockedSections:1 ('spam') is not a settings section; use one of general, email, protection, files, privacy, integrations." }));
+            Is.EqualTo(new[] { $"{Root}:LockedSections:1 ('spam') is not a settings section; use one of general, email, protection, files, privacy, access, integrations." }));
     }
 
     [Test]
@@ -302,10 +303,10 @@ public sealed class FormBuilderOptionsTests
         Assert.That(failures, Has.Count.EqualTo(4));
     }
 
-    [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are Files, Limits, Designer and LockedSections.")]
+    [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are Files, Limits, Designer, Access and LockedSections.")]
     [TestCase("JironFormBuilder:Limits:Definitions:MaxField", "JironFormBuilder:Limits:Definitions:MaxField is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits:Definitions are MaxBytes, MaxPages, MaxGroups, MaxFields, MaxOptionsPerField, MaxActions, MaxOutcomes and MaxRules.")]
     [TestCase("JironFormBuilder:Limits:Definition:MaxFields", "JironFormBuilder:Limits:Definition is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits are Definitions.")]
-    [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are Files, Limits, Designer and LockedSections.")]
+    [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are Files, Limits, Designer, Access and LockedSections.")]
     [TestCase("JironFormBuilder:Designer:SettingLocks:0:Typ", "JironFormBuilder:Designer:SettingLocks:0:Typ is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Designer:SettingLocks:0 are Kind, Type, Setting, Value and Hidden.")]
     [TestCase("JironFormBuilder:Files:Root:Folder", "JironFormBuilder:Files:Root is a single value, not a section.")]
     [TestCase("JironFormBuilder:LockedSections:0:Name", "JironFormBuilder:LockedSections:0 is a single value, not a section.")]

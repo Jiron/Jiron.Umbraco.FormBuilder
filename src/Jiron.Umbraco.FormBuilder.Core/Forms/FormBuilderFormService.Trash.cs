@@ -109,7 +109,18 @@ internal sealed partial class FormBuilderFormService
         }
 
         await CancelableAsync(new FormDeletingNotification(form.Key, form.Alias, form.Name, userKey, new EventMessages()));
-        if (await removal.DeleteAsync(form, userKey, cancellationToken) is not { } removed)
+        FormRemoved? removed;
+        try
+        {
+            removed = await removal.DeleteAsync(form, userKey, cancellationToken);
+        }
+        finally
+        {
+            // Its grants go in its last unit; the snapshot drops whether the delete finished or not (ADR-0048).
+            access.Changed();
+        }
+
+        if (removed is null)
         {
             return null;
         }

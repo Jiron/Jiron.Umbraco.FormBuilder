@@ -604,10 +604,14 @@ besides the primary key on the user and the setting's name.
 
 ### `jfbPermission`
 
-What a user group may do, globally (`targetKey` is `Guid.Empty`), in a folder or on a form, as flags (ADR-0013).
+What a user group may do, globally (`targetKey` is `Guid.Empty`), in a folder or on a form, as flags (ADR-0013):
+`design` 1, `manageActions` 2, `viewEntries` 4, `viewSensitive` 8, `editEntries` 16, `deleteEntries` 32, `export` 64,
+and, only globally, `manageLibrary` 128, `manageSettings` 256, `managePermissions` 512 and `privacyTools` 1024. A bit
+no permission uses reads as nothing (ADR-0048).
 
 - `IX_jfbPermission_userGroupKey_targetType_targetKey`: unique; one row per group and target. No row holds 0, and
-  a change names the permissions the row holds now, which work as its version (ADR-0037).
+  a change names the permissions the row holds now, which work as its version (ADR-0037). A grant on a folder or form
+  is written only while the folder's or form's row exists, which the statement reads with a lock, and goes with it.
 
 ### `jfbSetting`
 

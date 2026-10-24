@@ -81,6 +81,12 @@ internal interface IFolderRepository
     Task<StoredFolder?> RenameAsync(int id, string name, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Restricts a folder outside the trash, or lifts its restriction, and leaves the rest as it is (ADR-0048). Null when
+    /// it does not exist; refused with <see cref="FormBuilderConflict.Trashed"/> for a folder in the trash.
+    /// </summary>
+    Task<StoredFolder?> RestrictAsync(int id, bool isRestricted, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Moves a folder outside the trash into <paramref name="parentId"/> (null: the root), with everything in it. Null
     /// when it does not exist. Refused with <see cref="FormBuilderConflict.Trashed"/> for a folder in the trash, and with
     /// <see cref="FormBuilderConflict.MissingFolder"/> (the target is missing or in the trash),
@@ -220,6 +226,25 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
             },
             cancellationToken);
     }
+
+    /// <inheritdoc />
+    public Task<StoredFolder?> RestrictAsync(int id, bool isRestricted, Guid? userKey, CancellationToken cancellationToken = default) =>
+        database.WriteAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var changed = await db.ExecAsync(
+                    $"UPDATE {n.T(FormBuilderTables.Folder)} SET {n.C("isRestricted")} = @0, {n.C("updatedUtc")} = @1, {n.C("updatedByUserKey")} = @2 WHERE {n.C("id")} = @3 AND {n.C("trashedUtc")} IS NULL",
+                    isRestricted,
+                    database.UtcNow,
+                    userKey,
+                    id);
+                var current = await FindAsync(db, "id", id);
+                return changed == 1 || current is null
+                    ? current
+                    : throw new FormBuilderConflictException(FormBuilderConflict.Trashed, "The folder is in the trash; restore it first.");
+            },
+            cancellationToken);
 
     /// <inheritdoc />
     public Task<StoredFolder?> MoveAsync(int id, int? parentId, Guid? userKey, CancellationToken cancellationToken = default) =>

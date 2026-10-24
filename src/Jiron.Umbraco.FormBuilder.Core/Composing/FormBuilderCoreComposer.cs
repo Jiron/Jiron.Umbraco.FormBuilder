@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Upgrades;
@@ -21,7 +22,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Composing;
 /// Registers Jiron Form Builder's core services with Umbraco, which discovers this composer automatically: the host
 /// configuration and the start-up checks (ADR-0042), the database migration plan (ADR-0033), the pending-migration
 /// state, the definition services, the persistence (ADR-0036), the file store (ADR-0041), the backoffice settings
-/// (ADR-0043), the form service (ADR-0044) and the retention job (ADR-0045).
+/// (ADR-0043), the permission model (ADR-0048), the form service (ADR-0044) and the retention job (ADR-0045).
 /// </summary>
 public sealed class FormBuilderCoreComposer : IComposer
 {
@@ -72,6 +73,9 @@ public sealed class FormBuilderCoreComposer : IComposer
 
         // The backoffice settings (ADR-0008, ADR-0043): the sections, the cached reader, the save and the refresher.
         builder.AddFormBuilderSettings();
+
+        // The permission model (ADR-0013, ADR-0048): the evaluation with its cached snapshot, the grants and restrictions.
+        builder.AddFormBuilderAccess();
 
         // The form service (ADR-0044): create, save, publish and the other changes, with their notifications.
         builder.AddFormBuilderForms();

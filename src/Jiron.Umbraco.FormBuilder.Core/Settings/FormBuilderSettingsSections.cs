@@ -24,6 +24,15 @@ public static class FormBuilderSettingsSections
     /// <summary>Webhook signing, Slack and Teams defaults, and Umbraco webhook events.</summary>
     public const string Integrations = "integrations";
 
+    /// <summary>
+    /// Who holds which permission, globally and per folder or form. It is stored in <c>jfbPermission</c>, not with the
+    /// sections (ADR-0013, ADR-0048), and <c>JironFormBuilder:LockedSections</c> takes it like a section.
+    /// </summary>
+    public const string Access = "access";
+
     /// <summary>Every section alias, in the order the settings screen shows them.</summary>
     public static IReadOnlyList<string> All { get; } = [General, Email, Protection, Files, Privacy, Integrations];
+
+    /// <summary>Every alias <c>JironFormBuilder:LockedSections</c> takes: the sections and <see cref="Access"/>.</summary>
+    public static IReadOnlyList<string> Lockable { get; } = [General, Email, Protection, Files, Privacy, Access, Integrations];
 }

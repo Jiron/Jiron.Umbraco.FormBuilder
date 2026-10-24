@@ -1,4 +1,5 @@
 using System.Text;
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
@@ -215,6 +216,7 @@ internal sealed partial class FormBuilderFormService(
     IEnumerable<IFormPublishCheck> publishChecks,
     IFormBuilderSettingsService settings,
     FormRemoval removal,
+    FormBuilderAccessCache access,
     IEventAggregator eventAggregator,
     ILogger<FormBuilderFormService> logger)
     : IFormBuilderFormService

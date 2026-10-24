@@ -17,6 +17,14 @@ public sealed class PermissionRepositoryTests : RepositoryTestBase
     private static readonly Guid Hr = Guid.Parse("8e4a1f20-7b3c-4d5e-9f60-1a2b3c4d5e6f");
     private static readonly Guid Contact = Guid.Parse("8e4a1f20-7b3c-4d5e-9f60-1a2b3c4d5e70");
 
+    // A grant on a folder or form needs its row (ADR-0048).
+    [SetUp]
+    public async Task CreateTargetsAsync()
+    {
+        await Folders.CreateAsync(new NewFolder(Hr, null, "HR", UserKey: Editor));
+        await Forms.CreateAsync(NewForm() with { Key = Contact });
+    }
+
     [Test]
     public async Task AGrant_IsMade_Changed_AndRemoved()
     {

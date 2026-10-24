@@ -1,5 +1,6 @@
 using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Umbraco.Cms.Infrastructure.Persistence;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -126,6 +127,11 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                 if (filter.Trashed is { } trashed)
                 {
                     where.Add($"{n.C("trashedUtc")} {(trashed ? "IS NOT NULL" : "IS NULL")}");
+                }
+
+                if (AccessSql.FormClause(filter.Access, n, string.Empty, Arg) is { } access)
+                {
+                    where.Add(access);
                 }
 
                 if (!string.IsNullOrWhiteSpace(filter.Search))

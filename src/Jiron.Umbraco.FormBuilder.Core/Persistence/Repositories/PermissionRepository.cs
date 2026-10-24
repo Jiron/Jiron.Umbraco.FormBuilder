@@ -58,10 +58,18 @@ internal interface IPermissionRepository
 
     /// <summary>
     /// Grants, changes or removes a group's permissions on a target in one conditional statement, and returns the grant
-    /// as it is now (null when there is none). Refused with <see cref="FormBuilderConcurrencyException"/>, changing
+    /// as it is now (null when there is none). A grant on a folder or form needs the target's row, which the statement
+    /// reads with a lock, so a grant never outlives a delete at the same moment: without the row, a change that grants
+    /// something changes nothing and returns null. Refused with <see cref="FormBuilderConcurrencyException"/>, changing
     /// nothing, when the grant no longer holds <see cref="GrantChange.Expected"/>.
     /// </summary>
     Task<StoredGrant?> ChangeAsync(GrantChange change, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The folders of the forms that hold a grant of their own to one of these groups with one of
+    /// <paramref name="anyOf"/>: the folders a folder list shows on the way to them (ADR-0048).
+    /// </summary>
+    Task<IReadOnlyList<int>> ListFoldersOfGrantedFormsAsync(IReadOnlyCollection<Guid> userGroupKeys, int anyOf, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Removes every grant on a folder or form deleted for good (4.5). Returns how many. Global grants are removed one by
@@ -171,6 +179,7 @@ internal sealed class PermissionRepository(FormBuilderDatabase database) : IPerm
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.Permission);
                 var row = $"{n.C("userGroupKey")} = @0 AND {n.C("targetType")} = @1 AND {n.C("targetKey")} = @2";
+                var target = Target(n, change.TargetType);
                 int changed;
                 try
                 {
@@ -180,14 +189,14 @@ internal sealed class PermissionRepository(FormBuilderDatabase database) : IPerm
                             $"""
                             INSERT INTO {table} ({n.C("userGroupKey")}, {n.C("targetType")}, {n.C("targetKey")}, {n.C("permissions")})
                             SELECT @0, @1, @2, @3
-                            WHERE NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {row})
+                            WHERE NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {row}){target}
                             """,
                             group,
                             type,
                             key,
                             change.Permissions),
                         { Permissions: 0 } => await db.ExecAsync($"DELETE FROM {table} WHERE {row} AND {n.C("permissions")} = @3", group, type, key, change.Expected),
-                        _ => await db.ExecAsync($"UPDATE {table} SET {n.C("permissions")} = @3 WHERE {row} AND {n.C("permissions")} = @4", group, type, key, change.Permissions, change.Expected),
+                        _ => await db.ExecAsync($"UPDATE {table} SET {n.C("permissions")} = @3 WHERE {row} AND {n.C("permissions")} = @4{target}", group, type, key, change.Permissions, change.Expected),
                     };
                 }
                 catch (Exception exception) when (FormBuilderDatabaseErrors.IsUniqueViolation(exception))
@@ -197,7 +206,43 @@ internal sealed class PermissionRepository(FormBuilderDatabase database) : IPerm
                 }
 
                 var current = await FindAsync(db, n, group, change.TargetType, key);
-                return changed == 1 ? current : throw Stale(change, current?.Permissions ?? 0);
+                if (changed == 1)
+                {
+                    return current;
+                }
+
+                // A grant on a folder or form that is gone: nothing to grant, as for any missing item.
+                return target.Length > 0 && change.Permissions != 0 && !await TargetExistsAsync(db, n, change.TargetType, key)
+                    ? null
+                    : throw Stale(change, current?.Permissions ?? 0);
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<int>> ListFoldersOfGrantedFormsAsync(IReadOnlyCollection<Guid> userGroupKeys, int anyOf, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(userGroupKeys);
+        var keys = userGroupKeys.Distinct().ToArray();
+        if (keys.Length == 0 || anyOf == 0)
+        {
+            return Task.FromResult<IReadOnlyList<int>>([]);
+        }
+
+        return database.ReadAsync<IReadOnlyList<int>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var ids = new HashSet<int>();
+                foreach (var chunk in keys.Chunk(GroupsPerStatement))
+                {
+                    var list = string.Join(", ", chunk.Select((_, i) => "@" + (i + 1).ToString(CultureInfo.InvariantCulture)));
+                    ids.UnionWith(await db.FetchListAsync<int>(
+                        $"SELECT DISTINCT f.{n.C("folderId")} FROM {n.T(FormBuilderTables.Form)} f WHERE f.{n.C("folderId")} IS NOT NULL AND f.{n.C("key")} IN (SELECT p.{n.C("targetKey")} FROM {n.T(FormBuilderTables.Permission)} p WHERE p.{n.C("targetType")} = '{nameof(PermissionTarget.Form)}' AND (p.{n.C("permissions")} & @0) <> 0 AND p.{n.C("userGroupKey")} IN ({list}))",
+                        [anyOf, .. chunk.Cast<object?>()]));
+                }
+
+                return ids.Order().ToList();
             },
             cancellationToken);
     }
@@ -259,6 +304,20 @@ internal sealed class PermissionRepository(FormBuilderDatabase database) : IPerm
         {
             throw new ArgumentException("A global grant's target key is Guid.Empty, and a folder's or form's grant names its key.", nameof(targetKey));
         }
+    }
+
+    // The condition that a folder's or form's grant adds to its write: the target's row, read with a lock (ADR-0038).
+    private static string Target(SqlNames n, PermissionTarget targetType) => targetType switch
+    {
+        PermissionTarget.Folder => $" AND EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Folder)} t{n.LockingRead} WHERE t.{n.C("key")} = @2)",
+        PermissionTarget.Form => $" AND EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)} t{n.LockingRead} WHERE t.{n.C("key")} = @2)",
+        _ => string.Empty,
+    };
+
+    private static async Task<bool> TargetExistsAsync(IUmbracoDatabase db, SqlNames n, PermissionTarget targetType, Guid targetKey)
+    {
+        var table = n.T(targetType == PermissionTarget.Folder ? FormBuilderTables.Folder : FormBuilderTables.Form);
+        return await db.ScalarAsync<int>($"SELECT COUNT(*) FROM {table} WHERE {n.C("key")} = @0", targetKey) > 0;
     }
 
     private static FormBuilderConcurrencyException Stale(GrantChange change, int current) =>

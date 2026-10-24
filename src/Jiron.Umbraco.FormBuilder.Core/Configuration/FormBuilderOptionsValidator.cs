@@ -1,4 +1,5 @@
 using System.Globalization;
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -42,6 +43,7 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
         CheckDefinitionLimits(options.Limits.Definitions, failures);
         CheckSettingLocks(options.Designer.SettingLocks, failures);
         CheckLockedSections(options.LockedSections, failures);
+        CheckHostGrants(options.Access.Grants, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
 
@@ -125,15 +127,66 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
         }
     }
 
+    // Each host grant names a group once and grants known permissions with the ones they need (ADR-0048).
+    private static void CheckHostGrants(IList<HostGrant> grants, List<string> failures)
+    {
+        var seen = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < grants.Count; i++)
+        {
+            var key = string.Create(CultureInfo.InvariantCulture, $"{Root}:Access:Grants:{i}");
+            if (grants[i] is not { } grant)
+            {
+                failures.Add($"{key} is empty: give its Group and Permissions.");
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(grant.Group))
+            {
+                failures.Add($"{key}:Group is missing: name a user group by its alias, such as 'editor'.");
+            }
+            else if (!seen.TryAdd(grant.Group, i))
+            {
+                failures.Add(string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"{key}:Group ('{grant.Group}') is granted again; {Root}:Access:Grants:{seen[grant.Group]} grants it already. Keep one."));
+            }
+
+            if (grant.Permissions.Count == 0)
+            {
+                failures.Add($"{key}:Permissions is empty: list at least one permission, or remove the grant.");
+            }
+
+            var permissions = FormBuilderPermissions.None;
+            for (var j = 0; j < grant.Permissions.Count; j++)
+            {
+                if (PermissionRules.TryParse(grant.Permissions[j], out var permission))
+                {
+                    permissions |= permission;
+                }
+                else
+                {
+                    failures.Add(string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"{key}:Permissions:{j} ('{grant.Permissions[j]}') is not a permission; use one of {string.Join(", ", PermissionRules.NamesOf(PermissionRules.All))}."));
+                }
+            }
+
+            foreach (var missing in PermissionRules.MissingDependencies(permissions))
+            {
+                failures.Add($"{key}:Permissions grants '{PermissionRules.NameOf(missing.Permission)}' without '{PermissionRules.NameOf(missing.Needs)}', which it needs.");
+            }
+        }
+    }
+
     private static void CheckLockedSections(IList<string> sections, List<string> failures)
     {
         for (var i = 0; i < sections.Count; i++)
         {
-            if (!FormBuilderSettingsSections.All.Contains(sections[i], StringComparer.OrdinalIgnoreCase))
+            if (!FormBuilderSettingsSections.Lockable.Contains(sections[i], StringComparer.OrdinalIgnoreCase))
             {
                 failures.Add(string.Create(
                     CultureInfo.InvariantCulture,
-                    $"{Root}:LockedSections:{i} ('{sections[i]}') is not a settings section; use one of {string.Join(", ", FormBuilderSettingsSections.All)}."));
+                    $"{Root}:LockedSections:{i} ('{sections[i]}') is not a settings section; use one of {string.Join(", ", FormBuilderSettingsSections.Lockable)}."));
             }
         }
     }

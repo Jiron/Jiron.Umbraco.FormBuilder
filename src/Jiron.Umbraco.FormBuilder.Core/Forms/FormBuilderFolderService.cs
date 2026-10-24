@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -22,8 +23,12 @@ internal interface IFormBuilderFolderService
     /// <summary>A folder by key, or null.</summary>
     Task<FolderInfo?> GetAsync(Guid key, CancellationToken cancellationToken = default);
 
-    /// <summary>Every folder, in the trash or not, by sort order and name: a library holds few folders.</summary>
-    Task<IReadOnlyList<FolderInfo>> ListAsync(CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Every folder, in the trash or not, by sort order and name: a library holds few folders. With
+    /// <paramref name="visibility"/>, only the folders it allows, those that lead to something the user may see
+    /// (ADR-0048); without it, every folder, which only Jiron Form Builder's own work asks for.
+    /// </summary>
+    Task<IReadOnlyList<FolderInfo>> ListAsync(FolderVisibility? visibility = null, CancellationToken cancellationToken = default);
 
     /// <summary>Creates a folder at the root or in a folder outside the trash.</summary>
     /// <exception cref="FormBuilderValidationException">The name is not allowed.</exception>
@@ -92,6 +97,7 @@ internal sealed partial class FormBuilderFolderService(
     IAuditRepository audit,
     FormBuilderDatabase database,
     FormRemoval removal,
+    FormBuilderAccessCache access,
     IEventAggregator eventAggregator,
     ILogger<FormBuilderFolderService> logger)
     : IFormBuilderFolderService
@@ -122,11 +128,14 @@ internal sealed partial class FormBuilderFolderService(
         await folders.GetAsync(key, cancellationToken) is { } folder ? await InfoAsync(folder, cancellationToken) : null;
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<FolderInfo>> ListAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<FolderInfo>> ListAsync(FolderVisibility? visibility = null, CancellationToken cancellationToken = default)
     {
         var all = await folders.ListAllAsync(cancellationToken);
         var keys = all.ToDictionary(folder => folder.Id, folder => folder.Key);
-        return all.Select(folder => Info(folder, folder.ParentId is { } parentId && keys.TryGetValue(parentId, out var parentKey) ? parentKey : null)).ToList();
+        return all
+            .Where(folder => visibility?.Allows(folder.Key) != false)
+            .Select(folder => Info(folder, folder.ParentId is { } parentId && keys.TryGetValue(parentId, out var parentKey) ? parentKey : null))
+            .ToList();
     }
 
     /// <inheritdoc />
@@ -342,7 +351,7 @@ internal sealed partial class FormBuilderFolderService(
         }
 
         await CancelableAsync(new FolderDeletingNotification(folder.Key, folder.Name, Summaries(below), Summaries(inside), userKey, new EventMessages()));
-        var deleted = await DeleteTreeAsync(folder, below, inside, userKey, cancellationToken);
+        var deleted = await DeletingAsync(() => DeleteTreeAsync(folder, below, inside, userKey, cancellationToken));
         await PublishedAsync(new FolderDeletedNotification(folder.Key, folder.Name, [.. deleted.Folders.Where(summary => summary.Key != folder.Key)], deleted.Forms, userKey));
         return deleted;
     }
@@ -374,18 +383,21 @@ internal sealed partial class FormBuilderFolderService(
             new EventMessages());
         await CancelableAsync(going);
 
-        var deleted = new List<LibraryDeletion>();
-        foreach (var tree in trees)
+        var emptied = await DeletingAsync(async () =>
         {
-            deleted.Add(await DeleteTreeAsync(tree.Top, tree.Below, tree.Forms, userKey, cancellationToken));
-        }
+            var deleted = new List<LibraryDeletion>();
+            foreach (var tree in trees)
+            {
+                deleted.Add(await DeleteTreeAsync(tree.Top, tree.Below, tree.Forms, userKey, cancellationToken));
+            }
 
-        deleted.Add(await DeleteFormsAsync(loose, userKey, cancellationToken));
-        var emptied = new LibraryDeletion(
-            [.. deleted.SelectMany(part => part.Folders)],
-            [.. deleted.SelectMany(part => part.Forms)],
-            deleted.Sum(part => part.Entries),
-            deleted.Sum(part => part.Files));
+            deleted.Add(await DeleteFormsAsync(loose, userKey, cancellationToken));
+            return new LibraryDeletion(
+                [.. deleted.SelectMany(part => part.Folders)],
+                [.. deleted.SelectMany(part => part.Forms)],
+                deleted.Sum(part => part.Entries),
+                deleted.Sum(part => part.Files));
+        });
         await PublishedAsync(new TrashEmptiedNotification(emptied.Folders, emptied.Forms, userKey));
         return emptied;
     }
@@ -547,10 +559,27 @@ internal sealed partial class FormBuilderFolderService(
         }
     }
 
-    // Publishes a notification after a change committed: a handler that fails is logged, and the change stands.
+    // A permanent delete, which may stop part way: what went before it stopped took its grants with it, so the access
+    // snapshot drops then too; a delete that finishes drops it as it publishes (ADR-0048).
+    private async Task<T> DeletingAsync<T>(Func<Task<T>> delete)
+    {
+        try
+        {
+            return await delete();
+        }
+        catch
+        {
+            access.Changed();
+            throw;
+        }
+    }
+
+    // Publishes a notification after a change committed: a handler that fails is logged, and the change stands. Every
+    // change of the tree drops the access snapshot first, once, so the handlers already see it (ADR-0048).
     private async Task PublishedAsync<T>(T notification)
         where T : INotification
     {
+        access.Changed();
         try
         {
             await eventAggregator.PublishAsync(notification, CancellationToken.None);

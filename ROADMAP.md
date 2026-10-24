@@ -1656,20 +1656,26 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - "delete removes the files from the file store";
     - "delete leaves no reference or daily stat of the form".
     - "a stale save returns `concurrency_conflict`".
-- [ ] **4.6 Permissions**
-  - **The model** (ADR-0013):
-    - permissions: design forms, manage actions, view entries, view sensitive data, edit entries, delete entries, export, manage library, manage settings, manage permissions, use privacy tools;
-    - granted per user group globally, per folder or per form, combined as a union.
-  - Authorization handlers for the management API, plus the "who may see this form" filter for trees, search and the inbox.
-  - The E2E global setup (3.4) grants each test role its Jiron Form Builder permissions.
-  - Done when: unit tests cover the evaluation, and the E2E users have their grants.
+- [ ] **4.6a The permission model and its evaluation** (4.6 split in two, WORKLOG 2026-10-24)
+  - **The model** (ADR-0013, ADR-0048):
+    - permissions: design forms, manage actions, view entries, view sensitive data, edit entries, delete entries, export, manage library, manage settings, manage permissions, use privacy tools, as flags with stable names and values;
+    - granted per user group globally, per folder or per form, combined as a union within the restriction boundary of ADR-0013; a grant without its dependency, and a global-only permission on a folder or form, are refused;
+    - grants and restrictions change through the access service, with the locks of §4.8 (`JironFormBuilder:Access:Grants`, checked at start-up, and `access` in `LockedSections`) and an audit entry in the unit of each change; a user group that Umbraco deletes takes its grants with it;
+    - the evaluation says which groups a move gives more access, which the move endpoints of 4.7 refuse without `managePermissions`.
+  - **The evaluation** reads a snapshot of the grants and the folder tree, cached on each server and dropped by a cache refresher after every change of a grant, a restriction, a folder or a user group.
+  - **The "who may see this form" filter** for trees, search and the inbox: the form list's query applies it in the database, before paging, and the folder list keeps only the folders that lead to something the user may see; the inbox (11.3) applies the same filter.
+  - Done when: unit tests cover the evaluation, including restrictions, dependencies, moves and administrators. Integration tests show that the cached evaluation follows each change, that a form list and a folder list as each persona of ADR-0013 hold only what the persona may see (a restricted folder included), and that the start-up check refuses invalid host grants.
+- [ ] **4.6b Authorization policies and the personas' grants**
+  - Authorization handlers for the management API: the Forms section requirement and one policy per permission, singletons (§3.4), evaluated globally or against a form or folder. A user who holds nothing on the resource fails in a way that 4.7 answers with `404`, and one who lacks only the permission in a way that it answers with `403` and the permission's name.
+  - The E2E global setup (3.4) grants each test role its Jiron Form Builder permissions, and seeds a restricted folder with its own grant to a separate group (ADR-0013).
+  - Done when: integration tests authorize every policy as each persona, signed in through Umbraco, globally and against a form and a folder (the restricted one included); the E2E users have their grants, which a browser test reads from the test host.
 - [ ] **4.7 The management API foundation**
   - **The base:**
     - a base controller, `[MapToApi("jfb")]`, and the auth policies from 4.6;
     - ProblemDetails with stable codes, and a test that each refusal keeps its `code` in the body (Umbraco's error handling and validation answers can drop it, §3.3);
     - the OpenAPI document `jfb`, with a snapshot test that writes `docs/api/jfb.json`;
     - the TypeScript client in the backoffice package, generated from that committed snapshot rather than from a running site, so the client and the demo never wait on each other.
-  - **The first endpoints** (§4.7): forms and folders (tree, search, CRUD, publish, versions, trash) over the 4.5 services.
+  - **The first endpoints** (§4.7): forms and folders (tree, search, CRUD, publish, versions, trash) over the 4.5 services. A move that gives a group more access needs `managePermissions` (ADR-0013, ADR-0048).
   - **The permission matrix test:** it enumerates **every** management endpoint by reflection, asserts there is more than zero, asserts each one declares a Jiron Form Builder permission, or the Forms section requirement for what any user of the section may call (the setup checklist, health results, the user's own settings), or is on the reviewed exception list (only the form picker, authorised by content access, ADR-0013; a test fails when the list grows). It calls each as a user who can see the resource but lacks that permission, expecting `403`; for routes on a form, folder or entry, as a user who holds nothing on it, expecting `404` (ADR-0013); and each endpoint with the section requirement as a user without the Forms section, expecting `403`. It fills route parameters by type, because an `int` route given a GUID answers `404` before the permission check. Every later step that adds endpoints is covered by it automatically.
   - **Pending migrations** (ADR-0033): while `IFormBuilderMigrationState` reports the plan as behind, every management endpoint answers `503` with the code `migrations_pending`.
   - Done when: the integration tests for the endpoints and the matrix test pass, and the client is generated and committed. A test shows `503 migrations_pending` from every management endpoint while the plan is behind, and normal answers once it has run.
@@ -2130,11 +2136,11 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Forward** (added in 1.1): send the entry to a backoffice user or to one of the team addresses of the email settings (§4.8), through the outbox. Sensitive values go along only when the user may see them and chooses to. Audited, and shown on the timeline.
   - Done when: Playwright passes, and the audit entries are asserted, including Approve in the panel followed by Undo from its toast (ADR-0023). A forwarded entry arrives in the pickup folder, and an address outside the allowed recipients is refused by the API.
 - [ ] **11.3 The all-entries inbox and spam**
-  - **The inbox:** a cross-form list with a form column and a form filter, unseen entries first.
+  - **The inbox:** a cross-form list with a form column and a form filter, unseen entries first. It holds the entries of the forms the user may view entries of, through the access filter of 4.6a in its query (ADR-0048).
   - **Spam:** the spam folder with "not spam".
   - **Badges:** unseen counts on the menu items, from a light count endpoint. The poll pauses while the user is idle and never renews an expired session (§4.10).
   - **The digest** (added in 1.1): each user can ask for a daily or weekly email ("12 new entries in 3 forms") instead of watching the inbox. It holds counts and links only, never entry values, covers only the forms the user may view, and goes out in the site's time zone through the outbox.
-  - Done when: Playwright passes, including an idle user whose session still ends on time (`page.clock`). Tests with fake time show one digest per user and period, nothing for a user who has not asked for one, no form the user may not view, and no entry value in the mail.
+  - Done when: Playwright passes, including an idle user whose session still ends on time (`page.clock`), and an inbox as the viewer that holds no entry of the restricted folder's forms. Tests with fake time show one digest per user and period, nothing for a user who has not asked for one, no form the user may not view, and no entry value in the mail.
 - [ ] **11.4 Exports**
   - **Formats:**
     - **CSV:** delimiter, BOM, formula guard, headers as labels or aliases;

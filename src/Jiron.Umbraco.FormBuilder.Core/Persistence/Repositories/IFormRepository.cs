@@ -1,3 +1,5 @@
+using Jiron.Umbraco.FormBuilder.Core.Access;
+
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 /// <summary>Whether a version is a saved draft or a publish (ADR-0002).</summary>
@@ -148,6 +150,12 @@ internal sealed record FormFilter
 
     /// <summary>Text that the name or the alias contains, or null.</summary>
     public string? Search { get; init; }
+
+    /// <summary>
+    /// The forms a user may see (ADR-0048), applied in the query before paging; null for every form, which only Jiron
+    /// Form Builder's own work asks for.
+    /// </summary>
+    public AccessScope? Access { get; init; }
 }
 
 /// <summary>A field of the catalogue, by which entry values refer to it (ADR-0003).</summary>

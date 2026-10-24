@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 
@@ -24,9 +25,12 @@ public sealed class FormBuilderOptions
     /// <summary>Settings of field types and action types that the designer cannot change.</summary>
     public FormBuilderDesignerOptions Designer { get; } = new();
 
+    /// <summary>Who holds which permission: the global grants, set from the host (ADR-0048).</summary>
+    public FormBuilderAccessOptions Access { get; } = new();
+
     /// <summary>
     /// Backoffice settings sections that are read-only: <c>general</c>, <c>email</c>, <c>protection</c>, <c>files</c>,
-    /// <c>privacy</c> or <c>integrations</c>, in any case.
+    /// <c>privacy</c>, <c>access</c> (every grant and restriction) or <c>integrations</c>, in any case.
     /// </summary>
     public IList<string> LockedSections { get; } = [];
 }

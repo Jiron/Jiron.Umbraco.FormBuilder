@@ -1,9 +1,9 @@
 # 0013. Permissions
 
-- Status: accepted
+- Status: accepted; the cache, host grants and the audit actions amended in 4.6a ([ADR-0048](0048-permission-evaluation-and-visibility-filter.md))
 - Date: 2026-10-23
-- Roadmap step: 1.7b (decided); built in 4.6 (the model and the handlers), 4.7 (the permission matrix), 12.4a (the
-  editor), and used by every step that adds a management endpoint or a screen
+- Roadmap step: 1.7b (decided); built in 4.6a (the model and its evaluation), 4.6b (the policies and handlers), 4.7
+  (the permission matrix), 12.4a (the editor), and used by every step that adds a management endpoint or a screen
 
 ## Context
 
@@ -84,11 +84,14 @@ administrators unrestricted, because they could widen any group anyway.
 - **The restriction** is a flag on the folder or form, `IsRestricted` on `jfbFolder` and `jfbForm`, set with
   `managePermissions`. Restricting a folder that has no grants of its own asks first, because only administrators
   would see it then.
-- Every change is audited with the group, the target and the permissions before and after.
+- Every change is audited with the group, the target and the permissions before and after. **Amended in 4.6a
+  (ADR-0048):** so is each restriction set or lifted, and the grants a deleted user group took with it.
 
 **Host configuration** may set the global grants (`JironFormBuilder:Access:Grants`, a list of
 `{ "group": "<alias>", "permissions": [ … ] }`). Global grants then show read-only with the key (ADR-0008). With
-`LockedSections` including `access`, folder and form grants and restrictions are read-only too.
+`LockedSections` including `access`, folder and form grants and restrictions are read-only too. **Amended in 4.6a
+(ADR-0048):** the host's grants replace the stored global grants rather than adding to them, and a group they name
+grants nothing until the site has it.
 
 **Enforcement:**
 
@@ -96,7 +99,9 @@ administrators unrestricted, because they could widen any group anyway.
   act on a form or folder evaluate the permission against that resource: the handler resolves its path and the
   user's effective permissions.
 - **The evaluation is cached** per user and form path, and dropped by a cache refresher when a grant, a restriction, a
-  move or a user's groups change.
+  move or a user's groups change. **Amended in 4.6a (ADR-0048):** each server caches the evaluation's inputs instead
+  (every grant, the folder tree and the host's grants by group) as one snapshot, which every committed change of a
+  grant, a restriction, a folder, a permanent delete or a user group drops; a user's groups come with the user.
 - **What a user cannot see does not exist for them:** a form or folder the user holds no permission on, and its
   entries, answer `404 form_not_found` (or `entry_not_found`), the same as a missing key, so keys reveal nothing. A
   form the user can see but not act on answers `403 forbidden` with the missing permission's name.
