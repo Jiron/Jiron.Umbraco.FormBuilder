@@ -42,9 +42,9 @@ public sealed class PersistenceHelperTests
         });
     }
 
-    [TestCase(Sqlite, true, "", "WITH RECURSIVE")]
-    [TestCase(SqlServer, false, " WITH (UPDLOCK, HOLDLOCK)", "WITH")]
-    public void TheSqlThatDiffers_FollowsTheProvider(string provider, bool sqlite, string insertOnceHint, string withRecursive)
+    [TestCase(Sqlite, true, "", "WITH RECURSIVE", " COLLATE BINARY", "IFNULL")]
+    [TestCase(SqlServer, false, " WITH (UPDLOCK, HOLDLOCK)", "WITH", " COLLATE Latin1_General_BIN2", "ISNULL")]
+    public void TheSqlThatDiffers_FollowsTheProvider(string provider, bool sqlite, string insertOnceHint, string withRecursive, string binaryCollation, string ifNull)
     {
         var names = Names(provider);
         Assert.Multiple(() =>
@@ -53,6 +53,8 @@ public sealed class PersistenceHelperTests
             Assert.That(names.InsertOnceHint, Is.EqualTo(insertOnceHint), "inserts that must happen once lock the checked range on SQL Server");
             Assert.That(names.LockingRead, Is.EqualTo(insertOnceHint), "so do the checks whose answer must hold until the unit ends (ADR-0038)");
             Assert.That(names.WithRecursive, Is.EqualTo(withRecursive));
+            Assert.That(names.BinaryCollation, Is.EqualTo(binaryCollation), "the query builder compares text again by its code units (ADR-0039)");
+            Assert.That(names.IfNull, Is.EqualTo(ifNull), "a fallback that runs its subquery once");
         });
     }
 

@@ -116,6 +116,21 @@ public sealed class EntryTextKeyTests
         });
     }
 
+    [Test]
+    public void TheWholeText_IsCleanedAndFolded_NeverCut()
+    {
+        var max = EntryTextKey.MaxLength;
+        var text = "  " + new string('A', max + 44) + "B ";
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(EntryTextKey.Whole(text), Is.EqualTo(new string('a', max + 44) + "b"));
+            Assert.That(EntryTextKey.For(text), Is.EqualTo(EntryTextKey.Whole(text)[..max]), "the key is the whole text cut");
+            Assert.That(EntryTextKey.Whole("Anna"), Is.EqualTo(EntryTextKey.For("Anna")), "a short text is its key");
+            Assert.That(() => EntryTextKey.Whole(null!), Throws.ArgumentNullException);
+        });
+    }
+
     private static string Text(params int[] codePoints) => string.Concat(codePoints.Select(char.ConvertFromUtf32));
 
     /// <summary>

@@ -49,6 +49,10 @@ public sealed class FormBuilderDatabaseErrorsTests
             Assert.That(FormBuilderDatabaseErrors.IsTransient(new TimeoutException(), write: false), Is.False);
             Assert.That(FormBuilderDatabaseErrors.IsTransient(new OtherDbException(), write: false), Is.False, "an unknown client");
             Assert.That(FormBuilderDatabaseErrors.IsTransient(new FormBuilderConcurrencyException("stale"), write: true), Is.False);
+            Assert.That(
+                FormBuilderDatabaseErrors.IsTransient(new FormBuilderQueryTimeoutException("past its budget", new SqliteException(5)), write: false),
+                Is.False,
+                "a read past its time budget never runs again, whatever stopped it (ADR-0039)");
         });
     }
 

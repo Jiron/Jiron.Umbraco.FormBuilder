@@ -248,6 +248,175 @@ public sealed class FormBuilderDatabaseTests
         });
     }
 
+    [Test]
+    public async Task AQueryPastItsBudget_FailsWithQueryTimeout_AndIsNotRunAgain()
+    {
+        var attempts = 0;
+        var query = _database.QueryAsync<int>(
+            async _ =>
+            {
+                attempts++;
+                await Task.Delay(Timeout.Infinite, FormBuilderDbExtensions.CurrentToken);
+                return 1;
+            },
+            TimeSpan.FromSeconds(10));
+
+        await FireWaitAsync(0, TimeSpan.FromSeconds(10));
+
+        Assert.That(
+            () => query.WaitAsync(Patience),
+            Throws.InstanceOf<FormBuilderQueryTimeoutException>().With.InnerException.InstanceOf<OperationCanceledException>());
+        Assert.Multiple(() =>
+        {
+            Assert.That(attempts, Is.EqualTo(1), "a timeout never runs again");
+            _scopes.Single().Received(1).Dispose();
+        });
+    }
+
+    [Test]
+    public async Task ACallersCancellation_EndsAQuery_AsACancellation()
+    {
+        using var cancel = new CancellationTokenSource();
+        var query = _database.QueryAsync<int>(
+            async _ =>
+            {
+                await Task.Delay(Timeout.Infinite, FormBuilderDbExtensions.CurrentToken);
+                return 1;
+            },
+            TimeSpan.FromSeconds(10),
+            cancel.Token);
+
+        await cancel.CancelAsync();
+
+        Assert.That(() => query.WaitAsync(Patience), Throws.InstanceOf<OperationCanceledException>());
+        Assert.That(_scopes, Has.Count.EqualTo(1), "a cancelled read is not run again");
+    }
+
+    [Test]
+    public void AStatementStoppedForTheCaller_IsACancellation()
+    {
+        // On SQLite the progress handler stops the statement for a caller who cancelled; the client says interrupted.
+        using var cancel = new CancellationTokenSource();
+
+        Assert.That(
+            () => _database.QueryAsync<int>(
+                async _ =>
+                {
+                    await cancel.CancelAsync();
+                    throw new SqliteException(9);
+                },
+                TimeSpan.FromSeconds(10),
+                cancel.Token).WaitAsync(Patience),
+            Throws.InstanceOf<OperationCanceledException>().With.InnerException.InstanceOf<SqliteException>());
+    }
+
+    [Test]
+    public async Task ARefusalPastTheDeadline_StaysARefusal()
+    {
+        var query = _database.QueryAsync<int>(
+            async _ =>
+            {
+                await Task.Delay(Timeout.Infinite, FormBuilderDbExtensions.CurrentToken).ContinueWith(_ => { }, TaskScheduler.Default);
+                throw new ArgumentException("JFB_TEST more values than one statement takes");
+            },
+            TimeSpan.FromSeconds(10));
+
+        await FireWaitAsync(0, TimeSpan.FromSeconds(10));
+
+        Assert.That(() => query.WaitAsync(Patience), Throws.ArgumentException);
+    }
+
+    [Test]
+    public void ARefusalAfterTheCallerCancelled_StaysARefusal()
+    {
+        using var cancel = new CancellationTokenSource();
+
+        Assert.That(
+            () => _database.QueryAsync<int>(
+                async _ =>
+                {
+                    await cancel.CancelAsync();
+                    throw new ArgumentException("JFB_TEST refused");
+                },
+                TimeSpan.FromSeconds(10),
+                cancel.Token).WaitAsync(Patience),
+            Throws.ArgumentException);
+    }
+
+    [Test]
+    public async Task ABudgetedReadInsideAnother_KeepsTheOuterBudget()
+    {
+        var query = _database.QueryAsync(
+            _ => _database.QueryAsync<int>(
+                async _ =>
+                {
+                    await Task.Delay(Timeout.Infinite, FormBuilderDbExtensions.CurrentToken);
+                    return 1;
+                },
+                TimeSpan.FromHours(1)),
+            TimeSpan.FromSeconds(10));
+
+        await FireWaitAsync(0, TimeSpan.FromSeconds(10));
+
+        Assert.That(() => query.WaitAsync(Patience), Throws.InstanceOf<FormBuilderQueryTimeoutException>());
+        Assert.That(_time.Timers, Has.Count.EqualTo(1), "the inner read starts no budget of its own");
+    }
+
+    [Test]
+    public async Task AQuery_ReturnsItsResult_WithItsOwnTokenThatTheCallerNeverSees()
+    {
+        using var cancel = new CancellationTokenSource();
+        var seen = CancellationToken.None;
+
+        var result = await _database.QueryAsync(
+            _ =>
+            {
+                seen = FormBuilderDbExtensions.CurrentToken;
+                return Task.FromResult(42);
+            },
+            TimeSpan.FromSeconds(10),
+            cancel.Token);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.EqualTo(42));
+            Assert.That(seen.CanBeCanceled, Is.True);
+            Assert.That(seen, Is.Not.EqualTo(cancel.Token), "the deadline's token, linked to the caller's");
+            Assert.That(FormBuilderDbExtensions.CurrentToken, Is.EqualTo(CancellationToken.None));
+            _scopes.Single().Received(1).Dispose();
+        });
+    }
+
+    [Test]
+    public async Task OnSQLite_AQueryWithoutAConnectionToWatch_RunsAndSaysSo()
+    {
+        ScopesAre(() =>
+        {
+            var scope = Substitute.For<IScope>();
+            scope.Database.SqlContext.SqlSyntax.ProviderName.Returns("Microsoft.Data.Sqlite");
+            return scope;
+        });
+
+        var result = await _database.QueryAsync(_ => Task.FromResult(7), TimeSpan.FromSeconds(10));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Is.EqualTo(7));
+            Assert.That(_log.Entries.Single().Level, Is.EqualTo(LogLevel.Warning));
+            Assert.That(_log.Entries.Single().Message, Does.Contain("without a time limit"));
+        });
+    }
+
+    [Test]
+    public void AQuery_NeedsWorkAndABudget()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(() => _database.QueryAsync<int>(null!, TimeSpan.FromSeconds(1)), Throws.ArgumentNullException);
+            Assert.That(() => _database.QueryAsync(_ => Task.FromResult(1), TimeSpan.Zero), Throws.InstanceOf<ArgumentOutOfRangeException>());
+        });
+    }
+
     private void ScopesAre(Func<IScope> create) =>
         _scopeProvider.CreateScope(Arg.Any<IsolationLevel>(), Arg.Any<RepositoryCacheMode>(), Arg.Any<IEventDispatcher?>(), Arg.Any<IScopedNotificationPublisher?>(), Arg.Any<bool?>(), Arg.Any<bool>(), Arg.Any<bool>())
             .Returns(_ =>

@@ -1,7 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Umbraco.Cms.Tests.Common.Testing;
-using static Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories.FormRepositoryTests;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
 
@@ -818,22 +817,4 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
 
     private static (int FieldId, int RowIndex, int ValueIndex, string? Text, string? TextKey, double? Number, DateTime? Date, bool? Bool, int? FileId) Plain(StoredEntryValue value) =>
         (value.FieldId, value.RowIndex, value.ValueIndex, value.Text, value.TextKey, value.Number, value.Date, value.Bool, value.FileId);
-
-    private async Task<TestForm> CreateTestFormAsync(params string[] fields)
-    {
-        var form = await CreateFormAsync();
-        var ids = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var alias in fields)
-        {
-            ids[alias] = (await Forms.AddFieldAsync(form.Id, Field(alias)))!.Id;
-        }
-
-        return new TestForm(form.Id, form.DraftVersionId!.Value, ids);
-    }
-
-    /// <summary>A form for entries: its id, its draft version and the catalogue rows of its fields by alias.</summary>
-    private sealed record TestForm(int Id, int VersionId, IReadOnlyDictionary<string, int> Fields)
-    {
-        public int this[string alias] => Fields[alias];
-    }
 }

@@ -121,7 +121,13 @@ the diff gets read and committed):
 - what option lists, themes and email layouts share, written once in `AliasedLibraryRepositoryTests` and run for each
   of the three;
 - units of work that commit or roll back together;
-- the reruns after SQLite's real busy error.
+- the reruns after SQLite's real busy error;
+- the entries query builder (`EntryQueryRepositoryTests`): every filter kind with the 1.3 spike's numbers and dates,
+  text compared as rules compare it (`ß` and `ss` apart, texts longer than their key), the sorts and their keyset
+  pages, the counts, and a list past its time budget while a submission comes in;
+- SQLite's plans of every shape the query builder writes, with and without planner statistics: no scan of entries
+  or values, and no temporary b-tree for a sort by a value (`EntryQueryPlanTests`), with a walk stripped of its
+  unary plus that the check must catch.
 
 The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made to do on cue:
 
@@ -129,9 +135,13 @@ The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made 
 - the arguments each repository refuses;
 - the entry text key against the rule vectors of `tests/vectors`: two texts share a key exactly when an `equals`
   vector says they match (`EntryTextKeyTests`);
+- the query builder's statements and refusals (`EntryQuerySqlTests`), and the time budget of a read: a timeout that
+  never runs again, a caller's cancellation, a read inside another (`FormBuilderDatabaseTests`);
 - the product rows against the migration's snapshots.
 
 `Architecture/CoreDatabaseConnectionTests` reads Core's IL and fails on any connection of Core's own (ADR-0036).
+`Architecture/QueryBuilderReadsTests` reads the query builder's source and fails on any database call but its one
+budgeted read, or on SQL that changes rows (ADR-0039).
 `Architecture/SqlGuardTests` reads the repositories' source and fails on a guard without a locking read (ADR-0038):
 the hints are empty on SQLite, so no database test here can tell.
 

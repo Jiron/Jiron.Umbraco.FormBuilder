@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 
@@ -47,6 +48,8 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
 
     private protected IEntryNoteRepository EntryNotes => Repo<IEntryNoteRepository>();
 
+    private protected IEntryQueryRepository EntryQueries => Repo<IEntryQueryRepository>();
+
     [SetUp]
     public async Task MigrateAsync()
     {
@@ -77,6 +80,19 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
 
     private protected async Task<StoredFolder> CreateFolderAsync(string name = "Folder", int? parentId = null, int sortOrder = 0) =>
         await Folders.CreateAsync(new NewFolder(Guid.NewGuid(), parentId, name, sortOrder, UserKey: Editor));
+
+    /// <summary>A form with text fields of these aliases in its catalogue.</summary>
+    private protected async Task<TestForm> CreateTestFormAsync(params string[] fields)
+    {
+        var form = await CreateFormAsync();
+        var ids = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var alias in fields)
+        {
+            ids[alias] = (await Forms.AddFieldAsync(form.Id, FormRepositoryTests.Field(alias)))!.Id;
+        }
+
+        return new TestForm(form.Id, form.DraftVersionId!.Value, ids);
+    }
 
     /// <summary>An entry to store for a form, pointing at one of its versions, with a fresh key and submission id.</summary>
     private protected static NewEntry NewEntry(int formId, int versionId, params NewEntryValue[] values) => new()
@@ -128,4 +144,10 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
     private protected static string Sha256(string text) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
 
     private protected static string Hex(int bytes) => Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(bytes));
+
+    /// <summary>A form for entries: its id, its draft version and the catalogue rows of its fields by alias.</summary>
+    private protected sealed record TestForm(int Id, int VersionId, IReadOnlyDictionary<string, int> Fields)
+    {
+        public int this[string alias] => Fields[alias];
+    }
 }
