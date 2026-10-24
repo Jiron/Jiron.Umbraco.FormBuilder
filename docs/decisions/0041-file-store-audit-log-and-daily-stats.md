@@ -1,6 +1,7 @@
 # 0041. The file store, the audit log and daily statistics
 
-- Status: accepted
+- Status: accepted; amended in 4.4a (`Files` is bound as part of the host options tree,
+  [ADR-0042](0042-host-configuration-and-start-up-checks.md))
 - Date: 2026-10-24
 - Roadmap step: 4.3f (decided and built); 4.5 (deleting a form), 6.1 (uploads), 10.x, 12.x and 13.x (the actions the
   log records), 11.x (insights), 12.4b (the log's viewer), 13.1 (retention), 15.2 (the blob sample)
@@ -97,9 +98,9 @@ Option 2 in each case, except option 3 for the web-root rule and for the increme
   - `New()` makes an id from 128 new random bits;
   - `IsValid(id)` is the rule above.
 - **The physical store** is the default:
-  - **The root** is `JironFormBuilder:Files:Root` (`FormBuilderFilesOptions`, default
-    `~/umbraco/Data/JironFormBuilder/Uploads`). `~/` is the content root, as Umbraco maps it, and the path after it is
-    relative to it (`..` may lead out); otherwise the path must be absolute. On Windows, device paths (`\\?\`, `\\.\`,
+  - **The root** is `JironFormBuilder:Files:Root` (`FormBuilderFilesOptions`, part of the host options tree since
+    4.4a, default `~/umbraco/Data/JironFormBuilder/Uploads`). `~/` is the content root, as Umbraco maps it, and the
+    path after it is relative to it (`..` may lead out); otherwise the path must be absolute. On Windows, device paths (`\\?\`, `\\.\`,
     `\??\`, also written with slashes) and a colon after the drive, which names a stream of a file, are refused.
   - **The web-root rule:** the full paths are compared ignoring case, and a root inside the web root or containing it is
     refused, also when `..` leads there. They are compared as written and again with the links among their existing

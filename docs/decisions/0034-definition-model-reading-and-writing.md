@@ -1,7 +1,8 @@
 # 0034. The definition model in code: reading, writing, the schema and upgraders
 
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the save codes,
-  properties a type does not support, the outcome limit)
+  properties a type does not support, the outcome limit); amended in 4.4a (stored definitions are read with the
+  highest limits, [ADR-0042](0042-host-configuration-and-start-up-checks.md))
 - Date: 2026-10-23
 - Roadmap step: 4.2a (decided and built); 4.2b builds the structural validation on it, 4.4 binds its limits, 4.5
   calls it from the form service
@@ -89,7 +90,8 @@ Option 3 for reading, option 2 for writing, JsonSchema.Net 8.0.5 as a test-only 
 A read runs these steps and stops at the first that fails, reporting at most 100 problems, each with a code, a JSON
 path (`$.pages[0].title['']`) and a message:
 
-1. the size (the site's limit, 2 MiB by default, counted in UTF-8 bytes);
+1. the size (the site's limit, 2 MiB by default, counted in UTF-8 bytes; `ReadStored` takes the highest limits a host
+   may set instead, for what the site stored itself, so a lowered limit never makes a stored form unreadable, ADR-0042);
 2. UTF-8 that is well formed, and JSON that parses with a depth of at most 64 (a scan tells a document that is only
    too deep from one that is not JSON, however deep it nests);
 3. a root object whose property names can all be read (an escaped lone surrogate in a name is `invalid_value` at its

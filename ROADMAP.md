@@ -901,7 +901,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 }
 ```
 
-`Files:MaxFileBytes` caps the limit an editor can give any file field. It is not a request limit: the upload endpoint and the no-JS post set Kestrel's limit per request from the form's fields, whatever the site's `Umbraco:CMS:Runtime:MaxRequestLength` (ADR-0006). `Files:Root` is `~/` and a path relative to the content root, or an absolute path; a root inside the web root or around it, as written or through its links, stops the site from starting (ADR-0041).
+`Files:MaxFileBytes` caps the limit an editor can give any file field. It is not a request limit: the upload endpoint and the no-JS post set Kestrel's limit per request from the form's fields, whatever the site's `Umbraco:CMS:Runtime:MaxRequestLength` (ADR-0006). `Files:Root` is `~/` and a path relative to the content root, or an absolute path; a root inside the web root or around it, as written or through its links, stops the site from starting (ADR-0041). `Limits:Definitions` holds the definition limits of §4.3.1: each may be lowered, or raised to ten times its default, and a form stored above a lowered limit keeps working while saving it is refused (ADR-0042). The host configuration is read once, when the site starts: a value out of range, or a key Jiron Form Builder does not have, stops it with a message that names the key.
 
 **Backoffice settings** (typed sections in `jfbSetting`, ADR-0008; `global` scope, plus per-site overrides where marked). A site is a root content node, and the site of a request is the root of the content the form is shown on or submitted from; without content, the root whose Umbraco domain matches the request's host (14.4); otherwise the global values apply.
 
@@ -1612,12 +1612,17 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - integration tests cover storing, reading and deleting files, with a failed or cut-off save leaving nothing behind (ADR-0006), and CRUD for the audit and stats repositories;
     - tests prove there are no field values in audit details, and that counters are correct under parallel increments.
-- [ ] **4.4 The settings framework** (port the pattern, §3.3)
+- [ ] **4.4a Host options and start-up checks** (4.4 split in two, WORKLOG 2026-10-24; port the pattern, §3.3)
+  - **Host options** (ADR-0008, ADR-0042): one `JironFormBuilder` tree, bound and validated at start (`ValidateOnStart`), which takes in the `Files` of 4.3f. It holds the definition limits of 4.2a (`Limits:Definitions`), which the reader and the structural validation already take, `Designer:SettingLocks` (applied by 5.1 and 8.1) and `LockedSections` (applied by 4.4b). Every message names the key and what is allowed, and an unknown key is refused. A lowered limit never makes a stored definition unreadable: the site reads what it stored with the highest limits a host may set.
+  - **Globalization** (ADR-0005): start-up refuses invariant globalization, which turns normalisation off and loses IANA time zones on Windows.
+  - **The IntelliSense schema:** ship a JSON schema for `appsettings` (with a `!` exception in `.gitignore`), and test that its `$ref`s resolve from the file itself (Tandem's first one resolved them from the options class, Tandem 11.1b).
+  - Done when: unit tests cover every host validator and default; a lowered `Limits:Definitions` limit refuses a definition that the default allows; an invalid host config fails start-up with a clear message; a site with invariant globalization fails start-up with a clear message. Both start-up failures are also shown in a real host process.
+- [ ] **4.4b The backoffice settings sections** (port the pattern, §3.3)
   - **Model:** typed sections (§4.8) with defaults, validators and JSON schema versions with migrations, plus global and per-site scope.
-  - **Host options:** bound and validated at start (`ValidateOnStart`); locks win over the backoffice, including `Designer:SettingLocks`. They include the definition limits of 4.2a (`Limits:Definitions`), which the reader and the structural validation already take.
-  - **Runtime:** a cached reader invalidated by a cache refresher, and a `SettingsSaved` notification. Ship a JSON schema for `appsettings` IntelliSense (with a `!` exception in `.gitignore`), and test that its `$ref`s resolve from the file itself (Tandem's first one resolved them from the options class, Tandem 11.1b).
-  - **Globalization** (ADR-0005): start-up refuses invariant globalization, which turns normalisation off and loses IANA time zones on Windows; saving a time zone the server cannot resolve is refused.
-  - Done when: unit tests cover every validator and default; migrating an old payload works; a lock overrides the backoffice value; a lowered `Limits:Definitions` limit refuses a definition that the default allows; an invalid host config fails start-up with a clear message; a site with invariant globalization fails start-up with a clear message, and an unknown time zone cannot be saved.
+  - **Host rules:** locks win over the backoffice: `LockedSections` and the rules of ADR-0008 (locked, restricted, clamped), applied where a value is used, without rewriting stored rows.
+  - **Runtime:** a cached reader invalidated by a cache refresher, and a `SettingsSaved` notification.
+  - **Globalization** (ADR-0005): saving a time zone the server cannot resolve is refused.
+  - Done when: unit tests cover every validator and default; migrating an old payload works; a lock overrides the backoffice value; an unknown time zone cannot be saved.
 - [ ] **4.5 The form service**
   - **Create:**
     - from blank, with the configured new-form defaults;
@@ -1632,6 +1637,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - duplicate, with or without actions, remapping every key and every rule, action and outcome reference;
     - copy actions to another form, remapping fields by alias and reporting the unmapped ones;
     - move.
+  - **Reading:** the service reads stored versions with `ReadStored`, so a host that lowers a definition limit never makes a stored form unreadable; saving or publishing it is refused until it fits (ADR-0042).
   - **Trash and delete:** trash, restore, delete permanently (cascading entries, files, versions, permissions, references and daily stats; references and stats name the form without a foreign key, ADR-0033), empty trash. The delete removes the form's row before its daily stats, in the same unit, so a count that waited for the row counts nothing (ADR-0041).
   - **Folders**, and notifications for every lifecycle event. Trashing a folder takes the folders and forms in it to the trash with it, and restoring it brings back what went with it (the repository of 4.3a marks one row at a time, ADR-0036). Its new statements follow the guard rule of ADR-0038: every check of other rows is a locking read on SQL Server, which `SqlGuardTests` enforces.
   - Done when: unit and integration tests cover each operation, including:
@@ -1639,6 +1645,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - "duplicate remaps rule references";
     - "delete removes the files from the file store";
     - "delete leaves no reference or daily stat of the form";
+    - "a form above a lowered definition limit still opens, and saving it returns `limit_exceeded`";
     - "a stale save returns `concurrency_conflict`".
 - [ ] **4.6 Permissions**
   - **The model** (ADR-0013):
@@ -1673,9 +1680,10 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - mapping from storage kinds to `jfbEntryValue` columns;
     - the parse and validate contract;
     - an availability check ("not configured: …").
-  - **Changing types:** a "change type" compatibility map, and `Designer:SettingLocks` applied.
+  - **Changing types:** a "change type" compatibility map.
+  - **Designer locks** (`Designer:SettingLocks`, ADR-0042): start-up refuses a lock that names a field type or setting the site lacks, or a value the setting refuses; the settings schema the backoffice reads marks a locked setting read-only or hidden; the form service refuses a save that gives it another value (`409 setting_locked`); the runtime uses the locked value.
   - **Publishing** (ADR-0035): the structural validation and the public projection read each type's traits from the registry instead of 4.2b's built-in table, and publishing runs each type's check of its own settings.
-  - Done when: unit tests pass, including a custom type registered by a test composer and a type removed from the collection; 4.2b's support matrix runs against the registry's traits.
+  - Done when: unit tests pass, including a custom type registered by a test composer and a type removed from the collection; 4.2b's support matrix runs against the registry's traits; a designer lock of a field setting refuses a save with another value and wins at run time.
 - [ ] **5.2 Rules and validation engines** (C# and `packages/logic`)
   - Implement §4.3.3 in both runtimes, with form-level validation rules and the "hidden means gone" propagation (a field hidden because its group or page is hidden). Groups nest only to a limited depth, checked before evaluation, because both evaluators recurse (ADR-0030).
   - **Vectors (≥ 300 cases),** starting from the 163 of 1.5 (ADR-0005):
@@ -1869,6 +1877,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [ ] **8.1 The action framework**
   - **The model:** a registry with `FormBuilderActionTypeBase<TSettings>`, triggers, rules, order and "stop the rest if this fails". Publishing refuses an action type the site lacks (`unknown_type` at `actions[n].type`, ADR-0035) and runs each type's check of its own settings.
   - **The processor** (ADR-0007): one worker per server, woken after each commit through a scoped notification and a bounded channel of one, with claims by token, leases, back-off, the late finisher and the `Uncertain` state. The distributed job only wakes its server's worker and returns.
+  - **Designer locks** of action settings, as 5.1 applies them to field settings (ADR-0042).
   - **The pause switch** (§4.4): while `JironFormBuilder:Actions:Paused` is on, the processor claims nothing, and the kick does nothing.
   - **Values kept only until the actions have run** (§4.4): deleted, with the entry event, once no trigger can still fire for the entry and every run is final.
   - **The retry API,** which refuses to retry an `Uncertain` run without an explicit confirmation (§4.4).
@@ -1877,7 +1886,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - webhooks send to the configured URL with `X-Jfb-Test: true` after a confirmation;
     - content actions create nothing (a dry run that shows what would be created).
   - Fill in the CI load-balancing job.
-  - Done when: tests cover ordering, retries with fake time, lease expiry turning into `Uncertain`, the late finisher, and **no double execution** with two processors on one database. The two-processor test injects the faults of 1.6 and fails against a claim without its state condition (a mutant), so it is known to catch doubles. A test shows that every Jiron Form Builder job returns within 10 s, and does nothing while the migrations are pending (ADR-0033). The `loadbalancing` job definition is shown. Tests also show that nothing runs while sending is paused and every queued run goes out once it is not, that a retry of an `Uncertain` run without the confirmation is refused, and that a value kept only until the actions have run is still there while a run is retrying and gone once no trigger can still fire for the entry and every run is final.
+  - Done when: tests cover ordering, retries with fake time, lease expiry turning into `Uncertain`, the late finisher, and **no double execution** with two processors on one database. The two-processor test injects the faults of 1.6 and fails against a claim without its state condition (a mutant), so it is known to catch doubles. A test shows that every Jiron Form Builder job returns within 10 s, and does nothing while the migrations are pending (ADR-0033). The `loadbalancing` job definition is shown. Tests also show that nothing runs while sending is paused and every queued run goes out once it is not, that a retry of an `Uncertain` run without the confirmation is refused, that a value kept only until the actions have run is still there while a run is retrying and gone once no trigger can still fire for the entry and every run is final, and that a designer lock of an action setting refuses a save with another value and wins at run time.
 - [ ] **8.2 Email infrastructure**
   - **Sending:** the outbox and sender job through `IEmailSender`, with `CanSendRequiredEmail()` gating so no retries are burnt while email is not configured (Umbraco would drop the mail silently). Queuing wakes the sender at once (D8). The sender also honours the pause switch (§4.4).
   - **Content:** responsive HTML layouts that work in dark mode, one body per mail as ADR-0007 decided (HTML, or plain text when the action chooses it, with the text version always generated), header sanitising, attachment caps, the per-site sender, a test email, and retention purge. The layouts follow the client rules of §3.3: inline styles on table cells, `<!--[if mso]>` tables for Outlook, and no styles on `<body>`.
