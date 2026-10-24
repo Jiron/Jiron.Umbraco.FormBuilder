@@ -36,6 +36,9 @@ internal sealed partial class FormBuilderDatabase(
     // Set inside each attempt, so it flows into the work and everything it awaits, but not back to the caller.
     private readonly AsyncLocal<bool> _inside = new();
 
+    // Set inside a budgeted read, so a budgeted read inside it keeps the outer budget.
+    private readonly AsyncLocal<bool> _budgeted = new();
+
     /// <summary>The clock that stamps every write.</summary>
     public TimeProvider Time => timeProvider;
 
@@ -54,6 +57,63 @@ internal sealed partial class FormBuilderDatabase(
                     FormBuilderDbExtensions.CurrentToken = cancellationToken;
                     using var scope = scopeProvider.CreateScope(autoComplete: true);
                     return await read(scope.Database);
+                },
+                cancellationToken),
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Runs read-only work under a time budget (ADR-0003, ADR-0039): past <paramref name="budget"/> the running
+    /// statement stops and the read fails with <see cref="FormBuilderQueryTimeoutException"/>, which never runs again.
+    /// The budget starts once the gate lets the read through. A budgeted read inside another one keeps the outer
+    /// budget.
+    /// </summary>
+    public Task<T> QueryAsync<T>(Func<IUmbracoDatabase, Task<T>> read, TimeSpan budget, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(budget, TimeSpan.Zero);
+        return AttemptsAsync(
+            write: false,
+            _ => gate.RunAsync(
+                async () =>
+                {
+                    using var scope = scopeProvider.CreateScope(autoComplete: true);
+                    var db = scope.Database;
+                    if (_budgeted.Value)
+                    {
+                        return await read(db);
+                    }
+
+                    FormBuilderDbExtensions.CurrentToken = cancellationToken;
+                    var sqlite = new SqlNames(db).IsSqlite;
+                    if (sqlite && db.Connection is null)
+                    {
+                        // The scope opens its connection with the first statement; the budget needs it open.
+                        await db.ScalarAsync<int>("SELECT 1");
+                    }
+
+                    using var deadline = FormBuilderQueryBudget.Start(db.Connection, sqlite, budget, timeProvider, cancellationToken);
+                    if (sqlite && !deadline.Armed)
+                    {
+                        LogUnbudgeted(logger);
+                    }
+
+                    _budgeted.Value = true;
+                    FormBuilderDbExtensions.CurrentToken = deadline.Token;
+                    try
+                    {
+                        return await read(db);
+                    }
+                    // A refusal stays a refusal; any other failure past the deadline is the stopped statement's.
+                    catch (Exception exception) when (deadline.Expired && !cancellationToken.IsCancellationRequested && exception is not ArgumentException)
+                    {
+                        throw new FormBuilderQueryTimeoutException($"The query ran past its time budget of {budget.TotalSeconds:0.###} s and was stopped.", exception);
+                    }
+                    catch (Exception exception) when (cancellationToken.IsCancellationRequested && exception is not OperationCanceledException and not ArgumentException)
+                    {
+                        // On SQLite the progress handler interrupted the statement for the caller: say so as .NET does.
+                        throw new OperationCanceledException("The query was cancelled.", exception, cancellationToken);
+                    }
                 },
                 cancellationToken),
             cancellationToken);
@@ -118,4 +178,7 @@ internal sealed partial class FormBuilderDatabase(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder runs a unit of work again after attempt {Attempt} met a transient database error: {Failure}")]
     private static partial void LogRetrying(ILogger logger, int attempt, string failure);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder found no SQLite connection to set its query budget on: this read runs without a time limit")]
+    private static partial void LogUnbudgeted(ILogger logger);
 }

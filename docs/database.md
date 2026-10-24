@@ -71,11 +71,17 @@ Every read and write goes through `FormBuilderDatabase` and the repositories in 
   unit or not at all. The insert itself refuses a submission id or a challenge the form has already seen, and a
   refused entry gives its number back. Values carry the text key rules compare by, and an entry's state changes only
   from the state the user saw. Events are only ever added, and a consent wording is stored once under its hash.
+- **Entry lists** ([ADR-0039](decisions/0039-entries-query-builder.md)) come from the entries query builder, in the
+  shapes ADR-0003 measured and only those: field filters as `IN` subqueries, keyset pages, a sort by a value that
+  walks the value index and then lists the entries without a value, and a search that counts up to 1,000. Text
+  compares by its key and then again in a binary collation; a key that may be cut compares the whole texts. Each
+  list is one read with a time budget of 10 seconds: past it the statement stops (SQLite's progress handler, a
+  cancelled command on SQL Server) and the read fails with `query_timeout`.
 - **Guards are locking reads.** A check whose answer must hold until the unit ends (a row that must stay, or rows that
   must not appear) reads with `UPDLOCK, HOLDLOCK` on SQL Server, so a writer at the same moment meets the repository's
   refusal, not a foreign key's error, also under read-committed snapshot (ADR-0038).
 - **Reruns.** A unit that meets a lock conflict runs again, up to three attempts in all; a read also after a lost
-  connection or a timeout.
+  connection or a command timeout, but never after its own time budget ran out.
 - **No connections of its own.** Core never opens a connection or creates a database. A unit test reads Core's IL to
   make sure.
 
@@ -454,7 +460,8 @@ entries). Entry columns, exports and search read it, and each value refers to it
 One row per entry, numbered per form from `jfbForm.lastEntryNumber` (drafts and test entries too, ADR-0038).
 `submissionId` and `digest` make retries safe: the same submission returns the first receipt, a different one with
 the same id is refused (§4.4). `state` is the entry's place in the review workflow; `isTest` marks
-entries from the preview. The search text is folded the way rules compare text and leaves out sensitive fields.
+entries from the preview. The search text holds the answers cleaned and folded the way rules compare text, one per
+line, and leaves out sensitive fields (ADR-0039).
 Resume tokens and challenges are stored only as hashes and ids.
 
 - `IX_jfbEntry_key`: unique.
@@ -483,7 +490,7 @@ typed columns are filled by the field's storage kind: `text` with `textKey` (for
 cleaned and folded as rules compare it, cut to 256 code units; ADR-0005, ADR-0038), `number`, `date`, `bool` or
 `fileId`, at most one of them. Values refer to their field without a cascade: a field that has values cannot be
 deleted. On SQL Server the column's case-insensitive collation can treat keys as equal that rules keep apart (`ß` and
-`ss`), so the entries query builder compares a key again in a binary collation after the seek (4.3d, ADR-0038).
+`ss`), so the entries query builder compares a key again in a binary collation after the seek (ADR-0038, ADR-0039).
 
 - `IX_jfbEntryValue_entryId_fieldId`: the answers of an entry.
 - `IX_jfbEntryValue_fieldId_textKey_entryId`, `IX_jfbEntryValue_fieldId_number_entryId`,

@@ -2,6 +2,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Upgrades;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.Composing;
@@ -50,5 +51,6 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<IEntryRepository, EntryRepository>();
         builder.Services.TryAddSingleton<IEntryEventRepository, EntryEventRepository>();
         builder.Services.TryAddSingleton<IEntryNoteRepository, EntryNoteRepository>();
+        builder.Services.TryAddSingleton<IEntryQueryRepository, EntryQueryRepository>();
     }
 }

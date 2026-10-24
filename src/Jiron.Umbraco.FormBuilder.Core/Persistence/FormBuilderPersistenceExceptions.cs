@@ -93,3 +93,28 @@ internal sealed class FormBuilderConflictException : Exception
     /// <summary>Why the change was refused.</summary>
     public FormBuilderConflict Conflict { get; }
 }
+
+/// <summary>
+/// Thrown when a read ran past its time budget and was stopped (ADR-0003, ADR-0039); the API answers
+/// <c>query_timeout</c>. The read ends without a result and is never run again; the gate is free for the next unit at once.
+/// </summary>
+internal sealed class FormBuilderQueryTimeoutException : Exception
+{
+    /// <summary>Creates the exception.</summary>
+    public FormBuilderQueryTimeoutException()
+        : base("The query ran past its time budget and was stopped.")
+    {
+    }
+
+    /// <summary>Creates the exception with a message.</summary>
+    public FormBuilderQueryTimeoutException(string message)
+        : base(message)
+    {
+    }
+
+    /// <summary>Creates the exception with a message and its cause: the database's error for the stopped statement.</summary>
+    public FormBuilderQueryTimeoutException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
+}

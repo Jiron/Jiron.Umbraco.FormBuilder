@@ -76,7 +76,7 @@ database connection of its own. Its areas:
 | Privacy | retention, holds, data subject tools, masking, IP handling | ADR-0009 |
 | Permissions | grants, restrictions, evaluation | ADR-0013 |
 | Settings | sections, host options, locks, the cache | ADR-0008 |
-| Persistence | NPoco DTOs, repositories, the migration plan, the database gate and units of work ([database.md](database.md#access)) | ADR-0003, ADR-0007, ADR-0033, ADR-0036, ADR-0037, ADR-0038, D7 |
+| Persistence | NPoco DTOs, repositories, the entries query builder, the migration plan, the database gate and units of work ([database.md](database.md#access)) | ADR-0003, ADR-0007, ADR-0033, ADR-0036, ADR-0037, ADR-0038, ADR-0039, D7 |
 | Platform | jobs, notifications, the audit log, daily statistics, the HTML and CSS sanitiser | ADR-0007, §4.10 |
 
 **Web** hosts the HTTP surfaces and rendering:

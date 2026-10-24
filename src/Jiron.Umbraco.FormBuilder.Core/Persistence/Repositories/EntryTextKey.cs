@@ -17,8 +17,7 @@ internal static class EntryTextKey
     /// <summary>The key of a text value.</summary>
     public static string For(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
-        var key = TextSemantics.Fold(TextSemantics.Clean(text));
+        var key = Whole(text);
         if (key.Length <= MaxLength)
         {
             return key;
@@ -26,6 +25,13 @@ internal static class EntryTextKey
 
         // Never half a surrogate pair: the cut moves before a high surrogate that would lose its partner.
         return key[..(char.IsHighSurrogate(key[MaxLength - 1]) ? MaxLength - 1 : MaxLength)];
+    }
+
+    /// <summary>A text cleaned and folded as rules compare it, uncut: what a key that may be cut stands for.</summary>
+    public static string Whole(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return TextSemantics.Fold(TextSemantics.Clean(text));
     }
 
     /// <summary>Whether a key may have been cut: a filter for equal text then compares the text itself too.</summary>

@@ -42,6 +42,12 @@ internal static class FormBuilderDatabaseErrors
     /// </summary>
     public static bool IsTransient(Exception exception, bool write)
     {
+        // A read stopped at its budget would only run into the budget again (ADR-0039).
+        if (exception is FormBuilderQueryTimeoutException)
+        {
+            return false;
+        }
+
         foreach (var database in DatabaseErrors(exception))
         {
             switch (database.GetType().Name)

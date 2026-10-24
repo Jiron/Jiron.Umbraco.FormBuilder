@@ -45,6 +45,21 @@ internal readonly struct SqlNames(ISqlSyntaxProvider syntax)
     public string LockingRead => InsertOnceHint;
 
     /// <summary>
+    /// The collation that compares text by its code units, to append to a column (ADR-0039): <c>COLLATE BINARY</c> on
+    /// SQLite, <c>COLLATE Latin1_General_BIN2</c> on SQL Server, whose case-insensitive collation can equate texts that
+    /// rules keep apart (a sharp s and <c>ss</c>). A seek uses the column's own collation first, so it stays on the index.
+    /// SQLite's <c>LIKE</c> ignores collations and folds ASCII letters, which folded text no longer differs by.
+    /// </summary>
+    public string BinaryCollation => IsSqlite ? " COLLATE BINARY" : " COLLATE Latin1_General_BIN2";
+
+    /// <summary>
+    /// The function that gives its first argument, or its second when the first is null, evaluating each once:
+    /// <c>IFNULL</c> on SQLite, <c>ISNULL</c> on SQL Server, where <c>COALESCE</c> runs a subquery twice and can see a row
+    /// that went away in between as null (ADR-0039).
+    /// </summary>
+    public string IfNull => IsSqlite ? "IFNULL" : "ISNULL";
+
+    /// <summary>
     /// The start of a statement with recursive common table expressions: SQLite wants <c>WITH RECURSIVE</c>, SQL Server
     /// knows only <c>WITH</c>.
     /// </summary>
