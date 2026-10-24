@@ -1594,7 +1594,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - integration tests cover CRUD for each of these repositories, and **unique entry numbers under 50 parallel inserts**;
     - a unit test shows `TextKey` folding as the rule vectors of 1.5 compare (the Turkish i's, final sigma, no folding outside the folded blocks).
-- [ ] **4.3d The entries query builder**
+- [x] **4.3d The entries query builder** (2026-10-24, 81ce702)
   - **The entries query builder** turns typed field filters into SQL against `jfbEntryValue`, using only the shapes of ADR-0003 (`IN` subqueries, keyset paging, the value-index walk for a sort by a value, one-pass search with a count up to 1,000) under the per-statement time budget.
   - **Text keys** (ADR-0038): a filter on text seeks `textKey` with the column's collation and then compares the key again in a binary collation, because SQL Server's case-insensitive collation can treat keys as equal that rules keep apart (`ß` and `ss`). A key that may have been cut (`EntryTextKey.MayBeCut`) compares the full text too. (Added from the review of 4.3c, WORKLOG 2026-10-24.)
   - Done when:
