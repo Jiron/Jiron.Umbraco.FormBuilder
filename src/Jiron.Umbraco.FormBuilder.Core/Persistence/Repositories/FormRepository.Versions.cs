@@ -72,6 +72,20 @@ internal sealed partial class FormRepository
     }
 
     /// <inheritdoc />
+    public Task<int?> GetLastPublishedNumberAsync(int formId, int beforeNumber, CancellationToken cancellationToken = default) =>
+        database.ReadAsync(
+            db =>
+            {
+                var n = new SqlNames(db);
+                return db.ScalarAsync<int?>(
+                    $"SELECT MAX({n.C("number")}) FROM {n.T(FormBuilderTables.FormVersion)} WHERE {n.C("formId")} = @0 AND {n.C("kind")} = @1 AND {n.C("number")} < @2",
+                    formId,
+                    nameof(FormVersionKind.Published),
+                    beforeNumber);
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
     public Task<StoredFormVersion?> GetVersionAsync(int formId, int number, CancellationToken cancellationToken = default) =>
         database.ReadAsync(
             async db =>

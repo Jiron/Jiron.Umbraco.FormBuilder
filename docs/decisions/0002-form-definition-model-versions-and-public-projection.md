@@ -3,7 +3,8 @@
 - Status: accepted; theme alias, calculation decimals, consent and card defaults, unsafe patterns and verification
   amended in 1.8; the save codes, unsupported properties and the outcome limit amended by
   [ADR-0034](0034-definition-model-reading-and-writing.md) in 4.2a; the publish codes and what the projection and its
-  hash hold amended by [ADR-0035](0035-structural-validation-and-public-projection.md) in 4.2b
+  hash hold amended by [ADR-0035](0035-structural-validation-and-public-projection.md) in 4.2b; saves and publishes
+  that change nothing amended by [ADR-0044](0044-form-service.md) in 4.5a
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2a (the model, the schema, upgraders), 4.2b (structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
@@ -320,7 +321,9 @@ A custom type's `settings` belong to it: it validates them, and it reads older s
 
 ### Versions
 
-- **Every save appends a row to `jfbFormVersion`:** `Number` counts up per form; `Kind` is `Draft` or `Published`.
+- **Every save that changes the definition appends a row to `jfbFormVersion`:** `Number` counts up per form; `Kind`
+  is `Draft` or `Published`. A save whose definition is the draft's, and a publish whose draft is the live version,
+  write nothing (ADR-0044).
 - **Publishing** appends a `Published` row with the draft's definition, and in one transaction: upgrades the document
   to the current `schemaVersion`, validates it, updates the field catalogue (new fields get rows, or their draft-only
   row gets its `FirstVersionNumber`; removed ones get `LastVersionNumber`, ADR-0003), sets `PublishedVersionId`, and

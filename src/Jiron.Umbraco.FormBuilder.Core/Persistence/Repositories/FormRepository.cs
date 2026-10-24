@@ -32,7 +32,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.Form);
                 var now = database.UtcNow;
-                var folder = form.FolderId is null ? string.Empty : $" AND EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Folder)}{n.LockingRead} WHERE {n.C("id")} = @1)";
+                var folder = form.FolderId is null ? string.Empty : $" AND EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Folder)}{n.LockingRead} WHERE {n.C("id")} = @1 AND {n.C("trashedUtc")} IS NULL)";
                 int inserted;
                 try
                 {
@@ -146,6 +146,22 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
     }
 
     /// <inheritdoc />
+    /// <remarks>The alias column compares without regard to case on both databases, so <c>LIKE</c> does too (ADR-0033).</remarks>
+    public Task<IReadOnlyList<string>> ListAliasesAsync(string prefix, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(prefix);
+        return database.ReadAsync<IReadOnlyList<string>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                return await db.FetchListAsync<string>(
+                    $"SELECT {n.C("alias")} FROM {n.T(FormBuilderTables.Form)} WHERE {n.C("alias")} LIKE @0 {SqlNames.EscapeClause} ORDER BY {n.C("alias")}",
+                    SqlNames.Escape(prefix) + "%");
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<StoredForm?> UpdateAsync(FormUpdate update, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(update);
@@ -156,11 +172,12 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
             {
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.Form);
-                var folder = update.FolderId is null ? string.Empty : $" AND EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Folder)}{n.LockingRead} WHERE {n.C("id")} = @2)";
+                // A form may stay in its folder whatever became of it; a move needs a folder outside the trash.
+                var folder = update.FolderId is null ? string.Empty : $" AND ({n.C("folderId")} = @2 OR EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Folder)}{n.LockingRead} WHERE {n.C("id")} = @2 AND {n.C("trashedUtc")} IS NULL))";
                 var updated = await TranslateDuplicatesAsync(() => db.ExecAsync(
                     $"""
                     UPDATE {table} SET {n.C("alias")} = @0, {n.C("name")} = @1, {n.C("folderId")} = @2, {n.C("isRestricted")} = @3, {Raise(n)}, {n.C("updatedUtc")} = @4, {n.C("updatedByUserKey")} = @5
-                    WHERE {n.C("id")} = @6 AND {n.C("concurrencyVersion")} = @7
+                    WHERE {n.C("id")} = @6 AND {n.C("concurrencyVersion")} = @7 AND {n.C("trashedUtc")} IS NULL
                     AND NOT EXISTS (SELECT 1 FROM {table} o{n.InsertOnceHint} WHERE o.{n.C("alias")} = @0 AND o.{n.C("id")} <> @6){folder}
                     """,
                     update.Alias,
@@ -178,13 +195,14 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                 }
 
                 CheckFresh(current, update.ExpectedConcurrencyVersion);
+                CheckLive(current);
                 var taken = await db.ScalarAsync<int>(
                     $"SELECT COUNT(*) FROM {table} WHERE {n.C("alias")} = @0 AND {n.C("id")} <> @1",
                     update.Alias,
                     update.Id);
                 throw taken > 0
                     ? new FormBuilderConflictException(FormBuilderConflict.DuplicateAlias, "Another form already has this alias.")
-                    : new FormBuilderConflictException(FormBuilderConflict.MissingFolder, "The folder does not exist.");
+                    : new FormBuilderConflictException(FormBuilderConflict.MissingFolder, "The folder does not exist or is in the trash.");
             },
             cancellationToken);
     }
@@ -299,8 +317,8 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
 
     /// <summary>
     /// Raises the concurrency version and applies <paramref name="set"/> (where <c>@0</c> is the time) when the form is
-    /// fresh and <paramref name="needed"/> holds. A form for which <paramref name="needed"/> does not hold needs no
-    /// change and comes back as it is.
+    /// fresh and <paramref name="needed"/> holds. A form for which <paramref name="needed"/> does not hold needs no change
+    /// and comes back as it is.
     /// </summary>
     private async Task<StoredForm?> ChangeAsync(IUmbracoDatabase db, SqlNames n, int formId, int expected, string set, string needed, Guid? userKey)
     {
@@ -320,13 +338,13 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
     }
 
     /// <summary>
-    /// Raises the concurrency version of a fresh form, the first statement of a save or a publish, so the transaction
-    /// holds the form's row before it counts versions. False when the form does not exist.
+    /// Raises the concurrency version of a fresh form outside the trash, the first statement of a save or a publish, so
+    /// the transaction holds the form's row before it counts versions. False when the form does not exist.
     /// </summary>
     private async Task<bool> RaiseAsync(IUmbracoDatabase db, SqlNames n, int formId, int expected, Guid? userKey)
     {
         var raised = await db.ExecAsync(
-            $"UPDATE {n.T(FormBuilderTables.Form)} SET {Raise(n)}, {n.C("updatedUtc")} = @0, {n.C("updatedByUserKey")} = @1 WHERE {n.C("id")} = @2 AND {n.C("concurrencyVersion")} = @3",
+            $"UPDATE {n.T(FormBuilderTables.Form)} SET {Raise(n)}, {n.C("updatedUtc")} = @0, {n.C("updatedByUserKey")} = @1 WHERE {n.C("id")} = @2 AND {n.C("concurrencyVersion")} = @3 AND {n.C("trashedUtc")} IS NULL",
             database.UtcNow,
             userKey,
             formId,
@@ -343,6 +361,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
         }
 
         CheckFresh(current, expected);
+        CheckLive(current);
         return true;
     }
 
@@ -351,6 +370,14 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
         if (current.ConcurrencyVersion != expected)
         {
             throw new FormBuilderConcurrencyException($"The form was changed by someone else meanwhile (version {current.ConcurrencyVersion}, not {expected}).");
+        }
+    }
+
+    private static void CheckLive(StoredForm current)
+    {
+        if (current.TrashedUtc is not null)
+        {
+            throw new FormBuilderConflictException(FormBuilderConflict.Trashed, "The form is in the trash; restore it first.");
         }
     }
 
@@ -364,7 +391,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
 
         return await db.ScalarAsync<int>($"SELECT COUNT(*) FROM {table} WHERE {n.C("key")} = @0", form.Key) > 0
             ? new FormBuilderConflictException(FormBuilderConflict.DuplicateKey, "Another form already has this key.")
-            : new FormBuilderConflictException(FormBuilderConflict.MissingFolder, "The folder does not exist.");
+            : new FormBuilderConflictException(FormBuilderConflict.MissingFolder, "The folder does not exist or is in the trash.");
     }
 
     /// <summary>

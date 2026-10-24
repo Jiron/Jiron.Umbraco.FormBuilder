@@ -462,7 +462,12 @@ saves are, except pinned ones and any an entry points at.
 
 The field catalogue: every field a form has published, plus fields that so far exist only in a draft (for test
 entries). Entry columns, exports and search read it, and each value refers to its field by this table's id.
-`firstVersionNumber` and `lastVersionNumber` say in which published versions the field appeared.
+`firstVersionNumber` and `lastVersionNumber` say in which published versions the field appeared: a publish sets the
+first of a new field, clears the last of one that came back and ends a dropped one at the publish before
+([ADR-0044](decisions/0044-form-service.md)). `storageKind` says how the field's values are stored, one of the kinds
+of ROADMAP §4.3.2 (`text`, `longText`, `number`, `date`, `bool`, `file`, `json`) that 5.1 maps to the typed columns of
+`jfbEntryValue`, or `none` for a repeatable group or a grid, whose parts hold the values; each row of a grid has a row
+of its own under the grid's alias, with the grid as its parent.
 
 - `IX_jfbFormField_formId_fieldKey`: unique; a field key once per form.
 

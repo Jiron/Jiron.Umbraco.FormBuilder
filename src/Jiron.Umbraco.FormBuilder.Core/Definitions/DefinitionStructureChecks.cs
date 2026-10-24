@@ -66,7 +66,7 @@ internal sealed partial class DefinitionStructureChecks
     private static string Name(FormField field) => field.Alias is { } alias ? $"field '{alias}'" : $"field {field.Key}";
 
     /// <summary>A lowercase ASCII letter, then ASCII letters and digits, at most 64 characters (section 4.3.1).</summary>
-    private static bool IsAlias(string alias) =>
+    internal static bool IsAlias(string alias) =>
         alias.Length is >= 1 and <= MaxAliasLength && char.IsAsciiLetterLower(alias[0]) && alias.All(char.IsAsciiLetterOrDigit);
 
     /// <summary>What a merge tag can write after <c>query.</c> or <c>context.</c>: letters, digits, <c>_</c> and <c>-</c>.</summary>

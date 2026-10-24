@@ -184,7 +184,8 @@ internal interface IFormRepository
 {
     /// <summary>
     /// Creates a form with its version 1, a draft. Refused with <see cref="FormBuilderConflict.DuplicateAlias"/>,
-    /// <see cref="FormBuilderConflict.DuplicateKey"/> or <see cref="FormBuilderConflict.MissingFolder"/>.
+    /// <see cref="FormBuilderConflict.DuplicateKey"/> or <see cref="FormBuilderConflict.MissingFolder"/>, also for a
+    /// folder in the trash.
     /// </summary>
     Task<SavedVersion> CreateAsync(NewForm form, CancellationToken cancellationToken = default);
 
@@ -201,23 +202,42 @@ internal interface IFormRepository
     Task<Page<StoredForm>> ListAsync(FormFilter filter, PageRequest page, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The aliases of every form, trashed ones included, that start with <paramref name="prefix"/> in any letter case
+    /// (ADR-0033), for choosing a free one (ADR-0044).
+    /// </summary>
+    Task<IReadOnlyList<string>> ListAliasesAsync(string prefix, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Renames, moves or restricts a form. Null when it does not exist. Refused with
-    /// <see cref="FormBuilderConflict.DuplicateAlias"/> or <see cref="FormBuilderConflict.MissingFolder"/>.
+    /// <see cref="FormBuilderConflict.DuplicateAlias"/>, with <see cref="FormBuilderConflict.MissingFolder"/> when it moves
+    /// to a folder that is missing or in the trash, and with <see cref="FormBuilderConflict.Trashed"/> while the form is in
+    /// the trash.
     /// </summary>
     Task<StoredForm?> UpdateAsync(FormUpdate update, CancellationToken cancellationToken = default);
 
-    /// <summary>Saves a new draft version and makes it the form's draft. Null when the form does not exist.</summary>
+    /// <summary>
+    /// Saves a new draft version and makes it the form's draft. Null when the form does not exist. Refused with
+    /// <see cref="FormBuilderConflict.Trashed"/> while the form is in the trash.
+    /// </summary>
     Task<SavedVersion?> SaveDraftAsync(int formId, int expectedConcurrencyVersion, VersionDocument draft, string? comment, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Appends a published version and makes it the one visitors get. Its public revision stays the one of the last
     /// publish when the public hash is the same, and goes up by one otherwise (1 for the first publish, ADR-0002).
-    /// Null when the form does not exist.
+    /// Null when the form does not exist. Refused with <see cref="FormBuilderConflict.Trashed"/> while the form is in the
+    /// trash.
     /// </summary>
     Task<SavedVersion?> PublishAsync(int formId, int expectedConcurrencyVersion, VersionDocument document, string? themeAlias, string? comment, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The number of the form's last published version before <paramref name="beforeNumber"/>, or null when no version
+    /// before it was published.
+    /// </summary>
+    Task<int?> GetLastPublishedNumberAsync(int formId, int beforeNumber, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Takes the form offline: its versions and entries stay. An unpublished form stays as it is. Null when it does not exist.
+    /// A form in the trash can be taken offline too, which lets go of its theme (ADR-0044).
     /// </summary>
     Task<StoredForm?> UnpublishAsync(int formId, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default);
 

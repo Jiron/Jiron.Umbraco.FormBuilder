@@ -171,7 +171,7 @@ public sealed class SettingsSectionJsonTests
         {
             Assert.That(SettingsSectionJson.FieldNames<SampleSettings>(), Is.EquivalentTo(new[] { "name", "count", "mode", "limits", "note", "tags", "keep", "summary" }));
             Assert.That(SettingsSectionJson.SiteFieldNames<SampleSettings>(), Is.EquivalentTo(new[] { "name", "count", "mode", "limits", "note", "tags", "summary" }));
-            Assert.That(SettingsSectionJson.FieldNames<GeneralSettings>(), Is.EquivalentTo(new[] { "timeZone" }));
+            Assert.That(SettingsSectionJson.FieldNames<GeneralSettings>(), Is.EquivalentTo(new[] { "timeZone", "newForms" }));
             Assert.That(SettingsSectionJson.SiteFieldNames<GeneralSettings>(), Is.EquivalentTo(new[] { "timeZone" }));
         });
     }

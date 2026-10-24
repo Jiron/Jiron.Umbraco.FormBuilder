@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -33,6 +34,12 @@ internal sealed class SettingsErrors(string section)
     /// <summary>The code of a field a site cannot override.</summary>
     public const string Scope = "scope";
 
+    /// <summary>The code of a value that must be given.</summary>
+    public const string Required = "required";
+
+    /// <summary>The code of texts that are not a localised text: a culture name that is not one, or one named twice.</summary>
+    public const string TextCode = "text";
+
     private readonly List<SettingsError> _errors = [];
 
     /// <summary>Everything found so far.</summary>
@@ -55,6 +62,35 @@ internal sealed class SettingsErrors(string section)
         }
     }
 
+    /// <summary>
+    /// Texts per culture that a definition takes (ADR-0002): a default text (the culture <c>""</c>) that is not only white
+    /// space, culture names, and the rules of a label on one line or, when <paramref name="html"/>, of rich text. The
+    /// codes of the definition's checks are kept, such as <c>limit_exceeded</c>.
+    /// </summary>
+    public void Text(string field, IReadOnlyDictionary<string, string>? texts, bool html)
+    {
+        if (texts is null || !texts.TryGetValue(string.Empty, out var fallback) || string.IsNullOrWhiteSpace(fallback))
+        {
+            Add(field, Required, "Needs a default text, for the culture \"\", that is not only white space.");
+            return;
+        }
+
+        LocalizedString text;
+        try
+        {
+            text = html ? new LocalizedHtml(texts) : new LocalizedText(texts);
+        }
+        catch (ArgumentException exception)
+        {
+            Add(field, TextCode, exception.Message);
+            return;
+        }
+
+        foreach (var problem in DefinitionSaveChecks.CheckText(text, html))
+        {
+            Add(field, problem.Code, problem.Message);
+        }
+    }
 }
 
 /// <summary>

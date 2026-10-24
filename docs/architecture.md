@@ -66,7 +66,8 @@ database connection of its own. Its areas:
 
 | Area | Holds | Decided in |
 | --- | --- | --- |
-| Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions, the field catalogue | ADR-0002 |
+| Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions | ADR-0002 |
+| Forms | the form service: create from blank, save, publish, unpublish, rename and move, each a unit of work of its own; aliases from names, the publish checks, the field catalogue, the form notifications and the one mapping from a refusal to its code | ADR-0002, ADR-0044 |
 | Fields and options | the field type registry, the built-in types, option sources and lists, places on options | ADR-0002, §4.3.2 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
@@ -130,8 +131,9 @@ Condition   { field, op, value } | { context, op, value } | { match, conditions[
 Text        LocalizedText: culture → text, "" is the default; "#key" reads the dictionary
 ```
 
-- **Versions:** every save appends a version row; publishing appends a published one, updates the field catalogue and
-  raises the public revision when the projection changed. Drafts keep what publishing refuses; the form check lists it.
+- **Versions:** every save that changes the definition appends a version row; publishing appends a published one,
+  updates the field catalogue and raises the public revision when the projection changed
+  ([ADR-0044](decisions/0044-form-service.md)). Drafts keep what publishing refuses; the form check lists it.
 - **Publishing** ([ADR-0035](decisions/0035-structural-validation-and-public-projection.md)) runs the save checks and
   then the structural validation: aliases, names and option values, references, what each field type supports (its
   traits, from the field-type registry from 5.1 on), rule effects, cycles of visibility through rules and containment,
@@ -302,9 +304,9 @@ Two layers ([ADR-0008](decisions/0008-settings-model.md)):
   never what the site stored. An IntelliSense schema generated from the options ships with the Core package.
 - **Backoffice sections** in `jfbSetting` ([ADR-0043](decisions/0043-backoffice-settings-sections.md)): one immutable
   record each, whose initializers are the defaults, with a validator, its schema migrations and a host rule, each
-  arriving with the step that builds what it configures (so far `general` with the time zone). `general` and `email`
-  are per site: a site row holds the top-level fields the site overrides (`null` meaning the default), and a
-  `[GlobalOnly]` field is shared by every site. `protection`, `files`, `privacy` and `integrations` are global;
+  arriving with the step that builds what it configures (so far `general` with the time zone and the new-form
+  defaults). `general` and `email` are per site: a site row holds the top-level fields the site overrides (`null`
+  meaning the default), and a `[GlobalOnly]` field, such as `general.newForms`, is shared by every site. `protection`, `files`, `privacy` and `integrations` are global;
   Access is stored in `jfbPermission`.
 
 Effective value = code default, then the global row, then the site row, then the host rules (switch off only, clamp,
@@ -339,7 +341,9 @@ Registries are collections, so a site can add, replace or remove entries.
 | `[FormBuilderSetting]` and the `jfbSettingEditor` manifest | settings editors for custom types without JavaScript, or with a custom element | §4.9 |
 | `jfbFieldPreview` manifest and workspace views | the designer preview of a custom field, extra form views | 15.1 |
 
-**Notifications:** `FormSaving`/`Saved`, `FormPublishing`/`Published`, `FormTrashing`/`Deleted`; `EntrySubmitting`
+**Notifications:** `FormSaving`/`Saved`, `FormPublishing`/`Published`, `FormUnpublishing`/`Unpublished`,
+`FormRenaming`/`Renamed`, `FormMoving`/`Moved` (the first of each pair cancelable, the second once the change
+committed, [ADR-0044](decisions/0044-form-service.md)), `FormTrashing`/`Deleted`; `EntrySubmitting`
 (cancelable, can add field errors), `EntrySubmitted`, `EntryStateChanged`, `EntryDeleting`;
 `ActionRunning`/`ActionRunCompleted`/`ActionRunFailed`; `ExportCompleted`; `SettingsSaved`. Umbraco's webhook system
 receives entry events too.

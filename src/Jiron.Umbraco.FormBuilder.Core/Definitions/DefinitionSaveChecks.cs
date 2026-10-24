@@ -50,6 +50,18 @@ internal sealed class DefinitionSaveChecks
         Html,
     }
 
+    /// <summary>
+    /// The problems of one text outside a definition, such as a setting that a new form takes into its definition
+    /// (ADR-0044): the rules of a label on one line, or of rich text when <paramref name="html"/>.
+    /// </summary>
+    public static IReadOnlyList<DefinitionProblem> CheckText(LocalizedString text, bool html)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var checks = new DefinitionSaveChecks(new DefinitionLimits());
+        checks.Text(text, JsonPaths.Root, html ? TextKind.Html : TextKind.Line);
+        return checks._problems;
+    }
+
     /// <summary>Every problem the definition has, in document order, at most <see cref="DefinitionShapeReader.MaxProblems"/>.</summary>
     public static IReadOnlyList<DefinitionProblem> Check(FormDefinition definition, DefinitionLimits limits)
     {

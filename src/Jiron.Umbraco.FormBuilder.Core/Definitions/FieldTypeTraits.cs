@@ -120,9 +120,41 @@ internal enum FieldMessageKinds
 }
 
 /// <summary>
-/// What the structural validation and the public projection need to know about a field type (section 4.3.2,
-/// ADR-0035): whether it holds a value, what rules compare it as, which common properties and error kinds it has, and
-/// which of its settings visitors may see. Step 5.1's registry declares the same for every registered type.
+/// How a field's values are stored, one of the kinds of section 4.3.2, as the field catalogue records it (ADR-0044).
+/// Step 5.1 maps each kind to the typed columns of the entry values (ADR-0003).
+/// </summary>
+internal enum FieldStorageKind
+{
+    /// <summary>No values of its own: a grid or a repeatable group, whose parts hold them.</summary>
+    None,
+
+    /// <summary>Text, as typed or chosen.</summary>
+    Text,
+
+    /// <summary>Text that may run long, a long answer.</summary>
+    LongText,
+
+    /// <summary>A number.</summary>
+    Number,
+
+    /// <summary>A date, or a date with a time.</summary>
+    Date,
+
+    /// <summary>Checked or not.</summary>
+    Bool,
+
+    /// <summary>Uploaded files.</summary>
+    File,
+
+    /// <summary>A value of several parts, such as a name or an address.</summary>
+    Json,
+}
+
+/// <summary>
+/// What the structural validation, the public projection and the field catalogue need to know about a field type
+/// (section 4.3.2, ADR-0035, ADR-0044): whether it holds a value, what rules compare it as, how its values are stored,
+/// which common properties and error kinds it has, and which of its settings visitors may see. Step 5.1's registry
+/// declares the same for every registered type.
 /// </summary>
 internal sealed record FieldTypeTraits
 {
@@ -137,6 +169,12 @@ internal sealed record FieldTypeTraits
 
     /// <summary>What rules compare the type's answers as; null when rules cannot compare them (a name, a repeatable group, a grid itself).</summary>
     public FieldKind? Kind { get; init; }
+
+    /// <summary>
+    /// Which column holds the type's values; <see cref="FieldStorageKind.None"/> for a type whose parts hold them (a
+    /// grid's rows hold text) or that holds no value.
+    /// </summary>
+    public FieldStorageKind Storage { get; init; }
 
     /// <summary>Whether the setting <c>multiple: true</c> turns one choice into several (a dropdown; a grid's rows).</summary>
     public bool MultipleSetting { get; init; }
@@ -211,11 +249,21 @@ internal sealed class FieldTypeCatalog
     /// <summary>The type with this alias, or null.</summary>
     public FieldTypeTraits? Find(string alias) => _types.GetValueOrDefault(alias);
 
+    // The storage of a type follows what rules compare it as, unless the type says otherwise.
     private static FieldTypeTraits Value(string alias, FieldKind? kind, FieldFeatures features, FieldMessageKinds messages, params string[] settings) => new()
     {
         Alias = alias,
         HoldsValue = true,
         Kind = kind,
+        Storage = kind switch
+        {
+            FieldKind.Number => FieldStorageKind.Number,
+            FieldKind.Date or FieldKind.DateTime => FieldStorageKind.Date,
+            FieldKind.Checkbox => FieldStorageKind.Bool,
+            FieldKind.Files => FieldStorageKind.File,
+            null => FieldStorageKind.None,
+            _ => FieldStorageKind.Text,
+        },
         Features = features,
         Messages = messages,
         PublicSettings = settings.ToFrozenSet(StringComparer.Ordinal),
@@ -237,7 +285,7 @@ internal sealed class FieldTypeCatalog
         const FieldMessageKinds Ranged = Readable | FieldMessageKinds.Min | FieldMessageKinds.Max | FieldMessageKinds.Step;
 
         yield return Value("text", FieldKind.Text, TextInput, Required | FieldMessageKinds.MinLength | FieldMessageKinds.MaxLength, "minLength", "maxLength", "prefix", "suffix", "counter");
-        yield return Value("textarea", FieldKind.Text, TextInput, Required | FieldMessageKinds.MinLength | FieldMessageKinds.MaxLength | FieldMessageKinds.MinWords | FieldMessageKinds.MaxWords, "rows", "autoGrow", "minLength", "maxLength", "minWords", "maxWords", "counter");
+        yield return Value("textarea", FieldKind.Text, TextInput, Required | FieldMessageKinds.MinLength | FieldMessageKinds.MaxLength | FieldMessageKinds.MinWords | FieldMessageKinds.MaxWords, "rows", "autoGrow", "minLength", "maxLength", "minWords", "maxWords", "counter") with { Storage = FieldStorageKind.LongText };
         yield return Value("email", FieldKind.Text, TextInput, Readable, "confirm", "confirmLabel");
         yield return Value("phone", FieldKind.Text, TextInput, Readable, "defaultCountry");
         yield return Value("url", FieldKind.Text, TextInput, Readable, "schemes");
@@ -256,10 +304,11 @@ internal sealed class FieldTypeCatalog
         yield return Value("ranking", FieldKind.Choices, Input | Choices, Readable, "top");
         yield return Value("checkbox", FieldKind.Checkbox, Input | FieldFeatures.DefaultValue | FieldFeatures.Prefill, Required, "text");
         yield return Value("yesno", FieldKind.Choice, Input | FieldFeatures.DefaultValue | FieldFeatures.Prefill, Required, "yesLabel", "noLabel", "style");
-        yield return Value("consent", FieldKind.Checkbox, Input, Required, "text");
+        // A consent value stores the hash of the wording the visitor agreed to (ADR-0009).
+        yield return Value("consent", FieldKind.Checkbox, Input, Required, "text") with { Storage = FieldStorageKind.Text };
         yield return Value("country", FieldKind.Choice, Input | FieldFeatures.DefaultValue | FieldFeatures.Prefill | FieldFeatures.Autocomplete, Readable, "allowed", "top", "default");
-        yield return Value("name", null, Input | FieldFeatures.Prefill, Readable, "parts", "requiredParts");
-        yield return Value("address", null, Input | FieldFeatures.Prefill, Readable, "parts", "requiredParts");
+        yield return Value("name", null, Input | FieldFeatures.Prefill, Readable, "parts", "requiredParts") with { Storage = FieldStorageKind.Json };
+        yield return Value("address", null, Input | FieldFeatures.Prefill, Readable, "parts", "requiredParts") with { Storage = FieldStorageKind.Json };
         yield return Value("file", FieldKind.Files, Input, Required | FieldMessageKinds.FileType | FieldMessageKinds.FileSize | FieldMessageKinds.FileCount, "types", "extensions", "maxBytes", "maxFiles", "dropZone", "thumbnails", "camera");
         yield return Value("signature", FieldKind.Files, Input, Readable, "width", "height");
         yield return Value("repeater", null, FieldFeatures.Label | FieldFeatures.HideLabel | FieldFeatures.Help | FieldFeatures.VisibilityRules | FieldFeatures.ChildFields, FieldMessageKinds.None, "minRows", "maxRows", "addLabel", "removeLabel");

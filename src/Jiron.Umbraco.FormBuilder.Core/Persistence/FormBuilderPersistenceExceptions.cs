@@ -34,7 +34,7 @@ internal enum FormBuilderConflict
     /// <summary>Another row already has this key.</summary>
     DuplicateKey,
 
-    /// <summary>The folder the change refers to does not exist (or no longer).</summary>
+    /// <summary>The folder the change refers to does not exist (or no longer), or is in the trash.</summary>
     MissingFolder,
 
     /// <summary>A folder would move into itself or into a folder below it.</summary>
@@ -68,6 +68,9 @@ internal enum FormBuilderConflict
 
     /// <summary>The form version an entry names does not exist or belongs to another form.</summary>
     MissingVersion,
+
+    /// <summary>The form is in the trash: only a restore, an unpublish or a delete applies to it (ADR-0044).</summary>
+    Trashed,
 }
 
 /// <summary>
