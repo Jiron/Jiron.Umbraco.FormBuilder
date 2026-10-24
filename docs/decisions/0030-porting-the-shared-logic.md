@@ -1,6 +1,6 @@
 # 0030. Porting the shared logic: where it lives, and what the port changed
 
-- Status: accepted
+- Status: accepted; the stored time zone's spelling amended in 4.4b ([ADR-0043](0043-backoffice-settings-sections.md))
 - Date: 2026-10-23
 - Roadmap step: 3.4b (decided and built); 4.4 stores the time zone as the server spells it; 5.2 and 5.3 complete the
   engines on these modules
@@ -93,6 +93,9 @@ The fixes themselves have one obvious form each. What needed deciding:
   facts.
 - 4.4's time zone setting stores the zone as the server spells it (`TimeZoneInfo.Id`), so the browser always gets an
   IANA name in its canonical letter case, whatever case an editor typed and whichever platform the server runs on.
+  **Amended in 4.4b (ADR-0043):** another letter case is refused rather than respelled. Windows finds an IANA name in
+  another case only once its exact spelling has been looked up, so whether a save passed would depend on what the
+  server did before. The browser still always gets the server's spelling.
 - 5.2's mutation sweep covers the code the port added: the instruction count, `own()`, the instant parser and the time
   zone check. Both evaluators recurse through nested groups, so 5.2 limits how deeply groups nest, and 5.3's expression
   language limits how deeply calculations nest.

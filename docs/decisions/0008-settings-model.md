@@ -1,7 +1,8 @@
 # 0008. The settings model
 
 - Status: accepted, the site of a request without content amended in 1.7b; host defaults and the validation status
-  amended in 1.8
+  amended in 1.8; site rows, host rules, the save and the time zone's spelling amended in 4.4b
+  ([ADR-0043](0043-backoffice-settings-sections.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.4 (the framework), each section in the step that builds its service, the
   screens in Phase 9 and later
@@ -60,7 +61,9 @@ change a migration of everything.
   and follows the same rules for locks, validation, conflicts and the audit.
 - **Scopes:** `global`, and a site, which is a root content node keyed by its GUID. `general` and `email` can be
   overridden per site field by field: a site row holds only the fields it overrides, and the screen shows the others
-  as inherited, with a way back to inheriting. The other sections are global.
+  as inherited, with a way back to inheriting. The other sections are global. **Amended in 4.4b (ADR-0043):** a site
+  row's fields are its top-level fields (a nested object is one field); a field stored as `null` there overrides the
+  global value with the default; `[GlobalOnly]` marks a field of a per-site section that every site shares.
 - **The site of a request** is the root of the content the form is shown on or submitted from (`contentKey`). Without
   content (a headless call without `contentKey`), it is the root whose Umbraco domain matches the request's host, as
   14.4 asks; the host only selects among configured sites and never becomes a URL. Otherwise (no match, an entry
@@ -88,6 +91,9 @@ setting that says `inherit` (ADR-0002), the effective site value is its default.
 - **A restriction that arrives later** (a host locks a value that forms or sections already store) is applied where
   the value is used: the stored value is replaced by the nearest allowed one (`full` becomes `anonymised`), the
   screen shows the lock, and the form check says so. Nothing is rewritten in the database.
+- **Amended in 4.4b (ADR-0043):** a section's host rules are one `ISettingsHostRule<T>`, which returns the section
+  with the rules applied and names each lock. The reader applies it where a value is used, and the save applies it
+  to the values an editor sends: a value it changes is one the host does not allow.
 - **Designer locks** (`JironFormBuilder:Designer:SettingLocks`) fix or hide a setting of a field type or an action
   type in every form: `{ "kind": "action", "type": "email", "setting": "from", "value": "noreply@example.com", "hidden": true }`,
   with `kind` `field` or `action`. The designer shows a locked setting read-only (or not at all when hidden), the
@@ -101,8 +107,8 @@ setting that says `inherit` (ADR-0002), the effective site value is its default.
 - One validator per section. Errors are `SettingsError(Field, Code, Message)` keyed `section.field` (and
   `section.list[2]` for items), returned as ProblemDetails `validation_failed` with `errors`.
 - Stable codes for the client: `required`, `range`, `maxLength`, `maxCount`, `enum`, `singleLine`, `pattern`,
-  `email`, `url`, `path`, `alias`, `culture`, `timeZone` (an IANA id the server can resolve, ADR-0005), `cidr`,
-  `domain` and `secretReference`.
+  `email`, `url`, `path`, `alias`, `culture`, `timeZone` (an IANA id the server can resolve, in the server's
+  spelling, ADR-0005 and ADR-0043), `cidr`, `domain` and `secretReference`.
 - The client mirrors the simple constraints (required, length, range, enum) from a JSON schema generated from the
   records, so most errors show before saving; cross-field rules run on the server, which decides.
 
@@ -116,6 +122,12 @@ setting that says `inherit` (ADR-0002), the effective site value is its default.
 4. clear this server's cached copy and send the cache instruction;
 5. write the audit entry `settings.saved` with the section, scope, version and changed field paths, never values;
 6. publish `SettingsSaved` with the changed field paths.
+
+**Amended in 4.4b (ADR-0043):** a save is a unit of work of its own and refuses to run inside another unit or an
+Umbraco scope, so that its effects follow its commit. The audit entry joins the write (step 5 before step 4); then
+this server forgets its copy, sends the instruction and publishes `SettingsSavedNotification`, whose failing handler
+is logged and does not fail the save. A value that a `Clamped` rule lowers is the validation error `range`, naming
+the key.
 
 **Schema versions:** each section has a current `SchemaVersion` and an ordered list of migrations (JSON in, JSON
 out). An old row is migrated when it is read and written back in the new shape at its next save. A missing step
@@ -144,7 +156,8 @@ from configuration when it is used; the screen shows only whether it resolves.
 - **The base URL** (`general`) is the only source of links in mail and of absolute URLs the server builds (§4.10). By
   default it is the site's first `https` domain in Umbraco, otherwise `Umbraco:CMS:WebRouting:UmbracoApplicationUrl`,
   and never the request's Host header. A health check warns when a site has neither.
-- **The time zone** (`general`) is an IANA id; saving refuses one the server cannot resolve (ADR-0005).
+- **The time zone** (`general`) is an IANA id; saving refuses one the server cannot resolve (ADR-0005), or spelled
+  otherwise than the server spells it (ADR-0043).
 - **The sender** (`email`) is a name and an address per site, never taken from a visitor (§4.10).
 
 **User settings** (`jfbUserSetting`) are a backoffice user's own choices (columns, filters, the digest). They are
@@ -163,7 +176,9 @@ classes, and a test fails when `docs/configuration.md` is stale (17.x).
 - Host locks are honest: the screen says which key locks a value, and a lock added later takes effect at once
   without rewriting stored rows.
 - The "only switch off" rule, the public allowlist test and the generated reference are written once in 4.4 and
-  guard every later section.
+  guard every later section. **Amended in 4.4b (ADR-0043):** the "only switch off" rule is the `Restricted` kind of a
+  section's host rule, built in 4.4b; the allowlist test comes with the first setting visitors see (the time zone,
+  6.1) and the reference with 17.x, as decided above.
 - Roadmap: §4.8 says that Access is stored in `jfbPermission`, which sections are per site, how the site of a request
   is found, where the base URL comes from, and the shape of designer locks (WORKLOG).
 - **Revisit** if sites need per-site values in sections that are global now (privacy per country, for example), or
