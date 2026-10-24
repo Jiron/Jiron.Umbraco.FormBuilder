@@ -77,6 +77,12 @@ Every read and write goes through `FormBuilderDatabase` and the repositories in 
   compares by its key and then again in a binary collation; a key that may be cut compares the whole texts. Each
   list is one read with a time budget of 10 seconds: past it the statement stops (SQLite's progress handler, a
   cancelled command on SQL Server) and the read fails with `query_timeout`.
+- **The outbox** ([ADR-0040](decisions/0040-outbox-repositories.md)): action runs and mail change state only through
+  one conditional statement each. A claim names the row's state and writes a token of its own, and an attempt's
+  outcome names that token, so a row is claimed once and a stale outcome changes nothing (ADR-0007). The runs one
+  change queues for an entry are a batch: an earlier run of the batch holds a later one back while it runs, waits for
+  its first attempt, or stops the rest and is not final. The processors pass the wait, the lease, the delay before the
+  next attempt and how long mail is kept: the repositories decide no policy.
 - **Guards are locking reads.** A check whose answer must hold until the unit ends (a row that must stay, or rows that
   must not appear) reads with `UPDLOCK, HOLDLOCK` on SQL Server, so a writer at the same moment meets the repository's
   refusal, not a foreign key's error, also under read-committed snapshot (ADR-0038).
@@ -520,17 +526,19 @@ Internal notes on an entry, never sent anywhere.
 ### `jfbActionRun`
 
 The outbox: one row per action an entry triggered, with its order (`seq`), state, attempts and the lease of the server
-that is running it (`lockedBy`, `lockedUntilUtc`). Errors are stored sanitised.
+that is running it (`lockedBy`, `lockedUntilUtc`). Errors are stored sanitised, as a code and a message; a skipped run
+says why with the code `stopped` (an earlier run stopped the rest) or `undone` (ADR-0023, ADR-0040).
 
 - `IX_jfbActionRun_state_nextAttemptUtc`: what is due.
 - `IX_jfbActionRun_entryId_seq`: the runs of an entry in order.
-- `IX_jfbActionRun_changeKey`: the runs a user's change queued, for undo.
+- `IX_jfbActionRun_changeKey`: the runs one change queued, a batch (ADR-0040), and for undo.
 
 ### `jfbEmail`
 
 The outgoing mail queue: the message as it will be sent, its state and attempts. Mail outlives the entry that caused
 it until its purge (`entryId` is then empty). `recipientKey` is the visitor's address folded, so the per-address limits
-count every spelling of one mailbox (ADR-0012).
+count every spelling of one mailbox (ADR-0012). `lastError` holds an error as `code: message`, and `purgeAfterUtc` is
+set once the mail is final or uncertain (ADR-0040).
 
 - `IX_jfbEmail_state_nextAttemptUtc`: what is due.
 - `IX_jfbEmail_entryId`: the mail of an entry.

@@ -52,5 +52,7 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<IEntryEventRepository, EntryEventRepository>();
         builder.Services.TryAddSingleton<IEntryNoteRepository, EntryNoteRepository>();
         builder.Services.TryAddSingleton<IEntryQueryRepository, EntryQueryRepository>();
+        builder.Services.TryAddSingleton<IActionRunRepository, ActionRunRepository>();
+        builder.Services.TryAddSingleton<IEmailRepository, EmailRepository>();
     }
 }
