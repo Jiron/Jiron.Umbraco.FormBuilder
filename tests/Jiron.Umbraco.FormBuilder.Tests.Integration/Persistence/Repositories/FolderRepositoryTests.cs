@@ -149,6 +149,30 @@ public sealed class FolderRepositoryTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task ARestriction_ChangesOnlyTheFlag_OutsideTheTrash()
+    {
+        var folder = await Folders.CreateAsync(new NewFolder(Guid.NewGuid(), null, "HR", 3, UserKey: Editor));
+        var trashed = await CreateFolderAsync("Old");
+        await Folders.TrashAsync(trashed.Id, Editor);
+        var other = Guid.NewGuid();
+        Clock.Advance(TimeSpan.FromMinutes(2));
+
+        var restricted = await Folders.RestrictAsync(folder.Id, true, other);
+        var freed = await Folders.RestrictAsync(folder.Id, false, null);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(restricted, Is.EqualTo(folder with { IsRestricted = true, UpdatedUtc = Now.AddMinutes(2), UpdatedByUserKey = other }), "the name and the order stay");
+            Assert.That(freed, Is.EqualTo(restricted! with { IsRestricted = false, UpdatedByUserKey = null }));
+            Assert.That(await Folders.RestrictAsync(-1, true, other), Is.Null);
+            Assert.That(
+                () => Folders.RestrictAsync(trashed.Id, true, other),
+                Throws.InstanceOf<FormBuilderConflictException>().With.Property(nameof(FormBuilderConflictException.Conflict)).EqualTo(FormBuilderConflict.Trashed));
+            Assert.That((await Folders.GetByIdAsync(trashed.Id))!.IsRestricted, Is.False);
+        });
+    }
+
+    [Test]
     public async Task Trashing_TakesEveryFolderBelow_WithOneNewKey_AndKeepsTheTree()
     {
         var parent = await CreateFolderAsync("Parent");

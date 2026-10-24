@@ -74,15 +74,19 @@ internal sealed class HookedSettingsRepository(SettingsRepository inner) : ISett
 }
 
 /// <summary>
-/// A server messenger that records the payload instructions a site sends to the other servers and delivers none, so a
-/// test sees what the service clears on its own server by itself.
+/// A server messenger that records the payload and refresh-everything instructions a site sends to the other servers
+/// and delivers none, so a test sees what the service clears on its own server by itself.
 /// </summary>
 internal sealed class RecordingServerMessenger : IServerMessenger
 {
     private readonly ConcurrentQueue<(Guid Refresher, string Payload)> _refreshes = new();
+    private readonly ConcurrentQueue<Guid> _refreshedAll = new();
 
     /// <summary>Each payload instruction so far: the refresher and its payloads, comma-separated.</summary>
     public IReadOnlyCollection<(Guid Refresher, string Payload)> Refreshes => _refreshes;
+
+    /// <summary>The refresher of each "refresh everything" instruction so far.</summary>
+    public IReadOnlyCollection<Guid> RefreshedAll => _refreshedAll;
 
     /// <inheritdoc />
     public void QueueRefresh<TPayload>(ICacheRefresher refresher, TPayload[] payload) =>
@@ -119,9 +123,7 @@ internal sealed class RecordingServerMessenger : IServerMessenger
     }
 
     /// <inheritdoc />
-    public void QueueRefreshAll(ICacheRefresher refresher)
-    {
-    }
+    public void QueueRefreshAll(ICacheRefresher refresher) => _refreshedAll.Enqueue(refresher.RefresherUniqueId);
 
     /// <inheritdoc />
     public void Sync()

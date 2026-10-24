@@ -19,6 +19,7 @@ public sealed class FormBuilderOptionsTests
     private const string Root = FormBuilderOptions.SectionName;
     private const string Limits = Root + ":Limits:Definitions:";
     private const string Locks = Root + ":Designer:SettingLocks:";
+    private const string Grants = Root + ":Access:Grants:";
 
     [Test]
     public void TheDefaults_AreSection48s_AndPassTheValidator()
@@ -262,6 +263,82 @@ public sealed class FormBuilderOptionsTests
         Assert.That(
             HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:LockedSections:0"] = "privacy", [$"{Root}:LockedSections:1"] = "spam" }),
             Is.EqualTo(new[] { $"{Root}:LockedSections:1 ('spam') is not a settings section; use one of general, email, protection, files, privacy, access, integrations." }));
+    }
+
+    [Test]
+    public void HostGrants_NameEachGroupOnce_WithKnownPermissions_InAnyCase()
+    {
+        var settings = new Dictionary<string, string?>
+        {
+            [$"{Grants}0:Group"] = "editor",
+            [$"{Grants}0:Permissions:0"] = "VIEWENTRIES",
+            [$"{Grants}0:Permissions:1"] = "export",
+            [$"{Grants}1:Group"] = "jfbDesigners",
+            [$"{Grants}1:Permissions:0"] = "design",
+            [$"{Grants}1:Permissions:1"] = "manageLibrary",
+        };
+
+        var options = HostOptions.Bind(settings);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(new FormBuilderOptions().Access.Grants, Is.Empty, "no host grants by default");
+            Assert.That(options.Access.Grants.Select(grant => grant.Group), Is.EqualTo(new[] { "editor", "jfbDesigners" }));
+            Assert.That(options.Access.Grants[0].Permissions, Is.EqualTo(new[] { "VIEWENTRIES", "export" }));
+            Assert.That(HostOptions.Failures(settings), Is.Empty);
+        });
+    }
+
+    [Test]
+    public void AHostGrant_ThatIsNotWhole_IsRefused_NamingItsKey()
+    {
+        var failures = HostOptions.Failures(new Dictionary<string, string?>
+        {
+            [$"{Grants}0:Permissions:0"] = "viewEntries",
+            [$"{Grants}1:Group"] = "editor",
+            [$"{Grants}2:Group"] = "writer",
+            [$"{Grants}2:Permissions:0"] = "viewEntries",
+            [$"{Grants}2:Permissions:1"] = "viewEntry",
+            [$"{Grants}3:Group"] = "EDITOR",
+            [$"{Grants}3:Permissions:0"] = "export",
+            [$"{Grants}3:Permissions:1"] = "manageActions",
+        });
+
+        Assert.That(failures, Is.EqualTo(new[]
+        {
+            $"{Grants}0:Group is missing: name a user group by its alias, such as 'editor'.",
+            $"{Grants}1:Permissions is empty: list at least one permission, or remove the grant.",
+            $"{Grants}2:Permissions:1 ('viewEntry') is not a permission; use one of design, manageActions, viewEntries, viewSensitive, editEntries, deleteEntries, export, manageLibrary, manageSettings, managePermissions, privacyTools.",
+            $"{Grants}3:Group ('EDITOR') is granted again; {Grants}1 grants it already. Keep one.",
+            $"{Grants}3:Permissions grants 'manageActions' without 'design', which it needs.",
+            $"{Grants}3:Permissions grants 'export' without 'viewEntries', which it needs.",
+        }));
+    }
+
+    [Test]
+    public void AnEmptyHostGrant_IsRefused()
+    {
+        var options = new FormBuilderOptions();
+        options.Access.Grants.Add(null!);
+
+        Assert.That(HostOptions.Failures(options), Is.EqualTo(new[] { $"{Grants}0 is empty: give its Group and Permissions." }));
+    }
+
+    [Test]
+    public void ASiteWithAnInvalidHostGrant_DoesNotStart_AndSaysWhatToFix()
+    {
+        using var services = HostOptions.Services(new Dictionary<string, string?>
+        {
+            [$"{Grants}0:Group"] = "editor",
+            [$"{Grants}0:Permissions:0"] = "viewSensitive",
+            [$"{Root}:Access:Grant:0:Group"] = "writer",
+        });
+
+        Assert.That(
+            () => HostOptions.Start(services),
+            Throws.InstanceOf<OptionsValidationException>()
+                .With.Message.Contains($"{Grants}0:Permissions grants 'viewSensitive' without 'viewEntries', which it needs.")
+                .And.Message.Contains("JironFormBuilder:Access:Grant is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Access are Grants."));
     }
 
     [Test]

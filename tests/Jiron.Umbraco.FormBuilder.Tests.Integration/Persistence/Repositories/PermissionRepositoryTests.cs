@@ -149,6 +149,81 @@ public sealed class PermissionRepositoryTests : RepositoryTestBase
         });
     }
 
+    [Test]
+    public async Task AGrantOnAFolderOrFormThatIsGone_WritesNothing_AndIsNull()
+    {
+        var gone = await CreateFolderAsync("Gone");
+        var orphan = await Grant(Designers, PermissionTarget.Folder, gone.Key, 1);
+        await Folders.TrashAsync(gone.Id, Editor);
+        Assert.That(await Folders.DeleteAsync(gone.Id), Is.True, "deleted without its grants, as no service would");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Permissions.ChangeAsync(new GrantChange(Handlers, PermissionTarget.Folder, gone.Key, 0, 4)), Is.Null, "no new grant");
+            Assert.That(await Permissions.ChangeAsync(new GrantChange(Handlers, PermissionTarget.Form, Guid.NewGuid(), 0, 4)), Is.Null);
+            Assert.That(await Permissions.ChangeAsync(new GrantChange(Designers, PermissionTarget.Folder, gone.Key, 1, 3)), Is.Null, "no changed grant");
+            Assert.That(await Permissions.GetAsync(Designers, PermissionTarget.Folder, gone.Key), Is.EqualTo(orphan));
+            Assert.That(await Permissions.ChangeAsync(new GrantChange(Designers, PermissionTarget.Folder, gone.Key, 2, 3)), Is.Null, "gone comes before stale, as for any missing item");
+            Assert.That(await Permissions.ChangeAsync(new GrantChange(Designers, PermissionTarget.Folder, gone.Key, 1, 0)), Is.Null, "but a grant of it can go");
+            Assert.That(Count(FormBuilderTables.Permission), Is.Zero);
+        });
+    }
+
+    [Test]
+    public async Task TheFoldersOfGrantedForms_AreThoseWhereAGroupHoldsOneOfThePermissions_OnTheFormItself()
+    {
+        var events = await CreateFolderAsync("Events");
+        var hr = (await Folders.GetAsync(Hr))!;
+        var spring = await CreateFormAsync("spring", events.Id);
+        var autumn = await CreateFormAsync("autumn", events.Id);
+        var payroll = await CreateFormAsync("payroll", hr.Id);
+        await Grant(Designers, PermissionTarget.Form, spring.Key, 1);
+        await Grant(Designers, PermissionTarget.Form, autumn.Key, 4);
+        await Grant(Handlers, PermissionTarget.Form, payroll.Key, 4);
+        await Grant(Designers, PermissionTarget.Form, Contact, 5);
+        await Grant(Designers, PermissionTarget.Folder, Hr, 5);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Permissions.ListFoldersOfGrantedFormsAsync([Designers], 1), Is.EqualTo(new[] { events.Id }), "once, and not the root's Contact nor a folder's own grant");
+            Assert.That(await Permissions.ListFoldersOfGrantedFormsAsync([Designers], 4), Is.EqualTo(new[] { events.Id }));
+            Assert.That(await Permissions.ListFoldersOfGrantedFormsAsync([Handlers, Designers, Handlers], 4), Is.EqualTo(new[] { Math.Min(hr.Id, events.Id), Math.Max(hr.Id, events.Id) }), "in order");
+            Assert.That(await Permissions.ListFoldersOfGrantedFormsAsync([Handlers], 1), Is.Empty);
+            Assert.That(await Permissions.ListFoldersOfGrantedFormsAsync([Designers], 0), Is.Empty);
+            Assert.That(await Permissions.ListFoldersOfGrantedFormsAsync([], 1), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task TheFoldersOfGrantedForms_OfManyGroups_AreReadInStatementsOfAtMost1000Keys()
+    {
+        var hr = (await Folders.GetAsync(Hr))!;
+        var payroll = await CreateFormAsync("payroll", hr.Id);
+        await Grant(Handlers, PermissionTarget.Form, payroll.Key, 4);
+        var keys = Enumerable.Range(0, (2 * PermissionRepository.GroupsPerStatement) + 1).Select(_ => Guid.NewGuid()).Append(Handlers).ToList();
+
+        var statements = new List<int>();
+        var folders = await Database.ReadAsync(async db =>
+        {
+            var counter = new ParameterCounter(statements);
+            db.Interceptors.Add(counter);
+            try
+            {
+                return await Permissions.ListFoldersOfGrantedFormsAsync(keys, 4);
+            }
+            finally
+            {
+                db.Interceptors.Remove(counter);
+            }
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(folders, Is.EqualTo(new[] { hr.Id }));
+            Assert.That(statements, Is.EqualTo(new[] { 1001, 1001, 3 }), "the permissions and at most 1,000 keys per statement");
+        });
+    }
+
     private async Task<StoredGrant> Grant(Guid group, PermissionTarget type, Guid key, int permissions) =>
         (await Permissions.ChangeAsync(new GrantChange(group, type, key, 0, permissions)))!;
 

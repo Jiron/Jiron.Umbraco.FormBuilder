@@ -26,8 +26,8 @@ npx playwright test --project=smoke
 
 | Project | What it holds |
 | --- | --- |
-| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below) and the form service (`Forms/`, below). |
+| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), and the Testing project's own tests. |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), the form service (`Forms/`, below) and the access service (`Access/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -256,6 +256,24 @@ and entries that keep arriving until `in_use`. `FolderServiceTests` covers the f
 create, rename and move with every refusal, a trash and a restore that take exactly what went (a folder and a form
 trashed before stay), a subfolder restored on its own, the delete of a folder's tree, emptying the trash, and that
 none of these publishes notifications of the forms it takes.
+
+## The access tests
+
+`Tests.Unit/Access/` covers the permission model without a host (ADR-0013, ADR-0048): the flags' names in any letter
+case, what each needs and where each may be granted (`PermissionRulesTests`); how a user is read, the administrators by
+Umbraco's alias and the Forms section matched exactly (`AccessUserTests`); and the evaluation on a tree with restricted
+folders, a ring and unknown folders, globally, per folder and per form, the lists' scope and visibility, and what a move
+gives each group (`AccessSnapshotTests`). `Tests.Unit/Persistence/AccessSqlTests` covers the lists' clause and its
+limit of groups.
+
+`Tests.Integration/Access/` runs the access service on a real site, with a fresh database per test. `AccessPersonas`
+creates the personas of ADR-0013, one group and one user each, with their global grants, and `AccessListTests` lists
+forms and folders as each of them over a library with a restricted folder for a separate group, a restricted form
+and a form in the trash, paged and counted. `AccessServiceTests` changes grants and restrictions with their audit
+entries, refusals and stale versions, deletes a user group through Umbraco, and shows that the cached evaluation
+follows every change: it gives the site a runtime cache, the recording server messenger, and
+`HookedPermissionRepository`, which lets another server change a grant while the snapshot loads or a change writes.
+`AccessLockTests` locks the section, and `HostGrantsBootTests` boots a site whose host sets the global grants.
 
 ## Writing tests
 
