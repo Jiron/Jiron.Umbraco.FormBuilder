@@ -11,6 +11,25 @@ public sealed class TestUserGroup
 
     /// <summary>Section aliases the group may open, for example <c>content</c>.</summary>
     public IList<string> Sections { get; } = [];
+
+    /// <summary>
+    /// The group's global Jiron Form Builder permissions by name, for example <c>viewEntries</c> (ADR-0013); the seed
+    /// sets the group's global grant to exactly these, none by default.
+    /// </summary>
+    public IList<string> Permissions { get; } = [];
+}
+
+/// <summary>A restricted folder at the root that a test host seeds, with its own grant to one group (ADR-0013, ADR-0049).</summary>
+public sealed class TestRestrictedFolder
+{
+    /// <summary>The folder's name, for example <c>HR</c>; the seed takes the root folder of that name outside the trash.</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>The alias of the user group the folder is granted to.</summary>
+    public string Group { get; set; } = string.Empty;
+
+    /// <summary>The group's permissions on the folder by name; the seed sets its grant to exactly these.</summary>
+    public IList<string> Permissions { get; } = [];
 }
 
 /// <summary>A backoffice user a test creates, approved and with the given password.</summary>

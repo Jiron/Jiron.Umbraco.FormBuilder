@@ -1,5 +1,7 @@
 using System.Net;
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Testing.Stub;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Microsoft.AspNetCore.Builder;
@@ -8,6 +10,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Services;
 
 namespace Jiron.Umbraco.FormBuilder.Testing.Endpoints;
 
@@ -63,11 +67,17 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// <item><description><c>/jfb-testing/clock</c>: reads (<c>GET</c>), moves (<c>POST {"utc": "..."}</c> or
 /// <c>{"advanceSeconds": 360}</c>) and resets (<c>DELETE</c>) the host's <see cref="TestClock"/>; <c>404</c> when the
 /// host has none.</description></item>
+/// <item><description><c>GET /jfb-testing/access</c>: each backoffice user's effective Jiron Form Builder permissions,
+/// globally, at the root and on each root folder outside the trash in the library's order (ADR-0049), so the browser
+/// tests can see that the personas have their grants.</description></item>
 /// </list>
 /// Requests from another machine, and paths outside <c>/jfb-testing/</c>, go on to the site as if this did not exist.
 /// </summary>
 internal sealed class TestEndpointsMiddleware(RequestDelegate next)
 {
+    // A test host has a handful of users.
+    private const int MaxUsers = 200;
+
     private static readonly JsonSerializerOptions Json = JsonSerializerOptions.Web;
 
     /// <summary>Handles one request.</summary>
@@ -87,6 +97,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "clock":
                 await ClockAsync(context);
+                return;
+            case "access" when HttpMethods.IsGet(context.Request.Method):
+                await AccessAsync(context);
                 return;
             default:
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -137,6 +150,48 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
         }
 
         await context.Response.WriteAsJsonAsync(new { utc = clock.GetUtcNow(), offsetSeconds = clock.Offset.TotalSeconds }, Json, context.RequestAborted);
+    }
+
+    // The evaluation itself, as the management API's policies ask it, for every user and root folder of the host.
+    private static async Task AccessAsync(HttpContext context)
+    {
+        var services = context.RequestServices;
+        var access = services.GetRequiredService<IFormBuilderAccessService>();
+        var folders = (await services.GetRequiredService<IFormBuilderFolderService>().ListAsync(cancellationToken: context.RequestAborted))
+            .Where(folder => folder is { ParentKey: null, TrashedUtc: null })
+            .ToList();
+        var users = await services.GetRequiredService<IUserService>().GetAllAsync(Constants.Security.SuperUserKey, 0, MaxUsers);
+        if (!users.Success || users.Result is not { } page)
+        {
+            throw new InvalidOperationException($"The test host could not read its users: {users.Status}.");
+        }
+
+        var answer = new List<object>();
+        foreach (var user in page.Items.OrderBy(user => user.Email, StringComparer.OrdinalIgnoreCase))
+        {
+            var who = AccessUser.Of(user);
+            var inFolders = new List<object>();
+            foreach (var folder in folders)
+            {
+                inFolders.Add(new
+                {
+                    name = folder.Name,
+                    restricted = folder.IsRestricted,
+                    permissions = PermissionRules.NamesOf(await access.GetForFolderAsync(who, folder.Key, context.RequestAborted)),
+                });
+            }
+
+            answer.Add(new
+            {
+                email = user.Email,
+                section = who.HasSection,
+                global = PermissionRules.NamesOf(await access.GetGlobalAsync(who, context.RequestAborted)),
+                root = PermissionRules.NamesOf(await access.GetForFolderAsync(who, null, context.RequestAborted)),
+                folders = inFolders,
+            });
+        }
+
+        await context.Response.WriteAsJsonAsync(new { users = answer }, Json, context.RequestAborted);
     }
 
     private sealed record ClockRequest(DateTimeOffset? Utc = null, double? AdvanceSeconds = null);

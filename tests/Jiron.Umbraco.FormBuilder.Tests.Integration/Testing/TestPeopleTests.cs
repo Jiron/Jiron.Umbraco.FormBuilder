@@ -1,5 +1,7 @@
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Testing.People;
+using Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -8,19 +10,28 @@ using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Testing;
-using Umbraco.Cms.Tests.Integration.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Testing;
 
-/// <summary>The user and member factories and the host seeder of the Testing project, against a real Umbraco.</summary>
+/// <summary>
+/// The user and member factories and the host seeder of the Testing project, against a real Umbraco with Jiron Form
+/// Builder's tables, where the seeder also gives the groups their grants and seeds the restricted folders.
+/// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public sealed class TestPeopleTests : UmbracoIntegrationTest
+public sealed class TestPeopleTests : FormBuilderMigrationTestBase
 {
     private const string Designer = "designer@people.jfb.test";
     private const string Member = "member@people.jfb.test";
 
     private TestPeople People => ActivatorUtilities.CreateInstance<TestPeople>(Services);
+
+    [SetUp]
+    public async Task MigrateAsync()
+    {
+        var result = await RunAsync(new FormBuilderMigrationPlan());
+        Assert.That(result.Successful, Is.True, result.Exception?.ToString());
+    }
 
     [Test]
     public async Task EnsureUserAsync_WithAGroup_CreatesAnApprovedUserWhoCanSignIn()
@@ -125,7 +136,7 @@ public sealed class TestPeopleTests : UmbracoIntegrationTest
         {
             Assert.That(GetRequiredService<IUserService>().GetByEmail(Designer), Is.Not.Null);
             Assert.That(GetRequiredService<IMemberService>().GetByEmail(Member), Is.Not.Null);
-            Assert.That(logged.Select(entry => entry.Message), Is.EqualTo(new[] { "Jiron Form Builder test people ready (1 groups, 1 users, 1 members)" }));
+            Assert.That(logged.Select(entry => entry.Message), Is.EqualTo(new[] { "Jiron Form Builder test people ready (1 groups, 0 restricted folders, 1 users, 1 members)" }));
             Assert.That(logged.Any(entry => entry.Message.Contains(settings.Users[0].Password, StringComparison.Ordinal)), Is.False);
         });
     }
@@ -157,7 +168,11 @@ public sealed class TestPeopleTests : UmbracoIntegrationTest
         Assert.That(GetRequiredService<LogCapture>().Entries.Where(entry => entry.Category == typeof(TestPeopleSeeder).FullName), Is.Empty);
     }
 
-    protected override void CustomTestSetup(IUmbracoBuilder builder) => builder.Services.AddLogCapture();
+    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    {
+        base.CustomTestSetup(builder);
+        builder.Services.AddLogCapture();
+    }
 
     private static TestUserGroup DesignersGroup()
     {

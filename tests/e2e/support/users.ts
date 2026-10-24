@@ -3,8 +3,11 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { credentialsFile } from './paths.ts';
 
-/** The backoffice personas the tests sign in as (ADR-0013). Step 4.6 gives each its Jiron Form Builder permissions. */
-export type Role = 'admin' | 'designer' | 'entryHandler' | 'viewer' | 'privacyOfficer' | 'noAccess' | 'outsider';
+/**
+ * The backoffice personas the tests sign in as (ADR-0013), each with its Jiron Form Builder permissions (ADR-0049); `hr`
+ * is the separate group that alone may open the restricted folder.
+ */
+export type Role = 'admin' | 'designer' | 'entryHandler' | 'viewer' | 'privacyOfficer' | 'noAccess' | 'hr' | 'outsider';
 
 export const ROLES: readonly Role[] = [
   'admin',
@@ -13,6 +16,7 @@ export const ROLES: readonly Role[] = [
   'viewer',
   'privacyOfficer',
   'noAccess',
+  'hr',
   'outsider',
 ];
 
@@ -27,15 +31,37 @@ export interface Account {
 }
 
 /**
- * The user groups the test host creates before the users: one per persona, each with the Forms section. Designers
- * also get Content, where they place forms on pages (6.7); the others work in the Forms section only.
+ * The user groups the test host creates before the users: one per persona, each with the Forms section and its global
+ * permissions (ADR-0013). Designers also get Content, where they place forms on pages (6.7); the others work in the
+ * Forms section only.
  */
 export const USER_GROUPS = [
-  { alias: 'jfbDesigners', name: 'Form designers', sections: ['content', FORMS_SECTION] },
-  { alias: 'jfbEntryHandlers', name: 'Entry handlers', sections: [FORMS_SECTION] },
-  { alias: 'jfbViewers', name: 'Entry viewers', sections: [FORMS_SECTION] },
-  { alias: 'jfbPrivacyOfficers', name: 'Privacy officers', sections: [FORMS_SECTION] },
-  { alias: 'jfbNoAccess', name: 'Forms without grants', sections: [FORMS_SECTION] },
+  {
+    alias: 'jfbDesigners',
+    name: 'Form designers',
+    sections: ['content', FORMS_SECTION],
+    permissions: ['design', 'manageActions', 'manageLibrary'],
+  },
+  {
+    alias: 'jfbEntryHandlers',
+    name: 'Entry handlers',
+    sections: [FORMS_SECTION],
+    permissions: ['viewEntries', 'editEntries', 'export'],
+  },
+  { alias: 'jfbViewers', name: 'Entry viewers', sections: [FORMS_SECTION], permissions: ['viewEntries'] },
+  {
+    alias: 'jfbPrivacyOfficers',
+    name: 'Privacy officers',
+    sections: [FORMS_SECTION],
+    permissions: ['privacyTools', 'viewEntries', 'viewSensitive', 'deleteEntries'],
+  },
+  { alias: 'jfbNoAccess', name: 'Forms without grants', sections: [FORMS_SECTION], permissions: [] },
+  { alias: 'jfbHrTeam', name: 'HR team', sections: [FORMS_SECTION], permissions: [] },
+] as const;
+
+/** The restricted folder at the root that the test host seeds, granted to the HR team only (ADR-0013). */
+export const RESTRICTED_FOLDERS = [
+  { name: 'HR', group: 'jfbHrTeam', permissions: ['viewEntries', 'editEntries'] },
 ] as const;
 
 /** Who each persona is and which Umbraco user groups it belongs to. */
@@ -48,6 +74,8 @@ export const PEOPLE: Record<Role, { name: string; email: string; groups: readonl
   privacyOfficer: { name: 'Pia Privacy', email: 'e2e-privacy@jfb.test', groups: ['jfbPrivacyOfficers'] },
   // The Forms section and no grants.
   noAccess: { name: 'Nina Nogrant', email: 'e2e-no-access@jfb.test', groups: ['jfbNoAccess'] },
+  // The only one besides the admin who may open the restricted folder.
+  hr: { name: 'Hana Hiring', email: 'e2e-hr@jfb.test', groups: ['jfbHrTeam'] },
   // A backoffice user without the Forms section: Umbraco's writers have Content only.
   outsider: { name: 'Otto Outsider', email: 'e2e-outsider@jfb.test', groups: ['writer'] },
 };

@@ -86,7 +86,7 @@ database connection of its own. Its areas:
 | Area | Holds | Decided in |
 | --- | --- | --- |
 | Public API | `/jfb/api/v1`, CORS, body and time limits, the rate-limit middleware, the no-form middleware | ADR-0012, ADR-0006 |
-| Management API | `/umbraco/jfb/management/api/v1`, authorization policies, the OpenAPI document `jfb` | ADR-0013, §4.7 |
+| Management API | `/umbraco/jfb/management/api/v1`, the authorization policies with their resources and denials, the OpenAPI document `jfb` | ADR-0013, ADR-0049, §4.7 |
 | Rendering | the view component, `<jfb-render>`, `<jfb-assets>`, the surface controller, output cache rules, asset serving | ADR-0004, ADR-0015 |
 | Themes | the built-in themes, their views and stylesheets | ADR-0015 |
 | Content integration | the form picker property editor, value converters, the Delivery API converter, "used on" | ADR-0017 |
@@ -318,6 +318,14 @@ form holds its own and, unless it is restricted, its folder's. An unknown folder
 evaluation fails closed. Lists filter in their query, before paging and counting: a form list keeps the forms whose
 folder (or the root) the user holds something on and the forms granted to them on their own; a folder list keeps the
 folders on the way to those. A move that gives a group more than it held needs `managePermissions` (4.7).
+
+**The policies** ([ADR-0049](decisions/0049-authorization-policies.md)) are ASP.NET Core authorization policies on
+the backoffice's token: `Jiron.FormBuilder.Policy.Section` for what any user of the section may call, and
+`Jiron.FormBuilder.Policy.<permission>` for each permission. A policy on its own checks globally; an endpoint for a
+folder or form passes the resource, the folder's key (none for the root) or the form's folder and grants, and the
+handler asks the evaluation. A failure says why: no Forms section, not found (the user holds nothing on the form,
+or nothing on the folder and nothing below it), or the missing permission by name, which the management API turns
+into `403` or `404` as above. A principal that is not a backoffice user gets no decision, so it is refused.
 
 ## 7. Settings
 

@@ -1,5 +1,5 @@
 import { STUB_PORT } from './paths.ts';
-import { PEOPLE, ROLES, USER_GROUPS, type E2ESecrets } from './users.ts';
+import { PEOPLE, RESTRICTED_FOLDERS, ROLES, USER_GROUPS, type E2ESecrets } from './users.ts';
 
 /** Whether the run's host has the Content Delivery API on: `JFB_E2E_DELIVERY_API=on` or `off` (the default). */
 export function deliveryApiOn(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -34,6 +34,17 @@ export function hostEnvironment(secrets: E2ESecrets, options: { deliveryApi: boo
     env[`JironFormBuilderTesting__UserGroups__${g}__Name`] = group.name;
     group.sections.forEach(
       (section, s) => (env[`JironFormBuilderTesting__UserGroups__${g}__Sections__${s}`] = section),
+    );
+    group.permissions.forEach(
+      (permission, p) => (env[`JironFormBuilderTesting__UserGroups__${g}__Permissions__${p}`] = permission),
+    );
+  });
+
+  RESTRICTED_FOLDERS.forEach((folder, f) => {
+    env[`JironFormBuilderTesting__RestrictedFolders__${f}__Name`] = folder.name;
+    env[`JironFormBuilderTesting__RestrictedFolders__${f}__Group`] = folder.group;
+    folder.permissions.forEach(
+      (permission, p) => (env[`JironFormBuilderTesting__RestrictedFolders__${f}__Permissions__${p}`] = permission),
     );
   });
 

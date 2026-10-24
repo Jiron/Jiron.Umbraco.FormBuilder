@@ -26,6 +26,7 @@ public sealed class FormBuilderTestingComposer : IComposer
     {
         builder.Services.AddOptions<FormBuilderTestingOptions>().Bind(builder.Config.GetSection(FormBuilderTestingOptions.SectionName));
         builder.Services.AddTransient<TestPeople>();
+        builder.Services.AddTransient<TestAccess>();
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, TestPeopleSeeder>();
         builder.Services.AddTransient<IStartupFilter, TestEndpointsStartupFilter>();
 

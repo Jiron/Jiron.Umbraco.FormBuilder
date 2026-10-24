@@ -14,7 +14,16 @@ import {
   TARGET_FRAMEWORK,
   testingProject,
 } from './paths.ts';
-import { MEMBERS, PEOPLE, ROLES, USER_GROUPS, type Account, type E2ESecrets, type Role } from './users.ts';
+import {
+  MEMBERS,
+  PEOPLE,
+  RESTRICTED_FOLDERS,
+  ROLES,
+  USER_GROUPS,
+  type Account,
+  type E2ESecrets,
+  type Role,
+} from './users.ts';
 
 // The test host's start and settings: the ports it may use, an environment that only the harness configures, the
 // people it creates, and log lines that are the ones the C# code writes.
@@ -89,7 +98,20 @@ test('the host environment creates every persona but the admin, with its groups,
     );
   });
   assert.equal(env[`JironFormBuilderTesting__Users__${users.length}__Email`], undefined);
-  USER_GROUPS.forEach((group, g) => assert.equal(env[`JironFormBuilderTesting__UserGroups__${g}__Alias`], group.alias));
+  USER_GROUPS.forEach((group, g) => {
+    assert.equal(env[`JironFormBuilderTesting__UserGroups__${g}__Alias`], group.alias);
+    group.permissions.forEach((permission, p) =>
+      assert.equal(env[`JironFormBuilderTesting__UserGroups__${g}__Permissions__${p}`], permission),
+    );
+    assert.equal(env[`JironFormBuilderTesting__UserGroups__${g}__Permissions__${group.permissions.length}`], undefined);
+  });
+  RESTRICTED_FOLDERS.forEach((folder, f) => {
+    assert.equal(env[`JironFormBuilderTesting__RestrictedFolders__${f}__Name`], folder.name);
+    assert.equal(env[`JironFormBuilderTesting__RestrictedFolders__${f}__Group`], folder.group);
+    folder.permissions.forEach((permission, p) =>
+      assert.equal(env[`JironFormBuilderTesting__RestrictedFolders__${f}__Permissions__${p}`], permission),
+    );
+  });
   MEMBERS.forEach((member, m) => assert.equal(env[`Demo__Members__${m}__Email`], member.email));
 });
 

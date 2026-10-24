@@ -34,8 +34,14 @@ public sealed class FormBuilderTestingOptions
     /// </summary>
     public bool StartupMarker { get; set; }
 
-    /// <summary>Backoffice user groups to create before the users; existing aliases are left as they are.</summary>
+    /// <summary>
+    /// Backoffice user groups to create before the users; existing aliases are left as they are, and each group's global
+    /// grant is set to its <see cref="TestUserGroup.Permissions"/>.
+    /// </summary>
     public IList<TestUserGroup> UserGroups { get; } = [];
+
+    /// <summary>Restricted root folders to create, each with its own grant to one group, after the user groups.</summary>
+    public IList<TestRestrictedFolder> RestrictedFolders { get; } = [];
 
     /// <summary>Backoffice users to create; existing email addresses are left as they are.</summary>
     public IList<TestUser> Users { get; } = [];
