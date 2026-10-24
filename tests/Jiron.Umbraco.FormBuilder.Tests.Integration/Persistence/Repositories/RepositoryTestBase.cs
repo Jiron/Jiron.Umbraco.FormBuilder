@@ -54,6 +54,10 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
 
     private protected IEmailRepository Emails => Repo<IEmailRepository>();
 
+    private protected IAuditRepository Audit => Repo<IAuditRepository>();
+
+    private protected IDailyStatRepository Stats => Repo<IDailyStatRepository>();
+
     [SetUp]
     public async Task MigrateAsync()
     {

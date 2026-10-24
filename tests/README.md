@@ -132,12 +132,34 @@ the diff gets read and committed):
   once, which SQLite's gate takes in turn; the two-processor test is 8.1's), a token of each claim's own, outcomes
   only with the claim's token and from the states they need, the order of a batch and "stop the rest" within it,
   leases that run out and the late finisher, retries from the log, undo, the purge and an entry's deletion
-  (ADR-0007, ADR-0040).
+  (ADR-0007, ADR-0040);
+- the audit log (`AuditRepositoryTests`): entries that commit and roll back with their change and come back as
+  stored, the filters and pages newest first, a view recorded once per window (also twenty at once, and again after
+  a unit that rolled back), the purge oldest first, and an entry full of
+  personal data through every kind of action about entries, after which `Support/AuditLogSearch` finds none of its
+  values anywhere in the log (ADR-0041);
+- the audit log's search itself: it finds a value in a column, in the details and escaped, ignoring case, and never
+  inside a key;
+- daily statistics (`DailyStatRepositoryTests`): counts by day, metric and dimension, 400 increments and 100 batches
+  at once from two repositories while fields are added to the form, a day's first counts at once, a form that does
+  not exist (also with values of it left), counts racing their form's delete, the caller's unit, a form's delete and
+  the purge a form and a day at a time (ADR-0041). SQLite runs one write at a time, so only the SQL Server run in CI
+  shows that the parallel ones never deadlock.
+
+`Tests.Integration/Files/PhysicalFileStoreTests` runs the file store as a site gets it, in a folder under
+`%TEMP%\jfb-files-*`: a file per id in its shard, read asynchronously from the stream, a delete during a download,
+and saves that are cut off, cancelled, repeated or made while another save of the id writes, none of which leaves
+anything behind or replaces a file, not even one that appears while the save writes. A partial file or a deleted
+file's bytes that cannot be deleted are logged without their path and left for retention (ADR-0006, ADR-0041).
 
 The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made to do on cue:
 
 - a commit that fails on its way, a lost connection, and the waits between attempts;
 - the arguments each repository refuses, and how the outbox cuts and stores errors and attachments;
+- the file store's root (`Tests.Unit/Files/FileStoreRootTests`), with a site whose files would lie in its web root
+  failing its start-up validation, device paths and streams refused, and real junctions or symbolic links followed
+  into, around and out of the web root (`FileStoreRootLinkTests`, in `%TEMP%\jfb-links-*`); and audit details that
+  take no text, down to every method and field of the type (`Tests.Unit/Audit/AuditDetailsTests`);
 - the entry text key against the rule vectors of `tests/vectors`: two texts share a key exactly when an `equals`
   vector says they match (`EntryTextKeyTests`);
 - the query builder's statements and refusals (`EntryQuerySqlTests`), and the time budget of a read: a timeout that

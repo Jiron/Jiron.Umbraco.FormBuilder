@@ -34,6 +34,8 @@ public sealed class ProductDtoTests
         new object[] { typeof(Dtos.EntryNoteDto), typeof(CreateSchemaV1.EntryNoteDto) },
         new object[] { typeof(Dtos.ActionRunDto), typeof(CreateSchemaV1.ActionRunDto) },
         new object[] { typeof(Dtos.EmailDto), typeof(CreateSchemaV1.EmailDto) },
+        new object[] { typeof(Dtos.AuditEntryDto), typeof(CreateSchemaV1.AuditEntryDto) },
+        new object[] { typeof(Dtos.DailyStatDto), typeof(CreateSchemaV1.DailyStatDto) },
     ];
 
     [TestCaseSource(nameof(Pairs))]
