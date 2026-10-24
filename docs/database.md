@@ -597,7 +597,9 @@ What a user group may do, globally (`targetKey` is `Guid.Empty`), in a folder or
 ### `jfbSetting`
 
 The backoffice settings, one row per section and scope: `global`, or the key of a site's root. `schemaVersion` lets
-code upgrade old values; `version` makes a save based on older values fail (ADR-0008).
+code upgrade old values; `version` makes a save based on older values fail (ADR-0008). `json` is camelCase, with
+enums as text and nulls left out: a global row holds every field of its section, and a site row only the top-level
+fields the site overrides, where `null` stands for the default (ADR-0043). A site without overrides has no row.
 
 - `IX_jfbSetting_scope_section`: unique.
 

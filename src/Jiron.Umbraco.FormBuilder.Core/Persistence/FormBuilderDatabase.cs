@@ -45,6 +45,12 @@ internal sealed partial class FormBuilderDatabase(
     /// <summary>The current time as the UTC value to store.</summary>
     public DateTime UtcNow => timeProvider.GetUtcNow().UtcDateTime;
 
+    /// <summary>
+    /// True inside a unit of work or a scope Umbraco opened: work started now joins a transaction its owner commits, so
+    /// its effects outside the database must wait for that owner.
+    /// </summary>
+    public bool InUnitOfWork => _inside.Value || scopeAccessor.AmbientScope is not null;
+
     /// <summary>Runs read-only work.</summary>
     public Task<T> ReadAsync<T>(Func<IUmbracoDatabase, Task<T>> read, CancellationToken cancellationToken = default)
     {
@@ -147,7 +153,7 @@ internal sealed partial class FormBuilderDatabase(
     /// <summary>Runs a unit of work, and again after a transient error where that is safe (see the remarks).</summary>
     private async Task<T> AttemptsAsync<T>(bool write, Func<StrongBox<bool>, Task<T>> unit, CancellationToken cancellationToken)
     {
-        if (_inside.Value || scopeAccessor.AmbientScope is not null)
+        if (InUnitOfWork)
         {
             return await unit(new StrongBox<bool>());
         }

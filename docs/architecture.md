@@ -75,7 +75,7 @@ database connection of its own. Its areas:
 | Files | the file store contract and the physical store, whose root is checked against the web root at start-up, scanning | ADR-0006, ADR-0041 |
 | Privacy | retention, holds, data subject tools, masking, IP handling | ADR-0009 |
 | Permissions | grants, restrictions, evaluation | ADR-0013 |
-| Settings | sections, host options and their start-up checks, locks, the cache | ADR-0008, ADR-0042 |
+| Settings | host options and their start-up checks; the backoffice sections with their validators, migrations and host rules, the cached reader, the save and the cache refresher | ADR-0008, ADR-0042, ADR-0043 |
 | Persistence | NPoco DTOs, repositories, the entries query builder, the outbox, the audit log and daily statistics, the migration plan, the database gate and units of work ([database.md](database.md#access)) | ADR-0003, ADR-0007, ADR-0033, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0041, D7 |
 | Platform | jobs, notifications, the audit log's details (keys, numbers, flags, enum values, times and identifiers only), the HTML and CSS sanitiser | ADR-0007, ADR-0041, §4.10 |
 
@@ -300,12 +300,23 @@ Two layers ([ADR-0008](decisions/0008-settings-model.md)):
   a misspelt one included, with messages that name the key, and refuses a runtime without ICU
   ([ADR-0042](decisions/0042-host-configuration-and-start-up-checks.md)). A lowered definition limit refuses saves,
   never what the site stored. An IntelliSense schema generated from the options ships with the Core package.
-- **Backoffice sections** in `jfbSetting`: `general` and `email` (both per site, field by field), `protection`,
-  `files`, `privacy` and `integrations` (global); Access is stored in `jfbPermission`.
+- **Backoffice sections** in `jfbSetting` ([ADR-0043](decisions/0043-backoffice-settings-sections.md)): one immutable
+  record each, whose initializers are the defaults, with a validator, its schema migrations and a host rule, each
+  arriving with the step that builds what it configures (so far `general` with the time zone). `general` and `email`
+  are per site: a site row holds the top-level fields the site overrides (`null` meaning the default), and a
+  `[GlobalOnly]` field is shared by every site. `protection`, `files`, `privacy` and `integrations` are global;
+  Access is stored in `jfbPermission`.
 
 Effective value = code default, then the global row, then the site row, then the host rules (switch off only, clamp,
-lock). A form's `inherit` takes the effective site value. The site of a request is the root of its content, else the
-root whose domain matches its host, else global. Changes reach every server through a cache refresher.
+lock), applied where the value is read, so a lock added later never rewrites a row. A form's `inherit` takes the
+effective site value. The site of a request is the root of its content, else the root whose domain matches its host,
+else global.
+
+A save is a unit of work of its own, so its effects follow its commit: it refuses a value the host rules change
+(`409 setting_locked`) or clamp (`range`), validates (`422`), writes with the version the editor read
+(`409 concurrency_conflict`) together with its audit entry, then clears this server's copy, tells the others through
+the payload cache refresher and publishes `SettingsSavedNotification`. Each server caches a section per scope for an
+hour, behind a loading token that keeps a read racing a save from caching the old value.
 
 ## 8. Extension points
 
