@@ -26,8 +26,8 @@ npx playwright test --project=smoke
 
 | Project | What it holds |
 | --- | --- |
-| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, and the repositories (`Persistence/`, below). |
+| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), and the Testing project's own tests. |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below) and the settings service (`Settings/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -182,6 +182,26 @@ The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made 
 budgeted read, or on SQL that changes rows (ADR-0039).
 `Architecture/SqlGuardTests` reads the repositories' source and fails on a guard without a locking read (ADR-0038):
 the hints are empty on SQLite, so no database test here can tell.
+
+## The settings tests
+
+`Tests.Unit/Settings/` covers the backoffice sections without a host (ADR-0043): a section's JSON (camelCase, enums
+as text, nulls left out, unknown properties dropped), each migration step and a missing or doubled one, how a site row
+combines with the global row, the changed field paths, the host rules of every kind and a save's lock check, every
+validator and default (`general`'s time zone: IANA ids pass; Windows names, offsets, untrimmed text and another letter
+case do not, even once the exact spelling is cached), the cache keys and what a refresher instruction clears.
+`Testing/Settings/SampleSettings` is a section with every kind of field (texts, a number, an enum, a nested object, a
+list, a `[GlobalOnly]` field, one stored under a name of its own) and what is no field (a worked-out value, an
+indexer), two migrations, a validator that normalises and checks across fields, and a host rule whose locks a test
+sets.
+
+`Tests.Integration/Settings/` runs the settings service on a real site, with a fresh database per test: saves
+globally and per site with their versions, stale saves, audit entries and notifications (a failing handler too); old
+rows migrated and rewritten; unreadable rows; host locks of every kind and a whole locked section
+(`LockedSectionTests`); a save refused inside a caller's unit of work or an Umbraco scope; and the cache with its
+loading token and the refresher, also as the JSON instruction other servers get. Umbraco's test host runs without
+caches (`NoAppCache`), so `SettingsServiceTests` gives its site a runtime cache, as a real site has, and a server
+messenger that records the instructions a save sends instead of delivering them (`RecordingServerMessenger`).
 
 ## Writing tests
 

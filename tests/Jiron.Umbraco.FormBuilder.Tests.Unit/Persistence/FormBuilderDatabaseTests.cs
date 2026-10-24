@@ -209,6 +209,21 @@ public sealed class FormBuilderDatabaseTests
     }
 
     [Test]
+    public async Task InUnitOfWork_InsideAUnit_OrAScopeThatUmbracoOpened_AndNotOutside()
+    {
+        var outside = _database.InUnitOfWork;
+        var inWrite = await _database.WriteAsync(_ => Task.FromResult(_database.InUnitOfWork));
+        var inRead = await _database.ReadAsync(_ => Task.FromResult(_database.InUnitOfWork));
+        _scopeAccessor.AmbientScope.Returns(Substitute.For<IScope>());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((outside, inWrite, inRead), Is.EqualTo((false, true, true)), "this test's scopes are not ambient");
+            Assert.That(_database.InUnitOfWork, Is.True, "inside a scope that Umbraco opened");
+        });
+    }
+
+    [Test]
     public void ACancelledUnit_IsNotRunAgain()
     {
         using var cancel = new CancellationTokenSource();
