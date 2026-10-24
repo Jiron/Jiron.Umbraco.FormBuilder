@@ -11,8 +11,8 @@ using Umbraco.Cms.Core.Notifications;
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Forms;
 
 /// <summary>
-/// Every notification of the form service a site published, whether a unit of work was open when a handler got it, and
-/// switches that make the handlers cancel, fail or change the form meanwhile.
+/// Every notification of the form and folder services a site published, whether a unit of work was open when a handler
+/// got it, and switches that make the handlers cancel, fail or change the library meanwhile.
 /// </summary>
 internal sealed class FormNotificationLog
 {
@@ -31,13 +31,13 @@ internal sealed class FormNotificationLog
     public bool Fail { get; set; }
 
     /// <summary>Runs in the handler of every notification before a change, before it would cancel.</summary>
-    public Func<FormCancelableNotification, Task>? Before { get; set; }
+    public Func<CancelableNotification, Task>? Before { get; set; }
 
     /// <summary>Records a notification.</summary>
     public void Add(INotification notification, bool inUnitOfWork) => _seen.Add((notification, inUnitOfWork));
 }
 
-/// <summary>Records a notification of the form service as an extension's handler gets it, and acts on the log's switches.</summary>
+/// <summary>Records a notification of the form or folder service as an extension's handler gets it, and acts on the log's switches.</summary>
 /// <typeparam name="T">The notification.</typeparam>
 internal sealed class FormNotificationRecorder<T>(FormNotificationLog log, FormBuilderDatabase database) : INotificationAsyncHandler<T>
     where T : INotification
@@ -52,7 +52,7 @@ internal sealed class FormNotificationRecorder<T>(FormNotificationLog log, FormB
     public async Task HandleAsync(T notification, CancellationToken cancellationToken)
     {
         log.Add(notification, database.InUnitOfWork);
-        if (notification is FormCancelableNotification before)
+        if (notification is CancelableNotification before)
         {
             if (log.Before is { } change)
             {

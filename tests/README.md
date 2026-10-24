@@ -159,7 +159,10 @@ the diff gets read and committed):
   at once from two repositories while fields are added to the form, a day's first counts at once, a form that does
   not exist (also with values of it left), counts racing their form's delete, the caller's unit, a form's delete and
   the purge a form and a day at a time (ADR-0041). SQLite runs one write at a time, so only the SQL Server run in CI
-  shows that the parallel ones never deadlock.
+  shows that the parallel ones never deadlock;
+- the trash and the delete (`TrashRepositoryTests`, ADR-0047): the forms of a folder's tree going to the trash with
+  its key and coming back with it, a form held in the trash at its version, the entries of a form lowest number
+  first with their files, the uploads that wait for an entry, a batch's unsent mail, and a form's references.
 
 `Tests.Integration/Files/PhysicalFileStoreTests` runs the file store as a site gets it, in a folder under
 `%TEMP%\jfb-files-*`: a file per id in its shard, read asynchronously from the stream, a delete during a download,
@@ -214,7 +217,8 @@ messenger that records the instructions a save sends instead of delivering them 
 spelled-out letters, camelCase, a leading digit, names without Latin letters, the length) and the lowest free number in
 any letter case; the field catalogue of a definition and what a publish adds, updates, brings back and ends, with the
 storage kind of every built-in type written out apart from the code; the code of every refusal and conflict; the
-notifications' arguments and the structural publish check; and the built-in templates (`BuiltInFormTemplatesTests`:
+notifications' arguments (also of the folder service, `FolderNotificationTests`) and the structural publish check; the
+name rule of forms and folders (`LibraryNamesTests`); and the built-in templates (`BuiltInFormTemplatesTests`:
 one per file, each reading with its key, publishing and having English and German texts) with the package version
 an export names.
 
@@ -242,6 +246,16 @@ new version (or writes nothing when the draft holds it already) with its notific
 comments that leave the form's row alone, and every refusal. `Tests.Integration/Retention/` runs the draft-version
 cleanup by the history settings, with the versions it must keep, its rounds, its deadline and its audit entries, and the
 retention job that runs it; `Tests.Unit/Retention/` covers the job's own rules without a host.
+
+`FormTrashServiceTests` covers the trash and the permanent delete of a form (ADR-0047): a trash and a restore into
+its folder or, when that is in the trash, the root; stale changes; a delete that removes the entries with their
+values, files, events and notes, the versions, catalogue, grants, references and daily statistics, unsent mail and
+the bytes of the files (with `Support/MemoryFileStore` as the site's file store), keeping sent mail and other forms;
+a delete that stops after its first batch and finishes when run again, bytes that cannot be deleted, a late entry
+and entries that keep arriving until `in_use`. `FolderServiceTests` covers the folder service on the same rules:
+create, rename and move with every refusal, a trash and a restore that take exactly what went (a folder and a form
+trashed before stay), a subfolder restored on its own, the delete of a folder's tree, emptying the trash, and that
+none of these publishes notifications of the forms it takes.
 
 ## Writing tests
 

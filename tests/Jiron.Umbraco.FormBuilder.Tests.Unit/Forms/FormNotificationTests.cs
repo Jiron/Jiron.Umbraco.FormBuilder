@@ -60,6 +60,31 @@ public sealed class FormNotificationTests
     }
 
     [Test]
+    public void TheNotificationsOfTheTrashAndTheDelete_CarryWhatTheyName()
+    {
+        var trashing = new FormTrashingNotification(FormKey, "contact", "Contact", User, new EventMessages());
+        var trashed = new FormTrashedNotification(FormKey, "contact", "Contact", User);
+        var restoring = new FormRestoringNotification(FormKey, "contact", "Contact", Folder, User, new EventMessages());
+        var restored = new FormRestoredNotification(FormKey, "contact", "Contact", null, User);
+        var deleting = new FormDeletingNotification(FormKey, "contact", "Contact", null, new EventMessages());
+        var deleted = new FormDeletedNotification(FormKey, "contact", "Contact", 12, 3, User);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((trashing.FormKey, trashing.Alias, trashing.Name, trashing.UserKey), Is.EqualTo((FormKey, "contact", "Contact", (Guid?)User)));
+            Assert.That((trashed.FormKey, trashed.Alias, trashed.Name, trashed.UserKey), Is.EqualTo((FormKey, "contact", "Contact", (Guid?)User)));
+            Assert.That((restoring.FolderKey, restored.FolderKey), Is.EqualTo(((Guid?)Folder, (Guid?)null)), "the folder it goes back into, or the root");
+            Assert.That((deleting.FormKey, deleting.UserKey), Is.EqualTo((FormKey, (Guid?)null)));
+            Assert.That((deleted.EntryCount, deleted.FileCount, deleted.UserKey), Is.EqualTo((12L, 3L, (Guid?)User)));
+            Assert.That(new[] { trashing.Cancel, restoring.Cancel, deleting.Cancel }, Is.All.False);
+            Assert.That(() => new FormDeletedNotification(FormKey, "contact", "Contact", -1, 0, null), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(() => new FormDeletedNotification(FormKey, "contact", "Contact", 0, -1, null), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(() => new FormRestoredNotification(FormKey, string.Empty, "Contact", null, null), Throws.ArgumentException);
+            Assert.That(() => new FormTrashingNotification(FormKey, "contact", string.Empty, null, new EventMessages()), Throws.ArgumentException);
+        });
+    }
+
+    [Test]
     public void ANotification_NeedsTheFormsAliasAndName()
     {
         var messages = new EventMessages();
