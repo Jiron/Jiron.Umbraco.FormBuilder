@@ -72,12 +72,12 @@ database connection of its own. Its areas:
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
 | Actions and email | action types, action runs, the email outbox, the worker | ADR-0007 |
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
-| Files | the file store contract and the physical store, scanning | ADR-0006 |
+| Files | the file store contract and the physical store, whose root is checked against the web root at start-up, scanning | ADR-0006, ADR-0041 |
 | Privacy | retention, holds, data subject tools, masking, IP handling | ADR-0009 |
 | Permissions | grants, restrictions, evaluation | ADR-0013 |
 | Settings | sections, host options, locks, the cache | ADR-0008 |
-| Persistence | NPoco DTOs, repositories, the entries query builder, the outbox, the migration plan, the database gate and units of work ([database.md](database.md#access)) | ADR-0003, ADR-0007, ADR-0033, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, D7 |
-| Platform | jobs, notifications, the audit log, daily statistics, the HTML and CSS sanitiser | ADR-0007, §4.10 |
+| Persistence | NPoco DTOs, repositories, the entries query builder, the outbox, the audit log and daily statistics, the migration plan, the database gate and units of work ([database.md](database.md#access)) | ADR-0003, ADR-0007, ADR-0033, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0041, D7 |
+| Platform | jobs, notifications, the audit log's details (keys, numbers, flags, enum values, times and identifiers only), the HTML and CSS sanitiser | ADR-0007, ADR-0041, §4.10 |
 
 **Web** hosts the HTTP surfaces and rendering:
 
@@ -88,7 +88,7 @@ database connection of its own. Its areas:
 | Rendering | the view component, `<jfb-render>`, `<jfb-assets>`, the surface controller, output cache rules, asset serving | ADR-0004, ADR-0015 |
 | Themes | the built-in themes, their views and stylesheets | ADR-0015 |
 | Content integration | the form picker property editor, value converters, the Delivery API converter, "used on" | ADR-0017 |
-| Operations | health checks, Umbraco webhook events | §3.4 |
+| Operations | health checks, Umbraco webhook events, the site's content root and web root for the file store | §3.4, ADR-0041 |
 
 **The client packages** (`src/Jiron.Umbraco.FormBuilder.Web/Client`, an npm workspace):
 
@@ -319,7 +319,7 @@ Registries are collections, so a site can add, replace or remove entries.
 | `IFormBuilderSpamCheck` | a spam signal with a score and a reason | ADR-0012 |
 | `IFormBuilderMergeTagSource`, `IFormBuilderMergeTagFilter` | merge-tag sources and filters | ADR-0014 |
 | `IFormBuilderFileScanner` | scanning and quarantine | ADR-0006 |
-| `IFormBuilderFileStore` | other file storage, asynchronous | ADR-0006 |
+| `IFormBuilderFileStore` | other file storage, asynchronous: all of a file or nothing, never replacing one | ADR-0006, ADR-0041 |
 | `IFormBuilderTheme` | a theme: stylesheet, class map, tokens, view folder | ADR-0015 |
 | `IFormBuilderCspNonceProvider` | the request's CSP nonce | ADR-0004 |
 | `[FormBuilderSetting]` and the `jfbSettingEditor` manifest | settings editors for custom types without JavaScript, or with a custom element | §4.9 |

@@ -83,6 +83,11 @@ Every read and write goes through `FormBuilderDatabase` and the repositories in 
   change queues for an entry are a batch: an earlier run of the batch holds a later one back while it runs, waits for
   its first attempt, or stops the rest and is not final. The processors pass the wait, the lease, the delay before the
   next attempt and how long mail is kept: the repositories decide no policy.
+- **The audit log and daily statistics** ([ADR-0041](decisions/0041-file-store-audit-log-and-daily-stats.md)): an
+  audit entry is added in the unit of the change it records, with details built only from keys, numbers, flags, enum
+  values, times and identifiers; a view is recorded once per user, item and window by one `INSERT … WHERE NOT EXISTS`.
+  A count is an update, then an insert where the form exists and the row does not, then an update again, so counters
+  stay right when servers count at once and a late count never brings back the statistics of a deleted form.
 - **Guards are locking reads.** A check whose answer must hold until the unit ends (a row that must stay, or rows that
   must not appear) reads with `UPDLOCK, HOLDLOCK` on SQL Server, so a writer at the same moment meets the repository's
   refusal, not a foreign key's error, also under read-committed snapshot (ADR-0038).
@@ -604,7 +609,11 @@ never fails over a form that is gone. No indexes besides the primary key.
 
 ### `jfbAuditEntry`
 
-Who did what in the backoffice, never with field values.
+Who did what to which item and when, never with field values (ADR-0041). The action is `entity.verb`, the user is
+null for Jiron Form Builder's own jobs, and the details are a JSON object of keys, numbers, flags, enum values, times
+and identifiers; details about an entry name its fields by key. Entries never change and outlive what they name;
+retention deletes them oldest first, in batches. SQL Server compares actions and entity types ignoring case, so none
+differs from another in case only.
 
 - `IX_jfbAuditEntry_occurredUtc`: the log in order.
 - `IX_jfbAuditEntry_entityKey`: the history of one form, entry or setting.
@@ -612,5 +621,9 @@ Who did what in the backoffice, never with field values.
 ### `jfbDailyStat`
 
 Counters per day, form, metric and dimension (views, starts, submissions, spam, pages reached, invalid fields, and so
-on). New metrics need no migration, and the counters hold no personal data. Like `jfbReference`, it names the form
-without a foreign key, so counting never fails over a form that is being deleted. No indexes besides the primary key.
+on). New metrics need no migration, and the counters hold no personal data: a metric is one camelCase word, and a
+dimension a key, an hour, or a field key and an error kind. Like `jfbReference`, it names the form without a foreign key,
+so counting never fails over a form that is being deleted; a count for a form that does not exist adds nothing, and
+deleting a form deletes its values. Every unit that writes a form's values holds the form's row first, as the form's
+delete does, so they take turns and never deadlock; deletes and retention go a form and a day at a time, each a seek
+on the key. Days are midnights in UTC. No indexes besides the primary key.

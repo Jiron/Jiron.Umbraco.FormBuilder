@@ -901,7 +901,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 }
 ```
 
-`Files:MaxFileBytes` caps the limit an editor can give any file field. It is not a request limit: the upload endpoint and the no-JS post set Kestrel's limit per request from the form's fields, whatever the site's `Umbraco:CMS:Runtime:MaxRequestLength` (ADR-0006).
+`Files:MaxFileBytes` caps the limit an editor can give any file field. It is not a request limit: the upload endpoint and the no-JS post set Kestrel's limit per request from the form's fields, whatever the site's `Umbraco:CMS:Runtime:MaxRequestLength` (ADR-0006). `Files:Root` is `~/` and a path relative to the content root, or an absolute path; a root inside the web root or around it, as written or through its links, stops the site from starting (ADR-0041).
 
 **Backoffice settings** (typed sections in `jfbSetting`, ADR-0008; `global` scope, plus per-site overrides where marked). A site is a root content node, and the site of a request is the root of the content the form is shown on or submitted from; without content, the root whose Umbraco domain matches the request's host (14.4); otherwise the global values apply.
 
@@ -950,7 +950,7 @@ A settings change raises a notification and a cache refresher: the saving server
   - `IFormBuilderMergeTagSource` and `IFormBuilderMergeTagFilter`;
   - `IFormBuilderFileScanner`: malware scanning, for example ClamAV, in a sample;
   - `IFormBuilderTheme`: a theme, with its stylesheet, class map, token defaults and view folder (ADR-0015);
-  - `IFormBuilderFileStore`: other storage, for example blob storage through Umbraco's official provider (sample in 15.2). Asynchronous: `SaveAsync(id, stream)` stores all of it or nothing, `OpenReadAsync(id)` returns a stream or null, `DeleteAsync(id)`; ids are random and never URLs (ADR-0006).
+  - `IFormBuilderFileStore`: other storage, for example blob storage through Umbraco's official provider (sample in 15.2). Asynchronous: `SaveAsync(id, stream)` stores all of it or nothing, `OpenReadAsync(id)` returns a stream or null, `DeleteAsync(id)`; ids are random and never URLs (ADR-0006); a save never replaces a file, and a reader never sees one that is still being written (ADR-0041).
 - **Settings schemas:** C# attributes on a settings class (`[FormBuilderSetting(Label, Description, Editor, Order, Group, SupportsMergeTags)]`) give every custom type a backoffice editor without any JavaScript. A custom Lit element can replace the editor for a setting through a `jfbSettingEditor` manifest.
 - **Notifications:**
   - forms: `FormSaving`/`Saved`, `FormPublishing`/`Published`, `FormTrashing`/`Deleted`;
@@ -1632,7 +1632,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - duplicate, with or without actions, remapping every key and every rule, action and outcome reference;
     - copy actions to another form, remapping fields by alias and reporting the unmapped ones;
     - move.
-  - **Trash and delete:** trash, restore, delete permanently (cascading entries, files, versions, permissions, references and daily stats; references and stats name the form without a foreign key, ADR-0033), empty trash.
+  - **Trash and delete:** trash, restore, delete permanently (cascading entries, files, versions, permissions, references and daily stats; references and stats name the form without a foreign key, ADR-0033), empty trash. The delete removes the form's row before its daily stats, in the same unit, so a count that waited for the row counts nothing (ADR-0041).
   - **Folders**, and notifications for every lifecycle event. Trashing a folder takes the folders and forms in it to the trash with it, and restoring it brings back what went with it (the repository of 4.3a marks one row at a time, ADR-0036). Its new statements follow the guard rule of ADR-0038: every check of other rows is a locking read on SQL Server, which `SqlGuardTests` enforces.
   - Done when: unit and integration tests cover each operation, including:
     - "restore creates a new version";
@@ -2209,8 +2209,9 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Rules:** days per state per form, with global defaults. `PurgeAfterUtc` is computed on every state change.
   - **A legal hold:** an entry can be kept with a reason and an end date.
   - **The job** deletes in batches, files and emails included, and offers a dry-run preview (counts per form). Everything is audited.
+    - **What a dead process leaves in the file store** (ADR-0041): the job also deletes `.partial` files, `.deleted-` files and stored files that no `jfbEntryFile` row names, once they are a day old.
   - **The screens:** the retention settings (global and per form) with the dry run, now that the engine exists.
-  - Done when: tests with fake time pass, including holds, and Playwright changes a retention setting and sees the dry run follow it.
+  - Done when: tests with fake time pass, including holds, and Playwright changes a retention setting and sees the dry run follow it. A test leaves a partial file, a deleted file's bytes and a stored file without a row, each older than a day, next to younger ones, and the job deletes exactly the three old ones.
 - [ ] **13.2 Data subject tools**
   - **Find:** by email (email-type fields and member email) or by member, across all forms.
   - **Export:** everything as a ZIP (JSON per entry, files, consent texts).

@@ -278,6 +278,16 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
         d.CreatedByUserKey,
         d.UpdatedByUserKey);
 
+    /// <summary>
+    /// The first write of a unit that counts for a form or deletes its daily values: it changes nothing, but holds the
+    /// form's row until the unit ends, so units that touch a form's values take turns, and always lock the form first.
+    /// False when the form does not exist.
+    /// </summary>
+    internal static async Task<bool> HoldAsync(IUmbracoDatabase db, SqlNames n, int formId) =>
+        await db.ExecAsync(
+            $"UPDATE {n.T(FormBuilderTables.Form)} SET {n.C("updatedUtc")} = {n.C("updatedUtc")} WHERE {n.C("id")} = @0",
+            formId) == 1;
+
     private static string Raise(SqlNames n) => $"{n.C("concurrencyVersion")} = {n.C("concurrencyVersion")} + 1";
 
     private static async Task<StoredForm?> FindAsync(IUmbracoDatabase db, string column, object value)

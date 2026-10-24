@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Upgrades;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
@@ -14,7 +15,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Composing;
 
 /// <summary>
 /// Registers Jiron Form Builder's core services with Umbraco, which discovers this composer automatically: the
-/// database migration plan (ADR-0033), the pending-migration state, the definition services and the persistence (ADR-0036).
+/// database migration plan (ADR-0033), the pending-migration state, the definition services, the persistence (ADR-0036) and
+/// the file store (ADR-0041).
 /// </summary>
 public sealed class FormBuilderCoreComposer : IComposer
 {
@@ -54,5 +56,10 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<IEntryQueryRepository, EntryQueryRepository>();
         builder.Services.TryAddSingleton<IActionRunRepository, ActionRunRepository>();
         builder.Services.TryAddSingleton<IEmailRepository, EmailRepository>();
+        builder.Services.TryAddSingleton<IAuditRepository, AuditRepository>();
+        builder.Services.TryAddSingleton<IDailyStatRepository, DailyStatRepository>();
+
+        // The file store (ADR-0006, ADR-0041): the physical default, whose root is checked when the site starts.
+        builder.Services.AddFormBuilderFiles(builder.Config);
     }
 }
