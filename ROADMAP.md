@@ -1648,7 +1648,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - copy actions to another form, remapping fields by alias and reporting the unmapped ones.
   - **Notifications** for these lifecycle events and audit entries; new statements follow the guard rule of ADR-0038 (`SqlGuardTests`).
   - Done when: unit and integration tests cover each operation, including "duplicate remaps rule references".
-- [ ] **4.5d Trash, delete and folders**
+- [x] **4.5d Trash, delete and folders** (2026-10-24, 1528309)
   - **Trash and delete:** trash, restore, delete permanently (cascading entries, files, versions, permissions, references and daily stats; references and stats name the form without a foreign key, ADR-0033), empty trash. The delete removes the form's row before its daily stats, in the same unit, so a count that waited for the row counts nothing (ADR-0041).
   - **Folders.** Trashing a folder takes the folders and forms in it to the trash with it, and restoring it brings back what went with it (the repository of 4.3a marks one row at a time, ADR-0036).
   - **Notifications for every lifecycle event** and audit entries. Its new statements follow the guard rule of ADR-0038: every check of other rows is a locking read on SQL Server, which `SqlGuardTests` enforces.
