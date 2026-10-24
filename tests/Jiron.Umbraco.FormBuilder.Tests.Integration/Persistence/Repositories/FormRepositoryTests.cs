@@ -269,6 +269,69 @@ public sealed class FormRepositoryTests : RepositoryTestBase
         });
     }
 
+    [Test]
+    public async Task AFormInTheTrash_IsRefusedEveryChange_ButBeingTakenOffline()
+    {
+        var form = await CreateFormAsync("contact");
+        var published = (await Forms.PublishAsync(form.Id, form.ConcurrencyVersion, Document(), "calm", null, Editor))!.Form;
+        var trashed = (await Forms.TrashAsync(published.Id, published.ConcurrencyVersion, Editor))!;
+        var current = trashed.ConcurrencyVersion;
+
+        Assert.Multiple(async () =>
+        {
+            AssertRefused(() => Forms.UpdateAsync(new FormUpdate(trashed.Id, current, "contact", "Renamed", null, false, null)), FormBuilderConflict.Trashed);
+            AssertRefused(() => Forms.SaveDraftAsync(trashed.Id, current, Document("""{"pages":[1]}"""), null, Editor), FormBuilderConflict.Trashed);
+            AssertRefused(() => Forms.PublishAsync(trashed.Id, current, Document("""{"pages":[1]}"""), null, null, Editor), FormBuilderConflict.Trashed);
+            Assert.That(
+                async () => await Forms.UpdateAsync(new FormUpdate(trashed.Id, current - 1, "contact", "Stale", null, false, null)),
+                Throws.InstanceOf<FormBuilderConcurrencyException>(),
+                "a stale change says so first");
+            Assert.That(await Forms.GetByIdAsync(trashed.Id), Is.EqualTo(trashed), "the refusals changed nothing");
+            Assert.That(Count(FormBuilderTables.FormVersion, $"{Q("formId")} = @0", form.Id), Is.EqualTo(2));
+            var offline = await Forms.UnpublishAsync(trashed.Id, current, Editor);
+            Assert.That((offline?.PublishedVersionId, offline?.ThemeAlias, offline?.TrashedUtc), Is.EqualTo(((int?)null, (string?)null, trashed.TrashedUtc)), "offline, letting go of its theme, still in the trash");
+        });
+    }
+
+    [Test]
+    public async Task AFolderInTheTrash_TakesNoForm_ButAFormMayStayInIt()
+    {
+        var doomed = await CreateFolderAsync("Doomed");
+        var inside = await CreateFormAsync("inside", doomed.Id);
+        var outside = await CreateFormAsync("outside");
+        await Folders.TrashAsync(doomed.Id, Editor);
+
+        Assert.Multiple(async () =>
+        {
+            AssertRefused(() => Forms.CreateAsync(NewForm(folderId: doomed.Id)), FormBuilderConflict.MissingFolder);
+            AssertRefused(() => Forms.UpdateAsync(new FormUpdate(outside.Id, outside.ConcurrencyVersion, "outside", "Moved", doomed.Id, false, null)), FormBuilderConflict.MissingFolder);
+            Assert.That(await Forms.GetByIdAsync(outside.Id), Is.EqualTo(outside));
+            Assert.That(Count(FormBuilderTables.Form), Is.EqualTo(2));
+            var renamed = await Forms.UpdateAsync(new FormUpdate(inside.Id, inside.ConcurrencyVersion, "inside", "Renamed", doomed.Id, false, null));
+            Assert.That((renamed?.Name, renamed?.FolderId), Is.EqualTo(("Renamed", (int?)doomed.Id)), "a rename keeps the folder");
+        });
+    }
+
+    [Test]
+    public async Task TheAliasesWithAPrefix_AreListed_InAnyLetterCase_TrashedFormsIncluded()
+    {
+        await CreateFormAsync("contact");
+        await CreateFormAsync("Contact2");
+        var trashed = await CreateFormAsync("contactUs");
+        await Forms.TrashAsync(trashed.Id, trashed.ConcurrencyVersion, Editor);
+        await CreateFormAsync("newsletter");
+        await CreateFormAsync("myContact");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Forms.ListAliasesAsync("CONTACT"), Is.EquivalentTo(new[] { "contact", "Contact2", "contactUs" }));
+            Assert.That(await Forms.ListAliasesAsync("contactU"), Is.EqualTo(new[] { "contactUs" }));
+            Assert.That(await Forms.ListAliasesAsync("con%"), Is.Empty, "% is no wildcard");
+            Assert.That(await Forms.ListAliasesAsync("c_ntact"), Is.Empty, "_ is no wildcard");
+            Assert.That(await Forms.ListAliasesAsync(string.Empty), Has.Count.EqualTo(5));
+        });
+    }
+
     internal static CatalogueFieldValues Field(string alias, int sortOrder = 0) =>
         new(Guid.NewGuid(), alias, alias.ToUpperInvariant(), "text", "Text", false, sortOrder, null, null, null);
 

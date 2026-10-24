@@ -38,6 +38,25 @@ public sealed class FormVersionTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task TheLastPublishBeforeAVersion_IsFound_AmongTheFormsOwnVersions()
+    {
+        var form = await CreateFormAsync();
+        var other = await CreateFormAsync();
+        var first = (await Forms.PublishAsync(form.Id, form.ConcurrencyVersion, Document(), null, null, Editor))!;
+        var saved = (await Forms.SaveDraftAsync(form.Id, first.Form.ConcurrencyVersion, Document("""{"pages":[1]}"""), null, Editor))!;
+        await Forms.PublishAsync(form.Id, saved.Form.ConcurrencyVersion, Document("""{"pages":[1]}"""), null, null, Editor);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Forms.GetLastPublishedNumberAsync(form.Id, 4), Is.EqualTo(2), "the publish before version 4");
+            Assert.That(await Forms.GetLastPublishedNumberAsync(form.Id, 3), Is.EqualTo(2), "a draft is no publish");
+            Assert.That(await Forms.GetLastPublishedNumberAsync(form.Id, 99), Is.EqualTo(4));
+            Assert.That(await Forms.GetLastPublishedNumberAsync(form.Id, 2), Is.Null, "none before the first");
+            Assert.That(await Forms.GetLastPublishedNumberAsync(other.Id, 99), Is.Null, "another form's publishes do not count");
+        });
+    }
+
+    [Test]
     public async Task AStaleSave_IsRefused_AndAppendsNothing()
     {
         var form = await CreateFormAsync();

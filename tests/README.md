@@ -26,8 +26,8 @@ npx playwright test --project=smoke
 
 | Project | What it holds |
 | --- | --- |
-| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below) and the settings service (`Settings/`, below). |
+| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), and the Testing project's own tests. |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below) and the form service (`Forms/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -189,7 +189,8 @@ the hints are empty on SQLite, so no database test here can tell.
 as text, nulls left out, unknown properties dropped), each migration step and a missing or doubled one, how a site row
 combines with the global row, the changed field paths, the host rules of every kind and a save's lock check, every
 validator and default (`general`'s time zone: IANA ids pass; Windows names, offsets, untrimmed text and another letter
-case do not, even once the exact spelling is cached), the cache keys and what a refresher instruction clears.
+case do not, even once the exact spelling is cached; the consent default's texts, refused as a definition refuses them),
+the cache keys and what a refresher instruction clears.
 `Testing/Settings/SampleSettings` is a section with every kind of field (texts, a number, an enum, a nested object, a
 list, a `[GlobalOnly]` field, one stored under a name of its own) and what is no field (a worked-out value, an
 indexer), two migrations, a validator that normalises and checks across fields, and a host rule whose locks a test
@@ -202,6 +203,24 @@ rows migrated and rewritten; unreadable rows; host locks of every kind and a who
 loading token and the refresher, also as the JSON instruction other servers get. Umbraco's test host runs without
 caches (`NoAppCache`), so `SettingsServiceTests` gives its site a runtime cache, as a real site has, and a server
 messenger that records the instructions a save sends instead of delivering them (`RecordingServerMessenger`).
+
+## The form service tests
+
+`Tests.Unit/Forms/` covers the parts of the form service without a host (ADR-0044): aliases from names (accents,
+spelled-out letters, camelCase, a leading digit, names without Latin letters, the length) and the lowest free number in
+any letter case; the field catalogue of a definition and what a publish adds, updates, brings back and ends, with the
+storage kind of every built-in type written out apart from the code; the code of every refusal and conflict; and the
+notifications' arguments and the structural publish check.
+
+`Tests.Integration/Forms/` runs the service on a real site, with a fresh database per test: a create from blank with
+and without the consent default (and with a stored default a definition would refuse), aliases and their races,
+folders outside the trash, draft saves that change something or nothing, stale changes and a change between the
+checks and the write, publishes with the catalogue, the theme and the public revision, every publish check at once,
+unpublish, rename and move, the trash, cancelling and failing handlers, the order of the notifications, the audit
+entries, and a change refused inside a unit of work or an Umbraco scope. `FormNotificationRecorder` records every
+notification and whether a unit was open, and cancels, fails or changes the form when a test says so;
+`TestPublishCheck` is a second publish check whose problems a test sets. `FormServiceLimitTests` lowers the pages a
+definition may have, so a form saved before still opens and its save returns `limit_exceeded`.
 
 ## Writing tests
 

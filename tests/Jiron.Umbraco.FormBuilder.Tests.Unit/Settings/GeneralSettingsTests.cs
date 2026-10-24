@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Logic;
 
@@ -5,7 +7,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Settings;
 
 /// <summary>
 /// The general section (section 4.8, ADR-0043): its defaults, its scope and its validator. A time zone the server cannot
-/// resolve as an IANA zone cannot be saved, and a zone is stored as the server spells it (ADR-0005, ADR-0030).
+/// resolve as an IANA zone cannot be saved, and a zone is stored as the server spells it (ADR-0005, ADR-0030). The
+/// consent field a new form starts with has texts a definition takes (ADR-0044).
 /// </summary>
 [TestFixture]
 public sealed class GeneralSettingsTests
@@ -75,6 +78,94 @@ public sealed class GeneralSettingsTests
 
         Assert.That(Errors(new GeneralSettings { TimeZone = timeZone }).Select(e => e.Code), Is.EqualTo(new[] { "timeZone" }));
     }
+
+    [Test]
+    public void ANewForm_StartsWithoutAConsentField_UnlessTheSettingsGiveOne()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(new GeneralSettings().NewForms.Consent, Is.Null);
+            Assert.That(Errors(new GeneralSettings { NewForms = new NewFormDefaults { Consent = Consent(Texts("I agree", "de", "Ich stimme zu"), Texts("<p>I agree to the <a href=\"/terms\">terms</a>.</p>" + (char)10 + "<p>Thank you.</p>")) } }), Is.Empty, "rich text may span lines");
+        });
+    }
+
+    [Test]
+    public void TheNewFormDefaults_AreSetForEverySiteAtOnce()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(SettingsSectionJson.FieldNames<GeneralSettings>(), Does.Contain("newForms"));
+            Assert.That(SettingsSectionJson.SiteFieldNames<GeneralSettings>(), Does.Not.Contain("newForms"), "a new form belongs to no site");
+        });
+    }
+
+    [Test]
+    public void TheConsentTexts_AreStoredByCulture_AndReadBack()
+    {
+        var section = new GeneralSettings { NewForms = new NewFormDefaults { Consent = Consent(Texts("I agree", "de", "Ich stimme zu"), Texts("<p>Yes.</p>")) } };
+
+        var json = SettingsSectionJson.GlobalJson(section);
+        var read = SettingsSectionJson.Read<GeneralSettings>(JsonNode.Parse(json)!.AsObject());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(JsonNode.DeepEquals(JsonNode.Parse(json), JsonNode.Parse("""{"timeZone":"UTC","newForms":{"consent":{"label":{"":"I agree","de":"Ich stimme zu"},"text":{"":"<p>Yes.</p>"}}}}""")), Is.True, json);
+            Assert.That(read.NewForms.Consent!.Label, Is.EqualTo(section.NewForms.Consent!.Label));
+            Assert.That(read.NewForms.Consent.Text, Is.EqualTo(section.NewForms.Consent.Text));
+        });
+    }
+
+    public static IEnumerable<TestCaseData> BadConsents()
+    {
+        var line = Texts("I agree");
+        var html = Texts("<p>Yes.</p>");
+        yield return Bad(Consent(Texts("I agree").Where(t => t.Key != string.Empty).ToDictionary(), html), "label", "required", "no default label");
+        yield return Bad(Consent(Texts("  "), html), "label", "required", "a blank default label");
+        yield return Bad(Consent(null!, html), "label", "required", "no labels");
+        yield return Bad(Consent(line, Texts(string.Empty)), "text", "required", "an empty default text");
+        yield return Bad(Consent(Texts("I" + (char)10 + "agree"), html), "label", "invalid_value", "a label on two lines");
+        yield return Bad(Consent(Texts(new string('a', 501)), html), "label", "limit_exceeded", "a label of 501 characters");
+        yield return Bad(Consent(line, Texts(new string('a', 50001))), "text", "limit_exceeded", "a text of 50,001 characters");
+        yield return Bad(Consent(Texts("I agree", "not a culture", "x"), html), "label", "text", "a culture name that is none");
+        yield return Bad(Consent(line, Texts("<p>Yes.</p>", "de", "<p>Ja.</p>", "DE", "<p>Ja!</p>")), "text", "text", "a culture twice");
+        yield return Bad(Consent(Texts("I agree" + (char)0xD800), html), "label", "invalid_value", "a lone surrogate");
+    }
+
+    [TestCaseSource(nameof(BadConsents))]
+    public void AConsentDefault_ATextOfADefinitionWouldRefuse_CannotBeSaved(object consent, string field, string code)
+    {
+        var errors = Errors(new GeneralSettings { NewForms = new NewFormDefaults { Consent = (NewFormConsent)consent } });
+
+        Assert.That(errors.Select(error => (error.Field, error.Code)), Is.EqualTo(new[] { ("general.newForms.consent." + field, code) }));
+    }
+
+    [Test]
+    public void ARichConsentText_MaySpanLines()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(DefinitionSaveChecks.CheckText(new LocalizedHtml("<p>Yes.</p>" + (char)10 + "<p>Really.</p>"), html: true), Is.Empty);
+            Assert.That(DefinitionSaveChecks.CheckText(new LocalizedText("Yes." + (char)10 + "Really."), html: false).Select(problem => problem.Code), Is.EqualTo(new[] { "invalid_value" }));
+            Assert.That(() => DefinitionSaveChecks.CheckText(null!, html: false), Throws.ArgumentNullException);
+        });
+    }
+
+    private static NewFormConsent Consent(IReadOnlyDictionary<string, string> label, IReadOnlyDictionary<string, string> text) => new() { Label = label, Text = text };
+
+    // A default text and pairs of a culture and its text.
+    private static Dictionary<string, string> Texts(string fallback, params string[] cultures)
+    {
+        var texts = new Dictionary<string, string> { [string.Empty] = fallback };
+        for (var i = 0; i < cultures.Length; i += 2)
+        {
+            texts[cultures[i]] = cultures[i + 1];
+        }
+
+        return texts;
+    }
+
+    private static TestCaseData Bad(NewFormConsent consent, string field, string code, string why) =>
+        new TestCaseData(consent, field, code).SetArgDisplayNames(why);
 
     private static IReadOnlyList<SettingsError> Errors(GeneralSettings section)
     {
