@@ -145,11 +145,13 @@ internal sealed partial class FormRepository
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.FormVersion);
                 var id = $"{table}.{n.C("id")}";
+
+                // The form is found by its id, so the locking read holds its row only: the version columns have no index.
                 var deleted = await db.ExecAsync(
                     $"""
                     DELETE FROM {table} WHERE {n.C("formId")} = @0 AND {n.C("number")} = @1 AND {n.C("kind")} = @2 AND {n.C("isPinned")} = @3
-                    AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)} f WHERE f.{n.C("draftVersionId")} = {id} OR f.{n.C("publishedVersionId")} = {id})
-                    AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Entry)} e WHERE e.{n.C("formVersionId")} = {id})
+                    AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)} f{n.LockingRead} WHERE f.{n.C("id")} = @0 AND (f.{n.C("draftVersionId")} = {id} OR f.{n.C("publishedVersionId")} = {id}))
+                    AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Entry)} e{n.LockingRead} WHERE e.{n.C("formVersionId")} = {id})
                     """,
                     formId,
                     number,

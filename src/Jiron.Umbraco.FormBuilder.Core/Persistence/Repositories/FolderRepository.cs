@@ -231,7 +231,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
             {
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.Folder);
-                var parentLives = $"EXISTS (SELECT 1 FROM {table} p WHERE p.{n.C("id")} = {table}.{n.C("parentId")} AND p.{n.C("trashedUtc")} IS NULL)";
+                var parentLives = $"EXISTS (SELECT 1 FROM {table} p{n.LockingRead} WHERE p.{n.C("id")} = {table}.{n.C("parentId")} AND p.{n.C("trashedUtc")} IS NULL)";
                 await db.ExecAsync(
                     $"UPDATE {table} SET {n.C("trashedUtc")} = NULL, {n.C("parentId")} = CASE WHEN {parentLives} THEN {n.C("parentId")} ELSE NULL END, {n.C("updatedUtc")} = @0, {n.C("updatedByUserKey")} = @1 WHERE {n.C("id")} = @2 AND {n.C("trashedUtc")} IS NOT NULL",
                     database.UtcNow,
@@ -249,7 +249,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.Folder);
                 var deleted = await db.ExecAsync(
-                    $"DELETE FROM {table} WHERE {n.C("id")} = @0 AND NOT EXISTS (SELECT 1 FROM {table} c WHERE c.{n.C("parentId")} = @0) AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)} f WHERE f.{n.C("folderId")} = @0)",
+                    $"DELETE FROM {table} WHERE {n.C("id")} = @0 AND NOT EXISTS (SELECT 1 FROM {table} c{n.LockingRead} WHERE c.{n.C("parentId")} = @0) AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)} f{n.LockingRead} WHERE f.{n.C("folderId")} = @0)",
                     id);
                 if (deleted == 1)
                 {

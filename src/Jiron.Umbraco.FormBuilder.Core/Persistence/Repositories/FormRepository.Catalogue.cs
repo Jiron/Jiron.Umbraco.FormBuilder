@@ -45,7 +45,7 @@ internal sealed partial class FormRepository
                         $"""
                         INSERT INTO {table} ({n.C("formId")}, {n.C("fieldKey")}, {n.C("alias")}, {n.C("label")}, {n.C("type")}, {n.C("storageKind")}, {n.C("isSensitive")}, {n.C("sortOrder")}, {n.C("firstVersionNumber")}, {n.C("lastVersionNumber")}, {n.C("parentFieldKey")})
                         SELECT @0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10
-                        WHERE EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)} WHERE {n.C("id")} = @0)
+                        WHERE EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)}{n.LockingRead} WHERE {n.C("id")} = @0)
                         AND NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {n.C("formId")} = @0 AND {n.C("fieldKey")} = @1)
                         """,
                         formId,
@@ -112,7 +112,7 @@ internal sealed partial class FormRepository
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.FormField);
                 var deleted = await db.ExecAsync(
-                    $"DELETE FROM {table} WHERE {n.C("formId")} = @0 AND {n.C("fieldKey")} = @1 AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.EntryValue)} v WHERE v.{n.C("fieldId")} = {table}.{n.C("id")})",
+                    $"DELETE FROM {table} WHERE {n.C("formId")} = @0 AND {n.C("fieldKey")} = @1 AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.EntryValue)} v{n.LockingRead} WHERE v.{n.C("fieldId")} = {table}.{n.C("id")})",
                     formId,
                     fieldKey);
                 if (deleted == 1)

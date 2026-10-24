@@ -32,7 +32,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.Form);
                 var now = database.UtcNow;
-                var folder = form.FolderId is null ? string.Empty : $" AND EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Folder)} WHERE {n.C("id")} = @1)";
+                var folder = form.FolderId is null ? string.Empty : $" AND EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Folder)}{n.LockingRead} WHERE {n.C("id")} = @1)";
                 int inserted;
                 try
                 {
@@ -156,7 +156,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
             {
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.Form);
-                var folder = update.FolderId is null ? string.Empty : $" AND EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Folder)} WHERE {n.C("id")} = @2)";
+                var folder = update.FolderId is null ? string.Empty : $" AND EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Folder)}{n.LockingRead} WHERE {n.C("id")} = @2)";
                 var updated = await TranslateDuplicatesAsync(() => db.ExecAsync(
                     $"""
                     UPDATE {table} SET {n.C("alias")} = @0, {n.C("name")} = @1, {n.C("folderId")} = @2, {n.C("isRestricted")} = @3, {Raise(n)}, {n.C("updatedUtc")} = @4, {n.C("updatedByUserKey")} = @5
@@ -223,7 +223,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
             {
                 var n = new SqlNames(db);
                 var folders = n.T(FormBuilderTables.Folder);
-                var folderLives = $"EXISTS (SELECT 1 FROM {folders} p WHERE p.{n.C("id")} = {n.T(FormBuilderTables.Form)}.{n.C("folderId")} AND p.{n.C("trashedUtc")} IS NULL)";
+                var folderLives = $"EXISTS (SELECT 1 FROM {folders} p{n.LockingRead} WHERE p.{n.C("id")} = {n.T(FormBuilderTables.Form)}.{n.C("folderId")} AND p.{n.C("trashedUtc")} IS NULL)";
                 return ChangeAsync(
                     db,
                     n,
@@ -242,7 +242,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
             {
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.Form);
-                var noEntries = $"NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Entry)} e WHERE e.{n.C("formId")} = @0)";
+                var noEntries = $"NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Entry)} e{n.LockingRead} WHERE e.{n.C("formId")} = @0)";
 
                 // The form's row points at two of its versions, which the delete cascades to: let go of them first.
                 var released = await db.ExecAsync(

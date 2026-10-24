@@ -36,6 +36,15 @@ internal readonly struct SqlNames(ISqlSyntaxProvider syntax)
     public string InsertOnceHint => IsSqlite ? string.Empty : " WITH (UPDLOCK, HOLDLOCK)";
 
     /// <summary>
+    /// The same hint for any other check whose answer must hold until the unit ends (ADR-0038): a row that must stay
+    /// (the version, field or file an insert names) or rows that must not appear (the values or entries that would keep
+    /// a delete from happening). On SQL Server the check becomes a locking read that waits for a writer at the same
+    /// moment instead of reading the row's last committed version, so the statement's own condition refuses, never a
+    /// foreign key. Empty on SQLite, whose writers the gate serialises.
+    /// </summary>
+    public string LockingRead => InsertOnceHint;
+
+    /// <summary>
     /// The start of a statement with recursive common table expressions: SQLite wants <c>WITH RECURSIVE</c>, SQL Server
     /// knows only <c>WITH</c>.
     /// </summary>

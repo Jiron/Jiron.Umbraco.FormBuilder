@@ -46,8 +46,28 @@ internal enum FormBuilderConflict
     /// <summary>A folder still holds folders or forms.</summary>
     FolderNotEmpty,
 
-    /// <summary>A form, a version or a catalogue field still has entries or values that point at it.</summary>
+    /// <summary>
+    /// A form, a version, a catalogue field, a theme or a file is still in use: entries, values or published forms point
+    /// at it.
+    /// </summary>
     InUse,
+
+    /// <summary>The form already has an entry with this submission id (section 4.4): the earlier entry answers the retry.</summary>
+    DuplicateSubmission,
+
+    /// <summary>The challenge already made another entry of the form; a challenge makes one entry (ADR-0012).</summary>
+    ChallengeUsed,
+
+    /// <summary>
+    /// A file the entry names does not exist, belongs to another form, or belongs to another entry already (ADR-0006).
+    /// </summary>
+    MissingFile,
+
+    /// <summary>A value names a field that is not in the catalogue of the entry's form.</summary>
+    MissingField,
+
+    /// <summary>The form version an entry names does not exist or belongs to another form.</summary>
+    MissingVersion,
 }
 
 /// <summary>

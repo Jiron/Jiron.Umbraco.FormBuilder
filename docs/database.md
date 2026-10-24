@@ -66,6 +66,14 @@ Every read and write goes through `FormBuilderDatabase` and the repositories in 
   Option lists, themes and email layouts are changed and deleted against their concurrency version, and a theme stays
   while a form's published version names it. A grant changes only from the permissions the editor saw, and a grant
   of nothing is no row.
+- **Entries** ([ADR-0038](decisions/0038-entry-repositories.md)) take their form's next number from
+  `jfbForm.lastEntryNumber`, raised as the first write of the unit, and are stored with their values and files in one
+  unit or not at all. The insert itself refuses a submission id or a challenge the form has already seen, and a
+  refused entry gives its number back. Values carry the text key rules compare by, and an entry's state changes only
+  from the state the user saw. Events are only ever added, and a consent wording is stored once under its hash.
+- **Guards are locking reads.** A check whose answer must hold until the unit ends (a row that must stay, or rows that
+  must not appear) reads with `UPDLOCK, HOLDLOCK` on SQL Server, so a writer at the same moment meets the repository's
+  refusal, not a foreign key's error, also under read-committed snapshot (ADR-0038).
 - **Reruns.** A unit that meets a lock conflict runs again, up to three attempts in all; a read also after a lost
   connection or a timeout.
 - **No connections of its own.** Core never opens a connection or creates a database. A unit test reads Core's IL to
@@ -443,8 +451,9 @@ entries). Entry columns, exports and search read it, and each value refers to it
 
 ### `jfbEntry`
 
-One row per entry. `submissionId` and `digest` make retries safe: the same submission returns the first receipt, a
-different one with the same id is refused (§4.4). `state` is the entry's place in the review workflow; `isTest` marks
+One row per entry, numbered per form from `jfbForm.lastEntryNumber` (drafts and test entries too, ADR-0038).
+`submissionId` and `digest` make retries safe: the same submission returns the first receipt, a different one with
+the same id is refused (§4.4). `state` is the entry's place in the review workflow; `isTest` marks
 entries from the preview. The search text is folded the way rules compare text and leaves out sensitive fields.
 Resume tokens and challenges are stored only as hashes and ids.
 
@@ -470,9 +479,11 @@ cleaned up (ADR-0006).
 ### `jfbEntryValue`
 
 One row per answer, or per item of a multi-value answer (`valueIndex`) and per row of a repeater (`rowIndex`). The
-typed columns are filled by the field's storage kind: `text` with `textKey` (the text folded for filters and sorts,
-ADR-0005), `number`, `date`, `bool` or `fileId`. Values refer to their field without a cascade: a field that has values
-cannot be deleted.
+typed columns are filled by the field's storage kind: `text` with `textKey` (for a value that is text only, the text
+cleaned and folded as rules compare it, cut to 256 code units; ADR-0005, ADR-0038), `number`, `date`, `bool` or
+`fileId`, at most one of them. Values refer to their field without a cascade: a field that has values cannot be
+deleted. On SQL Server the column's case-insensitive collation can treat keys as equal that rules keep apart (`ß` and
+`ss`), so the entries query builder compares a key again in a binary collation after the seek (4.3d, ADR-0038).
 
 - `IX_jfbEntryValue_entryId_fieldId`: the answers of an entry.
 - `IX_jfbEntryValue_fieldId_textKey_entryId`, `IX_jfbEntryValue_fieldId_number_entryId`,
@@ -481,8 +492,9 @@ cannot be deleted.
 
 ### `jfbConsentText`
 
-The exact wording of every consent a visitor gave, stored once and named by the SHA-256 of its culture and text; a
-consent value stores that hash. No indexes besides the primary key on `hash`.
+The exact wording of every consent a visitor gave, stored once and named by the SHA-256 of its culture and text (the
+culture's UTF-8 bytes, one zero byte, the text's UTF-8 bytes; ADR-0038); a consent value stores that hash. No
+indexes besides the primary key on `hash`.
 
 ### `jfbEntryEvent`
 
