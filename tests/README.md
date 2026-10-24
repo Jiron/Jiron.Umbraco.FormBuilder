@@ -26,11 +26,22 @@ npx playwright test --project=smoke
 
 | Project | What it holds |
 | --- | --- |
-| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), and the Testing project's own tests. |
+| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), and the Testing project's own tests. |
 | `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, and the repositories (`Persistence/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
+
+## The host configuration
+
+`Configuration/` checks the `JironFormBuilder` options as a site starts them (ADR-0042): `HostOptions` binds a
+configuration, runs the validator and builds the services, and `HostOptions.Start` runs what the host runs before it
+serves anything (`IStartupValidator`). A site that must not start is also run as a real process: the browser tests'
+`startup` project ([e2e/README.md](e2e/README.md)).
+
+`AppSettingsSchemaTests` generates the IntelliSense schema from the options and Core's XML docs and fails when
+`src/Jiron.Umbraco.FormBuilder.Core/appsettings-schema.Jiron.Umbraco.FormBuilder.json` is stale; run the unit tests
+with `JFB_UPDATE_SCHEMA=1` to rewrite it. Every `$ref` of the committed file must resolve within the file.
 
 ## The shared vectors
 

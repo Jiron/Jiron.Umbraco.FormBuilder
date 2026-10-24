@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -188,7 +189,7 @@ public sealed class FileStoreRootTests
         var mine = Substitute.For<IFormBuilderFileStore>();
         var services = new ServiceCollection();
         services.AddSingleton(mine);
-        services.AddFormBuilderFiles(new ConfigurationBuilder().Build());
+        services.AddFormBuilderFiles();
 
         Assert.That(services.Count(service => service.ServiceType == typeof(IFormBuilderFileStore)), Is.EqualTo(1));
     }
@@ -226,7 +227,8 @@ public sealed class FileStoreRootTests
         services.AddSingleton(folders);
         services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
-        services.AddFormBuilderFiles(new ConfigurationBuilder().AddInMemoryCollection(settings).Build());
+        services.AddFormBuilderOptions(new ConfigurationBuilder().AddInMemoryCollection(settings).Build());
+        services.AddFormBuilderFiles();
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
 }

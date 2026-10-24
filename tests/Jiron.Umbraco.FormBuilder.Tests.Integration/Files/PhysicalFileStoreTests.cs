@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.Files;
@@ -52,15 +53,15 @@ public sealed class PhysicalFileStoreTests : UmbracoIntegrationTest
     public void TheSite_StoresInTheConfiguredFolder_AndRefusesItsWebRoot()
     {
         var folders = GetRequiredService<IHostFolders>();
-        var validation = GetRequiredService<IEnumerable<IValidateOptions<FormBuilderFilesOptions>>>().Single();
+        var validation = GetRequiredService<IEnumerable<IValidateOptions<FormBuilderOptions>>>().Single();
 
         Assert.Multiple(() =>
         {
             Assert.That(Store, Is.InstanceOf<PhysicalFileStore>());
             Assert.That(((PhysicalFileStore)Store).Root, Is.EqualTo(_root));
             Assert.That(folders, Is.InstanceOf<WebHostFolders>(), "Web supplies the site's folders");
-            Assert.That(validation.Validate(Options.DefaultName, new FormBuilderFilesOptions { Root = Path.Combine(folders.WebRoot, "uploads") }).Failed, Is.True);
-            Assert.That(validation.Validate(Options.DefaultName, new FormBuilderFilesOptions()).Succeeded, Is.True, "the default");
+            Assert.That(validation.Validate(Options.DefaultName, new FormBuilderOptions { Files = { Root = Path.Combine(folders.WebRoot, "uploads") } }).Failed, Is.True);
+            Assert.That(validation.Validate(Options.DefaultName, new FormBuilderOptions()).Succeeded, Is.True, "the default");
         });
     }
 
@@ -328,7 +329,7 @@ public sealed class PhysicalFileStoreTests : UmbracoIntegrationTest
         builder.AddComposers();
         builder.Services.AddLogCapture();
         _root = Path.Combine(Path.GetTempPath(), "jfb-files-" + Guid.NewGuid().ToString("N"));
-        builder.Services.Configure<FormBuilderFilesOptions>(options => options.Root = _root);
+        builder.Services.Configure<FormBuilderOptions>(options => options.Files.Root = _root);
     }
 
     // Makes a file impossible to delete until the teardown: read-only on Windows, and elsewhere in a folder nobody may

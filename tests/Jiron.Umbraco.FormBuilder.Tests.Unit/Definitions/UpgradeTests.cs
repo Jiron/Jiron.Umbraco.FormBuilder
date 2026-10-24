@@ -44,6 +44,23 @@ public sealed class UpgradeTests
     }
 
     [Test]
+    public void AStoredOlderVersion_IsUpgradedToo_WhateverTheSitesLimits()
+    {
+        // A stored definition is read with the highest limits (ADR-0042), through the same upgrader chain.
+        var serializer = new FormDefinitionSerializer(new FormDefinitionUpgrades([new FlatFieldsToPages()]), new DefinitionLimits { MaxFields = 1 });
+
+        var result = serializer.ReadStored(Version0);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(serializer.Read(Version0).Problems.Select(problem => problem.Code), Is.EqualTo(new[] { DefinitionErrors.LimitExceeded }), "the site's limit");
+            Assert.That(result.Problems, Is.Empty);
+            Assert.That(result.SchemaVersion, Is.EqualTo(0));
+            Assert.That(result.Definition!.Pages.Single().Groups.Single().Fields, Has.Count.EqualTo(2));
+        });
+    }
+
+    [Test]
     public void AnUpgradedDocument_IsStillReadStrictly()
     {
         var serializer = new FormDefinitionSerializer(new FormDefinitionUpgrades([new FlatFieldsToPages()]), new DefinitionLimits());
