@@ -1640,7 +1640,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The draft-version cleanup,** the first part of the retention job (D8, ADR-0007), with its `general` setting: how long draft saves stay in a form's History, for every site at once (§4.8).
   - **Notifications** for these lifecycle events and audit entries; new statements follow the guard rule of ADR-0038 (`SqlGuardTests`).
   - Done when: unit and integration tests cover each operation, including "restore creates a new version".
-- [ ] **4.5c Copies, templates and import**
+- [x] **4.5c Copies, templates and import** (2026-10-24, 8d48ffd)
   - **Create from a template:** ship the built-in "Contact" template now, as embedded JSON (12.3 adds the others).
   - **Create by import.**
   - **Copies:**
