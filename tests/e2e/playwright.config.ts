@@ -32,5 +32,10 @@ export default defineConfig({
       testDir: './specs/smoke',
       use: browser,
     },
+    {
+      // Sites that must not start: each test runs the built demo in a process of its own and reads its log; no browser.
+      name: 'startup',
+      testDir: './specs/startup',
+    },
   ],
 });

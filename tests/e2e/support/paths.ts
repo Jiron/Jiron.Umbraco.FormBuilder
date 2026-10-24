@@ -44,6 +44,9 @@ export const PORT_RANGE = { first: 5500, last: 5599 } as const;
 export const E2E_PORT = 5520;
 export const E2E_BASE_URL = `http://127.0.0.1:${E2E_PORT}`;
 
+/** The hosts that must refuse to start (ROADMAP 4.4a); they never listen, but each gets a port of its own. */
+export const REFUSAL_PORTS = { configuration: 5521, globalization: 5522 } as const;
+
 /** The HTTP stub that the test host starts for webhooks, URL option lists and captcha verification. */
 export const STUB_PORT = 5560;
 export const STUB_URL = `http://127.0.0.1:${STUB_PORT}`;

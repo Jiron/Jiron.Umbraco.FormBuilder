@@ -1,4 +1,5 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { closeSync, cpSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { connect } from 'node:net';
 import { join, relative, sep } from 'node:path';
@@ -12,6 +13,7 @@ export const READY_LINES = ['Demo seeding finished', 'Jiron Form Builder test pe
 export const FAILED_LINES = ['Demo seeding failed', 'Jiron Form Builder test people failed'] as const;
 
 const START_TIMEOUT_MS = 4 * 60_000;
+const REFUSAL_TIMEOUT_MS = 3 * 60_000;
 const STOP_TIMEOUT_MS = 15_000;
 
 /**
@@ -36,6 +38,14 @@ export interface HostOptions {
   port: number;
   /** The host's settings and the people it creates, as environment variables. Never printed or written to a file. */
   env: Record<string, string>;
+}
+
+/** What a host that had to refuse to start left behind. */
+export interface RefusedHost {
+  /** The process's exit code; null when a signal ended it. */
+  exitCode: number | null;
+  /** Everything the host wrote to its console. */
+  log: string;
 }
 
 /** A running demo host with its own content root, SQLite database, mail pickup folder and log. */
@@ -239,28 +249,8 @@ export async function startHost(options: HostOptions): Promise<Host> {
     ...options.env,
   });
 
-  let child: ChildProcess | null = null;
-  let exited = false;
-  const logFd = openSync(logFile, 'a');
-  try {
-    // Only the log file is inherited, so the test runner's console is never held open by the host.
-    child = spawn('dotnet', [dll, '--contentRoot', contentRoot], {
-      cwd: contentRoot,
-      env,
-      stdio: ['ignore', logFd, logFd],
-      windowsHide: true,
-    });
-  } finally {
-    closeSync(logFd);
-  }
-  const started = child;
-  started.once('exit', () => (exited = true));
-  if (started.pid) writeFileSync(pidFile, String(started.pid));
-
-  const stop = async (): Promise<void> => {
-    if (started.pid && !exited) await stopTree(started.pid);
-    rmSync(pidFile, { force: true });
-  };
+  const launched = launch(dll, contentRoot, env, logFile, pidFile);
+  const { stop } = launched;
 
   const deadline = Date.now() + START_TIMEOUT_MS;
   try {
@@ -268,7 +258,7 @@ export async function startHost(options: HostOptions): Promise<Host> {
       if (Date.now() > deadline)
         throw new Error(`The host ${name} was not ready within ${START_TIMEOUT_MS / 60_000} minutes.`);
       await delay(500);
-      if (exited) throw new Error(`The host ${name} exited during start-up.`);
+      if (launched.exited()) throw new Error(`The host ${name} exited during start-up.`);
       const log = existsSync(logFile) ? readFileSync(logFile, 'utf8') : '';
       const failed = FAILED_LINES.find((line) => log.includes(line));
       if (failed) throw new Error(`The host ${name} logged "${failed}".`);
@@ -283,4 +273,93 @@ export async function startHost(options: HostOptions): Promise<Host> {
   }
 
   return { baseUrl, mailDir, logFile, stateDir, stop };
+}
+
+/**
+ * Starts the built demo as a fresh host that must refuse to start (ROADMAP 4.4a, ADR-0042): its own content root under
+ * .local/e2e/<name>/site and no database, because an empty connection string boots Umbraco to its installer state.
+ * Resolves with the exit code and the log once the process ends. A host still running at the deadline is stopped,
+ * and the call fails.
+ */
+export async function runRefusedHost(options: HostOptions): Promise<RefusedHost> {
+  const { name, port } = options;
+  checkPort(port);
+
+  const stateDir = join(e2eState, name);
+  const contentRoot = join(stateDir, 'site');
+  const pidFile = join(stateDir, 'host.pid');
+  await stopStaleHost(pidFile, contentRoot);
+  rmSync(stateDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  const logFile = join(stateDir, 'host.log');
+  mkdirSync(contentRoot, { recursive: true });
+  prepareContentRoot(contentRoot);
+
+  const dll = demoDll();
+  if (!existsSync(dll)) throw new Error(`The demo is not built (${relative(repoRoot, dll)} is missing).`);
+
+  const env = hostProcessEnvironment(process.env, {
+    ASPNETCORE_ENVIRONMENT: 'Development',
+    ASPNETCORE_URLS: `http://127.0.0.1:${port}`,
+    DOTNET_NOLOGO: '1',
+    ConnectionStrings__umbracoDbDSN: '',
+    // The demo refuses to start without an imaging key; this one is never used.
+    Umbraco__CMS__Imaging__HMACSecretKey: randomBytes(64).toString('hex'),
+    ...options.env,
+  });
+
+  const launched = launch(dll, contentRoot, env, logFile, pidFile);
+  const deadline = Date.now() + REFUSAL_TIMEOUT_MS;
+  while (!launched.exited() && Date.now() < deadline) await delay(250);
+  const kept = !launched.exited();
+  await launched.stop();
+  const log = existsSync(logFile) ? readFileSync(logFile, 'utf8') : '';
+  if (kept) {
+    throw new Error(
+      `The host ${name} was still running after ${REFUSAL_TIMEOUT_MS / 60_000} minutes; it should have refused to start. Last log lines:\n${logTail(logFile)}`,
+    );
+  }
+
+  return { exitCode: launched.exitCode(), log };
+}
+
+/**
+ * Starts the demo's DLL in a content root with only the log file as its console, so the test runner's console is never
+ * held open by the host, and writes its PID file. `stop` ends it with its whole process tree.
+ */
+function launch(
+  dll: string,
+  contentRoot: string,
+  env: NodeJS.ProcessEnv,
+  logFile: string,
+  pidFile: string,
+): { exited(): boolean; exitCode(): number | null; stop(): Promise<void> } {
+  let child: ChildProcess | null = null;
+  let exited = false;
+  let code: number | null = null;
+  const logFd = openSync(logFile, 'a');
+  try {
+    child = spawn('dotnet', [dll, '--contentRoot', contentRoot], {
+      cwd: contentRoot,
+      env,
+      stdio: ['ignore', logFd, logFd],
+      windowsHide: true,
+    });
+  } finally {
+    closeSync(logFd);
+  }
+  const started = child;
+  started.once('exit', (exitCode) => {
+    code = exitCode;
+    exited = true;
+  });
+  if (started.pid) writeFileSync(pidFile, String(started.pid));
+
+  return {
+    exited: () => exited,
+    exitCode: () => code,
+    stop: async () => {
+      if (started.pid && !exited) await stopTree(started.pid);
+      rmSync(pidFile, { force: true });
+    },
+  };
 }

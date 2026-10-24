@@ -5,7 +5,15 @@ import { test } from 'node:test';
 import { deliveryApiOn, hostEnvironment } from './host-env.ts';
 import { MARKER_NOT_LAST, STARTUP_LINES } from './host-health.ts';
 import { checkPort, demoDll, FAILED_LINES, hostProcessEnvironment, READY_LINES } from './host.ts';
-import { DEMO_URL, demoProject, E2E_PORT, STUB_PORT, TARGET_FRAMEWORK, testingProject } from './paths.ts';
+import {
+  DEMO_URL,
+  demoProject,
+  E2E_PORT,
+  REFUSAL_PORTS,
+  STUB_PORT,
+  TARGET_FRAMEWORK,
+  testingProject,
+} from './paths.ts';
 import { MEMBERS, PEOPLE, ROLES, USER_GROUPS, type Account, type E2ESecrets, type Role } from './users.ts';
 
 // The test host's start and settings: the ports it may use, an environment that only the harness configures, the
@@ -15,6 +23,12 @@ const source = (...path: string[]): string => readFileSync(join(...path), 'utf8'
 
 test('a test host uses a port of its own range and never the demo', () => {
   assert.doesNotThrow(() => checkPort(E2E_PORT));
+  for (const port of Object.values(REFUSAL_PORTS)) assert.doesNotThrow(() => checkPort(port));
+  assert.equal(
+    new Set([E2E_PORT, STUB_PORT, ...Object.values(REFUSAL_PORTS)]).size,
+    4,
+    'every host and the stub have a port of their own',
+  );
   assert.throws(() => checkPort(5420), /outside/);
   assert.throws(() => checkPort(5600), /outside/);
   assert.throws(() => checkPort(Number(new URL(DEMO_URL).port)), /demo's own/);

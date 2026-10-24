@@ -68,9 +68,10 @@ The support code has its own tests: `npm run support`.
 Edge locally (`channel: 'msedge'`), Playwright's Chromium when `CI` is set; `retries: 0`. Each project joins the
 config with its first spec.
 
-| Project | What it checks                                                                                                                                                            |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `smoke` | the site in both languages, every persona's sign-in and groups, the members area, the mail pickup, the test host (status, stub, Delivery API switch) and the form helpers |
+| Project   | What it checks                                                                                                                                                                                                                                                                 |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `smoke`   | the site in both languages, every persona's sign-in and groups, the members area, the mail pickup, the test host (status, stub, Delivery API switch) and the form helpers                                                                                                      |
+| `startup` | sites that must not start: an invalid host configuration and invariant globalization each stop the demo with a message that says what to change (ADR-0042). No browser: each test runs the demo in a process of its own on 5521 or 5522, without a database, and reads its log |
 
 ## Checks and output
 
