@@ -1623,7 +1623,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Runtime:** a cached reader invalidated by a cache refresher, and a `SettingsSaved` notification.
   - **Globalization** (ADR-0005): saving a time zone the server cannot resolve is refused.
   - Done when: unit tests cover every validator and default; migrating an old payload works; a lock overrides the backoffice value; an unknown time zone cannot be saved.
-- [ ] **4.5a The form service: create, save and publish** (4.5 split in four, WORKLOG 2026-10-24)
+- [x] **4.5a The form service: create, save and publish** (4.5 split in four, WORKLOG 2026-10-24) (2026-10-24, a664533)
   - **Create from blank,** with the configured new-form defaults: the consent field, a `general` setting for every site at once, since a new form belongs to no site (§4.8). The notify-the-creator default needs the email action, so it comes with it (8.3).
   - **Save and publish:**
     - save draft with a concurrency check;
