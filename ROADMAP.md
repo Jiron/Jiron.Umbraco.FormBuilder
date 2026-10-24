@@ -1587,7 +1587,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Repositories:** option lists, themes, email layouts, templates and permissions, through the gate of 4.3a.
   - **Aliases** (option lists, themes, email layouts) are looked up without regard to case on both databases, as they are unique (ADR-0033).
   - Done when: integration tests cover CRUD for each of these repositories and concurrency conflicts on the library rows that carry a concurrency version; a lookup by alias finds the option list, theme or layout in any letter case (ADR-0033).
-- [ ] **4.3c Entries, their values, files, events and notes**
+- [x] **4.3c Entries, their values, files, events and notes** (2026-10-24, ad7fef5)
   - **Repositories:** entries with their values and file rows, events and notes.
   - **Entry numbers** come from the atomic update of ADR-0003, as the first write of the unit, with the unique index as the backstop. The values of a page load by `EntryId IN (…)`, at most 1,000 ids per statement.
   - **Text keys:** `jfbEntryValue.TextKey` is the value cleaned and folded as rules compare text (ADR-0005), so the entries screen filters as rules decide.
@@ -1596,8 +1596,10 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a unit test shows `TextKey` folding as the rule vectors of 1.5 compare (the Turkish i's, final sigma, no folding outside the folded blocks).
 - [ ] **4.3d The entries query builder**
   - **The entries query builder** turns typed field filters into SQL against `jfbEntryValue`, using only the shapes of ADR-0003 (`IN` subqueries, keyset paging, the value-index walk for a sort by a value, one-pass search with a count up to 1,000) under the per-statement time budget.
+  - **Text keys** (ADR-0038): a filter on text seeks `textKey` with the column's collation and then compares the key again in a binary collation, because SQL Server's case-insensitive collation can treat keys as equal that rules keep apart (`ß` and `ss`). A key that may have been cut (`EntryTextKey.MayBeCut`) compares the full text too. (Added from the review of 4.3c, WORKLOG 2026-10-24.)
   - Done when:
     - integration tests cover every filter kind, with the correctness cases of 1.3;
+    - a filter for `straße` does not find `strasse`, nor the reverse, on SQLite and in the SQL Server job, and a filter for a text longer than its key finds only the entries with that full text;
     - on SQLite, `EXPLAIN QUERY PLAN` tests show every shape of the query builder on its index, with and without planner statistics: no `SCAN` of `jfbEntryValue` and no temporary b-tree for a sort by a value (ADR-0003);
     - a statement past its time budget is interrupted and answered with `query_timeout`, and a submission made meanwhile still succeeds; a search with more than 1,000 matches reports "more than 1,000".
 - [ ] **4.3e The outbox repositories: action runs and emails**
@@ -1631,7 +1633,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - copy actions to another form, remapping fields by alias and reporting the unmapped ones;
     - move.
   - **Trash and delete:** trash, restore, delete permanently (cascading entries, files, versions, permissions, references and daily stats; references and stats name the form without a foreign key, ADR-0033), empty trash.
-  - **Folders**, and notifications for every lifecycle event. Trashing a folder takes the folders and forms in it to the trash with it, and restoring it brings back what went with it (the repository of 4.3a marks one row at a time, ADR-0036).
+  - **Folders**, and notifications for every lifecycle event. Trashing a folder takes the folders and forms in it to the trash with it, and restoring it brings back what went with it (the repository of 4.3a marks one row at a time, ADR-0036). Its new statements follow the guard rule of ADR-0038: every check of other rows is a locking read on SQL Server, which `SqlGuardTests` enforces.
   - Done when: unit and integration tests cover each operation, including:
     - "restore creates a new version";
     - "duplicate remaps rule references";
