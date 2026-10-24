@@ -536,14 +536,14 @@ public sealed class StructureTests
         return document.ToJsonString();
     }
 
-    /// <summary>The codes publishing adds to those of a save.</summary>
+    /// <summary>The codes publishing adds to those of a save and of an export file (ADR-0046).</summary>
     internal static HashSet<string> PublishCodes()
     {
         string[] save =
         [
             DefinitionErrors.InvalidJson, DefinitionErrors.UnknownProperty, DefinitionErrors.MissingProperty, DefinitionErrors.DuplicateProperty,
             DefinitionErrors.InvalidType, DefinitionErrors.InvalidValue, DefinitionErrors.DuplicateKey, DefinitionErrors.UnsupportedSchemaVersion,
-            DefinitionErrors.LimitExceeded,
+            DefinitionErrors.LimitExceeded, DefinitionErrors.UnsupportedFormat,
         ];
         return typeof(DefinitionErrors).GetFields(BindingFlags.Public | BindingFlags.Static)
             .Select(field => (string)field.GetValue(null)!)

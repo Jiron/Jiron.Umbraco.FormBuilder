@@ -82,6 +82,9 @@ and the public projection ([ADR-0035](../docs/decisions/0035-structural-validati
 | `RedirectUrlTests` | The redirects that could leave the editor's site, and those that stay on it. |
 | `ProjectionTests` | 500 generated definitions with a marker in every private place project without it; the projection names only allowlisted properties; `fixtures/definitions/v1-full.public.json` is the reviewed projection of the fixture; which changes move `PublicHash` and which do not. |
 | `DefinitionDiffTests` | The comparison of two versions ([ADR-0045](../docs/decisions/0045-versions-comparison-and-draft-cleanup.md)): texts per culture, a type's settings one by one, option items by value and grid rows by key with their order, moves to another parent and the fewest moves within one, rules whose order means nothing, settings groups by name, the order of the changes. Then 100 generated definitions, each changed by `DefinitionMutator` as editors change them: the comparison swapped mirrors it, names each element once, and each changed element's property changes rebuild its newer properties from its older ones. |
+| `DefinitionKeysTests` | The element keys of a definition ([ADR-0046](../docs/decisions/0046-copies-templates-and-import.md)), the same as the model's by reflection over the fixture and 500 generated definitions; renewing them and mapping them back gives the same bytes; every reference follows, in rules, checks, the verification field and settings (as values, property names, in any letter case and in lists), but not a key inside a longer text, another format or the key of something outside the form. |
+| `ActionCopiesTests` | Copied actions: new keys, fields mapped by alias in any letter case, grid rows by a single matching label, what is not mapped kept and reported with its path, and the target's limits. |
+| `FormExportFormatTests` | The export envelope: a round trip, two-space indentation with line feeds and ASCII escapes, `schemas/jfb-form-export.v1.schema.json` (which refuses what the reader refuses, unless a schema cannot say it), the format checked first, every refusal with its path, the definition measured in its canonical text, and an older definition upgraded. |
 
 A new property of the model needs the record, the schema, the generator and the fixture: until all four agree, the
 coverage, schema and fixture tests fail.
@@ -210,8 +213,10 @@ messenger that records the instructions a save sends instead of delivering them 
 `Tests.Unit/Forms/` covers the parts of the form service without a host (ADR-0044): aliases from names (accents,
 spelled-out letters, camelCase, a leading digit, names without Latin letters, the length) and the lowest free number in
 any letter case; the field catalogue of a definition and what a publish adds, updates, brings back and ends, with the
-storage kind of every built-in type written out apart from the code; the code of every refusal and conflict; and the
-notifications' arguments and the structural publish check.
+storage kind of every built-in type written out apart from the code; the code of every refusal and conflict; the
+notifications' arguments and the structural publish check; and the built-in templates (`BuiltInFormTemplatesTests`:
+one per file, each reading with its key, publishing and having English and German texts) with the package version
+an export names.
 
 `Tests.Integration/Forms/` runs the service on a real site, with a fresh database per test: a create from blank with
 and without the consent default (and with a stored default a definition would refuse), aliases and their races,
@@ -221,8 +226,15 @@ unpublish, rename and move, the trash, cancelling and failing handlers, the orde
 entries, and a change refused inside a unit of work or an Umbraco scope. `FormNotificationRecorder` records every
 notification and whether a unit was open, and cancels, fails or changes the form when a test says so;
 `TestPublishCheck` is a second publish check whose problems a test sets. `FormServiceLimitTests` lowers the pages a
-definition may have, so a form saved before still opens and its save returns `limit_exceeded`, as does a restore of a
-version above the limit.
+definition may have, so a form saved before still opens and its save returns `limit_exceeded`, as do a restore of a
+version above the limit, a duplicate of it, copied actions into it, a saved template and an import above it.
+
+`FormCopyServiceTests` covers copies, templates, imports and exports (ADR-0046) on a form designed with every kind of
+reference: a duplicate whose rules, checks, verification field and action settings name its own elements, with and
+without actions; copied actions mapped by alias with the unmapped ones reported and refused at publish; forms from
+the Contact template and from saved templates, with the consent default; an export of the draft or a version with
+its option lists that imports as a new form, a theme the site lacks, option lists by key, by alias or missing; and
+every refusal, notification and audit entry, and each operation refused inside a unit of work or a scope.
 
 `FormVersionServiceTests` covers a form's versions (ADR-0045) on a history of six versions: the History of publishes
 or of every version with what changed into each, paged, one version, two compared either way, a restore that creates a
