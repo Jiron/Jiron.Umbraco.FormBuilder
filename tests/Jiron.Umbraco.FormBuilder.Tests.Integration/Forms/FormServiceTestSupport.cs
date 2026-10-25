@@ -113,7 +113,7 @@ internal static class FormServiceTesting
             FormDefinition.CurrentSchemaVersion,
             Encoding.UTF8.GetString(canonical),
             FormDefinitionSerializer.Hash(canonical),
-            PublicProjection.Hash(definition, FieldTypeCatalog.BuiltIn));
+            PublicProjection.Hash(definition, FieldTypeCatalogue.BuiltIn));
     }
 
     /// <summary>The hash of a definition's canonical form, to compare two definitions.</summary>

@@ -31,6 +31,14 @@ internal sealed record FolderInfo(
 /// <param name="UserKey">Who creates it, or null when Jiron Form Builder does.</param>
 internal sealed record NewFolderRequest(string Name, Guid? ParentKey = null, Guid? UserKey = null);
 
+/// <summary>
+/// Where a restore of a form or folder lands (ADR-0047, amended in 4.8c): the folder it goes back into, or null for the
+/// root. A caller that checks a restore's landing passes it to the restore, which refuses with <c>landing_changed</c>
+/// when it finds another.
+/// </summary>
+/// <param name="FolderKey">The folder it lands in, or null at the root.</param>
+internal sealed record RestoreLanding(Guid? FolderKey);
+
 /// <summary>What a folder's trash or restore changed (ADR-0047).</summary>
 /// <param name="Folder">The folder after the change.</param>
 /// <param name="Folders">The folders below it that went or came back with it, nearest first; empty when it changed nothing.</param>
@@ -50,7 +58,7 @@ internal sealed record LibraryDeletion(IReadOnlyList<FolderSummary> Folders, IRe
 /// </summary>
 /// <param name="FolderKeys">The folders, the top one first.</param>
 /// <param name="Forms">The forms, as the evaluation reads them.</param>
-internal sealed record LibraryRemoval(IReadOnlyList<Guid> FolderKeys, IReadOnlyList<FormAccessTarget> Forms);
+internal sealed record DeletionCandidate(IReadOnlyList<Guid> FolderKeys, IReadOnlyList<FormAccessTarget> Forms);
 
 /// <summary>What emptying the trash removed, and how many of its top items it left (ADR-0050).</summary>
 /// <param name="Deleted">What went.</param>

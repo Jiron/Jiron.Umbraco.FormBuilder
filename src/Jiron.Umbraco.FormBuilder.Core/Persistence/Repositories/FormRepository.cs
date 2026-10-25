@@ -160,7 +160,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
     /// The folder ids go into the text as integer literals, as in the access clause: numbers read from the database,
     /// and a page of the tree holds at most <see cref="PageRequest.MaxTake"/> folders.
     /// </remarks>
-    public Task<IReadOnlySet<int>> ListFolderIdsWithFormsAsync(IReadOnlyCollection<int> folderIds, bool trashed, AccessScope? access, CancellationToken cancellationToken = default)
+    public Task<IReadOnlySet<int>> ListFolderIdsWithFormsAsync(IReadOnlyCollection<int> folderIds, bool trashed, FormVisibility? access, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(folderIds);
         if (folderIds.Count == 0)

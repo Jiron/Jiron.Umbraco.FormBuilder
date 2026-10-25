@@ -53,8 +53,8 @@ public sealed class AccessSnapshotTests
                 Assert.That(snapshot.Folder(user, null), Is.EqualTo(FormBuilderPermissions.None));
                 Assert.That(snapshot.Folder(user, Events.Key), Is.EqualTo(FormBuilderPermissions.None));
                 Assert.That(snapshot.Form(user, InFolder(Events)), Is.EqualTo(FormBuilderPermissions.None));
-                Assert.That(snapshot.Scope(user, View), Is.SameAs(AccessScope.Nothing));
-                Assert.That(snapshot.Scope(user, View).IsNothing, Is.True);
+                Assert.That(snapshot.FormVisibilityOf(user, View), Is.SameAs(FormVisibility.Nothing));
+                Assert.That(snapshot.FormVisibilityOf(user, View).IsNothing, Is.True);
             }
         });
     }
@@ -71,9 +71,9 @@ public sealed class AccessSnapshotTests
             Assert.That(snapshot.Folder(admin, null), Is.EqualTo(PermissionRules.FolderLevel), "on a folder, the permissions a folder knows");
             Assert.That(snapshot.Folder(admin, Secret.Key), Is.EqualTo(PermissionRules.FolderLevel));
             Assert.That(snapshot.Form(admin, InFolder(Hr) with { IsRestricted = true }), Is.EqualTo(PermissionRules.FolderLevel));
-            Assert.That(snapshot.Scope(admin, View), Is.SameAs(AccessScope.Everything));
-            Assert.That(snapshot.Visibility(snapshot.Scope(admin, View), []), Is.SameAs(FolderVisibility.Everything));
-            Assert.That(snapshot.Visibility(snapshot.Scope(admin, View), []).Allows(Guid.NewGuid()), Is.True);
+            Assert.That(snapshot.FormVisibilityOf(admin, View), Is.SameAs(FormVisibility.Everything));
+            Assert.That(snapshot.FolderVisibilityOf(snapshot.FormVisibilityOf(admin, View), []), Is.SameAs(FolderVisibility.Everything));
+            Assert.That(snapshot.FolderVisibilityOf(snapshot.FormVisibilityOf(admin, View), []).Allows(Guid.NewGuid()), Is.True);
         });
     }
 
@@ -229,7 +229,7 @@ public sealed class AccessSnapshotTests
         {
             Assert.That(snapshot.Folder(User(Viewers), Key(1)), Is.EqualTo(FormBuilderPermissions.None));
             Assert.That(snapshot.Folder(User(Designers), Key(1)), Is.EqualTo(Design));
-            Assert.That(snapshot.Scope(User(Viewers), View).FolderIds, Is.Empty);
+            Assert.That(snapshot.FormVisibilityOf(User(Viewers), View).FolderIds, Is.Empty);
         });
     }
 
@@ -279,10 +279,10 @@ public sealed class AccessSnapshotTests
             Grant(Designers, PermissionTarget.Folder, Design, Events.Key),
             Grant(HrTeam, PermissionTarget.Folder, View, Payroll.Key));
 
-        var viewer = snapshot.Scope(User(Viewers), View);
-        var designerViewing = snapshot.Scope(User(Designers), View);
-        var designerDesigning = snapshot.Scope(User(Designers), Design | View);
-        var hr = snapshot.Scope(User(HrTeam), PermissionRules.FolderLevel);
+        var viewer = snapshot.FormVisibilityOf(User(Viewers), View);
+        var designerViewing = snapshot.FormVisibilityOf(User(Designers), View);
+        var designerDesigning = snapshot.FormVisibilityOf(User(Designers), Design | View);
+        var hr = snapshot.FormVisibilityOf(User(HrTeam), PermissionRules.FolderLevel);
 
         Assert.Multiple(() =>
         {
@@ -311,9 +311,9 @@ public sealed class AccessSnapshotTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(snapshot.Scope(user, View).GroupKeys, Is.EqualTo(new[] { HrTeam }), "the global grant is no form grant, and design is not viewEntries");
-            Assert.That(snapshot.Scope(user, View | Design).GroupKeys, Is.EquivalentTo(new[] { HrTeam, Designers }));
-            Assert.That(snapshot.Scope(User(PayrollTeam), View).IsNothing, Is.True, "a group without grants");
+            Assert.That(snapshot.FormVisibilityOf(user, View).GroupKeys, Is.EqualTo(new[] { HrTeam }), "the global grant is no form grant, and design is not viewEntries");
+            Assert.That(snapshot.FormVisibilityOf(user, View | Design).GroupKeys, Is.EquivalentTo(new[] { HrTeam, Designers }));
+            Assert.That(snapshot.FormVisibilityOf(User(PayrollTeam), View).IsNothing, Is.True, "a group without grants");
         });
     }
 
@@ -324,9 +324,9 @@ public sealed class AccessSnapshotTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(() => snapshot.Scope(User(Viewers), FormBuilderPermissions.PrivacyTools), Throws.ArgumentException);
-            Assert.That(() => snapshot.Scope(User(Viewers), FormBuilderPermissions.None), Throws.ArgumentException);
-            Assert.That(snapshot.Scope(User(Viewers), View | FormBuilderPermissions.PrivacyTools).AnyOf, Is.EqualTo(View));
+            Assert.That(() => snapshot.FormVisibilityOf(User(Viewers), FormBuilderPermissions.PrivacyTools), Throws.ArgumentException);
+            Assert.That(() => snapshot.FormVisibilityOf(User(Viewers), FormBuilderPermissions.None), Throws.ArgumentException);
+            Assert.That(snapshot.FormVisibilityOf(User(Viewers), View | FormBuilderPermissions.PrivacyTools).AnyOf, Is.EqualTo(View));
         });
     }
 
@@ -334,17 +334,17 @@ public sealed class AccessSnapshotTests
     public void TheFolderList_HoldsTheFoldersOnTheWayToWhatTheUserMaySee()
     {
         var snapshot = Snapshot(Grant(PayrollTeam, PermissionTarget.Folder, View, Payroll.Key), Grant(HrTeam, PermissionTarget.Form, View, Contact));
-        var payroll = snapshot.Scope(User(PayrollTeam), PermissionRules.FolderLevel);
-        var hr = snapshot.Scope(User(HrTeam), PermissionRules.FolderLevel);
+        var payroll = snapshot.FormVisibilityOf(User(PayrollTeam), PermissionRules.FolderLevel);
+        var hr = snapshot.FormVisibilityOf(User(HrTeam), PermissionRules.FolderLevel);
 
         Assert.Multiple(() =>
         {
-            Assert.That(snapshot.Visibility(payroll, []).FolderKeys, Is.EquivalentTo(new[] { Payroll.Key, Hr.Key, Company.Key }));
-            Assert.That(snapshot.Visibility(payroll, []).Allows(Events.Key), Is.False);
-            Assert.That(snapshot.Visibility(payroll, []).Allows(Secret.Key), Is.False, "restricted below what the user holds");
-            Assert.That(snapshot.Visibility(hr, [Events.Id]).FolderKeys, Is.EquivalentTo(new[] { Events.Key, Company.Key }), "the folders of a form granted on its own");
-            Assert.That(snapshot.Visibility(hr, [99]).FolderKeys, Is.Empty, "a folder the snapshot does not know");
-            Assert.That(snapshot.Visibility(AccessScope.Nothing, []).FolderKeys, Is.Empty);
+            Assert.That(snapshot.FolderVisibilityOf(payroll, []).FolderKeys, Is.EquivalentTo(new[] { Payroll.Key, Hr.Key, Company.Key }));
+            Assert.That(snapshot.FolderVisibilityOf(payroll, []).Allows(Events.Key), Is.False);
+            Assert.That(snapshot.FolderVisibilityOf(payroll, []).Allows(Secret.Key), Is.False, "restricted below what the user holds");
+            Assert.That(snapshot.FolderVisibilityOf(hr, [Events.Id]).FolderKeys, Is.EquivalentTo(new[] { Events.Key, Company.Key }), "the folders of a form granted on its own");
+            Assert.That(snapshot.FolderVisibilityOf(hr, [99]).FolderKeys, Is.Empty, "a folder the snapshot does not know");
+            Assert.That(snapshot.FolderVisibilityOf(FormVisibility.Nothing, []).FolderKeys, Is.Empty);
         });
     }
 

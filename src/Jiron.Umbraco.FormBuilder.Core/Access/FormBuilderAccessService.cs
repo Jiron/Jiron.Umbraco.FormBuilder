@@ -33,7 +33,7 @@ internal interface IFormBuilderAccessService
     /// The forms the user's lists hold, for <see cref="FormFilter.Access"/>: those where they hold one of
     /// <paramref name="anyOf"/>, by default any permission.
     /// </summary>
-    Task<AccessScope> GetFormScopeAsync(AccessUser user, FormBuilderPermissions anyOf = PermissionRules.FolderLevel, CancellationToken cancellationToken = default);
+    Task<FormVisibility> GetFormVisibilityAsync(AccessUser user, FormBuilderPermissions anyOf = PermissionRules.FolderLevel, CancellationToken cancellationToken = default);
 
     /// <summary>The folders the user's folder lists hold: those that lead to a folder or form they hold something on.</summary>
     Task<FolderVisibility> GetFolderVisibilityAsync(AccessUser user, CancellationToken cancellationToken = default);
@@ -66,7 +66,10 @@ internal interface IFormBuilderAccessService
     /// <exception cref="FormBuilderConcurrencyException">The form changed since the caller read it.</exception>
     Task<AccessRestriction?> RestrictFormAsync(Guid formKey, int expectedConcurrencyVersion, bool isRestricted, Guid? userKey, CancellationToken cancellationToken = default);
 
-    /// <summary>Removes every grant of a user group Umbraco deleted, with an audit entry when it had any; returns how many.</summary>
+    /// <summary>
+    /// Removes every grant of a user group Umbraco deleted, with an audit entry when it had any, in a unit of work of its
+    /// own as every change of access is; returns how many.
+    /// </summary>
     Task<int> RemoveGroupAsync(Guid userGroupKey, CancellationToken cancellationToken = default);
 }
 
@@ -80,7 +83,7 @@ internal sealed partial class FormBuilderAccessService(
     IUserGroupService userGroups,
     IOptions<FormBuilderOptions> options,
     AppCaches appCaches,
-    FormBuilderAccessCache cache,
+    AccessSnapshotInvalidator cache,
     ILogger<FormBuilderAccessService> logger)
     : IFormBuilderAccessService
 {
@@ -141,21 +144,21 @@ internal sealed partial class FormBuilderAccessService(
         (await GetSnapshotAsync(cancellationToken)).Form(user, form);
 
     /// <inheritdoc />
-    public async Task<AccessScope> GetFormScopeAsync(AccessUser user, FormBuilderPermissions anyOf = PermissionRules.FolderLevel, CancellationToken cancellationToken = default) =>
-        (await GetSnapshotAsync(cancellationToken)).Scope(user, anyOf);
+    public async Task<FormVisibility> GetFormVisibilityAsync(AccessUser user, FormBuilderPermissions anyOf = PermissionRules.FolderLevel, CancellationToken cancellationToken = default) =>
+        (await GetSnapshotAsync(cancellationToken)).FormVisibilityOf(user, anyOf);
 
     /// <inheritdoc />
     public async Task<FolderVisibility> GetFolderVisibilityAsync(AccessUser user, CancellationToken cancellationToken = default)
     {
         var snapshot = await GetSnapshotAsync(cancellationToken);
-        var scope = snapshot.Scope(user, PermissionRules.FolderLevel);
-        if (scope.IsEverything)
+        var forms = snapshot.FormVisibilityOf(user, PermissionRules.FolderLevel);
+        if (forms.IsEverything)
         {
             return FolderVisibility.Everything;
         }
 
-        var granted = await permissions.ListFoldersOfGrantedFormsAsync(scope.GroupKeys, (int)scope.AnyOf, cancellationToken);
-        return snapshot.Visibility(scope, granted);
+        var granted = await permissions.ListFoldersOfGrantedFormsAsync(forms.GroupKeys, (int)forms.AnyOf, cancellationToken);
+        return snapshot.FolderVisibilityOf(forms, granted);
     }
 
     /// <inheritdoc />
@@ -297,6 +300,7 @@ internal sealed partial class FormBuilderAccessService(
     /// <inheritdoc />
     public async Task<int> RemoveGroupAsync(Guid userGroupKey, CancellationToken cancellationToken = default)
     {
+        EnsureOwnUnit();
         var removed = await database.WriteAsync(
             async _ =>
             {
@@ -316,32 +320,22 @@ internal sealed partial class FormBuilderAccessService(
     }
 
     /// <summary>
-    /// The snapshot, from this server's cache or read now. A change clears the cached copy and its loading token; when
-    /// the token is gone or replaced after the read, the rows may be older than the change, so the snapshot answers this
-    /// call but is not kept (ADR-0043's pattern).
+    /// The snapshot, from this server's cache or read now, one read for every miss while it runs. A change clears the
+    /// cached copy and the read under way; a read that began before the change answers its callers but is not kept
+    /// (ADR-0043's pattern, <see cref="RuntimeCacheLoads"/>).
     /// </summary>
-    internal async Task<AccessSnapshot> GetSnapshotAsync(CancellationToken cancellationToken)
-    {
-        var runtime = appCaches.RuntimeCache;
-        if (runtime.GetCacheItem<AccessSnapshot>(AccessCacheKeys.Snapshot) is { } hit)
-        {
-            return hit;
-        }
+    internal Task<AccessSnapshot> GetSnapshotAsync(CancellationToken cancellationToken) =>
+        RuntimeCacheLoads.GetAsync(appCaches.RuntimeCache, AccessCacheKeys.Snapshot, AccessCacheKeys.Loading, LoadSnapshotAsync, CacheDuration, cancellationToken);
 
-        var token = new object();
-        runtime.Insert(AccessCacheKeys.Loading, () => token, CacheDuration);
-        var grants = await permissions.ListAsync(cancellationToken);
-        var tree = await folders.ListAllAsync(cancellationToken);
-        var snapshot = AccessSnapshot.Create(
+    // Read without a caller's cancellation: other callers may wait for it.
+    private async Task<AccessSnapshot> LoadSnapshotAsync()
+    {
+        var grants = await permissions.ListAsync(CancellationToken.None);
+        var tree = await folders.ListAllAsync(CancellationToken.None);
+        return AccessSnapshot.Create(
             grants,
             tree.Select(folder => new AccessFolder(folder.Id, folder.Key, folder.ParentId, folder.IsRestricted)),
             await HostGrantsAsync());
-        if (ReferenceEquals(runtime.Get(AccessCacheKeys.Loading), token))
-        {
-            runtime.Insert(AccessCacheKeys.Snapshot, () => snapshot, CacheDuration);
-        }
-
-        return snapshot;
     }
 
     private static string EntityTypeOf(PermissionTarget target) => target switch

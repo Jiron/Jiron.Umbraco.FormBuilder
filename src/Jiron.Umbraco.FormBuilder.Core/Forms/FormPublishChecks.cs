@@ -17,7 +17,7 @@ internal interface IFormPublishCheck
 /// The structural validation of ADR-0035 with the site's limits: the save checks, then aliases, references, cycles,
 /// rules and redirects.
 /// </summary>
-internal sealed class StructuralPublishCheck(FormDefinitionSerializer serializer, FieldTypeCatalog types) : IFormPublishCheck
+internal sealed class StructuralPublishCheck(FormDefinitionSerializer serializer, FieldTypeCatalogue types) : IFormPublishCheck
 {
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DefinitionProblem>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)

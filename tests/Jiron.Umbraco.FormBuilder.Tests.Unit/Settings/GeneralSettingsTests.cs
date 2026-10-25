@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Logic;
+using Jiron.Umbraco.FormBuilder.Testing.Settings;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Settings;
 
@@ -104,7 +105,7 @@ public sealed class GeneralSettingsTests
     {
         var section = new GeneralSettings { NewForms = new NewFormDefaults { Consent = Consent(Texts("I agree", "de", "Ich stimme zu"), Texts("<p>Yes.</p>")) } };
 
-        var json = SettingsSectionJson.GlobalJson(section);
+        var json = SettingsJson.Global(section);
         var read = SettingsSectionJson.Read<GeneralSettings>(JsonNode.Parse(json)!.AsObject());
 
         Assert.Multiple(() =>

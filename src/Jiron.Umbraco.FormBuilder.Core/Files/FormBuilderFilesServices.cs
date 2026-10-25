@@ -7,8 +7,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.Files;
 internal static class FormBuilderFilesServices
 {
     /// <summary>
-    /// Registers the physical store unless the site registered a store of its own first. Its root is part of the host
-    /// configuration, which checks it when the site starts (ADR-0042); Web supplies the <see cref="IHostFolders"/>.
+    /// Registers the physical store unless the site registered a store of its own first; one the site registers later
+    /// replaces it. Its root is part of the host configuration, which checks it when the site starts (ADR-0042); Web
+    /// supplies the <see cref="IHostFolders"/>.
     /// </summary>
     public static IServiceCollection AddFormBuilderFiles(this IServiceCollection services)
     {

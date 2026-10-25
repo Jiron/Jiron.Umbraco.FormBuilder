@@ -14,7 +14,7 @@ internal static class PublicProjection
     /// <summary>The projection of a definition the save checks accept.</summary>
     /// <param name="definition">The definition.</param>
     /// <param name="types">The field types, which say which of their settings visitors see.</param>
-    public static PublicForm Create(FormDefinition definition, FieldTypeCatalog types)
+    public static PublicForm Create(FormDefinition definition, FieldTypeCatalogue types)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(types);
@@ -77,9 +77,9 @@ internal static class PublicProjection
     public static string Hash(PublicForm form) => FormDefinitionSerializer.Hash(Write(form));
 
     /// <summary>The <c>PublicHash</c> of a definition's projection.</summary>
-    public static string Hash(FormDefinition definition, FieldTypeCatalog types) => Hash(Create(definition, types));
+    public static string Hash(FormDefinition definition, FieldTypeCatalogue types) => Hash(Create(definition, types));
 
-    private static PublicPage Page(FormPage page, FieldTypeCatalog types) => new()
+    private static PublicPage Page(FormPage page, FieldTypeCatalogue types) => new()
     {
         Key = page.Key,
         Title = page.Title,
@@ -97,7 +97,7 @@ internal static class PublicProjection
         })],
     };
 
-    private static PublicField Field(FormField field, FieldTypeCatalog types)
+    private static PublicField Field(FormField field, FieldTypeCatalogue types)
     {
         var traits = types.Find(field.Type);
         return new PublicField

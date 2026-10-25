@@ -123,7 +123,7 @@ public sealed class FormTrashServiceTests : RepositoryTestBase
         {
             if (notification is FormDeletingNotification)
             {
-                await Forms.RestoreAsync(inTrash.Id, inTrash.ConcurrencyVersion, null);
+                await Forms.RestoreAsync(inTrash.Id, inTrash.ConcurrencyVersion, inTrash.FolderId, null);
             }
         };
 

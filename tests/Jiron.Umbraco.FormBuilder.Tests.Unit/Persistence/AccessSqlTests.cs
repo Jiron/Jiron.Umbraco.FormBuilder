@@ -25,9 +25,9 @@ public sealed class AccessSqlTests
         Assert.Multiple(() =>
         {
             Assert.That(AccessSql.FormClause(null, Names(), "f.", Parameters(args)), Is.Null, "no filter");
-            Assert.That(AccessSql.FormClause(AccessScope.Everything, Names(), "f.", Parameters(args)), Is.Null);
-            Assert.That(AccessSql.FormClause(AccessScope.Everything with { FolderIds = [1], GroupKeys = [Designers] }, Names(), "f.", Parameters(args)), Is.Null, "whatever the rest says");
-            Assert.That(AccessSql.FormClause(AccessScope.Nothing, Names(), "f.", Parameters(args)), Is.EqualTo("1 = 0"));
+            Assert.That(AccessSql.FormClause(FormVisibility.Everything, Names(), "f.", Parameters(args)), Is.Null);
+            Assert.That(AccessSql.FormClause(FormVisibility.Everything with { FolderIds = [1], GroupKeys = [Designers] }, Names(), "f.", Parameters(args)), Is.Null, "whatever the rest says");
+            Assert.That(AccessSql.FormClause(FormVisibility.Nothing, Names(), "f.", Parameters(args)), Is.EqualTo("1 = 0"));
             Assert.That(args, Is.Empty);
         });
     }
@@ -40,10 +40,10 @@ public sealed class AccessSqlTests
         Assert.Multiple(() =>
         {
             Assert.That(
-                AccessSql.FormClause(new AccessScope { FolderIds = [12, 7], Root = true }, Names(), "f.", Parameters(args)),
+                AccessSql.FormClause(new FormVisibility { FolderIds = [12, 7], Root = true }, Names(), "f.", Parameters(args)),
                 Is.EqualTo("(f.[isRestricted] = 0 AND (f.[folderId] IN (12, 7) OR f.[folderId] IS NULL))"));
-            Assert.That(AccessSql.FormClause(new AccessScope { FolderIds = [3] }, Names(), "f.", Parameters(args)), Is.EqualTo("(f.[isRestricted] = 0 AND (f.[folderId] IN (3)))"));
-            Assert.That(AccessSql.FormClause(new AccessScope { Root = true }, Names(), string.Empty, Parameters(args)), Is.EqualTo("([isRestricted] = 0 AND ([folderId] IS NULL))"));
+            Assert.That(AccessSql.FormClause(new FormVisibility { FolderIds = [3] }, Names(), "f.", Parameters(args)), Is.EqualTo("(f.[isRestricted] = 0 AND (f.[folderId] IN (3)))"));
+            Assert.That(AccessSql.FormClause(new FormVisibility { Root = true }, Names(), string.Empty, Parameters(args)), Is.EqualTo("([isRestricted] = 0 AND ([folderId] IS NULL))"));
             Assert.That(args, Is.Empty, "no parameter for a number the snapshot read");
         });
     }
@@ -53,7 +53,7 @@ public sealed class AccessSqlTests
     {
         var args = new List<object?>();
 
-        var clause = AccessSql.FormClause(new AccessScope { GroupKeys = [Designers, Handlers], AnyOf = FormBuilderPermissions.ViewEntries }, Names(), "f.", Parameters(args));
+        var clause = AccessSql.FormClause(new FormVisibility { GroupKeys = [Designers, Handlers], AnyOf = FormBuilderPermissions.ViewEntries }, Names(), "f.", Parameters(args));
 
         Assert.Multiple(() =>
         {
@@ -67,7 +67,7 @@ public sealed class AccessSqlTests
     {
         var args = new List<object?>();
 
-        var clause = AccessSql.FormClause(new AccessScope { FolderIds = [5], GroupKeys = [Designers, Handlers] }, Names(), "f.", Parameters(args));
+        var clause = AccessSql.FormClause(new FormVisibility { FolderIds = [5], GroupKeys = [Designers, Handlers] }, Names(), "f.", Parameters(args));
 
         Assert.Multiple(() =>
         {
@@ -83,12 +83,12 @@ public sealed class AccessSqlTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(AccessSql.FormClause(new AccessScope { GroupKeys = most }, Names(), "f.", Parameters([])), Does.Contain("@1000"));
+            Assert.That(AccessSql.FormClause(new FormVisibility { GroupKeys = most }, Names(), "f.", Parameters([])), Does.Contain("@1000"));
             Assert.That(
-                () => AccessSql.FormClause(new AccessScope { GroupKeys = [.. most, Guid.NewGuid()] }, Names(), "f.", Parameters([])),
-                Throws.ArgumentException.With.Message.StartsWith("A scope names at most 1000 groups"));
-            Assert.That(() => AccessSql.FormClause(AccessScope.Nothing, Names(), null!, Parameters([])), Throws.ArgumentNullException);
-            Assert.That(() => AccessSql.FormClause(AccessScope.Nothing, Names(), "f.", null!), Throws.ArgumentNullException);
+                () => AccessSql.FormClause(new FormVisibility { GroupKeys = [.. most, Guid.NewGuid()] }, Names(), "f.", Parameters([])),
+                Throws.ArgumentException.With.Message.StartsWith("A form visibility names at most 1000 groups"));
+            Assert.That(() => AccessSql.FormClause(FormVisibility.Nothing, Names(), null!, Parameters([])), Throws.ArgumentNullException);
+            Assert.That(() => AccessSql.FormClause(FormVisibility.Nothing, Names(), "f.", null!), Throws.ArgumentNullException);
         });
     }
 

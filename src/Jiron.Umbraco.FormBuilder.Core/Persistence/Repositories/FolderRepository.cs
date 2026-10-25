@@ -99,12 +99,14 @@ internal interface IFolderRepository
     Task<FolderTreeChange?> TrashAsync(int id, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Takes a folder out of the trash, back into its parent or to the root when the parent is in the trash, with the
-    /// folders below it that went to the trash with it: those with its trash key, reached only through such folders
-    /// (ADR-0047). The forms in them are the form repository's to restore, in the same unit of work. Null when the folder
-    /// does not exist or is outside the trash.
+    /// Takes a folder out of the trash into <paramref name="landingParentId"/>: its parent, which the caller found outside
+    /// the trash, or null for the root, which the caller found it goes to as its parent is in the trash; with the folders
+    /// below it that went to the trash with it: those with its trash key, reached only through such folders (ADR-0047).
+    /// The parent is read with a lock, and a parent found the other way refuses with
+    /// <see cref="FormBuilderConflict.LandingChanged"/>. The forms in them are the form repository's to restore, in the
+    /// same unit of work. Null when the folder does not exist or is outside the trash.
     /// </summary>
-    Task<FolderTreeChange?> RestoreAsync(int id, Guid? userKey, CancellationToken cancellationToken = default);
+    Task<FolderTreeChange?> RestoreAsync(int id, int? landingParentId, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes an empty folder in the trash. False when it does not exist. Refused with
@@ -278,7 +280,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
             cancellationToken);
 
     /// <inheritdoc />
-    public Task<FolderTreeChange?> RestoreAsync(int id, Guid? userKey, CancellationToken cancellationToken = default) =>
+    public Task<FolderTreeChange?> RestoreAsync(int id, int? landingParentId, Guid? userKey, CancellationToken cancellationToken = default) =>
         database.WriteAsync(
             async db =>
             {
@@ -291,7 +293,17 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
                     return null;
                 }
 
-                var trashKey = (await FindAsync(db, "id", id))!.TrashKey;
+                var held = (await FindAsync(db, "id", id))!;
+                var trashKey = held.TrashKey;
+
+                // The landing the caller checked, read with a lock so it holds until the unit ends: the parent while it
+                // lives, else the root.
+                var intoParent = held.ParentId is { } parentId
+                    && await db.ScalarAsync<int>($"SELECT COUNT(*) FROM {table}{n.LockingRead} WHERE {n.C("id")} = @0 AND {n.C("trashedUtc")} IS NULL", parentId) == 1;
+                if ((intoParent ? held.ParentId : null) != landingParentId)
+                {
+                    throw new FormBuilderConflictException(FormBuilderConflict.LandingChanged, "Where it lands changed since it was checked: its folder went to the trash or came back meanwhile. Check again, then restore it.");
+                }
 
                 // What went to the trash with it: the folders below it with its key, reached only through such folders.
                 // The walk locks what it reads, and the restore walks the same rows. The leading semicolon keeps NPoco

@@ -359,7 +359,7 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
             Assert.That(Count(FormBuilderTables.AuditEntry), Is.EqualTo(audited));
         });
 
-        await Forms.RestoreAsync(row.Id, (await RowAsync(created)).ConcurrencyVersion, Editor);
+        await Forms.RestoreAsync(row.Id, (await RowAsync(created)).ConcurrencyVersion, row.FolderId, Editor);
         Assert.That((await Service.CommentVersionAsync(created.Key, 1, longest, Editor))?.Comment, Is.EqualTo(longest), "the longest comment a version holds");
     }
 

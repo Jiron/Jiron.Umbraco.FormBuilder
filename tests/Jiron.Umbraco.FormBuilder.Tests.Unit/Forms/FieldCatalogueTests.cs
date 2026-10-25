@@ -11,7 +11,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Forms;
 /// rows a publish adds, brings back, ends or leaves alone.
 /// </summary>
 [TestFixture]
-public sealed class FormCatalogueTests
+public sealed class FieldCatalogueTests
 {
     // Every built-in type and how its values are stored; content, the captcha, grids and repeaters hold none of their own.
     private static readonly Dictionary<string, FieldStorageKind> Storage = new(StringComparer.Ordinal)
@@ -68,8 +68,8 @@ public sealed class FormCatalogueTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That(FieldTypeCatalog.BuiltIn.All.Select(type => type.Alias).Order(StringComparer.Ordinal), Is.EqualTo(Storage.Keys.Order(StringComparer.Ordinal)));
-            foreach (var type in FieldTypeCatalog.BuiltIn.All)
+            Assert.That(FieldTypeCatalogue.BuiltIn.All.Select(type => type.Alias).Order(StringComparer.Ordinal), Is.EqualTo(Storage.Keys.Order(StringComparer.Ordinal)));
+            foreach (var type in FieldTypeCatalogue.BuiltIn.All)
             {
                 Assert.That(type.Storage, Is.EqualTo(Storage[type.Alias]), type.Alias);
             }
@@ -100,7 +100,7 @@ public sealed class FormCatalogueTests
     [Test]
     public void ADefinition_HasARowPerValue_InDocumentOrder()
     {
-        Assert.That(FormCatalogue.Of(Definition(), FieldTypeCatalog.BuiltIn), Is.EqualTo(new[]
+        Assert.That(FieldCatalogue.Of(Definition(), FieldTypeCatalogue.BuiltIn), Is.EqualTo(new[]
         {
             new CatalogueEntry(Email, "email", "Email", "email", FieldStorageKind.Text, true, null),
             new CatalogueEntry(Grid, "satisfaction", "Satisfaction", "grid", FieldStorageKind.None, false, null),
@@ -119,9 +119,9 @@ public sealed class FormCatalogueTests
     [Test]
     public void TheFirstPublish_AddsEveryRow_FromItsVersion()
     {
-        var entries = FormCatalogue.Of(Definition(), FieldTypeCatalog.BuiltIn);
+        var entries = FieldCatalogue.Of(Definition(), FieldTypeCatalogue.BuiltIn);
 
-        var changes = FormCatalogue.Changes(entries, [], 3, null);
+        var changes = FieldCatalogue.Changes(entries, [], 3, null);
 
         Assert.Multiple(() =>
         {
@@ -137,19 +137,19 @@ public sealed class FormCatalogueTests
     [Test]
     public void ARepublish_OfTheSameFields_ChangesNoRow()
     {
-        var entries = FormCatalogue.Of(Definition(), FieldTypeCatalog.BuiltIn);
-        var stored = Stored(FormCatalogue.Changes(entries, [], 1, null));
+        var entries = FieldCatalogue.Of(Definition(), FieldTypeCatalogue.BuiltIn);
+        var stored = Stored(FieldCatalogue.Changes(entries, [], 1, null));
 
-        Assert.That(FormCatalogue.Changes(entries, stored, 4, 1), Is.Empty);
+        Assert.That(FieldCatalogue.Changes(entries, stored, 4, 1), Is.Empty);
     }
 
     [Test]
     public void ARowWhoseLabelPlaceOrTypeChanged_IsUpdated_KeepingItsFirstVersion()
     {
-        var stored = Stored(FormCatalogue.Changes(Entries(Row(Email, "email"), Row(Age, "age")), [], 1, null));
+        var stored = Stored(FieldCatalogue.Changes(Entries(Row(Email, "email"), Row(Age, "age")), [], 1, null));
         var entries = Entries(Row(Age, "age"), Row(Email, "email") with { Label = "E-mail", Type = "email" });
 
-        var changes = FormCatalogue.Changes(entries, stored, 2, 1);
+        var changes = FieldCatalogue.Changes(entries, stored, 2, 1);
 
         Assert.That(changes, Is.EqualTo(new[]
         {
@@ -161,9 +161,9 @@ public sealed class FormCatalogueTests
     [Test]
     public void ARowAPublishDropped_EndsAtTheLastPublishThatHadIt()
     {
-        var stored = Stored(FormCatalogue.Changes(Entries(Row(Email, "email"), Row(Age, "age")), [], 1, null));
+        var stored = Stored(FieldCatalogue.Changes(Entries(Row(Email, "email"), Row(Age, "age")), [], 1, null));
 
-        var changes = FormCatalogue.Changes(Entries(Row(Email, "email")), stored, 5, 3);
+        var changes = FieldCatalogue.Changes(Entries(Row(Email, "email")), stored, 5, 3);
 
         Assert.That(changes, Is.EqualTo(new[] { (new CatalogueFieldValues(Age, "age", "AGE", "text", FieldStorageKind.Text, false, 1, 1, 3, null), false) }));
     }
@@ -171,9 +171,9 @@ public sealed class FormCatalogueTests
     [Test]
     public void ARowDroppedWithoutAnEarlierPublish_EndsAtItsFirstVersion()
     {
-        var stored = Stored(FormCatalogue.Changes(Entries(Row(Age, "age")), [], 2, null));
+        var stored = Stored(FieldCatalogue.Changes(Entries(Row(Age, "age")), [], 2, null));
 
-        Assert.That(FormCatalogue.Changes([], stored, 4, null).Single().Values.LastVersionNumber, Is.EqualTo(2));
+        Assert.That(FieldCatalogue.Changes([], stored, 4, null).Single().Values.LastVersionNumber, Is.EqualTo(2));
     }
 
     [Test]
@@ -181,8 +181,8 @@ public sealed class FormCatalogueTests
     {
         var ended = Stored([(Values(Age, "age", sortOrder: 0, first: 1, last: 2), true)]);
 
-        var absent = FormCatalogue.Changes(Entries(Row(Email, "email")), ended, 5, 4);
-        var back = FormCatalogue.Changes(Entries(Row(Age, "age")), ended, 5, 4);
+        var absent = FieldCatalogue.Changes(Entries(Row(Email, "email")), ended, 5, 4);
+        var back = FieldCatalogue.Changes(Entries(Row(Age, "age")), ended, 5, 4);
 
         Assert.Multiple(() =>
         {
@@ -196,8 +196,8 @@ public sealed class FormCatalogueTests
     {
         var draftOnly = Stored([(Values(Age, "age", sortOrder: 0, first: null, last: null), true)]);
 
-        var without = FormCatalogue.Changes(Entries(Row(Email, "email")), draftOnly, 3, null);
-        var with = FormCatalogue.Changes(Entries(Row(Age, "age")), draftOnly, 3, null);
+        var without = FieldCatalogue.Changes(Entries(Row(Email, "email")), draftOnly, 3, null);
+        var with = FieldCatalogue.Changes(Entries(Row(Age, "age")), draftOnly, 3, null);
 
         Assert.Multiple(() =>
         {
@@ -215,7 +215,7 @@ public sealed class FormCatalogueTests
             new FormField { Key = Key(22), Type = "heading" },
             new FormField { Key = Key(23), Type = "heading", Alias = "title" });
 
-        Assert.That(FormCatalogue.Of(definition, FieldTypeCatalog.BuiltIn), Is.Empty);
+        Assert.That(FieldCatalogue.Of(definition, FieldTypeCatalogue.BuiltIn), Is.Empty);
     }
 
     [Test]
@@ -223,10 +223,10 @@ public sealed class FormCatalogueTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That(() => FormCatalogue.Of(null!, FieldTypeCatalog.BuiltIn), Throws.ArgumentNullException);
-            Assert.That(() => FormCatalogue.Of(Definition(), null!), Throws.ArgumentNullException);
-            Assert.That(() => FormCatalogue.Changes(null!, [], 1, null), Throws.ArgumentNullException);
-            Assert.That(() => FormCatalogue.Changes([], null!, 1, null), Throws.ArgumentNullException);
+            Assert.That(() => FieldCatalogue.Of(null!, FieldTypeCatalogue.BuiltIn), Throws.ArgumentNullException);
+            Assert.That(() => FieldCatalogue.Of(Definition(), null!), Throws.ArgumentNullException);
+            Assert.That(() => FieldCatalogue.Changes(null!, [], 1, null), Throws.ArgumentNullException);
+            Assert.That(() => FieldCatalogue.Changes([], null!, 1, null), Throws.ArgumentNullException);
         });
     }
 

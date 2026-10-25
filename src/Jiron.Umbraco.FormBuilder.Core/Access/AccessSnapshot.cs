@@ -100,7 +100,7 @@ internal sealed class AccessSnapshot
     }
 
     /// <summary>The forms a list holds for the user: those where the user holds one of <paramref name="anyOf"/>.</summary>
-    public AccessScope Scope(AccessUser user, FormBuilderPermissions anyOf)
+    public FormVisibility FormVisibilityOf(AccessUser user, FormBuilderPermissions anyOf)
     {
         ArgumentNullException.ThrowIfNull(user);
         anyOf &= PermissionRules.FolderLevel;
@@ -111,17 +111,17 @@ internal sealed class AccessSnapshot
 
         if (!user.HasSection)
         {
-            return AccessScope.Nothing;
+            return FormVisibility.Nothing;
         }
 
         if (user.IsAdministrator)
         {
-            return AccessScope.Everything;
+            return FormVisibility.Everything;
         }
 
         var groups = GroupsOf(user);
         var memo = new Dictionary<int, FormBuilderPermissions>();
-        return new AccessScope
+        return new FormVisibility
         {
             Root = (Root(groups) & anyOf) != 0,
             FolderIds = [.. _byId.Values.Where(folder => (FolderOf(groups, folder, memo) & anyOf) != 0).Select(folder => folder.Id).Order()],
@@ -131,20 +131,20 @@ internal sealed class AccessSnapshot
     }
 
     /// <summary>
-    /// The folders a folder list holds for the user of <paramref name="scope"/>: those whose forms it holds, the folders
+    /// The folders a folder list holds for the user of <paramref name="forms"/>: those whose forms it holds, the folders
     /// that hold forms with their own grant (<paramref name="grantedFormFolderIds"/>), and every folder above them.
     /// </summary>
-    public FolderVisibility Visibility(AccessScope scope, IEnumerable<int> grantedFormFolderIds)
+    public FolderVisibility FolderVisibilityOf(FormVisibility forms, IEnumerable<int> grantedFormFolderIds)
     {
-        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(forms);
         ArgumentNullException.ThrowIfNull(grantedFormFolderIds);
-        if (scope.IsEverything)
+        if (forms.IsEverything)
         {
             return FolderVisibility.Everything;
         }
 
         var keys = new HashSet<Guid>();
-        foreach (var id in scope.FolderIds.Concat(grantedFormFolderIds))
+        foreach (var id in forms.FolderIds.Concat(grantedFormFolderIds))
         {
             // Up to the root, or to a folder already reached; a parent the snapshot does not know ends the walk.
             for (int? current = id; current is { } at && _byId.TryGetValue(at, out var folder) && keys.Add(folder.Key);)

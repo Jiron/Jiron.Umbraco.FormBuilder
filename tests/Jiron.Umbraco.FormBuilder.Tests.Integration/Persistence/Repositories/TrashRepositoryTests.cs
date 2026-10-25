@@ -32,7 +32,7 @@ public sealed class TrashRepositoryTests : RepositoryTestBase
         var trashed = await Forms.TrashInFoldersAsync(ids, tree.TrashKey!.Value, Editor);
         var listed = await Forms.ListInFoldersAsync(ids);
         Clock.Advance(TimeSpan.FromMinutes(1));
-        var back = await Folders.RestoreAsync(folder.Id, Editor);
+        var back = await Folders.RestoreAsync(folder.Id, folder.ParentId, Editor);
         var restored = await Forms.RestoreInFoldersAsync(ids, tree.TrashKey.Value, Editor);
 
         Assert.Multiple(async () =>

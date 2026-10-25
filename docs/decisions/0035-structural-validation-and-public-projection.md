@@ -77,7 +77,7 @@ Option 2 for all three. In detail:
 
 How the traits are used:
 
-- `FieldTypeCatalog.BuiltIn` holds the 33 types of §4.3.2.
+- `FieldTypeCatalogue.BuiltIn` holds the 33 types of §4.3.2.
 - A type's public settings are those a browser needs to show and check the field. An email field's allowed and blocked
   domains are the site's policy, so they stay on the server, which checks them.
 - `FieldTypeSupportTests` restates §4.3.2 apart from the code. For each type it covers every common property, check,

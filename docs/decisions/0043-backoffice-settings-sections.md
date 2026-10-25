@@ -118,6 +118,13 @@ site's own save.
 its result only while the token is still there. A save clears its scope's key and token; a global save clears every
 scope of the section, since each site's values rest on the global row.
 
+**Amended in 4.8c** (the Phase 4 review): misses that come together share one load per server. The loading token is
+the load itself, which the runtime cache hands every caller that misses while it runs, so a burst after a save reads
+the rows once instead of once per request. The load runs without any caller's cancellation, since others may wait for
+it; a caller that stops waiting leaves it to them. A load that fails, before or after its first await, is cleared, so
+the next miss reads again. A save that clears the token during a load still lets that load answer its callers, once,
+without keeping it. The access snapshot of ADR-0048 uses the same load.
+
 ## Consequences
 
 - Each later section is a record, a validator, its migrations and its host rule, registered in the composer, with no

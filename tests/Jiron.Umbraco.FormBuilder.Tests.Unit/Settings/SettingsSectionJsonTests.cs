@@ -193,7 +193,7 @@ public sealed class SettingsSectionJsonTests
     public void AGlobalRow_HoldsEveryField_InCamelCase_WithEnumsAsText_AndNoNulls()
     {
         Assert.That(
-            SettingsSectionJson.GlobalJson(new SampleSettings { Mode = SampleMode.LoudAndClear, Tags = ["a"] }),
+            SettingsJson.Global(new SampleSettings { Mode = SampleMode.LoudAndClear, Tags = ["a"] }),
             Is.EqualTo("""{"name":"Jiron","count":5,"mode":"loudAndClear","limits":{"max":10},"tags":["a"],"keep":50}"""));
     }
 
@@ -242,7 +242,7 @@ public sealed class SettingsSectionJsonTests
     private static JsonObject Node(string json) => JsonNode.Parse(json)!.AsObject();
 
     // Records with lists compare their lists by reference, so the tests compare what they store.
-    private static bool Same(SampleSettings a, SampleSettings b) => SettingsSectionJson.GlobalJson(a) == SettingsSectionJson.GlobalJson(b);
+    private static bool Same(SampleSettings a, SampleSettings b) => SettingsJson.Global(a) == SettingsJson.Global(b);
 }
 
 /// <summary>A step of another section, from a version the sample section has a step for too.</summary>

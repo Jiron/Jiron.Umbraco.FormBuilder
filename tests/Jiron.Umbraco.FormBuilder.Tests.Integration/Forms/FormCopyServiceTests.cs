@@ -361,7 +361,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             Assert.That(Hash(Remapped(definition, designed)), Is.EqualTo(Hash(designed)), "the same definition otherwise");
             Assert.That(seen.OfType<FormSavingNotification>().Single() is { IsNew: true, CreatedFrom: FormSource.Import, SourceKey: { } key } && key == source.Key, Is.True);
             Assert.That(seen.OfType<FormSavedNotification>().Single() is { CreatedFrom: FormSource.Import, Version: 1 }, Is.True);
-            Assert.That((entry.Action, entry.Details), Is.EqualTo((FormBuilderFormService.ImportedAction, $$"""{"alias":"contact2","version":1,"folder":"{{folder.Key}}","source":"{{source.Key}}","sourceAlias":"contact","packageVersion":"{{FormBuilderVersion.Package}}","notes":[]}""")));
+            Assert.That((entry.Action, entry.Details), Is.EqualTo((FormBuilderFormService.ImportedAction, $$"""{"alias":"contact2","version":1,"folder":"{{folder.Key}}","source":"{{source.Key}}","sourceAlias":"contact","packageVersion":"{{FormBuilderVersion.Package}}","notes":[],"noteCounts":[]}""")));
         });
 
         var named = await Service.ImportAsync(new ImportFormRequest(file.Json, "Kontakt", "kontaktformular", UserKey: Editor));
@@ -421,7 +421,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             Assert.That((await Service.GetDraftAsync(cleared.Form.Key))!.Definition!.Settings.Appearance.Theme, Is.Null, "the default theme");
             Assert.That(cleared.Notes[0], Is.EqualTo(new FormImportNote(FormImportNotes.ThemeMissing, "$.definition.settings.appearance.theme", "gone")));
             Assert.That(designed.Settings.Appearance.Theme, Is.Null);
-            Assert.That(entry.Details, Does.EndWith(""","notes":["theme_missing","option_list_missing"]}"""), "the audit entry names the notes: the theme, and the session list this site lacks");
+            Assert.That(entry.Details, Does.EndWith(""","notes":["theme_missing","option_list_missing"],"noteCounts":[1,1]}"""), "the audit entry names the notes: the theme, and the session list this site lacks");
         });
     }
 

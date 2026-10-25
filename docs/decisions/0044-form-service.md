@@ -94,7 +94,7 @@ the repositories:
   version, whether it is published, the public revision, trash, times and users), never with row ids; opening a form
   (`GetDraftAsync`) adds the draft's definition, the draft and published version numbers, whether the draft has
   unpublished changes, and the problems of a stored definition that cannot be read at all.
-- **Field types** come from a registered `FieldTypeCatalog`, the built-in one until 5.1 registers its registry.
+- **Field types** come from a registered `FieldTypeCatalogue`, the built-in one until 5.1 registers its registry.
 
 ### Refusals and their codes
 
@@ -104,7 +104,7 @@ the repositories:
 | --- | --- |
 | `FormBuilderConcurrencyException` | `concurrency_conflict` |
 | `FormBuilderValidationException` | the first problem's code, such as `limit_exceeded` or `alias_invalid`; every problem keeps its code, path and message |
-| `FormBuilderConflictException` | `alias_taken`, `key_taken`, `folder_missing`, `folder_into_itself`, `folder_too_deep`, `folder_not_empty`, `in_use`, `trashed`, `not_trashed`, `duplicate_submission`, `challenge_used`, `file_missing`, `field_missing`, `version_missing` |
+| `FormBuilderConflictException` | `alias_taken`, `key_taken`, `folder_missing`, `folder_into_itself`, `folder_too_deep`, `folder_not_empty`, `in_use`, `trashed`, `not_trashed`, `landing_changed`, `duplicate_submission`, `challenge_used`, `file_missing`, `field_missing`, `version_missing` |
 | `FormBuilderCancelledException` | `cancelled`, with the messages the handlers gave |
 
 A missing form is no refusal: the service returns null or false, and the API answers `404`. A validation problem's

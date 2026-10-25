@@ -194,6 +194,19 @@ Option 2 in each case, except option 3 for the web-root rule and for the increme
   - Both compare as the column does, ignoring case on SQL Server. The callers make them from constants, keys in .NET's
     lowercase form and the error kinds of section 4.4, none of which differ only by case.
 
+**Amended in 4.8c** (the Phase 4 review):
+
+- **The default folder on a load-balanced site.** The default root lies on each server's own disk, so a file uploaded
+  on one server is missing on the others. Once Umbraco has started, a site that keeps the physical store with the
+  default root logs an error that names `JironFormBuilder:Files:Root` when it runs on more than one server: when
+  this server is a subscriber, or when more than one server is registered as active. Umbraco elects the roles just
+  after start-up, and a single server that the election makes the scheduling publisher is still one server, so the
+  role alone does not decide; a site set to the single-server role never hears of it. A root the host set, written
+  in any way other than the default, and a store of the site's own, are the host's choice and pass. A site whose
+  servers start together for the first time registers them only later; the health check (9.1) looks again.
+- **Registering a store** works in either order: Jiron Form Builder adds the physical store only when none is
+  registered yet, and a store registered afterwards, with `AddUnique`, replaces it.
+
 ## Consequences
 
 - 6.1 saves an upload through `IFormBuilderFileStore` while it hashes the stream, then records the row. Deleting an

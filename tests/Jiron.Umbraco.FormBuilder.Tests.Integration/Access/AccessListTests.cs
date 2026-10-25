@@ -63,7 +63,7 @@ public sealed class AccessListTests : RepositoryTestBase
     [TestCase("outsider", new string[0])]
     public async Task TheFormList_HoldsWhatThePersonaMaySee_CountedBeforePaging(string role, string[] expected)
     {
-        var access = await Access.GetFormScopeAsync(_personas[role]);
+        var access = await Access.GetFormVisibilityAsync(_personas[role]);
 
         var all = await Forms.ListAsync(new FormFilter { AllFolders = true, Access = access }, PageRequest.First(50));
         var first = await Forms.ListAsync(new FormFilter { AllFolders = true, Access = access }, PageRequest.First(2));
@@ -82,7 +82,7 @@ public sealed class AccessListTests : RepositoryTestBase
     [TestCase("hr", new[] { "Old", "Payroll" })]
     public async Task AListByAPermission_HoldsTheFormsWhereThePersonaHoldsIt(string role, string[] expected)
     {
-        var viewing = await Access.GetFormScopeAsync(_personas[role], FormBuilderPermissions.ViewEntries);
+        var viewing = await Access.GetFormVisibilityAsync(_personas[role], FormBuilderPermissions.ViewEntries);
 
         var forms = await Forms.ListAsync(new FormFilter { AllFolders = true, Access = viewing }, PageRequest.First(50));
 
@@ -115,7 +115,7 @@ public sealed class AccessListTests : RepositoryTestBase
         var noAccess = _personas["noAccess"];
 
         var folders = await FolderService.ListAsync(await Access.GetFolderVisibilityAsync(noAccess));
-        var forms = await Forms.ListAsync(new FormFilter { AllFolders = true, Access = await Access.GetFormScopeAsync(noAccess) }, PageRequest.First(50));
+        var forms = await Forms.ListAsync(new FormFilter { AllFolders = true, Access = await Access.GetFormVisibilityAsync(noAccess) }, PageRequest.First(50));
 
         Assert.Multiple(() =>
         {
@@ -129,8 +129,8 @@ public sealed class AccessListTests : RepositoryTestBase
     public async Task TheFilter_CombinesWithTheOtherConditionsOfAList()
     {
         var events = (await FolderService.ListAsync()).Single(folder => folder.Name == "Events");
-        var viewer = await Access.GetFormScopeAsync(_personas["viewer"]);
-        var hr = await Access.GetFormScopeAsync(_personas["hr"]);
+        var viewer = await Access.GetFormVisibilityAsync(_personas["viewer"]);
+        var hr = await Access.GetFormVisibilityAsync(_personas["hr"]);
 
         Assert.Multiple(async () =>
         {
@@ -140,7 +140,7 @@ public sealed class AccessListTests : RepositoryTestBase
             Assert.That((await Forms.ListAsync(new FormFilter { AllFolders = true, Search = "payroll", Access = viewer }, PageRequest.First(50))).Items, Is.Empty);
             Assert.That((await Forms.ListAsync(new FormFilter { FolderId = await IdOf(events.Key), Access = viewer }, PageRequest.First(50))).Items.Select(form => form.Name), Is.EqualTo(new[] { "Autumn", "Spring" }), "one folder");
             Assert.That((await Forms.ListAsync(new FormFilter { FolderId = null, Access = viewer }, PageRequest.First(50))).Items.Select(form => form.Name), Is.EqualTo(new[] { "Welcome" }), "the root, without Board");
-            Assert.That((await Forms.ListAsync(new FormFilter { AllFolders = true, Access = AccessScope.Nothing }, PageRequest.First(50))).Total, Is.Zero);
+            Assert.That((await Forms.ListAsync(new FormFilter { AllFolders = true, Access = FormVisibility.Nothing }, PageRequest.First(50))).Total, Is.Zero);
             Assert.That((await Forms.ListAsync(new FormFilter { AllFolders = true }, PageRequest.First(50))).Total, Is.EqualTo(6), "no filter: Jiron Form Builder's own work");
         });
     }

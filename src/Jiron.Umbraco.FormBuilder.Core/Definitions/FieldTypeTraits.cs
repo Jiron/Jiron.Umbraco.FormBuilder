@@ -212,7 +212,7 @@ internal sealed record FieldTypeTraits
 }
 
 /// <summary>The field types a site has, by alias; the built-in ones of section 4.3.2 until step 5.1 builds the registry.</summary>
-internal sealed class FieldTypeCatalog
+internal sealed class FieldTypeCatalogue
 {
     private const FieldFeatures Input = FieldFeatures.Label | FieldFeatures.HideLabel | FieldFeatures.Help | FieldFeatures.Required | FieldFeatures.VisibilityRules;
     private const FieldFeatures TextInput = Input | FieldFeatures.Placeholder | FieldFeatures.DefaultValue | FieldFeatures.Prefill | FieldFeatures.Autocomplete
@@ -225,7 +225,7 @@ internal sealed class FieldTypeCatalog
 
     /// <summary>A catalogue of the given types.</summary>
     /// <exception cref="ArgumentException">Two types have the same alias.</exception>
-    public FieldTypeCatalog(IEnumerable<FieldTypeTraits> types)
+    public FieldTypeCatalogue(IEnumerable<FieldTypeTraits> types)
     {
         ArgumentNullException.ThrowIfNull(types);
         var byAlias = new Dictionary<string, FieldTypeTraits>(StringComparer.Ordinal);
@@ -241,7 +241,7 @@ internal sealed class FieldTypeCatalog
     }
 
     /// <summary>The built-in types of section 4.3.2.</summary>
-    public static FieldTypeCatalog BuiltIn { get; } = new(BuiltInTypes());
+    public static FieldTypeCatalogue BuiltIn { get; } = new(BuiltInTypes());
 
     /// <summary>Every type, by alias.</summary>
     public IEnumerable<FieldTypeTraits> All => _types.Values;

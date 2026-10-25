@@ -87,12 +87,22 @@ internal interface IFormBuilderFormService
     Task<FormInfo?> TrashAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Where a restore of the form lands now: its folder while that is outside the trash, otherwise the root; for a form
+    /// outside the trash, its folder. Null when the form does not exist.
+    /// </summary>
+    Task<RestoreLanding?> GetRestoreLandingAsync(Guid key, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Takes a form out of the trash on its own, back into its folder, or to the root when the folder is in the trash
-    /// (ADR-0047). A form outside the trash stays as it is. Null when it does not exist.
+    /// (ADR-0047). With <paramref name="landing"/>, the landing the caller checked (<see cref="GetRestoreLandingAsync"/>),
+    /// it lands there or nowhere. A form outside the trash stays as it is. Null when it does not exist.
     /// </summary>
     /// <exception cref="FormBuilderConcurrencyException">Someone changed the form meanwhile.</exception>
+    /// <exception cref="FormBuilderConflictException">
+    /// The restore would land elsewhere than <paramref name="landing"/> or than it found before the write (<c>landing_changed</c>).
+    /// </exception>
     /// <exception cref="FormBuilderCancelledException">A handler cancelled the change.</exception>
-    Task<FormInfo?> RestoreAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default);
+    Task<FormInfo?> RestoreAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, RestoreLanding? landing = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a form in the trash for good, with its entries and their files, versions, grants, the references of
@@ -212,11 +222,11 @@ internal sealed partial class FormBuilderFormService(
     IAuditRepository audit,
     FormBuilderDatabase database,
     FormDefinitionSerializer serializer,
-    FieldTypeCatalog types,
+    FieldTypeCatalogue types,
     IEnumerable<IFormPublishCheck> publishChecks,
     IFormBuilderSettingsService settings,
     FormRemoval removal,
-    FormBuilderAccessCache access,
+    AccessSnapshotInvalidator access,
     IEventAggregator eventAggregator,
     ILogger<FormBuilderFormService> logger)
     : IFormBuilderFormService

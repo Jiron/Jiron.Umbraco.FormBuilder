@@ -392,7 +392,7 @@ public sealed class AccessServiceTests : RepositoryTestBase
         var freed = await AfterAsync(() => Access.RestrictFolderAsync(hr.Key, false, Editor), () => Access.GetForFormAsync(viewer, FormAccessTarget.Of(payroll)));
         var granted = await AfterAsync(
             () => Access.ChangeGrantAsync(new AccessGrantChange(viewers, PermissionTarget.Folder, hr.Key, FormBuilderPermissions.None, FormBuilderPermissions.ViewEntries | FormBuilderPermissions.Export, Editor)),
-            () => Access.GetFormScopeAsync(viewer, FormBuilderPermissions.Export));
+            () => Access.GetFormVisibilityAsync(viewer, FormBuilderPermissions.Export));
         var formRestricted = await AfterAsync(
             () => Access.RestrictFormAsync(payroll.Key, payroll.ConcurrencyVersion, true, Editor),
             async () => await Access.GetForFormAsync(viewer, FormAccessTarget.Of((await FormService.GetAsync(payroll.Key))!)));

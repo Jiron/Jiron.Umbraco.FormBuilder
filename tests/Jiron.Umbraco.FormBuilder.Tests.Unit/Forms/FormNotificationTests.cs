@@ -135,8 +135,8 @@ public sealed class FormNotificationTests
             ],
             Outcomes = [new FormOutcome { Key = Guid.NewGuid() }],
         };
-        var lenient = new StructuralPublishCheck(DefinitionFixtures.Serializer(), FieldTypeCatalog.BuiltIn);
-        var strict = new StructuralPublishCheck(DefinitionFixtures.Serializer(new DefinitionLimits { MaxPages = 1 }), FieldTypeCatalog.BuiltIn);
+        var lenient = new StructuralPublishCheck(DefinitionFixtures.Serializer(), FieldTypeCatalogue.BuiltIn);
+        var strict = new StructuralPublishCheck(DefinitionFixtures.Serializer(new DefinitionLimits { MaxPages = 1 }), FieldTypeCatalogue.BuiltIn);
 
         Assert.Multiple(async () =>
         {

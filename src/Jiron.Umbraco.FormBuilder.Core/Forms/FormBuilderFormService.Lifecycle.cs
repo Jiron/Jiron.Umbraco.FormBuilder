@@ -119,7 +119,7 @@ internal sealed partial class FormBuilderFormService
         }
 
         await CancelableAsync(new FormPublishingNotification(definition, form.Alias, form.Name, userKey, new EventMessages()));
-        var catalogue = FormCatalogue.Of(definition, types);
+        var catalogue = FieldCatalogue.Of(definition, types);
         var published = await database.WriteAsync(
             async _ =>
             {
@@ -132,11 +132,16 @@ internal sealed partial class FormBuilderFormService
                 var number = stored.Version.Info.Number;
                 var fields = await forms.ListFieldsAsync(form.Id, cancellationToken);
                 var previous = await forms.GetLastPublishedNumberAsync(form.Id, number, cancellationToken);
-                foreach (var (values, isNew) in FormCatalogue.Changes(catalogue, fields, number, previous))
+                foreach (var (values, isNew) in FieldCatalogue.Changes(catalogue, fields, number, previous))
                 {
-                    GC.KeepAlive(isNew
-                        ? await forms.AddFieldAsync(form.Id, values, cancellationToken)
-                        : await forms.UpdateFieldAsync(form.Id, values, cancellationToken));
+                    if (isNew)
+                    {
+                        await forms.AddFieldAsync(form.Id, values, cancellationToken);
+                    }
+                    else
+                    {
+                        await forms.UpdateFieldAsync(form.Id, values, cancellationToken);
+                    }
                 }
 
                 var details = new AuditDetails()

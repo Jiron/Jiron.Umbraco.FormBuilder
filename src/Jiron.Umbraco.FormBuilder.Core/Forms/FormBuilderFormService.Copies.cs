@@ -159,6 +159,7 @@ internal sealed partial class FormBuilderFormService
         definition = await WithThemeAsync(definition, notes, cancellationToken);
         definition = await WithOptionListsAsync(definition, envelope, notes, cancellationToken);
         CheckSaveable(definition);
+        var codes = NoteCodes(notes);
         var creation = new Creation(
             FormSource.Import,
             envelope.FormKey,
@@ -167,10 +168,16 @@ internal sealed partial class FormBuilderFormService
                 .Add("source", envelope.FormKey)
                 .AddIdentifier("sourceAlias", AuditDetails.IsIdentifier(envelope.Alias) ? envelope.Alias : null)
                 .AddIdentifier("packageVersion", AuditDetails.IsIdentifier(envelope.PackageVersion) ? envelope.PackageVersion : null)
-                .AddIdentifiers("notes", notes.Select(note => note.Code)));
+                .AddIdentifiers("notes", codes.Select(code => code.Code))
+                .AddNumbers("noteCounts", codes.Select(code => (long)code.Count)));
         var form = await CreateFormAsync(definition, name, request.Alias, wanted, folder, request.UserKey, creation, cancellationToken);
         return new FormImport(form, notes);
     }
+
+    // The codes of an import's notes, each once in the order it first came, with how many notes have it: an import can
+    // note hundreds of option lists, more than an audit entry lists.
+    private static List<(string Code, int Count)> NoteCodes(IEnumerable<FormImportNote> notes) =>
+        [.. notes.GroupBy(note => note.Code, StringComparer.Ordinal).Select(group => (group.Key, group.Count()))];
 
     /// <inheritdoc />
     public async Task<FormExport?> ExportAsync(Guid key, int? version = null, CancellationToken cancellationToken = default)
@@ -207,7 +214,7 @@ internal sealed partial class FormBuilderFormService
         var document = Document(definition);
         for (var attempt = 1; ; attempt++)
         {
-            var chosen = alias ?? FormAliases.FirstFree(wanted, await forms.ListAliasesAsync(wanted, cancellationToken));
+            var chosen = alias ?? FormAliases.FirstFree(wanted, await forms.ListAliasesAsync(FormAliases.Stem(wanted), cancellationToken));
             await CancelableAsync(new FormSavingNotification(definition, chosen, name, isNew: true, userKey, new EventMessages()) { CreatedFrom = creation.Source, SourceKey = creation.SourceKey });
             SavedVersion created;
             try

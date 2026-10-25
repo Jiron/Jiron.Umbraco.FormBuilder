@@ -251,7 +251,8 @@ internal sealed class FormController(
 
     /// <summary>
     /// Takes a form out of the trash, back into its folder, or to the root when that folder is in the trash. A restore to
-    /// the root needs what a move there needs.
+    /// the root needs what a move there needs; when the folder goes to the trash or comes back meanwhile, the restore is
+    /// refused with <c>landing_changed</c>.
     /// </summary>
     /// <param name="key">The form.</param>
     /// <param name="request">The version it is based on, and the confirmation.</param>
@@ -266,17 +267,18 @@ internal sealed class FormController(
     {
         ArgumentNullException.ThrowIfNull(request);
         var form = RequestAccess.Form!;
-        if (form.TrashedUtc is not null)
+        if (await forms.GetRestoreLandingAsync(key, cancellationToken) is not { } landing)
         {
-            var landing = form.FolderKey is { } folderKey && await folders.GetAsync(folderKey, cancellationToken) is { TrashedUtc: null } ? folderKey : (Guid?)null;
-            var move = new AccessMove(PermissionTarget.Form, form.Key, form.IsRestricted, form.FolderKey, landing);
-            if (landing != form.FolderKey && await LibraryMoves.RefusalAsync(access, authorization, User, move, request.WidenAccess, cancellationToken) is { } refusal)
-            {
-                return refusal;
-            }
+            return FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
         }
 
-        return await ChangedAsync(await forms.RestoreAsync(key, request.ConcurrencyVersion, RequestAccess.User.Key, cancellationToken), cancellationToken);
+        var move = new AccessMove(PermissionTarget.Form, form.Key, form.IsRestricted, form.FolderKey, landing.FolderKey);
+        if (landing.FolderKey != form.FolderKey && await LibraryMoves.RefusalAsync(access, authorization, User, move, request.WidenAccess, cancellationToken) is { } refusal)
+        {
+            return refusal;
+        }
+
+        return await ChangedAsync(await forms.RestoreAsync(key, request.ConcurrencyVersion, RequestAccess.User.Key, landing, cancellationToken), cancellationToken);
     }
 
     /// <summary>Deletes a form in the trash for good, with its entries, their files and its versions.</summary>

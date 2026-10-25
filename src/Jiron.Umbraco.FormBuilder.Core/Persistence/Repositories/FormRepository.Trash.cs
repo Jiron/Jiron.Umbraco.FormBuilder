@@ -25,21 +25,30 @@ internal sealed partial class FormRepository
             cancellationToken);
 
     /// <inheritdoc />
-    public Task<StoredForm?> RestoreAsync(int formId, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default) =>
+    public Task<StoredForm?> RestoreAsync(int formId, int expectedConcurrencyVersion, int? landingFolderId, Guid? userKey, CancellationToken cancellationToken = default) =>
         database.WriteAsync(
-            db =>
+            async db =>
             {
                 var n = new SqlNames(db);
                 var folders = n.T(FormBuilderTables.Folder);
                 var folderLives = $"EXISTS (SELECT 1 FROM {folders} p{n.LockingRead} WHERE p.{n.C("id")} = {n.T(FormBuilderTables.Form)}.{n.C("folderId")} AND p.{n.C("trashedUtc")} IS NULL)";
-                return ChangeAsync(
+
+                // The landing the caller checked, as the locking read finds it now: its folder while that lives, else the root.
+                var lands = landingFolderId is null ? $"NOT {folderLives}" : $"{n.C("folderId")} = @4 AND {folderLives}";
+                var restored = await ChangeAsync(
                     db,
                     n,
                     formId,
                     expectedConcurrencyVersion,
-                    $"{n.C("trashedUtc")} = NULL, {n.C("trashKey")} = NULL, {n.C("folderId")} = CASE WHEN {folderLives} THEN {n.C("folderId")} ELSE NULL END",
-                    $"{n.C("trashedUtc")} IS NOT NULL",
-                    userKey);
+                    $"{n.C("trashedUtc")} = NULL, {n.C("trashKey")} = NULL, {n.C("folderId")} = {(landingFolderId is null ? "NULL" : n.C("folderId"))}",
+                    $"{n.C("trashedUtc")} IS NOT NULL AND {lands}",
+                    userKey,
+                    landingFolderId);
+
+                // Fresh and still in the trash, so only the landing kept it there.
+                return restored is { TrashedUtc: not null }
+                    ? throw new FormBuilderConflictException(FormBuilderConflict.LandingChanged, "Where it lands changed since it was checked: its folder went to the trash or came back meanwhile. Check again, then restore it.")
+                    : restored;
             },
             cancellationToken);
 

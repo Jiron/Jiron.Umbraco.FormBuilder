@@ -140,6 +140,21 @@ the unit with its audit entry, a notification after the commit):
 - Every check of other rows is a locking read (ADR-0038), which `SqlGuardTests` enforces; a batch names at most 100
   ids, below the 1,000 of one statement.
 
+**Amended in 4.8c** (the Phase 4 review):
+
+- **A delete that stops part way is on record.** The batches of a form's delete commit one by one, so a delete that
+  stops (a cancellation, a stale version, a crash, entries that keep arriving) has deleted entries already. The first
+  unit that deletes anything before the last writes `form.deleting` with it; the last writes `form.deleted` with the
+  counts, as before. A delete whose last unit is its first to delete anything writes only `form.deleted`, as nothing
+  could stop part way. Deleting again after a stop writes a `form.deleting` of its own. Folder deletes and the empty
+  trash delete their forms this way too.
+- **A restore lands where it was checked.** Core works out where a restore lands (`GetRestoreLandingAsync`: the
+  folder or parent while it is outside the trash, otherwise the root), the endpoints check that landing as a move
+  (ADR-0051), and pass it to the restore. The write reads the folder or parent with a lock and refuses with the new
+  conflict `landing_changed` (`409`) when it finds the other answer, so a folder put in the trash between the check
+  and the write can no longer send the restore to the root unchecked. Without a landing from the caller, the service
+  passes the one it read itself, and the write refuses the same way.
+
 ## Consequences
 
 - A folder brings back exactly what went to the trash with it, whatever the clock says.

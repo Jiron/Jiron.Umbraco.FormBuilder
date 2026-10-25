@@ -18,13 +18,13 @@ internal sealed record CatalogueEntry(Guid FieldKey, string Alias, string Label,
 /// for every field that holds a value (the children of repeatable groups included), for each row of a grid, and for
 /// the grid and the repeatable group themselves, in document order.
 /// </summary>
-internal static class FormCatalogue
+internal static class FieldCatalogue
 {
     /// <summary>
     /// The rows of a definition in document order. A field whose type the site lacks has none; publishing refuses it
     /// anyway (ADR-0035).
     /// </summary>
-    public static IReadOnlyList<CatalogueEntry> Of(FormDefinition definition, FieldTypeCatalog types)
+    public static IReadOnlyList<CatalogueEntry> Of(FormDefinition definition, FieldTypeCatalogue types)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(types);
@@ -92,7 +92,7 @@ internal static class FormCatalogue
         return changes;
     }
 
-    private static void Add(FormField field, Guid? parent, FieldTypeCatalog types, List<CatalogueEntry> entries)
+    private static void Add(FormField field, Guid? parent, FieldTypeCatalogue types, List<CatalogueEntry> entries)
     {
         if (types.Find(field.Type) is not { HoldsValue: true } type || field.Alias is not { } alias)
         {

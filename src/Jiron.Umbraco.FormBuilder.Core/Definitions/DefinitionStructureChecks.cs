@@ -23,7 +23,7 @@ internal sealed partial class DefinitionStructureChecks
     public static readonly FrozenSet<string> ReservedAliases =
         new[] { "form", "entry", "page", "member", "query", "context", "site", "date", "ufprt" }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
-    private readonly FieldTypeCatalog _types;
+    private readonly FieldTypeCatalogue _types;
     private readonly List<DefinitionProblem> _problems = [];
 
     // Every field, repeatable group child and grid row by key; the first of two with one key wins (a save refuses both).
@@ -41,12 +41,12 @@ internal sealed partial class DefinitionStructureChecks
     private int _cursor;
     private bool _captcha;
 
-    private DefinitionStructureChecks(FieldTypeCatalog types) => _types = types;
+    private DefinitionStructureChecks(FieldTypeCatalogue types) => _types = types;
 
     /// <summary>Every structural problem of the definition, at most <see cref="DefinitionShapeReader.MaxProblems"/>.</summary>
     /// <param name="definition">A definition the save checks accept.</param>
     /// <param name="types">The field types the site has.</param>
-    public static IReadOnlyList<DefinitionProblem> Check(FormDefinition definition, FieldTypeCatalog types)
+    public static IReadOnlyList<DefinitionProblem> Check(FormDefinition definition, FieldTypeCatalogue types)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(types);

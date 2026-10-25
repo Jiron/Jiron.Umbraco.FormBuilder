@@ -213,7 +213,7 @@ internal sealed class FormDefinitionSerializer
     /// </summary>
     /// <param name="definition">The definition to publish.</param>
     /// <param name="types">The field types the site has.</param>
-    public IReadOnlyList<DefinitionProblem> CheckPublish(FormDefinition definition, FieldTypeCatalog types)
+    public IReadOnlyList<DefinitionProblem> CheckPublish(FormDefinition definition, FieldTypeCatalogue types)
     {
         var problems = CheckSave(definition);
         return problems.Count > 0 ? problems : DefinitionStructureChecks.Check(definition, types);

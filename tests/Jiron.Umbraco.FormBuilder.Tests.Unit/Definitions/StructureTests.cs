@@ -493,8 +493,8 @@ public sealed class StructureTests
 
         Assert.Multiple(() =>
         {
-            AssertOneProblem(DefinitionFixtures.Serializer().CheckPublish(twoKeys, FieldTypeCatalog.BuiltIn), DefinitionErrors.DuplicateKey, "$.actions[1].key");
-            AssertOneProblem(serializer.CheckPublish(definition, FieldTypeCatalog.BuiltIn), DefinitionErrors.LimitExceeded, "$.actions");
+            AssertOneProblem(DefinitionFixtures.Serializer().CheckPublish(twoKeys, FieldTypeCatalogue.BuiltIn), DefinitionErrors.DuplicateKey, "$.actions[1].key");
+            AssertOneProblem(serializer.CheckPublish(definition, FieldTypeCatalogue.BuiltIn), DefinitionErrors.LimitExceeded, "$.actions");
         });
     }
 
@@ -515,7 +515,7 @@ public sealed class StructureTests
         for (var seed = 0; seed < 500; seed++)
         {
             var definition = new DefinitionGenerator(seed).Next();
-            var problems = DefinitionStructureChecks.Check(definition, FieldTypeCatalog.BuiltIn);
+            var problems = DefinitionStructureChecks.Check(definition, FieldTypeCatalogue.BuiltIn);
             var document = JsonNode.Parse(FormDefinitionSerializer.Write(definition))!;
             Assert.Multiple(() =>
             {
@@ -523,7 +523,7 @@ public sealed class StructureTests
                 Assert.That(problems.Select(problem => problem.Code).Except(codes), Is.Empty, $"seed {seed}: codes of the structural validation");
                 Assert.That(problems.Where(problem => !JsonPathResolves(document, problem.Path)).Select(problem => problem.Path), Is.Empty, $"seed {seed}: paths into the document");
                 Assert.That(problems.Where(problem => problem.Message.Length == 0), Is.Empty, $"seed {seed}: messages");
-                Assert.That(DefinitionStructureChecks.Check(definition, FieldTypeCatalog.BuiltIn), Is.EqualTo(problems), $"seed {seed}: the same problems every time");
+                Assert.That(DefinitionStructureChecks.Check(definition, FieldTypeCatalogue.BuiltIn), Is.EqualTo(problems), $"seed {seed}: the same problems every time");
             });
         }
     }
@@ -556,7 +556,7 @@ public sealed class StructureTests
 
     /// <summary>Publishes a definition and returns the problems.</summary>
     internal static IReadOnlyList<DefinitionProblem> Publish(FormDefinition definition) =>
-        DefinitionFixtures.Serializer().CheckPublish(definition, FieldTypeCatalog.BuiltIn);
+        DefinitionFixtures.Serializer().CheckPublish(definition, FieldTypeCatalogue.BuiltIn);
 
     internal static void AssertOneProblem(IReadOnlyList<DefinitionProblem> problems, string code, string path)
     {

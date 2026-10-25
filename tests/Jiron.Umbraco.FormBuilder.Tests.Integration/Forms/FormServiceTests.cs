@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Testing.Settings;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Microsoft.Extensions.DependencyInjection;
@@ -610,7 +611,7 @@ public sealed class FormServiceTests : RepositoryTestBase
         {
             Assert.That(GetRequiredService<IFormBuilderFormService>(), Is.InstanceOf<FormBuilderFormService>());
             Assert.That(GetRequiredService<IEnumerable<IFormPublishCheck>>().OfType<StructuralPublishCheck>().Count(), Is.EqualTo(1));
-            Assert.That(GetRequiredService<FieldTypeCatalog>(), Is.SameAs(FieldTypeCatalog.BuiltIn));
+            Assert.That(GetRequiredService<FieldTypeCatalogue>(), Is.SameAs(FieldTypeCatalogue.BuiltIn));
         });
     }
 
@@ -637,7 +638,7 @@ public sealed class FormServiceTests : RepositoryTestBase
     private static Guid Key(int number) => Guid.Parse($"70000000-0000-4000-8000-{number:D12}");
 
     private static string ConsentRow(Dictionary<string, string> label, Dictionary<string, string> text) =>
-        SettingsSectionJson.GlobalJson(new GeneralSettings { NewForms = new NewFormDefaults { Consent = new NewFormConsent { Label = label, Text = text } } });
+        SettingsJson.Global(new GeneralSettings { NewForms = new NewFormDefaults { Consent = new NewFormConsent { Label = label, Text = text } } });
 
     // A default text and pairs of a culture and its text.
     private static Dictionary<string, string> Texts(string fallback, params string[] cultures)

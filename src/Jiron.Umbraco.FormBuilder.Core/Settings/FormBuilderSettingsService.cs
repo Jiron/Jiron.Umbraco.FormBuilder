@@ -80,29 +80,21 @@ internal sealed partial class FormBuilderSettingsService(
     private readonly IReadOnlyList<ISettingsSectionMigration> _migrations = migrations.ToList();
 
     /// <inheritdoc />
-    public async Task<SettingsSnapshot<T>> GetAsync<T>(Guid? siteKey = null, CancellationToken cancellationToken = default)
+    public Task<SettingsSnapshot<T>> GetAsync<T>(Guid? siteKey = null, CancellationToken cancellationToken = default)
         where T : class, ISettingsSection, new()
     {
         var scope = siteKey is { } key && T.PerSite ? SettingsScopes.ForSite(key) : SettingsScopes.Global;
         var cacheKey = SettingsCacheKeys.Of(scope, T.Alias);
-        var cache = appCaches.RuntimeCache;
-        if (cache.GetCacheItem<SettingsSnapshot<T>>(cacheKey) is { } hit)
-        {
-            return hit;
-        }
 
-        // A save clears the key and its token. When the token is gone or replaced after the read, the rows may be
-        // older than the save, so the snapshot is returned but not cached.
-        var token = new object();
-        var tokenKey = cacheKey + SettingsCacheKeys.LoadingSuffix;
-        cache.Insert(tokenKey, () => token, CacheDuration);
-        var snapshot = Snapshot<T>(await ReadStoredAsync<T>(scope, cancellationToken));
-        if (ReferenceEquals(cache.Get(tokenKey), token))
-        {
-            cache.Insert(cacheKey, () => snapshot, CacheDuration);
-        }
-
-        return snapshot;
+        // One read for every miss while it runs. A save clears the key and the read under way: a read that began before
+        // the save answers its callers but is not kept. It runs without a caller's cancellation, as others may wait for it.
+        return RuntimeCacheLoads.GetAsync(
+            appCaches.RuntimeCache,
+            cacheKey,
+            cacheKey + SettingsCacheKeys.LoadingSuffix,
+            async () => Snapshot<T>(await ReadStoredAsync<T>(scope, CancellationToken.None)),
+            CacheDuration,
+            cancellationToken);
     }
 
     /// <inheritdoc />

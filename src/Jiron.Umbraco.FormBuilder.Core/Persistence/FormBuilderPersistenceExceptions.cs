@@ -74,6 +74,12 @@ internal enum FormBuilderConflict
 
     /// <summary>The form or folder is outside the trash: only one in the trash is deleted for good (ADR-0047).</summary>
     NotTrashed,
+
+    /// <summary>
+    /// A restore would land elsewhere than the caller checked: the folder it goes back into went to the trash, or came
+    /// back, since then (ADR-0047, amended in 4.8c).
+    /// </summary>
+    LandingChanged,
 }
 
 /// <summary>

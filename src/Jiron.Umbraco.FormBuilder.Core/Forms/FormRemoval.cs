@@ -6,19 +6,15 @@ using Microsoft.Extensions.Logging;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
-/// <summary>What a form's permanent delete removed.</summary>
-/// <param name="Entries">How many entries went.</param>
-/// <param name="Files">How many files went, the uploads that waited for an entry included.</param>
-internal sealed record FormRemoved(long Entries, long Files);
-
 /// <summary>
 /// Deletes a form in the trash for good (ADR-0047), for the form service and the folder service: its entries in
 /// batches, each a unit of work that holds the form's row while the form is in the trash at the version the editor
 /// confirmed; then the uploads that wait for an entry, in batches the same way; then one unit with the form's own rows,
 /// its grants, the references to it and its daily statistics, and the audit entry. The bytes of the deleted files go
 /// after each unit committed, so a unit that rolls back never loses a file (ADR-0041). A delete that stops part way
-/// leaves the form in the trash with fewer entries, and deleting it again finishes the job. It publishes nothing; the
-/// services announce what they delete.
+/// leaves the form in the trash with fewer entries, and deleting it again finishes the job; the first batch that
+/// deletes anything records <see cref="DeletingAction"/> in its unit, so a delete that stops is on record too. It
+/// publishes nothing; the services announce what they delete.
 /// </summary>
 internal sealed partial class FormRemoval(
     IFormRepository forms,
@@ -34,6 +30,13 @@ internal sealed partial class FormRemoval(
 {
     /// <summary>The audit action of a form's permanent delete.</summary>
     public const string DeletedAction = "form.deleted";
+
+    /// <summary>
+    /// The audit action of the first batch of a delete that deletes anything before its last unit (ADR-0047, amended in
+    /// 4.8c): the batches commit one by one, so a delete that stops part way has deleted entries already, and the log
+    /// says so. A delete whose last unit is its first to delete anything records only <see cref="DeletedAction"/>.
+    /// </summary>
+    public const string DeletingAction = "form.deleting";
 
     /// <summary>
     /// How many entries one unit deletes: with their values, a unit locks a few thousand rows at most, below the point
@@ -55,11 +58,13 @@ internal sealed partial class FormRemoval(
     /// <exception cref="FormBuilderConflictException">
     /// The form is outside the trash (<c>not_trashed</c>), or entries kept arriving (<c>in_use</c>).
     /// </exception>
-    public async Task<FormRemoved?> DeleteAsync(StoredForm form, Guid? userKey, CancellationToken cancellationToken)
+    public async Task<FormDeletion?> DeleteAsync(StoredForm form, Guid? userKey, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(form);
         long entryCount = 0;
         long fileCount = 0;
+        var deleting = new NewAuditEntry(DeletingAction, FormBuilderFormService.EntityType, form.Key, userKey);
+        var recorded = false;
         for (var attempt = 1; ; attempt++)
         {
             if (!await InBatchesAsync(DeleteEntriesAsync) || !await InBatchesAsync(DeleteUploadsAsync))
@@ -69,7 +74,7 @@ internal sealed partial class FormRemoval(
 
             try
             {
-                return await DeleteRowAsync(form, entryCount, fileCount, userKey, cancellationToken) ? new FormRemoved(entryCount, fileCount) : null;
+                return await DeleteRowAsync(form, entryCount, fileCount, userKey, cancellationToken) ? new FormDeletion(form.Key, entryCount, fileCount) : null;
             }
             catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.InUse && attempt < Attempts)
             {
@@ -77,16 +82,18 @@ internal sealed partial class FormRemoval(
             }
         }
 
-        // Runs batches until one lists nothing, deleting the bytes of the files of each; false when the form is gone.
-        async Task<bool> InBatchesAsync(Func<StoredForm, CancellationToken, Task<Batch?>> next)
+        // Runs batches until one lists nothing, deleting the bytes of the files of each; false when the form is gone. The
+        // first batch that lists anything records the delete in its unit.
+        async Task<bool> InBatchesAsync(Func<StoredForm, NewAuditEntry?, CancellationToken, Task<Batch?>> next)
         {
-            while (await next(form, cancellationToken) is { } batch)
+            while (await next(form, recorded ? null : deleting, cancellationToken) is { } batch)
             {
                 if (batch.Listed == 0)
                 {
                     return true;
                 }
 
+                recorded = true;
                 entryCount += batch.Entries;
                 fileCount += batch.Files.Count;
                 await DeleteBytesAsync(batch.Files);
@@ -96,9 +103,10 @@ internal sealed partial class FormRemoval(
         }
     }
 
-    // One batch of entries, with their unsent mail; null when the form is gone. The hold refuses a form that left the
-    // trash or changed since the editor confirmed, and keeps new entries out until the unit ends.
-    private Task<Batch?> DeleteEntriesAsync(StoredForm form, CancellationToken cancellationToken) =>
+    // One batch of entries, with their unsent mail and, when it is the first, the delete's record; null when the form is
+    // gone. The hold refuses a form that left the trash or changed since the editor confirmed, and keeps new entries
+    // out until the unit ends.
+    private Task<Batch?> DeleteEntriesAsync(StoredForm form, NewAuditEntry? record, CancellationToken cancellationToken) =>
         database.WriteAsync(
             async _ =>
             {
@@ -113,15 +121,16 @@ internal sealed partial class FormRemoval(
                     return new Batch(0, 0, []);
                 }
 
+                await RecordAsync(record, cancellationToken);
                 var stored = await entries.ListFilesAsync(ids, cancellationToken);
                 await emails.DeleteUnsentAsync(ids, cancellationToken);
                 return new Batch(ids.Count, await entries.DeleteAsync(ids, cancellationToken), stored);
             },
             cancellationToken);
 
-    // One batch of the uploads that wait for an entry; null when the form is gone. While the unit holds the form, no
-    // entry takes an upload and none comes in, so each one listed is deleted.
-    private Task<Batch?> DeleteUploadsAsync(StoredForm form, CancellationToken cancellationToken) =>
+    // One batch of the uploads that wait for an entry and, when it is the first, the delete's record; null when the form
+    // is gone. While the unit holds the form, no entry takes an upload and none comes in, so each one listed is deleted.
+    private Task<Batch?> DeleteUploadsAsync(StoredForm form, NewAuditEntry? record, CancellationToken cancellationToken) =>
         database.WriteAsync<Batch?>(
             async _ =>
             {
@@ -131,6 +140,11 @@ internal sealed partial class FormRemoval(
                 }
 
                 var uploads = await entries.ListUploadsAsync(form.Id, UploadsPerBatch, cancellationToken);
+                if (uploads.Count > 0)
+                {
+                    await RecordAsync(record, cancellationToken);
+                }
+
                 var deleted = new List<StoredEntryFile>();
                 foreach (var upload in uploads)
                 {
@@ -163,6 +177,14 @@ internal sealed partial class FormRemoval(
                 return true;
             },
             cancellationToken);
+
+    private async Task RecordAsync(NewAuditEntry? record, CancellationToken cancellationToken)
+    {
+        if (record is not null)
+        {
+            await audit.AddAsync(record, cancellationToken);
+        }
+    }
 
     // After the commit, whatever the caller's cancellation says: the rows are gone, so their bytes go too. What cannot be
     // deleted is logged without its path and left for retention (13.1).

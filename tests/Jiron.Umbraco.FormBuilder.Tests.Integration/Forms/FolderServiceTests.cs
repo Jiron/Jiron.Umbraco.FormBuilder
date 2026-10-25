@@ -398,7 +398,7 @@ public sealed class FolderServiceTests : RepositoryTestBase
         await Service.TrashAsync(spare.Key, Editor);
         await FormService.TrashAsync(loose.Key, loose.ConcurrencyVersion, Editor);
         await FormService.TrashAsync(kept.Key, kept.ConcurrencyVersion, Editor);
-        var offered = new List<LibraryRemoval>();
+        var offered = new List<DeletionCandidate>();
         var before = Notifications.Seen.Count;
 
         var emptied = await Service.EmptyTrashAsync(
@@ -435,15 +435,15 @@ public sealed class FolderServiceTests : RepositoryTestBase
         var notes = await CreateFormAsync("Notes", deep.Key);
         await CreateFormAsync("Elsewhere");
 
-        var removal = await Service.GetRemovalAsync(top.Key);
-        var ofDeep = await Service.GetRemovalAsync(deep.Key);
+        var removal = await Service.GetDeletionCandidateAsync(top.Key);
+        var ofDeep = await Service.GetDeletionCandidateAsync(deep.Key);
 
         Assert.Multiple(async () =>
         {
             Assert.That(removal!.FolderKeys, Is.EqualTo(new[] { top.Key, mid.Key, deep.Key }));
             Assert.That(removal.Forms, Is.EquivalentTo(new[] { new FormAccessTarget(invite.Key, top.Key, false), new FormAccessTarget(notes.Key, deep.Key, false) }));
             Assert.That((ofDeep!.FolderKeys, ofDeep.Forms), Is.EqualTo((new[] { deep.Key }, new[] { new FormAccessTarget(notes.Key, deep.Key, false) })).Using<(IReadOnlyList<Guid>, IReadOnlyList<FormAccessTarget>)>((a, b) => a.Item1.SequenceEqual(b.Item1) && a.Item2.SequenceEqual(b.Item2)));
-            Assert.That(await Service.GetRemovalAsync(Guid.NewGuid()), Is.Null);
+            Assert.That(await Service.GetDeletionCandidateAsync(Guid.NewGuid()), Is.Null);
         });
     }
 

@@ -53,7 +53,19 @@ internal sealed partial class FormBuilderFormService
     }
 
     /// <inheritdoc />
-    public async Task<FormInfo?> RestoreAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default)
+    public async Task<RestoreLanding?> GetRestoreLandingAsync(Guid key, CancellationToken cancellationToken = default)
+    {
+        if (await forms.GetAsync(key, cancellationToken) is not { } form)
+        {
+            return null;
+        }
+
+        var folder = form.FolderId is { } folderId ? await folders.GetByIdAsync(folderId, cancellationToken) : null;
+        return form.TrashedUtc is null ? new RestoreLanding(folder?.Key) : Landing(folder);
+    }
+
+    /// <inheritdoc />
+    public async Task<FormInfo?> RestoreAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, RestoreLanding? landing = null, CancellationToken cancellationToken = default)
     {
         EnsureOwnUnit();
         if (await forms.GetAsync(key, cancellationToken) is not { } form)
@@ -67,13 +79,16 @@ internal sealed partial class FormBuilderFormService
             return await InfoAsync(form, cancellationToken);
         }
 
-        // Back into its folder while that is outside the trash, otherwise to the root.
+        // Back into its folder while that is outside the trash, otherwise to the root; there, or where the caller checked
+        // it lands, and the write refuses another landing.
         var folder = form.FolderId is { } folderId ? await folders.GetByIdAsync(folderId, cancellationToken) : null;
-        await CancelableAsync(new FormRestoringNotification(form.Key, form.Alias, form.Name, folder is { TrashedUtc: null } ? folder.Key : null, userKey, new EventMessages()));
+        var lands = landing ?? Landing(folder);
+        int? landingId = lands.FolderKey is null ? null : folder is not null && folder.Key == lands.FolderKey ? folder.Id : throw LandingChanged();
+        await CancelableAsync(new FormRestoringNotification(form.Key, form.Alias, form.Name, lands.FolderKey, userKey, new EventMessages()));
         var changed = await database.WriteAsync(
             async _ =>
             {
-                if (await forms.RestoreAsync(form.Id, expectedConcurrencyVersion, userKey, cancellationToken) is not { } stored)
+                if (await forms.RestoreAsync(form.Id, expectedConcurrencyVersion, landingId, userKey, cancellationToken) is not { } stored)
                 {
                     return null;
                 }
@@ -93,6 +108,12 @@ internal sealed partial class FormBuilderFormService
         return Info(row, back);
     }
 
+    // A restore goes back into the folder while that is outside the trash, otherwise to the root.
+    private static RestoreLanding Landing(StoredFolder? folder) => new(folder is { TrashedUtc: null } ? folder.Key : null);
+
+    private static FormBuilderConflictException LandingChanged() =>
+        new(FormBuilderConflict.LandingChanged, "Where it lands changed since it was checked: its folder went to the trash or came back meanwhile. Check again, then restore it.");
+
     /// <inheritdoc />
     public async Task<FormDeletion?> DeleteAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default)
     {
@@ -109,7 +130,7 @@ internal sealed partial class FormBuilderFormService
         }
 
         await CancelableAsync(new FormDeletingNotification(form.Key, form.Alias, form.Name, userKey, new EventMessages()));
-        FormRemoved? removed;
+        FormDeletion? removed;
         try
         {
             removed = await removal.DeleteAsync(form, userKey, cancellationToken);
@@ -126,7 +147,7 @@ internal sealed partial class FormBuilderFormService
         }
 
         await PublishedAsync(new FormDeletedNotification(form.Key, form.Alias, form.Name, removed.Entries, removed.Files, userKey));
-        return new FormDeletion(form.Key, removed.Entries, removed.Files);
+        return removed;
     }
 
     // A restored form and the folder it went back to.

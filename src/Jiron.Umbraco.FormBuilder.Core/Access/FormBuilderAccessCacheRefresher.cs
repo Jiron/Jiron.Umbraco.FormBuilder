@@ -56,7 +56,7 @@ internal sealed class FormBuilderAccessCacheRefresher(AppCaches appCaches, IEven
 }
 
 /// <summary>Drops the access snapshot after a committed change, here at once and on the other servers through the refresher.</summary>
-internal sealed class FormBuilderAccessCache(AppCaches appCaches, DistributedCache distributedCache)
+internal sealed class AccessSnapshotInvalidator(AppCaches appCaches, DistributedCache distributedCache)
 {
     /// <summary>Called after every committed change the evaluation reads.</summary>
     public void Changed()

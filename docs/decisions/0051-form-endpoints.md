@@ -63,6 +63,10 @@ For the definition:
   as a move to the root: `design` there, and when it widens access `managePermissions` and the confirmation
   `widenAccess`, with the same answers. A folder's restore takes an optional body for the confirmation; this amends
   ADR-0050, whose restore did not ask.
+
+  **Amended in 4.8c** (the Phase 4 review): the endpoint asks Core where the restore lands, checks that landing, and
+  hands it to the restore, which lands there or answers `409 landing_changed` (ADR-0047), so a folder that goes to the
+  trash or comes back between the check and the write cannot send the restore somewhere no check looked.
 - **The answers:** a form names its key, alias, name, folder, `concurrencyVersion`, publish state and revision,
   restriction, trash time, creation and change times, and the user's permissions. The draft adds the definition, its
   problems under the current limits, the draft's and the published version's numbers and whether there are

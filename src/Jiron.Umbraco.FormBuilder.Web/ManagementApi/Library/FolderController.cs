@@ -131,7 +131,8 @@ internal sealed class FolderController(
 
     /// <summary>
     /// Takes a folder out of the trash with what went there with it, into its parent, or to the root when the parent is
-    /// in the trash. A restore to the root needs what a move there needs.
+    /// in the trash. A restore to the root needs what a move there needs; when the parent goes to the trash or comes back
+    /// meanwhile, the restore is refused with <c>landing_changed</c>.
     /// </summary>
     /// <param name="key">The folder.</param>
     /// <param name="request">The confirmation of a restore that gives user groups more access; none for a restore without it.</param>
@@ -145,17 +146,18 @@ internal sealed class FolderController(
     public async Task<IActionResult> Restore(Guid key, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] RestoreFolderRequestModel? request = null, CancellationToken cancellationToken = default)
     {
         var folder = RequestAccess.Folder!;
-        if (folder.TrashedUtc is not null)
+        if (await folders.GetRestoreLandingAsync(key, cancellationToken) is not { } landing)
         {
-            var landing = folder.ParentKey is { } parentKey && await folders.GetAsync(parentKey, cancellationToken) is { TrashedUtc: null } ? parentKey : (Guid?)null;
-            var move = new AccessMove(PermissionTarget.Folder, folder.Key, folder.IsRestricted, folder.ParentKey, landing);
-            if (landing != folder.ParentKey && await LibraryMoves.RefusalAsync(access, authorization, User, move, request?.WidenAccess == true, cancellationToken) is { } refusal)
-            {
-                return refusal;
-            }
+            return FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder);
         }
 
-        return await folders.RestoreAsync(key, RequestAccess.User.Key, cancellationToken) is { } change
+        var move = new AccessMove(PermissionTarget.Folder, folder.Key, folder.IsRestricted, folder.ParentKey, landing.FolderKey);
+        if (landing.FolderKey != folder.ParentKey && await LibraryMoves.RefusalAsync(access, authorization, User, move, request?.WidenAccess == true, cancellationToken) is { } refusal)
+        {
+            return refusal;
+        }
+
+        return await folders.RestoreAsync(key, RequestAccess.User.Key, landing, cancellationToken) is { } change
             ? Ok(LibraryChangeResponseModel.Of(change))
             : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder);
     }
@@ -174,7 +176,7 @@ internal sealed class FolderController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(Guid key, CancellationToken cancellationToken = default)
     {
-        if (await folders.GetRemovalAsync(key, cancellationToken) is not { } removal)
+        if (await folders.GetDeletionCandidateAsync(key, cancellationToken) is not { } removal)
         {
             return FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder);
         }

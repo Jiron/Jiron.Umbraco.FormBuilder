@@ -15,7 +15,7 @@ internal static class FormBuilderFormServices
     public static IUmbracoBuilder AddFormBuilderForms(this IUmbracoBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
-        builder.Services.TryAddSingleton(FieldTypeCatalog.BuiltIn);
+        builder.Services.TryAddSingleton(FieldTypeCatalogue.BuiltIn);
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormPublishCheck, StructuralPublishCheck>());
         builder.Services.TryAddSingleton<FormRemoval>();
         builder.Services.TryAddSingleton<IFormBuilderFormService, FormBuilderFormService>();

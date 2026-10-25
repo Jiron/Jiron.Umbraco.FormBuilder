@@ -32,6 +32,7 @@ public sealed partial class FormRefusalTests
         [FormBuilderConflict.MissingVersion] = "version_missing",
         [FormBuilderConflict.Trashed] = "trashed",
         [FormBuilderConflict.NotTrashed] = "not_trashed",
+        [FormBuilderConflict.LandingChanged] = "landing_changed",
     };
 
     [Test]

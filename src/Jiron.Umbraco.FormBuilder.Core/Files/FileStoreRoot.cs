@@ -12,7 +12,7 @@ internal static class FileStoreRoot
     /// <summary>The most links one path may pass through.</summary>
     public const int MaxLinks = 32;
 
-    private const string Setting = "JironFormBuilder:Files:Root";
+    private const string Setting = FormBuilderFilesOptions.RootKey;
     private const string ContentRootPrefix = "~/";
 
     /// <summary>The folder <paramref name="root"/> names on this site.</summary>

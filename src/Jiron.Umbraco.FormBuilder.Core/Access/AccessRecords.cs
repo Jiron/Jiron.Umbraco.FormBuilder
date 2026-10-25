@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
@@ -35,13 +36,13 @@ internal sealed record AccessGain(Guid UserGroupKey, FormBuilderPermissions Gain
 /// everything, nothing, or the unrestricted forms in <see cref="FolderIds"/> (and at the root when <see cref="Root"/>)
 /// plus the forms with their own grant to one of <see cref="GroupKeys"/>.
 /// </summary>
-internal sealed record AccessScope
+internal sealed record FormVisibility
 {
     /// <summary>Every form: an administrator's lists.</summary>
-    public static AccessScope Everything { get; } = new() { IsEverything = true };
+    public static FormVisibility Everything { get; } = new() { IsEverything = true };
 
     /// <summary>No form.</summary>
-    public static AccessScope Nothing { get; } = new();
+    public static FormVisibility Nothing { get; } = new();
 
     /// <summary>True for every form, whatever the rest says.</summary>
     public bool IsEverything { get; init; }
@@ -68,7 +69,7 @@ internal sealed record AccessScope
 internal sealed record FolderVisibility(bool IsEverything, IReadOnlySet<Guid> FolderKeys)
 {
     /// <summary>Every folder: an administrator's lists.</summary>
-    public static FolderVisibility Everything { get; } = new(true, new HashSet<Guid>());
+    public static FolderVisibility Everything { get; } = new(true, FrozenSet<Guid>.Empty);
 
     /// <summary>Whether the list holds the folder.</summary>
     public bool Allows(Guid folderKey) => IsEverything || FolderKeys.Contains(folderKey);

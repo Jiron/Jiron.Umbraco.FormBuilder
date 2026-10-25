@@ -13,6 +13,7 @@ using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Infrastructure.Migrations.Notifications;
 using Umbraco.Extensions;
 
@@ -69,8 +70,10 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<IDailyStatRepository, DailyStatRepository>();
         builder.Services.TryAddSingleton<IReferenceRepository, ReferenceRepository>();
 
-        // The file store (ADR-0006, ADR-0041): the physical default, whose root the host configuration checks.
+        // The file store (ADR-0006, ADR-0041): the physical default, whose root the host configuration checks, and the
+        // check that a load-balanced site does not keep it on each server's own disk.
         builder.Services.AddFormBuilderFiles();
+        builder.AddNotificationHandler<UmbracoApplicationStartedNotification, FileStoreLoadBalancingCheck>();
 
         // The backoffice settings (ADR-0008, ADR-0043): the sections, the cached reader, the save and the refresher.
         builder.AddFormBuilderSettings();

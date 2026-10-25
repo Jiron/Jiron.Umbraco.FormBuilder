@@ -137,9 +137,9 @@ public sealed class FormRepositoryTests : RepositoryTestBase
         {
             Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, trashed: false, access: null), Is.EquivalentTo(new[] { events.Id, hr.Id }));
             Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, trashed: true, access: null), Is.EquivalentTo(new[] { archive.Id }));
-            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, false, new AccessScope { FolderIds = [events.Id] }), Is.EquivalentTo(new[] { events.Id }), "only the forms the scope holds");
-            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, false, AccessScope.Nothing), Is.Empty);
-            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, false, AccessScope.Everything), Is.EquivalentTo(new[] { events.Id, hr.Id }));
+            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, false, new FormVisibility { FolderIds = [events.Id] }), Is.EquivalentTo(new[] { events.Id }), "only the forms the scope holds");
+            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, false, FormVisibility.Nothing), Is.Empty);
+            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, false, FormVisibility.Everything), Is.EquivalentTo(new[] { events.Id, hr.Id }));
             Assert.That(await Forms.ListFolderIdsWithFormsAsync([events.Id], false, null), Is.EquivalentTo(new[] { events.Id }), "only the folders asked about");
             Assert.That(await Forms.ListFolderIdsWithFormsAsync([], false, null), Is.Empty);
         });
@@ -274,11 +274,11 @@ public sealed class FormRepositoryTests : RepositoryTestBase
 
         var trashed = await Forms.TrashAsync(inLive.Id, inLive.ConcurrencyVersion, Editor);
         var again = await Forms.TrashAsync(inLive.Id, trashed!.ConcurrencyVersion, Editor);
-        var restored = await Forms.RestoreAsync(inLive.Id, trashed.ConcurrencyVersion, Editor);
-        var outside = await Forms.RestoreAsync(inLive.Id, restored!.ConcurrencyVersion, Editor);
+        var restored = await Forms.RestoreAsync(inLive.Id, trashed.ConcurrencyVersion, live.Id, Editor);
+        var outside = await Forms.RestoreAsync(inLive.Id, restored!.ConcurrencyVersion, live.Id, Editor);
         var trashedToo = await Forms.TrashAsync(inDoomed.Id, inDoomed.ConcurrencyVersion, Editor);
         await Folders.TrashAsync(doomed.Id, Editor);
-        var toRoot = await Forms.RestoreAsync(inDoomed.Id, trashedToo!.ConcurrencyVersion, Editor);
+        var toRoot = await Forms.RestoreAsync(inDoomed.Id, trashedToo!.ConcurrencyVersion, null, Editor);
 
         Assert.Multiple(async () =>
         {
@@ -296,7 +296,7 @@ public sealed class FormRepositoryTests : RepositoryTestBase
                 async () => await Forms.TrashAsync(inLive.Id, inLive.ConcurrencyVersion, Editor),
                 Throws.InstanceOf<FormBuilderConcurrencyException>());
             Assert.That(await Forms.TrashAsync(-1, 1, Editor), Is.Null);
-            Assert.That(await Forms.RestoreAsync(-1, 1, Editor), Is.Null);
+            Assert.That(await Forms.RestoreAsync(-1, 1, null, Editor), Is.Null);
         });
     }
 

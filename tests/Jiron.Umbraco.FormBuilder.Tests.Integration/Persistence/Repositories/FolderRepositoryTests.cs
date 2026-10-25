@@ -203,7 +203,7 @@ public sealed class FolderRepositoryTests : RepositoryTestBase
         var other = Guid.NewGuid();
         Clock.Advance(TimeSpan.FromMinutes(1));
 
-        var restored = (await Folders.RestoreAsync(parent.Id, other))!;
+        var restored = (await Folders.RestoreAsync(parent.Id, top.Id, other))!;
 
         Assert.Multiple(async () =>
         {
@@ -215,8 +215,8 @@ public sealed class FolderRepositoryTests : RepositoryTestBase
             Assert.That(restored.Folders, Is.EqualTo(new[] { await Folders.GetByIdAsync(parent.Id), await Folders.GetByIdAsync(child.Id), await Folders.GetByIdAsync(grandchild.Id) }), "as stored");
             Assert.That((await Folders.GetByIdAsync(earlier.Id))!.TrashedUtc, Is.Not.Null, "a folder trashed before stays in the trash");
             Assert.That((await Folders.GetByIdAsync(below.Id))!.TrashedUtc, Is.Not.Null, "with what went with it");
-            Assert.That(await Folders.RestoreAsync(parent.Id, Editor), Is.Null, "outside the trash");
-            Assert.That(await Folders.RestoreAsync(-1, Editor), Is.Null);
+            Assert.That(await Folders.RestoreAsync(parent.Id, top.Id, Editor), Is.Null, "outside the trash");
+            Assert.That(await Folders.RestoreAsync(-1, null, Editor), Is.Null);
         });
     }
 
@@ -232,7 +232,7 @@ public sealed class FolderRepositoryTests : RepositoryTestBase
         await Folders.MoveAsync(older.Id, parent.Id, Editor);
         await Folders.TrashAsync(top.Id, Editor);
 
-        var restored = (await Folders.RestoreAsync(top.Id, Editor))!;
+        var restored = (await Folders.RestoreAsync(top.Id, null, Editor))!;
 
         Assert.Multiple(() =>
         {
@@ -250,8 +250,8 @@ public sealed class FolderRepositoryTests : RepositoryTestBase
         var sibling = await CreateFolderAsync("Sibling", parent.Id);
         var trashed = (await Folders.TrashAsync(parent.Id, Editor))!;
 
-        var restored = (await Folders.RestoreAsync(child.Id, Editor))!;
-        var later = (await Folders.RestoreAsync(parent.Id, Editor))!;
+        var restored = (await Folders.RestoreAsync(child.Id, null, Editor))!;
+        var later = (await Folders.RestoreAsync(parent.Id, null, Editor))!;
 
         Assert.Multiple(() =>
         {

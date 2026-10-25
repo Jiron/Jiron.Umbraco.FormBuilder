@@ -103,10 +103,6 @@ internal static class SettingsSectionJson
     public static IReadOnlySet<string> SiteFieldNames<T>()
         where T : ISettingsSection => Fields<T>.Overridable;
 
-    /// <summary>The JSON of a global row: every field, nulls left out.</summary>
-    public static string GlobalJson<T>(T section)
-        where T : ISettingsSection => JsonSerializer.Serialize(section, Options);
-
     /// <summary>The JSON of a site row: the <paramref name="fields"/> it overrides, with a null where the value is the default.</summary>
     public static JsonObject SiteRow<T>(T section, IEnumerable<string> fields)
         where T : ISettingsSection

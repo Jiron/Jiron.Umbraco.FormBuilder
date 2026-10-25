@@ -65,7 +65,7 @@ public sealed class FieldTypeSupportTests
     [Test]
     public void TheBuiltInTypes_AreThoseOfSection432()
     {
-        Assert.That(FieldTypeCatalog.BuiltIn.All.Select(type => type.Alias).Order(StringComparer.Ordinal), Is.EqualTo(Matrix.Keys.Order(StringComparer.Ordinal)));
+        Assert.That(FieldTypeCatalogue.BuiltIn.All.Select(type => type.Alias).Order(StringComparer.Ordinal), Is.EqualTo(Matrix.Keys.Order(StringComparer.Ordinal)));
     }
 
     [TestCaseSource(nameof(Types))]

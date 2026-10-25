@@ -71,8 +71,20 @@ internal static class FormAliases
     }
 
     /// <summary>
+    /// The start that every alias <see cref="FirstFree"/> gives for <paramref name="alias"/> shares, up to the number
+    /// 9999: the aliases to ask the database about.
+    /// </summary>
+    public static string Stem(string alias)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(alias);
+        return alias.Length <= MaxBaseLength ? alias : alias[..MaxBaseLength];
+    }
+
+    /// <summary>
     /// <paramref name="alias"/> when no form has it, otherwise the alias with the lowest number from 2 that no form has
-    /// (<c>contact2</c>), compared in any letter case as the database compares aliases (ADR-0033).
+    /// (<c>contact2</c>), compared in any letter case as the database compares aliases (ADR-0033). An alias too long to
+    /// take its number is cut, so the alias with its number has at most 64 characters (<c>...ab2</c> for a 64-character
+    /// alias that ends in <c>abc</c>).
     /// </summary>
     public static string FirstFree(string alias, IEnumerable<string> taken)
     {
@@ -86,7 +98,8 @@ internal static class FormAliases
 
         for (var number = 2; ; number++)
         {
-            var candidate = alias + number.ToString(CultureInfo.InvariantCulture);
+            var suffix = number.ToString(CultureInfo.InvariantCulture);
+            var candidate = alias[..Math.Min(alias.Length, DefinitionStructureChecks.MaxAliasLength - suffix.Length)] + suffix;
             if (!used.Contains(candidate))
             {
                 return candidate;

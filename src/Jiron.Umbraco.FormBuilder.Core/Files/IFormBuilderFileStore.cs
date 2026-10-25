@@ -3,8 +3,10 @@ namespace Jiron.Umbraco.FormBuilder.Core.Files;
 /// <summary>
 /// Where the bytes of uploaded files are kept (D15, ADR-0006, ADR-0041). The default keeps them in a folder outside the
 /// web root (<see cref="FormBuilderFilesOptions.Root"/>); a site that keeps them elsewhere, for example in blob storage
-/// through Umbraco's official provider, registers its own implementation in a composer that runs after Jiron Form
-/// Builder's. The rows that describe the files are Jiron Form Builder's: a store keeps only bytes under ids.
+/// through Umbraco's official provider, registers its own implementation in a composer with
+/// <c>builder.Services.AddUnique&lt;IFormBuilderFileStore, TStore&gt;()</c>. Either order works: Jiron Form Builder
+/// registers the default only when no store is registered yet, and a store registered after it replaces it. The rows
+/// that describe the files are Jiron Form Builder's: a store keeps only bytes under ids.
 /// </summary>
 /// <remarks>
 /// Ids are <see cref="FormBuilderFileId"/>s, 128 random bits as 32 lowercase hex characters, never derived from a file's

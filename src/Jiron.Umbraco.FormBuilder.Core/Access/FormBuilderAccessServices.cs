@@ -16,7 +16,7 @@ internal static class FormBuilderAccessServices
     public static IUmbracoBuilder AddFormBuilderAccess(this IUmbracoBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
-        builder.Services.TryAddSingleton<FormBuilderAccessCache>();
+        builder.Services.TryAddSingleton<AccessSnapshotInvalidator>();
         builder.Services.TryAddSingleton<IFormBuilderAccessService, FormBuilderAccessService>();
         builder.CacheRefreshers().Add<FormBuilderAccessCacheRefresher>();
         builder.AddNotificationAsyncHandler<UserGroupDeletedNotification, FormBuilderUserGroupHandler>();
@@ -26,7 +26,7 @@ internal static class FormBuilderAccessServices
 }
 
 /// <summary>Follows Umbraco's user groups (ADR-0048): a deleted group's grants go, and any change drops the snapshot.</summary>
-internal sealed class FormBuilderUserGroupHandler(IFormBuilderAccessService access, FormBuilderAccessCache cache)
+internal sealed class FormBuilderUserGroupHandler(IFormBuilderAccessService access, AccessSnapshotInvalidator cache)
     : INotificationAsyncHandler<UserGroupDeletedNotification>, INotificationHandler<UserGroupSavedNotification>
 {
     /// <inheritdoc />

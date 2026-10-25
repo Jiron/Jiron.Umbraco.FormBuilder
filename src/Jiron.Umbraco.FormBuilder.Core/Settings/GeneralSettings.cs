@@ -62,7 +62,7 @@ internal sealed record HistorySettings
 /// <summary>What a form created from blank starts with (section 4.8, ADR-0044).</summary>
 internal sealed record NewFormDefaults
 {
-    /// <summary>A required consent field at the end of the first group, or null for none (the default).</summary>
+    /// <summary>A required consent field at the end of the last group of the last page, or null for none (the default).</summary>
     public NewFormConsent? Consent { get; init; }
 }
 

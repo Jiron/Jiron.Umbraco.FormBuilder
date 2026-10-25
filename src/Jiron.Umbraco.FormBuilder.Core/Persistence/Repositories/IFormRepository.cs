@@ -162,7 +162,7 @@ internal sealed record FormFilter
     /// The forms a user may see (ADR-0048), applied in the query before paging; null for every form, which only Jiron
     /// Form Builder's own work asks for.
     /// </summary>
-    public AccessScope? Access { get; init; }
+    public FormVisibility? Access { get; init; }
 }
 
 /// <summary>A field of the catalogue, by which entry values refer to it (ADR-0003).</summary>
@@ -227,7 +227,7 @@ internal interface IFormRepository
     /// Which of these folders hold a form in the trash (<paramref name="trashed"/>) or outside it that
     /// <paramref name="access"/> holds (null: any form): whether a folder of the library tree has forms to show (ADR-0050).
     /// </summary>
-    Task<IReadOnlySet<int>> ListFolderIdsWithFormsAsync(IReadOnlyCollection<int> folderIds, bool trashed, AccessScope? access, CancellationToken cancellationToken = default);
+    Task<IReadOnlySet<int>> ListFolderIdsWithFormsAsync(IReadOnlyCollection<int> folderIds, bool trashed, FormVisibility? access, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The aliases of every form, trashed ones included, that start with <paramref name="prefix"/> in any letter case
@@ -276,10 +276,12 @@ internal interface IFormRepository
     Task<StoredForm?> TrashAsync(int formId, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Takes a form out of the trash on its own, back into its folder, or to the root when the folder is in the trash. A
-    /// form outside the trash stays as it is. Null when it does not exist.
+    /// Takes a form out of the trash on its own, into <paramref name="landingFolderId"/>: its folder, which the caller
+    /// found outside the trash, or null for the root, which the caller found it goes to as its folder is in the trash.
+    /// The statement reads the folder with a lock and refuses with <see cref="FormBuilderConflict.LandingChanged"/> when
+    /// it finds the other answer. A form outside the trash stays as it is. Null when it does not exist.
     /// </summary>
-    Task<StoredForm?> RestoreAsync(int formId, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default);
+    Task<StoredForm?> RestoreAsync(int formId, int expectedConcurrencyVersion, int? landingFolderId, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Puts the forms in these folders that are outside the trash in the trash with the folders' trash key, in the unit

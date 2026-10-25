@@ -137,6 +137,13 @@ snapshot:
   `access.restricted` and `access.unrestricted`, and `access.groupRemoved` (how many grants a deleted user group took
   with it).
 
+**Amended in 4.8c** (the Phase 4 review):
+
+- **Removing a deleted group's grants** is a unit of work of its own, as every other change of access is, so the
+  snapshot drops only after the commit. Umbraco publishes `UserGroupDeletedNotification` after its own scope ends,
+  so the handler runs outside any unit.
+- **A folder's rename keeps the snapshot,** which names no folder; every other change of the tree drops it.
+
 ## Consequences
 
 - One rule, in one place, decides every check and every list; the lists stay single statements with exact counts.

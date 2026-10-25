@@ -8,14 +8,18 @@ namespace Jiron.Umbraco.FormBuilder.Core.Files;
 public sealed class FormBuilderFilesOptions
 {
     /// <summary>The configuration key of these options.</summary>
-    public const string SectionName = "JironFormBuilder:Files";
+    public const string SectionName = Configuration.FormBuilderOptions.SectionName + ":Files";
+
+    /// <summary>The configuration key of <see cref="Root"/>.</summary>
+    public const string RootKey = SectionName + ":" + nameof(Root);
 
     /// <summary>The folder of the default store unless the host sets another.</summary>
     public const string DefaultRoot = "~/umbraco/Data/JironFormBuilder/Uploads";
 
     /// <summary>
     /// The folder the default store keeps the files in: <c>~/</c> followed by a path relative to the site's content root, or an
-    /// absolute path, for example a folder that the servers of a load-balanced site share. It must not lie inside the web
+    /// absolute path, for example a folder that the servers of a load-balanced site share (the default lies on each
+    /// server's own disk, and a load-balanced site that keeps it is told so at start-up). It must not lie inside the web
     /// root or contain it, as written or with its links followed: a site configured so does not start. Name the folder by
     /// its own path, because the check cannot see through an administrative share, a drive letter made with <c>subst</c>, a
     /// short 8.3 name or a link inside the web root that points to the folder.
