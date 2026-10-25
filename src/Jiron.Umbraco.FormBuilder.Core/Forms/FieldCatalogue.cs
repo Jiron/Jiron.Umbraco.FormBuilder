@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
@@ -24,7 +25,7 @@ internal static class FieldCatalogue
     /// The rows of a definition in document order. A field whose type the site lacks has none; publishing refuses it
     /// anyway (ADR-0035).
     /// </summary>
-    public static IReadOnlyList<CatalogueEntry> Of(FormDefinition definition, FieldTypeCatalogue types)
+    public static IReadOnlyList<CatalogueEntry> Of(FormDefinition definition, FieldTypeRegistry types)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(types);
@@ -92,7 +93,7 @@ internal static class FieldCatalogue
         return changes;
     }
 
-    private static void Add(FormField field, Guid? parent, FieldTypeCatalogue types, List<CatalogueEntry> entries)
+    private static void Add(FormField field, Guid? parent, FieldTypeRegistry types, List<CatalogueEntry> entries)
     {
         if (types.Find(field.Type) is not { HoldsValue: true } type || field.Alias is not { } alias)
         {

@@ -2,10 +2,11 @@
 
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the publish codes,
   what the projection holds and what its hash covers); amended in 4.8e (each one-per-form type counts on its own);
-  amended in 4.8f (the publish check holds what publishing refuses; `OnePerForm`)
+  amended in 4.8f (the publish check holds what publishing refuses; `OnePerForm`); amended in 5.1a by
+  [ADR-0055](0055-field-type-framework.md) (the traits come from the registry)
 - Date: 2026-10-23
-- Roadmap step: 4.2b (decided and built); 4.5 calls it when a form is published, 5.1 moves the field-type traits into
-  the registry, 6.6 serves the projection, 7.2 and 8.1 add provider and action types
+- Roadmap step: 4.2b (decided and built); 4.5 calls it when a form is published, 5.1a moved the field-type traits
+  into the registry, 6.6 serves the projection, 7.2 and 8.1 add provider and action types
 
 ## Context
 
@@ -81,13 +82,14 @@ Option 2 for all three. In detail:
 
 How the traits are used:
 
-- `FieldTypeCatalogue.BuiltIn` holds the 33 types of §4.3.2.
+- **Amended in 5.1a** (ADR-0055): `FieldTypeRegistry` builds the traits from each registered type's declaration,
+  and its public settings from the type's settings schema; the built-in table `FieldTypeCatalogue.BuiltIn` is gone.
+  The validation, the projection and the field catalogue changed only where they get the traits from.
 - A type's public settings are those a browser needs to show and check the field. An email field's allowed and blocked
   domains are the site's policy, so they stay on the server, which checks them.
-- `FieldTypeSupportTests` restates §4.3.2 apart from the code. For each type it covers every common property, check,
-  rule and message the type does not support.
-- 5.1's registry builds the same traits from each type's declaration. The validation and the projection then change
-  only where they get the traits from.
+- `FieldTypeSupportTests` restates §4.3.2 apart from the code, against the registry. For each type it covers every
+  common property, check, rule and message the type does not support, and (from 5.1a) its palette group, storage,
+  rule kind, one per form, server-only default, settings and public settings.
 
 ### Publishing
 
@@ -246,8 +248,8 @@ None of these needs a new revision.
 
 - Publishing can tell the editor everything that blocks it at once. Each problem has a code the backoffice translates
   and a path the designer can point at, while drafts keep every problem (ADR-0002).
-- The type table exists twice, in the traits and in their test. A change to §4.3.2 needs both, which is the point.
-  5.1 replaces the built-in table with the registry, and the test then runs against the registry.
+- The type table exists twice, in the built-in declarations and in their test. A change to §4.3.2 needs both, which
+  is the point. 5.1a replaced the built-in table with the registry, and the test runs against it.
 - Switching a rule off is a public change, so it moves the public revision.
 - An unknown type stays quiet about everything that depends on it, so its true problems show only once it has a type.
 - ADR-0002 is amended: its status line, "Refusing" and "The public projection". The roadmap gains notes in 5.1, 7.2

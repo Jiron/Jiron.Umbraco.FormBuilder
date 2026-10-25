@@ -1,7 +1,10 @@
 namespace Jiron.Umbraco.FormBuilder.Logic;
 
-/// <summary>What a field's answers are compared as (ADR-0005).</summary>
-internal enum FieldKind
+/// <summary>
+/// What a field's answers are compared as (ADR-0005). The one public part of the shared logic: a field type declares
+/// it (ADR-0055), and the logic's engines stay internal until they get public interfaces.
+/// </summary>
+public enum FieldKind
 {
     /// <summary>Any text: compared folded.</summary>
     Text,

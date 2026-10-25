@@ -1,8 +1,10 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Testing.Settings;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
@@ -611,7 +613,7 @@ public sealed class FormServiceTests : RepositoryTestBase
         {
             Assert.That(GetRequiredService<IFormBuilderFormService>(), Is.InstanceOf<FormBuilderFormService>());
             Assert.That(GetRequiredService<IEnumerable<IFormPublishCheck>>().OfType<StructuralPublishCheck>().Count(), Is.EqualTo(1));
-            Assert.That(GetRequiredService<FieldTypeCatalogue>(), Is.SameAs(FieldTypeCatalogue.BuiltIn));
+            Assert.That(GetRequiredService<FieldTypeRegistry>().Types.Select(type => type.GetType()), Is.EqualTo(TestFieldTypes.Registry.Types.Select(type => type.GetType())));
         });
     }
 

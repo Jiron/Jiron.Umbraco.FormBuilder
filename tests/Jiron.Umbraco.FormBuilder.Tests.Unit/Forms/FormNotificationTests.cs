@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 using Umbraco.Cms.Core.Events;
 
@@ -135,8 +136,8 @@ public sealed class FormNotificationTests
             ],
             Outcomes = [new FormOutcome { Key = Guid.NewGuid() }],
         };
-        var lenient = new StructuralPublishCheck(DefinitionFixtures.Serializer(), FieldTypeCatalogue.BuiltIn);
-        var strict = new StructuralPublishCheck(DefinitionFixtures.Serializer(new DefinitionLimits { MaxPages = 1 }), FieldTypeCatalogue.BuiltIn);
+        var lenient = new StructuralPublishCheck(DefinitionFixtures.Serializer(), TestFieldTypes.Registry);
+        var strict = new StructuralPublishCheck(DefinitionFixtures.Serializer(new DefinitionLimits { MaxPages = 1 }), TestFieldTypes.Registry);
 
         Assert.Multiple(async () =>
         {

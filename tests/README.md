@@ -37,8 +37,8 @@ npx playwright test --project=smoke
 
 | Project | What it holds |
 | --- | --- |
-| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the management API's policies, access filter and answers (`ManagementApi/`, below), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test (each service of Core resolved, one per site, and each notification handler registered), the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), the form services and the change pipeline they share (`Forms/`, below), the access service with the authorization policies (`Access/`, below) and the management API (`ManagementApi/`, below). |
+| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the field types (`FieldTypes/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the management API's policies, access filter and answers (`ManagementApi/`, below), and the Testing project's own tests. |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test (each service of Core resolved, one per site, and each notification handler registered), the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), a site's own field types (`FieldTypes/`, below), the form services and the change pipeline they share (`Forms/`, below), the access service with the authorization policies (`Access/`, below) and the management API (`ManagementApi/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -100,7 +100,7 @@ and the public projection ([ADR-0035](../docs/decisions/0035-structural-validati
 | `DefinitionValueTests` | Localised texts (a null culture refused as documented), default values, settings objects, instants and the string escaping; what the writer cannot write reported as what it is; the reader of what the site stored built once; both readers refusing text and bytes alike; a group nested 30 deep read in about the time of one. |
 | `ModelListTests` | No list of a read definition, its value types or its projection can be changed through a cast or through the list a record was built from, none takes a null item, and records compare their lists by their items, in order. |
 | `StructureTests` | A document that publishes, and each publish refusal with its code and JSON path as one change to it (aliases that differ only in letter case and option values that fold to one text included); what publishes; that a save refusal comes first; that each one-per-form type counts on its own; and 500 generated definitions checked without throwing, every path naming a part of them. |
-| `FieldTypeSupportTests` | §4.3.2 restated apart from the code: each built-in type refuses exactly the common properties, checks, rules and messages it does not support, and the one list of field messages that both checks use holds every message of the record with its own kind. |
+| `FieldTypeSupportTests` | §4.3.2 restated apart from the code, against the field type registry: each built-in type refuses exactly the common properties, checks, rules and messages it does not support, and declares the palette group, storage, rule kind, multiple setting, one per form, server-only default, settings and public settings written there; the one list of field messages that both checks use holds every message of the record with its own kind. |
 | `RedirectUrlTests` | The redirects that could leave the editor's site, and those that stay on it. |
 | `ProjectionTests` | 500 generated definitions with a marker in every private place project without it; the projection names only allowlisted properties; `fixtures/definitions/v1-full.public.json` is the reviewed projection of the fixture; which changes move `PublicHash` and which do not. |
 | `DefinitionDiffTests` | The comparison of two versions ([ADR-0045](../docs/decisions/0045-versions-comparison-and-draft-cleanup.md)): texts per culture, a type's settings one by one, option items by value and grid rows by key with their order, moves to another parent and the fewest moves within one, rules whose order means nothing, settings groups by name, the order of the changes. Then 100 generated definitions, each changed by `DefinitionMutator` as editors change them: the comparison swapped mirrors it, names each element once, and each changed element's property changes rebuild its newer properties from its older ones. Also when a save changes the actions ([ADR-0051](../docs/decisions/0051-form-endpoints.md)): an action, or a rule of one added, changed or moved in or out, and nothing else. |
@@ -110,6 +110,25 @@ and the public projection ([ADR-0035](../docs/decisions/0035-structural-validati
 
 A new property of the model needs the record, the schema, the generator and the fixture: until all four agree, the
 coverage, schema and fixture tests fail.
+
+## The field type tests
+
+`Tests.Unit/FieldTypes/` covers the field type framework without a host
+([ADR-0055](../docs/decisions/0055-field-type-framework.md)):
+
+| Tests | What they show |
+| --- | --- |
+| `FieldTypeRegistryTests` | The collection builder holds the built-in types in palette order; a type appended, replaced or removed (a field of a removed type is `unknown_type` at publish), a custom type's field publishing with only its public settings projected; an alias taken twice named with how to replace the first, and each contradiction of a declaration refused naming the type; the start-up check on a valid site and on two broken ones. |
+| `FieldSettingsSchemaTests` | A settings class read into its schema: each property's kind and editor, defaults as settings store them, the order by group, order and declaration, the attribute's details and JSON names, public settings at the top only; every class or property that cannot be a setting refused with its reason (all reasons at once), the base class naming the type, and the strict JSON that reads settings. |
+
+`TestFieldTypes` (in the Testing project) gives the unit tests the registry of the built-in types, or of a builder a
+test changes, as a site's container builds it.
+
+`Tests.Integration/FieldTypes/` boots a real site whose composers change the field types: one adds a colour field
+before the core composer, one removes the signature after it. Both are found like any site's composers and do nothing
+unless the site sets `JironFormBuilderTests:SiteFieldTypes`, so every other test's site keeps the built-in types.
+`SiteFieldTypeTests` shows the registry, start-up, publishing, the field catalogue and the public revision with the
+site's types.
 
 ## The Testing project
 

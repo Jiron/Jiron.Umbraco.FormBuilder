@@ -1,5 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Access;
-using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 

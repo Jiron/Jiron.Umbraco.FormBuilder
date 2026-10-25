@@ -1753,17 +1753,26 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 
 ### Phase 5: Field types, option lists and the logic engines
 
-- [ ] **5.1 The field type framework**
-  - **The registry:** a collection builder with `FormBuilderFieldTypeBase<TSettings>`, and settings schemas from attributes (exposed to the backoffice as JSON).
+- [ ] **5.1a The field type registry and the traits** (5.1 split in four, WORKLOG 2026-10-25)
+  - **The registry:** a collection builder with `FormBuilderFieldTypeBase<TSettings>` (`builder.JironFormBuilder().FieldTypes()`, ADR-0055) that holds the built-in types of §4.3.2 from its start, so that a site adds, replaces or removes a type whatever order the composers run in. Each type declares its alias, icon, palette group, storage kind (the one the field catalogue records from 4.5a on, ADR-0044), how rules compare its answers, and which common properties and error kinds it has. Start-up refuses two types with one alias, naming both, and a declaration that contradicts itself.
+  - **Settings schemas from attributes:** the settings class of each built-in type (ADR-0002's table) with `[FormBuilderSetting]` (label, description, editor, order, group, merge tags, and whether visitors see the setting), read into the type's settings schema with each setting's kind and default.
+  - **Publishing** (ADR-0035): the structural validation, the public projection and the field catalogue read each type's traits from the registry instead of 4.2b's built-in table, and a type's public settings come from its schema.
+  - Done when: unit tests pass, including a custom type registered by a test composer and a type removed from the collection (a field of the removed type is `unknown_type` at publish); 4.2b's support matrix runs against the registry's traits and restates the rest of 4.2b's table (storage kinds, rule kinds, public settings, one per form, server-only defaults), item by item; start-up refuses a second type with an alias already taken and a declaration that contradicts itself, each with a message that names the type.
+- [ ] **5.1b Settings checks, the backoffice schema and availability** (5.1 split in four, WORKLOG 2026-10-25)
+  - **Each type's check of its own settings** (ADR-0035): publishing reads a field's settings as its type's settings class, applies the rules its attributes give (ranges, lengths, allowed values, required settings) and then the type's own check (for example a minimum above the maximum), each problem at its path under `…settings`.
+  - **Settings schemas exposed to the backoffice as JSON:** the field types of §4.7's designer support, each with its palette group, icon, the common properties it supports and its settings schema, with the permission matrix, the regenerated client and English and German keys for the built-in types' names and settings.
+  - **An availability check** ("not configured: …"): a type that needs configuration the site lacks says why, and the backoffice receives the reason, so the palette can grey the type out (§4.3.2).
+  - Done when: unit tests cover each attribute rule and the own check of each built-in type that has one, at its path; the endpoint's integration tests pass, with the permission matrix; a type that is not configured reaches the backoffice with its reason.
+- [ ] **5.1c Field values and changing types** (5.1 split in four, WORKLOG 2026-10-25)
   - **Field values:**
-    - mapping from storage kinds to `jfbEntryValue` columns, each type declaring the storage kind that the field catalogue records from 4.5a on (ADR-0044);
+    - mapping from storage kinds to `jfbEntryValue` columns, for the storage kind each type declares (ADR-0044);
     - the parse and validate contract;
-    - the longest answer the type takes, which the submission pipeline checks before the rules run (6.1, ADR-0030; added in 4.8f);
-    - an availability check ("not configured: …").
+    - the longest answer the type takes, which the submission pipeline checks before the rules run (6.1, ADR-0030; added in 4.8f).
   - **Changing types:** a "change type" compatibility map.
+  - Done when: unit tests cover every storage kind's columns, the contract through a custom type and a built-in one, the longest answer of every built-in type, and the compatibility map with what each change loses.
+- [ ] **5.1d Designer locks** (5.1 split in four, WORKLOG 2026-10-25)
   - **Designer locks** (`Designer:SettingLocks`, ADR-0042): start-up refuses a lock that names a field type or setting the site lacks, or a value the setting refuses; the settings schema the backoffice reads marks a locked setting read-only or hidden; the form service refuses a save that gives it another value (`409 setting_locked`); the runtime uses the locked value.
-  - **Publishing** (ADR-0035): the structural validation and the public projection read each type's traits from the registry instead of 4.2b's built-in table, and publishing runs each type's check of its own settings.
-  - Done when: unit tests pass, including a custom type registered by a test composer and a type removed from the collection; 4.2b's support matrix runs against the registry's traits; a designer lock of a field setting refuses a save with another value and wins at run time.
+  - Done when: a designer lock of a field setting refuses a save with another value and wins at run time; start-up refuses a lock on a type or a setting the site lacks and one whose value the setting refuses, each naming the key; the schema the backoffice reads marks a locked setting read-only, and a hidden one hidden.
 - [ ] **5.2 Rules and validation engines** (C# and `packages/logic`)
   - Implement §4.3.3 in both runtimes, with form-level validation rules and the "hidden means gone" propagation (a field hidden because its group or page is hidden). Groups nest only to a limited depth, checked before evaluation, because both evaluators recurse (ADR-0030).
   - **Vectors (≥ 300 cases),** starting from the 163 of 1.5 (ADR-0005):

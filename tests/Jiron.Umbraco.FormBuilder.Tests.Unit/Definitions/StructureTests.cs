@@ -1,7 +1,9 @@
 using System.Reflection;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -494,8 +496,8 @@ public sealed class StructureTests
 
         Assert.Multiple(() =>
         {
-            AssertOneProblem(new StructuralPublishCheck(DefinitionFixtures.Serializer(), FieldTypeCatalogue.BuiltIn).Check(twoKeys), DefinitionErrors.DuplicateKey, "$.actions[1].key");
-            AssertOneProblem(new StructuralPublishCheck(serializer, FieldTypeCatalogue.BuiltIn).Check(definition), DefinitionErrors.LimitExceeded, "$.actions");
+            AssertOneProblem(new StructuralPublishCheck(DefinitionFixtures.Serializer(), TestFieldTypes.Registry).Check(twoKeys), DefinitionErrors.DuplicateKey, "$.actions[1].key");
+            AssertOneProblem(new StructuralPublishCheck(serializer, TestFieldTypes.Registry).Check(definition), DefinitionErrors.LimitExceeded, "$.actions");
         });
     }
 
@@ -503,7 +505,7 @@ public sealed class StructureTests
     public void EachOnePerFormType_IsCountedOnItsOwn()
     {
         // A second one-per-form type beside the captcha, as a package of field types may bring one.
-        var types = new FieldTypeCatalogue([.. FieldTypeCatalogue.BuiltIn.All, new FieldTypeTraits { Alias = "signal", OnePerForm = true }]);
+        var types = TestFieldTypes.Build(builder => builder.Append<SignalFieldType>());
         var one = Changed(d => d["pages"]![0]!["groups"]![1]!["fields"]!.AsArray().Add(new JsonObject { ["key"] = K(0x21), ["type"] = "signal" }));
         var two = Changed(d =>
         {
@@ -536,7 +538,7 @@ public sealed class StructureTests
         for (var seed = 0; seed < 500; seed++)
         {
             var definition = new DefinitionGenerator(seed).Next();
-            var problems = DefinitionStructureChecks.Check(definition, FieldTypeCatalogue.BuiltIn);
+            var problems = DefinitionStructureChecks.Check(definition, TestFieldTypes.Registry);
             var document = JsonNode.Parse(FormDefinitionSerializer.Write(definition))!;
             Assert.Multiple(() =>
             {
@@ -544,7 +546,7 @@ public sealed class StructureTests
                 Assert.That(problems.Select(problem => problem.Code).Except(codes), Is.Empty, $"seed {seed}: codes of the structural validation");
                 Assert.That(problems.Where(problem => !JsonPathResolves(document, problem.Path)).Select(problem => problem.Path), Is.Empty, $"seed {seed}: paths into the document");
                 Assert.That(problems.Where(problem => problem.Message.Length == 0), Is.Empty, $"seed {seed}: messages");
-                Assert.That(DefinitionStructureChecks.Check(definition, FieldTypeCatalogue.BuiltIn), Is.EqualTo(problems), $"seed {seed}: the same problems every time");
+                Assert.That(DefinitionStructureChecks.Check(definition, TestFieldTypes.Registry), Is.EqualTo(problems), $"seed {seed}: the same problems every time");
             });
         }
     }
@@ -577,7 +579,7 @@ public sealed class StructureTests
 
     /// <summary>Publishes a definition and returns the problems.</summary>
     internal static IReadOnlyList<DefinitionProblem> Publish(FormDefinition definition) =>
-        new StructuralPublishCheck(DefinitionFixtures.Serializer(), FieldTypeCatalogue.BuiltIn).Check(definition);
+        new StructuralPublishCheck(DefinitionFixtures.Serializer(), TestFieldTypes.Registry).Check(definition);
 
     internal static void AssertOneProblem(IReadOnlyList<DefinitionProblem> problems, string code, string path)
     {
@@ -608,4 +610,14 @@ public sealed class StructureTests
 
         return true;
     }
+
+    // A one-per-form type of a package, beside the captcha.
+    private sealed class SignalFieldType() : FormBuilderFieldTypeBase<NoFieldSettings>(new FieldTypeDeclaration
+    {
+        Alias = "signal",
+        Name = "Signal",
+        Icon = "icon-shield",
+        PaletteGroup = FieldPaletteGroup.Protection,
+        OnePerForm = true,
+    });
 }

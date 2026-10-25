@@ -4,7 +4,8 @@
   changes nothing writes no version); the new-form defaults for forms from a template amended by
   [ADR-0046](0046-copies-templates-and-import.md) in 4.5c; the trash, the permanent delete and the folder service
   added by [ADR-0047](0047-trash-delete-and-folders.md) in 4.5d; split in three parts with one change pipeline by
-  [ADR-0053](0053-form-service-in-parts.md) in 4.8d
+  [ADR-0053](0053-form-service-in-parts.md) in 4.8d; its field types come from the registry of
+  [ADR-0055](0055-field-type-framework.md) since 5.1a
 - Date: 2026-10-24
 - Roadmap step: 4.5a (decided and built); 4.5b to 4.5d add versions, copies and the trash on the same rules, 4.7
   maps the refusals to the API, 5.1 takes over the storage kinds, 6.1 adds the published-form cache, 8.3 the
@@ -95,7 +96,8 @@ the repositories:
   version, whether it is published, the public revision, trash, times and users), never with row ids; opening a form
   (`GetDraftAsync`) adds the draft's definition, the draft and published version numbers, whether the draft has
   unpublished changes, and the problems of a stored definition that cannot be read at all.
-- **Field types** come from a registered `FieldTypeCatalogue`, the built-in one until 5.1 registers its registry.
+- **Field types** come from the registered `FieldTypeRegistry` (amended in 5.1a, ADR-0055), so a site's own types
+  publish, enter the catalogue and project as the built-in ones do.
 
 **Amended in 4.8d** (ADR-0053): the service keeps the lifecycle and the trash; the versions of ADR-0045 are
 `IFormBuilderFormVersionService`'s and the copies, templates, imports and exports of ADR-0046
@@ -173,7 +175,8 @@ On every publish, in the publish's unit:
   group themselves, with the storage kind `none`, so the columns of their parts have a heading even after a later
   version drops them. The label is the default text, empty without one.
 - **Storage kinds** are the ones of §4.3.2 (`text`, `longText`, `number`, `date`, `bool`, `file`, `json`, `none`), a
-  trait of each field type until 5.1's registry declares them and maps them to the typed columns of ADR-0003: text
+  trait each field type declares in the registry since 5.1a (ADR-0055); 5.1c maps them to the typed columns of
+  ADR-0003. The built-in types store as: text
   for the one-line text and choice types (yes/no and ranking among them), country, time, hidden and consent (a consent
   value stores the wording's hash, ADR-0009); longText for long text; json for name and address, whose values have
   parts; number for number, rating, scale, slider and calculation; date for date and date with time; bool for the

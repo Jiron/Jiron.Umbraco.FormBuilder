@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Testing;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 
@@ -114,7 +115,7 @@ internal static class FormServiceTesting
             FormDefinition.CurrentSchemaVersion,
             Encoding.UTF8.GetString(canonical),
             CanonicalJson.Hash(canonical),
-            PublicProjection.Hash(definition, FieldTypeCatalogue.BuiltIn));
+            PublicProjection.Hash(definition, TestFieldTypes.Registry));
     }
 
     /// <summary>The hash of a definition's canonical form, to compare two definitions.</summary>

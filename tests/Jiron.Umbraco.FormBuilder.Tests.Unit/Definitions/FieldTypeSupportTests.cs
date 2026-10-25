@@ -3,6 +3,8 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -68,7 +70,7 @@ public sealed class FieldTypeSupportTests
     [Test]
     public void TheBuiltInTypes_AreThoseOfSection432()
     {
-        Assert.That(FieldTypeCatalogue.BuiltIn.All.Select(type => type.Alias).Order(StringComparer.Ordinal), Is.EqualTo(Matrix.Keys.Order(StringComparer.Ordinal)));
+        Assert.That(TestFieldTypes.Registry.All.Select(type => type.Alias).Order(StringComparer.Ordinal), Is.EqualTo(Matrix.Keys.Order(StringComparer.Ordinal)));
     }
 
     [Test]

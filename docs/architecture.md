@@ -181,8 +181,15 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   own rows with its grants, references and daily statistics; the bytes of the files go after each commit.
 - **Publishing** ([ADR-0035](decisions/0035-structural-validation-and-public-projection.md)) runs the save checks and
   then the structural validation: aliases, names and option values, references, what each field type supports (its
-  traits, from the field-type registry from 5.1 on), rule effects, cycles of visibility through rules and containment,
-  safe patterns and redirects. Every problem has a code and a JSON path.
+  traits, from the field-type registry), rule effects, cycles of visibility through rules and containment, safe
+  patterns and redirects. Every problem has a code and a JSON path.
+- **Field types** ([ADR-0055](decisions/0055-field-type-framework.md)): `builder.JironFormBuilder().FieldTypes()` is
+  a collection builder that holds the 33 built-in types from its start, so a site's composer adds, replaces or removes
+  one whatever order the composers run in. Each type declares its alias, icon, palette group, storage, rule kind,
+  common properties and error kinds, and its settings class with `[FormBuilderSetting]` becomes its settings schema
+  (kinds, defaults, editors, and which settings visitors see). `FieldTypeRegistry` builds the traits that the
+  validation, the projection and the field catalogue read; start-up refuses an alias taken twice and a declaration
+  or settings class that contradicts itself, naming the type.
 - **The public projection** is built from an allowlist of public types (`Core.Definitions.Projection`) and carries no
   actions, outcomes, recipients, option-source configuration, privacy settings or switched-off rules; its SHA-256 is
   `PublicHash`. Its TypeScript types and schema ship in `schemas/` (6.6).
@@ -415,7 +422,7 @@ Registries are collections, so a site can add, replace or remove entries.
 
 | Extension | For | Decided in |
 | --- | --- | --- |
-| `IFormBuilderFieldType` (`FormBuilderFieldTypeBase<TSettings>`) | a field with settings, parsing, validation, storage kind, view and client behaviour | §4.3.2, ADR-0002 |
+| `IFormBuilderFieldType` (`FormBuilderFieldTypeBase<TSettings>`) | a field with settings, parsing, validation, storage kind, view and client behaviour | §4.3.2, ADR-0002, ADR-0055 |
 | `IFormBuilderActionType` (`FormBuilderActionTypeBase<TSettings>`) | an action with settings, a test run and retries | ADR-0007 |
 | `IFormBuilderOptionSource` | options from code, with parent filtering | ADR-0002 |
 | `IFormBuilderExportFormat` | an export | §4.9 |
@@ -426,7 +433,7 @@ Registries are collections, so a site can add, replace or remove entries.
 | `IFormBuilderFileStore` | other file storage, asynchronous: all of a file or nothing, never replacing one | ADR-0006, ADR-0041 |
 | `IFormBuilderTheme` | a theme: stylesheet, class map, tokens, view folder | ADR-0015 |
 | `IFormBuilderCspNonceProvider` | the request's CSP nonce | ADR-0004 |
-| `[FormBuilderSetting]` and the `jfbSettingEditor` manifest | settings editors for custom types without JavaScript, or with a custom element | §4.9 |
+| `[FormBuilderSetting]` and the `jfbSettingEditor` manifest | settings editors for custom types without JavaScript, or with a custom element | §4.9, ADR-0055 |
 | `jfbFieldPreview` manifest and workspace views | the designer preview of a custom field, extra form views | 15.1 |
 
 **Notifications:** `FormSaving`/`Saved`, `FormPublishing`/`Published`, `FormUnpublishing`/`Unpublished`,

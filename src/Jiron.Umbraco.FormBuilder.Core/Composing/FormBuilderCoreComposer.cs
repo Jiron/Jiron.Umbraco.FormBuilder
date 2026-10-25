@@ -2,6 +2,7 @@ using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Upgrades;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
@@ -23,7 +24,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Composing;
 /// Registers Jiron Form Builder's core services with Umbraco, which discovers this composer automatically: the host
 /// configuration and the start-up checks (ADR-0042), the database migration plan (ADR-0033), the pending-migration
 /// state, the definition services, the persistence (ADR-0036), the file store (ADR-0041), the backoffice settings
-/// (ADR-0043), the permission model (ADR-0048), the form service (ADR-0044) and the retention job (ADR-0045).
+/// (ADR-0043), the permission model (ADR-0048), the field types (ADR-0055), the form service (ADR-0044) and the
+/// retention job (ADR-0045).
 /// </summary>
 public sealed class FormBuilderCoreComposer : IComposer
 {
@@ -83,6 +85,9 @@ public sealed class FormBuilderCoreComposer : IComposer
 
         // The permission model (ADR-0013, ADR-0048): the evaluation with its cached snapshot, the grants and restrictions.
         builder.AddFormBuilderAccess();
+
+        // The field types (ADR-0055): the collection with the built-in ones, its registry and the check of both at start.
+        builder.AddFormBuilderFieldTypes();
 
         // The form service (ADR-0044): create, save, publish and the other changes, with their notifications.
         builder.AddFormBuilderForms();

@@ -1,7 +1,9 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Forms;
 
@@ -68,8 +70,8 @@ public sealed class FieldCatalogueTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That(FieldTypeCatalogue.BuiltIn.All.Select(type => type.Alias).Order(StringComparer.Ordinal), Is.EqualTo(Storage.Keys.Order(StringComparer.Ordinal)));
-            foreach (var type in FieldTypeCatalogue.BuiltIn.All)
+            Assert.That(TestFieldTypes.Registry.All.Select(type => type.Alias).Order(StringComparer.Ordinal), Is.EqualTo(Storage.Keys.Order(StringComparer.Ordinal)));
+            foreach (var type in TestFieldTypes.Registry.All)
             {
                 Assert.That(type.Storage, Is.EqualTo(Storage[type.Alias]), type.Alias);
             }
@@ -100,7 +102,7 @@ public sealed class FieldCatalogueTests
     [Test]
     public void ADefinition_HasARowPerValue_InDocumentOrder()
     {
-        Assert.That(FieldCatalogue.Of(Definition(), FieldTypeCatalogue.BuiltIn), Is.EqualTo(new[]
+        Assert.That(FieldCatalogue.Of(Definition(), TestFieldTypes.Registry), Is.EqualTo(new[]
         {
             new CatalogueEntry(Email, "email", "Email", "email", FieldStorageKind.Text, true, null),
             new CatalogueEntry(Grid, "satisfaction", "Satisfaction", "grid", FieldStorageKind.None, false, null),
@@ -119,7 +121,7 @@ public sealed class FieldCatalogueTests
     [Test]
     public void TheFirstPublish_AddsEveryRow_FromItsVersion()
     {
-        var entries = FieldCatalogue.Of(Definition(), FieldTypeCatalogue.BuiltIn);
+        var entries = FieldCatalogue.Of(Definition(), TestFieldTypes.Registry);
 
         var changes = FieldCatalogue.Changes(entries, [], 3, null);
 
@@ -137,7 +139,7 @@ public sealed class FieldCatalogueTests
     [Test]
     public void ARepublish_OfTheSameFields_ChangesNoRow()
     {
-        var entries = FieldCatalogue.Of(Definition(), FieldTypeCatalogue.BuiltIn);
+        var entries = FieldCatalogue.Of(Definition(), TestFieldTypes.Registry);
         var stored = Stored(FieldCatalogue.Changes(entries, [], 1, null));
 
         Assert.That(FieldCatalogue.Changes(entries, stored, 4, 1), Is.Empty);
@@ -215,7 +217,7 @@ public sealed class FieldCatalogueTests
             new FormField { Key = Key(22), Type = "heading" },
             new FormField { Key = Key(23), Type = "heading", Alias = "title" });
 
-        Assert.That(FieldCatalogue.Of(definition, FieldTypeCatalogue.BuiltIn), Is.Empty);
+        Assert.That(FieldCatalogue.Of(definition, TestFieldTypes.Registry), Is.Empty);
     }
 
     [Test]
@@ -223,7 +225,7 @@ public sealed class FieldCatalogueTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That(() => FieldCatalogue.Of(null!, FieldTypeCatalogue.BuiltIn), Throws.ArgumentNullException);
+            Assert.That(() => FieldCatalogue.Of(null!, TestFieldTypes.Registry), Throws.ArgumentNullException);
             Assert.That(() => FieldCatalogue.Of(Definition(), null!), Throws.ArgumentNullException);
             Assert.That(() => FieldCatalogue.Changes(null!, [], 1, null), Throws.ArgumentNullException);
             Assert.That(() => FieldCatalogue.Changes([], null!, 1, null), Throws.ArgumentNullException);

@@ -2,6 +2,7 @@ using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
@@ -24,7 +25,7 @@ internal sealed partial class DefinitionStructureChecks
     public static readonly FrozenSet<string> ReservedAliases =
         new[] { "form", "entry", "page", "member", "query", "context", "site", "date", "ufprt" }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
-    private readonly FieldTypeCatalogue _types;
+    private readonly FieldTypeRegistry _types;
     private readonly DefinitionProblems _problems = new();
 
     // Every field, repeatable group child and grid row by key; the first of two with one key wins (a save refuses both).
@@ -44,12 +45,12 @@ internal sealed partial class DefinitionStructureChecks
     private readonly HashSet<string> _onePerForm = new(StringComparer.Ordinal);
     private int _cursor;
 
-    private DefinitionStructureChecks(FieldTypeCatalogue types) => _types = types;
+    private DefinitionStructureChecks(FieldTypeRegistry types) => _types = types;
 
     /// <summary>Every structural problem of the definition, at most <see cref="DefinitionProblems.Max"/>.</summary>
     /// <param name="definition">A definition the save checks accept.</param>
     /// <param name="types">The field types the site has.</param>
-    public static IReadOnlyList<DefinitionProblem> Check(FormDefinition definition, FieldTypeCatalogue types)
+    public static IReadOnlyList<DefinitionProblem> Check(FormDefinition definition, FieldTypeRegistry types)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(types);

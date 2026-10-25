@@ -2,6 +2,7 @@ using System.Text;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
@@ -16,7 +17,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 internal sealed class FormDocuments(
     IFormRepository forms,
     FormDefinitionSerializer serializer,
-    FieldTypeCatalogue types)
+    FieldTypeRegistry types)
 {
     /// <summary>The stored document of a definition: its canonical form, its hash and the hash of its public projection.</summary>
     public VersionDocument Document(FormDefinition definition)

@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
+using Jiron.Umbraco.FormBuilder.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -146,7 +147,7 @@ public sealed partial class ProjectionTests
         {
             var privateKeys = new List<Guid>();
             var definition = Mark(new DefinitionGenerator(seed).Next(), seed, privateKeys);
-            var json = Encoding.UTF8.GetString(PublicProjection.Write(PublicProjection.Create(definition, FieldTypeCatalogue.BuiltIn)));
+            var json = Encoding.UTF8.GetString(PublicProjection.Write(PublicProjection.Create(definition, TestFieldTypes.Registry)));
             var publicKeys = definition.Pages.SelectMany(page => page.Groups.SelectMany(group => AllFields(group.Fields)).Select(field => field.Key).Append(page.Key));
 
             Assert.Multiple(() =>
@@ -164,7 +165,7 @@ public sealed partial class ProjectionTests
         var seen = new HashSet<string>(StringComparer.Ordinal);
         for (var seed = 0; seed < Definitions; seed++)
         {
-            var projection = PublicProjection.Write(PublicProjection.Create(new DefinitionGenerator(seed).Next(), FieldTypeCatalogue.BuiltIn));
+            var projection = PublicProjection.Write(PublicProjection.Create(new DefinitionGenerator(seed).Next(), TestFieldTypes.Registry));
             Collect(JsonNode.Parse(projection)!, "$", seen);
         }
 
@@ -178,7 +179,7 @@ public sealed partial class ProjectionTests
     [Test]
     public void TheFullFixture_ProjectsAsReviewed()
     {
-        var projection = PublicProjection.Write(PublicProjection.Create(DefinitionFixtures.Read(DefinitionFixtures.Full), FieldTypeCatalogue.BuiltIn));
+        var projection = PublicProjection.Write(PublicProjection.Create(DefinitionFixtures.Read(DefinitionFixtures.Full), TestFieldTypes.Registry));
 
         Assert.That(Encoding.UTF8.GetString(projection), Is.EqualTo(DefinitionFixtures.Minify(DefinitionFixtures.FullProjection)));
     }
@@ -187,11 +188,11 @@ public sealed partial class ProjectionTests
     public void ThePublicHash_IsTheSha256OfTheCanonicalProjection()
     {
         var definition = DefinitionFixtures.Read(DefinitionFixtures.Full);
-        var projection = PublicProjection.Create(definition, FieldTypeCatalogue.BuiltIn);
+        var projection = PublicProjection.Create(definition, TestFieldTypes.Registry);
 
         Assert.Multiple(() =>
         {
-            Assert.That(PublicProjection.Hash(definition, FieldTypeCatalogue.BuiltIn), Is.EqualTo(CanonicalJson.Hash(PublicProjection.Write(projection))));
+            Assert.That(PublicProjection.Hash(definition, TestFieldTypes.Registry), Is.EqualTo(CanonicalJson.Hash(PublicProjection.Write(projection))));
             Assert.That(PublicProjection.Hash(projection), Does.Match("^[0-9a-f]{64}$"));
             Assert.That(PublicProjection.Hash(projection), Is.Not.EqualTo(CanonicalJson.Hash(FormDefinitionSerializer.Write(definition))), "the projection is not the definition");
         });
@@ -219,7 +220,7 @@ public sealed partial class ProjectionTests
         var definition = DefinitionFixtures.Read(DefinitionFixtures.Full);
         var off = definition with { ValidationRules = [definition.ValidationRules[0] with { Enabled = false }] };
 
-        var projection = PublicProjection.Create(off, FieldTypeCatalogue.BuiltIn);
+        var projection = PublicProjection.Create(off, TestFieldTypes.Registry);
 
         Assert.Multiple(() =>
         {
@@ -236,7 +237,7 @@ public sealed partial class ProjectionTests
         var fields = definition.Pages[0].Groups[1].Fields;
         var withItems = fields[1] with { Options = fields[1].Options! with { Items = [new FieldOption { Value = Marker }] } };
 
-        var projection = PublicProjection.Create(definition with { Pages = [definition.Pages[0] with { Groups = [definition.Pages[0].Groups[0], definition.Pages[0].Groups[1] with { Fields = [fields[0], withItems, fields[2]] }] }, definition.Pages[1]] }, FieldTypeCatalogue.BuiltIn);
+        var projection = PublicProjection.Create(definition with { Pages = [definition.Pages[0] with { Groups = [definition.Pages[0].Groups[0], definition.Pages[0].Groups[1] with { Fields = [fields[0], withItems, fields[2]] }] }, definition.Pages[1]] }, TestFieldTypes.Registry);
         var options = projection.Pages[0].Groups[1].Fields[1].Options!;
 
         Assert.Multiple(() =>
@@ -251,7 +252,7 @@ public sealed partial class ProjectionTests
     [Test]
     public void APrefillFromTheMember_SaysOnlyThatItIsOne()
     {
-        var projection = PublicProjection.Create(DefinitionFixtures.Read(DefinitionFixtures.Full), FieldTypeCatalogue.BuiltIn);
+        var projection = PublicProjection.Create(DefinitionFixtures.Read(DefinitionFixtures.Full), TestFieldTypes.Registry);
 
         Assert.That(projection.Pages[0].Groups[0].Fields[0].Prefill, Is.EqualTo(new PublicPrefill { Query = "name", FromMember = true, MemberMode = PrefillMemberMode.Hide }));
     }
@@ -264,7 +265,7 @@ public sealed partial class ProjectionTests
         var unknown = name with { Type = "acme.colourPicker", Settings = SettingsObject.Parse("{\"maxLength\":3}"), DefaultValue = FieldDefaultValue.Of(Marker) };
         var group = definition.Pages[0].Groups[0] with { Fields = [unknown] };
 
-        var projection = PublicProjection.Create(definition with { Pages = [definition.Pages[0] with { Groups = [group] }] }, FieldTypeCatalogue.BuiltIn);
+        var projection = PublicProjection.Create(definition with { Pages = [definition.Pages[0] with { Groups = [group] }] }, TestFieldTypes.Registry);
 
         Assert.Multiple(() =>
         {
@@ -280,9 +281,9 @@ public sealed partial class ProjectionTests
     {
         var document = JsonNode.Parse(DefinitionFixtures.Full)!.AsObject();
         setup(document);
-        var before = PublicProjection.Hash(DefinitionFixtures.Read(document.ToJsonString()), FieldTypeCatalogue.BuiltIn);
+        var before = PublicProjection.Hash(DefinitionFixtures.Read(document.ToJsonString()), TestFieldTypes.Registry);
         change(document);
-        return (before, PublicProjection.Hash(DefinitionFixtures.Read(document.ToJsonString()), FieldTypeCatalogue.BuiltIn));
+        return (before, PublicProjection.Hash(DefinitionFixtures.Read(document.ToJsonString()), TestFieldTypes.Registry));
     }
 
     private static IEnumerable<FormField> AllFields(IEnumerable<FormField> fields) =>

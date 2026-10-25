@@ -46,7 +46,7 @@ public sealed class BuiltInFormTemplatesTests
                 var envelope = read.Envelope!;
                 Assert.That((envelope.FormKey, envelope.Alias), Is.EqualTo((template.Key, template.Alias)), $"{template.Alias}: its key and alias");
                 Assert.That(BuiltInFormTemplates.Find(template.Key), Is.SameAs(template));
-                Assert.That(new StructuralPublishCheck(DefinitionFixtures.Serializer(), FieldTypeCatalogue.BuiltIn).Check(envelope.Definition), Is.Empty, $"{template.Alias}: publishes");
+                Assert.That(new StructuralPublishCheck(DefinitionFixtures.Serializer(), TestFieldTypes.Registry).Check(envelope.Definition), Is.Empty, $"{template.Alias}: publishes");
                 foreach (var text in Texts(envelope.Definition))
                 {
                     Assert.That(text.Texts.Select(pair => pair.Culture), Is.EquivalentTo(new[] { string.Empty, "de" }), $"{template.Alias}: \"{text.Default}\" in English and German");

@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
+using Jiron.Umbraco.FormBuilder.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -16,7 +17,7 @@ public sealed class ModelListTests
     public void NoListOfAReadDefinition_OrOfItsProjection_CanBeChangedThroughACast()
     {
         var definition = DefinitionFixtures.Read(DefinitionFixtures.Full);
-        var lists = Lists(definition).Concat(Lists(PublicProjection.Create(definition, FieldTypeCatalogue.BuiltIn))).ToList();
+        var lists = Lists(definition).Concat(Lists(PublicProjection.Create(definition, TestFieldTypes.Registry))).ToList();
 
         Assert.Multiple(() =>
         {
@@ -110,7 +111,7 @@ public sealed class ModelListTests
             Assert.That(second.GetHashCode(), Is.EqualTo(first.GetHashCode()), "and their hash codes");
             Assert.That(deep.Equals(first), Is.False, "the last field of the last page changed");
             Assert.That((second with { Pages = [.. second.Pages.Reverse()] }).Equals(first), Is.False, "the same pages in another order");
-            Assert.That(PublicProjection.Create(second, FieldTypeCatalogue.BuiltIn).Equals(PublicProjection.Create(first, FieldTypeCatalogue.BuiltIn)), Is.True, "two projections of equal definitions");
+            Assert.That(PublicProjection.Create(second, TestFieldTypes.Registry).Equals(PublicProjection.Create(first, TestFieldTypes.Registry)), Is.True, "two projections of equal definitions");
             Assert.That(new FieldOptions { Items = [option, other] }.Equals(new FieldOptions { Items = new List<FieldOption> { option, other } }), Is.True, "however the list was built");
             Assert.That(new FieldOptions().Equals(new FieldOptions { Items = new List<FieldOption>() }), Is.True, "an empty list and none");
         });
