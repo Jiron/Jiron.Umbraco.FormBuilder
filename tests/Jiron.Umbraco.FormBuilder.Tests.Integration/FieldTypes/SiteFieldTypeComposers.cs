@@ -48,8 +48,12 @@ public sealed class RemoveSignatureFieldTypeComposer : IComposer
     }
 }
 
-/// <summary>A choice of colours, a site's own field type.</summary>
-public sealed class ColourFieldType() : FormBuilderFieldTypeBase<ColourSettings>(new FieldTypeDeclaration
+/// <summary>
+/// A choice of colours, a site's own field type, which needs the site's brand colours in its configuration
+/// (<see cref="SwatchesKey"/>) and is not configured without them (ADR-0057).
+/// </summary>
+/// <param name="configuration">The site's configuration, a singleton service the type takes.</param>
+public sealed class ColourFieldType(IConfiguration configuration) : FormBuilderFieldTypeBase<ColourSettings>(new FieldTypeDeclaration
 {
     Alias = "acme.colour",
     Name = "Colour",
@@ -60,7 +64,18 @@ public sealed class ColourFieldType() : FormBuilderFieldTypeBase<ColourSettings>
     RuleKind = FieldKind.Choice,
     Features = FieldFeatures.Label | FieldFeatures.Help | FieldFeatures.Required | FieldFeatures.VisibilityRules,
     Messages = FieldMessageKinds.Required,
-});
+})
+{
+    /// <summary>The configuration key that holds the brand colours.</summary>
+    public const string SwatchesKey = "Acme:Swatches";
+
+    /// <summary>The reason the type gives while the brand colours are missing.</summary>
+    public const string MissingSwatches = "Set Acme:Swatches to the brand colours.";
+
+    /// <inheritdoc />
+    public override ValueTask<FieldTypeAvailability> CheckAvailabilityAsync(CancellationToken cancellationToken) =>
+        ValueTask.FromResult(string.IsNullOrWhiteSpace(configuration[SwatchesKey]) ? FieldTypeAvailability.NotConfigured(MissingSwatches) : FieldTypeAvailability.Available);
+}
 
 /// <summary>The settings of a colour field: one visitors see, and one that stays on the server.</summary>
 public sealed class ColourSettings

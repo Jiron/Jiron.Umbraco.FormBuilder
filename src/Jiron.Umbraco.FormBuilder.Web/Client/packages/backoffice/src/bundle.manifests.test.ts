@@ -39,4 +39,17 @@ describe('the bundle', () => {
     expect(aliases.every((alias) => alias.startsWith('Jiron.FormBuilder.'))).toBe(true);
     expect(new Set(aliases).size).toBe(aliases.length);
   });
+
+  it('registers a dictionary for English and one for German, each loading its own texts (ADR-0057)', async () => {
+    interface Localization {
+      meta: { culture: string };
+      js: () => Promise<{ default: unknown }>;
+    }
+    const localizations = manifests.filter((manifest) => manifest.type === 'localization') as unknown as Localization[];
+    expect(localizations.map((manifest) => manifest.meta.culture)).toEqual(['en', 'de']);
+    const [english, german] = await Promise.all(localizations.map(async (manifest) => (await manifest.js()).default));
+    expect(english).toEqual((await import('./lang/en')).default);
+    expect(german).toEqual((await import('./lang/de')).default);
+    expect(german).not.toEqual(english);
+  });
 });
