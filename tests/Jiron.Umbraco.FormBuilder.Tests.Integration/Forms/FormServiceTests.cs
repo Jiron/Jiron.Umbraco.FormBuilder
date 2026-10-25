@@ -368,6 +368,39 @@ public sealed class FormServiceTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task APublish_RefusesSettingsThatBreakTheirTypesRules_AtTheirPaths_AndPublishesThemPutRight()
+    {
+        var created = await CreateAsync("Contact");
+        var broken = WithFields(
+            await DraftAsync(created),
+            Age with { Settings = SettingsObject.Parse("""{"decimals":16}""") },
+            GuestName with { Settings = SettingsObject.Parse("""{"maxLength":5,"minLength":10}""") });
+        var saved = await SaveAsync(created, broken);
+
+        var refused = AssertCode(async () => await PublishAsync(saved.Form), DefinitionErrors.SettingInvalid, "$.pages[0].groups[0].fields[0].settings.decimals");
+        var fixedUp = await SaveAsync(saved.Form, WithFields(
+            await DraftAsync(saved.Form),
+            Age with { Settings = SettingsObject.Parse("""{"decimals":2}""") },
+            GuestName with { Settings = SettingsObject.Parse("""{"maxLength":10,"minLength":5}""") }));
+        var published = await PublishAsync(fixedUp.Form);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(
+                (refused as FormBuilderValidationException)?.Problems.Select(problem => (problem.Code, problem.Path)),
+                Is.EqualTo(new[]
+                {
+                    (DefinitionErrors.SettingInvalid, "$.pages[0].groups[0].fields[0].settings.decimals"),
+                    (DefinitionErrors.SettingInvalid, "$.pages[0].groups[0].fields[1].settings.minLength"),
+                }),
+                "the rule of an attribute, then a type's own check");
+            Assert.That(saved.Form.IsPublished, Is.False, "a draft keeps settings that cannot be published");
+            Assert.That(published.Form.IsPublished, Is.True);
+            Assert.That((await Service.GetDraftAsync(created.Key))!.Definition!.Pages[0].Groups[0].Fields[1].Settings!.ToString(), Is.EqualTo("""{"maxLength":10,"minLength":5}"""));
+        });
+    }
+
+    [Test]
     public async Task Unpublishing_TakesTheFormOffline_AndAPublishPutsTheDraftBack()
     {
         var created = await CreateAsync("Contact");
