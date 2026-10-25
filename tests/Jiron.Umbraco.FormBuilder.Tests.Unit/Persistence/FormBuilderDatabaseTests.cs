@@ -432,6 +432,155 @@ public sealed class FormBuilderDatabaseTests
         });
     }
 
+    [Test]
+    public async Task AUnitInsideAnother_KeepsTheOuterUnitsToken_AndAddsItsCallers()
+    {
+        using var outer = new CancellationTokenSource();
+        using var own = new CancellationTokenSource();
+        var (none, same, linked) = (CancellationToken.None, CancellationToken.None, CancellationToken.None);
+
+        await _database.ReadAsync(
+            async _ =>
+            {
+                none = await _database.ReadAsync(_ => Task.FromResult(FormBuilderDbExtensions.CurrentToken));
+                same = await _database.ReadAsync(_ => Task.FromResult(FormBuilderDbExtensions.CurrentToken), outer.Token);
+                linked = await _database.ReadAsync(_ => Task.FromResult(FormBuilderDbExtensions.CurrentToken), own.Token);
+                return true;
+            },
+            outer.Token);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(none, Is.EqualTo(outer.Token), "an inner unit without a token of its own keeps the outer one");
+            Assert.That(same, Is.EqualTo(outer.Token), "the same token stays itself");
+            Assert.That(linked, Is.Not.EqualTo(own.Token).And.Not.EqualTo(outer.Token), "both, linked");
+            Assert.That(linked.CanBeCanceled, Is.True);
+        });
+    }
+
+    [Test]
+    public async Task AUnitInsideAnother_IsCancelledByEitherCaller()
+    {
+        using var outer = new CancellationTokenSource();
+        using var own = new CancellationTokenSource();
+        var byOuter = false;
+        var byOwn = false;
+
+        await _database.ReadAsync(
+            async _ =>
+            {
+                await _database.ReadAsync(
+                    async _ =>
+                    {
+                        await own.CancelAsync();
+                        byOwn = FormBuilderDbExtensions.CurrentToken.IsCancellationRequested;
+                        return true;
+                    },
+                    own.Token);
+                return true;
+            },
+            outer.Token);
+
+        using var second = new CancellationTokenSource();
+        await _database.ReadAsync(
+            async _ =>
+            {
+                await _database.ReadAsync(
+                    async _ =>
+                    {
+                        await outer.CancelAsync();
+                        byOuter = FormBuilderDbExtensions.CurrentToken.IsCancellationRequested;
+                        return true;
+                    },
+                    second.Token);
+                return true;
+            },
+            outer.Token);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(byOwn, Is.True, "the inner caller's cancellation reaches its statements");
+            Assert.That(byOuter, Is.True, "and so does the outer unit's");
+        });
+    }
+
+    [Test]
+    public async Task AReadInsideABudgetedQuery_KeepsTheQuerysDeadline()
+    {
+        var (outer, inner) = (CancellationToken.None, CancellationToken.None);
+
+        await _database.QueryAsync(
+            async _ =>
+            {
+                outer = FormBuilderDbExtensions.CurrentToken;
+                inner = await _database.ReadAsync(_ => Task.FromResult(FormBuilderDbExtensions.CurrentToken));
+                return true;
+            },
+            TimeSpan.FromSeconds(10));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(outer.CanBeCanceled, Is.True, "the deadline's token");
+            Assert.That(inner, Is.EqualTo(outer), "the inner read's statements stop at the same deadline");
+        });
+    }
+
+    [Test]
+    public async Task ABudgetedQueryInsideAUnit_KeepsTheOuterUnitsCancellation()
+    {
+        using var outer = new CancellationTokenSource();
+        var cancelled = false;
+
+        await _database.ReadAsync(
+            _ => _database.QueryAsync(
+                async _ =>
+                {
+                    await outer.CancelAsync();
+                    cancelled = FormBuilderDbExtensions.CurrentToken.IsCancellationRequested;
+                    return true;
+                },
+                TimeSpan.FromSeconds(10)),
+            outer.Token);
+
+        Assert.That(cancelled, Is.True, "the query's deadline token follows the outer unit's cancellation");
+    }
+
+    [Test]
+    public async Task AWriteInsideAWrite_KeepsTheOuterUnitsToken()
+    {
+        using var outer = new CancellationTokenSource();
+        var inner = CancellationToken.None;
+
+        await _database.WriteAsync(
+            async _ =>
+            {
+                inner = await _database.WriteAsync(_ => Task.FromResult(FormBuilderDbExtensions.CurrentToken));
+                return true;
+            },
+            outer.Token);
+
+        Assert.That(inner, Is.EqualTo(outer.Token));
+    }
+
+    [Test]
+    public async Task AWriteInsideARead_IsRefused_AndInsideAWrite_ItJoins()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(() => _database.ReadAsync(_ => _database.WriteAsync(_ => Task.FromResult(1))), Throws.InvalidOperationException.With.Message.Contains("inside a read"));
+            Assert.That(() => _database.QueryAsync(_ => _database.WriteAsync(_ => Task.FromResult(1)), TimeSpan.FromSeconds(10)), Throws.InvalidOperationException.With.Message.Contains("inside a read"));
+        });
+
+        var joined = await _database.WriteAsync(async _ => await _database.WriteAsync(_ => Task.FromResult(1)) + await _database.ReadAsync(_ => Task.FromResult(2)));
+        var after = await _database.WriteAsync(_ => Task.FromResult(3));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(joined, Is.EqualTo(3), "writes and reads inside a write join it");
+            Assert.That(after, Is.EqualTo(3), "a write after a read is no write inside it");
+        });
+    }
+
     private void ScopesAre(Func<IScope> create) =>
         _scopeProvider.CreateScope(Arg.Any<IsolationLevel>(), Arg.Any<RepositoryCacheMode>(), Arg.Any<IEventDispatcher?>(), Arg.Any<IScopedNotificationPublisher?>(), Arg.Any<bool?>(), Arg.Any<bool>(), Arg.Any<bool>())
             .Returns(_ =>

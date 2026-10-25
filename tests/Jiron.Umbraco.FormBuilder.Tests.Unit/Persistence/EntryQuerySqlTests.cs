@@ -3,8 +3,6 @@ using System.Text.RegularExpressions;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using NSubstitute;
-using Umbraco.Cms.Infrastructure.Persistence.SqlSyntax;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Persistence;
 
@@ -15,8 +13,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Persistence;
 [TestFixture]
 public sealed partial class EntryQuerySqlTests
 {
-    private const string Sqlite = "Microsoft.Data.Sqlite";
-    private const string SqlServer = "Microsoft.Data.SqlClient";
+    private const string Sqlite = TestSqlNames.Sqlite;
+    private const string SqlServer = TestSqlNames.SqlServer;
     private const int Form = 7;
     private const int Field = 11;
     private static readonly DateTime Utc = new(2026, 10, 24, 9, 0, 0, DateTimeKind.Utc);
@@ -343,14 +341,7 @@ public sealed partial class EntryQuerySqlTests
     private static object?[] ArgumentsOf(SqlStatement statement, string pattern) =>
         [.. Regex.Matches(statement.Text, pattern).Select(match => statement.Args[int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture)])];
 
-    private static SqlNames Names(string provider)
-    {
-        var syntax = Substitute.For<ISqlSyntaxProvider>();
-        syntax.ProviderName.Returns(provider);
-        syntax.GetQuotedTableName(Arg.Any<string>()).Returns(call => "[" + call.Arg<string>() + "]");
-        syntax.GetQuotedColumnName(Arg.Any<string>()).Returns(call => "[" + call.Arg<string>() + "]");
-        return new SqlNames(syntax);
-    }
+    private static SqlNames Names(string provider) => TestSqlNames.Of(provider);
 
     [GeneratedRegex(@"@(\d+)")]
     private static partial Regex Placeholder();

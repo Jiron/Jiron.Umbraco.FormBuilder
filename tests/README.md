@@ -147,7 +147,8 @@ the diff gets read and committed; the management API's document is the third suc
 - SQLite's plans of the statements the indexes of 4.8a serve (`IndexPlanTests`): the statements a repository really
   issues, recorded by `StatementRecorder` (in `StatementInterceptors`) and explained with their values, each naming
   its index and scanning nothing: an entry's files and the uploads that wait for one, one form's daily statistics
-  and their delete, retention by day, and a content item's references;
+  and their delete, retention by day, and a content item's references; and a create's checks of its alias and its
+  key, each a search of its own unique index, never one search over both (4.8b);
 - stored names: a state written in another letter case is refused when read, as a row something else wrote, and
   `Tests.Unit/Persistence/StoredNamesTests` shows every stored enum written as the camel case of its names, read back
   only from that text, and fitting its column;
@@ -158,11 +159,13 @@ the diff gets read and committed; the management API's document is the third suc
   (ADR-0007, ADR-0040);
 - the audit log (`AuditRepositoryTests`): entries that commit and roll back with their change and come back as
   stored, the filters and pages newest first, a view recorded once per window (also twenty at once, and again after
-  a unit that rolled back), the purge oldest first, and an entry full of
+  a unit that rolled back), the purge oldest first, a filtered list past its time budget, and an entry full of
   personal data through every kind of action about entries, after which `Support/AuditLogSearch` finds none of its
   values anywhere in the log (ADR-0041);
 - the audit log's search itself: it finds a value in a column, in the details and escaped, ignoring case, and never
   inside a key;
+- consent wordings (`ConsentTextRepositoryTests`): stored once under the hash of their culture and text, first seen
+  when first stored, and a writer at the same moment answered by the stored wording;
 - daily statistics (`DailyStatRepositoryTests`): counts by day, metric and dimension, 400 increments and 100 batches
   at once from two repositories while fields are added to the form, a day's first counts at once, a form that does
   not exist (also with values of it left), counts racing their form's delete, the caller's unit, a form's delete and
@@ -190,13 +193,19 @@ The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made 
   vector says they match (`EntryTextKeyTests`);
 - the query builder's statements and refusals (`EntryQuerySqlTests`), and the time budget of a read: a timeout that
   never runs again, a caller's cancellation, a read inside another (`FormBuilderDatabaseTests`);
+- units inside units (`FormBuilderDatabaseTests`): an inner unit keeps the outer unit's cancellation and deadline and
+  adds its own caller's, and a write inside a read is refused; the migration state read again after a busy read
+  (`FormBuilderMigrationStateTests`);
+- statement text on SQL Server, with names from `TestSqlNames`: the due list of action runs reads without lock hints
+  and the claim with them (`ActionRunSqlTests`); and the numbering of a statement's arguments (`PersistenceHelperTests`);
 - the product rows against the migration's snapshots.
 
 `Architecture/CoreDatabaseConnectionTests` reads Core's IL and fails on any connection of Core's own (ADR-0036).
 `Architecture/QueryBuilderReadsTests` reads the query builder's source and fails on any database call but its one
 budgeted read, or on SQL that changes rows (ADR-0039).
 `Architecture/SqlGuardTests` reads the repositories' source and fails on a guard without a locking read (ADR-0038):
-the hints are empty on SQLite, so no database test here can tell.
+the hints are empty on SQLite, so no database test here can tell. The few checks that read without a lock on purpose
+are listed there, each with its reason.
 
 ## The settings tests
 

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
@@ -98,6 +99,26 @@ public sealed class AuditRepositoryTests : RepositoryTestBase
             var filtered = await Audit.QueryAsync(new AuditQuery { EntityType = "form" }, new PageRequest(5, 2));
             Assert.That(filtered.Items, Is.Empty, "past the end");
             Assert.That(filtered.Total, Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public async Task AQueryPastItsBudget_StopsWithQueryTimeout_AndRunsOnce()
+    {
+        await Audit.AddAsync(new NewAuditEntry("settings.saved", "settings", Guid.NewGuid(), Editor));
+        var where = T(FormBuilderTables.AuditEntry) + " WHERE ";
+        var slowly = new CommandRewriter(where, where + SlowCondition);
+        var budgeted = new AuditRepository(Database, TimeSpan.FromMilliseconds(250));
+        var query = new AuditQuery { Action = "settings.saved" };
+        var watch = Stopwatch.StartNew();
+
+        Assert.That(async () => await WatchedReadAsync(slowly, () => budgeted.QueryAsync(query, PageRequest.First(10))), Throws.InstanceOf<FormBuilderQueryTimeoutException>());
+        var stopped = watch.Elapsed;
+        Assert.Multiple(async () =>
+        {
+            Assert.That(slowly.Rewritten, Is.EqualTo(1), "the count ran once, and never again");
+            Assert.That(stopped, Is.LessThan(TimeSpan.FromSeconds(5)), "interrupted, not run to its end");
+            Assert.That((await budgeted.QueryAsync(query, PageRequest.First(10))).Total, Is.EqualTo(1), "the next list runs within the budget");
         });
     }
 

@@ -7,9 +7,10 @@ using Umbraco.Cms.Tests.Common.Testing;
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
 
 /// <summary>
-/// The indexes added before the schema froze (ROADMAP 4.8a, ADR-0033) serve the statements they were made for: SQLite's
-/// <c>EXPLAIN QUERY PLAN</c> of each statement the repository issues names the index and scans no table, as
-/// <see cref="EntryQueryPlanTests"/> shows for the entries query builder. The plans are SQLite's; SQL Server's optimizer
+/// The indexes added before the schema froze (ROADMAP 4.8a, ADR-0033) serve the statements they were made for, and a
+/// create's checks seek each unique index on their own (4.8b): SQLite's <c>EXPLAIN QUERY PLAN</c> of each statement
+/// the repository issues names the index and scans no table, as <see cref="EntryQueryPlanTests"/> shows for the entries
+/// query builder. The plans are SQLite's; SQL Server's optimizer
 /// picks its own, and the correctness tests run there.
 /// </summary>
 [TestFixture]
@@ -79,6 +80,35 @@ public sealed class IndexPlanTests : RepositoryTestBase
         });
 
         AssertEach(plans, FormBuilderTables.Reference, 2, ReferenceIndex);
+    }
+
+    [Test]
+    public async Task ACreate_ChecksItsAliasAndItsKey_EachWithASearchOfItsOwnUniqueIndex()
+    {
+        Assume.That(IsSqlite, Is.True, "plans are SQLite's");
+
+        var form = await PlansAsync(() => CreateFormAsync("contact"));
+        var list = await PlansAsync(() => OptionLists.CreateAsync(new NewOptionList(Guid.NewGuid(), "colours", "Colours", "Manual")));
+
+        Assert.Multiple(() =>
+        {
+            AssertChecks(form, FormBuilderTables.Form, "IX_jfbForm_alias", "IX_jfbForm_key");
+            AssertChecks(list, FormBuilderTables.OptionList, "IX_jfbOptionList_alias", "IX_jfbOptionList_key");
+        });
+    }
+
+    // The create's insert searches each index once on its own, and neither scans the table nor combines the two.
+    private void AssertChecks(IReadOnlyList<(string Statement, IReadOnlyList<string> Plan)> plans, string table, params string[] indexes)
+    {
+        var (statement, plan) = plans.Single(plan => plan.Statement.StartsWith("INSERT INTO " + T(table) + " (", StringComparison.Ordinal));
+        var searches = plan.Where(line => line.StartsWith("SEARCH " + table + " ", StringComparison.Ordinal)).ToList();
+        Assert.That(searches, Has.Count.EqualTo(indexes.Length), $"{statement}: {string.Join("; ", plan)}");
+        foreach (var index in indexes)
+        {
+            Assert.That(searches, Has.One.Contains("INDEX " + index + " ("), $"{statement}: {string.Join("; ", plan)}");
+        }
+
+        Assert.That(plan, Has.None.Contains("MULTI-INDEX OR").And.None.StartsWith("SCAN " + table), $"{statement}: {string.Join("; ", plan)}");
     }
 
     // Each plan of a statement on the table names one of the indexes and scans nothing; there are as many as expected.

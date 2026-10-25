@@ -329,6 +329,24 @@ public sealed class FormRepositoryTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task ADeleteWhoseLastStatementFindsNothing_RollsBack_AndTheFormKeepsItsVersions()
+    {
+        var form = await CreateFormAsync();
+        var trashed = (await Forms.TrashAsync(form.Id, form.ConcurrencyVersion, Editor))!;
+        var delete = "DELETE FROM " + T(FormBuilderTables.Form) + " WHERE ";
+        var nothing = new CommandRewriter(delete, delete + "1 = 0 AND ");
+
+        AssertConflict(() => WatchedAsync(nothing, () => Forms.DeleteAsync(trashed.Id, trashed.ConcurrencyVersion)), FormBuilderConflict.InUse);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(nothing.Rewritten, Is.EqualTo(1), "the delete ran, after the release");
+            Assert.That(await Forms.GetByIdAsync(trashed.Id), Is.EqualTo(trashed), "the release of its versions rolled back");
+            Assert.That(trashed.DraftVersionId, Is.Not.Null);
+        });
+    }
+
+    [Test]
     public async Task AFormInTheTrash_IsRefusedEveryChange_ButBeingTakenOffline()
     {
         var form = await CreateFormAsync("contact");

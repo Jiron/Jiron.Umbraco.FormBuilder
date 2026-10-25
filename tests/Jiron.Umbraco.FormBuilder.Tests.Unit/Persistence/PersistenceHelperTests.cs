@@ -4,12 +4,15 @@ using Umbraco.Cms.Infrastructure.Persistence.SqlSyntax;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Persistence;
 
-/// <summary>The small persistence helpers (ADR-0036): SQL that differs per database, LIKE escaping, UTC times, paging.</summary>
+/// <summary>
+/// The small persistence helpers (ADR-0036): SQL that differs per database, LIKE escaping, UTC times, paging, and the
+/// arguments of a statement.
+/// </summary>
 [TestFixture]
 public sealed class PersistenceHelperTests
 {
-    private const string Sqlite = "Microsoft.Data.Sqlite";
-    private const string SqlServer = "Microsoft.Data.SqlClient";
+    private const string Sqlite = TestSqlNames.Sqlite;
+    private const string SqlServer = TestSqlNames.SqlServer;
 
     [TestCase("anna", "anna")]
     [TestCase("100%", @"100\%")]
@@ -106,10 +109,40 @@ public sealed class PersistenceHelperTests
         });
     }
 
-    private static SqlNames Names(string provider)
+    [Test]
+    public void Arguments_AreNumberedInTheOrderTheyAreAdded_EachWithItsValue()
     {
-        var syntax = Substitute.For<ISqlSyntaxProvider>();
-        syntax.ProviderName.Returns(provider);
-        return new SqlNames(syntax);
+        var args = new SqlArgs();
+
+        var first = args.Add("contact");
+        var list = args.List([3, null, 5]);
+        var last = args.Add(Guid.Empty);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(first, Is.EqualTo("@0"));
+            Assert.That(list, Is.EqualTo("@1, @2, @3"));
+            Assert.That(last, Is.EqualTo("@4"));
+            Assert.That(args.Count, Is.EqualTo(5));
+            Assert.That(args.Values, Is.EqualTo(new object?[] { "contact", 3, null, 5, Guid.Empty }));
+            Assert.That(args.Values, Is.Not.SameAs(args.Values), "a copy each time");
+            Assert.That(new SqlArgs().Values, Is.Empty);
+        });
     }
+
+    [Test]
+    public void Placeholders_NumberTheValuesOfAnArray_FromTheFirstGiven()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(SqlArgs.Placeholders(0, 3), Is.EqualTo("@0, @1, @2"));
+            Assert.That(SqlArgs.Placeholders(2, 1), Is.EqualTo("@2"));
+            Assert.That(SqlArgs.Placeholders(9, 2), Is.EqualTo("@9, @10"));
+            Assert.That(() => SqlArgs.Placeholders(-1, 2), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(() => SqlArgs.Placeholders(0, 0), Throws.InstanceOf<ArgumentOutOfRangeException>(), "an empty IN list is no statement");
+            Assert.That(SqlArgs.MaxListLength, Is.EqualTo(1000), "well inside SQL Server's 2,100 parameters");
+        });
+    }
+
+    private static SqlNames Names(string provider) => TestSqlNames.Of(provider);
 }
