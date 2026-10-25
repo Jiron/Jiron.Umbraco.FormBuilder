@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
 
@@ -66,12 +68,55 @@ public sealed class LibraryModelsTests
     }
 
     [Test]
+    public void AForm_SaysWhereItIs_ItsState_AndWhatTheUserHoldsOnIt()
+    {
+        var info = Form();
+
+        var model = FormResponseModel.Of(info, FormBuilderPermissions.Design | FormBuilderPermissions.Export);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((model.Key, model.Alias, model.Name, model.FolderKey), Is.EqualTo((info.Key, "contact", "Contact", info.FolderKey)));
+            Assert.That((model.ConcurrencyVersion, model.IsPublished, model.PublicRevision, model.IsRestricted), Is.EqualTo((7, true, 3, true)));
+            Assert.That((model.TrashedUtc, model.CreatedUtc, model.UpdatedUtc), Is.EqualTo(((DateTimeOffset?)Trashed, Created, Updated)));
+            Assert.That(model.Permissions, Is.EqualTo(new[] { "design", "export" }));
+        });
+    }
+
+    [Test]
+    public void ADraft_CarriesTheCanonicalDocument_ItsProblems_AndItsVersions()
+    {
+        var info = Form();
+        var definition = new FormDefinition { Key = info.Key, Pages = [new FormPage { Key = Guid.NewGuid() }] };
+        var form = FormResponseModel.Of(info, FormBuilderPermissions.Design);
+
+        var read = FormDraftResponseModel.Of(new FormDraft(info, definition, [new DefinitionProblem("limit_exceeded", "$.pages", "Too many.")], 4, 2, true), form);
+        var unreadable = FormDraftResponseModel.Of(new FormDraft(info, null, [], 1, null, false), form);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Form, Is.SameAs(form));
+            Assert.That(read.Definition?.GetRawText(), Is.EqualTo(FormDefinitionSerializer.WriteString(definition)), "the canonical document");
+            Assert.That(read.Problems, Is.EqualTo(new[] { new DefinitionProblemResponseModel("limit_exceeded", "$.pages", "Too many.") }));
+            Assert.That((read.DraftVersion, read.PublishedVersion, read.HasUnpublishedChanges), Is.EqualTo((4, (int?)2, true)));
+            Assert.That((unreadable.Definition, unreadable.Problems.Count, unreadable.PublishedVersion, unreadable.HasUnpublishedChanges), Is.EqualTo(((JsonElement?)null, 0, (int?)null, false)));
+        });
+    }
+
+    [Test]
     public void ADeletion_CountsWhatWent()
     {
         var deletion = new LibraryDeletion([new FolderSummary(Guid.NewGuid(), "Archive"), new FolderSummary(Guid.NewGuid(), "Old")], [new FormSummary(Guid.NewGuid(), "notes", "Notes")], 7, 3);
 
         var model = LibraryDeletionResponseModel.Of(deletion);
 
-        Assert.That((model.Folders, model.Forms, model.Entries, model.Files), Is.EqualTo((2, 1, 7L, 3L)));
+        Assert.Multiple(() =>
+        {
+            Assert.That((model.Folders, model.Forms, model.Entries, model.Files), Is.EqualTo((2, 1, 7L, 3L)));
+            var form = LibraryDeletionResponseModel.Of(new FormDeletion(Guid.NewGuid(), 5, 2));
+            Assert.That((form.Folders, form.Forms, form.Entries, form.Files), Is.EqualTo((0, 1, 5L, 2L)), "a form on its own");
+        });
     }
+
+    private static FormInfo Form() => new(Guid.NewGuid(), "contact", "Contact", Guid.NewGuid(), 7, true, 3, true, Trashed, Created, Updated, Guid.NewGuid(), Guid.NewGuid());
 }

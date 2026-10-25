@@ -162,6 +162,35 @@ public sealed class FolderApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task ARestoreToTheRoot_BecauseItsParentIsInTheTrash_NeedsWhatAMoveThereNeeds()
+    {
+        // Drafts went to the trash on its own, then Contracts after it: a restore takes Drafts to the root, where the
+        // global grants of every group reach it.
+        var contracts = await FolderAsync("Contracts");
+        await RestrictAsync(contracts, "designer", FormBuilderPermissions.Design);
+        var drafts = await FolderAsync("Drafts", contracts);
+        var notes = await FolderAsync("Notes", contracts);
+        await TrashFolderAsync(drafts);
+        await TrashFolderAsync(notes);
+        var intoParent = await _api.CallAsync("designer", HttpMethod.Post, $"folder/{notes}/restore");
+        await TrashFolderAsync(contracts);
+
+        var designer = await _api.CallAsync("designer", HttpMethod.Post, $"folder/{drafts}/restore");
+        var unconfirmed = await _api.CallAsync("admin", HttpMethod.Post, $"folder/{drafts}/restore");
+        var confirmed = await _api.CallAsync("admin", HttpMethod.Post, $"folder/{drafts}/restore", new { widenAccess = true });
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(intoParent.Status, Is.EqualTo(HttpStatusCode.OK), "back into its parent asks nothing more, and needs no body");
+            Assert.That((designer.Outcome, designer.Body?["permission"]?.GetValue<string>()), Is.EqualTo(("403 forbidden", "managePermissions")), designer.ToString());
+            Assert.That(unconfirmed.Outcome, Is.EqualTo("409 widens_access"), unconfirmed.ToString());
+            Assert.That(Gains(unconfirmed)[People.GroupKeys["viewer"]], Is.EqualTo("viewEntries"));
+            Assert.That(confirmed.Status, Is.EqualTo(HttpStatusCode.OK), confirmed.ToString());
+            Assert.That((await GetRequiredService<IFormBuilderFolderService>().GetAsync(drafts))!.ParentKey, Is.Null, "at the root");
+        });
+    }
+
+    [Test]
     public async Task TrashAndRestore_TakeTheFolderWithWhatIsBelowIt()
     {
         var archive = await FolderAsync("Archive");

@@ -481,6 +481,39 @@ public sealed class DefinitionDiffTests
     }
 
     // Each changed element's property changes rebuild its newer properties from its older ones.
+    [Test]
+    public void ChangesActions_HoldsForAnActionOrARuleOfOne_AndForNothingElse()
+    {
+        var before = Base();
+        before["actions"] = new JsonArray(Action(71, "Notify"));
+        var withRule = With(before, root => root["actions"]![0]!["rules"] = new JsonArray(Rule(81, "run", K(13))));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Changes(before, before), Is.False, "nothing");
+            Assert.That(Changes(before, With(before, root => Field(root, 0, 0, 0)["required"] = true)), Is.False, "a field");
+            Assert.That(Changes(before, With(before, root => Field(root, 0, 0, 0)["rules"] = new JsonArray(Rule(82, "hide", K(12))))), Is.False, "a rule of a field");
+            Assert.That(Changes(before, With(before, root => root["actions"]![0]!["name"] = "Tell sales")), Is.True, "an action's name");
+            Assert.That(Changes(before, With(before, root => root["actions"]!.AsArray().Add(Action(72, "Thank")))), Is.True, "an added action");
+            Assert.That(Changes(before, With(before, root => root["actions"] = new JsonArray())), Is.True, "a removed action");
+            Assert.That(Changes(before, withRule), Is.True, "a rule added to an action");
+            Assert.That(Changes(withRule, With(withRule, root => root["actions"]![0]!["rules"]![0]!["conditions"]![0]!["value"] = "press")), Is.True, "a rule of an action changed");
+            Assert.That(Changes(withRule, With(before, root => Field(root, 0, 0, 0)["rules"] = new JsonArray(Rule(81, "show", K(13))))), Is.True, "a rule moved from an action to a field");
+            Assert.That(Changes(With(before, root => Field(root, 0, 0, 0)["rules"] = new JsonArray(Rule(81, "run", K(13)))), withRule), Is.True, "a rule moved from a field to an action");
+            Assert.That(DefinitionDiff.ChangesActions(null, DefinitionFixtures.Read(before.ToJsonString())), Is.True, "a draft that could not be read had no actions");
+            Assert.That(DefinitionDiff.ChangesActions(null, DefinitionFixtures.Read(Base().ToJsonString())), Is.False);
+        });
+
+        static bool Changes(JsonObject from, JsonObject to) => DefinitionDiff.ChangesActions(DefinitionFixtures.Read(from.ToJsonString()), DefinitionFixtures.Read(to.ToJsonString()));
+
+        static JsonObject With(JsonObject root, System.Action<JsonObject> change)
+        {
+            var copy = root.DeepClone().AsObject();
+            change(copy);
+            return copy;
+        }
+    }
+
     private static void AssertRebuilt(IReadOnlyList<DefinitionChange> changes, string what)
     {
         foreach (var change in changes.Where(change => change.Change == DefinitionChangeKind.Changed))
