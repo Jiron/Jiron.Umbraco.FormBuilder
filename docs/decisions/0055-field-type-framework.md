@@ -161,7 +161,7 @@ one per form, server-only default, settings and public settings.
 - **5.1c:** the field-types endpoint for the designer; availability ("not configured: …").
 - **5.1d:** storage kinds mapped to `jfbEntryValue` columns, the parse and validate contract and the longest answer a
   type takes (ADR-0058).
-- **5.1e:** the change-type map.
+- **5.1e:** the change-type map: which types a field may become, and what each change keeps and loses (ADR-0059).
 - **5.1f:** designer locks of settings (ADR-0042), checked against the schema.
 
 ## Consequences

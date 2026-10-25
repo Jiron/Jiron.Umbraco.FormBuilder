@@ -2134,8 +2134,9 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Sections:** Essentials, Validation, Rules, Appearance, Advanced (§4.13).
   - **Per-culture texts** with a culture switcher and "missing translation" marks.
   - **Fields:** alias editing with its lock rules, and change field type (compatible types only, with a preview of what is lost).
+  - **Changing types** (added in 5.1e, ADR-0059): the field types endpoint (5.1c) also serves each type's changes from 5.1e's map, with the permission matrix and the regenerated client, and the preview applies a change to the selected field: its values of lost and narrowed settings, the properties it uses that go, the conditions naming it whose operator goes, and the settings and options it needs.
   - **Locks:** host-locked settings are shown as locked.
-  - Done when: Playwright configures every built-in type through the UI, and axe is clean on the inspector.
+  - Done when: Playwright configures every built-in type through the UI, and axe is clean on the inspector. Playwright changes a text field with a placeholder and a condition using `contains` into a dropdown, and the preview names the placeholder, the condition and the options it needs before the change; the endpoint's integration tests cover the served changes (ADR-0059).
 - [ ] **9.5a The rules builder**
   - **The builder:** rule rows in plain language ("Show this field when **Country** **is** **Germany**"), any/all groups, operators per field type, and value pickers (options, dates including relative ones, numbers).
     - "Required when", a value taken from another field ("is after **Arrival**"), and the context conditions (language, member, query value, today), all of §4.3.3.

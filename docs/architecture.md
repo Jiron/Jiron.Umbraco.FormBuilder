@@ -199,6 +199,10 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   every answer before the rules run, `Read` turns the texts and parts into values in the wire form, and `Validate`
   holds a shown field's values to its settings; `FieldValues` runs the three in the pipeline's order and refuses a type
   that breaks the contract, and `EntryValueColumns` stores each value in the typed column of its storage kind.
+  `FieldTypeChanges` works out which types a field may become and what each change keeps and loses (its settings, by
+  name, kind and rules; common properties; messages; the operators of rules; the columns of older answers), from the
+  declarations and schemas alone ([ADR-0059](decisions/0059-changing-field-types.md)), for the inspector's "Change
+  type" (9.4).
 - **The public projection** is built from an allowlist of public types (`Core.Definitions.Projection`) and carries no
   actions, outcomes, recipients, option-source configuration, privacy settings or switched-off rules; its SHA-256 is
   `PublicHash`. Its TypeScript types and schema ship in `schemas/` (6.6).

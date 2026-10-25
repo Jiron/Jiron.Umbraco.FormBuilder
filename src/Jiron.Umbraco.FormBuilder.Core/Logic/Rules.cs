@@ -49,6 +49,10 @@ internal static class Rules
         Checked,
     }
 
+    /// <summary>The operators a condition on a field of the kind takes, in ordinal order (ADR-0059).</summary>
+    public static ImmutableArray<string> OperatorsFor(FieldKind kind) =>
+        [.. Operators.Where(op => op.Value.Kinds.Contains(kind)).Select(op => op.Key).Order(StringComparer.Ordinal)];
+
     /// <summary>Checks the condition, then evaluates it.</summary>
     public static bool EvaluateCondition(LogicCondition condition, Subject subject)
     {
