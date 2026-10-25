@@ -115,7 +115,7 @@ coverage, schema and fixture tests fail.
 
 `Tests.Unit/FieldTypes/` covers the field type framework without a host
 ([ADR-0055](../docs/decisions/0055-field-type-framework.md), [ADR-0056](../docs/decisions/0056-field-settings-checks.md),
-[ADR-0058](../docs/decisions/0058-field-answers-and-values.md)):
+[ADR-0058](../docs/decisions/0058-field-answers-and-values.md), [ADR-0059](../docs/decisions/0059-changing-field-types.md)):
 
 | Tests | What they show |
 | --- | --- |
@@ -128,6 +128,7 @@ coverage, schema and fixture tests fail.
 | `FieldAnswersTests` | What a type receives and gives back: a field's texts and parts, with empty, nameless and repeated ones refused; the longest answer at its edges and none; a value with its row and the text it stores; a reading that refuses a row the field lacks and keeps nothing once unreadable; a validation that keeps each error once and refuses kinds the type does not declare. |
 | `FieldValuesTests` | The contract as the pipeline runs it, through a type on the interface alone (one text, choices, a `multiple` setting, no value), one with settings on the base class, and the built-in number: the limits with `maxLength` or `invalid`, the reading, and the order of `invalid`, `required` and the type's own errors; a type without limits, with an undeclared error kind, or reading a value its storage kind cannot hold refused by name, without the answer. |
 | `PostedNumbersTests` | Numbers as posted (leading zeros, a point first, an exponent) converted exactly to the canonical wire form, and everything else refused: no number, other digits, or past 15 digits. |
+| `FieldTypeChangesTests` | Which types a field may become: every built-in type that holds a value of its own into every other, none of content, grids or repeatable groups; 25 built-in changes restated apart from the code with everything each keeps and loses; every rule by which a setting is kept, narrowed or lost (kinds, item kinds, required, bounds and their exclusivity, lengths, counts, allowed values, choices, nested objects, any JSON); the settings a change needs; the operators of each rule kind; and a site's own type changing like the built-in ones. |
 | `BuiltInAnswersTests` | The longest answer of every built-in type, restated from ADR-0058 apart from the code, and how they read: wire forms, choices with "Other", grids by row, rankings in order or by position, a consent's tick with its wording's hash, names and addresses as one object of their parts in order. |
 
 `TestFieldTypes` (in the Testing project) gives the unit tests the registry of the built-in types, or of a builder a
