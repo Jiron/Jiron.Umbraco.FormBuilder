@@ -1715,7 +1715,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **4.8d The form service in parts** (4.8 split in six, WORKLOG 2026-10-25) (2026-10-25, a86aa92)
   - The form service (ADR-0044) holds more than twenty operations over fifteen dependencies and becomes public in 15.1. Split it by job: the lifecycle with the trash, the versions, and the exchange (copies, templates, import and export). Every service of Core shares one change pipeline (a unit of its own, the cancelable notification, the write with its audit entry, the published notification), one check that a call runs in its own unit, and one trash check.
   - Done when: the form, folder, access, settings and management API tests pass unchanged in what they check; each part has its own interface and registration, and the boot test resolves each; architecture.md shows the parts.
-- [ ] **4.8e The definition model's limits, immutability and checks** (4.8 split in six, then 4.8e in two, WORKLOG 2026-10-25)
+- [x] **4.8e The definition model's limits, immutability and checks** (4.8 split in six, then 4.8e in two, WORKLOG 2026-10-25) (2026-10-25, 9f7c201)
   - **Limits:** the export file's reader stops at 100 problems as every other reader does, through one shared limit.
   - **Immutable as ADR-0034 promises:** the reader gives read-only lists, the value types hand out read-only views, the public projection's lists are read-only, and how records compare their lists (by sequence, or by reference as written down) is decided once in an ADR amendment.
   - **Checks:** one-per-form types are counted per type, and the field messages are listed once, for both checks.
