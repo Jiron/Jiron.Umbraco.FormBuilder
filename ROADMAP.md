@@ -1753,7 +1753,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 
 ### Phase 5: Field types, option lists and the logic engines
 
-- [ ] **5.1a The field type registry and the traits** (5.1 split in four, WORKLOG 2026-10-25)
+- [x] **5.1a The field type registry and the traits** (5.1 split in four, WORKLOG 2026-10-25) (2026-10-25, b860e77)
   - **The registry:** a collection builder with `FormBuilderFieldTypeBase<TSettings>` (`builder.JironFormBuilder().FieldTypes()`, ADR-0055) that holds the built-in types of §4.3.2 from its start, so that a site adds, replaces or removes a type whatever order the composers run in. Each type declares its alias, icon, palette group, storage kind (the one the field catalogue records from 4.5a on, ADR-0044), how rules compare its answers, and which common properties and error kinds it has. Start-up refuses two types with one alias, naming both, and a declaration that contradicts itself.
   - **Settings schemas from attributes:** the settings class of each built-in type (ADR-0002's table) with `[FormBuilderSetting]` (label, description, editor, order, group, merge tags, and whether visitors see the setting), read into the type's settings schema with each setting's kind and default.
   - **Publishing** (ADR-0035): the structural validation, the public projection and the field catalogue read each type's traits from the registry instead of 4.2b's built-in table, and a type's public settings come from its schema.
