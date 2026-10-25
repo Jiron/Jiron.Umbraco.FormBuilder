@@ -36,10 +36,10 @@ internal sealed partial class EntryRepository
             {
                 var n = new SqlNames(db);
                 var files = new List<StoredEntryFile>();
-                foreach (var chunk in ids.Chunk(IdsPerStatement))
+                foreach (var chunk in ids.Chunk(SqlArgs.MaxListLength))
                 {
                     var rows = await db.FetchListAsync<EntryFileDto>(
-                        $"SELECT * FROM {n.T(FormBuilderTables.EntryFile)} WHERE {n.C("entryId")} IN ({Parameters(0, chunk.Length)}) ORDER BY {n.C("entryId")}, {n.C("createdUtc")}, {n.C("id")}",
+                        $"SELECT * FROM {n.T(FormBuilderTables.EntryFile)} WHERE {n.C("entryId")} IN ({SqlArgs.Placeholders(0, chunk.Length)}) ORDER BY {n.C("entryId")}, {n.C("createdUtc")}, {n.C("id")}",
                         [.. chunk.Cast<object?>()]);
                     files.AddRange(rows.Select(FileFromDto));
                 }
@@ -67,10 +67,10 @@ internal sealed partial class EntryRepository
             {
                 var n = new SqlNames(db);
                 var deleted = 0;
-                foreach (var chunk in ids.Chunk(IdsPerStatement))
+                foreach (var chunk in ids.Chunk(SqlArgs.MaxListLength))
                 {
                     deleted += await db.ExecAsync(
-                        $"DELETE FROM {n.T(FormBuilderTables.Entry)} WHERE {n.C("id")} IN ({Parameters(0, chunk.Length)})",
+                        $"DELETE FROM {n.T(FormBuilderTables.Entry)} WHERE {n.C("id")} IN ({SqlArgs.Placeholders(0, chunk.Length)})",
                         [.. chunk.Cast<object?>()]);
                 }
 
@@ -104,6 +104,6 @@ internal sealed partial class EntryRepository
     private static void CheckTake(int take)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(take);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(take, IdsPerStatement);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(take, SqlArgs.MaxListLength);
     }
 }

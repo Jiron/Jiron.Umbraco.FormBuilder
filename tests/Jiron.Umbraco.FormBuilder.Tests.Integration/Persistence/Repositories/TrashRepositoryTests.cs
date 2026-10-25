@@ -121,8 +121,8 @@ public sealed class TrashRepositoryTests : RepositoryTestBase
             Assert.That(await Entries.ListFilesAsync(Array.Empty<long>()), Is.Empty);
             Assert.That(await Entries.DeleteAsync(Array.Empty<long>()), Is.Zero);
             Assert.That(() => Entries.ListIdsAsync(form.Id, 0), Throws.InstanceOf<ArgumentOutOfRangeException>());
-            Assert.That(() => Entries.ListIdsAsync(form.Id, EntryRepository.IdsPerStatement + 1), Throws.InstanceOf<ArgumentOutOfRangeException>());
-            Assert.That(() => Entries.ListUploadsAsync(form.Id, EntryRepository.IdsPerStatement + 1), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(() => Entries.ListIdsAsync(form.Id, SqlArgs.MaxListLength + 1), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(() => Entries.ListUploadsAsync(form.Id, SqlArgs.MaxListLength + 1), Throws.InstanceOf<ArgumentOutOfRangeException>());
         });
     }
 

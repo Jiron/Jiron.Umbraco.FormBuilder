@@ -6,9 +6,6 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 // it there, its own or its folder's, so a folder's restore brings back exactly what went with it.
 internal sealed partial class FormRepository
 {
-    /// <summary>The most folder ids one statement names; SQL Server takes at most 2,100 parameters.</summary>
-    public const int FoldersPerStatement = 1000;
-
     /// <inheritdoc />
     public Task<StoredForm?> TrashAsync(int formId, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default) =>
         database.WriteAsync(
@@ -52,8 +49,11 @@ internal sealed partial class FormRepository
             async db =>
             {
                 var n = new SqlNames(db);
-                var held = await db.ExecAsync(
-                    $"UPDATE {n.T(FormBuilderTables.Form)} SET {n.C("updatedUtc")} = {n.C("updatedUtc")} WHERE {n.C("id")} = @0 AND {n.C("concurrencyVersion")} = @1 AND {n.C("trashedUtc")} IS NOT NULL",
+                var held = await RowHolds.HoldAsync(
+                    db,
+                    n,
+                    FormBuilderTables.Form,
+                    $"{n.C("id")} = @0 AND {n.C("concurrencyVersion")} = @1 AND {n.C("trashedUtc")} IS NOT NULL",
                     formId,
                     expectedConcurrencyVersion);
                 var current = await FindAsync(db, "id", formId);
@@ -93,7 +93,14 @@ internal sealed partial class FormRepository
                     throw new FormBuilderConflictException(FormBuilderConflict.InUse, "The form still has entries.");
                 }
 
-                return await db.ExecAsync($"DELETE FROM {table} WHERE {n.C("id")} = @0 AND {noEntries}", formId) == 1;
+                // The release holds the form's row and the range of its entries, so the delete finds it. Should it not,
+                // the unit rolls back, rather than leave a form in the trash without its versions.
+                if (await db.ExecAsync($"DELETE FROM {table} WHERE {n.C("id")} = @0 AND {noEntries}", formId) != 1)
+                {
+                    throw new FormBuilderConflictException(FormBuilderConflict.InUse, "The form still has entries.");
+                }
+
+                return true;
             },
             cancellationToken);
 
@@ -113,15 +120,15 @@ internal sealed partial class FormRepository
                 var table = n.T(FormBuilderTables.Form);
                 var now = database.UtcNow;
                 var trashed = new List<StoredForm>();
-                foreach (var chunk in ids.Chunk(FoldersPerStatement))
+                foreach (var chunk in ids.Chunk(SqlArgs.MaxListLength))
                 {
                     await db.ExecAsync(
-                        $"UPDATE {table} SET {n.C("trashedUtc")} = @0, {n.C("trashKey")} = @1, {Raise(n)}, {n.C("updatedUtc")} = @0, {n.C("updatedByUserKey")} = @2 WHERE {n.C("trashedUtc")} IS NULL AND {n.C("folderId")} IN ({Parameters(3, chunk.Length)})",
+                        $"UPDATE {table} SET {n.C("trashedUtc")} = @0, {n.C("trashKey")} = @1, {Raise(n)}, {n.C("updatedUtc")} = @0, {n.C("updatedByUserKey")} = @2 WHERE {n.C("trashedUtc")} IS NULL AND {n.C("folderId")} IN ({SqlArgs.Placeholders(3, chunk.Length)})",
                         [now, trashKey, userKey, .. chunk.Cast<object?>()]);
 
                     // The key is new, so the forms that carry it in these folders are exactly those this statement trashed.
                     var rows = await db.FetchListAsync<FormDto>(
-                        $"SELECT * FROM {table} WHERE {n.C("trashKey")} = @0 AND {n.C("folderId")} IN ({Parameters(1, chunk.Length)}) ORDER BY {n.C("name")}, {n.C("id")}",
+                        $"SELECT * FROM {table} WHERE {n.C("trashKey")} = @0 AND {n.C("folderId")} IN ({SqlArgs.Placeholders(1, chunk.Length)}) ORDER BY {n.C("name")}, {n.C("id")}",
                         [trashKey, .. chunk.Cast<object?>()]);
                     trashed.AddRange(rows.Select(FromDto));
                 }
@@ -146,11 +153,11 @@ internal sealed partial class FormRepository
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.Form);
                 var restored = new List<StoredForm>();
-                foreach (var chunk in ids.Chunk(FoldersPerStatement))
+                foreach (var chunk in ids.Chunk(SqlArgs.MaxListLength))
                 {
                     // Out of the trash first, with the key kept: outside the trash no other form carries a key, so the
                     // forms with it that are outside the trash now are exactly those this statement brought back.
-                    var keyed = $"{n.C("trashKey")} = @0 AND {n.C("folderId")} IN ({Parameters(1, chunk.Length)})";
+                    var keyed = $"{n.C("trashKey")} = @0 AND {n.C("folderId")} IN ({SqlArgs.Placeholders(1, chunk.Length)})";
                     object?[] args = [trashKey, .. chunk.Cast<object?>()];
                     await db.ExecAsync(
                         $"UPDATE {table} SET {n.C("trashedUtc")} = NULL, {Raise(n)}, {n.C("updatedUtc")} = @{chunk.Length + 1}, {n.C("updatedByUserKey")} = @{chunk.Length + 2} WHERE {keyed} AND {n.C("trashedUtc")} IS NOT NULL",
@@ -181,10 +188,10 @@ internal sealed partial class FormRepository
             {
                 var n = new SqlNames(db);
                 var found = new List<StoredForm>();
-                foreach (var chunk in ids.Chunk(FoldersPerStatement))
+                foreach (var chunk in ids.Chunk(SqlArgs.MaxListLength))
                 {
                     var rows = await db.FetchListAsync<FormDto>(
-                        $"SELECT * FROM {n.T(FormBuilderTables.Form)} WHERE {n.C("folderId")} IN ({Parameters(0, chunk.Length)}) ORDER BY {n.C("name")}, {n.C("id")}",
+                        $"SELECT * FROM {n.T(FormBuilderTables.Form)} WHERE {n.C("folderId")} IN ({SqlArgs.Placeholders(0, chunk.Length)}) ORDER BY {n.C("name")}, {n.C("id")}",
                         [.. chunk.Cast<object?>()]);
                     found.AddRange(rows.Select(FromDto));
                 }

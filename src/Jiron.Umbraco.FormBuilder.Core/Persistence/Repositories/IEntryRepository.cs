@@ -305,17 +305,10 @@ internal sealed record StoredEntryFile(
     string ScanState,
     DateTimeOffset CreatedUtc);
 
-/// <summary>The exact wording of a consent as shown, named by its hash (ADR-0009).</summary>
-/// <param name="Hash">The SHA-256 of the culture and the text in lowercase hex.</param>
-/// <param name="Culture">The culture, or "" for the invariant culture.</param>
-/// <param name="Text">The wording.</param>
-/// <param name="FirstSeenUtc">When it was first stored.</param>
-internal sealed record StoredConsentText(string Hash, string Culture, string Text, DateTimeOffset FirstSeenUtc);
-
 /// <summary>
-/// The entries of <c>jfbEntry</c> with their values (<c>jfbEntryValue</c>), files (<c>jfbEntryFile</c>) and the consent
-/// wordings they gave (<c>jfbConsentText</c>), one aggregate (ADR-0003, ADR-0038). Lists, filters and search are the
-/// entries query builder's (4.3d).
+/// The entries of <c>jfbEntry</c> with their values (<c>jfbEntryValue</c>) and files (<c>jfbEntryFile</c>), one aggregate
+/// (ADR-0003, ADR-0038). Lists, filters and search are the entries query builder's (4.3d); the consent wordings the
+/// values name are <see cref="IConsentTextRepository"/>'s.
 /// </summary>
 internal interface IEntryRepository
 {
@@ -343,7 +336,7 @@ internal interface IEntryRepository
 
     /// <summary>
     /// The values of these entries, by entry, field, row and item. The ids go into statements of at most
-    /// <see cref="EntryRepository.IdsPerStatement"/> (ADR-0003).
+    /// <see cref="SqlArgs.MaxListLength"/> (ADR-0003).
     /// </summary>
     Task<IReadOnlyList<StoredEntryValue>> ListValuesAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default);
 
@@ -368,7 +361,7 @@ internal interface IEntryRepository
     Task<bool> DeleteAsync(long entryId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// The ids of up to <paramref name="take"/> (at most <see cref="EntryRepository.IdsPerStatement"/>) entries of a form,
+    /// The ids of up to <paramref name="take"/> (at most <see cref="SqlArgs.MaxListLength"/>) entries of a form,
     /// lowest number first: a batch of the form's permanent delete (ADR-0047).
     /// </summary>
     Task<IReadOnlyList<long>> ListIdsAsync(int formId, int take, CancellationToken cancellationToken = default);
@@ -383,7 +376,7 @@ internal interface IEntryRepository
     Task<int> DeleteAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Up to <paramref name="take"/> (at most <see cref="EntryRepository.IdsPerStatement"/>) uploads of a form that wait
+    /// Up to <paramref name="take"/> (at most <see cref="SqlArgs.MaxListLength"/>) uploads of a form that wait
     /// for an entry, oldest first: the next ones the form's permanent delete removes (ADR-0047).
     /// </summary>
     Task<IReadOnlyList<StoredEntryFile>> ListUploadsAsync(int formId, int take, CancellationToken cancellationToken = default);
@@ -418,13 +411,4 @@ internal interface IEntryRepository
     /// to another entry by now, and with <see cref="FormBuilderConflict.InUse"/> while a value names it.
     /// </summary>
     Task<bool> DeleteFileAsync(int fileId, long? entryId, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Stores a consent's wording once, and returns its hash (<see cref="ConsentTextHash"/>): what the consent value
-    /// stores. A wording stored before is left as it is, so the first time it was seen stays.
-    /// </summary>
-    Task<string> AddConsentTextAsync(string culture, string text, CancellationToken cancellationToken = default);
-
-    /// <summary>The consent wording with this hash, or null.</summary>
-    Task<StoredConsentText?> GetConsentTextAsync(string hash, CancellationToken cancellationToken = default);
 }

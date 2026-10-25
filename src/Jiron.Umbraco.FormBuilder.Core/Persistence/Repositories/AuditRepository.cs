@@ -4,7 +4,7 @@ using Umbraco.Cms.Infrastructure.Persistence;
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 /// <inheritdoc />
-internal sealed class AuditRepository(FormBuilderDatabase database) : IAuditRepository
+internal sealed class AuditRepository : IAuditRepository
 {
     /// <summary>The longest action or entity type the columns hold.</summary>
     public const int MaxNameLength = 64;
@@ -21,16 +21,34 @@ internal sealed class AuditRepository(FormBuilderDatabase database) : IAuditRepo
     /// <summary>The longest time the log can be kept: ten years.</summary>
     public static readonly TimeSpan MaxKeep = TimeSpan.FromDays(3653);
 
+    private readonly FormBuilderDatabase _database;
+    private readonly TimeSpan _budget;
+
+    /// <summary>The repository, with the default budget for its list.</summary>
+    public AuditRepository(FormBuilderDatabase database)
+        : this(database, FormBuilderQueryBudget.Default)
+    {
+    }
+
+    /// <summary>The repository with another budget for its list, for the tests of the budget itself.</summary>
+    internal AuditRepository(FormBuilderDatabase database, TimeSpan budget)
+    {
+        ArgumentNullException.ThrowIfNull(database);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(budget, TimeSpan.Zero);
+        _database = database;
+        _budget = budget;
+    }
+
     /// <inheritdoc />
     public Task<StoredAuditEntry> AddAsync(NewAuditEntry entry, CancellationToken cancellationToken = default)
     {
         CheckEntry(entry);
-        return database.WriteAsync(
+        return _database.WriteAsync(
             async db =>
             {
                 var row = new AuditEntryDto
                 {
-                    OccurredUtc = database.UtcNow,
+                    OccurredUtc = _database.UtcNow,
                     UserKey = entry.UserKey,
                     Action = entry.Action,
                     EntityType = entry.EntityType,
@@ -59,12 +77,12 @@ internal sealed class AuditRepository(FormBuilderDatabase database) : IAuditRepo
             throw new ArgumentOutOfRangeException(nameof(window), window, $"A window is at least {MinWindow.TotalSeconds:0} second and at most {MaxWindow.TotalHours:0} hours.");
         }
 
-        return database.WriteAsync(
+        return _database.WriteAsync(
             async db =>
             {
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.AuditEntry);
-                var now = database.UtcNow;
+                var now = _database.UtcNow;
                 var since = now - window;
                 var added = await db.ExecAsync(
                     $"""
@@ -98,7 +116,7 @@ internal sealed class AuditRepository(FormBuilderDatabase database) : IAuditRepo
 
     /// <inheritdoc />
     public Task<StoredAuditEntry?> GetAsync(long id, CancellationToken cancellationToken = default) =>
-        database.ReadAsync(
+        _database.ReadAsync(
             async db =>
             {
                 var row = await ReadAsync(db, new SqlNames(db), id);
@@ -110,7 +128,7 @@ internal sealed class AuditRepository(FormBuilderDatabase database) : IAuditRepo
     public Task<Page<StoredAuditEntry>> QueryAsync(AuditQuery query, PageRequest page, CancellationToken cancellationToken = default)
     {
         CheckQuery(query);
-        return database.ReadAsync(
+        return _database.QueryAsync(
             async db =>
             {
                 var n = new SqlNames(db);
@@ -122,6 +140,7 @@ internal sealed class AuditRepository(FormBuilderDatabase database) : IAuditRepo
                     args);
                 return new Page<StoredAuditEntry>(rows.Select(FromDto).ToList(), total);
             },
+            _budget,
             cancellationToken);
     }
 
@@ -135,14 +154,14 @@ internal sealed class AuditRepository(FormBuilderDatabase database) : IAuditRepo
 
         ArgumentOutOfRangeException.ThrowIfLessThan(take, 1);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(take, MaxPurgeTake);
-        return database.WriteAsync(
+        return _database.WriteAsync(
             db =>
             {
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.AuditEntry);
                 return db.ExecAsync(
                     $"DELETE FROM {table} WHERE {n.C("occurredUtc")} < @0 AND {n.C("id")} IN (SELECT o.{n.C("id")} FROM {table} o WHERE o.{n.C("occurredUtc")} < @0 ORDER BY o.{n.C("occurredUtc")}, o.{n.C("id")} {n.Page(0, take)})",
-                    database.UtcNow - keep);
+                    _database.UtcNow - keep);
             },
             cancellationToken);
     }
@@ -198,7 +217,7 @@ internal sealed class AuditRepository(FormBuilderDatabase database) : IAuditRepo
     private static (string Where, object?[] Args) Where(SqlNames n, AuditQuery query)
     {
         var parts = new List<string>();
-        var args = new List<object?>();
+        var args = new SqlArgs();
         if (query.Action is { } action)
         {
             Add("action", "=", action);
@@ -229,13 +248,9 @@ internal sealed class AuditRepository(FormBuilderDatabase database) : IAuditRepo
             Add("occurredUtc", "<", FormBuilderDbTime.Write(before));
         }
 
-        return (parts.Count == 0 ? string.Empty : " WHERE " + string.Join(" AND ", parts), args.ToArray());
+        return (parts.Count == 0 ? string.Empty : " WHERE " + string.Join(" AND ", parts), args.Values);
 
-        void Add(string column, string comparison, object value)
-        {
-            parts.Add($"{n.C(column)} {comparison} @{args.Count}");
-            args.Add(value);
-        }
+        void Add(string column, string comparison, object value) => parts.Add($"{n.C(column)} {comparison} {args.Add(value)}");
     }
 
     private static string Json(NewAuditEntry entry) => entry.Details?.ToJson() ?? "{}";

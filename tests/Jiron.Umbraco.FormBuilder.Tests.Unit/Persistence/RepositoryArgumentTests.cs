@@ -82,8 +82,8 @@ public sealed class RepositoryArgumentTests
         {
             Assert.That(() => repository.CreateAsync(new NewFolder(Guid.NewGuid(), null, string.Empty)), Throws.ArgumentException);
             Assert.That(() => repository.CreateAsync(new NewFolder(Guid.NewGuid(), null, tooLong)), Throws.ArgumentException);
-            Assert.That(() => repository.UpdateAsync(1, string.Empty, 0, false, null), Throws.ArgumentException);
-            Assert.That(() => repository.UpdateAsync(1, tooLong, 0, false, null), Throws.ArgumentException);
+            Assert.That(() => repository.RenameAsync(1, string.Empty, null), Throws.ArgumentException);
+            Assert.That(() => repository.RenameAsync(1, tooLong, null), Throws.ArgumentException);
         });
     }
 

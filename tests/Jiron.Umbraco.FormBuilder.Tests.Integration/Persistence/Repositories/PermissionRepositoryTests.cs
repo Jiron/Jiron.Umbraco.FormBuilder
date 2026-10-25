@@ -105,7 +105,7 @@ public sealed class PermissionRepositoryTests : RepositoryTestBase
         var first = await Grant(Designers, PermissionTarget.Global, Guid.Empty, 1);
         var last = await Grant(Handlers, PermissionTarget.Global, Guid.Empty, 2);
         var keys = new List<Guid> { Handlers };
-        keys.AddRange(Enumerable.Range(0, (2 * PermissionRepository.GroupsPerStatement) + 1).Select(_ => Guid.NewGuid()));
+        keys.AddRange(Enumerable.Range(0, (2 * SqlArgs.MaxListLength) + 1).Select(_ => Guid.NewGuid()));
         keys.Add(Designers);
 
         // SQL Server takes at most 2,100 parameters per statement: the read names its keys in statements of at most 1,000.
@@ -200,7 +200,7 @@ public sealed class PermissionRepositoryTests : RepositoryTestBase
         var hr = (await Folders.GetAsync(Hr))!;
         var payroll = await CreateFormAsync("payroll", hr.Id);
         await Grant(Handlers, PermissionTarget.Form, payroll.Key, 4);
-        var keys = Enumerable.Range(0, (2 * PermissionRepository.GroupsPerStatement) + 1).Select(_ => Guid.NewGuid()).Append(Handlers).ToList();
+        var keys = Enumerable.Range(0, (2 * SqlArgs.MaxListLength) + 1).Select(_ => Guid.NewGuid()).Append(Handlers).ToList();
 
         var statements = new List<int>();
         var folders = await Database.ReadAsync(async db =>

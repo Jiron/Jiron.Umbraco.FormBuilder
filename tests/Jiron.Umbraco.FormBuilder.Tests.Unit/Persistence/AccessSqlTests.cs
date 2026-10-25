@@ -2,9 +2,6 @@ using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
-using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using NSubstitute;
-using Umbraco.Cms.Infrastructure.Persistence.SqlSyntax;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Persistence;
 
@@ -82,7 +79,7 @@ public sealed class AccessSqlTests
     [Test]
     public void AScopeOfMoreGroupsThanAStatementTakes_IsRefused()
     {
-        var most = Enumerable.Range(0, PermissionRepository.GroupsPerStatement).Select(_ => Guid.NewGuid()).ToList();
+        var most = Enumerable.Range(0, SqlArgs.MaxListLength).Select(_ => Guid.NewGuid()).ToList();
 
         Assert.Multiple(() =>
         {
@@ -102,12 +99,5 @@ public sealed class AccessSqlTests
         return "@" + (args.Count - 1).ToString(CultureInfo.InvariantCulture);
     };
 
-    private static SqlNames Names()
-    {
-        var syntax = Substitute.For<ISqlSyntaxProvider>();
-        syntax.ProviderName.Returns("Microsoft.Data.SqlClient");
-        syntax.GetQuotedTableName(Arg.Any<string>()).Returns(call => "[" + call.Arg<string>() + "]");
-        syntax.GetQuotedColumnName(Arg.Any<string>()).Returns(call => "[" + call.Arg<string>() + "]");
-        return new SqlNames(syntax);
-    }
+    private static SqlNames Names() => TestSqlNames.Of(TestSqlNames.SqlServer);
 }

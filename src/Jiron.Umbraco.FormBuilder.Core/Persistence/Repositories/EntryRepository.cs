@@ -1,4 +1,3 @@
-using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
 
@@ -15,9 +14,6 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 /// </remarks>
 internal sealed partial class EntryRepository(FormBuilderDatabase database) : IEntryRepository
 {
-    /// <summary>The most ids one statement names; SQL Server takes at most 2,100 parameters (ADR-0003).</summary>
-    public const int IdsPerStatement = 1000;
-
     /// <summary>The longest culture the column holds.</summary>
     public const int MaxCultureLength = 32;
 
@@ -254,15 +250,6 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
     };
 
     /// <summary>
-    /// The first write of a unit that adds an event or a note to an entry: it changes nothing, but holds the entry's row until the unit ends,
-    /// so the entry cannot go away before the new row's foreign key is checked. False when the entry does not exist.
-    /// </summary>
-    internal static async Task<bool> HoldAsync(IUmbracoDatabase db, SqlNames n, long entryId) =>
-        await db.ExecAsync(
-            $"UPDATE {n.T(FormBuilderTables.Entry)} SET {n.C("updatedUtc")} = {n.C("updatedUtc")} WHERE {n.C("id")} = @0",
-            entryId) == 1;
-
-    /// <summary>
     /// Whether <paramref name="url"/> is a site path only, as ADR-0009 keeps it: one slash first (two, or a slash and a
     /// backslash, name another host to a browser), and no query or fragment, which may carry personal data.
     /// </summary>
@@ -272,10 +259,6 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
     /// <summary>Whether <paramref name="value"/> is <paramref name="length"/> lowercase hex characters.</summary>
     internal static bool IsLowerHex(string value, int length) =>
         value.Length == length && value.All(c => char.IsAsciiDigit(c) || c is >= 'a' and <= 'f');
-
-    /// <summary>The parameter list <c>@first, @first+1, ...</c> of <paramref name="count"/> parameters.</summary>
-    private static string Parameters(int first, int count) =>
-        string.Join(", ", Enumerable.Range(first, count).Select(i => "@" + i.ToString(CultureInfo.InvariantCulture)));
 
     private static async Task<StoredEntry?> FindAsync(IUmbracoDatabase db, SqlNames n, string where, params object?[] args)
     {

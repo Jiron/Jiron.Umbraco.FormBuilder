@@ -1,4 +1,5 @@
 using System.Data.Common;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -7,6 +8,8 @@ using NSubstitute.ExceptionExtensions;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Scoping;
+using IScope = Umbraco.Cms.Infrastructure.Scoping.IScope;
+using IScopeProvider = Umbraco.Cms.Infrastructure.Scoping.IScopeProvider;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Persistence;
 
@@ -61,12 +64,20 @@ public sealed class FormBuilderMigrationStateTests
         });
     }
 
-    private static FormBuilderMigrationState Create(RuntimeLevel level, IScopeProvider scopes, TimeProvider? clock = null)
+    private static FormBuilderMigrationState Create(RuntimeLevel level, IScopeProvider scopes, TimeProvider? clock = null, ManualTimers? timers = null)
     {
         var runtime = Substitute.For<IRuntimeState>();
         runtime.Level.Returns(level);
-        return new FormBuilderMigrationState(scopes, runtime, clock ?? new TestTimeProvider(), NullLogger<FormBuilderMigrationState>.Instance);
+        var accessor = Substitute.For<IScopeAccessor>();
+        accessor.AmbientScope.Returns((IScope?)null);
+        var database = new FormBuilderDatabase(scopes, accessor, new PassThroughGate(), timers ?? new ManualTimers(), NullLogger<FormBuilderDatabase>.Instance);
+        return new FormBuilderMigrationState(database, runtime, clock ?? new TestTimeProvider(), NullLogger<FormBuilderMigrationState>.Instance);
     }
 
     private sealed class TestDbException() : DbException("JFB_TEST: the database is not there.");
+
+    private sealed class PassThroughGate : IFormBuilderDatabaseGate
+    {
+        public Task<T> RunAsync<T>(Func<Task<T>> work, CancellationToken cancellationToken = default) => work();
+    }
 }

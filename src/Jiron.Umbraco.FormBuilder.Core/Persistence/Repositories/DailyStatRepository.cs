@@ -5,7 +5,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 /// <inheritdoc />
 /// <remarks>
-/// Every unit that writes a form's values holds the form's row first (<see cref="FormRepository.HoldAsync"/>), as the
+/// Every unit that writes a form's values holds the form's row first (<see cref="RowHolds.HoldFormAsync"/>), as the
 /// unit that deletes the form does: no count reaches a form that is being deleted, units of one form take turns, and none
 /// waits for a form's row while it holds a value. Values are deleted a form and a day at a time, each a seek on the key.
 /// </remarks>
@@ -43,7 +43,7 @@ internal sealed class DailyStatRepository(FormBuilderDatabase database) : IDaily
             async db =>
             {
                 var n = new SqlNames(db);
-                if (!await FormRepository.HoldAsync(db, n, formId))
+                if (!await RowHolds.HoldFormAsync(db, n, formId))
                 {
                     return false;
                 }
@@ -102,7 +102,7 @@ internal sealed class DailyStatRepository(FormBuilderDatabase database) : IDaily
                 var table = n.T(FormBuilderTables.DailyStat);
 
                 // A unit that deleted the form's row holds it already, and finds nothing more to hold.
-                await FormRepository.HoldAsync(db, n, formId);
+                await RowHolds.HoldFormAsync(db, n, formId);
                 var days = await db.FetchListAsync<DailyStatDto>(
                     $"SELECT {n.C("day")} FROM {table} WHERE {n.C("formId")} = @0 GROUP BY {n.C("day")}",
                     formId);

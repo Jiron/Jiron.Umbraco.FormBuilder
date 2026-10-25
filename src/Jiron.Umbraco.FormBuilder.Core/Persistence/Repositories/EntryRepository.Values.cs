@@ -33,10 +33,10 @@ internal sealed partial class EntryRepository
                 var values = new List<StoredEntryValue>();
 
                 // The ids are in order and each statement sorts its own, so the statements' rows follow one another.
-                foreach (var chunk in ids.Chunk(IdsPerStatement))
+                foreach (var chunk in ids.Chunk(SqlArgs.MaxListLength))
                 {
                     var rows = await db.FetchListAsync<EntryValueDto>(
-                        $"SELECT * FROM {n.T(FormBuilderTables.EntryValue)} WHERE {n.C("entryId")} IN ({Parameters(0, chunk.Length)}) ORDER BY {n.C("entryId")}, {n.C("fieldId")}, {n.C("rowIndex")}, {n.C("valueIndex")}, {n.C("id")}",
+                        $"SELECT * FROM {n.T(FormBuilderTables.EntryValue)} WHERE {n.C("entryId")} IN ({SqlArgs.Placeholders(0, chunk.Length)}) ORDER BY {n.C("entryId")}, {n.C("fieldId")}, {n.C("rowIndex")}, {n.C("valueIndex")}, {n.C("id")}",
                         [.. chunk.Cast<object?>()]);
                     values.AddRange(rows.Select(ValueFromDto));
                 }
@@ -89,10 +89,10 @@ internal sealed partial class EntryRepository
                 var formId = await db.ScalarAsync<int>($"SELECT {n.C("formId")} FROM {entries} WHERE {n.C("id")} = @0", entryId);
                 await CheckFieldsAsync(db, n, formId, fields);
                 await CheckOwnFilesAsync(db, n, entryId, values.Where(value => value.FileId is not null).Select(value => value.FileId!.Value).Distinct().ToArray());
-                foreach (var chunk in fields.Chunk(IdsPerStatement))
+                foreach (var chunk in fields.Chunk(SqlArgs.MaxListLength))
                 {
                     await db.ExecAsync(
-                        $"DELETE FROM {n.T(FormBuilderTables.EntryValue)} WHERE {n.C("entryId")} = @0 AND {n.C("fieldId")} IN ({Parameters(1, chunk.Length)})",
+                        $"DELETE FROM {n.T(FormBuilderTables.EntryValue)} WHERE {n.C("entryId")} = @0 AND {n.C("fieldId")} IN ({SqlArgs.Placeholders(1, chunk.Length)})",
                         [entryId, .. chunk.Cast<object?>()]);
                 }
 
@@ -122,10 +122,10 @@ internal sealed partial class EntryRepository
     private static async Task CheckFieldsAsync(IUmbracoDatabase db, SqlNames n, int formId, int[] fieldIds)
     {
         var found = 0;
-        foreach (var chunk in fieldIds.Chunk(IdsPerStatement))
+        foreach (var chunk in fieldIds.Chunk(SqlArgs.MaxListLength))
         {
             found += await db.ScalarAsync<int>(
-                $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.FormField)}{n.LockingRead} WHERE {n.C("formId")} = @0 AND {n.C("id")} IN ({Parameters(1, chunk.Length)})",
+                $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.FormField)}{n.LockingRead} WHERE {n.C("formId")} = @0 AND {n.C("id")} IN ({SqlArgs.Placeholders(1, chunk.Length)})",
                 [formId, .. chunk.Cast<object?>()]);
         }
 
@@ -142,10 +142,10 @@ internal sealed partial class EntryRepository
     private static async Task CheckOwnFilesAsync(IUmbracoDatabase db, SqlNames n, long entryId, int[] fileIds)
     {
         var found = 0;
-        foreach (var chunk in fileIds.Chunk(IdsPerStatement))
+        foreach (var chunk in fileIds.Chunk(SqlArgs.MaxListLength))
         {
             found += await db.ScalarAsync<int>(
-                $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.EntryFile)}{n.LockingRead} WHERE {n.C("entryId")} = @0 AND {n.C("id")} IN ({Parameters(1, chunk.Length)})",
+                $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.EntryFile)}{n.LockingRead} WHERE {n.C("entryId")} = @0 AND {n.C("id")} IN ({SqlArgs.Placeholders(1, chunk.Length)})",
                 [entryId, .. chunk.Cast<object?>()]);
         }
 
@@ -165,7 +165,7 @@ internal sealed partial class EntryRepository
             var rows = new List<string>(chunk.Length);
             foreach (var value in chunk)
             {
-                rows.Add("(" + Parameters(args.Count, ValueColumns.Length) + ")");
+                rows.Add("(" + SqlArgs.Placeholders(args.Count, ValueColumns.Length) + ")");
                 args.AddRange(
                 [
                     entryId,

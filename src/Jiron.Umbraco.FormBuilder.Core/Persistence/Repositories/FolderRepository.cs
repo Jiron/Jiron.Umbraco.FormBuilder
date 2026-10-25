@@ -71,9 +71,6 @@ internal interface IFolderRepository
     /// <summary>Every folder, for the tree and the permission checks (a library holds few folders).</summary>
     Task<IReadOnlyList<StoredFolder>> ListAllAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Renames, reorders or restricts a folder. Null when it does not exist.</summary>
-    Task<StoredFolder?> UpdateAsync(int id, string name, int sortOrder, bool isRestricted, Guid? userKey, CancellationToken cancellationToken = default);
-
     /// <summary>
     /// Renames a folder and leaves the rest as it is, so a rename never undoes a restriction set meanwhile. Null when it
     /// does not exist.
@@ -188,27 +185,6 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
         database.ReadAsync<IReadOnlyList<StoredFolder>>(db => AllAsync(db, new SqlNames(db)), cancellationToken);
 
     /// <inheritdoc />
-    public Task<StoredFolder?> UpdateAsync(int id, string name, int sortOrder, bool isRestricted, Guid? userKey, CancellationToken cancellationToken = default)
-    {
-        CheckName(name);
-        return database.WriteAsync(
-            async db =>
-            {
-                var n = new SqlNames(db);
-                await db.ExecAsync(
-                    $"UPDATE {n.T(FormBuilderTables.Folder)} SET {n.C("name")} = @0, {n.C("sortOrder")} = @1, {n.C("isRestricted")} = @2, {n.C("updatedUtc")} = @3, {n.C("updatedByUserKey")} = @4 WHERE {n.C("id")} = @5",
-                    name,
-                    sortOrder,
-                    isRestricted,
-                    database.UtcNow,
-                    userKey,
-                    id);
-                return await FindAsync(db, "id", id);
-            },
-            cancellationToken);
-    }
-
-    /// <inheritdoc />
     public Task<StoredFolder?> RenameAsync(int id, string name, Guid? userKey, CancellationToken cancellationToken = default)
     {
         CheckName(name);
@@ -310,7 +286,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
                 var table = n.T(FormBuilderTables.Folder);
 
                 // Held first, so its trash key stays the one read next until the unit ends.
-                if (await db.ExecAsync($"UPDATE {table} SET {n.C("updatedUtc")} = {n.C("updatedUtc")} WHERE {n.C("id")} = @0 AND {n.C("trashedUtc")} IS NOT NULL", id) == 0)
+                if (await RowHolds.HoldAsync(db, n, FormBuilderTables.Folder, $"{n.C("id")} = @0 AND {n.C("trashedUtc")} IS NOT NULL", id) == 0)
                 {
                     return null;
                 }

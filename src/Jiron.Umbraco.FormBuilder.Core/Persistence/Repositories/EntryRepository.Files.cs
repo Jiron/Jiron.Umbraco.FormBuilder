@@ -3,8 +3,8 @@ using Umbraco.Cms.Infrastructure.Persistence;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
-// The rows of uploaded files (ADR-0006) and of consent wordings (ADR-0009). A file is recorded when it is uploaded, waits
-// without an entry, and is taken by the entry that names it; the bytes are the file store's (4.3f).
+// The rows of uploaded files (ADR-0006). A file is recorded when it is uploaded, waits without an entry, and is taken by
+// the entry that names it; the bytes are the file store's (4.3f).
 internal sealed partial class EntryRepository
 {
     /// <summary>The longest original file name the column holds.</summary>
@@ -176,53 +176,6 @@ internal sealed partial class EntryRepository
             },
             cancellationToken);
 
-    /// <inheritdoc />
-    /// <remarks>
-    /// One insert-once on the hash (ADR-0036). The unique key is the backstop for a writer the database let through at
-    /// the same moment; the hash names the culture and wording, so that row holds the same wording and the refusal is
-    /// the answer.
-    /// </remarks>
-    public Task<string> AddConsentTextAsync(string culture, string text, CancellationToken cancellationToken = default)
-    {
-        var hash = ConsentTextHash.For(culture, text);
-        return database.WriteAsync(
-            async db =>
-            {
-                var n = new SqlNames(db);
-                var table = n.T(FormBuilderTables.ConsentText);
-                try
-                {
-                    await db.ExecAsync(
-                        $"INSERT INTO {table} ({n.C("textHash")}, {n.C("culture")}, {n.C("text")}, {n.C("firstSeenUtc")}) SELECT @0, @1, @2, @3 WHERE NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {n.C("textHash")} = @0)",
-                        hash,
-                        culture,
-                        text,
-                        database.UtcNow);
-                }
-                catch (Exception exception) when (FormBuilderDatabaseErrors.IsUniqueViolation(exception))
-                {
-                    // Stored at the same moment by another writer: the same wording, under the same hash.
-                }
-
-                return hash;
-            },
-            cancellationToken);
-    }
-
-    /// <inheritdoc />
-    public Task<StoredConsentText?> GetConsentTextAsync(string hash, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(hash);
-        return database.ReadAsync(
-            async db =>
-            {
-                var n = new SqlNames(db);
-                var row = await db.FirstOrNullAsync<ConsentTextDto>($"SELECT * FROM {n.T(FormBuilderTables.ConsentText)} WHERE {n.C("textHash")} = @0", hash);
-                return row is null ? null : new StoredConsentText(row.TextHash, row.Culture, row.Text, FormBuilderDbTime.Read(row.FirstSeenUtc));
-            },
-            cancellationToken);
-    }
-
     internal static StoredEntryFile FileFromDto(EntryFileDto d) => new(
         d.Id,
         d.Key,
@@ -250,10 +203,10 @@ internal sealed partial class EntryRepository
     private static async Task TakeFilesAsync(IUmbracoDatabase db, SqlNames n, long entryId, int formId, IReadOnlyList<int> fileIds)
     {
         var taken = 0;
-        foreach (var chunk in fileIds.Chunk(IdsPerStatement))
+        foreach (var chunk in fileIds.Chunk(SqlArgs.MaxListLength))
         {
             taken += await db.ExecAsync(
-                $"UPDATE {n.T(FormBuilderTables.EntryFile)} SET {n.C("entryId")} = @0 WHERE {n.C("formId")} = @1 AND {n.C("entryId")} IS NULL AND {n.C("id")} IN ({Parameters(2, chunk.Length)})",
+                $"UPDATE {n.T(FormBuilderTables.EntryFile)} SET {n.C("entryId")} = @0 WHERE {n.C("formId")} = @1 AND {n.C("entryId")} IS NULL AND {n.C("id")} IN ({SqlArgs.Placeholders(2, chunk.Length)})",
                 [entryId, formId, .. chunk.Cast<object?>()]);
         }
 

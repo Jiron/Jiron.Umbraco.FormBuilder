@@ -2,13 +2,16 @@ using System.Data.Common;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Cms.Infrastructure.Scoping;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 
 /// <inheritdoc />
+/// <remarks>
+/// The state is read as a unit of work (ADR-0036): behind the gate, so a running write does not turn it away on SQLite,
+/// and again after a lock conflict, so a busy moment does not answer "pending" for the next few seconds.
+/// </remarks>
 internal sealed partial class FormBuilderMigrationState(
-    IScopeProvider scopeProvider,
+    FormBuilderDatabase database,
     IRuntimeState runtimeState,
     TimeProvider timeProvider,
     ILogger<FormBuilderMigrationState> logger)
@@ -59,16 +62,20 @@ internal sealed partial class FormBuilderMigrationState(
     {
         try
         {
-            using var scope = scopeProvider.CreateScope(autoComplete: true);
-            var syntax = scope.SqlContext.SqlSyntax;
-            var sql = scope.SqlContext.Sql(
-                $"SELECT {syntax.GetQuotedColumnName("value")} FROM {syntax.GetQuotedTableName(Constants.DatabaseSchema.Tables.KeyValue)} WHERE {syntax.GetQuotedColumnName("key")} = @0",
-                StateKey);
-            return await scope.Database.ExecuteScalarAsync<string?>(sql, cancellationToken);
+            return await database.ReadAsync(
+                db =>
+                {
+                    var syntax = db.SqlContext.SqlSyntax;
+                    return db.ScalarAsync<string?>(
+                        $"SELECT {syntax.GetQuotedColumnName("value")} FROM {syntax.GetQuotedTableName(Constants.DatabaseSchema.Tables.KeyValue)} WHERE {syntax.GetQuotedColumnName("key")} = @0",
+                        StateKey);
+                },
+                cancellationToken);
         }
         catch (DbException exception)
         {
-            // An unreadable state counts as pending: Jiron Form Builder must not run on a schema it cannot vouch for.
+            // An unreadable state counts as pending, after the reruns: Jiron Form Builder must not run on a schema it
+            // cannot vouch for.
             LogStateUnreadable(logger, exception);
             return null;
         }

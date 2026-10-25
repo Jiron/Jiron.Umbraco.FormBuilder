@@ -72,22 +72,6 @@ public sealed class FolderRepositoryTests : RepositoryTestBase
     }
 
     [Test]
-    public async Task AFolder_IsRenamedReorderedAndRestricted()
-    {
-        var folder = await CreateFolderAsync("Draft name");
-        var other = Guid.NewGuid();
-        Clock.Advance(TimeSpan.FromMinutes(5));
-
-        var updated = await Folders.UpdateAsync(folder.Id, "Final name", 7, true, other);
-
-        Assert.Multiple(async () =>
-        {
-            Assert.That(updated, Is.EqualTo(folder with { Name = "Final name", SortOrder = 7, IsRestricted = true, UpdatedUtc = Now.AddMinutes(5), UpdatedByUserKey = other }));
-            Assert.That(await Folders.UpdateAsync(-1, "Nothing", 0, false, null), Is.Null);
-        });
-    }
-
-    [Test]
     public async Task AFolder_MovesIntoAnotherFolder_AndBackToTheRoot_WithEverythingInIt()
     {
         var source = await CreateFolderAsync("Source");

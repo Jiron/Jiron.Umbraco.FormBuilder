@@ -318,22 +318,6 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
     }
 
     [Test]
-    public async Task AConsentWordingTheDatabaseLetThrough_IsTheAnswer()
-    {
-        var hash = await Entries.AddConsentTextAsync("en", "JFB_TEST wording");
-        var rewriter = new CommandRewriter(" WHERE NOT EXISTS", " WHERE 1 = 1 OR NOT EXISTS");
-
-        var again = await WatchedAsync(rewriter, () => Entries.AddConsentTextAsync("en", "JFB_TEST wording"));
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(rewriter.Rewritten, Is.EqualTo(1), "the insert's condition was lifted");
-            Assert.That(again, Is.EqualTo(hash), "the primary key refused it, and the stored wording is the same");
-            Assert.That(Count(FormBuilderTables.ConsentText), Is.EqualTo(1));
-        });
-    }
-
-    [Test]
     public async Task AnUpdateThatFoundAnotherState_IsRefused_EvenWhenTheStateCameBack()
     {
         var form = await CreateTestFormAsync();
@@ -439,7 +423,7 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
         var second = await Entries.CreateAsync(NewEntry(form.Id, form.VersionId, new NewEntryValue(form["name"], "second"), new NewEntryValue(form["name"], "second, again", ValueIndex: 1)));
 
         // Ids no entry has go first, so both entries come in the last statement.
-        var ids = Enumerable.Range(1, EntryRepository.IdsPerStatement + 500).Select(i => (long)-i).Concat([second!.Id, first!.Id, first.Id]).ToArray();
+        var ids = Enumerable.Range(1, SqlArgs.MaxListLength + 500).Select(i => (long)-i).Concat([second!.Id, first!.Id, first.Id]).ToArray();
         var statements = new List<int>();
         var values = await Database.ReadAsync(async db =>
         {
@@ -690,28 +674,6 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
     }
 
     [Test]
-    public async Task AConsentWording_IsStoredOnce_UnderTheHashOfItsCultureAndText()
-    {
-        const string Text = "I agree to the privacy policy. JFB_TEST";
-
-        var hash = await Entries.AddConsentTextAsync("en", Text);
-        Clock.Advance(TimeSpan.FromDays(1));
-        var again = await Entries.AddConsentTextAsync("en", Text);
-        var invariant = await Entries.AddConsentTextAsync(string.Empty, Text);
-
-        Assert.Multiple(async () =>
-        {
-            Assert.That(hash, Is.EqualTo(ConsentTextHash.For("en", Text)));
-            Assert.That(again, Is.EqualTo(hash));
-            Assert.That(invariant, Is.Not.EqualTo(hash), "the culture is part of the name");
-            Assert.That(await Entries.GetConsentTextAsync(hash), Is.EqualTo(new StoredConsentText(hash, "en", Text, Now)), "first seen when first stored");
-            Assert.That(await Entries.GetConsentTextAsync(invariant), Is.EqualTo(new StoredConsentText(invariant, string.Empty, Text, Now.AddDays(1))));
-            Assert.That(await Entries.GetConsentTextAsync(new string('0', 64)), Is.Null);
-            Assert.That(Count(FormBuilderTables.ConsentText), Is.EqualTo(2));
-        });
-    }
-
-    [Test]
     public async Task TheLongestValues_TheColumnsHold_AreStored()
     {
         var form = await CreateTestFormAsync();
@@ -731,7 +693,6 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
 
         var stored = await Entries.CreateAsync(entry);
         var storedFile = await Entries.AddFileAsync(file);
-        var hash = await Entries.AddConsentTextAsync(new string('c', ConsentTextHash.MaxCultureLength), "JFB_TEST");
 
         Assert.Multiple(async () =>
         {
@@ -739,7 +700,6 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
             Assert.That(storedFile?.OriginalName, Is.EqualTo(file.OriginalName));
             Assert.That(storedFile?.ContentType, Is.EqualTo(file.ContentType));
             Assert.That(storedFile?.ScanState, Is.EqualTo(file.ScanState));
-            Assert.That((await Entries.GetConsentTextAsync(hash))?.Culture, Is.EqualTo(new string('c', ConsentTextHash.MaxCultureLength)));
         });
     }
 
@@ -751,7 +711,7 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
         var stored = await Database.WriteAsync(async _ =>
         {
             var entry = await Entries.CreateAsync(NewEntry(form.Id, form.VersionId));
-            await Entries.AddConsentTextAsync("en", "I agree. JFB_TEST");
+            await ConsentTexts.AddAsync("en", "I agree. JFB_TEST");
             await EntryEvents.AddAsync(new NewEntryEvent(entry!.Id, "submitted"));
             return entry;
         });
@@ -759,7 +719,7 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
             async () => await Database.WriteAsync<int>(async _ =>
             {
                 var entry = await Entries.CreateAsync(NewEntry(form.Id, form.VersionId));
-                await Entries.AddConsentTextAsync("en", "Another wording. JFB_TEST");
+                await ConsentTexts.AddAsync("en", "Another wording. JFB_TEST");
                 await EntryEvents.AddAsync(new NewEntryEvent(entry!.Id, "submitted"));
                 throw new InvalidOperationException("JFB_TEST: a later step of the submission failed");
             }),

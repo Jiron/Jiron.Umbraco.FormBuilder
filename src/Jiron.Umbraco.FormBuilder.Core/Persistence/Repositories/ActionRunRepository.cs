@@ -8,7 +8,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 /// <remarks>
 /// The order of a batch (section 4.4, ADR-0040), the runs one change queued for an entry: an earlier run of the batch, by
 /// position and then id, holds a run back while it is running, while it is pending without an attempt, or while it stops
-/// the rest and is not final. The due list and the claim share that condition, a locking read on SQL Server.
+/// the rest and is not final. The due list and the claim share that condition. The claim reads it with locks on SQL
+/// Server; the due list only proposes, so it reads without, and holds no lock between the passes of the servers.
 /// </remarks>
 internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActionRunRepository
 {
@@ -43,7 +44,7 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
             async db =>
             {
                 var n = new SqlNames(db);
-                if (!await EntryRepository.HoldAsync(db, n, entryId))
+                if (!await RowHolds.HoldEntryAsync(db, n, entryId))
                 {
                     return null;
                 }
@@ -98,11 +99,7 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
         return database.ReadAsync<IReadOnlyList<long>>(
             async db =>
             {
-                var n = new SqlNames(db);
-                var runs = n.T(FormBuilderTables.ActionRun);
-                return await db.FetchListAsync<long>(
-                    $"SELECT r.{n.C("id")} FROM {runs} r WHERE r.{n.C("state")} = '{Pending}' AND r.{n.C("nextAttemptUtc")} <= @0 AND {Unblocked(n, runs, "r")} ORDER BY r.{n.C("nextAttemptUtc")}, r.{n.C("id")} {n.Page(0, take)}",
-                    database.UtcNow);
+                return await db.FetchListAsync<long>(DueSql(new SqlNames(db), take), database.UtcNow);
             },
             cancellationToken);
     }
@@ -117,10 +114,9 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
             async db =>
             {
                 var n = new SqlNames(db);
-                var runs = n.T(FormBuilderTables.ActionRun);
                 var now = database.UtcNow;
                 var claimed = await db.ExecAsync(
-                    $"UPDATE {runs} SET {n.C("state")} = '{Running}', {n.C("lockedBy")} = @1, {n.C("lockedUntilUtc")} = @2, {n.C("attempts")} = {n.C("attempts")} + 1, {n.C("startedUtc")} = COALESCE({n.C("startedUtc")}, @3) WHERE {n.C("id")} = @0 AND {n.C("state")} = '{Pending}' AND {n.C("nextAttemptUtc")} <= @3 AND {Unblocked(n, runs, runs)}",
+                    ClaimSql(n),
                     runId,
                     token,
                     now + lease,
@@ -269,12 +265,34 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
         FormBuilderDbTime.Read(d.StartedUtc),
         FormBuilderDbTime.Read(d.FinishedUtc));
 
+    /// <summary>
+    /// The due list (<c>@0</c> the time): the ids of the pending runs whose time came and that nothing holds back, the
+    /// longest due first. It reads without locks: it only proposes, and the claim checks again under its own.
+    /// </summary>
+    internal static string DueSql(SqlNames n, int take)
+    {
+        var runs = n.T(FormBuilderTables.ActionRun);
+        return $"SELECT r.{n.C("id")} FROM {runs} r WHERE r.{n.C("state")} = '{Pending}' AND r.{n.C("nextAttemptUtc")} <= @0 AND {Unblocked(n, runs, "r", locking: false)} ORDER BY r.{n.C("nextAttemptUtc")}, r.{n.C("id")} {n.Page(0, take)}";
+    }
+
+    /// <summary>
+    /// The claim (<c>@0</c> the run, <c>@1</c> the token, <c>@2</c> the lease's end, <c>@3</c> the time): one update of
+    /// a run that is pending, due and not held back, whose check of the earlier runs holds their rows on SQL Server
+    /// until the claim commits.
+    /// </summary>
+    internal static string ClaimSql(SqlNames n)
+    {
+        var runs = n.T(FormBuilderTables.ActionRun);
+        return $"UPDATE {runs} SET {n.C("state")} = '{Running}', {n.C("lockedBy")} = @1, {n.C("lockedUntilUtc")} = @2, {n.C("attempts")} = {n.C("attempts")} + 1, {n.C("startedUtc")} = COALESCE({n.C("startedUtc")}, @3) WHERE {n.C("id")} = @0 AND {n.C("state")} = '{Pending}' AND {n.C("nextAttemptUtc")} <= @3 AND {Unblocked(n, runs, runs, locking: true)}";
+    }
+
     private static string? Message(DeliveryError error) => Outbox.Cut(error.Message, MaxErrorMessageLength);
 
     // No earlier run of the same batch (entry and change) holds the run back: none is running, none waits for its first
-    // attempt, and none that stops the rest is still to be decided. The outer reference names the run being checked.
-    private static string Unblocked(SqlNames n, string runs, string outer) =>
-        $"NOT EXISTS (SELECT 1 FROM {runs} p{n.LockingRead} WHERE p.{n.C("entryId")} = {outer}.{n.C("entryId")} AND p.{n.C("changeKey")} = {outer}.{n.C("changeKey")} AND {Before(n, "p", outer)} AND (p.{n.C("state")} = '{Running}' OR (p.{n.C("state")} = '{Pending}' AND p.{n.C("attempts")} = 0) OR (p.{n.C("stopOnFailure")} = 1 AND p.{n.C("state")} NOT IN ('{Succeeded}', '{Failed}', '{Skipped}'))))";
+    // attempt, and none that stops the rest is still to be decided. The outer reference names the run being checked;
+    // a locking check holds the earlier runs' rows on SQL Server.
+    private static string Unblocked(SqlNames n, string runs, string outer, bool locking) =>
+        $"NOT EXISTS (SELECT 1 FROM {runs} p{(locking ? n.LockingRead : string.Empty)} WHERE p.{n.C("entryId")} = {outer}.{n.C("entryId")} AND p.{n.C("changeKey")} = {outer}.{n.C("changeKey")} AND {Before(n, "p", outer)} AND (p.{n.C("state")} = '{Running}' OR (p.{n.C("state")} = '{Pending}' AND p.{n.C("attempts")} = 0) OR (p.{n.C("stopOnFailure")} = 1 AND p.{n.C("state")} NOT IN ('{Succeeded}', '{Failed}', '{Skipped}'))))";
 
     // The run with the given id stops the rest, is in the given state, and comes before the run being changed in its batch.
     private static string Stopper(SqlNames n, string runs, string id, string state) =>

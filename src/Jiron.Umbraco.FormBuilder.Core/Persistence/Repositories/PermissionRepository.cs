@@ -84,9 +84,6 @@ internal interface IPermissionRepository
 /// <inheritdoc />
 internal sealed class PermissionRepository(FormBuilderDatabase database) : IPermissionRepository
 {
-    /// <summary>The most group keys one statement names; SQL Server takes at most 2,100 parameters.</summary>
-    public const int GroupsPerStatement = 1000;
-
     /// <inheritdoc />
     public Task<StoredGrant?> GetAsync(Guid userGroupKey, PermissionTarget targetType, Guid targetKey, CancellationToken cancellationToken = default)
     {
@@ -120,9 +117,9 @@ internal sealed class PermissionRepository(FormBuilderDatabase database) : IPerm
             {
                 var n = new SqlNames(db);
                 var rows = new List<PermissionDto>();
-                foreach (var chunk in keys.Chunk(GroupsPerStatement))
+                foreach (var chunk in keys.Chunk(SqlArgs.MaxListLength))
                 {
-                    var list = string.Join(", ", chunk.Select((_, i) => "@" + i.ToString(CultureInfo.InvariantCulture)));
+                    var list = SqlArgs.Placeholders(0, chunk.Length);
                     rows.AddRange(await db.FetchListAsync<PermissionDto>(
                         $"SELECT * FROM {n.T(FormBuilderTables.Permission)} WHERE {n.C("userGroupKey")} IN ({list})",
                         [.. chunk.Cast<object?>()]));
@@ -234,9 +231,9 @@ internal sealed class PermissionRepository(FormBuilderDatabase database) : IPerm
             {
                 var n = new SqlNames(db);
                 var ids = new HashSet<int>();
-                foreach (var chunk in keys.Chunk(GroupsPerStatement))
+                foreach (var chunk in keys.Chunk(SqlArgs.MaxListLength))
                 {
-                    var list = string.Join(", ", chunk.Select((_, i) => "@" + (i + 1).ToString(CultureInfo.InvariantCulture)));
+                    var list = SqlArgs.Placeholders(1, chunk.Length);
                     ids.UnionWith(await db.FetchListAsync<int>(
                         $"SELECT DISTINCT f.{n.C("folderId")} FROM {n.T(FormBuilderTables.Form)} f WHERE f.{n.C("folderId")} IS NOT NULL AND f.{n.C("key")} IN (SELECT p.{n.C("targetKey")} FROM {n.T(FormBuilderTables.Permission)} p WHERE p.{n.C("targetType")} = '{StoredNames.Of(PermissionTarget.Form)}' AND (p.{n.C("permissions")} & @0) <> 0 AND p.{n.C("userGroupKey")} IN ({list}))",
                         [anyOf, .. chunk.Cast<object?>()]));

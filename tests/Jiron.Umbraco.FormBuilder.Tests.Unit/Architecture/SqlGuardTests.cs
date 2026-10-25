@@ -18,6 +18,7 @@ public sealed partial class SqlGuardTests
     [
         ("ThemeRepository.cs", "themeAlias", "a name without a foreign key: ADR-0037 accepts a publish while a delete runs"),
         ("FormRepository.Versions.cs", "Entry)} e WHERE e.{n.C(\"formVersionId\")", "the cleanup's nominating read: each delete checks again with a locking read (ADR-0045)"),
+        ("ActionRunRepository.cs", "{runs} p{(locking ? n.LockingRead : string.Empty)", "the due list only proposes; the claim makes the same check with a locking read (ADR-0040, ActionRunSqlTests)"),
     ];
 
     // Common table expressions a check may read: their own reads carry the hint.
@@ -105,8 +106,8 @@ public sealed partial class SqlGuardTests
         });
     }
 
-    [TestCase("SELECT COUNT(*) FROM {n.T(FormBuilderTables.FormField)} WHERE {n.C(\"formId\")} = @0 AND {n.C(\"id\")} IN ({Parameters(1, chunk.Length)})", false)]
-    [TestCase("SELECT COUNT(*) FROM {n.T(FormBuilderTables.FormField)}{n.LockingRead} WHERE {n.C(\"formId\")} = @0 AND {n.C(\"id\")} IN ({Parameters(1, chunk.Length)})", true)]
+    [TestCase("SELECT COUNT(*) FROM {n.T(FormBuilderTables.FormField)} WHERE {n.C(\"formId\")} = @0 AND {n.C(\"id\")} IN ({SqlArgs.Placeholders(1, chunk.Length)})", false)]
+    [TestCase("SELECT COUNT(*) FROM {n.T(FormBuilderTables.FormField)}{n.LockingRead} WHERE {n.C(\"formId\")} = @0 AND {n.C(\"id\")} IN ({SqlArgs.Placeholders(1, chunk.Length)})", true)]
     public void TheScan_FindsACountOfNamedIds(string sql, bool locked)
     {
         var match = Count().Match(sql);
@@ -137,7 +138,7 @@ public sealed partial class SqlGuardTests
     [GeneratedRegex(@"EXISTS \(SELECT [^)\n]*?FROM (?:\{[^}]+\}|\w+)")]
     private static partial Regex Exists();
 
-    // A count of the ids a unit names: SELECT COUNT(*) FROM {table}{hint} WHERE ... IN ({Parameters(...)}).
-    [GeneratedRegex(@"SELECT COUNT\(\*\) FROM \{[^}]+\}(?<hint>\{n\.LockingRead\})?[^\n]*? IN \(\{Parameters\(")]
+    // A count of the ids a unit names: SELECT COUNT(*) FROM {table}{hint} WHERE ... IN ({SqlArgs.Placeholders(...)}).
+    [GeneratedRegex(@"SELECT COUNT\(\*\) FROM \{[^}]+\}(?<hint>\{n\.LockingRead\})?[^\n]*? IN \(\{SqlArgs\.Placeholders\(")]
     private static partial Regex Count();
 }

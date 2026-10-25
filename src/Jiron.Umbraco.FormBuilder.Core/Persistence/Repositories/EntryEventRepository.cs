@@ -50,7 +50,7 @@ internal sealed class EntryEventRepository(FormBuilderDatabase database) : IEntr
             async db =>
             {
                 var n = new SqlNames(db);
-                if (!await EntryRepository.HoldAsync(db, n, entryEvent.EntryId))
+                if (!await RowHolds.HoldEntryAsync(db, n, entryEvent.EntryId))
                 {
                     return null;
                 }

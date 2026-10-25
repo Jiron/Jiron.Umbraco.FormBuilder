@@ -48,7 +48,7 @@ internal sealed class EntryNoteRepository(FormBuilderDatabase database) : IEntry
             async db =>
             {
                 var n = new SqlNames(db);
-                if (!await EntryRepository.HoldAsync(db, n, entryId))
+                if (!await RowHolds.HoldEntryAsync(db, n, entryId))
                 {
                     return null;
                 }

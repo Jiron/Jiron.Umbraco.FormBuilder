@@ -35,6 +35,9 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                 var table = n.T(FormBuilderTables.Form);
                 var now = database.UtcNow;
                 var folder = form.FolderId is null ? string.Empty : $" AND EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Folder)}{n.LockingRead} WHERE {n.C("id")} = @1 AND {n.C("trashedUtc")} IS NULL)";
+
+                // One check per unique index, so each is a seek and locks only its own key's range.
+                var free = $"NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE";
                 int inserted;
                 try
                 {
@@ -42,7 +45,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                         $"""
                         INSERT INTO {table} ({n.C("key")}, {n.C("folderId")}, {n.C("alias")}, {n.C("name")}, {n.C("publicRevision")}, {n.C("concurrencyVersion")}, {n.C("lastEntryNumber")}, {n.C("isRestricted")}, {n.C("createdUtc")}, {n.C("updatedUtc")}, {n.C("createdByUserKey")}, {n.C("updatedByUserKey")})
                         SELECT @0, @1, @2, @3, 0, 1, 0, @4, @5, @5, @6, @6
-                        WHERE NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {n.C("alias")} = @2 OR {n.C("key")} = @0){folder}
+                        WHERE {free} {n.C("alias")} = @2) AND {free} {n.C("key")} = @0){folder}
                         """,
                         form.Key,
                         form.FolderId,
@@ -112,17 +115,12 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
             async db =>
             {
                 var n = new SqlNames(db);
-                var args = new List<object?>();
-                string Arg(object? value)
-                {
-                    args.Add(value);
-                    return "@" + (args.Count - 1).ToString(CultureInfo.InvariantCulture);
-                }
+                var args = new SqlArgs();
 
                 var where = new List<string>();
                 if (!filter.AllFolders)
                 {
-                    where.Add(filter.FolderId is { } folder ? $"{n.C("folderId")} = {Arg(folder)}" : $"{n.C("folderId")} IS NULL");
+                    where.Add(filter.FolderId is { } folder ? $"{n.C("folderId")} = {args.Add(folder)}" : $"{n.C("folderId")} IS NULL");
                 }
 
                 if (filter.Trashed is { } trashed)
@@ -130,7 +128,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                     where.Add($"{n.C("trashedUtc")} {(trashed ? "IS NOT NULL" : "IS NULL")}");
                 }
 
-                if (AccessSql.FormClause(filter.Access, n, string.Empty, Arg) is { } access)
+                if (AccessSql.FormClause(filter.Access, n, string.Empty, args.Add) is { } access)
                 {
                     where.Add(access);
                 }
@@ -142,16 +140,16 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
 
                 if (!string.IsNullOrWhiteSpace(filter.Search))
                 {
-                    var pattern = Arg("%" + SqlNames.Escape(filter.Search.Trim()) + "%");
+                    var pattern = args.Add("%" + SqlNames.Escape(filter.Search.Trim()) + "%");
                     where.Add($"({n.C("name")} LIKE {pattern} {SqlNames.EscapeClause} OR {n.C("alias")} LIKE {pattern} {SqlNames.EscapeClause})");
                 }
 
                 var table = n.T(FormBuilderTables.Form);
                 var clause = where.Count == 0 ? string.Empty : " WHERE " + string.Join(" AND ", where);
-                var total = await db.ScalarAsync<long>($"SELECT COUNT(*) FROM {table}{clause}", [.. args]);
+                var total = await db.ScalarAsync<long>($"SELECT COUNT(*) FROM {table}{clause}", args.Values);
                 var rows = total <= page.Skip
                     ? new List<FormDto>()
-                    : await db.FetchListAsync<FormDto>($"SELECT * FROM {table}{clause} ORDER BY {n.C("name")}, {n.C("id")} {n.Page(page.Skip, page.Take)}", [.. args]);
+                    : await db.FetchListAsync<FormDto>($"SELECT * FROM {table}{clause} ORDER BY {n.C("name")}, {n.C("id")} {n.Page(page.Skip, page.Take)}", args.Values);
                 return new Page<StoredForm>(rows.Select(FromDto).ToList(), total);
             },
             cancellationToken);
@@ -174,24 +172,19 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
             async db =>
             {
                 var n = new SqlNames(db);
-                var args = new List<object?>();
-                string Arg(object? value)
-                {
-                    args.Add(value);
-                    return "@" + (args.Count - 1).ToString(CultureInfo.InvariantCulture);
-                }
+                var args = new SqlArgs();
 
                 var where = new List<string>
                 {
                     $"{n.C("folderId")} IN ({Literals(folderIds)})",
                     $"{n.C("trashedUtc")} {(trashed ? "IS NOT NULL" : "IS NULL")}",
                 };
-                if (AccessSql.FormClause(access, n, string.Empty, Arg) is { } clause)
+                if (AccessSql.FormClause(access, n, string.Empty, args.Add) is { } clause)
                 {
                     where.Add(clause);
                 }
 
-                var ids = await db.FetchListAsync<int>($"SELECT DISTINCT {n.C("folderId")} FROM {n.T(FormBuilderTables.Form)} WHERE {string.Join(" AND ", where)}", [.. args]);
+                var ids = await db.FetchListAsync<int>($"SELECT DISTINCT {n.C("folderId")} FROM {n.T(FormBuilderTables.Form)} WHERE {string.Join(" AND ", where)}", args.Values);
                 return ids.ToHashSet();
             },
             cancellationToken);
@@ -295,16 +288,6 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
         FormBuilderDbTime.Read(d.UpdatedUtc),
         d.CreatedByUserKey,
         d.UpdatedByUserKey);
-
-    /// <summary>
-    /// The first write of a unit that counts for a form or deletes its daily values: it changes nothing, but holds the
-    /// form's row until the unit ends, so units that touch a form's values take turns, and always lock the form first.
-    /// False when the form does not exist.
-    /// </summary>
-    internal static async Task<bool> HoldAsync(IUmbracoDatabase db, SqlNames n, int formId) =>
-        await db.ExecAsync(
-            $"UPDATE {n.T(FormBuilderTables.Form)} SET {n.C("updatedUtc")} = {n.C("updatedUtc")} WHERE {n.C("id")} = @0",
-            formId) == 1;
 
     private static string Raise(SqlNames n) => $"{n.C("concurrencyVersion")} = {n.C("concurrencyVersion")} + 1";
 

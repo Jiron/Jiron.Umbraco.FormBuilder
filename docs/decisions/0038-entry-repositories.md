@@ -167,6 +167,15 @@ or a count of named ids without the hint, because on SQLite the hints are empty 
 - the context and an event's details are JSON objects;
 - the culture, address, spam reasons, names, content type and scan state fit their columns.
 
+**Amended in 4.8b** (the Phase 4 review):
+
+- **Consent wordings** have a repository of their own, `IConsentTextRepository` (`AddAsync`, `GetAsync`), with the
+  rules above: every entry's consent values name them, but they belong to no entry. The entry repository keeps the
+  entries, their values and their files.
+- **Holding a row** first, an entry's for its events, notes, runs and mail, or a form's for its counts, is one helper
+  (`RowHolds`) that every repository calls, and so is the numbering of a statement's arguments (`SqlArgs`), with one
+  limit for the ids an `IN` list names (`SqlArgs.MaxListLength`, 1,000).
+
 ## Consequences
 
 - The submission pipeline (6.x) answers a `DuplicateSubmission` by reading the first entry with

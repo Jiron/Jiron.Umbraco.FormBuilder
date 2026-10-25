@@ -156,6 +156,15 @@ Option 2 for the due list, the token, the back-off, error texts and the retry fr
 - **The limits for visitor mail** (ADR-0012) come with 8.2: one `INSERT ... SELECT` on the recipient key that stores a
   mail over a limit as `Limited`, added to this repository. Until then nothing stores `Limited`, and nothing claims it.
 
+**Amended in 4.8b** (the Phase 4 review):
+
+- **The due list reads without locks.** It checks the earlier runs of a batch as the claim does, but holds no lock
+  while it reads: it only proposes, and the claim checks again under its locks and decides. Before, it took the
+  claim's locking read on SQL Server, so the passes of two servers took turns for it and held range locks over the
+  runs they read until the read ended. This replaces "as a locking read" for the due list above, and the consequence
+  of the two servers' turns below; a claim can still meet a failure's skip in a deadlock, and is then rerun.
+- The position column `seq` is `sortOrder` since 4.8a (ADR-0033).
+
 ## Consequences
 
 - 8.1 and 8.2 build their processors on these calls and own the policies: the attempts, the back-off, the lease of 5

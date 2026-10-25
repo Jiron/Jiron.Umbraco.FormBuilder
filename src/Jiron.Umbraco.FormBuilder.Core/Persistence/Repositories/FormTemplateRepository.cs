@@ -1,4 +1,3 @@
-using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
 
@@ -168,36 +167,31 @@ internal sealed class FormTemplateRepository(FormBuilderDatabase database) : IFo
             async db =>
             {
                 var n = new SqlNames(db);
-                var args = new List<object?>();
-                string Arg(object? value)
-                {
-                    args.Add(value);
-                    return "@" + (args.Count - 1).ToString(CultureInfo.InvariantCulture);
-                }
+                var args = new SqlArgs();
 
                 var where = new List<string>();
                 if (filter.Kind is { } kind)
                 {
-                    where.Add($"{n.C("kind")} = {Arg(StoredNames.Of(kind))}");
+                    where.Add($"{n.C("kind")} = {args.Add(StoredNames.Of(kind))}");
                 }
 
                 if (filter.Category is { } category)
                 {
-                    where.Add($"{n.C("category")} = {Arg(category)}");
+                    where.Add($"{n.C("category")} = {args.Add(category)}");
                 }
 
                 if (!string.IsNullOrWhiteSpace(filter.Search))
                 {
-                    var pattern = Arg("%" + SqlNames.Escape(filter.Search.Trim()) + "%");
+                    var pattern = args.Add("%" + SqlNames.Escape(filter.Search.Trim()) + "%");
                     where.Add($"({n.C("name")} LIKE {pattern} {SqlNames.EscapeClause} OR {n.C("description")} LIKE {pattern} {SqlNames.EscapeClause})");
                 }
 
                 var table = n.T(FormBuilderTables.FormTemplate);
                 var clause = where.Count == 0 ? string.Empty : " WHERE " + string.Join(" AND ", where);
-                var total = await db.ScalarAsync<long>($"SELECT COUNT(*) FROM {table}{clause}", [.. args]);
+                var total = await db.ScalarAsync<long>($"SELECT COUNT(*) FROM {table}{clause}", args.Values);
                 var rows = total <= page.Skip
                     ? []
-                    : await db.FetchListAsync<FormTemplateDto>($"SELECT * FROM {table}{clause} ORDER BY {n.C("name")}, {n.C("id")} {n.Page(page.Skip, page.Take)}", [.. args]);
+                    : await db.FetchListAsync<FormTemplateDto>($"SELECT * FROM {table}{clause} ORDER BY {n.C("name")}, {n.C("id")} {n.Page(page.Skip, page.Take)}", args.Values);
                 return new Page<StoredFormTemplate>(rows.Select(FromDto).ToList(), total);
             },
             cancellationToken);

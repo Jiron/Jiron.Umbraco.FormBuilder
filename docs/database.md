@@ -75,7 +75,8 @@ Every read and write goes through `FormBuilderDatabase` and the repositories in 
   `jfbForm.lastEntryNumber`, raised as the first write of the unit, and are stored with their values and files in one
   unit or not at all. The insert itself refuses a submission id or a challenge the form has already seen, and a
   refused entry gives its number back. Values carry the text key rules compare by, and an entry's state changes only
-  from the state the user saw. Events are only ever added, and a consent wording is stored once under its hash.
+  from the state the user saw. Events are only ever added, and a consent wording is stored once under its hash, by a
+  repository of its own.
 - **Entry lists** ([ADR-0039](decisions/0039-entries-query-builder.md)) come from the entries query builder, in the
   shapes ADR-0003 measured and only those: field filters as `IN` subqueries, keyset pages, a sort by a value that
   walks the value index and then lists the entries without a value, and a search that counts up to 1,000. Text
@@ -91,8 +92,9 @@ Every read and write goes through `FormBuilderDatabase` and the repositories in 
 - **The audit log and daily statistics** ([ADR-0041](decisions/0041-file-store-audit-log-and-daily-stats.md)): an
   audit entry is added in the unit of the change it records, with details built only from keys, numbers, flags, enum
   values, times and identifiers; a view is recorded once per user, item and window by one `INSERT … WHERE NOT EXISTS`.
-  A count is an update, then an insert where the form exists and the row does not, then an update again, so counters
-  stay right when servers count at once and a late count never brings back the statistics of a deleted form.
+  A unit of counts holds the form's row first, as the form's delete does, and then adds each count in ordinal order:
+  an update, or an insert when the day has no row yet. Units of one form take turns, so counters stay right when
+  servers count at once, and no count reaches a form that is being deleted.
 - **Versions** ([ADR-0045](decisions/0045-versions-comparison-and-draft-cleanup.md)): a pin or a comment is one
   update that a form in the trash refuses, and leaves the form's row alone. The draft cleanup's read only nominates
   versions without locks; each delete checks the pin, the form's draft and published versions and the entries again

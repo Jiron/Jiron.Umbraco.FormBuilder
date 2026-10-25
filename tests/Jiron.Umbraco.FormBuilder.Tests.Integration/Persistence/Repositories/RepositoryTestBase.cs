@@ -44,6 +44,8 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
 
     private protected IEntryRepository Entries => Repo<IEntryRepository>();
 
+    private protected IConsentTextRepository ConsentTexts => Repo<IConsentTextRepository>();
+
     private protected IEntryEventRepository EntryEvents => Repo<IEntryEventRepository>();
 
     private protected IEntryNoteRepository EntryNotes => Repo<IEntryNoteRepository>();
@@ -121,6 +123,29 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
     /// <summary>A value of an entry, for a field of the catalogue.</summary>
     private protected Task AddValueAsync(long entryId, int fieldId) =>
         Entries.ReplaceValuesAsync(entryId, [fieldId], [new NewEntryValue(fieldId, "JFB_TEST")], string.Empty);
+
+    /// <summary>
+    /// A condition that holds and takes far longer than any budget to find so, put in front of a statement's own
+    /// conditions to make it slow.
+    /// </summary>
+    private protected string SlowCondition => IsSqlite
+        ? "(WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 100000000) SELECT MAX(x) FROM c) > 0 AND "
+        : "(SELECT COUNT_BIG(*) FROM sys.all_objects a CROSS JOIN sys.all_objects b CROSS JOIN sys.all_objects c CROSS JOIN sys.all_objects d) > 0 AND ";
+
+    /// <summary>Runs <paramref name="work"/> inside one read with <paramref name="interceptor"/> watching its statements.</summary>
+    private protected Task<T> WatchedReadAsync<T>(NPoco.IInterceptor interceptor, Func<Task<T>> work) =>
+        Database.ReadAsync(async db =>
+        {
+            db.Interceptors.Add(interceptor);
+            try
+            {
+                return await work();
+            }
+            finally
+            {
+                db.Interceptors.Remove(interceptor);
+            }
+        });
 
     /// <summary>Runs <paramref name="work"/> as one unit of work with <paramref name="interceptor"/> watching its statements.</summary>
     private protected Task<T> WatchedAsync<T>(NPoco.IInterceptor interceptor, Func<Task<T>> work) =>

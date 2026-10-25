@@ -108,9 +108,10 @@ internal sealed class EntryQuerySql
     /// <summary>The distinct stored texts of a field whose key is <paramref name="key"/>, each as it was stored.</summary>
     public static SqlStatement LongTexts(SqlNames n, int fieldId, string key)
     {
-        var a = new Args();
+        var a = new SqlArgs();
         var textKey = n.C("textKey");
-        return a.Statement(
+        return Statement(
+            a,
             $"SELECT DISTINCT v.{n.C("text")}{n.BinaryCollation} AS {n.C("Text")} FROM {n.T(FormBuilderTables.EntryValue)} v WHERE v.{n.C("fieldId")} = {a.Add(fieldId)} AND v.{textKey} = {a.Add(key)} AND v.{textKey}{n.BinaryCollation} = {a.Add(key)}");
     }
 
@@ -119,8 +120,8 @@ internal sealed class EntryQuerySql
     {
         ArgumentNullException.ThrowIfNull(ids);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(ids.Count, MaxTake);
-        var a = new Args();
-        return a.Statement($"SELECT * FROM {n.T(FormBuilderTables.Entry)} WHERE {n.C("id")} IN ({a.List(ids.Cast<object?>())})");
+        var a = new SqlArgs();
+        return Statement(a, $"SELECT * FROM {n.T(FormBuilderTables.Entry)} WHERE {n.C("id")} IN ({a.List(ids.Cast<object?>())})");
     }
 
     /// <summary>A page by submission: the next <paramref name="limit"/> positions after <paramref name="after"/>.</summary>
@@ -139,7 +140,7 @@ internal sealed class EntryQuerySql
     public SqlStatement Walk(EntryCursor? after, int limit)
     {
         var sort = _query.Sort;
-        var a = new Args();
+        var a = new SqlArgs();
         var column = C(SortColumn(sort.Column));
         var (id, entryId, fieldId, submitted) = (C("id"), C("entryId"), C("fieldId"), C("submittedUtc"));
         var (row, item) = (C("rowIndex"), C("valueIndex"));
@@ -160,7 +161,8 @@ internal sealed class EntryQuerySql
         }
 
         var order = sort.Descending ? "DESC" : "ASC";
-        return a.Statement(
+        return Statement(
+            a,
             $"SELECT v.{id} AS {C("ValueId")}, e.{id} AS {C("Id")}, e.{submitted} AS {C("SubmittedUtc")}, v.{column} AS {C(PositionColumn(sort.Column))} FROM {_values} v CROSS JOIN {_entry} e WHERE {where} ORDER BY v.{column} {order}, v.{entryId} {order} {_n.Page(0, limit)}");
     }
 
@@ -169,12 +171,12 @@ internal sealed class EntryQuerySql
     /// </summary>
     public SqlStatement Count()
     {
-        var a = new Args();
+        var a = new SqlArgs();
         var where = Where(a);
         var (id, submitted) = (C("id"), C("submittedUtc"));
         return Searches
-            ? a.Statement($"SELECT COUNT(*) FROM (SELECT e.{id} AS {C("Id")} FROM {_entry} e WHERE {where} ORDER BY e.{submitted} DESC, e.{id} DESC {_n.Page(0, SearchCountLimit + 1)}) c")
-            : a.Statement($"SELECT COUNT(*) FROM {_entry} e WHERE {where}");
+            ? Statement(a, $"SELECT COUNT(*) FROM (SELECT e.{id} AS {C("Id")} FROM {_entry} e WHERE {where} ORDER BY e.{submitted} DESC, e.{id} DESC {_n.Page(0, SearchCountLimit + 1)}) c")
+            : Statement(a, $"SELECT COUNT(*) FROM {_entry} e WHERE {where}");
     }
 
     /// <summary>Refuses a query, cursor or page size the builder cannot answer as asked.</summary>
@@ -289,7 +291,7 @@ internal sealed class EntryQuerySql
 
     private SqlStatement ByDate(EntryCursor? after, int limit, bool tail)
     {
-        var a = new Args();
+        var a = new SqlArgs();
         var (id, submitted) = (C("id"), C("submittedUtc"));
         var descending = tail || _query.Sort.Descending;
         var where = Where(a);
@@ -308,10 +310,10 @@ internal sealed class EntryQuerySql
         }
 
         var order = descending ? "DESC" : "ASC";
-        return a.Statement($"SELECT e.{id} AS {C("Id")}, e.{submitted} AS {C("SubmittedUtc")} FROM {_entry} e WHERE {where} ORDER BY e.{submitted} {order}, e.{id} {order} {_n.Page(0, limit)}");
+        return Statement(a, $"SELECT e.{id} AS {C("Id")}, e.{submitted} AS {C("SubmittedUtc")} FROM {_entry} e WHERE {where} ORDER BY e.{submitted} {order}, e.{id} {order} {_n.Page(0, limit)}");
     }
 
-    private string ValueKeyset(Args a, string column, EntryValuePosition position, long entryId, bool descending)
+    private string ValueKeyset(SqlArgs a, string column, EntryValuePosition position, long entryId, bool descending)
     {
         object? fallback = _query.Sort.Column switch
         {
@@ -328,7 +330,7 @@ internal sealed class EntryQuerySql
     }
 
     // The conditions on the entry row e, the field filters included.
-    private string Where(Args a)
+    private string Where(SqlArgs a)
     {
         var parts = new List<string> { $"e.{C("formId")} = {a.Add(_query.FormId)}" };
         var states = _query.States.Distinct().ToList();
@@ -367,7 +369,7 @@ internal sealed class EntryQuerySql
 
     // One field filter, on the alias vf: the entry's id in (or, for the opposite, not in) the ids of the entries whose
     // values match.
-    private string Filter(Args a, int index, EntryFieldFilter filter)
+    private string Filter(SqlArgs a, int index, EntryFieldFilter filter)
     {
         // The field's argument comes first, as its placeholder does.
         string In(bool negate, Func<string>? condition)
@@ -393,7 +395,7 @@ internal sealed class EntryQuerySql
     // A value's key equals one of the filter's keys: sought with the column's collation, then kept by a LIKE without
     // wildcards in a binary collation. Unlike = and IN, LIKE pads nothing on SQL Server, where a cut key can end in
     // spaces that a shorter key would otherwise equal.
-    private string OneOf(Args a, int index, EntryTextFilter filter)
+    private string OneOf(SqlArgs a, int index, EntryTextFilter filter)
     {
         var (key, bin) = (C("textKey"), _n.BinaryCollation);
         var parts = new List<string>();
@@ -429,7 +431,7 @@ internal sealed class EntryQuerySql
     // only, which folded keys no longer differ by, so its LIKE decides exactly and, on the NOCASE column, seeks the
     // prefix on the index. On SQL Server a collation may read letters as one (Danish aa, Czech ch) and miss a key that
     // starts with the prefix, so only a binary LIKE decides there, over the field's values.
-    private string StartsWith(Args a, string prefix)
+    private string StartsWith(SqlArgs a, string prefix)
     {
         var key = C("textKey");
         var pattern = a.Add(SqlNames.Escape(EntryTextKey.For(prefix)) + "%");
@@ -443,7 +445,7 @@ internal sealed class EntryQuerySql
     private static double? Bound(decimal? value) =>
         value is { } bound ? double.Parse(bound.ToString(CultureInfo.InvariantCulture), NumberStyles.Float, CultureInfo.InvariantCulture) : null;
 
-    private string Range(Args a, string column, object? low, bool lowInclusive, object? high, bool highInclusive)
+    private string Range(SqlArgs a, string column, object? low, bool lowInclusive, object? high, bool highInclusive)
     {
         var parts = new List<string>(2);
         if (low is not null)
@@ -459,22 +461,9 @@ internal sealed class EntryQuerySql
         return string.Join(" AND ", parts);
     }
 
-    // The arguments of one statement, numbered as they are added; one per placeholder, as NPoco binds them.
-    private sealed class Args
-    {
-        private readonly List<object?> _values = [];
-
-        public string Add(object? value)
-        {
-            _values.Add(value);
-            return "@" + (_values.Count - 1).ToString(CultureInfo.InvariantCulture);
-        }
-
-        public string List(IEnumerable<object?> values) => string.Join(", ", values.Select(Add));
-
-        public SqlStatement Statement(string text) =>
-            _values.Count > MaxParameters
-                ? throw new ArgumentException($"The query names more values than one statement takes ({_values.Count}, at most {MaxParameters}).")
-                : new SqlStatement(text, [.. _values]);
-    }
+    // The statement with its arguments, refused when it names more values than one statement takes.
+    private static SqlStatement Statement(SqlArgs a, string text) =>
+        a.Count > MaxParameters
+            ? throw new ArgumentException($"The query names more values than one statement takes ({a.Count}, at most {MaxParameters}).")
+            : new SqlStatement(text, a.Values);
 }

@@ -24,6 +24,9 @@ internal sealed class FormBuilderQueryBudget : IDisposable
     /// <summary>How many SQLite virtual-machine steps run between two checks of the deadline.</summary>
     internal const int StepsPerCheck = 10_000;
 
+    /// <summary>The time one list may take (ADR-0003): past it the read stops with <c>query_timeout</c>.</summary>
+    internal static readonly TimeSpan Default = TimeSpan.FromSeconds(10);
+
     private static readonly Lazy<SqliteBinding?> Sqlite = new(SqliteBinding.Find);
 
     private readonly CancellationToken _caller;

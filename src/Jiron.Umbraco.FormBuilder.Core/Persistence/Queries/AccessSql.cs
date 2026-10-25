@@ -34,9 +34,9 @@ internal static class AccessSql
             return "1 = 0";
         }
 
-        if (scope.GroupKeys.Count > PermissionRepository.GroupsPerStatement)
+        if (scope.GroupKeys.Count > SqlArgs.MaxListLength)
         {
-            throw new ArgumentException($"A scope names at most {PermissionRepository.GroupsPerStatement} groups with grants on forms.", nameof(scope));
+            throw new ArgumentException($"A scope names at most {SqlArgs.MaxListLength} groups with grants on forms.", nameof(scope));
         }
 
         var places = new List<string>();

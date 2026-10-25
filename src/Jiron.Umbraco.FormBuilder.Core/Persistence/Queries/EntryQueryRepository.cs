@@ -27,15 +27,12 @@ internal interface IEntryQueryRepository
 /// <inheritdoc />
 internal sealed class EntryQueryRepository : IEntryQueryRepository
 {
-    /// <summary>The time one list may take (ADR-0003): past it the read stops with <c>query_timeout</c>.</summary>
-    public static readonly TimeSpan DefaultBudget = TimeSpan.FromSeconds(10);
-
     private readonly FormBuilderDatabase _database;
     private readonly TimeSpan _budget;
 
     /// <summary>The repository, with the default budget.</summary>
     public EntryQueryRepository(FormBuilderDatabase database)
-        : this(database, DefaultBudget)
+        : this(database, FormBuilderQueryBudget.Default)
     {
     }
 

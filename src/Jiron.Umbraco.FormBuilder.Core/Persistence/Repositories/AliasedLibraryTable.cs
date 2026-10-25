@@ -1,4 +1,3 @@
-using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
 
@@ -46,13 +45,16 @@ internal sealed class AliasedLibraryTable<TDto>(FormBuilderDatabase database, st
             {
                 var n = new SqlNames(db);
                 var t = n.T(table);
-                var args = new Arguments();
+                var args = new SqlArgs();
                 var columns = string.Concat(content.Select(column => ", " + n.C(column.Name)));
                 var values = string.Concat(content.Select(column => ", " + args.Add(column.Value)));
                 var now = args.Add(database.UtcNow);
                 var keyArg = args.Add(key);
                 var aliasArg = args.Add(alias);
                 var nameArg = args.Add(name);
+
+                // One check per unique index, so each is a seek and locks only its own key's range.
+                var free = $"NOT EXISTS (SELECT 1 FROM {t}{n.InsertOnceHint} WHERE";
                 int inserted;
                 try
                 {
@@ -60,7 +62,7 @@ internal sealed class AliasedLibraryTable<TDto>(FormBuilderDatabase database, st
                         $"""
                         INSERT INTO {t} ({n.C("key")}, {n.C("alias")}, {n.C("name")}{columns}, {n.C("concurrencyVersion")}, {n.C("createdUtc")}, {n.C("updatedUtc")})
                         SELECT {keyArg}, {aliasArg}, {nameArg}{values}, 1, {now}, {now}
-                        WHERE NOT EXISTS (SELECT 1 FROM {t}{n.InsertOnceHint} WHERE {n.C("alias")} = {aliasArg} OR {n.C("key")} = {keyArg})
+                        WHERE {free} {n.C("alias")} = {aliasArg}) AND {free} {n.C("key")} = {keyArg})
                         """,
                         args.Values);
                 }
@@ -96,7 +98,7 @@ internal sealed class AliasedLibraryTable<TDto>(FormBuilderDatabase database, st
             {
                 var n = new SqlNames(db);
                 var t = n.T(table);
-                var args = new Arguments();
+                var args = new SqlArgs();
                 var clause = string.Empty;
                 if (!string.IsNullOrWhiteSpace(search))
                 {
@@ -131,7 +133,7 @@ internal sealed class AliasedLibraryTable<TDto>(FormBuilderDatabase database, st
             {
                 var n = new SqlNames(db);
                 var t = n.T(table);
-                var args = new Arguments();
+                var args = new SqlArgs();
                 var idArg = args.Add(id);
                 var set = $"{n.C("name")} = {args.Add(name)}"
                     + string.Concat(content.Select(column => $", {n.C(column.Name)} = {args.Add(column.Value)}"));
@@ -247,20 +249,6 @@ internal sealed class AliasedLibraryTable<TDto>(FormBuilderDatabase database, st
         catch (Exception exception) when (FormBuilderDatabaseErrors.IsUniqueViolation(exception))
         {
             throw new FormBuilderConflictException(FormBuilderConflict.DuplicateAlias, $"Another {noun} already has this alias.", exception);
-        }
-    }
-
-    // The arguments of one statement, numbered in the order they are added, so no argument goes unused.
-    private sealed class Arguments
-    {
-        private readonly List<object?> _values = [];
-
-        public object?[] Values => [.. _values];
-
-        public string Add(object? value)
-        {
-            _values.Add(value);
-            return "@" + (_values.Count - 1).ToString(CultureInfo.InvariantCulture);
         }
     }
 }

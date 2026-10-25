@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Infrastructure.Persistence;
@@ -19,6 +20,10 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence;
 /// a transaction only its owner can start over; and an error while the commit is on its way leaves its outcome unknown.
 /// Neither runs again. The work runs again whole, so it must keep its effects inside the transaction (notifications
 /// are published after the commit).
+/// <para>
+/// A unit inside another keeps the outer unit's cancellation and deadline, and adds its own caller's. A write inside a
+/// read is refused: the read's scope would commit it, and a read may run again after a lost connection.
+/// </para>
 /// </remarks>
 internal sealed partial class FormBuilderDatabase(
     IScopeProvider scopeProvider,
@@ -31,13 +36,16 @@ internal sealed partial class FormBuilderDatabase(
     internal const int Attempts = 3;
 
     /// <summary>The waits before the second and the third attempt: short, as lock conflicts clear quickly.</summary>
-    internal static readonly TimeSpan[] Waits = [TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(250)];
+    internal static readonly ImmutableArray<TimeSpan> Waits = [TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(250)];
 
     // Set inside each attempt, so it flows into the work and everything it awaits, but not back to the caller.
     private readonly AsyncLocal<bool> _inside = new();
 
     // Set inside a budgeted read, so a budgeted read inside it keeps the outer budget.
     private readonly AsyncLocal<bool> _budgeted = new();
+
+    // Set inside a read, so a write inside it is refused.
+    private readonly AsyncLocal<bool> _reading = new();
 
     /// <summary>The clock that stamps every write.</summary>
     public TimeProvider Time => timeProvider;
@@ -60,7 +68,9 @@ internal sealed partial class FormBuilderDatabase(
             _ => gate.RunAsync(
                 async () =>
                 {
-                    FormBuilderDbExtensions.CurrentToken = cancellationToken;
+                    using var linked = Keep(cancellationToken, out var token);
+                    FormBuilderDbExtensions.CurrentToken = token;
+                    _reading.Value = true;
                     using var scope = scopeProvider.CreateScope(autoComplete: true);
                     return await read(scope.Database);
                 },
@@ -83,6 +93,7 @@ internal sealed partial class FormBuilderDatabase(
             _ => gate.RunAsync(
                 async () =>
                 {
+                    _reading.Value = true;
                     using var scope = scopeProvider.CreateScope(autoComplete: true);
                     var db = scope.Database;
                     if (_budgeted.Value)
@@ -90,7 +101,8 @@ internal sealed partial class FormBuilderDatabase(
                         return await read(db);
                     }
 
-                    FormBuilderDbExtensions.CurrentToken = cancellationToken;
+                    using var linked = Keep(cancellationToken, out var token);
+                    FormBuilderDbExtensions.CurrentToken = token;
                     var sqlite = new SqlNames(db).IsSqlite;
                     if (sqlite && db.Connection is null)
                     {
@@ -98,7 +110,7 @@ internal sealed partial class FormBuilderDatabase(
                         await db.ScalarAsync<int>("SELECT 1");
                     }
 
-                    using var deadline = FormBuilderQueryBudget.Start(db.Connection, sqlite, budget, timeProvider, cancellationToken);
+                    using var deadline = FormBuilderQueryBudget.Start(db.Connection, sqlite, budget, timeProvider, token);
                     if (sqlite && !deadline.Armed)
                     {
                         LogUnbudgeted(logger);
@@ -132,12 +144,18 @@ internal sealed partial class FormBuilderDatabase(
     public Task<T> WriteAsync<T>(Func<IUmbracoDatabase, Task<T>> write, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(write);
+        if (_reading.Value)
+        {
+            throw new InvalidOperationException("A write cannot run inside a read: the read's scope would commit it, and a read may run again.");
+        }
+
         return AttemptsAsync(
             write: true,
             committing => gate.RunAsync(
                 async () =>
                 {
-                    FormBuilderDbExtensions.CurrentToken = cancellationToken;
+                    using var linked = Keep(cancellationToken, out var token);
+                    FormBuilderDbExtensions.CurrentToken = token;
                     using var scope = scopeProvider.CreateScope();
                     var result = await write(scope.Database);
                     scope.Complete();
@@ -148,6 +166,31 @@ internal sealed partial class FormBuilderDatabase(
                 },
                 cancellationToken),
             cancellationToken);
+    }
+
+    /// <summary>
+    /// The token of a unit: its caller's, or, inside another unit, the outer unit's too, so a nested unit never drops
+    /// the cancellation or the deadline of the unit it runs in. It returns the source to dispose when both can be
+    /// cancelled, and null otherwise.
+    /// </summary>
+    private static CancellationTokenSource? Keep(CancellationToken own, out CancellationToken token)
+    {
+        var outer = FormBuilderDbExtensions.CurrentToken;
+        if (!outer.CanBeCanceled || outer == own)
+        {
+            token = own;
+            return null;
+        }
+
+        if (!own.CanBeCanceled)
+        {
+            token = outer;
+            return null;
+        }
+
+        var linked = CancellationTokenSource.CreateLinkedTokenSource(outer, own);
+        token = linked.Token;
+        return linked;
     }
 
     /// <summary>Runs a unit of work, and again after a transient error where that is safe (see the remarks).</summary>

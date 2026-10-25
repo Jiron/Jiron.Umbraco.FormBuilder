@@ -77,7 +77,11 @@ internal interface IAuditRepository
     /// <summary>The entry with this id, or null.</summary>
     Task<StoredAuditEntry?> GetAsync(long id, CancellationToken cancellationToken = default);
 
-    /// <summary>A page of the entries that match <paramref name="query"/>, newest first, with how many match in all.</summary>
+    /// <summary>
+    /// A page of the entries that match <paramref name="query"/>, newest first, with how many match in all, within a time
+    /// budget: the filters may match few rows of a long log, and no index serves them all.
+    /// </summary>
+    /// <exception cref="FormBuilderQueryTimeoutException">The read ran past its time budget (<c>query_timeout</c>).</exception>
     Task<Page<StoredAuditEntry>> QueryAsync(AuditQuery query, PageRequest page, CancellationToken cancellationToken = default);
 
     /// <summary>

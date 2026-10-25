@@ -167,14 +167,14 @@ public sealed class EntryRepositoryArgumentTests
     [Test]
     public void AConsentWording_IsRefused_WhenItsHashCouldNotNameItAlone()
     {
-        var repository = new EntryRepository(_database);
+        var repository = new ConsentTextRepository(_database);
 
         Assert.Multiple(() =>
         {
-            Assert.That(() => repository.AddConsentTextAsync(new string('c', ConsentTextHash.MaxCultureLength + 1), "JFB_TEST"), Throws.ArgumentException);
-            Assert.That(() => repository.AddConsentTextAsync("en", string.Empty), Throws.ArgumentException);
-            Assert.That(() => repository.AddConsentTextAsync("en", "a" + (char)0xDC00), Throws.InstanceOf<ArgumentException>());
-            Assert.That(() => repository.GetConsentTextAsync(null!), Throws.ArgumentNullException);
+            Assert.That(() => repository.AddAsync(new string('c', ConsentTextHash.MaxCultureLength + 1), "JFB_TEST"), Throws.ArgumentException);
+            Assert.That(() => repository.AddAsync("en", string.Empty), Throws.ArgumentException);
+            Assert.That(() => repository.AddAsync("en", "a" + (char)0xDC00), Throws.InstanceOf<ArgumentException>());
+            Assert.That(() => repository.GetAsync(null!), Throws.ArgumentNullException);
         });
     }
 

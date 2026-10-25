@@ -527,11 +527,8 @@ public sealed class EntryQueryRepositoryTests : RepositoryTestBase
     {
         var form = await CreateTestFormAsync("name");
         await StoreAsync(form, Text(form["name"], "Anna"));
-        var slow = IsSqlite
-            ? "(WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 100000000) SELECT MAX(x) FROM c) > 0 AND "
-            : "(SELECT COUNT_BIG(*) FROM sys.all_objects a CROSS JOIN sys.all_objects b CROSS JOIN sys.all_objects c CROSS JOIN sys.all_objects d) > 0 AND ";
         var where = T(FormBuilderTables.Entry) + " e WHERE ";
-        var slowly = new CommandRewriter(where, where + slow);
+        var slowly = new CommandRewriter(where, where + SlowCondition);
         var budgeted = new EntryQueryRepository(Database, TimeSpan.FromMilliseconds(250));
         var watch = Stopwatch.StartNew();
 
@@ -663,19 +660,4 @@ public sealed class EntryQueryRepositoryTests : RepositoryTestBase
 
         throw new AssertionException("The list did not end within 100 pages.");
     }
-
-    /// <summary>Runs <paramref name="work"/> inside one read with <paramref name="interceptor"/> watching its statements.</summary>
-    private Task<T> WatchedReadAsync<T>(NPoco.IInterceptor interceptor, Func<Task<T>> work) =>
-        Database.ReadAsync(async db =>
-        {
-            db.Interceptors.Add(interceptor);
-            try
-            {
-                return await work();
-            }
-            finally
-            {
-                db.Interceptors.Remove(interceptor);
-            }
-        });
 }

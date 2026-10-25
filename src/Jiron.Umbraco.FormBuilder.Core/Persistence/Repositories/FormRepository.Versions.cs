@@ -1,4 +1,3 @@
-using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
 
@@ -130,7 +129,7 @@ internal sealed partial class FormRepository
             {
                 var n = new SqlNames(db);
                 var rows = await db.FetchListAsync<FormVersionDto>(
-                    $"SELECT * FROM {n.T(FormBuilderTables.FormVersion)} WHERE {n.C("formId")} = @0 AND {n.C("number")} IN ({Parameters(1, wanted.Length)}) ORDER BY {n.C("number")} DESC",
+                    $"SELECT * FROM {n.T(FormBuilderTables.FormVersion)} WHERE {n.C("formId")} = @0 AND {n.C("number")} IN ({SqlArgs.Placeholders(1, wanted.Length)}) ORDER BY {n.C("number")} DESC",
                     [formId, .. wanted.Cast<object>()]);
                 return rows.Select(VersionFromDto).ToList();
             },
@@ -286,10 +285,6 @@ internal sealed partial class FormRepository
     }
 
     private static string InfoColumns(SqlNames n) => string.Join(", ", InfoColumnNames.Select(column => n.C(column)));
-
-    /// <summary>The parameter list <c>@first, @first+1, ...</c> of <paramref name="count"/> parameters.</summary>
-    private static string Parameters(int first, int count) =>
-        string.Join(", ", Enumerable.Range(first, count).Select(i => "@" + i.ToString(CultureInfo.InvariantCulture)));
 
     /// <summary>
     /// Sets one column of a version: one statement, which a form in the trash refuses (ADR-0045). The form's row stays as
