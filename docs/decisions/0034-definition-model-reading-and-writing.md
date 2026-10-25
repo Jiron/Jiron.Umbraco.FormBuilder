@@ -4,7 +4,9 @@
   properties a type does not support, the outcome limit); amended in 4.4a (stored definitions are read with the
   highest limits, [ADR-0042](0042-host-configuration-and-start-up-checks.md)); amended in 4.8e (one limit of 100
   problems for every reader and check; the lists are read-only, and records compare them by their items); amended in
-  4.8f (five C# names, one opening for both readers, what the writer refuses, nested groups read once)
+  4.8f (five C# names, one opening for both readers, what the writer refuses, nested groups read once); amended in
+  4.8h (what the save checks refuse before the writer, depth alone deciding `limit_exceeded`, no null item in a list,
+  the culture texts, static data that cannot change)
 - Date: 2026-10-23
 - Roadmap step: 4.2a (decided and built); 4.2b builds the structural validation on it, 4.4 binds its limits, 4.5
   calls it from the form service
@@ -76,7 +78,7 @@ Option 3 for reading, option 2 for writing, JsonSchema.Net 8.0.5 as a test-only 
 - **Lists** (amended in 4.8e): every list that a record, a value type or the public projection holds is the model's
   own read-only list (internal), which implements no collection interface that adds, removes or replaces items, so no
   cast changes it. A record's `init` accessor copies the list it is given, the reader's lists included, so the list a
-  caller built a record from cannot change it later either.
+  caller built a record from cannot change it later either. It takes no null item (amended in 4.8h).
 - **Records compare their lists by their items, in order** (amended in 4.8e), each item by its own equality, and hash
   them alike, so two reads of one document are equal, as the value types always were. The other choice, comparing
   lists by reference and writing that down, would let a public record's `Equals` say that two equal definitions
@@ -221,6 +223,40 @@ and the export file's reader stops reading.
 - **Nested groups are read once:** the rule item reader looks at a copy of the reader for `match` or `conditions` and
   reads the item with the model's own converter, so a group nested many levels deep costs what its text costs, not
   that once per level.
+
+### Amended in 4.8h
+
+- **The save checks refuse what the writer cannot write, at its path, before it runs:** a value its enum does not
+  define is `invalid_value` with the enum's words in the message, and a value the model requires that is missing is
+  `invalid_value` ("A required value is missing."). What depends on an undefined value is not checked against it, so
+  an undefined way of storing entries does not also refuse `storeDays`. A test sets every enum property and every
+  required reference of the full fixture in turn and expects exactly that one problem, and that the fixture reaches
+  every such property of the model.
+- **The writer still refuses all of it,** an undefined value with the same message, and a missing required value
+  instead of leaving it out as it leaves out every null, which wrote a document no reader reads.
+- **Depth alone decides `limit_exceeded`,** correcting 4.8f: the converters' `ArgumentException` did not make a
+  `JsonException` mean depth, because System.Text.Json's enum converter threw one for an undefined value. Now a
+  refusal of the writer is `limit_exceeded` when the writer had already gone deeper than a reader reads, or when the
+  canonical bytes nest deeper, and `invalid_value` otherwise. The save checks stop at 32 nested groups or fields (a
+  level of either is two levels of the document), so a definition built in code with 100,000 nested groups is
+  `limit_exceeded` at `$` and cannot overflow the stack, and every depth the checks pass reads back.
+- **No list of the model takes a null item:** the list refuses one when it is built (`ArgumentException` naming the
+  item's type), so a null page is refused where it is made rather than written as nothing.
+- **The export file's reader** answers `limit_exceeded` for a file that is JSON as far as it goes but nests too deep
+  and `invalid_json` only for text that is not JSON, as the definition reader does; both open documents through
+  `StrictText.Parse`.
+- **One home each:** the size refusal is built only for a document that is too large, and bytes the strict encoder
+  made are not checked again. The records' list equality is the list's own: `LocalizedText` and `LocalizedHtml`
+  keep their texts as a list of `CultureText` (a culture and its text), and the list operand and default values
+  compare as their list does. An export file's option list holds its configuration and items as JSON text, which
+  cannot change, and the export file's reader keeps the canonical text, so two reads of a file compare by value.
+- **Names:** a change of the comparison has a `ChangeKind` ([ADR-0045](0045-versions-comparison-and-draft-cleanup.md)),
+  so `Kind` never names the element in one layer and the change in the other; the entries of the field message list
+  are `FieldMessageProperty`; the copy of a problem list is `ToReadOnlyList`.
+- **Static data that cannot change:** the static serializer options are read-only, the shape reader's defaults are a
+  frozen table built once, and the export envelope's lists are the model's list. The test of static fields allows only
+  what cannot change (values, frozen and immutable collections, read-only options and contexts, and types of the
+  package whose every field is read-only and holds what is allowed), instead of refusing a list of what can.
 
 ## Consequences
 

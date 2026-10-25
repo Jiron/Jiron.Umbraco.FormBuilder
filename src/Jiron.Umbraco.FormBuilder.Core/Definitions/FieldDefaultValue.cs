@@ -37,31 +37,20 @@ public sealed class FieldDefaultValue : IEquatable<FieldDefaultValue>
     {
         ArgumentNullException.ThrowIfNull(values);
         var list = DefinitionList.Of(values);
-        if (list.Count == 0 || list.Any(value => value is null))
+        if (list.Count == 0)
         {
-            throw new ArgumentException("A list default has at least one value and no null.", nameof(values));
+            throw new ArgumentException("A list default has at least one value.", nameof(values));
         }
 
         return new FieldDefaultValue(list, isList: true);
     }
 
     /// <inheritdoc />
-    public bool Equals(FieldDefaultValue? other) =>
-        other is not null && IsList == other.IsList && _values.SequenceEqual(other._values, StringComparer.Ordinal);
+    public bool Equals(FieldDefaultValue? other) => other is not null && IsList == other.IsList && _values.Equals(other._values);
 
     /// <inheritdoc />
     public override bool Equals(object? obj) => Equals(obj as FieldDefaultValue);
 
     /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        var hash = default(HashCode);
-        hash.Add(IsList);
-        foreach (var value in _values.AsSpan())
-        {
-            hash.Add(value, StringComparer.Ordinal);
-        }
-
-        return hash.ToHashCode();
-    }
+    public override int GetHashCode() => HashCode.Combine(IsList, _values);
 }

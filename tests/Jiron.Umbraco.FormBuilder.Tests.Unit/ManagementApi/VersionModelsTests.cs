@@ -90,7 +90,7 @@ public sealed class VersionModelsTests
             new JsonObject { ["alias"] = "name", ["required"] = false },
             new JsonObject { ["alias"] = "name", ["required"] = true },
             [new DefinitionPropertyChange(["required"], JsonValue.Create(false), JsonValue.Create(true)), new DefinitionPropertyChange(["help", "de"], null, JsonValue.Create("Hilfe"))]);
-        var added = change with { Kind = DefinitionChangeKind.Added, Before = null, Properties = [] };
+        var added = change with { ChangeKind = DefinitionChangeKind.Added, Before = null, Properties = [] };
 
         var model = FormComparisonResponseModel.Of(new FormComparison(2, 5, [change, added]));
 

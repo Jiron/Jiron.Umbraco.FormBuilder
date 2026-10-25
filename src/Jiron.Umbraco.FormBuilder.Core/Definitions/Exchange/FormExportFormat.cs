@@ -21,17 +21,21 @@ internal sealed record FormExportEnvelope(
     string PackageVersion,
     DateTimeOffset ExportedUtc,
     FormDefinition Definition,
-    IReadOnlyList<ExportedOptionList> OptionLists);
+    IReadOnlyList<ExportedOptionList> OptionLists)
+{
+    /// <summary>The library option lists the definition names that the exporting site had, as a list nobody can change.</summary>
+    public IReadOnlyList<ExportedOptionList> OptionLists { get; init => field = DefinitionList.Of(value); } = DefinitionList.Of(OptionLists);
+}
 
-/// <summary>A library option list as an export carries it.</summary>
+/// <summary>A library option list as an export carries it; its configuration and items are JSON text, which cannot change.</summary>
 /// <param name="Key">Its key, which definitions name it by.</param>
 /// <param name="Alias">Its alias.</param>
 /// <param name="Name">Its name.</param>
 /// <param name="Kind">Where its options come from.</param>
-/// <param name="Config">The source's configuration.</param>
-/// <param name="Items">The items of a manual or uploaded list.</param>
+/// <param name="Config">The source's configuration: the text of a JSON object.</param>
+/// <param name="Items">The items of a manual or uploaded list: the text of a JSON array.</param>
 /// <param name="CacheSeconds">How long the options of a source are cached.</param>
-internal sealed record ExportedOptionList(Guid Key, string Alias, string Name, string Kind, JsonObject Config, JsonArray Items, int CacheSeconds);
+internal sealed record ExportedOptionList(Guid Key, string Alias, string Name, string Kind, string Config, string Items, int CacheSeconds);
 
 /// <summary>An envelope that was read, or why it was refused.</summary>
 /// <param name="Envelope">The envelope, or null when it was refused.</param>
@@ -58,8 +62,9 @@ internal static class FormExportFormat
     public const int MaxPackageVersionLength = 64;
 
     private const string DefinitionProperty = "definition";
+    private const string Document = "An export file";
 
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true, NewLine = "\n", MaxDepth = MaxDepth };
+    private static readonly JsonSerializerOptions Indented = FrozenOptions.Of(new() { WriteIndented = true, NewLine = "\n", MaxDepth = MaxDepth });
     private static readonly ImmutableArray<string> RootProperties = ["format", "packageVersion", "exportedUtc", "form", DefinitionProperty, "optionLists"];
     private static readonly ImmutableArray<string> FormProperties = ["key", "alias", "name"];
     private static readonly ImmutableArray<string> ListProperties = ["key", "alias", "name", "kind", "config", "items", "cacheSeconds"];
@@ -78,8 +83,8 @@ internal static class FormExportFormat
                 ["alias"] = list.Alias,
                 ["name"] = list.Name,
                 ["kind"] = list.Kind,
-                ["config"] = list.Config.DeepClone(),
-                ["items"] = list.Items.DeepClone(),
+                ["config"] = JsonNode.Parse(list.Config),
+                ["items"] = JsonNode.Parse(list.Items),
                 ["cacheSeconds"] = list.CacheSeconds,
             });
         }
@@ -103,8 +108,10 @@ internal static class FormExportFormat
     {
         ArgumentNullException.ThrowIfNull(json);
         ArgumentNullException.ThrowIfNull(serializer);
-        return StrictText.ToUtf8(json, MaxBytes(serializer), TooLarge(serializer), out var problem) is { } bytes
-            ? Read(bytes, serializer)
+
+        // The strict encoder made bytes within the limit and valid UTF-8, so they are not checked again.
+        return StrictText.ToUtf8(json, MaxBytes(serializer), Document, out var problem) is { } bytes
+            ? ReadChecked(bytes, serializer)
             : new EnvelopeReadResult(null, [problem!]);
     }
 
@@ -114,31 +121,19 @@ internal static class FormExportFormat
     public static EnvelopeReadResult Read(ReadOnlySpan<byte> utf8, FormDefinitionSerializer serializer)
     {
         ArgumentNullException.ThrowIfNull(serializer);
-        if (StrictText.Check(utf8, MaxBytes(serializer), TooLarge(serializer)) is { } refused)
-        {
-            return new EnvelopeReadResult(null, [refused]);
-        }
-
-        JsonDocument document;
-        try
-        {
-            document = JsonDocument.Parse(utf8.ToArray(), new JsonDocumentOptions { MaxDepth = MaxDepth });
-        }
-        catch (JsonException exception)
-        {
-            return Refused(DefinitionErrors.InvalidJson, JsonPaths.Root, $"The text is not JSON, or nests deeper than {MaxDepth} levels (line {exception.LineNumber + 1}, byte {exception.BytePositionInLine + 1}).");
-        }
-
-        using (document)
-        {
-            return new Reader(serializer).Read(document.RootElement);
-        }
+        return StrictText.Check(utf8, MaxBytes(serializer), Document) is { } refused
+            ? new EnvelopeReadResult(null, [refused])
+            : ReadChecked(utf8, serializer);
     }
 
     private static int MaxBytes(FormDefinitionSerializer serializer) => serializer.Limits.MaxBytes * EnvelopeFactor;
 
-    private static DefinitionProblem TooLarge(FormDefinitionSerializer serializer) =>
-        new(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"An export file has at most {MaxBytes(serializer)} bytes.");
+    // Reads bytes that are within the limit and valid UTF-8.
+    private static EnvelopeReadResult ReadChecked(ReadOnlySpan<byte> utf8, FormDefinitionSerializer serializer)
+    {
+        using var document = StrictText.Parse(utf8, MaxDepth, out var problem);
+        return document is null ? new EnvelopeReadResult(null, [problem!]) : new Reader(serializer).Read(document.RootElement);
+    }
 
     private static EnvelopeReadResult Refused(string code, string path, string message) => new(null, [new DefinitionProblem(code, path, message)]);
 
@@ -326,8 +321,8 @@ internal static class FormExportFormat
             var alias = String(properties["alias"], JsonPaths.Property(path, "alias"));
             var name = String(properties["name"], JsonPaths.Property(path, "name"));
             var kind = String(properties["kind"], JsonPaths.Property(path, "kind"));
-            var config = Node(properties["config"], JsonPaths.Property(path, "config"), JsonValueKind.Object, "an object") as JsonObject;
-            var items = Node(properties["items"], JsonPaths.Property(path, "items"), JsonValueKind.Array, "an array") as JsonArray;
+            var config = Json(properties["config"], JsonPaths.Property(path, "config"), JsonValueKind.Object, "an object");
+            var items = Json(properties["items"], JsonPaths.Property(path, "items"), JsonValueKind.Array, "an array");
             var cacheSeconds = properties["cacheSeconds"];
             int? seconds = cacheSeconds.ValueKind == JsonValueKind.Number && cacheSeconds.TryGetInt32(out var number) && number >= 0 ? number : null;
             if (seconds is null)
@@ -434,7 +429,8 @@ internal static class FormExportFormat
             return instant.ToUniversalTime();
         }
 
-        private JsonNode? Node(JsonElement value, string path, JsonValueKind kind, string what)
+        // A JSON object or array of the file as its canonical text, which cannot change.
+        private string? Json(JsonElement value, string path, JsonValueKind kind, string what)
         {
             if (value.ValueKind != kind)
             {
@@ -442,11 +438,19 @@ internal static class FormExportFormat
                 return null;
             }
 
-            return kind == JsonValueKind.Object ? JsonObject.Create(value.Clone()) : JsonArray.Create(value.Clone());
+            try
+            {
+                return CanonicalJson.Write(value, sortProperties: false);
+            }
+            catch (ArgumentException)
+            {
+                Fail(DefinitionErrors.InvalidJson, path, "The text holds a lone surrogate.");
+                return null;
+            }
         }
 
         private void Fail(string code, string path, string message) => _problems.Add(code, path, message);
 
-        private EnvelopeReadResult Failed() => new(null, _problems.ToList());
+        private EnvelopeReadResult Failed() => new(null, _problems.ToReadOnlyList());
     }
 }

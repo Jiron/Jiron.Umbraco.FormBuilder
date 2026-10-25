@@ -400,7 +400,7 @@ internal sealed partial class FormBuilderFormExchangeService(
 
         try
         {
-            return JsonNode.DeepEquals(JsonNode.Parse(site.Config), list.Config) && JsonNode.DeepEquals(JsonNode.Parse(site.Items), list.Items);
+            return JsonNode.DeepEquals(JsonNode.Parse(site.Config), JsonNode.Parse(list.Config)) && JsonNode.DeepEquals(JsonNode.Parse(site.Items), JsonNode.Parse(list.Items));
         }
         catch (JsonException)
         {
@@ -416,7 +416,7 @@ internal sealed partial class FormBuilderFormExchangeService(
         {
             if (JsonNode.Parse(list.Config) is JsonObject config && JsonNode.Parse(list.Items) is JsonArray items)
             {
-                return new ExportedOptionList(list.Key, list.Alias, list.Name, list.Kind, config, items, list.CacheSeconds);
+                return new ExportedOptionList(list.Key, list.Alias, list.Name, list.Kind, config.ToJsonString(), items.ToJsonString(), list.CacheSeconds);
             }
         }
         catch (JsonException)

@@ -57,7 +57,7 @@ internal sealed partial class DefinitionStructureChecks
         checks.Index(definition);
         checks.CheckDefinition(definition);
         checks.CheckCycles();
-        return checks._problems.ToList();
+        return checks._problems.ToReadOnlyList();
     }
 
     private static string P(string path, string name) => JsonPaths.Property(path, name);
@@ -407,7 +407,7 @@ internal sealed partial class DefinitionStructureChecks
         }
 
         var messagesPath = P(path, "messages");
-        foreach (var message in FieldMessageTexts.All)
+        foreach (var message in FieldMessageProperties.All)
         {
             if (message.Read(field.Messages) is not null && (traits.Messages & message.Kind) == 0)
             {

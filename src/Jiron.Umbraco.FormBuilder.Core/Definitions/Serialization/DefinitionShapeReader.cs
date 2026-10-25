@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
@@ -18,15 +18,14 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 /// </remarks>
 internal sealed partial class DefinitionShapeReader
 {
-    // A default instance of each model type, for FillDefaults: immutable records, the same on every server.
-    private static readonly ConcurrentDictionary<Type, object> Defaults = new();
+    // A default instance of each object type of the model, for FillDefaults: immutable records, made once from the
+    // model's metadata and the same on every server.
+    private static readonly FrozenDictionary<Type, object> Defaults = ModelDefaults(DefinitionJsonContext.Default.Options);
 
-    private readonly JsonSerializerOptions _options;
+    private readonly JsonSerializerOptions _options = DefinitionJsonContext.Default.Options;
     private readonly DefinitionProblems _problems = new();
 
-    public DefinitionShapeReader(JsonSerializerOptions options) => _options = options;
-
-    public IReadOnlyList<DefinitionProblem> Problems => _problems.ToList();
+    public IReadOnlyList<DefinitionProblem> Problems => _problems.ToReadOnlyList();
 
     /// <summary>
     /// Reads the document's root. <paramref name="skipped"/> names root properties another step has checked, such as
@@ -330,7 +329,7 @@ internal sealed partial class DefinitionShapeReader
     /// </summary>
     private void FillDefaults(JsonObject result, JsonTypeInfo info)
     {
-        var defaults = Defaults.GetOrAdd(info.Type, type => Activator.CreateInstance(type)!);
+        var defaults = Defaults[info.Type];
         foreach (var metadata in info.Properties)
         {
             if (metadata.Set is null || metadata.IsRequired || result.ContainsKey(metadata.Name) || metadata.Get?.Invoke(defaults) is not { } value)
@@ -340,6 +339,59 @@ internal sealed partial class DefinitionShapeReader
 
             result[metadata.Name] = JsonSerializer.SerializeToNode(value, _options.GetTypeInfo(metadata.PropertyType));
         }
+    }
+
+    // Every object type the reader reads, from the definition down: its records, the concrete types behind its
+    // polymorphic ones, the two kinds of rule item, and the items of its lists.
+    private static FrozenDictionary<Type, object> ModelDefaults(JsonSerializerOptions options)
+    {
+        var defaults = new Dictionary<Type, object>();
+        var seen = new HashSet<Type>();
+        var pending = new Stack<Type>([typeof(FormDefinition)]);
+        while (pending.TryPop(out var type))
+        {
+            type = Nullable.GetUnderlyingType(type) ?? type;
+            if (!seen.Add(type))
+            {
+                continue;
+            }
+
+            if (type == typeof(RuleItem))
+            {
+                pending.Push(typeof(RuleGroup));
+                pending.Push(typeof(RuleCondition));
+                continue;
+            }
+
+            var info = options.GetTypeInfo(type);
+            if (info.Kind == JsonTypeInfoKind.Enumerable)
+            {
+                pending.Push(info.ElementType!);
+                continue;
+            }
+
+            if (info.Kind != JsonTypeInfoKind.Object)
+            {
+                continue;
+            }
+
+            if (!type.IsAbstract)
+            {
+                defaults.Add(type, Activator.CreateInstance(type)!);
+            }
+
+            foreach (var derived in info.PolymorphismOptions?.DerivedTypes ?? [])
+            {
+                pending.Push(derived.DerivedType);
+            }
+
+            foreach (var property in info.Properties)
+            {
+                pending.Push(property.PropertyType);
+            }
+        }
+
+        return defaults.ToFrozenDictionary();
     }
 
     private JsonDerivedType? ChooseDerivedType(JsonElement value, JsonPolymorphismOptions polymorphism, string path)

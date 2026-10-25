@@ -49,7 +49,7 @@ public sealed class BuiltInFormTemplatesTests
                 Assert.That(new StructuralPublishCheck(DefinitionFixtures.Serializer(), FieldTypeCatalogue.BuiltIn).Check(envelope.Definition), Is.Empty, $"{template.Alias}: publishes");
                 foreach (var text in Texts(envelope.Definition))
                 {
-                    Assert.That(text.Texts.Select(pair => pair.Key), Is.EquivalentTo(new[] { string.Empty, "de" }), $"{template.Alias}: \"{text.Default}\" in English and German");
+                    Assert.That(text.Texts.Select(pair => pair.Culture), Is.EquivalentTo(new[] { string.Empty, "de" }), $"{template.Alias}: \"{text.Default}\" in English and German");
                 }
             }
 

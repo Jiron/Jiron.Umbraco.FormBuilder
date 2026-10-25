@@ -85,8 +85,7 @@ public sealed class FormExportFormatTests
             Assert.That(read.Problems, Is.Empty);
             Assert.That((back.FormKey, back.Alias, back.Name, back.PackageVersion, back.ExportedUtc), Is.EqualTo((FormKey, "contact", "Contact us", "17.0.0-alpha.0", Exported)));
             Assert.That(FormDefinitionSerializer.WriteString(back.Definition), Is.EqualTo(FormDefinitionSerializer.WriteString(envelope.Definition)));
-            Assert.That(back.OptionLists.Single() with { Config = envelope.OptionLists[0].Config, Items = envelope.OptionLists[0].Items }, Is.EqualTo(envelope.OptionLists[0]));
-            Assert.That(JsonNode.DeepEquals(back.OptionLists[0].Config, envelope.OptionLists[0].Config) && JsonNode.DeepEquals(back.OptionLists[0].Items, envelope.OptionLists[0].Items), Is.True, "the configuration and the items");
+            Assert.That(back.OptionLists.Single(), Is.EqualTo(envelope.OptionLists[0]), "the list, with its configuration and items as canonical JSON text");
             Assert.That(FormExportFormat.Write(back), Is.EqualTo(text), "written again, the same file");
             Assert.That(FormExportFormat.Write(envelope), Is.EqualTo(text), "the same envelope written twice, which it lends its lists to");
             Assert.That(FormExportFormat.Read(Encoding.UTF8.GetBytes(text), DefinitionFixtures.Serializer()).Problems, Is.Empty, "as bytes too");
@@ -167,7 +166,7 @@ public sealed class FormExportFormatTests
             Assert.That(Problems(new string(' ', limit)), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$") }), "at the limit, read as JSON");
             Assert.That(FormExportFormat.Read(Encoding.UTF8.GetBytes(new string(' ', limit + 1)), serializer).Problems.Select(problem => problem.Code), Is.EqualTo(new[] { DefinitionErrors.LimitExceeded }), "bytes past the limit");
             Assert.That(FormExportFormat.Read(Encoding.UTF8.GetBytes(new string(' ', limit)), serializer).Problems.Select(problem => problem.Code), Is.EqualTo(new[] { DefinitionErrors.InvalidJson }), "bytes at the limit");
-            Assert.That(Problems(new string('[', FormExportFormat.MaxDepth + 1)), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$") }), "too deep");
+            Assert.That(Problems(new string('[', FormExportFormat.MaxDepth + 1)), Is.EqualTo(new[] { (DefinitionErrors.LimitExceeded, "$") }), "JSON as far as it goes, but too deep, as the definition reader answers");
         });
     }
 
@@ -240,6 +239,22 @@ public sealed class FormExportFormatTests
         });
     }
 
+    [Test]
+    public void AnEnvelope_KeepsItsOwnListOfOptionLists()
+    {
+        var lists = new List<ExportedOptionList>(Envelope().OptionLists);
+        var changed = Envelope() with { OptionLists = lists };
+        var built = new FormExportEnvelope(FormKey, "contact", "Contact us", "17.0.0-alpha.0", Exported, changed.Definition, lists);
+        lists.Add(lists[0] with { Key = Guid.NewGuid() });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(changed.OptionLists, Has.Count.EqualTo(1), "a list set with with");
+            Assert.That(built.OptionLists, Has.Count.EqualTo(1), "a list given to the constructor");
+            Assert.Throws<InvalidCastException>(() => ((List<ExportedOptionList>)built.OptionLists).Clear(), "a cast to a list");
+        });
+    }
+
     // A definition as the full fixture has it, with one library option list.
     private static FormExportEnvelope Envelope() => new(
         FormKey,
@@ -248,7 +263,7 @@ public sealed class FormExportFormatTests
         "17.0.0-alpha.0",
         Exported,
         DefinitionFixtures.Read(DefinitionFixtures.Full),
-        [new ExportedOptionList(ListKey, "sessions", "Sessions", "manual", new JsonObject { ["sort"] = "label" }, [new JsonObject { ["value"] = "keynote", ["label"] = new JsonObject { [string.Empty] = "Keynote" } }], 60)]);
+        [new ExportedOptionList(ListKey, "sessions", "Sessions", "manual", """{"sort":"label"}""", """[{"value":"keynote","label":{"":"Keynote"}}]""", 60)]);
 
     private static JsonObject List(JsonObject envelope) => envelope["optionLists"]![0]!.AsObject();
 

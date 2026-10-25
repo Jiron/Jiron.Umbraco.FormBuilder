@@ -12,7 +12,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
 /// </summary>
 public abstract partial class LocalizedString : IEquatable<LocalizedString>
 {
-    private readonly DefinitionList<KeyValuePair<string, string>> _texts;
+    private readonly DefinitionList<CultureText> _texts;
 
     /// <summary>Creates a text from its cultures and texts.</summary>
     /// <exception cref="ArgumentException">
@@ -22,14 +22,14 @@ public abstract partial class LocalizedString : IEquatable<LocalizedString>
     private protected LocalizedString(IEnumerable<KeyValuePair<string, string>> texts)
     {
         ArgumentNullException.ThrowIfNull(texts);
-        var sorted = DefinitionList.Of(texts.OrderBy(text => text.Key, StringComparer.Ordinal));
+        var sorted = DefinitionList.Of(texts.OrderBy(text => text.Key, StringComparer.Ordinal).Select(text => new CultureText(text.Key, text.Value)));
         // The ordinal order puts a null culture first.
-        if (sorted.Count > 0 && sorted[0].Key is null)
+        if (sorted.Count > 0 && sorted[0].Culture is null)
         {
             throw new ArgumentException("A culture name is null; the default text's culture is \"\".", nameof(texts));
         }
 
-        if (sorted.Count == 0 || sorted[0].Key.Length != 0)
+        if (sorted.Count == 0 || sorted[0].Culture.Length != 0)
         {
             throw new ArgumentException("A localised text needs its default text, the culture \"\".", nameof(texts));
         }
@@ -54,10 +54,10 @@ public abstract partial class LocalizedString : IEquatable<LocalizedString>
     }
 
     /// <summary>The default text, shown when no culture of the request has a text of its own.</summary>
-    public string Default => _texts[0].Value;
+    public string Default => _texts[0].Text;
 
     /// <summary>Every culture with its text, the default (<c>""</c>) first, then by culture name (ordinal).</summary>
-    public IReadOnlyList<KeyValuePair<string, string>> Texts => _texts;
+    public IReadOnlyList<CultureText> Texts => _texts;
 
     /// <summary>Whether <paramref name="name"/> has the form of a culture name: a language and optional subtags.</summary>
     public static bool IsCultureName(string name) => name is not null && CultureName().IsMatch(name);
@@ -78,9 +78,9 @@ public abstract partial class LocalizedString : IEquatable<LocalizedString>
         ArgumentNullException.ThrowIfNull(culture);
         foreach (var entry in _texts.AsSpan())
         {
-            if (string.Equals(entry.Key, culture, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(entry.Culture, culture, StringComparison.OrdinalIgnoreCase))
             {
-                text = entry.Value;
+                text = entry.Text;
                 return true;
             }
         }
@@ -118,17 +118,7 @@ public abstract partial class LocalizedString : IEquatable<LocalizedString>
     public override bool Equals(object? obj) => Equals(obj as LocalizedString);
 
     /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        var hash = default(HashCode);
-        foreach (var (culture, text) in _texts.AsSpan())
-        {
-            hash.Add(culture, StringComparer.Ordinal);
-            hash.Add(text, StringComparer.Ordinal);
-        }
-
-        return hash.ToHashCode();
-    }
+    public override int GetHashCode() => _texts.GetHashCode();
 
     /// <inheritdoc />
     public override string ToString() => Default;
@@ -139,6 +129,11 @@ public abstract partial class LocalizedString : IEquatable<LocalizedString>
     [GeneratedRegex(@"^#[A-Za-z0-9._\-]+\z", RegexOptions.CultureInvariant)]
     private static partial Regex DictionaryReference();
 }
+
+/// <summary>One culture's text of a <see cref="LocalizedString"/>; two are equal when both parts are, ordinally.</summary>
+/// <param name="Culture">The culture name; <c>""</c> for the default text.</param>
+/// <param name="Text">The text.</param>
+public readonly record struct CultureText(string Culture, string Text);
 
 /// <summary>
 /// Plain text in one or more cultures: labels, titles, placeholders, help texts and messages. Texts that render on one

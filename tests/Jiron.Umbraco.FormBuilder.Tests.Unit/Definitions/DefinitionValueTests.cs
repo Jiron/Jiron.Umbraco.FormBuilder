@@ -38,7 +38,7 @@ public sealed class DefinitionValueTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(Labels.Texts.Select(text => text.Key), Is.EqualTo(new[] { string.Empty, "de", "de-CH", "sr-Latn" }));
+            Assert.That(Labels.Texts.Select(text => text.Culture), Is.EqualTo(new[] { string.Empty, "de", "de-CH", "sr-Latn" }));
             Assert.That(other, Is.EqualTo(Labels));
             Assert.That(other.GetHashCode(), Is.EqualTo(Labels.GetHashCode()));
             Assert.That(new LocalizedHtml("Email"), Is.Not.EqualTo(new LocalizedText("Email")), "a rich text is not a plain text");

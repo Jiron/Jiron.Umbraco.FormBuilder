@@ -13,7 +13,7 @@ internal static class DefinitionKeys
 {
     private const int KeyLength = 36;
 
-    private static readonly JsonSerializerOptions DeepText = new() { MaxDepth = 4 * FormDefinitionSerializer.MaxDepth };
+    private static readonly JsonSerializerOptions DeepText = FrozenOptions.Of(new() { MaxDepth = 4 * FormDefinitionSerializer.MaxDepth });
 
     /// <summary>
     /// Every element key of a definition in document order: the definition's own, its pages, groups and fields (the

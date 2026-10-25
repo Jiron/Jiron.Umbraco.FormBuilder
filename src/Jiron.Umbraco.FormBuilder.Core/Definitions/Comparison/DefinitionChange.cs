@@ -61,7 +61,7 @@ internal sealed record DefinitionPropertyChange(IReadOnlyList<string> Path, Json
 /// repeatable group, a rule's element; null for pages and for elements of the form itself.
 /// </param>
 /// <param name="PreviousParentKey">The element that held it in the older version, when it moved to another one; otherwise null.</param>
-/// <param name="Kind">Whether it was added, removed or changed.</param>
+/// <param name="ChangeKind">Whether it was added, removed or changed.</param>
 /// <param name="Moved">Whether its place changed: another parent, or another order among the siblings both versions share.</param>
 /// <param name="Label">Its default-culture title, label or name, from the newer version when it has one, or null.</param>
 /// <param name="Alias">A field's alias, or null.</param>
@@ -75,7 +75,7 @@ internal sealed record DefinitionChange(
     string? SettingsGroup,
     Guid? ParentKey,
     Guid? PreviousParentKey,
-    DefinitionChangeKind Kind,
+    DefinitionChangeKind ChangeKind,
     bool Moved,
     string? Label,
     string? Alias,
@@ -85,7 +85,7 @@ internal sealed record DefinitionChange(
     IReadOnlyList<DefinitionPropertyChange> Properties)
 {
     /// <summary>The change without its properties, for a version list.</summary>
-    public DefinitionChangeSummary Summarize() => new(ElementKind, Key, SettingsGroup, ParentKey, Kind, Moved, Label, Alias);
+    public DefinitionChangeSummary Summarize() => new(ElementKind, Key, SettingsGroup, ParentKey, ChangeKind, Moved, Label, Alias);
 }
 
 /// <summary>An element that differs between two versions, without its properties: what a version list shows (ADR-0045).</summary>
@@ -93,7 +93,7 @@ internal sealed record DefinitionChange(
 /// <param name="Key">Its key, or null for a settings group.</param>
 /// <param name="SettingsGroup">The settings group's name, or null for other elements.</param>
 /// <param name="ParentKey">The element that holds it, as in <see cref="DefinitionChange.ParentKey"/>.</param>
-/// <param name="Kind">Whether it was added, removed or changed.</param>
+/// <param name="ChangeKind">Whether it was added, removed or changed.</param>
 /// <param name="Moved">Whether its place changed.</param>
 /// <param name="Label">Its default-culture title, label or name, or null.</param>
 /// <param name="Alias">A field's alias, or null.</param>
@@ -102,7 +102,7 @@ internal sealed record DefinitionChangeSummary(
     Guid? Key,
     string? SettingsGroup,
     Guid? ParentKey,
-    DefinitionChangeKind Kind,
+    DefinitionChangeKind ChangeKind,
     bool Moved,
     string? Label,
     string? Alias);

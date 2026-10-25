@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 
@@ -6,8 +7,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
 
 /// <summary>
 /// What every save refuses on top of the document's shape (ADR-0002, ADR-0034): the element limits of section 4.3.1,
-/// the text limits, values out of range, empty keys and two elements with one key. They run on the model, so a
-/// definition built in code is held to the same rules as one read from JSON.
+/// the text limits, values out of range, words outside their enum, missing required values, empty keys and two
+/// elements with one key. They run on the model, so a definition built in code is held to the same rules as one read
+/// from JSON, and they refuse first, at its path, everything the writer refuses.
 /// </summary>
 internal sealed class DefinitionSaveChecks
 {
@@ -31,6 +33,10 @@ internal sealed class DefinitionSaveChecks
 
     private const int MaxDays = 36500;
 
+    // Each field inside a field and each group inside a group opens two levels of the document, an array and an
+    // object, so a definition that nests more than half as deep as a document may is too deep for any reader.
+    private const int MaxNesting = FormDefinitionSerializer.MaxDepth / 2;
+
     // CR, LF, NEL, and the line and paragraph separators.
     private static readonly SearchValues<char> LineBreaks = SearchValues.Create([(char)13, (char)10, (char)0x85, (char)0x2028, (char)0x2029]);
 
@@ -40,6 +46,8 @@ internal sealed class DefinitionSaveChecks
     private int _groups;
     private int _fields;
     private int _rules;
+    private int _nesting;
+    private bool _tooDeep;
 
     private DefinitionSaveChecks(DefinitionLimits limits) => _limits = limits;
 
@@ -59,8 +67,12 @@ internal sealed class DefinitionSaveChecks
         ArgumentNullException.ThrowIfNull(text);
         var checks = new DefinitionSaveChecks(new DefinitionLimits());
         checks.Text(text, JsonPaths.Root, html ? TextKind.Html : TextKind.Line);
-        return checks._problems.ToList();
+        return checks._problems.ToReadOnlyList();
     }
+
+    /// <summary>The problem of a definition that nests deeper than a document may: no reader reads it.</summary>
+    public static DefinitionProblem NestsTooDeep() =>
+        new(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"The definition nests deeper than {FormDefinitionSerializer.MaxDepth} levels, which no reader reads.");
 
     /// <summary>Every problem the definition has, in document order, at most <see cref="DefinitionProblems.Max"/>.</summary>
     public static IReadOnlyList<DefinitionProblem> Check(FormDefinition definition, DefinitionLimits limits)
@@ -69,7 +81,7 @@ internal sealed class DefinitionSaveChecks
         ArgumentNullException.ThrowIfNull(limits);
         var checks = new DefinitionSaveChecks(limits);
         checks.CheckDefinition(definition);
-        return checks._problems.ToList();
+        return checks._problems.ToReadOnlyList();
     }
 
     private static string P(string path, string name) => JsonPaths.Property(path, name);
@@ -83,7 +95,11 @@ internal sealed class DefinitionSaveChecks
     private void CheckDefinition(FormDefinition definition)
     {
         Key(definition.Key, P(JsonPaths.Root, "key"));
-        CheckSettings(definition.Settings, P(JsonPaths.Root, "settings"));
+        var settingsPath = P(JsonPaths.Root, "settings");
+        if (Present(definition.Settings, settingsPath))
+        {
+            CheckSettings(definition.Settings, settingsPath);
+        }
 
         var pagesPath = P(JsonPaths.Root, "pages");
         if (definition.Pages.Count > _limits.MaxPages)
@@ -105,6 +121,7 @@ internal sealed class DefinitionSaveChecks
             Key(rule.Key, P(path, "key"));
             Reference(rule.Field, P(path, "field"));
             Text(rule.Message, P(path, "message"), TextKind.Line);
+            Word(rule.Match, P(path, "match"));
             Conditions(rule.Conditions, P(path, "conditions"));
         }
 
@@ -119,8 +136,9 @@ internal sealed class DefinitionSaveChecks
             var action = definition.Actions[i];
             var path = I(actionsPath, i);
             Key(action.Key, P(path, "key"));
-            String(action.Type, P(path, "type"), TypeLength, singleLine: true);
+            RequiredString(action.Type, P(path, "type"), TypeLength);
             String(action.Name, P(path, "name"), LineLength, singleLine: true);
+            Word(action.Trigger, P(path, "trigger"));
             Rules(action.Rules, P(path, "rules"));
         }
 
@@ -135,6 +153,7 @@ internal sealed class DefinitionSaveChecks
             var outcome = definition.Outcomes[i];
             var path = I(outcomesPath, i);
             Key(outcome.Key, P(path, "key"));
+            Word(outcome.Kind, P(path, "kind"));
             Text(outcome.Message, P(path, "message"), TextKind.Html);
             if (outcome.Redirect is { } redirect)
             {
@@ -154,8 +173,71 @@ internal sealed class DefinitionSaveChecks
 
     private void CheckSettings(FormSettings settings, string path)
     {
-        var submission = settings.Submission;
         var submissionPath = P(path, "submission");
+        if (Present(settings.Submission, submissionPath))
+        {
+            CheckSubmission(settings.Submission, submissionPath);
+        }
+
+        var availabilityPath = P(path, "availability");
+        if (Present(settings.Availability, availabilityPath))
+        {
+            CheckAvailability(settings.Availability, availabilityPath);
+        }
+
+        var protectionPath = P(path, "protection");
+        if (Present(settings.Protection, protectionPath))
+        {
+            var protection = settings.Protection;
+            Word(protection.Level, P(protectionPath, "level"));
+            Word(protection.ContentRules, P(protectionPath, "contentRules"));
+            if (protection.Captcha is { } captcha)
+            {
+                RequiredString(captcha.Provider, P(P(protectionPath, "captcha"), "provider"), TypeLength);
+            }
+        }
+
+        var privacyPath = P(path, "privacy");
+        if (Present(settings.Privacy, privacyPath))
+        {
+            Word(settings.Privacy.IP, P(privacyPath, "ip"));
+            var retentionPath = P(privacyPath, "retentionDays");
+            if (Present(settings.Privacy.RetentionDays, retentionPath))
+            {
+                var retention = settings.Privacy.RetentionDays;
+                foreach (var (state, days) in new[] { ("submitted", retention.Submitted), ("approved", retention.Approved), ("rejected", retention.Rejected), ("spam", retention.Spam) })
+                {
+                    if (days is { } value)
+                    {
+                        Range(value, P(retentionPath, state), 1, MaxDays);
+                    }
+                }
+            }
+        }
+
+        var appearancePath = P(path, "appearance");
+        if (Present(settings.Appearance, appearancePath))
+        {
+            var appearance = settings.Appearance;
+            Word(appearance.RequiredMarker, P(appearancePath, "requiredMarker"));
+            Word(appearance.ChoiceLayout, P(appearancePath, "choiceLayout"));
+            String(appearance.Theme, P(appearancePath, "theme"), ThemeLength, singleLine: true);
+            String(appearance.CssClass, P(appearancePath, "cssClass"), LineLength, singleLine: true);
+        }
+
+        var developerPath = P(path, "developer");
+        if (Present(settings.Developer, developerPath))
+        {
+            Strings(settings.Developer.QueryValues, P(developerPath, "queryValues"), LineLength);
+            Strings(settings.Developer.ContextValues, P(developerPath, "contextValues"), LineLength);
+        }
+    }
+
+    private void CheckSubmission(FormSubmissionSettings submission, string submissionPath)
+    {
+        Word(submission.Progress, P(submissionPath, "progress"));
+        var stored = Word(submission.Store, P(submissionPath, "store"));
+        Word(submission.Approval, P(submissionPath, "approval"));
         Text(submission.SubmitLabel, P(submissionPath, "submitLabel"), TextKind.Line);
         Text(submission.NextLabel, P(submissionPath, "nextLabel"), TextKind.Line);
         Text(submission.BackLabel, P(submissionPath, "backLabel"), TextKind.Line);
@@ -171,7 +253,7 @@ internal sealed class DefinitionSaveChecks
                 Fail(DefinitionErrors.InvalidValue, storeDaysPath, "Storing entries for some days needs the number of days.");
             }
         }
-        else if (submission.StoreDays is not null)
+        else if (stored && submission.StoreDays is not null)
         {
             Fail(DefinitionErrors.InvalidValue, storeDaysPath, "The number of days belongs only to storing entries for some days.");
         }
@@ -195,9 +277,11 @@ internal sealed class DefinitionSaveChecks
             String(reference.Prefix, P(referencePath, "prefix"), LineLength, singleLine: true);
             Range(reference.Digits, P(referencePath, "digits"), 1, 10);
         }
+    }
 
-        var availability = settings.Availability;
-        var availabilityPath = P(path, "availability");
+    private void CheckAvailability(FormAvailabilitySettings availability, string availabilityPath)
+    {
+        Word(availability.Access, P(availabilityPath, "members"));
         Instant(availability.OpensAt, P(availabilityPath, "opensAt"));
         Instant(availability.ClosesAt, P(availabilityPath, "closesAt"));
         if (availability.MaxEntries is { } maxEntries)
@@ -210,29 +294,6 @@ internal sealed class DefinitionSaveChecks
         {
             Reference(availability.MemberGroups[i], I(P(availabilityPath, "memberGroups"), i));
         }
-
-        if (settings.Protection.Captcha is { } captcha)
-        {
-            String(captcha.Provider, P(P(P(path, "protection"), "captcha"), "provider"), TypeLength, singleLine: true);
-        }
-
-        var retention = settings.Privacy.RetentionDays;
-        var retentionPath = P(P(path, "privacy"), "retentionDays");
-        foreach (var (state, days) in new[] { ("submitted", retention.Submitted), ("approved", retention.Approved), ("rejected", retention.Rejected), ("spam", retention.Spam) })
-        {
-            if (days is { } value)
-            {
-                Range(value, P(retentionPath, state), 1, MaxDays);
-            }
-        }
-
-        var appearancePath = P(path, "appearance");
-        String(settings.Appearance.Theme, P(appearancePath, "theme"), ThemeLength, singleLine: true);
-        String(settings.Appearance.CssClass, P(appearancePath, "cssClass"), LineLength, singleLine: true);
-
-        var developerPath = P(path, "developer");
-        Strings(settings.Developer.QueryValues, P(developerPath, "queryValues"), LineLength);
-        Strings(settings.Developer.ContextValues, P(developerPath, "contextValues"), LineLength);
     }
 
     private void CheckPage(FormPage page, string path)
@@ -260,6 +321,7 @@ internal sealed class DefinitionSaveChecks
         Text(group.Title, P(path, "title"), TextKind.Line);
         Text(group.Description, P(path, "description"), TextKind.Html);
         Range(group.Columns, P(path, "columns"), 1, 4);
+        Word(group.Style, P(path, "style"));
         Rules(group.Rules, P(path, "rules"));
         Fields(group.Fields, P(path, "fields"), Math.Clamp(group.Columns, 1, 4));
     }
@@ -285,14 +347,20 @@ internal sealed class DefinitionSaveChecks
     private void CheckField(FormField field, string path, int columns)
     {
         Key(field.Key, P(path, "key"));
-        String(field.Type, P(path, "type"), TypeLength, singleLine: true);
+        RequiredString(field.Type, P(path, "type"), TypeLength);
         String(field.Alias, P(path, "alias"), LineLength, singleLine: true);
         Strings(field.FormerAliases, P(path, "formerAliases"), LineLength);
         Range(field.Span, P(path, "span"), 1, columns);
         Text(field.Label, P(path, "label"), TextKind.Line);
         Text(field.Help, P(path, "help"), TextKind.Plain);
         Text(field.Placeholder, P(path, "placeholder"), TextKind.Line);
-        Messages(field.Messages, P(path, "messages"));
+        var messagesPath = P(path, "messages");
+        if (Present(field.Messages, messagesPath))
+        {
+            Messages(field.Messages, messagesPath);
+        }
+
+        Word(field.Keep, P(path, "keep"));
 
         if (field.DefaultValue is { } defaultValue)
         {
@@ -308,6 +376,7 @@ internal sealed class DefinitionSaveChecks
             var prefillPath = P(path, "prefill");
             String(prefill.Query, P(prefillPath, "query"), LineLength, singleLine: true);
             String(prefill.Member, P(prefillPath, "member"), LineLength, singleLine: true);
+            Word(prefill.MemberMode, P(prefillPath, "memberMode"));
         }
 
         String(field.Autocomplete, P(path, "autocomplete"), LineLength, singleLine: true);
@@ -321,7 +390,12 @@ internal sealed class DefinitionSaveChecks
             switch (check)
             {
                 case PatternCheck pattern:
-                    String(pattern.Pattern, P(checkPath, "pattern"), PlainLength, singleLine: false);
+                    var patternPath = P(checkPath, "pattern");
+                    if (Present(pattern.Pattern, patternPath))
+                    {
+                        String(pattern.Pattern, patternPath, PlainLength, singleLine: false);
+                    }
+
                     break;
                 case MatchesFieldCheck matches:
                     Reference(matches.Field, P(checkPath, "field"));
@@ -347,12 +421,16 @@ internal sealed class DefinitionSaveChecks
             Text(row.Label, P(rowPath, "label"), TextKind.Line);
         }
 
-        Fields(field.Fields, P(path, "fields"), columns);
+        if (field.Fields.Count > 0 && Deeper())
+        {
+            Fields(field.Fields, P(path, "fields"), columns);
+            _nesting--;
+        }
     }
 
     private void Messages(FieldMessages messages, string path)
     {
-        foreach (var message in FieldMessageTexts.All)
+        foreach (var message in FieldMessageProperties.All)
         {
             Text(message.Read(messages), P(path, message.Name), TextKind.Line);
         }
@@ -360,6 +438,7 @@ internal sealed class DefinitionSaveChecks
 
     private void CheckOptions(FieldOptions options, string path)
     {
+        Word(options.Source, P(path, "source"));
         var itemsPath = P(path, "items");
         if (options.Items.Count > _limits.MaxOptionsPerField)
         {
@@ -401,8 +480,13 @@ internal sealed class DefinitionSaveChecks
         }
     }
 
-    private void OptionValue(string value, string path)
+    private void OptionValue(string? value, string path)
     {
+        if (!Present(value, path))
+        {
+            return;
+        }
+
         if (value.Length == 0)
         {
             Fail(DefinitionErrors.InvalidValue, path, "An option's value has at least one character.");
@@ -419,6 +503,8 @@ internal sealed class DefinitionSaveChecks
             var rulePath = I(path, i);
             CountRule(rulePath);
             Key(list[i].Key, P(rulePath, "key"));
+            Word(list[i].Effect, P(rulePath, "effect"));
+            Word(list[i].Match, P(rulePath, "match"));
             Conditions(list[i].Conditions, P(rulePath, "conditions"));
         }
     }
@@ -439,7 +525,13 @@ internal sealed class DefinitionSaveChecks
             switch (items[i])
             {
                 case RuleGroup group:
-                    Conditions(group.Conditions, P(itemPath, "conditions"));
+                    Word(group.Match, P(itemPath, "match"));
+                    if (Deeper())
+                    {
+                        Conditions(group.Conditions, P(itemPath, "conditions"));
+                        _nesting--;
+                    }
+
                     break;
                 case RuleCondition condition:
                     if (condition.Field is { } field)
@@ -448,7 +540,7 @@ internal sealed class DefinitionSaveChecks
                     }
 
                     String(condition.Context, P(itemPath, "context"), LineLength, singleLine: true);
-                    String(condition.Operator, P(itemPath, "op"), LineLength, singleLine: true);
+                    RequiredString(condition.Operator, P(itemPath, "op"), LineLength);
                     if (condition.Value is { } value)
                     {
                         Operand(value, P(itemPath, "value"));
@@ -464,13 +556,17 @@ internal sealed class DefinitionSaveChecks
         switch (operand)
         {
             case ConditionOperand.Text text:
-                String(text.Value, path, PlainLength, singleLine: false);
+                if (Present(text.Value, path))
+                {
+                    String(text.Value, path, PlainLength, singleLine: false);
+                }
+
                 break;
             case ConditionOperand.Field field:
                 Reference(field.Key, P(path, "field"));
                 break;
             case ConditionOperand.Today today:
-                String(today.Offset, P(path, "today"), LineLength, singleLine: true);
+                RequiredString(today.Offset, P(path, "today"), LineLength);
                 break;
             case ConditionOperand.List list:
                 // A list holds at least one item and no list (its constructor sees to that).
@@ -481,6 +577,51 @@ internal sealed class DefinitionSaveChecks
 
                 break;
         }
+    }
+
+    // One level deeper into fields inside fields or groups inside groups, or, past the levels a reader reads, the
+    // problem once and no deeper: however deep a definition built in code nests, the checks never run out of stack.
+    private bool Deeper()
+    {
+        if (_nesting < MaxNesting)
+        {
+            _nesting++;
+            return true;
+        }
+
+        if (!_tooDeep)
+        {
+            _tooDeep = true;
+            _problems.Add(NestsTooDeep());
+        }
+
+        return false;
+    }
+
+    // Whether a value the model requires is there; a missing one is refused at its path.
+    private bool Present([NotNullWhen(true)] object? value, string path)
+    {
+        if (value is not null)
+        {
+            return true;
+        }
+
+        Fail(DefinitionErrors.InvalidValue, path, "A required value is missing.");
+        return false;
+    }
+
+    // Whether the value is a word of the definition, one its enum defines, which the writer can write; one that is not
+    // is refused at its path, and what depends on it is not checked against it.
+    private bool Word<T>(T value, string path)
+        where T : struct, Enum
+    {
+        if (DefinitionWords<T>.Of(value) is not null)
+        {
+            return true;
+        }
+
+        Fail(DefinitionErrors.InvalidValue, path, DefinitionWords<T>.NotAWord(value));
+        return false;
     }
 
     private void Key(Guid key, string path)
@@ -526,6 +667,15 @@ internal sealed class DefinitionSaveChecks
         for (var i = 0; i < values.Count; i++)
         {
             String(values[i], I(path, i), max, singleLine: true);
+        }
+    }
+
+    // A text on one line that the model requires.
+    private void RequiredString(string? value, string path, int max)
+    {
+        if (Present(value, path))
+        {
+            String(value, path, max, singleLine: true);
         }
     }
 

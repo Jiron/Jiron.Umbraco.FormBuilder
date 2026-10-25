@@ -1,10 +1,11 @@
 // Conditions and rules (ADR-0005), the same in C#: checked as a whole first (unknown fields and operators, operands,
 // patterns), then evaluated. Checking first means both runtimes report the same error whatever order they evaluate
-// in. Step 5.2 builds the rules engine on these.
+// in. Step 5.2 builds the rules engine on these. Condition, Group and Rule are Core's LogicCondition, LogicGroup and
+// LogicRule; Core's names say they belong to its logic, beside the definition's own conditions (ADR-0030).
 import { applyRelative, formatDate, parseDate, parseDateTime, parseRelative, parseTime, today } from './dates.ts';
 import { compareText } from './decimal.ts';
 import { LogicError, own } from './errors.ts';
-import { compilePattern } from './pattern.ts';
+import { compilePattern, type Pattern } from './pattern.ts';
 import { clean, fold } from './text.ts';
 
 /** What a field's answers are compared as. */
@@ -135,7 +136,8 @@ function checkOne(operand: unknown, subject: Subject): void {
   throw new LogicError('invalid_operand');
 }
 
-function checkCondition(condition: Condition, subject: Subject): void {
+// Checks a condition; a pattern it compiles goes into patterns, for the evaluation that follows.
+function checkCondition(condition: Condition, subject: Subject, patterns: Map<string, Pattern>): void {
   const kind = subjectKind(condition, subject);
   const operator = OPERATORS.get(condition.op);
   if (operator === undefined) throw new LogicError('unknown_operator');
@@ -162,7 +164,7 @@ function checkCondition(condition: Condition, subject: Subject): void {
       return;
     case 'pattern':
       if (typeof value !== 'string') throw new LogicError('invalid_operand');
-      compilePattern(value);
+      if (!patterns.has(value)) patterns.set(value, compilePattern(value));
       return;
     case 'checked':
       // A checkbox is checked or not; a choice field names the option.
@@ -172,11 +174,11 @@ function checkCondition(condition: Condition, subject: Subject): void {
   }
 }
 
-function checkGroup(group: Group, subject: Subject): void {
+function checkGroup(group: Group, subject: Subject, patterns: Map<string, Pattern>): void {
   if (group.match !== 'all' && group.match !== 'any') throw new LogicError('invalid_condition');
   for (const item of group.conditions) {
-    if (isGroup(item)) checkGroup(item, subject);
-    else checkCondition(item, subject);
+    if (isGroup(item)) checkGroup(item, subject, patterns);
+    else checkCondition(item, subject, patterns);
   }
 }
 
@@ -232,13 +234,6 @@ function key(kind: Kind, value: string): string | null {
   }
 }
 
-// Numbers compare as the values they are, digit by digit, without a number or a key being built (ADR-0005).
-function same(kind: Kind, a: string, b: string): boolean {
-  if (kind === 'number') return compareText(a, b) === 0;
-  const x = key(kind, a);
-  return x !== null && x === key(kind, b);
-}
-
 /** Orders two values of an ordered kind; null when either is not a valid value of that kind. */
 function order(kind: Kind, a: string, b: string): number | null {
   if (kind === 'number') return compareText(a, b);
@@ -266,18 +261,27 @@ function isChecked(condition: Condition, kind: Kind, values: readonly string[]):
   return values.includes(expected);
 }
 
-function evaluate(condition: Condition, subject: Subject): boolean {
+// Evaluates a checked condition, with the patterns its check compiled.
+function evaluate(condition: Condition, subject: Subject, patterns: ReadonlyMap<string, Pattern>): boolean {
   const kind = subjectKind(condition, subject);
   const values = subjectValues(condition, subject);
   const value = condition.value;
   const operands = (): string[] => resolve(value, subject);
+  // Each value and each operand becomes its key once, however many of the others it meets. Numbers compare as the
+  // values they are, digit by digit, without a number or a key being built (ADR-0005).
   const anyEqual = (): boolean => {
     const list = operands();
-    return values.some((v) => list.some((o) => same(kind, v, o)));
+    if (kind === 'number') return values.some((v) => list.some((o) => compareText(v, o) === 0));
+    const keys = list.map((o) => key(kind, o));
+    return values.some((v) => {
+      const x = key(kind, v);
+      return x !== null && keys.includes(x);
+    });
   };
+  // Each value and each operand is folded once.
   const anyText = (test: (v: string, o: string) => boolean): boolean => {
     const list = operands().map(fold);
-    return values.some((v) => list.some((o) => test(fold(v), o)));
+    return values.map(fold).some((v) => list.some((o) => test(v, o)));
   };
   switch (condition.op) {
     case 'equals':
@@ -303,7 +307,8 @@ function evaluate(condition: Condition, subject: Subject): boolean {
     case 'endsWith':
       return anyText((v, o) => v.endsWith(o));
     case 'matches': {
-      const pattern = compilePattern(typeof value === 'string' ? value : '');
+      const pattern = typeof value === 'string' ? patterns.get(value) : undefined;
+      if (pattern === undefined) throw new LogicError('invalid_operand');
       return values.some((v) => pattern.test(v));
     }
     case 'greaterThan':
@@ -326,21 +331,23 @@ function evaluate(condition: Condition, subject: Subject): boolean {
   }
 }
 
-function evaluateGroup(group: Group, subject: Subject): boolean {
+function evaluateGroup(group: Group, subject: Subject, patterns: ReadonlyMap<string, Pattern>): boolean {
   const test = (item: Condition | Group): boolean =>
-    isGroup(item) ? evaluateGroup(item, subject) : evaluate(item, subject);
+    isGroup(item) ? evaluateGroup(item, subject, patterns) : evaluate(item, subject, patterns);
   return group.match === 'all' ? group.conditions.every(test) : group.conditions.some(test);
 }
 
 /** Checks the condition, then evaluates it. */
 export function evaluateCondition(condition: Condition, subject: Subject): boolean {
-  checkCondition(condition, subject);
-  return evaluate(condition, subject);
+  const patterns = new Map<string, Pattern>();
+  checkCondition(condition, subject, patterns);
+  return evaluate(condition, subject, patterns);
 }
 
 /** Checks the whole rule, then evaluates it: null when the rule is switched off. */
 export function evaluateRule(rule: Rule, subject: Subject): boolean | null {
-  checkGroup(rule, subject);
+  const patterns = new Map<string, Pattern>();
+  checkGroup(rule, subject, patterns);
   if (!rule.enabled) return null;
-  return evaluateGroup(rule, subject);
+  return evaluateGroup(rule, subject, patterns);
 }

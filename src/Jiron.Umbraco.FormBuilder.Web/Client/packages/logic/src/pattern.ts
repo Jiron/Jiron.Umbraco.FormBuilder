@@ -456,8 +456,14 @@ function run(program: Program, points: readonly number[]): boolean {
   const seen = new Int32Array(code.length).fill(-1);
   const threads = new Int32Array(code.length);
   const advanced = new Int32Array(code.length);
-  // A closure reaches each instruction once and pushes at most two more from it, besides its starts.
+  // A closure reaches each instruction once and pushes at most two more from it, besides its starts. A typed array
+  // drops a write past its end without a word, so every push checks the bound and stops the run instead.
   const stack = new Int32Array(3 * code.length);
+  const push = (top: number, pc: number): number => {
+    if (top >= stack.length) throw new Error('The pattern run outgrew its stack.');
+    stack[top] = pc;
+    return top + 1;
+  };
   let generation = 0;
   let threadCount = 0;
   let advancedCount = 1; // the first instruction, where every run starts
@@ -466,7 +472,7 @@ function run(program: Program, points: readonly number[]): boolean {
     generation++;
     threadCount = 0;
     let top = 0;
-    for (let k = advancedCount - 1; k >= 0; k--) stack[top++] = advanced[k] ?? 0;
+    for (let k = advancedCount - 1; k >= 0; k--) top = push(top, advanced[k] ?? 0);
     while (top > 0) {
       const pc = stack[--top] ?? 0;
       const instruction = code[pc];
@@ -474,13 +480,13 @@ function run(program: Program, points: readonly number[]): boolean {
       seen[pc] = generation;
       const [op, a, b] = instruction;
       if (op === SPLIT) {
-        stack[top++] = b;
-        stack[top++] = a;
-      } else if (op === JUMP) stack[top++] = a;
+        top = push(top, b);
+        top = push(top, a);
+      } else if (op === JUMP) top = push(top, a);
       else if (op === START) {
-        if (position === 0) stack[top++] = pc + 1;
+        if (position === 0) top = push(top, pc + 1);
       } else if (op === END) {
-        if (position === points.length) stack[top++] = pc + 1;
+        if (position === points.length) top = push(top, pc + 1);
       } else threads[threadCount++] = pc;
     }
   };

@@ -52,16 +52,18 @@ internal static class Rules
     /// <summary>Checks the condition, then evaluates it.</summary>
     public static bool EvaluateCondition(LogicCondition condition, Subject subject)
     {
-        CheckCondition(condition, subject.Fields);
-        return Evaluate(condition, subject);
+        var patterns = new Dictionary<string, SafePattern>(StringComparer.Ordinal);
+        CheckCondition(condition, subject.Fields, patterns);
+        return Evaluate(condition, subject, patterns);
     }
 
     /// <summary>Checks the whole rule, then evaluates it: null when the rule is switched off.</summary>
     public static bool? EvaluateRule(LogicRule rule, Subject subject)
     {
         var group = new LogicGroup(rule.Match, rule.Conditions);
-        CheckGroup(group, subject.Fields);
-        return rule.Enabled ? EvaluateGroup(group, subject) : null;
+        var patterns = new Dictionary<string, SafePattern>(StringComparer.Ordinal);
+        CheckGroup(group, subject.Fields, patterns);
+        return rule.Enabled ? EvaluateGroup(group, subject, patterns) : null;
     }
 
     /// <summary>
@@ -74,7 +76,7 @@ internal static class Rules
     {
         try
         {
-            CheckCondition(condition, fields);
+            CheckCondition(condition, fields, patterns: null);
             return null;
         }
         catch (LogicException exception)
@@ -132,7 +134,8 @@ internal static class Rules
         }
     }
 
-    private static void CheckCondition(LogicCondition condition, IReadOnlyDictionary<string, FieldKind> fields)
+    // Checks a condition; a pattern it compiles goes into patterns, when given, for the evaluation that follows.
+    private static void CheckCondition(LogicCondition condition, IReadOnlyDictionary<string, FieldKind> fields, Dictionary<string, SafePattern>? patterns)
     {
         var kind = SubjectKind(condition, fields);
         if (!Operators.TryGetValue(condition.Operator, out var op))
@@ -201,7 +204,16 @@ internal static class Rules
                     throw new LogicException(LogicErrors.InvalidOperand);
                 }
 
-                SafePattern.Compile(pattern);
+                // A pattern the evaluation already holds is not compiled again.
+                if (patterns is null)
+                {
+                    SafePattern.Compile(pattern);
+                }
+                else if (!patterns.ContainsKey(pattern))
+                {
+                    patterns[pattern] = SafePattern.Compile(pattern);
+                }
+
                 return;
             case OperandShape.Checked:
                 // A checkbox is checked or not; a choice field names the option.
@@ -218,7 +230,7 @@ internal static class Rules
     private static bool IsCount(string text) =>
         text.Length is >= 1 and <= 6 && text.All(char.IsAsciiDigit) && (text.Length == 1 || text[0] != '0');
 
-    private static void CheckGroup(LogicGroup group, IReadOnlyDictionary<string, FieldKind> fields)
+    private static void CheckGroup(LogicGroup group, IReadOnlyDictionary<string, FieldKind> fields, Dictionary<string, SafePattern> patterns)
     {
         if (group.Match is not ("all" or "any"))
         {
@@ -229,11 +241,11 @@ internal static class Rules
         {
             if (item is LogicGroup nested)
             {
-                CheckGroup(nested, fields);
+                CheckGroup(nested, fields, patterns);
             }
             else
             {
-                CheckCondition((LogicCondition)item, fields);
+                CheckCondition((LogicCondition)item, fields, patterns);
             }
         }
     }
@@ -299,18 +311,6 @@ internal static class Rules
         _ => value,
     };
 
-    // Numbers compare as the values they are, digit by digit, without a number or a key being built (ADR-0005).
-    private static bool Same(FieldKind kind, string a, string b)
-    {
-        if (kind == FieldKind.Number)
-        {
-            return ExactDecimal.CompareText(a, b) == 0;
-        }
-
-        var x = Key(kind, a);
-        return x is not null && string.Equals(x, Key(kind, b), StringComparison.Ordinal);
-    }
-
     /// <summary>Orders two values of an ordered kind; null when either is not a valid value of that kind.</summary>
     private static int? Order(FieldKind kind, string a, string b)
     {
@@ -337,23 +337,33 @@ internal static class Rules
         return values.Contains(expected, StringComparer.Ordinal);
     }
 
-    private static bool Evaluate(LogicCondition condition, Subject subject)
+    // Evaluates a checked condition, with the patterns its check compiled.
+    private static bool Evaluate(LogicCondition condition, Subject subject, Dictionary<string, SafePattern> patterns)
     {
         var kind = SubjectKind(condition, subject.Fields);
         var values = SubjectValues(condition, subject);
         var value = condition.Value;
         List<string> Operands() => Resolve(value!, subject);
 
+        // Each value and each operand becomes its key once, however many of the others it meets. Numbers compare as
+        // the values they are, digit by digit, without a number or a key being built (ADR-0005).
         bool AnyEqual()
         {
             var list = Operands();
-            return values.Exists(v => list.Exists(o => Same(kind, v, o)));
+            if (kind == FieldKind.Number)
+            {
+                return values.Exists(v => list.Exists(o => ExactDecimal.CompareText(v, o) == 0));
+            }
+
+            var keys = list.ConvertAll(o => Key(kind, o));
+            return values.Exists(v => Key(kind, v) is { } key && keys.Contains(key, StringComparer.Ordinal));
         }
 
+        // Each value and each operand is folded once.
         bool AnyText(Func<string, string, bool> test)
         {
             var list = Operands().ConvertAll(TextSemantics.Fold);
-            return values.Exists(v => list.Exists(o => test(TextSemantics.Fold(v), o)));
+            return values.ConvertAll(TextSemantics.Fold).Exists(v => list.Exists(o => test(v, o)));
         }
 
         switch (condition.Operator)
@@ -379,7 +389,7 @@ internal static class Rules
             case "endsWith":
                 return AnyText((v, o) => v.EndsWith(o, StringComparison.Ordinal));
             case "matches":
-                var pattern = SafePattern.Compile(((TextOperand)value!).Value);
+                var pattern = patterns[((TextOperand)value!).Value];
                 return values.Exists(pattern.IsMatch);
             case "greaterThan":
                 return CompareFirst(kind, values, Operands(), n => n > 0);
@@ -401,9 +411,9 @@ internal static class Rules
     private static int Count(Operand? value) =>
         int.Parse(((TextOperand)value!).Value, NumberStyles.None, CultureInfo.InvariantCulture);
 
-    private static bool EvaluateGroup(LogicGroup group, Subject subject)
+    private static bool EvaluateGroup(LogicGroup group, Subject subject, Dictionary<string, SafePattern> patterns)
     {
-        bool Test(LogicItem item) => item is LogicGroup nested ? EvaluateGroup(nested, subject) : Evaluate((LogicCondition)item, subject);
+        bool Test(LogicItem item) => item is LogicGroup nested ? EvaluateGroup(nested, subject, patterns) : Evaluate((LogicCondition)item, subject, patterns);
         return group.Match == "all" ? group.Conditions.All(Test) : group.Conditions.Any(Test);
     }
 }

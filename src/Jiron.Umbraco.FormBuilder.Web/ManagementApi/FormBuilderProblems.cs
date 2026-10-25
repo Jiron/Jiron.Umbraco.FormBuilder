@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -172,7 +173,7 @@ internal sealed class FormBuilderProblemResult(ProblemDetails problem) : IAction
     /// <summary>The media type of every refusal.</summary>
     public const string MediaType = "application/problem+json";
 
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions Json = FrozenOptions.Of(new(JsonSerializerDefaults.Web));
 
     /// <summary>The problem it answers with.</summary>
     public ProblemDetails Problem { get; } = problem ?? throw new ArgumentNullException(nameof(problem));

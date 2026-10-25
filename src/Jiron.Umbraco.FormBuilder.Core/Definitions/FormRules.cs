@@ -100,37 +100,22 @@ public abstract record ConditionOperand
         /// <exception cref="ArgumentException">The list is empty, or holds a list or null.</exception>
         public List(IReadOnlyList<ConditionOperand> items)
         {
-            ArgumentNullException.ThrowIfNull(items);
-            if (items.Count == 0)
+            var list = DefinitionList.Of(items);
+            if (list.Count == 0)
             {
                 throw new ArgumentException("A list operand has at least one item.", nameof(items));
             }
 
-            if (items.Any(item => item is null or List))
+            if (list.Any(item => item is List))
             {
                 throw new ArgumentException("A list operand holds texts, answers and dates, not lists.", nameof(items));
             }
 
-            Items = DefinitionList.Of(items);
+            Items = list;
         }
 
-        /// <summary>The items, at least one; none is a list.</summary>
+        /// <summary>The items, at least one; none is a list. Two lists are equal when their items are, in order.</summary>
         public IReadOnlyList<ConditionOperand> Items { get; }
-
-        /// <inheritdoc />
-        public bool Equals(List? other) => other is not null && Items.SequenceEqual(other.Items);
-
-        /// <inheritdoc />
-        public override int GetHashCode()
-        {
-            var hash = default(HashCode);
-            foreach (var item in Items)
-            {
-                hash.Add(item);
-            }
-
-            return hash.ToHashCode();
-        }
     }
 }
 

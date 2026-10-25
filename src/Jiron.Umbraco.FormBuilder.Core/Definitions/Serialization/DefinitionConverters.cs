@@ -7,16 +7,22 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 
 // The converters of the definition model. The reader validates every document's shape before System.Text.Json reads
 // it (DefinitionShapeReader), so these read only well-formed input; they still refuse what they cannot read. What they
-// cannot write they refuse with ArgumentException, so a JsonException while writing comes from System.Text.Json itself.
+// cannot write they refuse with ArgumentException, and the save checks refuse the same values first, at their paths.
 
-/// <summary>A definition word as its camelCase name, never as a number (ADR-0002).</summary>
-internal sealed class DefinitionEnumConverter<T> : JsonStringEnumConverter<T>
+/// <summary>
+/// A definition word as its camelCase name, never as a number (ADR-0002): exactly the word, in its letter case, on
+/// reading; on writing, a value the enum does not define is refused with the save checks' message.
+/// </summary>
+internal sealed class DefinitionEnumConverter<T> : JsonConverter<T>
     where T : struct, Enum
 {
-    public DefinitionEnumConverter()
-        : base(JsonNamingPolicy.CamelCase, allowIntegerValues: false)
-    {
-    }
+    public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        reader.TokenType == JsonTokenType.String && DefinitionWords<T>.TryRead(reader.GetString()!, out var value)
+            ? value
+            : throw new JsonException($"Expected one of {string.Join(", ", DefinitionWords<T>.All)}.");
+
+    public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(DefinitionWords<T>.Of(value) ?? throw new ArgumentException(DefinitionWords<T>.NotAWord(value), nameof(value)));
 }
 
 /// <summary>An instant in UTC as <c>YYYY-MM-DDTHH:mm:ssZ</c>, whole seconds only (ADR-0002, ADR-0034).</summary>
@@ -61,10 +67,14 @@ internal sealed class StrictStringConverter : JsonConverter<string>
 
     public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options) => writer.WriteStringValue(Checked(value));
 
-    /// <summary>The string, if it holds no lone surrogate.</summary>
+    /// <summary>The string, if it is there and holds no lone surrogate.</summary>
+    /// <exception cref="ArgumentNullException">The string is null where the model needs one.</exception>
     /// <exception cref="ArgumentException">The string holds a lone surrogate.</exception>
-    public static string Checked(string value) =>
-        IsWellFormed(value) ? value : throw new ArgumentException("A text of the definition holds a lone surrogate.", nameof(value));
+    public static string Checked(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return IsWellFormed(value) ? value : throw new ArgumentException("A text of the definition holds a lone surrogate.", nameof(value));
+    }
 
     /// <summary>Whether the string is well-formed UTF-16: every surrogate is half of a pair.</summary>
     public static bool IsWellFormed(string text)
@@ -259,17 +269,37 @@ internal sealed class ConditionOperandConverter : JsonConverter<ConditionOperand
 /// <summary>
 /// A condition, or a nested group: an object with <c>match</c> or <c>conditions</c> is a group. The item is read once,
 /// straight from the reader: a copy of it looks at the object's own property names first, skipping their values, so a
-/// group nested many levels deep is not parsed again at every level.
+/// group nested many levels deep is not parsed again at every level. Only an item that is refused is read again, to
+/// name where in it the problem is.
 /// </summary>
 internal sealed class RuleItemConverter : JsonConverter<RuleItem>
 {
     public override RuleItem? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
+        var start = reader;
         var copy = reader;
-        return IsGroup(ref copy)
-            ? Converter<RuleGroup>(options).Read(ref reader, typeof(RuleGroup), options)
-            : Converter<RuleCondition>(options).Read(ref reader, typeof(RuleCondition), options);
+        var group = IsGroup(ref copy);
+        try
+        {
+            return group
+                ? Converter<RuleGroup>(options).Read(ref reader, typeof(RuleGroup), options)
+                : Converter<RuleCondition>(options).Read(ref reader, typeof(RuleCondition), options);
+        }
+        catch (JsonException exception) when (exception.Path is null)
+        {
+            // Called straight, the model's converter keeps no path. The serializer keeps one, so the refused item is
+            // read again through it; the error then takes the path to the item from the serializer that called this
+            // converter, and keeps the part inside the item. A group inside a group adds its part at each level.
+            throw new ItemReadException(exception.Message, PathInside(ref start, group, options), exception);
+        }
     }
+
+    /// <summary>
+    /// The full path of a reader error: the path System.Text.Json names, and the part inside a rule item that the
+    /// item's own read named.
+    /// </summary>
+    public static string? PathOf(JsonException exception) =>
+        exception is ItemReadException item ? (exception.Path ?? JsonPaths.Root) + item.Rest[JsonPaths.Root.Length..] : exception.Path;
 
     public override void Write(Utf8JsonWriter writer, RuleItem value, JsonSerializerOptions options)
     {
@@ -317,6 +347,29 @@ internal sealed class RuleItemConverter : JsonConverter<RuleItem>
         }
 
         return false;
+    }
+
+    // Where in a refused item, from "$", its read through the serializer stops; "$" when that read goes through.
+    private static string PathInside(ref Utf8JsonReader start, bool group, JsonSerializerOptions options)
+    {
+        try
+        {
+            RuleItem? item = group
+                ? JsonSerializer.Deserialize(ref start, (JsonTypeInfo<RuleGroup>)options.GetTypeInfo(typeof(RuleGroup)))
+                : JsonSerializer.Deserialize(ref start, (JsonTypeInfo<RuleCondition>)options.GetTypeInfo(typeof(RuleCondition)));
+            _ = item;
+            return JsonPaths.Root;
+        }
+        catch (JsonException exception)
+        {
+            return PathOf(exception) ?? JsonPaths.Root;
+        }
+    }
+
+    // A reader error inside a rule item, with the part of its path inside the item, from "$".
+    private sealed class ItemReadException(string message, string rest, Exception inner) : JsonException(message, inner)
+    {
+        public string Rest { get; } = rest;
     }
 }
 

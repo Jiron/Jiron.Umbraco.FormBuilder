@@ -56,21 +56,11 @@ function trimZeros(digitsText: string): string {
  * by at least one digit. ASCII digits only; no plus sign, exponent, group separator or culture. Null otherwise.
  */
 export function parseDecimal(text: string): Decimal | null {
-  const negative = text.charCodeAt(0) === MINUS;
-  const start = negative ? 1 : 0;
-  const intEnd = readDigits(text, start);
-  const intPart = text.slice(start, intEnd);
-  if (intPart.length === 0 || (intPart.length > 1 && intPart.charCodeAt(0) === ZERO)) return null;
-  let fraction = '';
-  if (intEnd < text.length) {
-    if (text.charCodeAt(intEnd) !== POINT) return null;
-    const fractionEnd = readDigits(text, intEnd + 1);
-    if (fractionEnd === intEnd + 1 || fractionEnd !== text.length) return null;
-    // Trailing zeros go before the digits become a number, so a long run of them costs one pass.
-    fraction = trimZeros(text.slice(intEnd + 1, fractionEnd));
-  }
-  const n = BigInt(intPart + fraction);
-  return { n: negative ? -n : n, s: fraction.length };
+  const parts = readParts(text);
+  if (parts === null) return null;
+  // The fraction's trailing zeros are gone before the digits become a number, so a long run of them costs one pass.
+  const n = BigInt(parts.integer + parts.fraction);
+  return { n: parts.negative ? -n : n, s: parts.fraction.length };
 }
 
 /** The canonical wire form: no trailing fraction zeros, no "-0". */
@@ -112,8 +102,8 @@ interface Parts {
   readonly fraction: string;
 }
 
-// The parts of a value in the wire form, as parseDecimal reads it: the sign (never for zero, so -0 is 0), the integer
-// digits and the fraction's digits without their trailing zeros.
+// The parts of a value in the wire form, the one reading of its grammar that parseDecimal and compareText share: the
+// sign (never for zero, so -0 is 0), the integer digits and the fraction's digits without their trailing zeros.
 function readParts(text: string): Parts | null {
   const minus = text.charCodeAt(0) === MINUS;
   const start = minus ? 1 : 0;

@@ -79,13 +79,13 @@ public sealed class FieldTypeSupportTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(FieldMessageTexts.All.Select(message => message.Name), Is.EqualTo(properties), "every message of the record, in its order");
-            Assert.That(FieldMessageTexts.All.Select(message => message.Kind), Is.EquivalentTo(Enum.GetValues<FieldMessageKinds>().Where(kind => kind != FieldMessageKinds.None)), "every error kind, once");
+            Assert.That(FieldMessageProperties.All.Select(message => message.Name), Is.EqualTo(properties), "every message of the record, in its order");
+            Assert.That(FieldMessageProperties.All.Select(message => message.Kind), Is.EquivalentTo(Enum.GetValues<FieldMessageKinds>().Where(kind => kind != FieldMessageKinds.None)), "every error kind, once");
             Assert.That(MessageKinds, Is.EqualTo(properties), "this test's list too");
-            foreach (var message in FieldMessageTexts.All)
+            foreach (var message in FieldMessageProperties.All)
             {
                 var messages = new JsonObject { [message.Name] = new JsonObject { [string.Empty] = "A message." } }.Deserialize(info)!;
-                Assert.That(FieldMessageTexts.All.Where(each => each.Read(messages) is not null).Select(each => each.Name), Is.EqualTo(new[] { message.Name }), $"{message.Name} reads its own message");
+                Assert.That(FieldMessageProperties.All.Where(each => each.Read(messages) is not null).Select(each => each.Name), Is.EqualTo(new[] { message.Name }), $"{message.Name} reads its own message");
             }
         });
     }

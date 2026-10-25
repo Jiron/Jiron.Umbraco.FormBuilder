@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 
@@ -29,12 +30,12 @@ internal interface ISettingsSectionMigration
 /// </summary>
 internal static class SettingsSectionJson
 {
-    /// <summary>The serializer options of stored sections.</summary>
-    public static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
+    /// <summary>The serializer options of stored sections; read-only.</summary>
+    public static readonly JsonSerializerOptions Options = FrozenOptions.Of(new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) },
-    };
+    });
 
     /// <summary>
     /// A row's JSON, migrated from <paramref name="storedVersion"/> to the section's schema version; a row from a newer

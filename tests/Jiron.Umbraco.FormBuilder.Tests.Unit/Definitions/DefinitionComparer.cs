@@ -81,7 +81,7 @@ internal static class DefinitionComparer
     private static string Describe(object? value) => value switch
     {
         null => "null",
-        LocalizedString text => string.Join(", ", text.Texts.Select(entry => $"{entry.Key}={entry.Value}")),
+        LocalizedString text => string.Join(", ", text.Texts.Select(entry => $"{entry.Culture}={entry.Text}")),
         DateTime instant => $"{instant:O} ({instant.Kind})",
         _ => value.ToString() ?? string.Empty,
     };

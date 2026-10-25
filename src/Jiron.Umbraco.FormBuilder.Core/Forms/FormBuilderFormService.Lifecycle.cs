@@ -110,7 +110,7 @@ internal sealed partial class FormBuilderFormService
 
         if (problems.Found > 0)
         {
-            throw new FormBuilderValidationException(problems.ToList());
+            throw new FormBuilderValidationException(problems.ToReadOnlyList());
         }
 
         await changes.CancelableAsync(new FormPublishingNotification(definition, form.Alias, form.Name, userKey, new EventMessages()));

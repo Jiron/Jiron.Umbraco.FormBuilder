@@ -40,34 +40,13 @@ internal readonly record struct ExactDecimal
     /// </summary>
     public static ExactDecimal? Parse(string text)
     {
-        var negative = text.Length > 0 && text[0] == '-';
-        var i = negative ? 1 : 0;
-        var intEnd = ReadDigits(text, i);
-        var intPart = text[i..intEnd];
-        if (intPart.Length == 0 || (intPart.Length > 1 && intPart[0] == '0'))
+        if (!TryReadParts(text, out var negative, out var integer, out var fraction))
         {
             return null;
         }
 
-        var fraction = string.Empty;
-        if (intEnd < text.Length)
-        {
-            if (text[intEnd] != '.')
-            {
-                return null;
-            }
-
-            var fractionEnd = ReadDigits(text, intEnd + 1);
-            if (fractionEnd == intEnd + 1 || fractionEnd != text.Length)
-            {
-                return null;
-            }
-
-            // Trailing zeros go before the digits become a number, so a long run of them costs one pass.
-            fraction = text[(intEnd + 1)..fractionEnd].TrimEnd('0');
-        }
-
-        var n = BigInteger.Parse(intPart + fraction, NumberStyles.None, CultureInfo.InvariantCulture);
+        // The fraction's trailing zeros are gone before the digits become a number, so a long run of them costs one pass.
+        var n = BigInteger.Parse(string.Concat(integer, fraction), NumberStyles.None, CultureInfo.InvariantCulture);
         return new ExactDecimal(negative ? -n : n, fraction.Length);
     }
 
@@ -181,8 +160,8 @@ internal readonly record struct ExactDecimal
         return (num.Sign < 0) != (den.Sign < 0) ? q - 1 : q + 1;
     }
 
-    // The parts of a value in the wire form, as Parse reads it: the sign (never for zero, so -0 is 0), the integer
-    // digits and the fraction's digits without their trailing zeros.
+    // The parts of a value in the wire form, the one reading of its grammar that Parse and CompareText share: the
+    // sign (never for zero, so -0 is 0), the integer digits and the fraction's digits without their trailing zeros.
     private static bool TryReadParts(string text, out bool negative, out ReadOnlySpan<char> integer, out ReadOnlySpan<char> fraction)
     {
         negative = text.Length > 0 && text[0] == '-';

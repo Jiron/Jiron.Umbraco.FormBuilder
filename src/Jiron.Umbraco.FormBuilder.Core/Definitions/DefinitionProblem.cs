@@ -44,8 +44,8 @@ internal sealed class DefinitionProblems
     /// <summary>Records a problem with its code, path and message.</summary>
     public void Add(string code, string path, string message) => Add(new DefinitionProblem(code, path, message));
 
-    /// <summary>The problems kept, as a list nobody can change.</summary>
-    public IReadOnlyList<DefinitionProblem> ToList() => DefinitionList.Of(_kept);
+    /// <summary>A copy of the problems kept, as a list nobody can change.</summary>
+    public IReadOnlyList<DefinitionProblem> ToReadOnlyList() => DefinitionList.Of(_kept);
 }
 
 /// <summary>

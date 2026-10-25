@@ -120,20 +120,20 @@ internal enum FieldMessageKinds
     Full = 1 << 14,
 }
 
-/// <summary>One message of <see cref="FieldMessages"/>.</summary>
+/// <summary>One property of <see cref="FieldMessages"/>: its name, the error kind it is the message of, and its reader.</summary>
 /// <param name="Name">Its JSON name.</param>
 /// <param name="Kind">The error kind it is the message of.</param>
 /// <param name="Read">Reads it from a field's messages.</param>
-internal sealed record FieldMessageText(string Name, FieldMessageKinds Kind, Func<FieldMessages, LocalizedText?> Read);
+internal sealed record FieldMessageProperty(string Name, FieldMessageKinds Kind, Func<FieldMessages, LocalizedText?> Read);
 
 /// <summary>
-/// The messages of <see cref="FieldMessages"/>, listed once for the save checks and the structural checks; a test holds
-/// the list to the record and to <see cref="FieldMessageKinds"/>.
+/// The properties of <see cref="FieldMessages"/>, listed once for the save checks and the structural checks; a test
+/// holds the list to the record and to <see cref="FieldMessageKinds"/>.
 /// </summary>
-internal static class FieldMessageTexts
+internal static class FieldMessageProperties
 {
-    /// <summary>Every message, in the record's order.</summary>
-    public static readonly ImmutableArray<FieldMessageText> All =
+    /// <summary>Every property, in the record's order.</summary>
+    public static readonly ImmutableArray<FieldMessageProperty> All =
     [
         new("required", FieldMessageKinds.Required, messages => messages.Required),
         new("invalid", FieldMessageKinds.Invalid, messages => messages.Invalid),

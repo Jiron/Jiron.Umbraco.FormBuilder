@@ -1,7 +1,8 @@
 # 0030. Porting the shared logic: where it lives, and what the port changed
 
 - Status: accepted; the stored time zone's spelling amended in 4.4b ([ADR-0043](0043-backoffice-settings-sections.md));
-  what long answers cost and the names of Core's logic model amended in 4.8f
+  what long answers cost and the names of Core's logic model amended in 4.8f; work done once and the comparison's
+  cases amended in 4.8h
 - Date: 2026-10-23
 - Roadmap step: 3.4b (decided and built); 4.4 stores the time zone as the server spells it; 5.2 and 5.3 complete the
   engines on these modules
@@ -112,5 +113,14 @@ The fixes themselves have one obvious form each. What needed deciding:
   `LogicRule`, apart from the definition model's `RuleItem`, `RuleCondition`, `RuleGroup` and `FormRule`; the
   condition's operator is `Operator` in both, and the JSON keeps `op`. 6.1 holds every answer to a ceiling on its
   length before the rules run.
+- **Amended in 4.8h:** each runtime reads the number grammar once: the parser builds on the parts the comparison
+  reads. A text condition folds each answer and each operand once, not once for every pair, and an equality condition
+  makes each one's key once; an evaluation compiles each pattern once, in its check, and the evaluation uses what the
+  check compiled, also when a rule names the pattern twice. TypeScript's pattern run checks its stack's bound at every
+  push, because a typed array drops a write past its end without a word; the bound holds (a closure pushes at most
+  the starts and two per split), and vectors at the instruction limit with five splits in fourteen instructions show
+  it. The comparison's cases live in the shared vectors (`port`), both ways round, with what is not in the wire form
+  as an answer and as an operand; the runtimes' own tests keep only what costs. The TypeScript names `Condition`,
+  `Group` and `Rule` are Core's `LogicCondition`, `LogicGroup` and `LogicRule`, as its header says.
 - Revisit the instruction limit if real patterns reach it: it is five times what the weight limit allows for plain
   characters.
