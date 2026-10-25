@@ -1772,7 +1772,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the parse and validate contract;
     - the longest answer the type takes, which the submission pipeline checks before the rules run (6.1, ADR-0030; added in 4.8f).
   - Done when: unit tests cover every storage kind's columns, the contract through a custom type and a built-in one, and the longest answer of every built-in type.
-- [ ] **5.1e Changing types** (5.1d split in two, WORKLOG 2026-10-25)
+- [x] **5.1e Changing types** (5.1d split in two, WORKLOG 2026-10-25) (2026-10-25, c39611f)
   - **Changing types:** a "change type" compatibility map.
   - Done when: unit tests cover the compatibility map with what each change loses.
 - [ ] **5.1f Designer locks** (5.1 split in four, WORKLOG 2026-10-25; 5.1d until 5.1b's split, 5.1e until 5.1d's)
