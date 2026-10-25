@@ -11,8 +11,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence;
 /// <para>
 /// On SQL Server the unit's cancellation token is cancelled at the deadline, which stops the running command. On
 /// SQLite that is not enough, because Microsoft.Data.Sqlite does not cancel a statement once it runs: SQLite's
-/// progress handler, set on the unit's connection while it runs, checks the deadline every
-/// <see cref="StepsPerCheck"/> virtual-machine steps and interrupts the statement past it.
+/// progress handler, set on the unit's connection while it runs, checks the deadline and the cancellation of the unit
+/// whose statement runs every <see cref="StepsPerCheck"/> virtual-machine steps, and interrupts the statement past the
+/// deadline or once that unit is cancelled.
 /// </para>
 /// <para>
 /// Core references no database client (ADR-0036), so the handler is found by type name, as database errors are
@@ -95,9 +96,11 @@ internal sealed class FormBuilderQueryBudget : IDisposable
     }
 
     // SQLite's progress callback, whose argument is the unused user data: a value other than 0 interrupts the statement.
+    // It runs inside the statement, on the flow of the unit that runs it, so it also sees that unit's token: a unit
+    // inside this one adds its own caller's.
     private int OnProgress(object? _)
     {
-        if (_caller.IsCancellationRequested)
+        if (_caller.IsCancellationRequested || FormBuilderDbExtensions.CurrentToken.IsCancellationRequested)
         {
             return 1;
         }

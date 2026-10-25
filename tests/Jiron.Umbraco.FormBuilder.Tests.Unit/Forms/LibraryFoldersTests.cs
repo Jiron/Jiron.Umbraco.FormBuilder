@@ -27,11 +27,11 @@ public sealed class LibraryFoldersTests
 
         Assert.Multiple(async () =>
         {
-            Assert.That(await LibraryFolders.LiveAsync(folders, null, CancellationToken.None), Is.Null, "the root");
+            Assert.That(await LibraryFolders.OutsideTrashAsync(folders, null, CancellationToken.None), Is.Null, "the root");
             Assert.That(folders.ReceivedCalls(), Is.Empty, "nothing read for the root");
-            Assert.That(await LibraryFolders.LiveAsync(folders, Live.Key, CancellationToken.None), Is.SameAs(Live));
-            Assert.That(() => LibraryFolders.LiveAsync(folders, Trashed.Key, CancellationToken.None), MissingFolder(), "in the trash");
-            Assert.That(() => LibraryFolders.LiveAsync(folders, Guid.NewGuid(), CancellationToken.None), MissingFolder(), "missing");
+            Assert.That(await LibraryFolders.OutsideTrashAsync(folders, Live.Key, CancellationToken.None), Is.SameAs(Live));
+            Assert.That(() => LibraryFolders.OutsideTrashAsync(folders, Trashed.Key, CancellationToken.None), MissingFolder(), "in the trash");
+            Assert.That(() => LibraryFolders.OutsideTrashAsync(folders, Guid.NewGuid(), CancellationToken.None), MissingFolder(), "missing");
         });
     }
 

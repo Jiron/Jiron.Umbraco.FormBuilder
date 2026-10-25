@@ -9,7 +9,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 /// The canonical form of a definition and of settings objects (ADR-0002, ADR-0034): no whitespace; an object property
 /// that is <c>null</c>, an empty array or an object with nothing left is left out; strings escaped as JSON.stringify
 /// does (RFC 8785): only <c>"</c>, <c>\</c> and control characters, everything else as UTF-8. The output never
-/// depends on the .NET version's encoder, so hashes stay stable across package updates.
+/// depends on the .NET version's encoder, so hashes stay stable across package updates. JSON that is kept as it was
+/// given, such as an option list's configuration, is written the same way with every value (<see cref="Compact"/>).
 /// </summary>
 internal static class CanonicalJson
 {
@@ -20,16 +21,28 @@ internal static class CanonicalJson
     public static string Hash(ReadOnlySpan<byte> canonical) => Convert.ToHexStringLower(SHA256.HashData(canonical));
 
     /// <summary>The canonical text of a JSON value; <paramref name="sortProperties"/> sorts every object's properties ordinally.</summary>
-    /// <exception cref="ArgumentException">A string holds a lone surrogate, which UTF-8 cannot carry.</exception>
+    /// <exception cref="ArgumentException">A string or a property name holds a lone surrogate, which UTF-8 cannot carry.</exception>
     public static string Write(JsonElement value, bool sortProperties)
     {
         var text = new StringBuilder();
-        WriteValue(text, value, sortProperties);
+        WriteValue(text, value, sortProperties, leaveOut: true);
+        return text.ToString();
+    }
+
+    /// <summary>
+    /// The text of a JSON value that is kept as it was given: without whitespace and with the escapes of
+    /// <see cref="Write"/>, but with every value, nulls and empty arrays and objects too, in the order given.
+    /// </summary>
+    /// <exception cref="ArgumentException">A string or a property name holds a lone surrogate.</exception>
+    public static string Compact(JsonElement value)
+    {
+        var text = new StringBuilder();
+        WriteValue(text, value, sortProperties: false, leaveOut: false);
         return text.ToString();
     }
 
     /// <summary>The canonical text as UTF-8 bytes.</summary>
-    /// <exception cref="ArgumentException">A string holds a lone surrogate.</exception>
+    /// <exception cref="ArgumentException">A string or a property name holds a lone surrogate.</exception>
     public static byte[] WriteUtf8(JsonElement value, bool sortProperties)
     {
         try
@@ -92,12 +105,12 @@ internal static class CanonicalJson
         text.Append('"');
     }
 
-    private static void WriteValue(StringBuilder text, JsonElement value, bool sortProperties)
+    private static void WriteValue(StringBuilder text, JsonElement value, bool sortProperties, bool leaveOut)
     {
         switch (value.ValueKind)
         {
             case JsonValueKind.Object:
-                WriteObject(text, value, sortProperties);
+                WriteObject(text, value, sortProperties, leaveOut);
                 break;
             case JsonValueKind.Array:
                 text.Append('[');
@@ -109,14 +122,14 @@ internal static class CanonicalJson
                         text.Append(',');
                     }
 
-                    WriteValue(text, item, sortProperties);
+                    WriteValue(text, item, sortProperties, leaveOut);
                     first = false;
                 }
 
                 text.Append(']');
                 break;
             case JsonValueKind.String:
-                WriteString(text, value.GetString()!);
+                WriteString(text, JsonPaths.TryGetString(value) ?? throw LoneSurrogate());
                 break;
             case JsonValueKind.Number:
                 // Definitions hold integers only, which System.Text.Json and the reader keep in canonical form.
@@ -134,9 +147,12 @@ internal static class CanonicalJson
         }
     }
 
-    private static void WriteObject(StringBuilder text, JsonElement value, bool sortProperties)
+    // Every name is read, a left-out property's too, so a name that holds a lone surrogate is refused wherever it is.
+    private static void WriteObject(StringBuilder text, JsonElement value, bool sortProperties, bool leaveOut)
     {
-        IEnumerable<JsonProperty> properties = value.EnumerateObject().Where(property => !IsLeftOut(property.Value));
+        var properties = value.EnumerateObject()
+            .Select(property => (Name: JsonPaths.TryGetName(property) ?? throw LoneSurrogate(), property.Value))
+            .Where(property => !leaveOut || !IsLeftOut(property.Value));
         if (sortProperties)
         {
             properties = properties.OrderBy(property => property.Name, StringComparer.Ordinal);
@@ -153,10 +169,13 @@ internal static class CanonicalJson
 
             WriteString(text, property.Name);
             text.Append(':');
-            WriteValue(text, property.Value, sortProperties);
+            WriteValue(text, property.Value, sortProperties, leaveOut);
             first = false;
         }
 
         text.Append('}');
     }
+
+    // The JSON reader takes an escaped lone surrogate, which .NET cannot read as a string.
+    private static ArgumentException LoneSurrogate() => new("A string or a property name holds a lone surrogate, which UTF-8 cannot carry.");
 }

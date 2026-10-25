@@ -12,7 +12,7 @@ internal static class LibraryFolders
 {
     /// <summary>A folder a form or folder may go into, which is outside the trash; null for the root.</summary>
     /// <exception cref="FormBuilderConflictException">The folder is missing or in the trash (<c>folder_missing</c>).</exception>
-    public static async Task<StoredFolder?> LiveAsync(IFolderRepository folders, Guid? folderKey, CancellationToken cancellationToken)
+    public static async Task<StoredFolder?> OutsideTrashAsync(IFolderRepository folders, Guid? folderKey, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(folders);
         if (folderKey is not { } key)

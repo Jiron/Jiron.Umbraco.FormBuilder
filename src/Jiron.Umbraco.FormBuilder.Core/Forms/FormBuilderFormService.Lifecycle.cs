@@ -16,7 +16,7 @@ internal sealed partial class FormBuilderFormService
         changes.EnsureOwnUnit(FormChecks.OwnUnit);
         var name = FormChecks.Name(request.Name);
         FormChecks.Alias(request.Alias);
-        var folder = await LibraryFolders.LiveAsync(folders, request.FolderKey, cancellationToken);
+        var folder = await LibraryFolders.OutsideTrashAsync(folders, request.FolderKey, cancellationToken);
         var definition = await creation.BlankAsync(cancellationToken);
         return await creation.CreateAsync(definition, name, request.Alias, FormAliases.FromName(name), folder, request.UserKey, new FormOrigin(FormSource.Blank, null, CreatedAction), cancellationToken);
     }
@@ -217,7 +217,7 @@ internal sealed partial class FormBuilderFormService
         }
 
         FormChecks.Current(form, expectedConcurrencyVersion);
-        var folder = await LibraryFolders.LiveAsync(folders, folderKey, cancellationToken);
+        var folder = await LibraryFolders.OutsideTrashAsync(folders, folderKey, cancellationToken);
         if (folder?.Id == form.FolderId)
         {
             return await infos.InfoAsync(form, cancellationToken);

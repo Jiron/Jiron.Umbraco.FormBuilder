@@ -269,8 +269,9 @@ internal sealed class ConditionOperandConverter : JsonConverter<ConditionOperand
 /// <summary>
 /// A condition, or a nested group: an object with <c>match</c> or <c>conditions</c> is a group. The item is read once,
 /// straight from the reader: a copy of it looks at the object's own property names first, skipping their values, so a
-/// group nested many levels deep is not parsed again at every level. Only an item that is refused is read again, to
-/// name where in it the problem is.
+/// group nested many levels deep is not parsed again at every level. Only an item refused for something of its own is
+/// read again, to name where in it the problem is; a group refused for an item inside it names that item's place by
+/// skipping over the values before it, so each level costs one pass over its item, however deep the groups nest.
 /// </summary>
 internal sealed class RuleItemConverter : JsonConverter<RuleItem>
 {
@@ -287,10 +288,15 @@ internal sealed class RuleItemConverter : JsonConverter<RuleItem>
         }
         catch (JsonException exception) when (exception.Path is null)
         {
-            // Called straight, the model's converter keeps no path. The serializer keeps one, so the refused item is
-            // read again through it; the error then takes the path to the item from the serializer that called this
-            // converter, and keeps the part inside the item. A group inside a group adds its part at each level.
-            throw new ItemReadException(exception.Message, PathInside(ref start, group, options), exception);
+            // Called straight, the model's converter keeps no path. An error of an item inside this group named its
+            // part already, so this level adds the item's place in the conditions. Any other error is this item's own:
+            // the serializer keeps a path, so the item is read again through it. The error then takes the path to the
+            // item from the serializer that called this converter, and keeps the part inside the item.
+            var at = start.TokenStartIndex;
+            var rest = group && exception is ItemReadException inner && ConditionIndex(start, inner.Start) is { } index
+                ? JsonPaths.Index(JsonPaths.Property(JsonPaths.Root, "conditions"), index) + inner.Rest[JsonPaths.Root.Length..]
+                : PathInside(ref start, group, options);
+            throw new ItemReadException(exception.Message, rest, at, exception);
         }
     }
 
@@ -349,6 +355,42 @@ internal sealed class RuleItemConverter : JsonConverter<RuleItem>
         return false;
     }
 
+    // The place in a group's conditions of the item that starts at the index child, found by skipping over the values
+    // before it; null when the group holds no such item. The reader is a copy at the start of the group.
+    private static int? ConditionIndex(Utf8JsonReader reader, long child)
+    {
+        while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+        {
+            var conditions = reader.ValueTextEquals("conditions"u8);
+            if (!reader.Read())
+            {
+                return null;
+            }
+
+            if (conditions && reader.TokenType == JsonTokenType.StartArray)
+            {
+                for (var index = 0; reader.Read() && reader.TokenType != JsonTokenType.EndArray; index++)
+                {
+                    if (reader.TokenStartIndex == child)
+                    {
+                        return index;
+                    }
+
+                    if (!reader.TrySkip())
+                    {
+                        return null;
+                    }
+                }
+            }
+            else if (!reader.TrySkip())
+            {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
     // Where in a refused item, from "$", its read through the serializer stops; "$" when that read goes through.
     private static string PathInside(ref Utf8JsonReader start, bool group, JsonSerializerOptions options)
     {
@@ -366,10 +408,13 @@ internal sealed class RuleItemConverter : JsonConverter<RuleItem>
         }
     }
 
-    // A reader error inside a rule item, with the part of its path inside the item, from "$".
-    private sealed class ItemReadException(string message, string rest, Exception inner) : JsonException(message, inner)
+    // A reader error inside a rule item, with the part of its path inside the item, from "$", and where the item starts
+    // in the text the reader reads.
+    private sealed class ItemReadException(string message, string rest, long start, Exception inner) : JsonException(message, inner)
     {
         public string Rest { get; } = rest;
+
+        public long Start { get; } = start;
     }
 }
 

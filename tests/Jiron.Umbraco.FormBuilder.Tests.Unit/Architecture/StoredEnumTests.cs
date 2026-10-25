@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Testing;
@@ -10,10 +11,11 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Architecture;
 
 /// <summary>
 /// The repositories store their enums only through the one converter (ADR-0033; this check 4.8g): no code of Core's
-/// persistence apart from <see cref="StoredNames"/> parses an enum from text, turns one into text, boxes one (as a
-/// statement's parameter or a message's argument would) or names one of its values with <c>nameof</c>. StoredNamesTests
-/// shows the converter is right; this shows nothing goes around it. The scan reads the compiled code, so a value turned
-/// into text in an interpolated string, or passed to a statement as a number, is found as well.
+/// persistence apart from <see cref="StoredNames"/> and its table of names parses an enum from text, turns one into
+/// text, boxes one (as a statement's parameter or a message's argument would) or names one of its values with
+/// <c>nameof</c>. StoredNamesTests shows the converter is right; this shows nothing goes around it. The scan reads the
+/// compiled code, local functions and lambdas included (4.8i), so a value turned into text in an interpolated string,
+/// or passed to a statement as a number, is found as well.
 /// </summary>
 [TestFixture]
 public sealed partial class StoredEnumTests
@@ -23,6 +25,9 @@ public sealed partial class StoredEnumTests
     private static readonly Assembly Core = typeof(FormBuilderCoreComposer).Assembly;
 
     private static readonly string[] AroundTheConverter = ["Parse", "TryParse", "GetName", "GetNames", "ToString", "Format"];
+
+    // What the compiler writes for every record: its text, its equality and its copy.
+    private static readonly string[] RecordMembers = ["ToString", "PrintMembers", "GetHashCode", "Equals", "<Clone>$", "get_EqualityContract", "op_Equality", "op_Inequality", "Deconstruct"];
 
     [Test]
     public void ThePersistenceCode_StoresEnums_OnlyThroughTheConverter()
@@ -64,7 +69,7 @@ public sealed partial class StoredEnumTests
         Assert.Multiple(() =>
         {
             Assert.That(PersistenceTypes().SelectMany(Methods).Count(), Is.GreaterThan(500), "the methods read");
-            Assert.That(converter, Has.Member("turns TEnum into text"), "the converter itself turns the names into text");
+            Assert.That(converter, Has.Member("turns T into text"), "the converter's table of names turns them into text");
             Assert.That(uses[nameof(Samples.Parsed)], Is.EqualTo(new[] { "Parse of an enum" }));
             Assert.That(uses[nameof(Samples.TriedToParse)], Is.EqualTo(new[] { "TryParse of an enum" }));
             Assert.That(uses[nameof(Samples.Named)], Is.EqualTo(new[] { "GetName of an enum" }));
@@ -73,6 +78,9 @@ public sealed partial class StoredEnumTests
             Assert.That(uses[nameof(Samples.Boxed)], Is.EqualTo(new[] { "boxes DayOfWeek" }));
             Assert.That(uses[nameof(Samples.Checked)], Is.Empty, "a check that the value is defined");
             Assert.That(uses[nameof(Samples.Counted)], Is.Empty, "a flags value stored as its number");
+            Assert.That(uses.Single(pair => pair.Key.Contains("g__Text", StringComparison.Ordinal)).Value, Is.EqualTo(new[] { "turns DayOfWeek into text" }), "a local function");
+            Assert.That(Methods(typeof(Row)).SelectMany(Uses), Is.Empty, "a record's own text, left out");
+            Assert.That(IlReader.Methods(typeof(Row)).SelectMany(Uses), Is.Not.Empty, "which turns its values into text");
         });
     }
 
@@ -85,10 +93,13 @@ public sealed partial class StoredEnumTests
     private static IEnumerable<Type> PersistenceTypes() =>
         Core.GetTypes().Where(type => type.Namespace is { } name && (name == Persistence || name.StartsWith(Persistence + ".", StringComparison.Ordinal)) && !IsConverter(type));
 
-    private static bool IsConverter(Type type) => type == typeof(StoredNames) || (type.DeclaringType is { } outer && IsConverter(outer));
+    private static bool IsConverter(Type type) =>
+        type == typeof(StoredNames) || type == typeof(EnumNames<>) || (type.DeclaringType is { } outer && IsConverter(outer));
 
-    // What the compiler writes for a record (its text, equality and copy) is left out: no row is written with it.
-    private static IEnumerable<MethodBase> Methods(Type type) => IlReader.Methods(type).Where(method => !method.IsDefined(typeof(CompilerGeneratedAttribute)));
+    // What the compiler writes for a record is left out: no row is written with it. What it writes for local functions
+    // and lambdas is read, as code of the method they are in.
+    private static IEnumerable<MethodBase> Methods(Type type) =>
+        IlReader.Methods(type).Where(method => !(method.IsDefined(typeof(CompilerGeneratedAttribute)) && RecordMembers.Contains(method.Name)));
 
     // An enum, or a type parameter that only enums fill.
     private static bool IsEnum(Type type) => type.IsEnum || (type.IsGenericParameter && type.GetGenericParameterConstraints().Contains(typeof(Enum)));
@@ -151,5 +162,14 @@ public sealed partial class StoredEnumTests
         public static bool Checked(DayOfWeek day) => Enum.IsDefined(day);
 
         public static int Counted(AttributeTargets targets) => (int)targets;
+
+        public static string InALocalFunction(DayOfWeek day)
+        {
+            return Text(day);
+
+            static string Text(DayOfWeek value) => value.ToString();
+        }
     }
+
+    private sealed record Row(DayOfWeek Day);
 }

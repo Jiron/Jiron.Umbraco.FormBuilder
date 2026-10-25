@@ -15,7 +15,8 @@ internal static class RuntimeCacheLoads
     /// <summary>
     /// The value under <paramref name="key"/>, or the one <paramref name="load"/> reads, shared with every miss that comes
     /// while it runs. The load runs without the caller's cancellation, as other callers may wait for it; the caller
-    /// stops waiting when <paramref name="cancellationToken"/> is cancelled. A load that fails is not kept.
+    /// stops waiting when <paramref name="cancellationToken"/> is cancelled. A load that fails is forgotten as it fails,
+    /// even when every caller stopped waiting for it, so the next miss reads anew.
     /// </summary>
     public static async Task<T> GetAsync<T>(IAppPolicyCache cache, string key, string loadingKey, Func<Task<T>> load, TimeSpan duration, CancellationToken cancellationToken)
         where T : class
@@ -27,7 +28,7 @@ internal static class RuntimeCacheLoads
             return hit;
         }
 
-        var loading = cache.GetCacheItem(loadingKey, () => new Loading<T>(load), duration)!;
+        var loading = cache.GetCacheItem(loadingKey, () => new Loading<T>(load, failed => Forget(cache, loadingKey, failed)), duration)!;
         T value;
         try
         {
@@ -35,6 +36,8 @@ internal static class RuntimeCacheLoads
         }
         catch (Exception) when (loading.Value.IsFaulted || loading.Value.IsCanceled)
         {
+            // The load forgets itself as it fails, but perhaps after its callers hear of it: a caller forgets it before
+            // it passes the failure on, so no miss after it waits for the failed load.
             Forget(cache, loadingKey, loading);
             throw;
         }
@@ -68,28 +71,48 @@ internal static class RuntimeCacheLoads
 
     // A load that starts once, when the first caller asks for it, on the thread pool and without that caller's execution
     // context: it is shared, so it runs in no caller's unit of work, Umbraco scope or cancellation (ADR-0043). Task.Run
-    // turns a load that throws before its first await into a failed task, which the callers forget like any other.
-    private sealed class Loading<T>(Func<Task<T>> load)
+    // turns a load that throws before its first await into a failed task. A load that fails or is cancelled says so as it
+    // ends, whether or not a caller still waits for it, and its error counts as observed.
+    private sealed class Loading<T>
     {
-        private readonly Lazy<Task<T>> _value = new(() => Start(load), LazyThreadSafetyMode.ExecutionAndPublication);
+        private readonly Lazy<Task<T>> _value;
         private int _claimed;
+
+        public Loading(Func<Task<T>> load, Action<Loading<T>> failed) =>
+            _value = new(() => Start(load, failed), LazyThreadSafetyMode.ExecutionAndPublication);
 
         public Task<T> Value => _value.Value;
 
         // True for the one caller that keeps the value: the first to ask once the load is done.
         public bool Claim() => Interlocked.Exchange(ref _claimed, 1) == 0;
 
-        private static Task<T> Start(Func<Task<T>> load)
+        private Task<T> Start(Func<Task<T>> load, Action<Loading<T>> failed)
         {
             if (ExecutionContext.IsFlowSuppressed())
             {
-                return Task.Run(load);
+                return Run(load, failed);
             }
 
             using (ExecutionContext.SuppressFlow())
             {
-                return Task.Run(load);
+                return Run(load, failed);
             }
+        }
+
+        private Task<T> Run(Func<Task<T>> load, Action<Loading<T>> failed)
+        {
+            var task = Task.Run(load);
+            _ = task.ContinueWith(
+                (done, self) =>
+                {
+                    _ = done.Exception;
+                    failed((Loading<T>)self!);
+                },
+                this,
+                CancellationToken.None,
+                TaskContinuationOptions.NotOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+            return task;
         }
     }
 }

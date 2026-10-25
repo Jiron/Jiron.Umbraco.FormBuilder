@@ -96,17 +96,9 @@ internal interface IFormBuilderFolderService
     Task<DeletionCandidate?> GetDeletionCandidateAsync(Guid key, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes every folder and form in the trash for good: the folders at the top of the trash as a folder's delete
-    /// does, then the forms in the trash outside them.
-    /// </summary>
-    /// <exception cref="FormBuilderConcurrencyException">A form in the trash changed meanwhile; what is deleted stays deleted.</exception>
-    /// <exception cref="FormBuilderCancelledException">A handler cancelled the delete.</exception>
-    Task<LibraryDeletion> EmptyTrashAsync(Guid? userKey, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Empties the trash as <see cref="EmptyTrashAsync(Guid?, CancellationToken)"/> does, of the top items that
-    /// <paramref name="include"/> lets go (ADR-0050): each folder at the top of the trash with everything below it, and
-    /// each form in the trash on its own. The notifications name only what goes.
+    /// Deletes for good the top items of the trash that <paramref name="include"/> lets go (ADR-0050): each folder at the
+    /// top of the trash with everything below it, as a folder's delete does, then each form in the trash outside them on
+    /// its own. The notifications name only what goes.
     /// </summary>
     /// <exception cref="FormBuilderConcurrencyException">A form in the trash changed meanwhile; what is deleted stays deleted.</exception>
     /// <exception cref="FormBuilderCancelledException">A handler cancelled the delete.</exception>
@@ -170,7 +162,7 @@ internal sealed class FormBuilderFolderService(
         ArgumentNullException.ThrowIfNull(request);
         changes.EnsureOwnUnit(OwnUnit);
         var name = CheckName(request.Name);
-        var parent = await LibraryFolders.LiveAsync(folders, request.ParentKey, cancellationToken);
+        var parent = await LibraryFolders.OutsideTrashAsync(folders, request.ParentKey, cancellationToken);
         var key = Guid.NewGuid();
         await changes.CancelableAsync(new FolderCreatingNotification(key, name, parent?.Key, request.UserKey, new EventMessages()));
         var created = await changes.WriteAsync(
@@ -221,7 +213,7 @@ internal sealed class FormBuilderFolderService(
         }
 
         LibraryTrash.CheckOutside(folder.TrashedUtc, Item);
-        var parent = await LibraryFolders.LiveAsync(folders, parentKey, cancellationToken);
+        var parent = await LibraryFolders.OutsideTrashAsync(folders, parentKey, cancellationToken);
         if (parent?.Id == folder.ParentId)
         {
             return await InfoAsync(folder, cancellationToken);
@@ -385,10 +377,6 @@ internal sealed class FormBuilderFolderService(
         var keys = all.ToDictionary(row => row.Id, row => row.Key);
         return new DeletionCandidate([folder.Key, .. below.Select(row => row.Key)], [.. inside.Select(form => Target(form, keys))]);
     }
-
-    /// <inheritdoc />
-    public async Task<LibraryDeletion> EmptyTrashAsync(Guid? userKey, CancellationToken cancellationToken = default) =>
-        (await EmptyTrashAsync((_, _) => Task.FromResult(true), userKey, cancellationToken)).Deleted;
 
     /// <inheritdoc />
     public async Task<TrashEmptied> EmptyTrashAsync(Func<DeletionCandidate, CancellationToken, Task<bool>> include, Guid? userKey, CancellationToken cancellationToken = default)

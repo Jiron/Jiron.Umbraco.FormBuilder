@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
@@ -124,7 +123,7 @@ internal sealed partial class FormBuilderFormExchangeService(
         // source, so the copy takes its folder's, as a new form does.
         var definition = documents.Readable(draft);
         var copy = DefinitionKeys.Renew(request.IncludeActions ? definition : definition with { Actions = [] }, serializer);
-        var folder = await LibraryFolders.LiveAsync(folders, request.FolderKey, cancellationToken);
+        var folder = await LibraryFolders.OutsideTrashAsync(folders, request.FolderKey, cancellationToken);
         documents.CheckSaveable(copy);
         var origin = new FormOrigin(
             FormSource.Duplicate,
@@ -200,7 +199,7 @@ internal sealed partial class FormBuilderFormExchangeService(
         }
 
         var name = requestedName ?? FormChecks.Name(template.Name);
-        var folder = await LibraryFolders.LiveAsync(folders, request.FolderKey, cancellationToken);
+        var folder = await LibraryFolders.OutsideTrashAsync(folders, request.FolderKey, cancellationToken);
         var definition = await creation.WithNewFormDefaultsAsync(DefinitionKeys.Renew(template.Definition, serializer), cancellationToken);
         documents.CheckSaveable(definition);
         var origin = new FormOrigin(
@@ -222,7 +221,7 @@ internal sealed partial class FormBuilderFormExchangeService(
         var envelope = read.Envelope ?? throw new FormBuilderValidationException(read.Problems);
         var name = requestedName ?? FormChecks.Name(envelope.Name, JsonPaths.Property(JsonPaths.Property(JsonPaths.Root, "form"), "name"));
         var wanted = FormAliases.IsValid(envelope.Alias) ? envelope.Alias : FormAliases.FromName(name);
-        var folder = await LibraryFolders.LiveAsync(folders, request.FolderKey, cancellationToken);
+        var folder = await LibraryFolders.OutsideTrashAsync(folders, request.FolderKey, cancellationToken);
 
         // Always new keys (12.5 adds the import into an existing form); the theme and the option lists as this site has them.
         var notes = new List<FormImportNote>();
@@ -390,38 +389,21 @@ internal sealed partial class FormBuilderFormExchangeService(
         return found;
     }
 
-    // Whether the site's list holds what the file's list holds: the same kind, configuration and items.
-    private static bool Same(StoredOptionList site, ExportedOptionList list)
-    {
-        if (!string.Equals(site.Kind, list.Kind, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        try
-        {
-            return JsonNode.DeepEquals(JsonNode.Parse(site.Config), JsonNode.Parse(list.Config)) && JsonNode.DeepEquals(JsonNode.Parse(site.Items), JsonNode.Parse(list.Items));
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
+    // Whether the site's list holds what the file's list holds: the same kind, configuration and items, in any order of
+    // their properties. Both are read as an export reads them, so a list that an export carries is the same as the
+    // site's list it came from, nulls and empty values included.
+    private static bool Same(StoredOptionList site, ExportedOptionList list) =>
+        string.Equals(site.Kind, list.Kind, StringComparison.Ordinal) &&
+        FormExportFormat.SameListJson(site.Config, list.Config, JsonValueKind.Object) &&
+        FormExportFormat.SameListJson(site.Items, list.Items, JsonValueKind.Array);
 
     // A stored list as an export carries it, or null when its stored JSON does not read: it is left out, and an import
     // then says that the list is missing.
     private ExportedOptionList? Exported(StoredOptionList list)
     {
-        try
+        if (FormExportFormat.ListJson(list.Config, JsonValueKind.Object) is { } config && FormExportFormat.ListJson(list.Items, JsonValueKind.Array) is { } items)
         {
-            if (JsonNode.Parse(list.Config) is JsonObject config && JsonNode.Parse(list.Items) is JsonArray items)
-            {
-                return new ExportedOptionList(list.Key, list.Alias, list.Name, list.Kind, config.ToJsonString(), items.ToJsonString(), list.CacheSeconds);
-            }
-        }
-        catch (JsonException)
-        {
-            // Left out below.
+            return new ExportedOptionList(list.Key, list.Alias, list.Name, list.Kind, config, items, list.CacheSeconds);
         }
 
         LogListLeftOut(logger, list.Key);

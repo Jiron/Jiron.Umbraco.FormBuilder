@@ -8,7 +8,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 /// The opening steps of every reader of a document from outside, the definition's and the export file's (ADR-0034,
 /// ADR-0046), written once: text becomes UTF-8 within the reader's limit and a lone surrogate is refused rather than
 /// becoming U+FFFD; bytes are within the limit and valid UTF-8 throughout, which the JSON reader checks only inside the
-/// strings it reads; and a document that is only too deep is told from one that is not JSON.
+/// strings it reads; a document that is only too deep is told from one that is not JSON; and a lone surrogate that the
+/// JSON reader took as an escape is named where it is.
 /// </summary>
 internal static class StrictText
 {
@@ -83,6 +84,13 @@ internal static class StrictText
     }
 
     /// <summary>
+    /// The first lone surrogate of a value, which the JSON reader takes as an escape but .NET cannot read: a problem with
+    /// <paramref name="code"/> at the string that holds one, or at the object whose property name holds one, as the
+    /// definition reader names it; null when the value holds none.
+    /// </summary>
+    public static DefinitionProblem? LoneSurrogate(JsonElement value, string path, string code) => LoneSurrogate(value, JsonPaths.Location.At(path), code);
+
+    /// <summary>
     /// Whether the text opens more than <paramref name="maxDepth"/> nested objects and arrays before it ends or stops
     /// being JSON: this tells a document that is only too deep from one that is not JSON, whatever its depth, without
     /// parsing it.
@@ -106,5 +114,42 @@ internal static class StrictText
         }
 
         return false;
+    }
+
+    private static DefinitionProblem? LoneSurrogate(JsonElement value, JsonPaths.Location location, string code)
+    {
+        switch (value.ValueKind)
+        {
+            case JsonValueKind.Object:
+                foreach (var property in value.EnumerateObject())
+                {
+                    if (JsonPaths.TryGetName(property) is not { } name)
+                    {
+                        return new DefinitionProblem(code, location.ToString(), "A property name holds a lone surrogate.");
+                    }
+
+                    if (LoneSurrogate(property.Value, location.Property(name), code) is { } problem)
+                    {
+                        return problem;
+                    }
+                }
+
+                return null;
+            case JsonValueKind.Array:
+                var index = 0;
+                foreach (var item in value.EnumerateArray())
+                {
+                    if (LoneSurrogate(item, location.Item(index++), code) is { } problem)
+                    {
+                        return problem;
+                    }
+                }
+
+                return null;
+            case JsonValueKind.String:
+                return JsonPaths.TryGetString(value) is null ? new DefinitionProblem(code, location.ToString(), "The string holds a lone surrogate.") : null;
+            default:
+                return null;
+        }
     }
 }

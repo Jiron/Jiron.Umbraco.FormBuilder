@@ -27,7 +27,10 @@ internal sealed record FormExportEnvelope(
     public IReadOnlyList<ExportedOptionList> OptionLists { get; init => field = DefinitionList.Of(value); } = DefinitionList.Of(OptionLists);
 }
 
-/// <summary>A library option list as an export carries it; its configuration and items are JSON text, which cannot change.</summary>
+/// <summary>
+/// A library option list as an export carries it; its configuration and items are JSON text, which cannot change, with
+/// every value they hold (<see cref="FormExportFormat.ListJson"/>).
+/// </summary>
 /// <param name="Key">Its key, which definitions name it by.</param>
 /// <param name="Alias">Its alias.</param>
 /// <param name="Name">Its name.</param>
@@ -61,6 +64,12 @@ internal static class FormExportFormat
     /// <summary>The longest package version an envelope may name.</summary>
     public const int MaxPackageVersionLength = 64;
 
+    /// <summary>
+    /// How deeply an option list's configuration or items may nest: as deeply as a definition, so what an export
+    /// carries reads back wherever it goes.
+    /// </summary>
+    public const int ListDepth = FormDefinitionSerializer.MaxDepth;
+
     private const string DefinitionProperty = "definition";
     private const string Document = "An export file";
 
@@ -68,6 +77,45 @@ internal static class FormExportFormat
     private static readonly ImmutableArray<string> RootProperties = ["format", "packageVersion", "exportedUtc", "form", DefinitionProperty, "optionLists"];
     private static readonly ImmutableArray<string> FormProperties = ["key", "alias", "name"];
     private static readonly ImmutableArray<string> ListProperties = ["key", "alias", "name", "kind", "config", "items", "cacheSeconds"];
+    private static readonly JsonDocumentOptions ListOptions = new() { MaxDepth = ListDepth };
+
+    /// <summary>
+    /// The configuration (an object) or the items (an array) of a library option list as an export carries them: the
+    /// JSON text with every value kept, as the file's reader keeps it; null when the text is not JSON of that kind, nests
+    /// deeper than <see cref="ListDepth"/> or holds a lone surrogate.
+    /// </summary>
+    public static string? ListJson(string json, JsonValueKind kind)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        try
+        {
+            using var document = JsonDocument.Parse(json, ListOptions);
+            return document.RootElement.ValueKind == kind ? CanonicalJson.Compact(document.RootElement) : null;
+        }
+        catch (Exception exception) when (exception is JsonException or ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Whether two texts of an option list's configuration (an object) or items (an array) hold the same values, the
+    /// properties of an object in any order; false when either is not JSON of that kind as an export carries it
+    /// (<see cref="ListJson"/>).
+    /// </summary>
+    public static bool SameListJson(string one, string other, JsonValueKind kind)
+    {
+        if (ListJson(one, kind) is not { } first || ListJson(other, kind) is not { } second)
+        {
+            return false;
+        }
+
+        // Both read already as JSON of their kind within the depth, without a lone surrogate, so neither throws here.
+        // An import compares a few small lists, so reading them twice costs nothing worth a second way to read them.
+        using var a = JsonDocument.Parse(first, ListOptions);
+        using var b = JsonDocument.Parse(second, ListOptions);
+        return JsonElement.DeepEquals(a.RootElement, b.RootElement);
+    }
 
     /// <summary>The envelope as the text of its file.</summary>
     public static string Write(FormExportEnvelope envelope)
@@ -251,7 +299,9 @@ internal static class FormExportFormat
             }
             catch (ArgumentException)
             {
-                Fail(DefinitionErrors.InvalidJson, path, "The definition holds a lone surrogate.");
+                // Only an escaped lone surrogate gets past the strict encoder; it is refused where the definition reader
+                // refuses it.
+                _problems.Add(StrictText.LoneSurrogate(value, path, DefinitionErrors.InvalidValue) ?? new DefinitionProblem(DefinitionErrors.InvalidValue, path, "The definition holds a lone surrogate."));
                 return null;
             }
 
@@ -429,7 +479,7 @@ internal static class FormExportFormat
             return instant.ToUniversalTime();
         }
 
-        // A JSON object or array of the file as its canonical text, which cannot change.
+        // A JSON object or array of the file as its text with every value (ListJson), which cannot change.
         private string? Json(JsonElement value, string path, JsonValueKind kind, string what)
         {
             if (value.ValueKind != kind)
@@ -438,15 +488,24 @@ internal static class FormExportFormat
                 return null;
             }
 
+            string text;
             try
             {
-                return CanonicalJson.Write(value, sortProperties: false);
+                text = CanonicalJson.Compact(value);
             }
             catch (ArgumentException)
             {
-                Fail(DefinitionErrors.InvalidJson, path, "The text holds a lone surrogate.");
+                _problems.Add(StrictText.LoneSurrogate(value, path, DefinitionErrors.InvalidJson) ?? new DefinitionProblem(DefinitionErrors.InvalidJson, path, "The text holds a lone surrogate."));
                 return null;
             }
+
+            if (StrictText.NestsDeeperThan(StrictText.Utf8.GetBytes(text), ListDepth))
+            {
+                Fail(DefinitionErrors.LimitExceeded, path, $"An option list's configuration and items nest at most {ListDepth} levels, as a definition does.");
+                return null;
+            }
+
+            return text;
         }
 
         private void Fail(string code, string path, string message) => _problems.Add(code, path, message);

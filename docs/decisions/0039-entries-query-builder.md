@@ -1,6 +1,6 @@
 # 0039. The entries query builder
 
-- Status: accepted
+- Status: accepted; amended in 4.8g and 4.8i (units inside a budgeted read)
 - Date: 2026-10-24
 - Roadmap step: 4.3d (decided and built); 4.7 (the cursor and `query_timeout` on the wire), 6.x (the search text),
   11.1 (the entries list), 11.3 (the inbox), 11.4 (exports), 16.2 (the load test)
@@ -118,7 +118,9 @@ read (`FormBuilderDatabase.QueryAsync`). The query (`EntryQuery`) holds:
 and `FormBuilderQueryTimeoutException` (`query_timeout`, 4.7) says so. It is never run again, and the gate is free
 for the next unit at once. A refusal of the builder stays a refusal, also past the deadline. A budgeted read
 inside another one keeps the outer one's budget and adds its own caller's cancellation (4.8g); a read stopped through
-its caller's token or a unit's ends with `OperationCanceledException`, never with the provider's error. The SQLite
+its caller's token or a unit's ends with `OperationCanceledException`, never with the provider's error. Since 4.8i
+this holds for a plain read inside a budgeted one too, and SQLite's progress handler stops a statement once the unit
+that runs it is cancelled: the budgeted read's caller or deadline, or the caller of a unit inside it. The SQLite
 progress handler is cleared before the connection goes back to Umbraco.
 
 **The cursor** (`EntryCursor`) names the sort it belongs to, the last entry, its submission time and, in the walk, its

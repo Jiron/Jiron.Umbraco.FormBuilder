@@ -402,7 +402,7 @@ public sealed class FolderServiceTests : RepositoryTestBase
         Assert.That(Notifications.Seen.OfType<FolderDeletingNotification>(), Is.Empty, "refused before its handlers hear of it");
         Notifications.Cancel = true;
         AssertCode(async () => await Service.DeleteAsync(gone.Key, Editor), "cancelled");
-        AssertCode(async () => await Service.EmptyTrashAsync(Editor), "cancelled");
+        AssertCode(async () => await EmptyAllAsync(Editor), "cancelled");
         Notifications.Cancel = false;
 
         Assert.Multiple(async () =>
@@ -495,9 +495,9 @@ public sealed class FolderServiceTests : RepositoryTestBase
         await FormService.TrashAsync(loose.Key, loose.ConcurrencyVersion, Editor);
         var before = Notifications.Seen.Count;
 
-        var emptied = await Service.EmptyTrashAsync(Editor);
+        var emptied = await EmptyAllAsync(Editor);
         var seen = Notifications.Seen.Skip(before).ToList();
-        var again = await Service.EmptyTrashAsync(Editor);
+        var again = await EmptyAllAsync(Editor);
         var folders = new[] { new FolderSummary(top.Key, "Events"), new FolderSummary(mid.Key, "Archive"), new FolderSummary(old.Key, "Old") };
 
         Assert.Multiple(async () =>
@@ -549,7 +549,7 @@ public sealed class FolderServiceTests : RepositoryTestBase
             ("trash", () => Service.TrashAsync(folder.Key, Editor)),
             ("restore", () => Service.RestoreAsync(old.Key, Editor)),
             ("delete", () => Service.DeleteAsync(old.Key, Editor)),
-            ("empty the trash", () => Service.EmptyTrashAsync(Editor)),
+            ("empty the trash", () => EmptyAllAsync(Editor)),
         };
 
         Assert.Multiple(async () =>
@@ -645,6 +645,10 @@ public sealed class FolderServiceTests : RepositoryTestBase
 
         return found;
     }
+
+    // Empties the whole trash: the filter lets everything go, as the product's own filter does for a user who may delete it all.
+    private async Task<LibraryDeletion> EmptyAllAsync(Guid? userKey) =>
+        (await Service.EmptyTrashAsync((_, _) => Task.FromResult(true), userKey)).Deleted;
 
     // The audit entries of a folder or form, oldest first: action, user and details.
     private async Task<List<(string Action, Guid? UserKey, string Details)>> AuditAsync(Guid key) =>

@@ -2,7 +2,8 @@
 
 - Status: accepted; the trash key of folders and forms added by [ADR-0047](0047-trash-delete-and-folders.md) in 4.5d;
   amended in 4.8a (the review before the freeze, below) and in 4.8g (one more index, camelCase free words); step 1
-  frozen in 4.8i by [ADR-0054](0054-schema-freeze.md)
+  frozen in 4.8i by [ADR-0054](0054-schema-freeze.md); the stored names share one table with the definition's words
+  since 4.8i
 - Date: 2026-10-23
 - Roadmap step: 4.1 (decided and built); 4.2 and 4.3 follow its text rules; 4.7, 6.1, 6.2, 8.1 and 9.1 check the
   migration state
@@ -61,7 +62,8 @@ classes are nested in each step and never edited; repositories (4.3) get product
 
 - **Stored names:** every enum stored as text is the camel case of its name (`pending`, `published`, `longText`), as
   the definitions, the events and the audit actions already were; before, most were PascalCase and one lowercase.
-  One converter (`StoredNames`) writes and reads them for every repository, and a read takes exactly that text: any
+  One converter (`StoredNames`) writes and reads them for every repository, from the table of names it shares with
+  the definition's words (`EnumNames`, 4.8i), and a read takes exactly that text: any
   other, another letter case included, is a row that something else wrote, and is refused. Option list kinds and
   scan states stay free words until 5.5 and 7.3 make them enums, which then store them the same way.
 - **Names:** an action run's position is `sortOrder`, as elsewhere, not `seq`; the field catalogue's type is

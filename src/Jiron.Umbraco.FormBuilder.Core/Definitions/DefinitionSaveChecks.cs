@@ -33,8 +33,8 @@ internal sealed class DefinitionSaveChecks
 
     private const int MaxDays = 36500;
 
-    // Each field inside a field and each group inside a group opens two levels of the document, an array and an
-    // object, so a definition that nests more than half as deep as a document may is too deep for any reader.
+    // Each field inside a field and each rule group inside a rule group opens two levels of the document, an array and
+    // an object, so a definition that nests more than half as deep as a document may is too deep for any reader.
     private const int MaxNesting = FormDefinitionSerializer.MaxDepth / 2;
 
     // CR, LF, NEL, and the line and paragraph separators.
@@ -579,7 +579,7 @@ internal sealed class DefinitionSaveChecks
         }
     }
 
-    // One level deeper into fields inside fields or groups inside groups, or, past the levels a reader reads, the
+    // One level deeper into fields inside fields or rule groups inside rule groups, or, past the levels a reader reads, the
     // problem once and no deeper: however deep a definition built in code nests, the checks never run out of stack.
     private bool Deeper()
     {

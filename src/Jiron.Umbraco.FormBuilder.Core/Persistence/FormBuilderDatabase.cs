@@ -59,7 +59,10 @@ internal sealed partial class FormBuilderDatabase(
     /// </summary>
     public bool InUnitOfWork => _inside.Value || scopeAccessor.AmbientScope is not null;
 
-    /// <summary>Runs read-only work.</summary>
+    /// <summary>
+    /// Runs read-only work. A statement stopped through the unit's token, its caller's or an outer unit's, fails with
+    /// <see cref="OperationCanceledException"/>, as in <see cref="QueryAsync"/>.
+    /// </summary>
     public Task<T> ReadAsync<T>(Func<IUmbracoDatabase, Task<T>> read, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(read);
@@ -72,7 +75,7 @@ internal sealed partial class FormBuilderDatabase(
                     FormBuilderDbExtensions.CurrentToken = token;
                     _reading.Value = true;
                     using var scope = scopeProvider.CreateScope(autoComplete: true);
-                    return await read(scope.Database);
+                    return await AsCancelledAsync(() => read(scope.Database), token);
                 },
                 cancellationToken),
             cancellationToken);

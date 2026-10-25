@@ -6,7 +6,8 @@
   problems for every reader and check; the lists are read-only, and records compare them by their items); amended in
   4.8f (five C# names, one opening for both readers, what the writer refuses, nested groups read once); amended in
   4.8h (what the save checks refuse before the writer, depth alone deciding `limit_exceeded`, no null item in a list,
-  the culture texts, static data that cannot change)
+  the culture texts, static data that cannot change); amended in 4.8i (an option list keeps every value, escaped lone
+  surrogates in an export file, nested rule errors named in one pass, one table of enum names)
 - Date: 2026-10-23
 - Roadmap step: 4.2a (decided and built); 4.2b builds the structural validation on it, 4.4 binds its limits, 4.5
   calls it from the form service
@@ -237,8 +238,9 @@ and the export file's reader stops reading.
 - **Depth alone decides `limit_exceeded`,** correcting 4.8f: the converters' `ArgumentException` did not make a
   `JsonException` mean depth, because System.Text.Json's enum converter threw one for an undefined value. Now a
   refusal of the writer is `limit_exceeded` when the writer had already gone deeper than a reader reads, or when the
-  canonical bytes nest deeper, and `invalid_value` otherwise. The save checks stop at 32 nested groups or fields (a
-  level of either is two levels of the document), so a definition built in code with 100,000 nested groups is
+  canonical bytes nest deeper, and `invalid_value` otherwise. The save checks stop at 32 nested rule groups or fields
+  inside fields (a level of either is two levels of the document), so a definition built in code with 100,000 nested
+  rule groups is
   `limit_exceeded` at `$` and cannot overflow the stack, and every depth the checks pass reads back.
 - **No list of the model takes a null item:** the list refuses one when it is built (`ArgumentException` naming the
   item's type), so a null page is refused where it is made rather than written as nothing.
@@ -257,6 +259,28 @@ and the export file's reader stops reading.
   frozen table built once, and the export envelope's lists are the model's list. The test of static fields allows only
   what cannot change (values, frozen and immutable collections, read-only options and contexts, and types of the
   package whose every field is read-only and holds what is allowed), instead of refusing a list of what can.
+
+### Amended in 4.8i
+
+- **An option list in an export file keeps every value,** correcting 4.8h: the reader kept the canonical text of a
+  list's configuration and items, which leaves out nulls and empty arrays and objects, so a list the file carried no
+  longer matched the site's list it came from, and the import said the list was missing. The export, the reader and
+  the import's comparison now read a list's JSON the same way (`FormExportFormat.ListJson`, `CanonicalJson.Compact`):
+  compact text with every value, in the order given, escaped as the canonical text is, nested at most as deeply as a
+  definition (`limit_exceeded` at the list's path in a file); the import compares two lists with the properties of an
+  object in any order (`SameListJson`), so a list the file reader takes never fails the comparison. A stored list
+  that does not read is left out of an export and is not the file's list on import.
+- **An escaped lone surrogate in an export file is a problem where it is,** not an `InvalidOperationException` out of
+  the reader: the canonical writer read strings and names with .NET, which cannot read one. The writer now refuses
+  it with `ArgumentException`, a name included even where its value is left out, and the reader names it at its
+  place: in the definition `invalid_value` where the definition reader names it, in an option list `invalid_json` as
+  the file's own parts are refused (`StrictText.LoneSurrogate`).
+- **A rule error deep in nested rule groups is named in one pass per level:** a refused group was read again through
+  the serializer to name the path, and that read met the refused group inside it, which read itself again, so the
+  work doubled with each level. A group refused for an item inside it now adds that item's place in its conditions,
+  found by skipping over the values before it; only an item refused for something of its own is read again.
+- **One table of enum names** (`EnumNames<T>`) is behind the definition's words and the names the database stores;
+  a value that its enum names twice gets one name, where the words' own table could not be built.
 
 ## Consequences
 

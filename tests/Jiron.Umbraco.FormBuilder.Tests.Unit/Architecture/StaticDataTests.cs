@@ -17,9 +17,10 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Architecture;
 /// <summary>
 /// Core and Web keep no static state that can change (the quality bar; ROADMAP 4.8f, 4.8h): every static field is
 /// read-only, and what it holds is allowed all the way down, rather than merely not on a list of what changes. Allowed
-/// are values (primitives, strings, enums, instants, delegates, patterns, encodings), frozen and immutable collections
-/// and the definition's lists of allowed items, serializer options and contexts that are read-only, and types of this
-/// package whose every field is read-only and holds what is allowed.
+/// are values (primitives, strings, enums, instants, delegates, patterns, encodings, reflection's members), frozen and
+/// immutable collections and the definition's lists of allowed items, serializer options and contexts that are
+/// read-only, and types of this package whose every field is read-only and holds what is allowed. A lazy value not made
+/// yet is judged by what its type can hold (4.8i).
 /// </summary>
 [TestFixture]
 public sealed class StaticDataTests
@@ -59,6 +60,12 @@ public sealed class StaticDataTests
             Assert.That(Of(nameof(Samples.Words)), Is.Null, "a frozen set");
             Assert.That(Of(nameof(Samples.Steps)), Is.Null, "an immutable array");
             Assert.That(Of(nameof(Samples.Fixed)), Is.Null, "an own record of read-only fields");
+            Assert.That(Of(nameof(Samples.Later)), Does.Contain("List"), "a lazy list not made yet");
+            Assert.That(Of(nameof(Samples.LaterFixed)), Is.Null, "a lazy own record not made yet");
+            Assert.That(Of(nameof(Samples.Method)), Is.Null, "a reflection member");
+            Assert.That(Samples.Later.IsValueCreated || Samples.LaterFixed.IsValueCreated, Is.False, "the check made no lazy value");
+            Assert.That(Why(typeof(Holder<>).GetField(nameof(Holder<object>.Instance), BindingFlags.Static | BindingFlags.NonPublic)!), Does.Contain("type parameter"), "a field of an open type's parameter");
+            Assert.That(Why(typeof(Holder<>).GetField(nameof(Holder<object>.Items), BindingFlags.Static | BindingFlags.NonPublic)!), Is.Null, "an immutable array of it");
         });
     }
 
@@ -83,10 +90,72 @@ public sealed class StaticDataTests
     {
         if (field.DeclaringType!.ContainsGenericParameters || field.FieldType.ContainsGenericParameters)
         {
-            return IsContainer(field.FieldType) || IsValue(field.FieldType) ? null : $"its type {field.FieldType.Name} can change";
+            return Why(field.FieldType, [], item: false);
         }
 
         return Why(field.GetValue(null), new HashSet<object>(ReferenceEqualityComparer.Instance));
+    }
+
+    // Why a value of the type can change, or null, judged by the type alone: what a container's items, an own type's
+    // fields and a lazy value can hold. A type parameter is what each instantiation fills it with, which the open type
+    // cannot tell: allowed as an enum, or as the items of a container that cannot change, and refused otherwise.
+    private static string? Why(Type type, HashSet<Type> seen, bool item)
+    {
+        if (type.IsGenericParameter)
+        {
+            return item || type.GetGenericParameterConstraints().Contains(typeof(Enum)) ? null : $"its type parameter {type.Name} can change";
+        }
+
+        if (IsValue(type) || !seen.Add(type))
+        {
+            return null;
+        }
+
+        if (type.IsArray)
+        {
+            return $"an array of {type.GetElementType()!.Name} can change";
+        }
+
+        if (Closed(type, typeof(Lazy<>)) is { } lazy)
+        {
+            return Why(lazy.GetGenericArguments()[0], seen, item: false) is { } why ? $"its lazy value: {why}" : null;
+        }
+
+        if (IsContainer(type))
+        {
+            foreach (var argument in type.GetGenericArguments())
+            {
+                if (Why(argument, seen, item: true) is { } why)
+                {
+                    return $"an item of its {Short(type)}: {why}";
+                }
+            }
+
+            return null;
+        }
+
+        if (type.Namespace?.StartsWith("Jiron.Umbraco.FormBuilder", StringComparison.Ordinal) != true || !(type.IsSealed || type.IsValueType))
+        {
+            return $"{Short(type)} is not known to stay unchanged";
+        }
+
+        for (var current = type; current is not null && current != typeof(object); current = current.BaseType)
+        {
+            foreach (var field in current.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+            {
+                if (!type.IsValueType && !field.IsInitOnly)
+                {
+                    return $"{Short(type)}.{field.Name} can be set";
+                }
+
+                if (Why(field.FieldType, seen, item: false) is { } why)
+                {
+                    return $"{Short(type)}.{field.Name}: {why}";
+                }
+            }
+        }
+
+        return null;
     }
 
     private static string? Why(object? value, HashSet<object> seen)
@@ -109,15 +178,16 @@ public sealed class StaticDataTests
                 return encoding.IsReadOnly ? null : "an encoding that is not read-only";
         }
 
-        // A lazy value is set once; what it holds once it is made is checked.
-        if (IsGeneric(type, typeof(Lazy<>)))
+        // A lazy value is set once: what it holds once it is made is checked, and before that what its type can hold,
+        // without making it.
+        if (Closed(type, typeof(Lazy<>)) is { } lazy)
         {
-            return Read(value, "IsValueCreated") is true ? Why(Read(value, "Value"), seen) : null;
+            return Read(value, "IsValueCreated") is true ? Why(Read(value, "Value"), seen) : Why(lazy, [], item: false);
         }
 
         if (IsContainer(type))
         {
-            if (IsGeneric(type, typeof(ImmutableArray<>)) && Read(value, "IsDefault") is true)
+            if (Closed(type, typeof(ImmutableArray<>)) is not null && Read(value, "IsDefault") is true)
             {
                 return null;
             }
@@ -159,12 +229,12 @@ public sealed class StaticDataTests
         return null;
     }
 
-    // Values that cannot change, and flow-scoped state, which no other request sees.
+    // Values that cannot change, reflection's members among them, and flow-scoped state, which no other request sees.
     private static bool IsValue(Type type) =>
         type.IsPrimitive || type.IsEnum || type == typeof(string) || type == typeof(decimal) || type == typeof(Guid) ||
         type == typeof(TimeSpan) || type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(JsonEncodedText) ||
-        typeof(Delegate).IsAssignableFrom(type) || typeof(Regex).IsAssignableFrom(type) || typeof(Type).IsAssignableFrom(type) ||
-        typeof(CompositeFormat) == type || IsGeneric(type, typeof(SearchValues<>)) || IsGeneric(type, typeof(AsyncLocal<>));
+        typeof(Delegate).IsAssignableFrom(type) || typeof(Regex).IsAssignableFrom(type) || typeof(MemberInfo).IsAssignableFrom(type) ||
+        typeof(CompositeFormat) == type || Closed(type, typeof(SearchValues<>)) is not null || Closed(type, typeof(AsyncLocal<>)) is not null;
 
     // Collections whose items cannot be added, removed or replaced, the immutable collections' builders aside: what
     // they hold is checked item by item.
@@ -174,18 +244,18 @@ public sealed class StaticDataTests
         type.Name.StartsWith("<>z__ReadOnly", StringComparison.Ordinal) ||
         (type.IsGenericType && type.GetGenericTypeDefinition().FullName == "Jiron.Umbraco.FormBuilder.Core.Definitions.DefinitionList`1");
 
-    // Whether the type is, or derives from, a closed form of the generic definition.
-    private static bool IsGeneric(Type type, Type definition)
+    // The closed form of the generic definition that the type is or derives from, or null.
+    private static Type? Closed(Type type, Type definition)
     {
         for (var current = type; current is not null; current = current.BaseType)
         {
             if (current.IsGenericType && current.GetGenericTypeDefinition() == definition)
             {
-                return true;
+                return current;
             }
         }
 
-        return false;
+        return null;
     }
 
     private static object? Read(object value, string property) => value.GetType().GetProperty(property)!.GetValue(value);
@@ -207,12 +277,23 @@ public sealed class StaticDataTests
         internal static readonly FrozenSet<string> Words = new[] { "a" }.ToFrozenSet();
         internal static readonly ImmutableArray<string> Steps = ["a"];
         internal static readonly Point Fixed = new(1, 2);
+        internal static readonly Lazy<List<string>> Later = new(() => ["a"]);
+        internal static readonly Lazy<Point> LaterFixed = new(() => new(1, 2));
+        internal static readonly MethodInfo Method = typeof(Samples).GetMethod(nameof(ReadOnly), BindingFlags.Static | BindingFlags.NonPublic)!;
 
         private static JsonSerializerOptions ReadOnly(JsonSerializerOptions options)
         {
             options.MakeReadOnly(populateMissingResolver: true);
             return options;
         }
+    }
+
+    // An open generic type's fields: one of its type parameter, which any class may fill, and an immutable array of it.
+    private static class Holder<T>
+        where T : class, new()
+    {
+        internal static readonly T Instance = new();
+        internal static readonly ImmutableArray<T> Items = [];
     }
 
     private sealed class Counter
