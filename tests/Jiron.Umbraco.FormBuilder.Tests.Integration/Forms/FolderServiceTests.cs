@@ -1,4 +1,5 @@
 using System.Text;
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
@@ -381,6 +382,68 @@ public sealed class FolderServiceTests : RepositoryTestBase
             Assert.That(Count(FormBuilderTables.Folder), Is.EqualTo(3), "nothing was deleted");
             Assert.That(await FormService.GetAsync(form.Key), Is.EqualTo(form));
             Assert.That(await Service.DeleteAsync(Guid.NewGuid(), Editor), Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task EmptyingTheTrash_OfWhatAFilterLetsGo_NamesOnlyThat_AndCountsWhatStays()
+    {
+        var top = await CreateAsync("Events");
+        var mid = await CreateAsync("Archive", top.Key);
+        var invite = await CreateFormAsync("Invite", mid.Key);
+        var spare = await CreateAsync("Spare");
+        var loose = await CreateFormAsync("Loose");
+        var kept = await CreateFormAsync("Kept");
+        await Service.TrashAsync(top.Key, Editor);
+        await Service.TrashAsync(spare.Key, Editor);
+        await FormService.TrashAsync(loose.Key, loose.ConcurrencyVersion, Editor);
+        await FormService.TrashAsync(kept.Key, kept.ConcurrencyVersion, Editor);
+        var offered = new List<LibraryRemoval>();
+        var before = Notifications.Seen.Count;
+
+        var emptied = await Service.EmptyTrashAsync(
+            (removal, _) =>
+            {
+                offered.Add(removal);
+                return Task.FromResult(!removal.FolderKeys.Contains(top.Key) && !removal.Forms.Any(form => form.Key == kept.Key));
+            },
+            Editor);
+        var seen = Notifications.Seen.Skip(before).ToList();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(offered.Select(removal => (string.Join(",", removal.FolderKeys), string.Join(",", removal.Forms.Select(form => form.Key)))), Is.EqualTo(new[] { ($"{top.Key},{mid.Key}", $"{invite.Key}"), ($"{spare.Key}", string.Empty), (string.Empty, $"{kept.Key}"), (string.Empty, $"{loose.Key}") }), "each top item once, with everything it takes");
+            Assert.That(offered[0].Forms.Single(), Is.EqualTo(new FormAccessTarget(invite.Key, mid.Key, false)), "a form as the evaluation reads it");
+            Assert.That(emptied.Left, Is.EqualTo(2), "Events with what is below it, and Kept");
+            Assert.That(emptied.Deleted.Folders, Is.EqualTo(new[] { new FolderSummary(spare.Key, "Spare") }));
+            Assert.That(emptied.Deleted.Forms, Is.EqualTo(new[] { Summary(loose) }));
+            Assert.That(seen.OfType<TrashEmptyingNotification>().Single().Folders, Is.EqualTo(emptied.Deleted.Folders), "named before as they go, and only those");
+            Assert.That(seen.OfType<TrashEmptiedNotification>().Single().Forms, Is.EqualTo(emptied.Deleted.Forms));
+            Assert.That((await Service.GetAsync(mid.Key))!.TrashedUtc, Is.Not.Null, "what stayed is still in the trash");
+            Assert.That(await FormService.GetAsync(invite.Key), Is.Not.Null);
+            Assert.That(await FormService.GetAsync(kept.Key), Is.Not.Null);
+        });
+    }
+
+    [Test]
+    public async Task TheRemovalOfAFolder_IsTheFolderWithTheFoldersBelowIt_NearestFirst_AndTheirForms()
+    {
+        var top = await CreateAsync("Events");
+        var mid = await CreateAsync("Archive", top.Key);
+        var deep = await CreateAsync("Deep", mid.Key);
+        var invite = await CreateFormAsync("Invite", top.Key);
+        var notes = await CreateFormAsync("Notes", deep.Key);
+        await CreateFormAsync("Elsewhere");
+
+        var removal = await Service.GetRemovalAsync(top.Key);
+        var ofDeep = await Service.GetRemovalAsync(deep.Key);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(removal!.FolderKeys, Is.EqualTo(new[] { top.Key, mid.Key, deep.Key }));
+            Assert.That(removal.Forms, Is.EquivalentTo(new[] { new FormAccessTarget(invite.Key, top.Key, false), new FormAccessTarget(notes.Key, deep.Key, false) }));
+            Assert.That((ofDeep!.FolderKeys, ofDeep.Forms), Is.EqualTo((new[] { deep.Key }, new[] { new FormAccessTarget(notes.Key, deep.Key, false) })).Using<(IReadOnlyList<Guid>, IReadOnlyList<FormAccessTarget>)>((a, b) => a.Item1.SequenceEqual(b.Item1) && a.Item2.SequenceEqual(b.Item2)));
+            Assert.That(await Service.GetRemovalAsync(Guid.NewGuid()), Is.Null);
         });
     }
 

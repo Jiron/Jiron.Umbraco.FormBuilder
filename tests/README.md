@@ -26,8 +26,8 @@ npx playwright test --project=smoke
 
 | Project | What it holds |
 | --- | --- |
-| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the authorization policies (`ManagementApi/`, with the access tests below), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), the form service (`Forms/`, below) and the access service with the authorization policies (`Access/`, below). |
+| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the management API's policies, access filter and answers (`ManagementApi/`, below), and the Testing project's own tests. |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), the form service (`Forms/`, below), the access service with the authorization policies (`Access/`, below) and the management API (`ManagementApi/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -117,7 +117,7 @@ A host turns these on in the `JironFormBuilderTesting` section; everything is of
 queries of its own (`SchemaInspector`), comparing it with `ExpectedSchemaV1`, which is written out by hand from §4.5
 and [ADR-0033](../docs/decisions/0033-schema-v1.md). The same tests run against SQL Server in the `sqlserver` CI job.
 Two of them compare with files under review, and rewrite them when `JFB_UPDATE_SNAPSHOTS=1` is set (and then fail, so
-the diff gets read and committed):
+the diff gets read and committed; the management API's document is the third such file, below):
 
 - `SchemaV1DdlTests`: the SQL Server statements of step 1, rendered without a server, in
   `Persistence/schema-v1.sqlserver.sql`;
@@ -287,6 +287,32 @@ out by hand; it also calls actions guarded by `[Authorize(Policy = ...)]` withou
 without the section or the permission. `Testing/TestPeopleTests` seeds the grants and restricted folders, again,
 next to a folder of that name in the trash or inside another, for one of Umbraco's groups alone and with broken
 settings, and `Testing/TestAccessEndpointTests` reads them back through `/jfb-testing/access`.
+
+## The management API tests
+
+`Tests.Integration/ManagementApi/` calls the management API on a real site as the personas of ADR-0013, each an API
+user signed in through Umbraco's token endpoint on the first call (`ManagementApiTestBase`, `ManagementApiCaller`)
+([ADR-0050](../docs/decisions/0050-management-api-base.md)). `ManagementApiEndpoints` lists every endpoint through
+the API explorer and fills its route, query and body by type, so the permission check, not routing, answers; the
+tests that use it call a new endpoint by themselves:
+
+| Tests | What they show |
+| --- | --- |
+| `PermissionMatrixTests` | Each endpoint's declaration against a table written out by hand; each endpoint as the outsider (`403 no_section`), as a persona who sees the folder but lacks the permission (`403 forbidden` naming the first missing one), as one who holds nothing on the restricted folder and with a key that names nothing (`404`), and the section-wide ones as a user of the section without grants. |
+| `PendingMigrationsApiTests` | Every endpoint answers `503 migrations_pending` with `Retry-After` while the plan has not run (the site boots without it), and normally once it ran; the test writes each answer to its output. |
+| `RefusalBodiesApiTests` | Each kind of refusal through Umbraco's pipeline, from a real call: `application/problem+json`, the status in the body, the code, a title for editors and what the kind adds (the problems, the permission, a handler's messages). |
+| `TreeApiTests` | The tree and the trash as each persona sees them, folders first, with the user's permissions and `hasChildren` (only for what the user sees, in the folder's own state of the trash); paging across folders and forms, at the root and in the trash too; a folder in the trash holding what went with it; no key as the root; pages outside the limits. |
+| `FolderApiTests` | Each folder endpoint's answer and change: the permission checked before the request's values, `design` on a move's new parent, `managePermissions` and a confirmation for a move that widens access, `design` and `deleteEntries` on everything a permanent delete removes (restricted folders and forms below it included), and an emptied trash that keeps what the user may not delete. |
+| `OpenApiSnapshotTests` | The document `jfb` against `docs/api/jfb.json` (rewritten with `JFB_UPDATE_SNAPSHOTS=1`, then fails), its paths and operation names. |
+
+`Tests.Unit/ManagementApi/` covers the same without a host: the access filter's order, refusals and fail-closed
+cases, how it reads a key (`FormBuilderAccessFilterTests`); every answer to a refusal, the exception filter, the
+declarations, the operation and schema names and the feature provider (`FormBuilderProblemsTests`); the models of the library
+(`LibraryModelsTests`); and the policies and handlers (`FormBuilderAuthorizationTests`). In the client,
+`packages/backoffice/scripts/generate-client.test.mjs` generates the client from the snapshot next to the committed
+one and fails on any difference: after a change to the API, run the snapshot test with `JFB_UPDATE_SNAPSHOTS=1`, then
+`npm run generate-client -w @jfb/backoffice`, and commit both. `packages/backoffice/src/hey-api.test.ts` shows that
+the generated client starts from the backoffice's own HTTP client, whose settings win.
 
 ## Writing tests
 

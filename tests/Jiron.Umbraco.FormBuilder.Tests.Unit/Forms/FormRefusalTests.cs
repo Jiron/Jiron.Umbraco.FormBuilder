@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Umbraco.Cms.Core.Events;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Forms;
@@ -65,6 +66,17 @@ public sealed partial class FormRefusalTests
             Assert.That(FormBuilderErrorCodes.Of(new FormBuilderCancelledException(new EventMessages())), Is.EqualTo("cancelled"));
             Assert.That(FormBuilderErrorCodes.Of(new InvalidOperationException()), Is.Null, "no refusal");
             Assert.That(() => FormBuilderErrorCodes.Of((Exception)null!), Throws.ArgumentNullException);
+        });
+    }
+
+    [Test]
+    public void ASettingsRefusal_ALockedSetting_AndAReadThatRanTooLong_AnswerWithTheirCodes()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(FormBuilderErrorCodes.Of(new FormBuilderSettingsValidationException([new SettingsError("general.timeZone", "unknown_zone", "Not a time zone.")])), Is.EqualTo("validation_failed"));
+            Assert.That(FormBuilderErrorCodes.Of(new FormBuilderSettingLockedException("general.timeZone", "JironFormBuilder:General:TimeZone")), Is.EqualTo("setting_locked"));
+            Assert.That(FormBuilderErrorCodes.Of(new FormBuilderQueryTimeoutException()), Is.EqualTo("query_timeout"));
         });
     }
 

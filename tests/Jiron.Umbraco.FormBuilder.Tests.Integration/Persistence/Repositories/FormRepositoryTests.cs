@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -115,6 +116,56 @@ public sealed class FormRepositoryTests : RepositoryTestBase
             Assert.That(secondPage.Items.Select(form => form.Id), Is.EqualTo(new[] { gamma.Id }));
             Assert.That(new[] { firstPage.Total, secondPage.Total, beyond.Total }, Is.All.EqualTo(3));
             Assert.That(beyond.Items, Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task TheFoldersWithForms_AreThoseWithAFormInTheTrashStateAsked_ThatTheScopeHolds()
+    {
+        var events = await CreateFolderAsync("Events");
+        var empty = await CreateFolderAsync("Empty");
+        var archive = await CreateFolderAsync("Archive");
+        var hr = await CreateFolderAsync("HR");
+        await CreateFormAsync("spring", events.Id, "Spring");
+        var old = await CreateFormAsync("old", archive.Id, "Old");
+        await Forms.TrashAsync(old.Id, old.ConcurrencyVersion, Editor);
+        await CreateFormAsync("payroll", hr.Id, "Payroll");
+        int[] all = [events.Id, empty.Id, archive.Id, hr.Id];
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, trashed: false, access: null), Is.EquivalentTo(new[] { events.Id, hr.Id }));
+            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, trashed: true, access: null), Is.EquivalentTo(new[] { archive.Id }));
+            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, false, new AccessScope { FolderIds = [events.Id] }), Is.EquivalentTo(new[] { events.Id }), "only the forms the scope holds");
+            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, false, AccessScope.Nothing), Is.Empty);
+            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, false, AccessScope.Everything), Is.EquivalentTo(new[] { events.Id, hr.Id }));
+            Assert.That(await Forms.ListFolderIdsWithFormsAsync([events.Id], false, null), Is.EquivalentTo(new[] { events.Id }), "only the folders asked about");
+            Assert.That(await Forms.ListFolderIdsWithFormsAsync([], false, null), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task AList_LeavesOutTheFormsOfTheFoldersItNames_AndKeepsThoseAtTheRoot()
+    {
+        var events = await CreateFolderAsync("Events");
+        var archive = await CreateFolderAsync("Archive");
+        var contact = await CreateFormAsync("contact", name: "Contact");
+        var spring = await CreateFormAsync("spring", events.Id, "Spring");
+        var old = await CreateFormAsync("old", archive.Id, "Old");
+        foreach (var form in new[] { contact, spring, old })
+        {
+            await Forms.TrashAsync(form.Id, form.ConcurrencyVersion, Editor);
+        }
+
+        async Task<IReadOnlyList<int>> IdsAsync(FormFilter filter) => (await Forms.ListAsync(filter, PageRequest.First(50))).Items.Select(form => form.Id).ToList();
+        var trash = new FormFilter { AllFolders = true, Trashed = true };
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await IdsAsync(trash with { OutsideFolderIds = [archive.Id] }), Is.EqualTo(new[] { contact.Id, spring.Id }));
+            Assert.That(await IdsAsync(trash with { OutsideFolderIds = [archive.Id, events.Id] }), Is.EqualTo(new[] { contact.Id }), "the root stays");
+            Assert.That(await IdsAsync(trash with { OutsideFolderIds = [] }), Is.EqualTo(new[] { contact.Id, old.Id, spring.Id }), "none left out");
+            Assert.That((await Forms.ListAsync(trash with { OutsideFolderIds = [archive.Id] }, PageRequest.First(1))).Total, Is.EqualTo(2), "counted before paging");
         });
     }
 
