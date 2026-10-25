@@ -1766,7 +1766,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Settings schemas exposed to the backoffice as JSON:** the field types of §4.7's designer support, each with its palette group, icon, the common properties it supports and its settings schema, with the permission matrix, the regenerated client and English and German keys for the built-in types' names and settings.
   - **An availability check** ("not configured: …"): a type that needs configuration the site lacks says why, and the backoffice receives the reason, so the palette can grey the type out (§4.3.2).
   - Done when: the endpoint's integration tests pass, with the permission matrix; a type that is not configured reaches the backoffice with its reason; the client is regenerated, and every new string has an English and a German key.
-- [ ] **5.1d Field values** (5.1 split in four, then 5.1d in two, WORKLOG 2026-10-25; 5.1c until 5.1b's split)
+- [x] **5.1d Field values** (5.1 split in four, then 5.1d in two, WORKLOG 2026-10-25; 5.1c until 5.1b's split) (2026-10-25, 764e76a)
   - **Field values:**
     - mapping from storage kinds to `jfbEntryValue` columns, for the storage kind each type declares (ADR-0044);
     - the parse and validate contract;
