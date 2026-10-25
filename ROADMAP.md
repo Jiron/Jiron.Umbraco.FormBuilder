@@ -1685,8 +1685,46 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **4.7c Versions in the management API** (4.7b split in two, WORKLOG 2026-10-25) (2026-10-25, 6de9368)
   - **The endpoints** (§4.7) over the 4.5 services: versions (list, get, diff, restore, pin, comment). A restore that changes the actions needs `manageActions` (ADR-0013). Each joins 4.7a's permission matrix, which covers it by itself, and its `503 migrations_pending` test.
   - Done when: the integration tests for the endpoints pass; the permission matrix and the `503 migrations_pending` test call every new endpoint (each test names the endpoints it called); the OpenAPI snapshot and the client are regenerated and committed.
-- [ ] **4.8 Phase review**
-  - A subagent reviews the Core diff for SOLID, naming, async and load-balancing safety (no static mutable state). Fix what it finds.
+- [ ] **4.8a Schema v1 before the freeze** (4.8 split in six, WORKLOG 2026-10-25)
+  - **The review:** three subagents read the Core diff of Phase 4 for SOLID, naming, async and load-balancing safety (no static mutable state) before the split. Their findings are 4.8a to 4.8e, each part fixing its own; 4.8f has the fixes reviewed.
+  - **The schema's findings,** fixed while step 1 can still change (§4.5, ADR-0033):
+    - **indexes for the access paths:** the references by content item, which every content save replaces (ADR-0017); one form's daily statistics over a range of days, and their delete by form, through a key that leads with the form; the uploads that wait for an entry, oldest first, through one index over the entry and the time;
+    - **stored names in one letter case:** every enum stored as text (entry states, version kinds, the states and kinds of action runs and emails, trigger kinds, template kinds, permission targets, storage kinds) in camelCase, as the definitions, events and audit actions are, written and read by one converter;
+    - **column names:** the action run's `seq` becomes `sortOrder`, the field catalogue's `type` becomes `fieldType` (as the action run's `actionType`), `replyTo` becomes `replyToAddress`, and the hash columns are named one way;
+    - **an email's last error** in two columns, code and message, as an action run's;
+    - **a template's changes recorded** in `updatedUtc` and `updatedByUserKey`, as on every table whose rows change.
+  - Done when: the schema tests (`MigrationPlanTests` against `ExpectedSchemaV1`, the constraint tests) and the repository tests pass; SQLite's query plan of each query that a new index serves names that index (as `EntryQueryPlanTests` does); a stored enum in another letter case is refused when read; the SQL Server DDL snapshot and docs/database.md are regenerated and reviewed.
+- [ ] **4.8b The repositories after the review** (4.8 split in six, WORKLOG 2026-10-25)
+  - **Locks and budgets** (ADR-0036, ADR-0039, ADR-0040):
+    - the audit log's filtered list and its count run under the query budget and answer `query_timeout`, so a long search never holds the SQLite gate;
+    - the due list of action runs reads without locks, and the claim goes on checking under its lock;
+    - a create checks its alias and its key with one `NOT EXISTS` each, one per unique index (forms and the library tables).
+  - **Units of work:** a nested unit keeps the outer unit's cancellation and deadline, a write inside a read is refused, and the migration state is read through the gate with its reruns.
+  - **Safer statements:** the folder update that no service calls, and that could undo a restriction set meanwhile, goes; a trash delete whose last statement finds nothing rolls its unit back instead of committing.
+  - **One home each:** one helper builds the statements' arguments and one holds a row, for every repository; consent texts get a repository of their own; the reruns' waits are immutable; docs/database.md describes entry numbering as the code does it.
+  - Done when: a test for each change (the audit query stopped by the budget, the due list's statement without lock hints, the query plans of the alias and key checks on SQLite, the kept deadline, the refused write, the migration state after a busy read, the rolled-back delete); the repository tests pass.
+- [ ] **4.8c The services after the review** (4.8 split in six, WORKLOG 2026-10-25)
+  - **A delete that stops part way keeps its audit entry** (ADR-0047): the first unit that deletes anything of a form writes `form.deleting` with it, and the last writes `form.deleted` as now.
+  - **Files on a load-balanced site** (ADR-0041): at start-up, a server whose role is not "single" and whose file root is the default local folder logs an error that names `JironFormBuilder:Files:Root`.
+  - **A restore lands where it was checked** (ADR-0051): Core works out where a restored form or folder lands, the endpoints check that landing, and the write refuses with `409` when it finds another, so a folder put in the trash meanwhile cannot skip the check that a restore gives no group more access.
+  - **Imports:** an import that adds more than 200 notes records each note's code once, with its count; a re-imported alias of 64 characters gets its number within 64.
+  - **Caches** (ADR-0043): concurrent misses of the access and settings caches share one load, which a change discards.
+  - **Smaller fixes:** removing a group's grants runs in a unit of its own; renaming a folder keeps the access snapshot; the docs that contradict the code (where the new-form consent field goes, how a site registers a file store) say what the code does.
+  - **Names:** a form's visibility (not its "scope"), the snapshot's invalidator, one spelling of the field catalogue, one record per kind of delete, no `GC.KeepAlive` as a discard; the file root read through its options section; a helper only the tests use moved to the tests; the empty visibility frozen.
+  - Done when: a test for each fix (a delete stopped after its first batch leaves `form.deleting`; the start-up error on a load-balanced server, and none on a single server or with a root set; a restore refused when its folder went to the trash meanwhile; an import with 201 option lists; a re-import of a 64-character alias; one load for concurrent misses; the group removal inside a caller's unit); the service and API tests pass.
+- [ ] **4.8d The form service in parts** (4.8 split in six, WORKLOG 2026-10-25)
+  - The form service (ADR-0044) holds more than twenty operations over fifteen dependencies and becomes public in 15.1. Split it by job: the lifecycle with the trash, the versions, and the exchange (copies, templates, import and export). Every service of Core shares one change pipeline (a unit of its own, the cancelable notification, the write with its audit entry, the published notification), one check that a call runs in its own unit, and one trash check.
+  - Done when: the form, folder, access, settings and management API tests pass unchanged in what they check; each part has its own interface and registration, and the boot test resolves each; architecture.md shows the parts.
+- [ ] **4.8e The definition model before it is public** (4.8 split in six, WORKLOG 2026-10-25)
+  - **Limits:** the export file's reader stops at 100 problems as every other reader does, through one shared limit.
+  - **Immutable as ADR-0034 promises:** the reader gives read-only lists, the value types hand out read-only views, the public projection's lists are read-only, and how records compare their lists (by sequence, or by reference as written down) is decided once in an ADR amendment.
+  - **Checks:** one-per-form types are counted per type, and the field messages are listed once, for both checks.
+  - **Cost:** the rules compare numbers as parsed values without building text, the pattern engine reuses its buffers, and the rule reader reads nested groups once; 6.1 gains a ceiling on an answer's length, checked before the rules run.
+  - **Names before the model is public,** with the JSON names unchanged: the condition's operator, the options' option list key, the members' access, whether the reference includes the year, and the casing of IP; inside Core, the element kind and the change kind of a comparison, Logic's own item names, the export format's file and `OnePerForm`.
+  - **One home each:** the two readers' strict opening steps written once; the publish checks and the hash outside the serializer; write errors reported as what they are; a null culture key refused as documented; static data frozen; the stored serializer built once.
+  - Done when: a test for each (an export file with thousands of bad option lists answers 100 problems; a read list cannot be changed through a cast; records compare as the ADR says; two one-per-form types in one form; a message added to the record but not to the list fails a test; a rule compares a number answer of 10,000 digits in under 50 ms); the shared vectors pass in both runtimes; the definition, schema and logic tests pass.
+- [ ] **4.8f Phase review** (4.8 split in six, WORKLOG 2026-10-25)
+  - A subagent reviews the fixes of 4.8a to 4.8e for SOLID, naming, async and load-balancing safety. Fix what it finds.
   - Check the coverage report (≥ 85% on Core).
   - Tag the end of the phase as `baseline/schema-v1` and push the tag. Step 16.5 packs this tag as the "old version" for the upgrade test.
   - **The schema is frozen from here:** `CreateSchemaV1` is never edited again, and every change is a new migration step. A test pins the hash of the v1 snapshot DTOs.
