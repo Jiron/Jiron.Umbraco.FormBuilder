@@ -55,6 +55,7 @@ public sealed class OpenApiSnapshotTests : FormBuilderTestServerTestBase
             Assert.That(operations, Is.Unique);
             Assert.That(operations, Does.Contain("FolderCreate").And.Contain("TreeRoot").And.Contain("TrashEmpty"));
             Assert.That(GetRequiredService<IEnumerable<ISchemaIdHandler>>().OfType<FormBuilderSchemaIdHandler>().Count(), Is.EqualTo(1), "its own models are named by its own handler");
+            Assert.That(document["components"]!["schemas"]!.AsObject().Select(schema => schema.Key), Is.All.Matches<string>(name => name.EndsWith("RequestModel", StringComparison.Ordinal) || name.EndsWith("ResponseModel", StringComparison.Ordinal) || name == "ProblemDetails"), "only its own models, never a framework type described by its properties");
         });
     }
 

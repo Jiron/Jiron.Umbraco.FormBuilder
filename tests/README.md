@@ -304,12 +304,14 @@ tests that use it call a new endpoint by themselves:
 | `TreeApiTests` | The tree and the trash as each persona sees them, folders first, with the user's permissions and `hasChildren` (only for what the user sees, in the folder's own state of the trash); paging across folders and forms, at the root and in the trash too; a folder in the trash holding what went with it; no key as the root; pages outside the limits. |
 | `FolderApiTests` | Each folder endpoint's answer and change: the permission checked before the request's values, `design` on a move's new parent, `managePermissions` and a confirmation for a move that widens access, `design` and `deleteEntries` on everything a permanent delete removes (restricted folders and forms below it included), an emptied trash that keeps what the user may not delete, and a restore to the root (its parent in the trash) that needs what a move there needs. |
 | `FormApiTests` | Each form endpoint's answer and change: a search of what the user sees by name or alias, the form for anyone who sees it and the draft's document for `design`, a save of the document with its version (or none when nothing changed), problems with paths into the document and `409` for a stale version, `manageActions` for a save that changes the actions, publish and unpublish, rename, a move's new folder and its widened access, a restore to the root that needs what a move there needs, and a delete for good with `deleteEntries`. |
-| `OpenApiSnapshotTests` | The document `jfb` against `docs/api/jfb.json` (rewritten with `JFB_UPDATE_SNAPSHOTS=1`, then fails), its paths and operation names. |
+| `VersionApiTests` | The History of a form with four versions: the publishes or every version, newest first, with what changed and paged; a version with its document; a comparison with each property before and after; a restore into a new draft that needs `manageActions` when it changes the actions, after the concurrency check; pins and comments that leave the form's concurrency version alone; `404 version_not_found`. |
+| `OpenApiSnapshotTests` | The document `jfb` against `docs/api/jfb.json` (rewritten with `JFB_UPDATE_SNAPSHOTS=1`, then fails), its paths and operation names, and schemas that are only its own models, never a framework type described by its properties. |
 
 `Tests.Unit/ManagementApi/` covers the same without a host: the access filter's order, refusals and fail-closed
 cases, how it reads a key (`FormBuilderAccessFilterTests`); every answer to a refusal, the exception filter, the
 declarations, the operation and schema names and the feature provider (`FormBuilderProblemsTests`); the models of the library
-(`LibraryModelsTests`); and the policies and handlers (`FormBuilderAuthorizationTests`). In the client,
+(`LibraryModelsTests`) and of the versions, with the stable names of their kinds (`VersionModelsTests`); and the
+policies and handlers (`FormBuilderAuthorizationTests`). In the client,
 `packages/backoffice/scripts/generate-client.test.mjs` generates the client from the snapshot next to the committed
 one and fails on any difference: after a change to the API, run the snapshot test with `JFB_UPDATE_SNAPSHOTS=1`, then
 `npm run generate-client -w @jfb/backoffice`, and commit both. `packages/backoffice/src/hey-api.test.ts` shows that
