@@ -958,7 +958,7 @@ A settings change raises a notification and a cache refresher: the saving server
   - actions: `ActionRunning`/`ActionRunCompleted`/`ActionRunFailed`;
   - `ExportCompleted`.
 - **Services:**
-  - `IFormBuilderFormService`, `IFormBuilderEntryService` (query, create programmatically, change state);
+  - `IFormBuilderFormService` with its parts `IFormBuilderFormVersionService` and `IFormBuilderFormExchangeService` (ADR-0053), `IFormBuilderEntryService` (query, create programmatically, change state);
   - `IFormBuilderEntryReader` (read approved entries on the website, for example a guestbook);
   - `IFormBuilderRenderer`;
   - `IFormBuilderMergeTagService`.
@@ -1712,7 +1712,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Smaller fixes:** removing a group's grants runs in a unit of its own; renaming a folder keeps the access snapshot; the docs that contradict the code (where the new-form consent field goes, how a site registers a file store) say what the code does.
   - **Names:** a form's visibility (not its "scope"), the snapshot's invalidator, one spelling of the field catalogue, one record per kind of delete, no `GC.KeepAlive` as a discard; the file root read through its options section; a helper only the tests use moved to the tests; the empty visibility frozen.
   - Done when: a test for each fix (a delete stopped after its first batch leaves `form.deleting`; the start-up error on a load-balanced server, and none on a single server or with a root set; a restore refused when its folder went to the trash meanwhile; an import with 201 option lists; a re-import of a 64-character alias; one load for concurrent misses; the group removal inside a caller's unit); the service and API tests pass.
-- [ ] **4.8d The form service in parts** (4.8 split in six, WORKLOG 2026-10-25)
+- [x] **4.8d The form service in parts** (4.8 split in six, WORKLOG 2026-10-25) (2026-10-25, a86aa92)
   - The form service (ADR-0044) holds more than twenty operations over fifteen dependencies and becomes public in 15.1. Split it by job: the lifecycle with the trash, the versions, and the exchange (copies, templates, import and export). Every service of Core shares one change pipeline (a unit of its own, the cancelable notification, the write with its audit entry, the published notification), one check that a call runs in its own unit, and one trash check.
   - Done when: the form, folder, access, settings and management API tests pass unchanged in what they check; each part has its own interface and registration, and the boot test resolves each; architecture.md shows the parts.
 - [ ] **4.8e The definition model before it is public** (4.8 split in six, WORKLOG 2026-10-25)
