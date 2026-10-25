@@ -97,7 +97,7 @@ internal sealed record NewEntry
     public required Guid SubmissionId { get; init; }
 
     /// <summary>The SHA-256 of the submission in lowercase hex.</summary>
-    public required string Digest { get; init; }
+    public required string SubmissionHash { get; init; }
 
     /// <summary>The culture, or "" for the invariant culture.</summary>
     public string Culture { get; init; } = string.Empty;
@@ -184,8 +184,8 @@ internal sealed record StoredEntry
     /// <summary>The submission id.</summary>
     public required Guid SubmissionId { get; init; }
 
-    /// <summary>The submission's digest.</summary>
-    public required string Digest { get; init; }
+    /// <summary>The SHA-256 of the submission in lowercase hex.</summary>
+    public required string SubmissionHash { get; init; }
 
     /// <summary>The culture, or "".</summary>
     public required string Culture { get; init; }
@@ -265,8 +265,8 @@ internal sealed record StoredEntry
 /// <param name="StoredName">The file store's name: 32 lowercase hex characters, never derived from the name.</param>
 /// <param name="ContentType">The content type the server detected.</param>
 /// <param name="SizeBytes">Its size.</param>
-/// <param name="Sha256">The SHA-256 of its bytes in lowercase hex.</param>
-/// <param name="ScanState">Where the malware scan is, such as <c>Pending</c> (7.3).</param>
+/// <param name="FileHash">The SHA-256 of its bytes in lowercase hex.</param>
+/// <param name="ScanState">Where the malware scan is, such as <c>pending</c> (7.3, stored in camel case as every stored name).</param>
 internal sealed record NewEntryFile(
     Guid Key,
     int FormId,
@@ -275,7 +275,7 @@ internal sealed record NewEntryFile(
     string StoredName,
     string ContentType,
     long SizeBytes,
-    string Sha256,
+    string FileHash,
     string ScanState);
 
 /// <summary>A stored file.</summary>
@@ -288,7 +288,7 @@ internal sealed record NewEntryFile(
 /// <param name="StoredName">The file store's name.</param>
 /// <param name="ContentType">The content type.</param>
 /// <param name="SizeBytes">Its size.</param>
-/// <param name="Sha256">The SHA-256 of its bytes.</param>
+/// <param name="FileHash">The SHA-256 of its bytes.</param>
 /// <param name="ScanState">Where the malware scan is.</param>
 /// <param name="CreatedUtc">When it was uploaded.</param>
 internal sealed record StoredEntryFile(
@@ -301,7 +301,7 @@ internal sealed record StoredEntryFile(
     string StoredName,
     string ContentType,
     long SizeBytes,
-    string Sha256,
+    string FileHash,
     string ScanState,
     DateTimeOffset CreatedUtc);
 

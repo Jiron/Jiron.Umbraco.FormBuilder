@@ -109,7 +109,7 @@ public abstract class RepositoryTestBase : FormBuilderMigrationTestBase
         FormId = formId,
         FormVersionId = versionId,
         SubmissionId = Guid.NewGuid(),
-        Digest = Hex(32),
+        SubmissionHash = Hex(32),
         Culture = "en-US",
         Values = values,
     };

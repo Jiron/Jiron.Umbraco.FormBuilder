@@ -20,7 +20,7 @@ public sealed class FormTemplateRepositoryTests : RepositoryTestBase
 
         Assert.Multiple(async () =>
         {
-            Assert.That(saved with { Id = 0 }, Is.EqualTo(new StoredFormTemplate(0, key, FormTemplateKind.Group, "Address", "Street, town and country", "Blocks", Definition, Now, Editor)));
+            Assert.That(saved with { Id = 0 }, Is.EqualTo(new StoredFormTemplate(0, key, FormTemplateKind.Group, "Address", "Street, town and country", "Blocks", Definition, Now, Editor, Now, Editor)), "a new template was last changed when it was saved");
             Assert.That(await Templates.GetAsync(key), Is.EqualTo(saved));
             Assert.That(await Templates.GetByIdAsync(saved.Id), Is.EqualTo(saved));
             Assert.That(await Templates.GetAsync(Guid.NewGuid()), Is.Null);
@@ -65,17 +65,23 @@ public sealed class FormTemplateRepositoryTests : RepositoryTestBase
     }
 
     [Test]
-    public async Task AnUpdate_ReplacesTheTexts_AndTheLastOneWins()
+    public async Task AnUpdate_ReplacesTheTexts_AndTheLastOneWins_RecordingWhoChangedItAndWhen()
     {
         var saved = await Templates.CreateAsync(new NewFormTemplate(Guid.NewGuid(), FormTemplateKind.Form, "Contact", Definition, "Old", "General", Editor));
         const string Newer = """{"schemaVersion":1,"pages":[{"key":"0f8fad5b-d9cb-469f-a165-70867728950e"}]}""";
+        var reviser = Guid.NewGuid();
 
-        await Templates.UpdateAsync(new FormTemplateUpdate(saved.Id, "Contact us", null, null, Newer));
-        var last = await Templates.UpdateAsync(new FormTemplateUpdate(saved.Id, "Contact, second", "New", "Support", Newer));
+        Clock.Advance(TimeSpan.FromMinutes(5));
+        await Templates.UpdateAsync(new FormTemplateUpdate(saved.Id, "Contact us", null, null, Newer, Editor));
+        Clock.Advance(TimeSpan.FromMinutes(5));
+        var last = await Templates.UpdateAsync(new FormTemplateUpdate(saved.Id, "Contact, second", "New", "Support", Newer, reviser));
 
         Assert.Multiple(async () =>
         {
-            Assert.That(last, Is.EqualTo(saved with { Name = "Contact, second", Description = "New", Category = "Support", Definition = Newer }), "kind, time and author stay");
+            Assert.That(
+                last,
+                Is.EqualTo(saved with { Name = "Contact, second", Description = "New", Category = "Support", Definition = Newer, UpdatedUtc = Now.AddMinutes(10), UpdatedByUserKey = reviser }),
+                "the kind and who saved it when stay; the change and who made it are the last ones");
             Assert.That(await Templates.GetByIdAsync(saved.Id), Is.EqualTo(last));
             Assert.That(await Templates.UpdateAsync(new FormTemplateUpdate(-1, "Missing", null, null, Definition)), Is.Null);
         });

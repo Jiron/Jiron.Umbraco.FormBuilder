@@ -69,7 +69,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                 {
                     FormId = formId,
                     Number = 1,
-                    Kind = nameof(FormVersionKind.Draft),
+                    Kind = StoredNames.Of(FormVersionKind.Draft),
                     SchemaVersion = form.Draft.SchemaVersion,
                     Definition = form.Draft.Definition,
                     DefinitionHash = form.Draft.DefinitionHash,

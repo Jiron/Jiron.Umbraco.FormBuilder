@@ -61,7 +61,7 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
                 {
                     inserted = await db.ExecAsync(
                         $"""
-                        INSERT INTO {table} ({n.C("key")}, {n.C("formId")}, {n.C("formVersionId")}, {n.C("number")}, {n.C("state")}, {n.C("isTest")}, {n.C("submissionId")}, {n.C("digest")}, {n.C("culture")}, {n.C("contentKey")}, {n.C("pageUrl")}, {n.C("memberKey")}, {n.C("ipAddress")}, {n.C("spamScore")}, {n.C("spamReasons")},
+                        INSERT INTO {table} ({n.C("key")}, {n.C("formId")}, {n.C("formVersionId")}, {n.C("number")}, {n.C("state")}, {n.C("isTest")}, {n.C("submissionId")}, {n.C("submissionHash")}, {n.C("culture")}, {n.C("contentKey")}, {n.C("pageUrl")}, {n.C("memberKey")}, {n.C("ipAddress")}, {n.C("spamScore")}, {n.C("spamReasons")},
                         {n.C("searchText")}, {n.C("context")}, {n.C("durationSeconds")}, {n.C("submittedUtc")}, {n.C("updatedUtc")}, {n.C("stateChangedUtc")}, {n.C("stateChangedByUserKey")}, {n.C("firstSeenUtc")}, {n.C("verifiedUtc")}, {n.C("resumeTokenHash")}, {n.C("resumeExpiresUtc")}, {n.C("currentPageKey")}, {n.C("challengeId")}, {n.C("holdUntilUtc")}, {n.C("holdReason")}, {n.C("purgeAfterUtc")})
                         SELECT @0, @1, @2, (SELECT f.{n.C("lastEntryNumber")} FROM {forms} f WHERE f.{n.C("id")} = @1), @3, @4, @5, @6, @7, @8, @9, @10, @11, @12, @13, @14, @15, @16, @17, @17, @17, NULL, @18, @19, @20, @21, @22, @23, NULL, NULL, @24
                         WHERE EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.FormVersion)} v{n.LockingRead} WHERE v.{n.C("id")} = @2 AND v.{n.C("formId")} = @1)
@@ -71,10 +71,10 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
                         entry.Key,
                         entry.FormId,
                         entry.FormVersionId,
-                        entry.State.ToString(),
+                        StoredNames.Of(entry.State),
                         entry.IsTest,
                         entry.SubmissionId,
-                        entry.Digest,
+                        entry.SubmissionHash,
                         entry.Culture,
                         entry.ContentKey,
                         entry.PageUrl,
@@ -186,11 +186,11 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
                 var n = new SqlNames(db);
                 var changed = await db.ExecAsync(
                     $"UPDATE {n.T(FormBuilderTables.Entry)} SET {n.C("state")} = @0, {n.C("stateChangedUtc")} = @1, {n.C("updatedUtc")} = @1, {n.C("stateChangedByUserKey")} = @2 WHERE {n.C("id")} = @3 AND {n.C("state")} = @4",
-                    state.ToString(),
+                    StoredNames.Of(state),
                     database.UtcNow,
                     userKey,
                     entryId,
-                    expected.ToString());
+                    StoredNames.Of(expected));
                 var current = await FindAsync(db, n, $"{n.C("id")} = @0", entryId);
                 if (changed == 0 && current is not null)
                 {
@@ -224,10 +224,10 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
         FormId = d.FormId,
         FormVersionId = d.FormVersionId,
         Number = d.Number,
-        State = Enum.Parse<EntryState>(d.State),
+        State = StoredNames.Parse<EntryState>(d.State),
         IsTest = d.IsTest,
         SubmissionId = d.SubmissionId,
-        Digest = d.Digest,
+        SubmissionHash = d.SubmissionHash,
         Culture = d.Culture,
         ContentKey = d.ContentKey,
         PageUrl = d.PageUrl,
@@ -335,7 +335,7 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
     {
         ArgumentNullException.ThrowIfNull(entry);
         CheckState(entry.State, nameof(entry));
-        Require(entry.Digest is not null && IsLowerHex(entry.Digest, 64), "An entry's digest is 64 lowercase hex characters.");
+        Require(entry.SubmissionHash is not null && IsLowerHex(entry.SubmissionHash, 64), "An entry's submission hash is 64 lowercase hex characters.");
         Require(entry.Culture is not null && entry.Culture.Length <= MaxCultureLength, $"An entry's culture holds at most {MaxCultureLength} characters.");
         Require(
             entry.PageUrl is null || (entry.PageUrl.Length <= MaxPageUrlLength && IsPath(entry.PageUrl)),

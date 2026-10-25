@@ -1,4 +1,5 @@
 using System.Data;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -145,7 +146,7 @@ public sealed class RepositoryArgumentTests
     public void TheCatalogue_RefusesFieldsTheColumnsCannotHold()
     {
         var repository = new FormRepository(_database);
-        var field = new CatalogueFieldValues(Guid.NewGuid(), "email", "Email", "email", "Text", false, 0, null, null, null);
+        var field = new CatalogueFieldValues(Guid.NewGuid(), "email", "Email", "email", FieldStorageKind.Text, false, 0, null, null, null);
 
         Assert.Multiple(() =>
         {
@@ -154,7 +155,7 @@ public sealed class RepositoryArgumentTests
             Assert.That(() => repository.AddFieldAsync(1, field with { Label = new string('l', FormRepository.MaxLabelLength + 1) }), Throws.ArgumentException);
             Assert.That(() => repository.AddFieldAsync(1, field with { Type = string.Empty }), Throws.ArgumentException);
             Assert.That(() => repository.UpdateFieldAsync(1, field with { Type = new string('t', FormRepository.MaxTypeLength + 1) }), Throws.ArgumentException);
-            Assert.That(() => repository.UpdateFieldAsync(1, field with { StorageKind = new string('s', FormRepository.MaxStorageKindLength + 1) }), Throws.ArgumentException);
+            Assert.That(() => repository.UpdateFieldAsync(1, field with { StorageKind = (FieldStorageKind)99 }), Throws.InstanceOf<ArgumentOutOfRangeException>());
         });
     }
 

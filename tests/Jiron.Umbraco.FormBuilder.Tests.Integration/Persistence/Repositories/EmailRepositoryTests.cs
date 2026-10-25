@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Umbraco.Cms.Tests.Common.Testing;
 
@@ -169,20 +170,22 @@ public sealed class EmailRepositoryTests : RepositoryTestBase
     }
 
     [Test]
-    public async Task AnError_IsStoredAsItsCodeAndMessage_CutToItsColumn()
+    public async Task AnError_IsStoredAsItsCodeAndMessage_InTheirOwnColumns_TheMessageCutToItsColumn()
     {
         var mail = await Emails.AddAsync(Mail(null));
-        var wordy = new DeliveryError("smtp.timeout", new string('m', EmailRepository.MaxErrorLength));
+        var wordy = new DeliveryError("smtp.timeout", new string('m', EmailRepository.MaxErrorMessageLength + 10));
 
         await Emails.RetryAsync(mail!.Id, await TakeAsync(mail), TimeSpan.Zero, wordy);
         var retried = await Emails.GetAsync(mail.Id);
+        var row = await Database.ReadAsync(db => db.FirstOrNullAsync<EmailDto>($"SELECT * FROM {new SqlNames(db).T(FormBuilderTables.Email)} WHERE {new SqlNames(db).C("id")} = @0", mail.Id));
         await Emails.RetryAsync(mail.Id, await TakeAsync(mail), TimeSpan.Zero, new DeliveryError("smtp.busy"));
         var bare = await Emails.GetAsync(mail.Id);
         await Emails.SentAsync(mail.Id, await TakeAsync(mail), Keep);
 
         Assert.Multiple(async () =>
         {
-            Assert.That(retried!.LastError, Is.EqualTo(new DeliveryError("smtp.timeout", new string('m', EmailRepository.MaxErrorLength - "smtp.timeout: ".Length))));
+            Assert.That(retried!.LastError, Is.EqualTo(new DeliveryError("smtp.timeout", new string('m', EmailRepository.MaxErrorMessageLength))), "the whole code, the message cut");
+            Assert.That((row!.LastErrorCode, row.LastErrorMessage), Is.EqualTo(("smtp.timeout", new string('m', EmailRepository.MaxErrorMessageLength))), "two columns, no separator to parse");
             Assert.That(bare!.LastError, Is.EqualTo(new DeliveryError("smtp.busy")));
             Assert.That((await Emails.GetAsync(mail.Id))!.LastError, Is.Null, "a success clears it");
             Assert.That((await Emails.GetAsync(mail.Id))!.Attempts, Is.EqualTo(3));
@@ -255,7 +258,7 @@ public sealed class EmailRepositoryTests : RepositoryTestBase
     public async Task ALimitedMail_IsNeverClaimedOrRetried()
     {
         var mail = await Emails.AddAsync(Mail(null));
-        Write(db => db.Execute($"UPDATE {T(FormBuilderTables.Email)} SET {Q("state")} = @0 WHERE {Q("id")} = @1", nameof(EmailState.Limited), mail!.Id));
+        Write(db => db.Execute($"UPDATE {T(FormBuilderTables.Email)} SET {Q("state")} = @0 WHERE {Q("id")} = @1", StoredNames.Of(EmailState.Limited), mail!.Id));
 
         Assert.Multiple(async () =>
         {

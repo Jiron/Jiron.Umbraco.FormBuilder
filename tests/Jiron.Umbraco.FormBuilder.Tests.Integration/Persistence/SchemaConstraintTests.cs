@@ -134,9 +134,9 @@ public sealed class SchemaConstraintTests : FormBuilderMigrationTestBase
             AddValue(db, kept, form.FieldId, valueIndex: 0, text: "kept");
             db.Insert(new Schema.EntryEventDto { EntryId = entry, OccurredUtc = now, Kind = "submitted" });
             db.Insert(new Schema.EntryNoteDto { EntryId = entry, UserKey = Guid.NewGuid(), Body = "Called back.", CreatedUtc = now, UpdatedUtc = now });
-            var run = new Schema.ActionRunDto { EntryId = entry, FormVersionId = form.VersionId, ActionKey = Guid.NewGuid(), ActionType = "email", TriggerKind = "submitted", State = "Succeeded", CreatedUtc = now };
+            var run = new Schema.ActionRunDto { EntryId = entry, FormVersionId = form.VersionId, ActionKey = Guid.NewGuid(), ActionType = "email", TriggerKind = "submitted", State = "succeeded", CreatedUtc = now };
             db.Insert(run);
-            db.Insert(new Schema.EmailDto { Kind = "Action", EntryId = entry, ActionRunId = run.Id, ToAddresses = "team@jfb.test", FromAddress = "site@jfb.test", Subject = "New entry", TextBody = "t", Culture = "en-US", State = "Sent", CreatedUtc = now });
+            db.Insert(new Schema.EmailDto { Kind = "action", EntryId = entry, ActionRunId = run.Id, ToAddresses = "team@jfb.test", FromAddress = "site@jfb.test", Subject = "New entry", TextBody = "t", Culture = "en-US", State = "sent", CreatedUtc = now });
         });
 
         Write(db => db.Execute($"DELETE FROM {T(FormBuilderTables.Entry)} WHERE {Q("id")} = @0", entry));
@@ -287,7 +287,7 @@ public sealed class SchemaConstraintTests : FormBuilderMigrationTestBase
         var hash = Sha256("Tuesday");
         Write(db =>
         {
-            db.Insert(new Schema.PermissionDto { UserGroupKey = group, TargetType = "Global", TargetKey = Guid.Empty, Permissions = 1 });
+            db.Insert(new Schema.PermissionDto { UserGroupKey = group, TargetType = "global", TargetKey = Guid.Empty, Permissions = 1 });
             db.Insert(new Schema.OptionCapacityDto { FormId = form.FormId, FieldKey = form.FieldKey, ValueHash = hash, OptionValue = "Tuesday", UpdatedUtc = now });
             db.Insert(new Schema.UserSettingDto { UserKey = user, Name = "columns", UpdatedUtc = now });
             db.Insert(new Schema.ReferenceDto { FormId = form.FormId, ContentKey = content, PropertyAlias = "form", Culture = string.Empty, UpdatedUtc = now });
@@ -297,7 +297,7 @@ public sealed class SchemaConstraintTests : FormBuilderMigrationTestBase
         Assert.Multiple(() =>
         {
             Assert.That(() => Write(db => db.Insert(new Schema.SettingDto { Scope = CreateDefaultSettingsV1.GlobalScope, Section = "general", SchemaVersion = 1, Version = 1, UpdatedUtc = now })), Throws.Exception, "setting");
-            Assert.That(() => Write(db => db.Insert(new Schema.PermissionDto { UserGroupKey = group, TargetType = "Global", TargetKey = Guid.Empty, Permissions = 2 })), Throws.Exception, "permission");
+            Assert.That(() => Write(db => db.Insert(new Schema.PermissionDto { UserGroupKey = group, TargetType = "global", TargetKey = Guid.Empty, Permissions = 2 })), Throws.Exception, "permission");
             Assert.That(() => Write(db => db.Insert(new Schema.OptionCapacityDto { FormId = form.FormId, FieldKey = form.FieldKey, ValueHash = hash, OptionValue = "Tuesday", UpdatedUtc = now })), Throws.Exception, "capacity");
             Assert.That(() => Write(db => db.Insert(new Schema.UserSettingDto { UserKey = user, Name = "columns", UpdatedUtc = now })), Throws.Exception, "user setting");
             Assert.That(() => Write(db => db.Insert(new Schema.ReferenceDto { FormId = form.FormId, ContentKey = content, PropertyAlias = "form", Culture = string.Empty, UpdatedUtc = now })), Throws.Exception, "reference");
@@ -338,7 +338,7 @@ public sealed class SchemaConstraintTests : FormBuilderMigrationTestBase
         {
             FormId = formId,
             Number = number,
-            Kind = "Published",
+            Kind = "published",
             SchemaVersion = 1,
             Definition = "{}",
             DefinitionHash = Sha256("{}"),
@@ -352,7 +352,7 @@ public sealed class SchemaConstraintTests : FormBuilderMigrationTestBase
 
     private int AddField(int formId, Guid fieldKey)
     {
-        var field = new Schema.FormFieldDto { FormId = formId, FieldKey = fieldKey, Alias = "email", Label = "Email", Type = "email", StorageKind = "text", FirstVersionNumber = 1 };
+        var field = new Schema.FormFieldDto { FormId = formId, FieldKey = fieldKey, Alias = "email", Label = "Email", FieldType = "email", StorageKind = "text", FirstVersionNumber = 1 };
         Write(db => db.Insert(field));
         return field.Id;
     }
@@ -366,9 +366,9 @@ public sealed class SchemaConstraintTests : FormBuilderMigrationTestBase
             FormId = form.FormId,
             FormVersionId = versionId ?? form.VersionId,
             Number = number ?? Count(FormBuilderTables.Entry) + 1,
-            State = "New",
+            State = "submitted",
             SubmissionId = submissionId ?? Guid.NewGuid(),
-            Digest = Hex(32),
+            SubmissionHash = Hex(32),
             Culture = "en-US",
             SpamReasons = "[]",
             ChallengeId = challengeId,
@@ -400,7 +400,7 @@ public sealed class SchemaConstraintTests : FormBuilderMigrationTestBase
             StoredName = Hex(16),
             ContentType = "application/pdf",
             SizeBytes = 1024,
-            Sha256 = Hex(32),
+            FileHash = Hex(32),
             ScanState = "Clean",
             CreatedUtc = DateTime.UtcNow,
         };

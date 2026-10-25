@@ -143,7 +143,7 @@ internal sealed class PermissionRepository(FormBuilderDatabase database) : IPerm
                 var n = new SqlNames(db);
                 var rows = await db.FetchListAsync<PermissionDto>(
                     $"SELECT * FROM {n.T(FormBuilderTables.Permission)} WHERE {n.C("targetType")} = @0 AND {n.C("targetKey")} = @1 ORDER BY {n.C("id")}",
-                    targetType.ToString(),
+                    StoredNames.Of(targetType),
                     targetKey);
                 return rows.Select(FromDto).ToList();
             },
@@ -155,7 +155,7 @@ internal sealed class PermissionRepository(FormBuilderDatabase database) : IPerm
     {
         ArgumentNullException.ThrowIfNull(change);
         CheckTarget(change.UserGroupKey, change.TargetType, change.TargetKey);
-        var (group, type, key) = (change.UserGroupKey, change.TargetType.ToString(), change.TargetKey);
+        var (group, type, key) = (change.UserGroupKey, StoredNames.Of(change.TargetType), change.TargetKey);
         if (change is { Expected: 0, Permissions: 0 })
         {
             // Nothing to write: a read says whether the group still holds no grant.
@@ -238,7 +238,7 @@ internal sealed class PermissionRepository(FormBuilderDatabase database) : IPerm
                 {
                     var list = string.Join(", ", chunk.Select((_, i) => "@" + (i + 1).ToString(CultureInfo.InvariantCulture)));
                     ids.UnionWith(await db.FetchListAsync<int>(
-                        $"SELECT DISTINCT f.{n.C("folderId")} FROM {n.T(FormBuilderTables.Form)} f WHERE f.{n.C("folderId")} IS NOT NULL AND f.{n.C("key")} IN (SELECT p.{n.C("targetKey")} FROM {n.T(FormBuilderTables.Permission)} p WHERE p.{n.C("targetType")} = '{nameof(PermissionTarget.Form)}' AND (p.{n.C("permissions")} & @0) <> 0 AND p.{n.C("userGroupKey")} IN ({list}))",
+                        $"SELECT DISTINCT f.{n.C("folderId")} FROM {n.T(FormBuilderTables.Form)} f WHERE f.{n.C("folderId")} IS NOT NULL AND f.{n.C("key")} IN (SELECT p.{n.C("targetKey")} FROM {n.T(FormBuilderTables.Permission)} p WHERE p.{n.C("targetType")} = '{StoredNames.Of(PermissionTarget.Form)}' AND (p.{n.C("permissions")} & @0) <> 0 AND p.{n.C("userGroupKey")} IN ({list}))",
                         [anyOf, .. chunk.Cast<object?>()]));
                 }
 
@@ -260,7 +260,7 @@ internal sealed class PermissionRepository(FormBuilderDatabase database) : IPerm
             db =>
             {
                 var n = new SqlNames(db);
-                return db.ExecAsync($"DELETE FROM {n.T(FormBuilderTables.Permission)} WHERE {n.C("targetType")} = @0 AND {n.C("targetKey")} = @1", targetType.ToString(), targetKey);
+                return db.ExecAsync($"DELETE FROM {n.T(FormBuilderTables.Permission)} WHERE {n.C("targetType")} = @0 AND {n.C("targetKey")} = @1", StoredNames.Of(targetType), targetKey);
             },
             cancellationToken);
     }
@@ -328,10 +328,10 @@ internal sealed class PermissionRepository(FormBuilderDatabase database) : IPerm
         var row = await db.FirstOrNullAsync<PermissionDto>(
             $"SELECT * FROM {n.T(FormBuilderTables.Permission)} WHERE {n.C("userGroupKey")} = @0 AND {n.C("targetType")} = @1 AND {n.C("targetKey")} = @2",
             userGroupKey,
-            targetType.ToString(),
+            StoredNames.Of(targetType),
             targetKey);
         return row is null ? null : FromDto(row);
     }
 
-    private static StoredGrant FromDto(PermissionDto d) => new(d.Id, d.UserGroupKey, Enum.Parse<PermissionTarget>(d.TargetType), d.TargetKey, d.Permissions);
+    private static StoredGrant FromDto(PermissionDto d) => new(d.Id, d.UserGroupKey, StoredNames.Parse<PermissionTarget>(d.TargetType), d.TargetKey, d.Permissions);
 }

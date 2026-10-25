@@ -196,7 +196,7 @@ internal sealed partial class FormBuilderAccessService(
                 }
 
                 var details = new AuditDetails()
-                    .AddIdentifier("target", change.TargetType.ToString().ToLowerInvariant())
+                    .AddIdentifier("target", StoredNames.Of(change.TargetType))
                     .Add("group", change.UserGroupKey)
                     .AddIdentifiers("before", PermissionRules.NamesOf(change.Expected))
                     .AddIdentifiers("after", PermissionRules.NamesOf(change.Permissions));

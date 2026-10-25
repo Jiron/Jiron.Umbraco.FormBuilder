@@ -33,7 +33,7 @@ internal sealed partial class EntryRepository
                 {
                     inserted = await db.ExecAsync(
                         $"""
-                        INSERT INTO {table} ({n.C("key")}, {n.C("entryId")}, {n.C("formId")}, {n.C("fieldKey")}, {n.C("originalName")}, {n.C("storedName")}, {n.C("contentType")}, {n.C("sizeBytes")}, {n.C("sha256")}, {n.C("scanState")}, {n.C("createdUtc")})
+                        INSERT INTO {table} ({n.C("key")}, {n.C("entryId")}, {n.C("formId")}, {n.C("fieldKey")}, {n.C("originalName")}, {n.C("storedName")}, {n.C("contentType")}, {n.C("sizeBytes")}, {n.C("fileHash")}, {n.C("scanState")}, {n.C("createdUtc")})
                         SELECT @0, NULL, @1, @2, @3, @4, @5, @6, @7, @8, @9
                         WHERE EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)}{n.LockingRead} WHERE {n.C("id")} = @1)
                         AND NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {n.C("key")} = @0)
@@ -45,7 +45,7 @@ internal sealed partial class EntryRepository
                         file.StoredName,
                         file.ContentType,
                         file.SizeBytes,
-                        file.Sha256,
+                        file.FileHash,
                         file.ScanState,
                         database.UtcNow);
                 }
@@ -193,7 +193,7 @@ internal sealed partial class EntryRepository
                 try
                 {
                     await db.ExecAsync(
-                        $"INSERT INTO {table} ({n.C("hash")}, {n.C("culture")}, {n.C("text")}, {n.C("firstSeenUtc")}) SELECT @0, @1, @2, @3 WHERE NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {n.C("hash")} = @0)",
+                        $"INSERT INTO {table} ({n.C("textHash")}, {n.C("culture")}, {n.C("text")}, {n.C("firstSeenUtc")}) SELECT @0, @1, @2, @3 WHERE NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {n.C("textHash")} = @0)",
                         hash,
                         culture,
                         text,
@@ -217,8 +217,8 @@ internal sealed partial class EntryRepository
             async db =>
             {
                 var n = new SqlNames(db);
-                var row = await db.FirstOrNullAsync<ConsentTextDto>($"SELECT * FROM {n.T(FormBuilderTables.ConsentText)} WHERE {n.C("hash")} = @0", hash);
-                return row is null ? null : new StoredConsentText(row.Hash, row.Culture, row.Text, FormBuilderDbTime.Read(row.FirstSeenUtc));
+                var row = await db.FirstOrNullAsync<ConsentTextDto>($"SELECT * FROM {n.T(FormBuilderTables.ConsentText)} WHERE {n.C("textHash")} = @0", hash);
+                return row is null ? null : new StoredConsentText(row.TextHash, row.Culture, row.Text, FormBuilderDbTime.Read(row.FirstSeenUtc));
             },
             cancellationToken);
     }
@@ -233,7 +233,7 @@ internal sealed partial class EntryRepository
         d.StoredName,
         d.ContentType,
         d.SizeBytes,
-        d.Sha256,
+        d.FileHash,
         d.ScanState,
         FormBuilderDbTime.Read(d.CreatedUtc));
 
@@ -287,7 +287,7 @@ internal sealed partial class EntryRepository
         Require(file.StoredName is not null && IsLowerHex(file.StoredName, 32), "A file's stored name is 32 lowercase hex characters.");
         Require(file.ContentType is not null && file.ContentType.Length is > 0 and <= MaxContentTypeLength, $"A file's content type holds 1 to {MaxContentTypeLength} characters.");
         Require(file.SizeBytes >= 0, "A file's size is 0 bytes or more.");
-        Require(file.Sha256 is not null && IsLowerHex(file.Sha256, 64), "A file's SHA-256 is 64 lowercase hex characters.");
+        Require(file.FileHash is not null && IsLowerHex(file.FileHash, 64), "A file's SHA-256 is 64 lowercase hex characters.");
         CheckScanState(file.ScanState, nameof(file));
 
         static void Require(bool condition, string message)

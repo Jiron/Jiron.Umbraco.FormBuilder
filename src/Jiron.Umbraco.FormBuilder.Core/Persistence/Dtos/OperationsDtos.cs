@@ -36,15 +36,15 @@ internal sealed class AuditEntryDto
 
 /// <summary>A row of <c>jfbDailyStat</c>.</summary>
 [TableName(FormBuilderTables.DailyStat)]
-[PrimaryKey(["day", "formId", "metric", "dimension"], AutoIncrement = false)]
+[PrimaryKey(["formId", "day", "metric", "dimension"], AutoIncrement = false)]
 [ExplicitColumns]
 internal sealed class DailyStatDto
 {
-    [Column("day")]
-    public DateTime Day { get; set; }
-
     [Column("formId")]
     public int FormId { get; set; }
+
+    [Column("day")]
+    public DateTime Day { get; set; }
 
     [Column("metric")]
     public string Metric { get; set; } = string.Empty;

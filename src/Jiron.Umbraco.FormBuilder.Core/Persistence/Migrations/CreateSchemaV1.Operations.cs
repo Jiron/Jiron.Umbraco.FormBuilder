@@ -42,7 +42,7 @@ internal sealed partial class CreateSchemaV1
         [Index(IndexTypes.UniqueNonClustered, Name = "IX_jfbPermission_userGroupKey_targetType_targetKey", ForColumns = "userGroupKey,targetType,targetKey")]
         public Guid UserGroupKey { get; set; }
 
-        // Global, Folder or Form.
+        // global, folder or form.
         [Column("targetType")]
         [Length(16)]
         public string TargetType { get; set; } = string.Empty;
@@ -107,7 +107,9 @@ internal sealed partial class CreateSchemaV1
         [PrimaryKeyColumn(AutoIncrement = false, Name = "PK_jfbReference", OnColumns = "formId, contentKey, propertyAlias, culture")]
         public int FormId { get; set; }
 
+        // Every save, publish, move or delete of a content item replaces its rows by this key (ADR-0017).
         [Column("contentKey")]
+        [Index(IndexTypes.NonClustered, Name = "IX_jfbReference_contentKey")]
         public Guid ContentKey { get; set; }
 
         [Column("propertyAlias")]
@@ -160,19 +162,21 @@ internal sealed partial class CreateSchemaV1
         public string Details { get; set; } = "{}";
     }
 
-    // Daily counters per form, metric and dimension; new metrics need no migration, and nothing here is personal.
+    // Daily counters per form, metric and dimension; new metrics need no migration, and nothing here is personal. The
+    // key leads with the form, for one form's days and its delete; the index on the day serves retention (ADR-0041).
     [TableName(FormBuilderTables.DailyStat)]
-    [PrimaryKey(["day", "formId", "metric", "dimension"], AutoIncrement = false)]
+    [PrimaryKey(["formId", "day", "metric", "dimension"], AutoIncrement = false)]
     [ExplicitColumns]
     internal sealed class DailyStatDto
     {
+        [Column("formId")]
+        [PrimaryKeyColumn(AutoIncrement = false, Name = "PK_jfbDailyStat", OnColumns = "formId, day, metric, dimension")]
+        public int FormId { get; set; }
+
         // Midnight UTC of the day.
         [Column("day")]
-        [PrimaryKeyColumn(AutoIncrement = false, Name = "PK_jfbDailyStat", OnColumns = "day, formId, metric, dimension")]
+        [Index(IndexTypes.NonClustered, Name = "IX_jfbDailyStat_day_formId", ForColumns = "day,formId")]
         public DateTime Day { get; set; }
-
-        [Column("formId")]
-        public int FormId { get; set; }
 
         [Column("metric")]
         [Length(64)]

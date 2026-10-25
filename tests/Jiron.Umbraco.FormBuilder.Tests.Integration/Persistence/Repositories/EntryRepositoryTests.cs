@@ -589,7 +589,7 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
 
         Assert.Multiple(async () =>
         {
-            Assert.That(stored, Is.EqualTo(new StoredEntryFile(stored!.Id, file.Key, null, form.Id, file.FieldKey, file.OriginalName, file.StoredName, file.ContentType, file.SizeBytes, file.Sha256, file.ScanState, Now)));
+            Assert.That(stored, Is.EqualTo(new StoredEntryFile(stored!.Id, file.Key, null, form.Id, file.FieldKey, file.OriginalName, file.StoredName, file.ContentType, file.SizeBytes, file.FileHash, file.ScanState, Now)));
             Assert.That(await Entries.GetFileAsync(file.Key), Is.EqualTo(stored));
             Assert.That(await Entries.GetFileAsync(Guid.NewGuid()), Is.Null);
             AssertRefused(() => Entries.AddFileAsync(NewFile(form.Id) with { Key = file.Key }), FormBuilderConflict.DuplicateKey);
@@ -789,7 +789,7 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
         State = entry.State,
         IsTest = entry.IsTest,
         SubmissionId = entry.SubmissionId,
-        Digest = entry.Digest,
+        SubmissionHash = entry.SubmissionHash,
         Culture = entry.Culture,
         ContentKey = entry.ContentKey,
         PageUrl = entry.PageUrl,

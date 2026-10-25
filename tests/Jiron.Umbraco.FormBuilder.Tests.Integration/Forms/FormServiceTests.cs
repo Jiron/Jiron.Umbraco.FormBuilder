@@ -669,6 +669,6 @@ public sealed class FormServiceTests : RepositoryTestBase
         (await Forms.ListFieldsAsync((await RowAsync(form)).Id))
             .Select(field => field.Values)
             .OrderBy(values => values.SortOrder)
-            .Select(values => (values.Alias, values.Type, values.StorageKind, values.ParentFieldKey, values.SortOrder, values.FirstVersionNumber, values.LastVersionNumber))
+            .Select(values => (values.Alias, values.Type, StoredNames.Of(values.StorageKind), values.ParentFieldKey, values.SortOrder, values.FirstVersionNumber, values.LastVersionNumber))
             .ToList();
 }

@@ -84,7 +84,7 @@ internal sealed partial class FormRepository
                 return db.ScalarAsync<int?>(
                     $"SELECT MAX({n.C("number")}) FROM {n.T(FormBuilderTables.FormVersion)} WHERE {n.C("formId")} = @0 AND {n.C("kind")} = @1 AND {n.C("number")} < @2",
                     formId,
-                    nameof(FormVersionKind.Published),
+                    StoredNames.Of(FormVersionKind.Published),
                     beforeNumber);
             },
             cancellationToken);
@@ -145,7 +145,7 @@ internal sealed partial class FormRepository
                 var n = new SqlNames(db);
                 var table = n.T(FormBuilderTables.FormVersion);
                 var where = kind is null ? $"{n.C("formId")} = @0" : $"{n.C("formId")} = @0 AND {n.C("kind")} = @1";
-                var kindName = kind?.ToString();
+                var kindName = kind is { } named ? StoredNames.Of(named) : null;
                 var total = await db.ScalarAsync<long>($"SELECT COUNT(*) FROM {table} WHERE {where}", formId, kindName);
                 var rows = total <= page.Skip
                     ? new List<FormVersionDto>()
@@ -186,7 +186,7 @@ internal sealed partial class FormRepository
                     """,
                     formId,
                     number,
-                    nameof(FormVersionKind.Draft),
+                    StoredNames.Of(FormVersionKind.Draft),
                     false);
                 return deleted == 1;
             },
@@ -218,7 +218,7 @@ internal sealed partial class FormRepository
                     AND NOT EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Entry)} e WHERE e.{n.C("formVersionId")} = d.{n.C("id")})
                     ORDER BY d.{n.C("formId")}, d.{n.C("number")} {n.Page(0, take)}
                     """,
-                    nameof(FormVersionKind.Draft),
+                    StoredNames.Of(FormVersionKind.Draft),
                     keepNewest,
                     false,
                     FormBuilderDbTime.Write(createdBefore));
@@ -231,7 +231,7 @@ internal sealed partial class FormRepository
         d.Id,
         d.FormId,
         d.Number,
-        Enum.Parse<FormVersionKind>(d.Kind),
+        StoredNames.Parse<FormVersionKind>(d.Kind),
         d.SchemaVersion,
         d.DefinitionHash,
         d.PublicHash,
@@ -270,7 +270,7 @@ internal sealed partial class FormRepository
             SELECT @0, {next}, @1, @2, @3, @4, @5, {revision}, @6, @7, @8, @9, {publishedUtc}, {publishedBy}
             """,
             formId,
-            kind.ToString(),
+            StoredNames.Of(kind),
             document.SchemaVersion,
             document.Definition,
             document.DefinitionHash,

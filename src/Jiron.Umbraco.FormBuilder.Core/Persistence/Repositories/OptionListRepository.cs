@@ -7,7 +7,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 /// <param name="Key">The key definitions name it by.</param>
 /// <param name="Alias">The alias, unique without regard to case.</param>
 /// <param name="Name">The name editors see.</param>
-/// <param name="Kind">Where its options come from, such as <c>Manual</c> or <c>Content</c> (5.5).</param>
+/// <param name="Kind">Where its options come from, such as <c>manual</c> or <c>content</c>, in camel case as every stored name (5.5).</param>
 /// <param name="Config">The source's configuration as JSON, never in the public projection.</param>
 /// <param name="Items">The items of a manual or uploaded list as JSON.</param>
 /// <param name="CacheSeconds">How long the options of a source are cached; 0 for no cache.</param>

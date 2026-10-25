@@ -18,7 +18,7 @@ public sealed class AccessSqlTests
     private static readonly Guid Designers = Guid.Parse("5c0e9f4a-1d2b-4c3e-8f7a-6b5d4c3b2a10");
     private static readonly Guid Handlers = Guid.Parse("5c0e9f4a-1d2b-4c3e-8f7a-6b5d4c3b2a11");
 
-    private const string Granted = "IN (SELECT p.[targetKey] FROM [jfbPermission] p WHERE p.[targetType] = 'Form' AND p.[userGroupKey] IN (@0, @1) AND (p.[permissions] & @2) <> 0)";
+    private const string Granted = "IN (SELECT p.[targetKey] FROM [jfbPermission] p WHERE p.[targetType] = 'form' AND p.[userGroupKey] IN (@0, @1) AND (p.[permissions] & @2) <> 0)";
 
     [Test]
     public void EveryForm_AddsNoClause_AndNoForm_OneThatHoldsNothing()

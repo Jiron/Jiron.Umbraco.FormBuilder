@@ -19,7 +19,7 @@ internal sealed partial class CreateSchemaV1
 
         [Column("entryId")]
         [ForeignKey(typeof(EntryDto), Name = "FK_jfbActionRun_jfbEntry", OnDelete = Rule.Cascade)]
-        [Index(IndexTypes.NonClustered, Name = "IX_jfbActionRun_entryId_seq", ForColumns = "entryId,seq")]
+        [Index(IndexTypes.NonClustered, Name = "IX_jfbActionRun_entryId_sortOrder", ForColumns = "entryId,sortOrder")]
         public long EntryId { get; set; }
 
         // The version whose action this runs; no foreign key, the entry already keeps its version.
@@ -39,13 +39,13 @@ internal sealed partial class CreateSchemaV1
         public string TriggerKind { get; set; } = string.Empty;
 
         // The action's position, for the order of section 4.4.
-        [Column("seq")]
-        public int Seq { get; set; }
+        [Column("sortOrder")]
+        public int SortOrder { get; set; }
 
         [Column("stopOnFailure")]
         public bool StopOnFailure { get; set; }
 
-        // Pending, Running, Succeeded, Failed, Skipped or Uncertain.
+        // pending, running, succeeded, failed, skipped or uncertain.
         [Column("state")]
         [Length(16)]
         [Index(IndexTypes.NonClustered, Name = "IX_jfbActionRun_state_nextAttemptUtc", ForColumns = "state,nextAttemptUtc")]
@@ -107,7 +107,7 @@ internal sealed partial class CreateSchemaV1
         [PrimaryKeyColumn(AutoIncrement = true)]
         public long Id { get; set; }
 
-        // Action, Resume, Verification, Test, Report, Digest or Forward.
+        // action, resume, verification, test, report, digest or forward.
         [Column("kind")]
         [Length(16)]
         public string Kind { get; set; } = string.Empty;
@@ -139,10 +139,10 @@ internal sealed partial class CreateSchemaV1
         [NullSetting(NullSetting = NullSettings.Null)]
         public string? BccAddresses { get; set; }
 
-        [Column("replyTo")]
+        [Column("replyToAddress")]
         [Length(500)]
         [NullSetting(NullSetting = NullSettings.Null)]
-        public string? ReplyTo { get; set; }
+        public string? ReplyToAddress { get; set; }
 
         // The sender's name and address; never taken from a visitor (section 4.10).
         [Column("fromAddress")]
@@ -179,7 +179,7 @@ internal sealed partial class CreateSchemaV1
         [Index(IndexTypes.NonClustered, Name = "IX_jfbEmail_recipientKey_createdUtc", ForColumns = "recipientKey,createdUtc")]
         public string? RecipientKey { get; set; }
 
-        // Queued, Sending, Sent, Failed, Uncertain or Limited (final, never claimed).
+        // queued, sending, sent, failed, uncertain or limited (final, never claimed).
         [Column("state")]
         [Length(16)]
         [Index(IndexTypes.NonClustered, Name = "IX_jfbEmail_state_nextAttemptUtc", ForColumns = "state,nextAttemptUtc")]
@@ -201,10 +201,16 @@ internal sealed partial class CreateSchemaV1
         [NullSetting(NullSetting = NullSettings.Null)]
         public string? LockedBy { get; set; }
 
-        [Column("lastError")]
+        [Column("lastErrorCode")]
+        [Length(64)]
+        [NullSetting(NullSetting = NullSettings.Null)]
+        public string? LastErrorCode { get; set; }
+
+        // Sanitised, at most 1,000 characters.
+        [Column("lastErrorMessage")]
         [Length(1000)]
         [NullSetting(NullSetting = NullSettings.Null)]
-        public string? LastError { get; set; }
+        public string? LastErrorMessage { get; set; }
 
         [Column("createdUtc")]
         public DateTime CreatedUtc { get; set; }

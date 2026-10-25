@@ -334,7 +334,7 @@ internal sealed class EntryQuerySql
         var states = _query.States.Distinct().ToList();
         if (states.Count > 0 && states.Count < Enum.GetValues<EntryState>().Length)
         {
-            parts.Add($"e.{C("state")} IN ({a.List(states.Select(state => (object?)state.ToString()))})");
+            parts.Add($"e.{C("state")} IN ({a.List(states.Select(state => (object?)StoredNames.Of(state)))})");
         }
 
         if (_query.Tests != EntryTestFilter.Include)

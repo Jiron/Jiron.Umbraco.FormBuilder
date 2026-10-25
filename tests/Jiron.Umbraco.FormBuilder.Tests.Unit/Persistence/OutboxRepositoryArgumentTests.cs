@@ -67,7 +67,7 @@ public sealed class OutboxRepositoryArgumentTests
             Refused(() => runs.AddAsync(1, 1, change, [run with { ActionType = "Jiron.Webhook" + (char)0 }]), "a type with a control character");
             Refused(() => runs.AddAsync(1, 1, change, [run with { ActionType = null! }]), "a null type");
             Refused(() => runs.AddAsync(1, 1, change, [run with { Trigger = (ActionTrigger)99 }]), "a trigger");
-            Refused(() => runs.AddAsync(1, 1, change, [run with { Seq = -1 }]), "a position");
+            Refused(() => runs.AddAsync(1, 1, change, [run with { SortOrder = -1 }]), "a position");
         });
     }
 
@@ -246,22 +246,6 @@ public sealed class OutboxRepositoryArgumentTests
         });
     }
 
-    [Test]
-    public void AMailsError_IsStoredAsCodeAndMessage_AndReadBack()
-    {
-        var wordy = new string('m', EmailRepository.MaxErrorLength);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(EmailRepository.ErrorText(new DeliveryError("smtp.550", "Mailbox unavailable.")), Is.EqualTo("smtp.550: Mailbox unavailable."));
-            Assert.That(EmailRepository.ErrorText(new DeliveryError("lease_expired")), Is.EqualTo("lease_expired"));
-            Assert.That(EmailRepository.ErrorText(new DeliveryError("smtp.550", wordy)), Has.Length.EqualTo(EmailRepository.MaxErrorLength).And.StartWith("smtp.550: m"), "the code always fits");
-            Assert.That(EmailRepository.Error("smtp.550: Mailbox unavailable: try later."), Is.EqualTo(new DeliveryError("smtp.550", "Mailbox unavailable: try later.")), "the first separator ends the code");
-            Assert.That(EmailRepository.Error("lease_expired"), Is.EqualTo(new DeliveryError("lease_expired")));
-            Assert.That(EmailRepository.Error("Something: went wrong"), Is.EqualTo(new DeliveryError("unknown", "Something: went wrong")), "text without a code");
-            Assert.That(EmailRepository.Error(null), Is.Null);
-        });
-    }
 
     [Test]
     public void Attachments_AreAJsonArrayOfFileKeys()

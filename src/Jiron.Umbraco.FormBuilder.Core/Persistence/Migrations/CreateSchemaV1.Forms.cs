@@ -191,7 +191,7 @@ internal sealed partial class CreateSchemaV1
         [Column("number")]
         public int Number { get; set; }
 
-        // Draft or Published.
+        // draft or published.
         [Column("kind")]
         [Length(16)]
         public string Kind { get; set; } = string.Empty;
@@ -269,11 +269,11 @@ internal sealed partial class CreateSchemaV1
         public string Label { get; set; } = string.Empty;
 
         // The field type's alias, built in or custom.
-        [Column("type")]
+        [Column("fieldType")]
         [Length(128)]
-        public string Type { get; set; } = string.Empty;
+        public string FieldType { get; set; } = string.Empty;
 
-        // Which typed column of jfbEntryValue holds its values.
+        // Which typed column of jfbEntryValue holds its values: none, text, longText, number, date, bool, file or json.
         [Column("storageKind")]
         [Length(16)]
         public string StorageKind { get; set; } = string.Empty;

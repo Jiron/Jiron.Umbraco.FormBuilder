@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Forms;
@@ -83,16 +84,16 @@ public sealed class FormCatalogueTests
     [TestCase("Bool", ExpectedResult = "bool")]
     [TestCase("File", ExpectedResult = "file")]
     [TestCase("Json", ExpectedResult = "json")]
-    public string AStorageKind_IsStoredByItsName(string storage) => FormCatalogue.StoredName(Enum.Parse<FieldStorageKind>(storage));
+    public string AStorageKind_IsStoredByItsName(string storage) => StoredNames.Of(Enum.Parse<FieldStorageKind>(storage));
 
     [Test]
     public void EveryStorageKind_HasAStoredName_OfAtMost16Characters()
     {
         Assert.Multiple(() =>
         {
-            Assert.That(Enum.GetValues<FieldStorageKind>().Select(FormCatalogue.StoredName), Is.EquivalentTo(new[] { "text", "longText", "number", "date", "bool", "file", "json", "none" }), "the kinds of section 4.3.2");
-            Assert.That(Enum.GetValues<FieldStorageKind>().Select(FormCatalogue.StoredName), Is.Unique.And.All.Length.InRange(1, 16));
-            Assert.That(() => FormCatalogue.StoredName((FieldStorageKind)99), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(Enum.GetValues<FieldStorageKind>().Select(StoredNames.Of), Is.EquivalentTo(new[] { "text", "longText", "number", "date", "bool", "file", "json", "none" }), "the kinds of section 4.3.2");
+            Assert.That(Enum.GetValues<FieldStorageKind>().Select(StoredNames.Of), Is.Unique.And.All.Length.InRange(1, 16));
+            Assert.That(() => StoredNames.Of((FieldStorageKind)99), Throws.InstanceOf<ArgumentOutOfRangeException>());
         });
     }
 
@@ -128,7 +129,7 @@ public sealed class FormCatalogueTests
             Assert.That(changes.Select(change => change.IsNew), Is.All.True);
             Assert.That(changes.Select(change => change.Values.SortOrder), Is.EqualTo(Enumerable.Range(0, entries.Count)));
             Assert.That(changes.Select(change => (change.Values.FirstVersionNumber, change.Values.LastVersionNumber)), Is.All.EqualTo(((int?)3, (int?)null)));
-            Assert.That(changes[0].Values, Is.EqualTo(new CatalogueFieldValues(Email, "email", "Email", "email", "text", true, 0, 3, null, null)));
+            Assert.That(changes[0].Values, Is.EqualTo(new CatalogueFieldValues(Email, "email", "Email", "email", FieldStorageKind.Text, true, 0, 3, null, null)));
             Assert.That(changes[2].Values.ParentFieldKey, Is.EqualTo(Grid));
         });
     }
@@ -152,8 +153,8 @@ public sealed class FormCatalogueTests
 
         Assert.That(changes, Is.EqualTo(new[]
         {
-            (new CatalogueFieldValues(Age, "age", "AGE", "text", "text", false, 0, 1, null, null), false),
-            (new CatalogueFieldValues(Email, "email", "E-mail", "email", "text", false, 1, 1, null, null), false),
+            (new CatalogueFieldValues(Age, "age", "AGE", "text", FieldStorageKind.Text, false, 0, 1, null, null), false),
+            (new CatalogueFieldValues(Email, "email", "E-mail", "email", FieldStorageKind.Text, false, 1, 1, null, null), false),
         }));
     }
 
@@ -164,7 +165,7 @@ public sealed class FormCatalogueTests
 
         var changes = FormCatalogue.Changes(Entries(Row(Email, "email")), stored, 5, 3);
 
-        Assert.That(changes, Is.EqualTo(new[] { (new CatalogueFieldValues(Age, "age", "AGE", "text", "text", false, 1, 1, 3, null), false) }));
+        Assert.That(changes, Is.EqualTo(new[] { (new CatalogueFieldValues(Age, "age", "AGE", "text", FieldStorageKind.Text, false, 1, 1, 3, null), false) }));
     }
 
     [Test]
@@ -308,7 +309,7 @@ public sealed class FormCatalogueTests
     private static CatalogueEntry[] Entries(params CatalogueEntry[] entries) => entries;
 
     private static CatalogueFieldValues Values(Guid key, string alias, int sortOrder, int? first, int? last) =>
-        new(key, alias, alias.ToUpperInvariant(), "text", "text", false, sortOrder, first, last, null);
+        new(key, alias, alias.ToUpperInvariant(), "text", FieldStorageKind.Text, false, sortOrder, first, last, null);
 
     // The rows as a publish stored them.
     private static List<CatalogueField> Stored(IReadOnlyList<(CatalogueFieldValues Values, bool IsNew)> changes) =>

@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
 
@@ -13,8 +14,6 @@ internal sealed partial class FormRepository
     /// <summary>The longest field type alias the column holds.</summary>
     public const int MaxTypeLength = 128;
 
-    /// <summary>The longest storage kind the column holds.</summary>
-    public const int MaxStorageKindLength = 16;
 
     /// <inheritdoc />
     public Task<IReadOnlyList<CatalogueField>> ListFieldsAsync(int formId, CancellationToken cancellationToken = default) =>
@@ -43,7 +42,7 @@ internal sealed partial class FormRepository
                 {
                     inserted = await db.ExecAsync(
                         $"""
-                        INSERT INTO {table} ({n.C("formId")}, {n.C("fieldKey")}, {n.C("alias")}, {n.C("label")}, {n.C("type")}, {n.C("storageKind")}, {n.C("isSensitive")}, {n.C("sortOrder")}, {n.C("firstVersionNumber")}, {n.C("lastVersionNumber")}, {n.C("parentFieldKey")})
+                        INSERT INTO {table} ({n.C("formId")}, {n.C("fieldKey")}, {n.C("alias")}, {n.C("label")}, {n.C("fieldType")}, {n.C("storageKind")}, {n.C("isSensitive")}, {n.C("sortOrder")}, {n.C("firstVersionNumber")}, {n.C("lastVersionNumber")}, {n.C("parentFieldKey")})
                         SELECT @0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10
                         WHERE EXISTS (SELECT 1 FROM {n.T(FormBuilderTables.Form)}{n.LockingRead} WHERE {n.C("id")} = @0)
                         AND NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {n.C("formId")} = @0 AND {n.C("fieldKey")} = @1)
@@ -53,7 +52,7 @@ internal sealed partial class FormRepository
                         field.Alias,
                         field.Label,
                         field.Type,
-                        field.StorageKind,
+                        StoredNames.Of(field.StorageKind),
                         field.IsSensitive,
                         field.SortOrder,
                         field.FirstVersionNumber,
@@ -84,14 +83,14 @@ internal sealed partial class FormRepository
                 var n = new SqlNames(db);
                 await db.ExecAsync(
                     $"""
-                    UPDATE {n.T(FormBuilderTables.FormField)} SET {n.C("alias")} = @0, {n.C("label")} = @1, {n.C("type")} = @2, {n.C("storageKind")} = @3, {n.C("isSensitive")} = @4, {n.C("sortOrder")} = @5,
+                    UPDATE {n.T(FormBuilderTables.FormField)} SET {n.C("alias")} = @0, {n.C("label")} = @1, {n.C("fieldType")} = @2, {n.C("storageKind")} = @3, {n.C("isSensitive")} = @4, {n.C("sortOrder")} = @5,
                     {n.C("firstVersionNumber")} = @6, {n.C("lastVersionNumber")} = @7, {n.C("parentFieldKey")} = @8
                     WHERE {n.C("formId")} = @9 AND {n.C("fieldKey")} = @10
                     """,
                     field.Alias,
                     field.Label,
                     field.Type,
-                    field.StorageKind,
+                    StoredNames.Of(field.StorageKind),
                     field.IsSensitive,
                     field.SortOrder,
                     field.FirstVersionNumber,
@@ -133,8 +132,8 @@ internal sealed partial class FormRepository
             d.FieldKey,
             d.Alias,
             d.Label,
-            d.Type,
-            d.StorageKind,
+            d.FieldType,
+            StoredNames.Parse<FieldStorageKind>(d.StorageKind),
             d.IsSensitive,
             d.SortOrder,
             d.FirstVersionNumber,
@@ -157,7 +156,10 @@ internal sealed partial class FormRepository
         Check(field.Alias, 1, MaxAliasLength, "alias");
         Check(field.Label, 0, MaxLabelLength, "label");
         Check(field.Type, 1, MaxTypeLength, "type");
-        Check(field.StorageKind, 1, MaxStorageKindLength, "storage kind");
+        if (!Enum.IsDefined(field.StorageKind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(field), field.StorageKind, "A field's storage kind is one of the kinds of section 4.3.2.");
+        }
 
         static void Check(string value, int min, int max, string what)
         {

@@ -48,9 +48,9 @@ public sealed class EntryRepositoryArgumentTests
         Assert.Multiple(() =>
         {
             Refused(repository, Entry() with { State = (EntryState)99 }, "state");
-            Refused(repository, Entry() with { Digest = Hash.ToUpperInvariant() }, "digest in uppercase");
-            Refused(repository, Entry() with { Digest = Hash[1..] }, "digest of 63");
-            Refused(repository, Entry() with { Digest = null! }, "no digest");
+            Refused(repository, Entry() with { SubmissionHash = Hash.ToUpperInvariant() }, "submission hash in uppercase");
+            Refused(repository, Entry() with { SubmissionHash = Hash[1..] }, "submission hash of 63");
+            Refused(repository, Entry() with { SubmissionHash = null! }, "no submission hash");
             Refused(repository, Entry() with { Culture = new string('c', EntryRepository.MaxCultureLength + 1) }, "culture");
             Refused(repository, Entry() with { Culture = null! }, "no culture");
             Refused(repository, Entry() with { PageUrl = string.Empty }, "empty page");
@@ -152,7 +152,7 @@ public sealed class EntryRepositoryArgumentTests
             Assert.That(() => repository.AddFileAsync(file with { ContentType = string.Empty }), Throws.ArgumentException);
             Assert.That(() => repository.AddFileAsync(file with { ContentType = new string('t', EntryRepository.MaxContentTypeLength + 1) }), Throws.ArgumentException);
             Assert.That(() => repository.AddFileAsync(file with { SizeBytes = -1 }), Throws.ArgumentException);
-            Assert.That(() => repository.AddFileAsync(file with { Sha256 = Hash[1..] }), Throws.ArgumentException);
+            Assert.That(() => repository.AddFileAsync(file with { FileHash = Hash[1..] }), Throws.ArgumentException);
             Assert.That(() => repository.AddFileAsync(file with { ScanState = string.Empty }), Throws.ArgumentException);
             Assert.That(() => repository.AddFileAsync(file with { ScanState = new string('S', EntryRepository.MaxScanStateLength + 1) }), Throws.ArgumentException);
             Assert.That(() => repository.AddFileAsync(file with { ScanState = "Pending1" }), Throws.ArgumentException);
@@ -220,7 +220,7 @@ public sealed class EntryRepositoryArgumentTests
         FormId = 1,
         FormVersionId = 1,
         SubmissionId = Guid.NewGuid(),
-        Digest = Hash,
+        SubmissionHash = Hash,
         Values = values,
     };
 

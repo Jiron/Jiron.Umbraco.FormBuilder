@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
@@ -169,7 +170,7 @@ internal sealed record FormFilter
 /// <param name="Alias">Its alias, 1 to 64 characters.</param>
 /// <param name="Label">Its label in the default culture, up to 500 characters.</param>
 /// <param name="Type">Its field type's alias, 1 to 128 characters.</param>
-/// <param name="StorageKind">Which typed column of the entry values holds its values, 1 to 16 characters.</param>
+/// <param name="StorageKind">Which typed column of the entry values holds its values.</param>
 /// <param name="IsSensitive">Whether its values are sensitive (ADR-0009).</param>
 /// <param name="SortOrder">Its place among the form's columns.</param>
 /// <param name="FirstVersionNumber">The first published version that has it, or null while only a draft has it.</param>
@@ -180,7 +181,7 @@ internal sealed record CatalogueFieldValues(
     string Alias,
     string Label,
     string Type,
-    string StorageKind,
+    FieldStorageKind StorageKind,
     bool IsSensitive,
     int SortOrder,
     int? FirstVersionNumber,

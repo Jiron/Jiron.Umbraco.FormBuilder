@@ -60,7 +60,7 @@ internal static class AccessSql
         {
             var groups = string.Join(", ", scope.GroupKeys.Select(key => arg(key)));
             parts.Add(
-                $"{form}{n.C("key")} IN (SELECT p.{n.C("targetKey")} FROM {n.T(FormBuilderTables.Permission)} p WHERE p.{n.C("targetType")} = '{nameof(PermissionTarget.Form)}' AND p.{n.C("userGroupKey")} IN ({groups}) AND (p.{n.C("permissions")} & {arg((int)scope.AnyOf)}) <> 0)");
+                $"{form}{n.C("key")} IN (SELECT p.{n.C("targetKey")} FROM {n.T(FormBuilderTables.Permission)} p WHERE p.{n.C("targetType")} = '{StoredNames.Of(PermissionTarget.Form)}' AND p.{n.C("userGroupKey")} IN ({groups}) AND (p.{n.C("permissions")} & {arg((int)scope.AnyOf)}) <> 0)");
         }
 
         return parts.Count == 1 ? parts[0] : $"({string.Join(" OR ", parts)})";

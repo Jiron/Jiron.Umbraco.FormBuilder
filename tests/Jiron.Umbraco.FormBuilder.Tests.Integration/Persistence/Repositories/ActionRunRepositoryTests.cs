@@ -44,7 +44,7 @@ public sealed class ActionRunRepositoryTests : RepositoryTestBase
         var first = runs![0];
         Assert.Multiple(async () =>
         {
-            Assert.That(runs.Select(run => (run.Seq, run.Trigger)), Is.EqualTo(new[] { (0, ActionTrigger.Submitted), (1, ActionTrigger.Approved), (1, ActionTrigger.Rejected), (2, ActionTrigger.Verified) }), "by position, then as given");
+            Assert.That(runs.Select(run => (run.SortOrder, run.Trigger)), Is.EqualTo(new[] { (0, ActionTrigger.Submitted), (1, ActionTrigger.Approved), (1, ActionTrigger.Rejected), (2, ActionTrigger.Verified) }), "by position, then as given");
             Assert.That(runs.Select(run => run.Id), Is.Ordered.Ascending, "the ids follow the order");
             Assert.That(runs.All(run => run is { State: ActionRunState.Pending, Attempts: 0, LockedBy: null, LockedUntilUtc: null, LastError: null, StartedUtc: null, FinishedUtc: null }), Is.True);
             Assert.That(runs.All(run => run.EntryId == entryId && run.FormVersionId == versionId && run.CreatedUtc == Now && run.ChangeKey == change), Is.True);

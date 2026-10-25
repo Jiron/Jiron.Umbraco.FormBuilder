@@ -31,13 +31,13 @@ internal enum ActionRunState
 /// <param name="ActionKey">The action's key in the definition, not empty.</param>
 /// <param name="ActionType">The action type's alias, 1 to 128 characters without spaces or control characters.</param>
 /// <param name="Trigger">What started the action.</param>
-/// <param name="Seq">The action's position among the form's actions, 0 or more: the order of section 4.4.</param>
+/// <param name="SortOrder">The action's position among the form's actions, 0 or more: the order of section 4.4.</param>
 /// <param name="StopOnFailure">Whether the later runs of its batch are skipped when this one fails for good.</param>
 internal sealed record NewActionRun(
     Guid ActionKey,
     string ActionType,
     ActionTrigger Trigger,
-    int Seq,
+    int SortOrder,
     bool StopOnFailure);
 
 /// <summary>A stored run of an action.</summary>
@@ -47,7 +47,7 @@ internal sealed record NewActionRun(
 /// <param name="ActionKey">The action's key.</param>
 /// <param name="ActionType">The action type's alias.</param>
 /// <param name="Trigger">What started it.</param>
-/// <param name="Seq">The action's position.</param>
+/// <param name="SortOrder">The action's position.</param>
 /// <param name="StopOnFailure">Whether a failure for good skips the later runs of its batch.</param>
 /// <param name="State">Where it is.</param>
 /// <param name="Attempts">The attempts claimed so far.</param>
@@ -66,7 +66,7 @@ internal sealed record StoredActionRun(
     Guid ActionKey,
     string ActionType,
     ActionTrigger Trigger,
-    int Seq,
+    int SortOrder,
     bool StopOnFailure,
     ActionRunState State,
     int Attempts,

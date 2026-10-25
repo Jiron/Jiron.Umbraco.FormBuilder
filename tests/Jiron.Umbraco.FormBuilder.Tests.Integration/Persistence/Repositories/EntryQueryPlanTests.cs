@@ -210,8 +210,8 @@ public sealed partial class EntryQueryPlanTests : RepositoryTestBase
         db.Execute(
             $"""
             WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < {EntriesPerForm})
-            INSERT INTO {entry} ({Q("key")}, {Q("formId")}, {Q("formVersionId")}, {Q("number")}, {Q("state")}, {Q("isTest")}, {Q("submissionId")}, {Q("digest")}, {Q("culture")}, {Q("spamScore")}, {Q("spamReasons")}, {Q("searchText")}, {Q("context")}, {Q("submittedUtc")}, {Q("updatedUtc")}, {Q("stateChangedUtc")})
-            SELECT lower(hex(randomblob(16))), @0, @1, i, CASE i % 5 WHEN 0 THEN 'Approved' WHEN 1 THEN 'Spam' ELSE 'Submitted' END, i % 50 = 0, lower(hex(randomblob(16))), lower(hex(randomblob(32))), 'en-US', 0, '', 'entry ' || i, @2, {time}, {time}, {time}
+            INSERT INTO {entry} ({Q("key")}, {Q("formId")}, {Q("formVersionId")}, {Q("number")}, {Q("state")}, {Q("isTest")}, {Q("submissionId")}, {Q("submissionHash")}, {Q("culture")}, {Q("spamScore")}, {Q("spamReasons")}, {Q("searchText")}, {Q("context")}, {Q("submittedUtc")}, {Q("updatedUtc")}, {Q("stateChangedUtc")})
+            SELECT lower(hex(randomblob(16))), @0, @1, i, CASE i % 5 WHEN 0 THEN 'approved' WHEN 1 THEN 'spam' ELSE 'submitted' END, i % 50 = 0, lower(hex(randomblob(16))), lower(hex(randomblob(32))), 'en-US', 0, '', 'entry ' || i, @2, {time}, {time}, {time}
             FROM n
             """,
             form.Id,

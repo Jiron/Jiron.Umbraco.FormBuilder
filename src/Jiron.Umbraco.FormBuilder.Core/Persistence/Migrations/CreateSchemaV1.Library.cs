@@ -30,7 +30,7 @@ internal sealed partial class CreateSchemaV1
         [Length(255)]
         public string Name { get; set; } = string.Empty;
 
-        // Manual, Content, DataType, Url, File, Countries or Code.
+        // manual, content, dataType, url, file, countries or code (5.5).
         [Column("kind")]
         [Length(16)]
         public string Kind { get; set; } = string.Empty;
@@ -159,7 +159,7 @@ internal sealed partial class CreateSchemaV1
         [Index(IndexTypes.UniqueNonClustered, Name = "IX_jfbFormTemplate_key")]
         public Guid Key { get; set; }
 
-        // Form or Group.
+        // form or group.
         [Column("kind")]
         [Length(16)]
         public string Kind { get; set; } = string.Empty;
@@ -185,8 +185,15 @@ internal sealed partial class CreateSchemaV1
         [Column("createdUtc")]
         public DateTime CreatedUtc { get; set; }
 
+        [Column("updatedUtc")]
+        public DateTime UpdatedUtc { get; set; }
+
         [Column("createdByUserKey")]
         [NullSetting(NullSetting = NullSettings.Null)]
         public Guid? CreatedByUserKey { get; set; }
+
+        [Column("updatedByUserKey")]
+        [NullSetting(NullSetting = NullSettings.Null)]
+        public Guid? UpdatedByUserKey { get; set; }
     }
 }

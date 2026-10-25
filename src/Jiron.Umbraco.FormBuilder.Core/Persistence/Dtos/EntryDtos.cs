@@ -36,8 +36,8 @@ internal sealed class EntryDto
     [Column("submissionId")]
     public Guid SubmissionId { get; set; }
 
-    [Column("digest")]
-    public string Digest { get; set; } = string.Empty;
+    [Column("submissionHash")]
+    public string SubmissionHash { get; set; } = string.Empty;
 
     [Column("culture")]
     public string Culture { get; set; } = string.Empty;
@@ -142,8 +142,8 @@ internal sealed class EntryFileDto
     [Column("sizeBytes")]
     public long SizeBytes { get; set; }
 
-    [Column("sha256")]
-    public string Sha256 { get; set; } = string.Empty;
+    [Column("fileHash")]
+    public string FileHash { get; set; } = string.Empty;
 
     [Column("scanState")]
     public string ScanState { get; set; } = string.Empty;
@@ -194,12 +194,12 @@ internal sealed class EntryValueDto
 
 /// <summary>A row of <c>jfbConsentText</c>.</summary>
 [TableName(FormBuilderTables.ConsentText)]
-[PrimaryKey("hash", AutoIncrement = false)]
+[PrimaryKey("textHash", AutoIncrement = false)]
 [ExplicitColumns]
 internal sealed class ConsentTextDto
 {
-    [Column("hash")]
-    public string Hash { get; set; } = string.Empty;
+    [Column("textHash")]
+    public string TextHash { get; set; } = string.Empty;
 
     [Column("culture")]
     public string Culture { get; set; } = string.Empty;

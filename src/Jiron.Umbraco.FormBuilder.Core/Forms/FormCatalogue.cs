@@ -20,20 +20,6 @@ internal sealed record CatalogueEntry(Guid FieldKey, string Alias, string Label,
 /// </summary>
 internal static class FormCatalogue
 {
-    /// <summary>The stored name of a storage kind, such as <c>text</c>.</summary>
-    public static string StoredName(FieldStorageKind storage) => storage switch
-    {
-        FieldStorageKind.None => "none",
-        FieldStorageKind.Text => "text",
-        FieldStorageKind.LongText => "longText",
-        FieldStorageKind.Number => "number",
-        FieldStorageKind.Date => "date",
-        FieldStorageKind.Bool => "bool",
-        FieldStorageKind.File => "file",
-        FieldStorageKind.Json => "json",
-        _ => throw new ArgumentOutOfRangeException(nameof(storage), storage, "A storage kind without a stored name."),
-    };
-
     /// <summary>
     /// The rows of a definition in document order. A field whose type the site lacks has none; publishing refuses it
     /// anyway (ADR-0035).
@@ -76,7 +62,7 @@ internal static class FormCatalogue
                 entry.Alias,
                 entry.Label,
                 entry.Type,
-                StoredName(entry.Storage),
+                entry.Storage,
                 entry.IsSensitive,
                 index,
                 current?.FirstVersionNumber ?? version,

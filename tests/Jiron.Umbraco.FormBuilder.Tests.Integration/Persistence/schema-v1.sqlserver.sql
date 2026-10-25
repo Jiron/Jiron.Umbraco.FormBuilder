@@ -87,7 +87,7 @@ CREATE TABLE [jfbFormField] ([id] INTEGER NOT NULL IDENTITY(1,1),
 [fieldKey] UniqueIdentifier NOT NULL,
 [alias] NVARCHAR(64) NOT NULL,
 [label] NVARCHAR(500) NOT NULL,
-[type] NVARCHAR(128) NOT NULL,
+[fieldType] NVARCHAR(128) NOT NULL,
 [storageKind] NVARCHAR(16) NOT NULL,
 [isSensitive] BIT NOT NULL,
 [sortOrder] INTEGER NOT NULL,
@@ -109,7 +109,7 @@ CREATE TABLE [jfbEntry] ([id] BIGINT NOT NULL IDENTITY(1,1),
 [state] NVARCHAR(16) NOT NULL,
 [isTest] BIT NOT NULL,
 [submissionId] UniqueIdentifier NOT NULL,
-[digest] NVARCHAR(64) NOT NULL,
+[submissionHash] NVARCHAR(64) NOT NULL,
 [culture] NVARCHAR(32) NOT NULL,
 [contentKey] UniqueIdentifier NULL,
 [pageUrl] NVARCHAR(2048) NULL,
@@ -165,7 +165,7 @@ CREATE TABLE [jfbEntryFile] ([id] INTEGER NOT NULL IDENTITY(1,1),
 [storedName] NVARCHAR(64) NOT NULL,
 [contentType] NVARCHAR(255) NOT NULL,
 [sizeBytes] BIGINT NOT NULL,
-[sha256] NVARCHAR(64) NOT NULL,
+[fileHash] NVARCHAR(64) NOT NULL,
 [scanState] NVARCHAR(16) NOT NULL,
 [createdUtc] DATETIME NOT NULL);
 
@@ -173,9 +173,7 @@ ALTER TABLE [jfbEntryFile] ADD CONSTRAINT [PK_jfbEntryFile] PRIMARY KEY CLUSTERE
 
 CREATE UNIQUE NONCLUSTERED INDEX [IX_jfbEntryFile_key] ON [jfbEntryFile] ([key]);
 
-CREATE NONCLUSTERED INDEX [IX_jfbEntryFile_entryId] ON [jfbEntryFile] ([entryId]);
-
-CREATE NONCLUSTERED INDEX [IX_jfbEntryFile_createdUtc] ON [jfbEntryFile] ([createdUtc]);
+CREATE NONCLUSTERED INDEX [IX_jfbEntryFile_entryId_createdUtc] ON [jfbEntryFile] ([entryId],[createdUtc]);
 
 ALTER TABLE [jfbEntryFile] WITH CHECK ADD CONSTRAINT [FK_jfbEntryFile_jfbEntry] FOREIGN KEY ([entryId]) REFERENCES [jfbEntry] ([id]) ON DELETE CASCADE;
 
@@ -207,12 +205,12 @@ ALTER TABLE [jfbEntryValue] WITH CHECK ADD CONSTRAINT [FK_jfbEntryValue_jfbFormF
 
 ALTER TABLE [jfbEntryValue] WITH CHECK ADD CONSTRAINT [FK_jfbEntryValue_jfbEntryFile] FOREIGN KEY ([fileId]) REFERENCES [jfbEntryFile] ([id]);
 
-CREATE TABLE [jfbConsentText] ([hash] NVARCHAR(64) NOT NULL,
+CREATE TABLE [jfbConsentText] ([textHash] NVARCHAR(64) NOT NULL,
 [culture] NVARCHAR(32) NOT NULL,
 [text] NVARCHAR(MAX) NOT NULL,
 [firstSeenUtc] DATETIME NOT NULL);
 
-ALTER TABLE [jfbConsentText] ADD CONSTRAINT [PK_jfbConsentText] PRIMARY KEY CLUSTERED ([hash]);
+ALTER TABLE [jfbConsentText] ADD CONSTRAINT [PK_jfbConsentText] PRIMARY KEY CLUSTERED ([textHash]);
 
 CREATE TABLE [jfbEntryEvent] ([id] BIGINT NOT NULL IDENTITY(1,1),
 [entryId] BIGINT NOT NULL,
@@ -249,7 +247,7 @@ CREATE TABLE [jfbActionRun] ([id] BIGINT NOT NULL IDENTITY(1,1),
 [actionKey] UniqueIdentifier NOT NULL,
 [actionType] NVARCHAR(128) NOT NULL,
 [triggerKind] NVARCHAR(16) NOT NULL,
-[seq] INTEGER NOT NULL,
+[sortOrder] INTEGER NOT NULL,
 [stopOnFailure] BIT NOT NULL,
 [state] NVARCHAR(16) NOT NULL,
 [attempts] INTEGER NOT NULL,
@@ -265,7 +263,7 @@ CREATE TABLE [jfbActionRun] ([id] BIGINT NOT NULL IDENTITY(1,1),
 
 ALTER TABLE [jfbActionRun] ADD CONSTRAINT [PK_jfbActionRun] PRIMARY KEY CLUSTERED ([id]);
 
-CREATE NONCLUSTERED INDEX [IX_jfbActionRun_entryId_seq] ON [jfbActionRun] ([entryId],[seq]);
+CREATE NONCLUSTERED INDEX [IX_jfbActionRun_entryId_sortOrder] ON [jfbActionRun] ([entryId],[sortOrder]);
 
 CREATE NONCLUSTERED INDEX [IX_jfbActionRun_state_nextAttemptUtc] ON [jfbActionRun] ([state],[nextAttemptUtc]);
 
@@ -280,7 +278,7 @@ CREATE TABLE [jfbEmail] ([id] BIGINT NOT NULL IDENTITY(1,1),
 [toAddresses] NVARCHAR(4000) NOT NULL,
 [ccAddresses] NVARCHAR(4000) NULL,
 [bccAddresses] NVARCHAR(4000) NULL,
-[replyTo] NVARCHAR(500) NULL,
+[replyToAddress] NVARCHAR(500) NULL,
 [fromAddress] NVARCHAR(500) NOT NULL,
 [subject] NVARCHAR(1000) NOT NULL,
 [htmlBody] NVARCHAR(MAX) NULL,
@@ -293,7 +291,8 @@ CREATE TABLE [jfbEmail] ([id] BIGINT NOT NULL IDENTITY(1,1),
 [nextAttemptUtc] DATETIME NULL,
 [lockedUntilUtc] DATETIME NULL,
 [lockedBy] NVARCHAR(255) NULL,
-[lastError] NVARCHAR(1000) NULL,
+[lastErrorCode] NVARCHAR(64) NULL,
+[lastErrorMessage] NVARCHAR(1000) NULL,
 [createdUtc] DATETIME NOT NULL,
 [sentUtc] DATETIME NULL,
 [purgeAfterUtc] DATETIME NULL);
@@ -379,7 +378,9 @@ CREATE TABLE [jfbFormTemplate] ([id] INTEGER NOT NULL IDENTITY(1,1),
 [category] NVARCHAR(64) NULL,
 [definition] NVARCHAR(MAX) NOT NULL,
 [createdUtc] DATETIME NOT NULL,
-[createdByUserKey] UniqueIdentifier NULL);
+[updatedUtc] DATETIME NOT NULL,
+[createdByUserKey] UniqueIdentifier NULL,
+[updatedByUserKey] UniqueIdentifier NULL);
 
 ALTER TABLE [jfbFormTemplate] ADD CONSTRAINT [PK_jfbFormTemplate] PRIMARY KEY CLUSTERED ([id]);
 
@@ -423,6 +424,8 @@ CREATE TABLE [jfbReference] ([formId] INTEGER NOT NULL,
 
 ALTER TABLE [jfbReference] ADD CONSTRAINT [PK_jfbReference] PRIMARY KEY CLUSTERED ([formId], [contentKey], [propertyAlias], [culture]);
 
+CREATE NONCLUSTERED INDEX [IX_jfbReference_contentKey] ON [jfbReference] ([contentKey]);
+
 CREATE TABLE [jfbAuditEntry] ([id] BIGINT NOT NULL IDENTITY(1,1),
 [occurredUtc] DATETIME NOT NULL,
 [userKey] UniqueIdentifier NULL,
@@ -437,13 +440,15 @@ CREATE NONCLUSTERED INDEX [IX_jfbAuditEntry_occurredUtc] ON [jfbAuditEntry] ([oc
 
 CREATE NONCLUSTERED INDEX [IX_jfbAuditEntry_entityKey] ON [jfbAuditEntry] ([entityKey]);
 
-CREATE TABLE [jfbDailyStat] ([day] DATETIME NOT NULL,
-[formId] INTEGER NOT NULL,
+CREATE TABLE [jfbDailyStat] ([formId] INTEGER NOT NULL,
+[day] DATETIME NOT NULL,
 [metric] NVARCHAR(64) NOT NULL,
 [dimension] NVARCHAR(128) NOT NULL,
 [value] BIGINT NOT NULL);
 
-ALTER TABLE [jfbDailyStat] ADD CONSTRAINT [PK_jfbDailyStat] PRIMARY KEY CLUSTERED ([day], [formId], [metric], [dimension]);
+ALTER TABLE [jfbDailyStat] ADD CONSTRAINT [PK_jfbDailyStat] PRIMARY KEY CLUSTERED ([formId], [day], [metric], [dimension]);
+
+CREATE NONCLUSTERED INDEX [IX_jfbDailyStat_day_formId] ON [jfbDailyStat] ([day],[formId]);
 
 ALTER TABLE [jfbForm] WITH CHECK ADD CONSTRAINT [FK_jfbForm_jfbFormVersion_draftVersionId] FOREIGN KEY ([draftVersionId]) REFERENCES [jfbFormVersion] ([id]);
 

@@ -27,15 +27,14 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
     /// <summary>The longest recipient key the column holds.</summary>
     public const int MaxRecipientKeyLength = 320;
 
-    /// <summary>The longest error the column holds; longer ones are cut.</summary>
-    public const int MaxErrorLength = 1000;
+    /// <summary>The longest error message the column holds; longer ones are cut.</summary>
+    public const int MaxErrorMessageLength = 1000;
 
-    private const string Separator = ": ";
-    private const string Queued = nameof(EmailState.Queued);
-    private const string Sending = nameof(EmailState.Sending);
-    private const string Sent = nameof(EmailState.Sent);
-    private const string Failed = nameof(EmailState.Failed);
-    private const string Uncertain = nameof(EmailState.Uncertain);
+    private static readonly string Queued = StoredNames.Of(EmailState.Queued);
+    private static readonly string Sending = StoredNames.Of(EmailState.Sending);
+    private static readonly string Sent = StoredNames.Of(EmailState.Sent);
+    private static readonly string Failed = StoredNames.Of(EmailState.Failed);
+    private static readonly string Uncertain = StoredNames.Of(EmailState.Uncertain);
 
     /// <inheritdoc />
     public Task<StoredEmail?> AddAsync(NewEmail email, CancellationToken cancellationToken = default)
@@ -53,13 +52,13 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
                 var now = database.UtcNow;
                 var row = new EmailDto
                 {
-                    Kind = email.Kind.ToString(),
+                    Kind = StoredNames.Of(email.Kind),
                     EntryId = email.EntryId,
                     ActionRunId = email.ActionRunId,
                     ToAddresses = email.To,
                     CcAddresses = email.Cc,
                     BccAddresses = email.Bcc,
-                    ReplyTo = email.ReplyTo,
+                    ReplyToAddress = email.ReplyTo,
                     FromAddress = email.From,
                     Subject = email.Subject,
                     HtmlBody = email.HtmlBody,
@@ -139,7 +138,7 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
         return OutcomeAsync(
             emailId,
             token,
-            (n, now) => ($"{n.C("state")} = '{Sent}', {n.C("sentUtc")} = @2, {n.C("purgeAfterUtc")} = @3, {n.C("nextAttemptUtc")} = NULL, {n.C("lockedUntilUtc")} = NULL, {n.C("lastError")} = NULL", [now, now + keep]),
+            (n, now) => ($"{n.C("state")} = '{Sent}', {n.C("sentUtc")} = @2, {n.C("purgeAfterUtc")} = @3, {n.C("nextAttemptUtc")} = NULL, {n.C("lockedUntilUtc")} = NULL, {n.C("lastErrorCode")} = NULL, {n.C("lastErrorMessage")} = NULL", [now, now + keep]),
             cancellationToken);
     }
 
@@ -152,7 +151,7 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
         return OutcomeAsync(
             emailId,
             token,
-            (n, now) => ($"{n.C("state")} = '{Queued}', {n.C("nextAttemptUtc")} = @2, {n.C("lockedBy")} = NULL, {n.C("lockedUntilUtc")} = NULL, {n.C("lastError")} = @3, {n.C("purgeAfterUtc")} = NULL", [now + delay, ErrorText(error)]),
+            (n, now) => ($"{n.C("state")} = '{Queued}', {n.C("nextAttemptUtc")} = @2, {n.C("lockedBy")} = NULL, {n.C("lockedUntilUtc")} = NULL, {n.C("lastErrorCode")} = @3, {n.C("lastErrorMessage")} = @4, {n.C("purgeAfterUtc")} = NULL", [now + delay, error.Code, Message(error)]),
             cancellationToken);
     }
 
@@ -165,7 +164,7 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
         return OutcomeAsync(
             emailId,
             token,
-            (n, now) => ($"{n.C("state")} = '{Failed}', {n.C("nextAttemptUtc")} = NULL, {n.C("lockedUntilUtc")} = NULL, {n.C("lastError")} = @2, {n.C("purgeAfterUtc")} = @3", [ErrorText(error), now + keep]),
+            (n, now) => ($"{n.C("state")} = '{Failed}', {n.C("nextAttemptUtc")} = NULL, {n.C("lockedUntilUtc")} = NULL, {n.C("lastErrorCode")} = @2, {n.C("lastErrorMessage")} = @3, {n.C("purgeAfterUtc")} = @4", [error.Code, Message(error), now + keep]),
             cancellationToken);
     }
 
@@ -178,7 +177,7 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
         return OutcomeAsync(
             emailId,
             token,
-            (n, now) => ($"{n.C("state")} = '{Uncertain}', {n.C("lastError")} = @2, {n.C("purgeAfterUtc")} = @3", [ErrorText(error), now + keep]),
+            (n, now) => ($"{n.C("state")} = '{Uncertain}', {n.C("lastErrorCode")} = @2, {n.C("lastErrorMessage")} = @3, {n.C("purgeAfterUtc")} = @4", [error.Code, Message(error), now + keep]),
             cancellationToken);
     }
 
@@ -192,7 +191,7 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
                 var n = new SqlNames(db);
                 var now = database.UtcNow;
                 return db.ExecAsync(
-                    $"UPDATE {n.T(FormBuilderTables.Email)} SET {n.C("state")} = '{Uncertain}', {n.C("lastError")} = @1, {n.C("purgeAfterUtc")} = @2 WHERE {n.C("state")} = '{Sending}' AND {n.C("lockedUntilUtc")} < @0",
+                    $"UPDATE {n.T(FormBuilderTables.Email)} SET {n.C("state")} = '{Uncertain}', {n.C("lastErrorCode")} = @1, {n.C("lastErrorMessage")} = NULL, {n.C("purgeAfterUtc")} = @2 WHERE {n.C("state")} = '{Sending}' AND {n.C("lockedUntilUtc")} < @0",
                     now,
                     DeliveryError.LeaseExpired,
                     now + keep);
@@ -215,7 +214,7 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
                 var changed = await db.ExecAsync(
                     $"UPDATE {n.T(FormBuilderTables.Email)} SET {n.C("state")} = '{Queued}', {n.C("attempts")} = 0, {n.C("nextAttemptUtc")} = @2, {n.C("lockedBy")} = NULL, {n.C("lockedUntilUtc")} = NULL, {n.C("purgeAfterUtc")} = NULL WHERE {n.C("id")} = @0 AND {n.C("state")} = @1",
                     emailId,
-                    expected.ToString(),
+                    StoredNames.Of(expected),
                     database.UtcNow);
                 var current = await FindAsync(db, n, emailId);
                 if (changed == 0 && current is not null)
@@ -290,13 +289,13 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
 
     internal static StoredEmail FromDto(EmailDto d) => new(
         d.Id,
-        Enum.Parse<EmailKind>(d.Kind),
+        StoredNames.Parse<EmailKind>(d.Kind),
         d.EntryId,
         d.ActionRunId,
         d.ToAddresses,
         d.CcAddresses,
         d.BccAddresses,
-        d.ReplyTo,
+        d.ReplyToAddress,
         d.FromAddress,
         d.Subject,
         d.HtmlBody,
@@ -304,33 +303,18 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
         Attachments(d.Attachments),
         d.Culture,
         d.RecipientKey,
-        Enum.Parse<EmailState>(d.State),
+        StoredNames.Parse<EmailState>(d.State),
         d.Attempts,
         FormBuilderDbTime.Read(d.NextAttemptUtc),
         FormBuilderDbTime.Read(d.LockedUntilUtc),
         d.LockedBy,
-        Error(d.LastError),
+        d.LastErrorCode is { } code ? new DeliveryError(code, d.LastErrorMessage) : null,
         FormBuilderDbTime.Read(d.CreatedUtc),
         FormBuilderDbTime.Read(d.SentUtc),
         FormBuilderDbTime.Read(d.PurgeAfterUtc));
 
-    /// <summary>An error as the one column holds it: its code, then its message after a colon, cut to the column.</summary>
-    internal static string ErrorText(DeliveryError error) =>
-        Outbox.Cut(error.Message is null ? error.Code : error.Code + Separator + error.Message, MaxErrorLength)!;
-
-    /// <summary>A stored error read back; text that does not start with a code is the message of an <c>unknown</c> one.</summary>
-    internal static DeliveryError? Error(string? text)
-    {
-        if (text is null)
-        {
-            return null;
-        }
-
-        var end = text.IndexOf(Separator, StringComparison.Ordinal);
-        return end > 0 && DeliveryError.IsCode(text[..end])
-            ? new DeliveryError(text[..end], text[(end + Separator.Length)..])
-            : DeliveryError.IsCode(text) ? new DeliveryError(text) : new DeliveryError("unknown", text);
-    }
+    // The message cut to its column; the code is checked and short already.
+    private static string? Message(DeliveryError error) => Outbox.Cut(error.Message, MaxErrorMessageLength);
 
     /// <summary>The attachments as the column holds them: a JSON array of file keys.</summary>
     internal static string AttachmentsText(IReadOnlyList<Guid> keys) =>

@@ -1,6 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Testing.People;
@@ -89,7 +90,7 @@ public sealed class HostGrantsBootTests : RepositoryTestBase
                     .And.Property(nameof(FormBuilderSettingLockedException.ConfigurationKey)).EqualTo("JironFormBuilder:Access:Grants"));
             Assert.That(granted!.Permissions, Is.EqualTo(FormBuilderPermissions.Design));
             Assert.That(await Access.GetForFolderAsync(Member(viewers), events.Key), Is.EqualTo(FormBuilderPermissions.ViewEntries | FormBuilderPermissions.Export | FormBuilderPermissions.Design));
-            Assert.That(Count("jfbPermission", $"{Q("targetType")} = @0", nameof(PermissionTarget.Global)), Is.Zero, "nothing stored globally");
+            Assert.That(Count("jfbPermission", $"{Q("targetType")} = @0", StoredNames.Of(PermissionTarget.Global)), Is.Zero, "nothing stored globally");
         });
     }
 

@@ -30,8 +30,8 @@ internal sealed class ActionRunDto
     [Column("triggerKind")]
     public string TriggerKind { get; set; } = string.Empty;
 
-    [Column("seq")]
-    public int Seq { get; set; }
+    [Column("sortOrder")]
+    public int SortOrder { get; set; }
 
     [Column("stopOnFailure")]
     public bool StopOnFailure { get; set; }
@@ -97,8 +97,8 @@ internal sealed class EmailDto
     [Column("bccAddresses")]
     public string? BccAddresses { get; set; }
 
-    [Column("replyTo")]
-    public string? ReplyTo { get; set; }
+    [Column("replyToAddress")]
+    public string? ReplyToAddress { get; set; }
 
     [Column("fromAddress")]
     public string FromAddress { get; set; } = string.Empty;
@@ -136,8 +136,11 @@ internal sealed class EmailDto
     [Column("lockedBy")]
     public string? LockedBy { get; set; }
 
-    [Column("lastError")]
-    public string? LastError { get; set; }
+    [Column("lastErrorCode")]
+    public string? LastErrorCode { get; set; }
+
+    [Column("lastErrorMessage")]
+    public string? LastErrorMessage { get; set; }
 
     [Column("createdUtc")]
     public DateTime CreatedUtc { get; set; }

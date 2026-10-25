@@ -199,8 +199,8 @@ internal sealed class FormFieldDto
     [Column("label")]
     public string Label { get; set; } = string.Empty;
 
-    [Column("type")]
-    public string Type { get; set; } = string.Empty;
+    [Column("fieldType")]
+    public string FieldType { get; set; } = string.Empty;
 
     [Column("storageKind")]
     public string StorageKind { get; set; } = string.Empty;

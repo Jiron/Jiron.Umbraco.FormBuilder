@@ -21,12 +21,12 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
     /// <summary>The longest error message the column holds; longer ones are cut.</summary>
     public const int MaxErrorMessageLength = 1000;
 
-    private const string Pending = nameof(ActionRunState.Pending);
-    private const string Running = nameof(ActionRunState.Running);
-    private const string Succeeded = nameof(ActionRunState.Succeeded);
-    private const string Failed = nameof(ActionRunState.Failed);
-    private const string Skipped = nameof(ActionRunState.Skipped);
-    private const string Uncertain = nameof(ActionRunState.Uncertain);
+    private static readonly string Pending = StoredNames.Of(ActionRunState.Pending);
+    private static readonly string Running = StoredNames.Of(ActionRunState.Running);
+    private static readonly string Succeeded = StoredNames.Of(ActionRunState.Succeeded);
+    private static readonly string Failed = StoredNames.Of(ActionRunState.Failed);
+    private static readonly string Skipped = StoredNames.Of(ActionRunState.Skipped);
+    private static readonly string Uncertain = StoredNames.Of(ActionRunState.Uncertain);
 
     /// <inheritdoc />
     public Task<IReadOnlyList<StoredActionRun>?> AddAsync(long entryId, int formVersionId, Guid changeKey, IReadOnlyList<NewActionRun> runs, TimeSpan wait = default, CancellationToken cancellationToken = default)
@@ -58,7 +58,7 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
                 var now = database.UtcNow;
                 var ids = new HashSet<long>();
                 // By position, so the ids follow the order too and the entry's list reads as the runs run.
-                foreach (var run in runs.OrderBy(run => run.Seq))
+                foreach (var run in runs.OrderBy(run => run.SortOrder))
                 {
                     var row = new ActionRunDto
                     {
@@ -66,8 +66,8 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
                         FormVersionId = formVersionId,
                         ActionKey = run.ActionKey,
                         ActionType = run.ActionType,
-                        TriggerKind = TriggerName(run.Trigger),
-                        Seq = run.Seq,
+                        TriggerKind = StoredNames.Of(run.Trigger),
+                        SortOrder = run.SortOrder,
                         StopOnFailure = run.StopOnFailure,
                         State = Pending,
                         NextAttemptUtc = now + wait,
@@ -212,7 +212,7 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
                 var changed = await db.ExecAsync(
                     $"UPDATE {runs} SET {n.C("state")} = '{Pending}', {n.C("attempts")} = 0, {n.C("nextAttemptUtc")} = @2, {n.C("lockedBy")} = NULL, {n.C("lockedUntilUtc")} = NULL, {n.C("finishedUtc")} = NULL WHERE {n.C("id")} = @0 AND {n.C("state")} = @1",
                     runId,
-                    expected.ToString(),
+                    StoredNames.Of(expected),
                     now);
                 if (changed == 1)
                 {
@@ -255,10 +255,10 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
         d.FormVersionId,
         d.ActionKey,
         d.ActionType,
-        Enum.Parse<ActionTrigger>(d.TriggerKind, ignoreCase: true),
-        d.Seq,
+        StoredNames.Parse<ActionTrigger>(d.TriggerKind),
+        d.SortOrder,
         d.StopOnFailure,
-        Enum.Parse<ActionRunState>(d.State),
+        StoredNames.Parse<ActionRunState>(d.State),
         d.Attempts,
         FormBuilderDbTime.Read(d.NextAttemptUtc),
         d.ChangeKey,
@@ -268,16 +268,6 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
         FormBuilderDbTime.Read(d.CreatedUtc),
         FormBuilderDbTime.Read(d.StartedUtc),
         FormBuilderDbTime.Read(d.FinishedUtc));
-
-    // The trigger as the definition names it: submitted, approved, rejected or verified.
-    private static string TriggerName(ActionTrigger trigger) => trigger switch
-    {
-        ActionTrigger.Submitted => "submitted",
-        ActionTrigger.Approved => "approved",
-        ActionTrigger.Rejected => "rejected",
-        ActionTrigger.Verified => "verified",
-        _ => throw new ArgumentOutOfRangeException(nameof(trigger), trigger, "Not an action trigger."),
-    };
 
     private static string? Message(DeliveryError error) => Outbox.Cut(error.Message, MaxErrorMessageLength);
 
@@ -292,7 +282,7 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
 
     // The run of the first alias comes before the run of the second, by position and then by id.
     private static string Before(SqlNames n, string earlier, string later) =>
-        $"({earlier}.{n.C("seq")} < {later}.{n.C("seq")} OR ({earlier}.{n.C("seq")} = {later}.{n.C("seq")} AND {earlier}.{n.C("id")} < {later}.{n.C("id")}))";
+        $"({earlier}.{n.C("sortOrder")} < {later}.{n.C("sortOrder")} OR ({earlier}.{n.C("sortOrder")} = {later}.{n.C("sortOrder")} AND {earlier}.{n.C("id")} < {later}.{n.C("id")}))";
 
     private static void CheckRuns(IReadOnlyList<NewActionRun> runs)
     {
@@ -304,7 +294,7 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
             Require(run!.ActionKey != Guid.Empty, "A run names its action.");
             Require(run.ActionType is { Length: > 0 and <= MaxActionTypeLength } && !run.ActionType.Any(c => char.IsWhiteSpace(c) || char.IsControl(c)), $"An action type is 1 to {MaxActionTypeLength} characters without spaces or control characters.");
             Require(Enum.IsDefined(run.Trigger), "A run's trigger is one of the definition's.");
-            Require(run.Seq >= 0, "A run's position is 0 or more.");
+            Require(run.SortOrder >= 0, "A run's position is 0 or more.");
         }
 
         static void Require(bool condition, string message)

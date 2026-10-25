@@ -154,8 +154,14 @@ internal sealed class FormTemplateDto
     [Column("createdUtc")]
     public DateTime CreatedUtc { get; set; }
 
+    [Column("updatedUtc")]
+    public DateTime UpdatedUtc { get; set; }
+
     [Column("createdByUserKey")]
     public Guid? CreatedByUserKey { get; set; }
+
+    [Column("updatedByUserKey")]
+    public Guid? UpdatedByUserKey { get; set; }
 }
 
 /// <summary>A row of <c>jfbPermission</c>.</summary>

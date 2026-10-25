@@ -27,6 +27,11 @@ from the migration's snapshot classes, and a test (`DatabaseDocsTests`) fails wh
   NULLs there as equal and SQLite as distinct. A sentinel stands in (`Guid.Empty` for "global", `""` for the invariant
   culture or no dimension), or the index is filtered to the rows that have a value.
 - **JSON columns** hold camelCase JSON; a missing property means the default.
+- **Stored names.** An enum stored as text is the camel case of its name (`pending`, `published`, `longText`), as in
+  the definitions, the events and the audit actions. Every repository writes and reads it through one converter, which
+  refuses any other spelling, another letter case included, as a row something else wrote (ADR-0033).
+- **Hashes** are SHA-256 in lowercase hex, in columns named for what they hash: `definitionHash`, `publicHash`,
+  `submissionHash`, `fileHash`, `textHash`, `valueHash`, `resumeTokenHash`.
 - **Deletes.** Deleting an entry deletes its values, files, events, notes and action runs; its emails stay until their
   purge, unlinked. A form, a version, a field, a file or a folder that something still points at cannot be deleted:
   the services delete entries before their form, and the cleanup jobs skip what is in use.
@@ -171,7 +176,7 @@ erDiagram
         guid fieldKey
         string(64) alias
         string(500) label
-        string(128) type
+        string(128) fieldType
         string(16) storageKind
         bool isSensitive
         int sortOrder
@@ -188,7 +193,7 @@ erDiagram
         string(16) state
         bool isTest
         guid submissionId
-        string(64) digest
+        string(64) submissionHash
         string(32) culture
         guid contentKey "null"
         string(2048) pageUrl "null"
@@ -223,7 +228,7 @@ erDiagram
         string(64) storedName
         string(255) contentType
         bigint sizeBytes
-        string(64) sha256
+        string(64) fileHash
         string(16) scanState
         datetime createdUtc
     }
@@ -241,7 +246,7 @@ erDiagram
         int fileId FK "null"
     }
     jfbConsentText {
-        string(64) hash PK
+        string(64) textHash PK
         string(32) culture
         text text
         datetime firstSeenUtc
@@ -270,7 +275,7 @@ erDiagram
         guid actionKey
         string(128) actionType
         string(16) triggerKind
-        int seq
+        int sortOrder
         bool stopOnFailure
         string(16) state
         int attempts
@@ -292,7 +297,7 @@ erDiagram
         string(4000) toAddresses
         string(4000) ccAddresses "null"
         string(4000) bccAddresses "null"
-        string(500) replyTo "null"
+        string(500) replyToAddress "null"
         string(500) fromAddress
         string(1000) subject
         text htmlBody "null"
@@ -305,7 +310,8 @@ erDiagram
         datetime nextAttemptUtc "null"
         datetime lockedUntilUtc "null"
         string(255) lockedBy "null"
-        string(1000) lastError "null"
+        string(64) lastErrorCode "null"
+        string(1000) lastErrorMessage "null"
         datetime createdUtc
         datetime sentUtc "null"
         datetime purgeAfterUtc "null"
@@ -362,7 +368,9 @@ erDiagram
         string(64) category "null"
         text definition
         datetime createdUtc
+        datetime updatedUtc
         guid createdByUserKey "null"
+        guid updatedByUserKey "null"
     }
     jfbUserSetting {
         guid userKey PK
@@ -404,8 +412,8 @@ erDiagram
         text details
     }
     jfbDailyStat {
-        datetime day PK
         int formId PK
+        datetime day PK
         string(64) metric PK
         string(128) dimension PK
         bigint value
@@ -477,15 +485,15 @@ first of a new field, clears the last of one that came back and ends a dropped o
 ([ADR-0044](decisions/0044-form-service.md)). `storageKind` says how the field's values are stored, one of the kinds
 of ROADMAP §4.3.2 (`text`, `longText`, `number`, `date`, `bool`, `file`, `json`) that 5.1 maps to the typed columns of
 `jfbEntryValue`, or `none` for a repeatable group or a grid, whose parts hold the values; each row of a grid has a row
-of its own under the grid's alias, with the grid as its parent.
+of its own under the grid's alias, with the grid as its parent. `fieldType` is the alias of the field's type.
 
 - `IX_jfbFormField_formId_fieldKey`: unique; a field key once per form.
 
 ### `jfbEntry`
 
 One row per entry, numbered per form from `jfbForm.lastEntryNumber` (drafts and test entries too, ADR-0038).
-`submissionId` and `digest` make retries safe: the same submission returns the first receipt, a different one with
-the same id is refused (§4.4). `state` is the entry's place in the review workflow; `isTest` marks
+`submissionId` and `submissionHash` make retries safe: the same submission returns the first receipt, a different one
+with the same id is refused (§4.4). `state` is the entry's place in the review workflow; `isTest` marks
 entries from the preview. The search text holds the answers cleaned and folded the way rules compare text, one per
 line, and leaves out sensitive fields (ADR-0039).
 Resume tokens and challenges are stored only as hashes and ids.
@@ -503,11 +511,11 @@ Resume tokens and challenges are stored only as hashes and ids.
 
 Uploaded files. The bytes live in the file store under `storedName`, a random name; the original name is kept for
 downloads only. A file is linked to its entry when the entry is stored, and files that stay without one for a day are
-cleaned up (ADR-0006).
+cleaned up (ADR-0006). `fileHash` is the SHA-256 of the bytes.
 
 - `IX_jfbEntryFile_key`: unique.
-- `IX_jfbEntryFile_entryId`: the files of an entry.
-- `IX_jfbEntryFile_createdUtc`: the cleanup of orphans.
+- `IX_jfbEntryFile_entryId_createdUtc`: the files of an entry, and the uploads that wait for one, oldest first, for
+  their cleanup and a form's delete.
 
 ### `jfbEntryValue`
 
@@ -527,7 +535,7 @@ deleted. On SQL Server the column's case-insensitive collation can treat keys as
 
 The exact wording of every consent a visitor gave, stored once and named by the SHA-256 of its culture and text (the
 culture's UTF-8 bytes, one zero byte, the text's UTF-8 bytes; ADR-0038); a consent value stores that hash. No
-indexes besides the primary key on `hash`.
+indexes besides the primary key on `textHash`.
 
 ### `jfbEntryEvent`
 
@@ -545,20 +553,20 @@ Internal notes on an entry, never sent anywhere.
 
 ### `jfbActionRun`
 
-The outbox: one row per action an entry triggered, with its order (`seq`), state, attempts and the lease of the server
-that is running it (`lockedBy`, `lockedUntilUtc`). Errors are stored sanitised, as a code and a message; a skipped run
-says why with the code `stopped` (an earlier run stopped the rest) or `undone` (ADR-0023, ADR-0040).
+The outbox: one row per action an entry triggered, with its order (`sortOrder`), state, attempts and the lease of the
+server that is running it (`lockedBy`, `lockedUntilUtc`). Errors are stored sanitised, as a code and a message; a
+skipped run says why with the code `stopped` (an earlier run stopped the rest) or `undone` (ADR-0023, ADR-0040).
 
 - `IX_jfbActionRun_state_nextAttemptUtc`: what is due.
-- `IX_jfbActionRun_entryId_seq`: the runs of an entry in order.
+- `IX_jfbActionRun_entryId_sortOrder`: the runs of an entry in order.
 - `IX_jfbActionRun_changeKey`: the runs one change queued, a batch (ADR-0040), and for undo.
 
 ### `jfbEmail`
 
 The outgoing mail queue: the message as it will be sent, its state and attempts. Mail outlives the entry that caused
 it until its purge (`entryId` is then empty). `recipientKey` is the visitor's address folded, so the per-address limits
-count every spelling of one mailbox (ADR-0012). `lastError` holds an error as `code: message`, and `purgeAfterUtc` is
-set once the mail is final or uncertain (ADR-0040).
+count every spelling of one mailbox (ADR-0012). `lastErrorCode` and `lastErrorMessage` hold the last error as an
+action run's do, and `purgeAfterUtc` is set once the mail is final or uncertain (ADR-0040).
 
 - `IX_jfbEmail_state_nextAttemptUtc`: what is due.
 - `IX_jfbEmail_entryId`: the mail of an entry.
@@ -592,8 +600,8 @@ Layouts for outgoing mail: logo, colours, header and footer per culture. The def
 
 ### `jfbFormTemplate`
 
-Templates users saved: whole forms, and groups of fields the designer inserts as copies. The built-in templates ship
-inside the package.
+Templates users saved: whole forms, and groups of fields the designer inserts as copies, with who saved each and who
+changed it last. The built-in templates ship inside the package.
 
 - `IX_jfbFormTemplate_key`: unique.
 
@@ -626,7 +634,10 @@ fields the site overrides, where `null` stands for the default (ADR-0043). A sit
 
 Where forms are used: one row per form, content item, property and culture, refreshed when content is saved, because
 Umbraco's own relations link only its own nodes (ADR-0017). It names the form without a foreign key, so a content save
-never fails over a form that is gone. No indexes besides the primary key.
+never fails over a form that is gone. The primary key leads with the form, for the list of where a form is used.
+
+- `IX_jfbReference_contentKey`: the rows of a content item, which every save, publish, move or delete of the item
+  replaces.
 
 ### `jfbAuditEntry`
 
@@ -646,5 +657,8 @@ on). New metrics need no migration, and the counters hold no personal data: a me
 dimension a key, an hour, or a field key and an error kind. Like `jfbReference`, it names the form without a foreign key,
 so counting never fails over a form that is being deleted; a count for a form that does not exist adds nothing, and
 deleting a form deletes its values. Every unit that writes a form's values holds the form's row first, as the form's
-delete does, so they take turns and never deadlock; deletes and retention go a form and a day at a time, each a seek
-on the key. Days are midnights in UTC. No indexes besides the primary key.
+delete does, so they take turns and never deadlock. The key leads with the form, so one form's days and its delete
+are a seek on it; deletes and retention go a form and a day at a time, so no statement locks more than one form's
+day (ADR-0041). Days are midnights in UTC.
+
+- `IX_jfbDailyStat_day_formId`: retention, which deletes the earliest day first.

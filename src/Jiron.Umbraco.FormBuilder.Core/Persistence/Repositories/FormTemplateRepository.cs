@@ -24,6 +24,8 @@ internal enum FormTemplateKind
 /// <param name="Definition">The definition as JSON.</param>
 /// <param name="CreatedUtc">When it was saved.</param>
 /// <param name="CreatedByUserKey">Who saved it, or null.</param>
+/// <param name="UpdatedUtc">When it was last changed; when it was saved, until a change.</param>
+/// <param name="UpdatedByUserKey">Who changed it last, or null.</param>
 internal sealed record StoredFormTemplate(
     int Id,
     Guid Key,
@@ -33,7 +35,9 @@ internal sealed record StoredFormTemplate(
     string? Category,
     string Definition,
     DateTimeOffset CreatedUtc,
-    Guid? CreatedByUserKey);
+    Guid? CreatedByUserKey,
+    DateTimeOffset UpdatedUtc,
+    Guid? UpdatedByUserKey);
 
 /// <summary>A template to save.</summary>
 /// <param name="Key">Its key.</param>
@@ -58,7 +62,8 @@ internal sealed record NewFormTemplate(
 /// <param name="Description">A description, or null.</param>
 /// <param name="Category">The gallery's category, or null.</param>
 /// <param name="Definition">The definition as JSON.</param>
-internal sealed record FormTemplateUpdate(int Id, string Name, string? Description, string? Category, string Definition);
+/// <param name="UserKey">Who changes it, or null.</param>
+internal sealed record FormTemplateUpdate(int Id, string Name, string? Description, string? Category, string Definition, Guid? UserKey = null);
 
 /// <summary>Which templates a list holds; every condition left null holds for all.</summary>
 /// <param name="Kind">Forms or groups.</param>
@@ -122,12 +127,12 @@ internal sealed class FormTemplateRepository(FormBuilderDatabase database) : IFo
                 {
                     inserted = await db.ExecAsync(
                         $"""
-                        INSERT INTO {table} ({n.C("key")}, {n.C("kind")}, {n.C("name")}, {n.C("description")}, {n.C("category")}, {n.C("definition")}, {n.C("createdUtc")}, {n.C("createdByUserKey")})
-                        SELECT @0, @1, @2, @3, @4, @5, @6, @7
+                        INSERT INTO {table} ({n.C("key")}, {n.C("kind")}, {n.C("name")}, {n.C("description")}, {n.C("category")}, {n.C("definition")}, {n.C("createdUtc")}, {n.C("createdByUserKey")}, {n.C("updatedUtc")}, {n.C("updatedByUserKey")})
+                        SELECT @0, @1, @2, @3, @4, @5, @6, @7, @6, @7
                         WHERE NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE {n.C("key")} = @0)
                         """,
                         template.Key,
-                        template.Kind.ToString(),
+                        StoredNames.Of(template.Kind),
                         template.Name,
                         template.Description,
                         template.Category,
@@ -173,7 +178,7 @@ internal sealed class FormTemplateRepository(FormBuilderDatabase database) : IFo
                 var where = new List<string>();
                 if (filter.Kind is { } kind)
                 {
-                    where.Add($"{n.C("kind")} = {Arg(kind.ToString())}");
+                    where.Add($"{n.C("kind")} = {Arg(StoredNames.Of(kind))}");
                 }
 
                 if (filter.Category is { } category)
@@ -208,12 +213,14 @@ internal sealed class FormTemplateRepository(FormBuilderDatabase database) : IFo
             {
                 var n = new SqlNames(db);
                 await db.ExecAsync(
-                    $"UPDATE {n.T(FormBuilderTables.FormTemplate)} SET {n.C("name")} = @0, {n.C("description")} = @1, {n.C("category")} = @2, {n.C("definition")} = @3 WHERE {n.C("id")} = @4",
+                    $"UPDATE {n.T(FormBuilderTables.FormTemplate)} SET {n.C("name")} = @0, {n.C("description")} = @1, {n.C("category")} = @2, {n.C("definition")} = @3, {n.C("updatedUtc")} = @5, {n.C("updatedByUserKey")} = @6 WHERE {n.C("id")} = @4",
                     update.Name,
                     update.Description,
                     update.Category,
                     update.Definition,
-                    update.Id);
+                    update.Id,
+                    database.UtcNow,
+                    update.UserKey);
                 return await FindAsync(db, n, "id", update.Id);
             },
             cancellationToken);
@@ -260,11 +267,13 @@ internal sealed class FormTemplateRepository(FormBuilderDatabase database) : IFo
     private static StoredFormTemplate FromDto(FormTemplateDto d) => new(
         d.Id,
         d.Key,
-        Enum.Parse<FormTemplateKind>(d.Kind),
+        StoredNames.Parse<FormTemplateKind>(d.Kind),
         d.Name,
         d.Description,
         d.Category,
         d.Definition,
         FormBuilderDbTime.Read(d.CreatedUtc),
-        d.CreatedByUserKey);
+        d.CreatedByUserKey,
+        FormBuilderDbTime.Read(d.UpdatedUtc),
+        d.UpdatedByUserKey);
 }

@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -391,7 +392,7 @@ public sealed class FormRepositoryTests : RepositoryTestBase
     }
 
     internal static CatalogueFieldValues Field(string alias, int sortOrder = 0) =>
-        new(Guid.NewGuid(), alias, alias.ToUpperInvariant(), "text", "Text", false, sortOrder, null, null, null);
+        new(Guid.NewGuid(), alias, alias.ToUpperInvariant(), "text", FieldStorageKind.Text, false, sortOrder, null, null, null);
 
     internal static void AssertConflict<T>(Func<Task<T>> change, FormBuilderConflict conflict, string? why = null) =>
         Assert.That(

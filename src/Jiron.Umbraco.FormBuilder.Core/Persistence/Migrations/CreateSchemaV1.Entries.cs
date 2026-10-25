@@ -40,7 +40,7 @@ internal sealed partial class CreateSchemaV1
         [Column("number")]
         public int Number { get; set; }
 
-        // Draft, Unverified, Submitted, Approved, Rejected or Spam (section 4.4).
+        // draft, unverified, submitted, approved, rejected or spam (section 4.4).
         [Column("state")]
         [Length(16)]
         public string State { get; set; } = string.Empty;
@@ -52,9 +52,11 @@ internal sealed partial class CreateSchemaV1
         [Column("submissionId")]
         public Guid SubmissionId { get; set; }
 
-        [Column("digest")]
+        // The submission's SHA-256 in lowercase hex: with the submission id, it tells a retry from a different
+        // submission (ADR-0012).
+        [Column("submissionHash")]
         [Length(64)]
-        public string Digest { get; set; } = string.Empty;
+        public string SubmissionHash { get; set; } = string.Empty;
 
         // "" for the invariant culture.
         [Column("culture")]
@@ -179,7 +181,7 @@ internal sealed partial class CreateSchemaV1
         [Column("entryId")]
         [NullSetting(NullSetting = NullSettings.Null)]
         [ForeignKey(typeof(EntryDto), Name = "FK_jfbEntryFile_jfbEntry", OnDelete = Rule.Cascade)]
-        [Index(IndexTypes.NonClustered, Name = "IX_jfbEntryFile_entryId")]
+        [Index(IndexTypes.NonClustered, Name = "IX_jfbEntryFile_entryId_createdUtc", ForColumns = "entryId,createdUtc")]
         public long? EntryId { get; set; }
 
         [Column("formId")]
@@ -204,16 +206,17 @@ internal sealed partial class CreateSchemaV1
         [Column("sizeBytes")]
         public long SizeBytes { get; set; }
 
-        [Column("sha256")]
+        // SHA-256 of the file's bytes in lowercase hex.
+        [Column("fileHash")]
         [Length(64)]
-        public string Sha256 { get; set; } = string.Empty;
+        public string FileHash { get; set; } = string.Empty;
 
         [Column("scanState")]
         [Length(16)]
         public string ScanState { get; set; } = string.Empty;
 
+        // With the entry, the index finds an entry's files and the uploads that wait for one, oldest first.
         [Column("createdUtc")]
-        [Index(IndexTypes.NonClustered, Name = "IX_jfbEntryFile_createdUtc")]
         public DateTime CreatedUtc { get; set; }
     }
 
@@ -284,15 +287,15 @@ internal sealed partial class CreateSchemaV1
 
     // The exact wording of a consent, stored once; a consent value stores true plus this hash (ADR-0009).
     [TableName(FormBuilderTables.ConsentText)]
-    [PrimaryKey("hash", AutoIncrement = false)]
+    [PrimaryKey("textHash", AutoIncrement = false)]
     [ExplicitColumns]
     internal sealed class ConsentTextDto
     {
         // SHA-256 of the culture and the text, in lowercase hex.
-        [Column("hash")]
+        [Column("textHash")]
         [Length(64)]
         [PrimaryKeyColumn(AutoIncrement = false)]
-        public string Hash { get; set; } = string.Empty;
+        public string TextHash { get; set; } = string.Empty;
 
         [Column("culture")]
         [Length(32)]
