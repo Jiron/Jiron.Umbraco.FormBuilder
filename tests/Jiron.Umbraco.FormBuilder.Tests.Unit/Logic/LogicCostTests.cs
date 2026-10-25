@@ -6,7 +6,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 /// <summary>
 /// What the logic costs on long answers (ROADMAP 4.8f): numbers compare digit by digit as the values they are, without
 /// a number or a key being built, and a pattern's run keeps one set of buffers, so a long answer costs about as much
-/// as reading it. The shared vectors show that both still mean what they meant.
+/// as reading it. The shared vectors hold what the comparison answers (ROADMAP 4.8h) and show that both still mean what
+/// they meant.
 /// </summary>
 public sealed class LogicCostTests
 {
@@ -51,41 +52,52 @@ public sealed class LogicCostTests
         });
     }
 
-    [TestCase("0", "-0", 0)]
-    [TestCase("0.50", "0.5", 0)]
-    [TestCase("-0.000", "0", 0)]
-    [TestCase("10", "9", 1)]
-    [TestCase("-10", "-9", -1)]
-    [TestCase("1.25", "1.3", -1)]
-    [TestCase("12", "12.0001", -1)]
-    [TestCase("-0.5", "0", -1)]
-    [TestCase("-1.5", "-1.25", -1)]
-    [TestCase("123456789012345678901234567890", "123456789012345678901234567891", -1)]
-    public void Numbers_CompareAsTheValuesTheyAre(string a, string b, int expected)
+    [TestCase("isOneOf")]
+    [TestCase("contains")]
+    public void ATextCondition_FoldsTheAnswerOnce_HoweverManyOperands(string op)
     {
-        Assert.Multiple(() =>
+        // An answer that folds, so each fold of it makes a new copy of 20,000 bytes and more (ROADMAP 4.8h).
+        var answer = new string('A', 10_000);
+        long Against(int count)
         {
-            Assert.That(ExactDecimal.CompareText(a, b), Is.EqualTo(expected));
-            Assert.That(ExactDecimal.CompareText(b, a), Is.EqualTo(-expected), "the other way round");
-        });
+            var others = Enumerable.Range(1, count).Select(i => "x" + i).ToList();
+            var subject = new Subject(
+                new Dictionary<string, FieldKind> { ["name"] = FieldKind.Text, ["others"] = FieldKind.Text },
+                new Dictionary<string, IReadOnlyList<string>> { ["name"] = [answer], ["others"] = others },
+                Context);
+            Operand operand = op == "isOneOf" ? new ListOperand([.. others.Select(other => (Operand)new TextOperand(other))]) : new FieldOperand("others");
+            var condition = new LogicCondition("name", null, op, operand);
+            var matched = true;
+            var bytes = Allocated(() => matched = Rules.EvaluateCondition(condition, subject));
+            Assert.That(matched, Is.False, $"{op} against {count}");
+            return bytes;
+        }
+
+        var one = Against(1);
+        var twenty = Against(20);
+
+        Assert.That(twenty - one, Is.LessThan(answer.Length), "what 19 more operands cost, in bytes: their own folds, not 19 more of the answer");
     }
 
-    [TestCase("1e3")]
-    [TestCase("01")]
-    [TestCase("1.")]
-    [TestCase(".5")]
-    [TestCase("-")]
-    [TestCase("")]
-    [TestCase("+1")]
-    [TestCase("1,5")]
-    [TestCase("1.5x")]
-    public void WhatIsNotANumberInTheWireForm_ComparesWithNothing(string text)
+    [Test]
+    public void AMatchesCondition_CompilesItsPatternOnce()
     {
+        const string Pattern = "(ab|cd|ef){300}";
+        var subject = new Subject(
+            new Dictionary<string, FieldKind> { ["phone"] = FieldKind.Text },
+            new Dictionary<string, IReadOnlyList<string>> { ["phone"] = ["ab"] },
+            Context);
+        var compiled = SafePattern.Compile(Pattern);
+        var compile = Allocated(() => SafePattern.Compile(Pattern));
+        var run = Allocated(() => compiled.IsMatch("ab"));
+        var condition = new LogicCondition("phone", null, "matches", new TextOperand(Pattern));
+        LogicItem[] twice = [condition, condition with { }];
+        var rule = new LogicRule("show", Enabled: true, "any", twice);
+
         Assert.Multiple(() =>
         {
-            Assert.That(ExactDecimal.CompareText(text, "1"), Is.Null);
-            Assert.That(ExactDecimal.CompareText("1", text), Is.Null);
-            Assert.That(ExactDecimal.Parse(text), Is.Null, "as the parser refuses it");
+            Assert.That(Allocated(() => Rules.EvaluateCondition(condition, subject)), Is.LessThan(compile + run + (compile / 2)), "one compile and one run, with room for the condition's own lists");
+            Assert.That(Allocated(() => Rules.EvaluateRule(rule, subject)), Is.LessThan(compile + (2 * run) + (compile / 2)), "a rule that names the pattern twice compiles it once");
         });
     }
 
@@ -107,5 +119,14 @@ public sealed class LogicCostTests
             // Reading the code points takes about twice their size; the run's own buffers are a few hundred bytes.
             Assert.That(allocated, Is.LessThan(3L * value.Length * sizeof(int)));
         });
+    }
+
+    // What the action allocates on this thread, once it has run once.
+    private static long Allocated(Action action)
+    {
+        action();
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        action();
+        return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 }

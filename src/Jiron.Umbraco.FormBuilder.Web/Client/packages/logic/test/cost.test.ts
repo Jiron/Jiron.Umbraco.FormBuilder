@@ -1,9 +1,21 @@
 // What the logic costs on long answers (ROADMAP 4.8f), the same as Core's LogicCostTests: numbers compare digit by
-// digit as the values they are, without a BigInt being built, and a pattern's run keeps one set of buffers. The
-// shared vectors show that both still mean what they meant.
-import { describe, expect, it } from 'vitest';
-import { compareText } from '../src/decimal.ts';
-import { compilePattern, evaluateCondition, type Condition, type Subject } from '../src/index.ts';
+// digit as the values they are, without a BigInt being built, and a pattern's run keeps one set of buffers. A text
+// condition folds each answer once and an evaluation compiles each pattern once (ROADMAP 4.8h). The shared vectors
+// hold what the comparison answers and show that all of it still means what it meant.
+import { describe, expect, it, vi } from 'vitest';
+import { compilePattern, evaluateCondition, evaluateRule, type Condition, type Subject } from '../src/index.ts';
+import * as patterns from '../src/pattern.ts';
+import * as text from '../src/text.ts';
+
+// The fold and the compiler, counted as they run.
+vi.mock('../src/text.ts', async (original) => {
+  const actual = await original<typeof import('../src/text.ts')>();
+  return { ...actual, fold: vi.fn(actual.fold) };
+});
+vi.mock('../src/pattern.ts', async (original) => {
+  const actual = await original<typeof import('../src/pattern.ts')>();
+  return { ...actual, compilePattern: vi.fn(actual.compilePattern) };
+});
 
 const context = {
   now: '2026-10-25T10:00:00Z',
@@ -58,25 +70,36 @@ describe('long answers', () => {
   });
 });
 
-describe('numbers in the wire form', () => {
+describe('work done once', () => {
+  const answer = 'A'.repeat(10_000);
+  const others = Array.from({ length: 20 }, (_, i) => 'x' + String(i + 1));
+  const subject: Subject = {
+    fields: { name: 'text', others: 'text', phone: 'text' },
+    values: { name: [answer], others, phone: ['ab'] },
+    context,
+  };
+  const fold = vi.mocked(text.fold);
+  const compile = vi.mocked(patterns.compilePattern);
+
   it.each([
-    ['0', '-0', 0],
-    ['0.50', '0.5', 0],
-    ['-0.000', '0', 0],
-    ['10', '9', 1],
-    ['-10', '-9', -1],
-    ['1.25', '1.3', -1],
-    ['12', '12.0001', -1],
-    ['-0.5', '0', -1],
-    ['-1.5', '-1.25', -1],
-    ['123456789012345678901234567890', '123456789012345678901234567891', -1],
-  ] as const)('%s against %s is %i', (a, b, expected) => {
-    expect(compareText(a, b)).toBe(expected);
-    expect(compareText(b, a)).toBe(expected === 0 ? 0 : -expected);
+    ['isOneOf', others],
+    ['contains', { field: 'others' }],
+  ] as const)('%s against 20 operands folds the answer once', (op, value) => {
+    fold.mockClear();
+    expect(evaluateCondition({ field: 'name', op, value }, subject)).toBe(false);
+    expect(fold.mock.calls.filter(([folded]) => folded === answer)).toHaveLength(1);
+    expect(fold).toHaveBeenCalledTimes(21);
   });
 
-  it.each(['1e3', '01', '1.', '.5', '-', '', '+1', '1,5', '1.5x'])('%j compares with nothing', (text) => {
-    expect(compareText(text, '1')).toBeNull();
-    expect(compareText('1', text)).toBeNull();
+  it('an evaluation compiles each pattern once', () => {
+    const condition: Condition = { field: 'phone', op: 'matches', value: '(ab|cd|ef){300}' };
+    compile.mockClear();
+    expect(evaluateCondition(condition, subject)).toBe(false);
+    expect(compile).toHaveBeenCalledTimes(1);
+
+    compile.mockClear();
+    const rule = { effect: 'show', enabled: true, match: 'any', conditions: [condition, { ...condition }] } as const;
+    expect(evaluateRule(rule, subject)).toBe(false);
+    expect(compile).toHaveBeenCalledTimes(1);
   });
 });

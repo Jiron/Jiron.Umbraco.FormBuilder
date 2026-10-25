@@ -2,8 +2,9 @@
 // What porting the spike to Core and packages/logic found (ROADMAP 3.4b, ADR-0030): limits the spike did not keep,
 // names an object's prototype answers in TypeScript, operands that are null, the instant of evaluation in any
 // shape either runtime parses, and time zone names only one runtime takes. About half of the cases fail on one of
-// the spike's two evaluators (ADR-0030 says which); the others pin the edges next to them. Special characters are
-// built from code points, so this file and the JSON it becomes stay ASCII (build.mjs).
+// the spike's two evaluators (ADR-0030 says which); the others pin the edges next to them. Sections added by later
+// reviews name their step. Special characters are built from code points, so this file and the JSON it becomes stay
+// ASCII (build.mjs).
 
 const defaults = {
   context: {
@@ -90,6 +91,63 @@ const cases = [
   { id: 'number-equals-with-ten-thousand-trailing-zeros', values: { amount: ['1'] }, condition: cond('amount', 'equals', '1.' + '0'.repeat(10000)), expect: true },
   { id: 'number-trailing-zeros-after-a-digit', number: '2.50000', expect: '2.5' },
   { id: 'number-negative-zero-with-places', number: '-0.000', expect: '0' },
+
+  // ---- Numbers compare as the values they are, both ways round (ROADMAP 4.8h): the one home of these cases ----
+  { id: 'number-zero-equals-minus-zero', description: '-0 is 0', values: { amount: ['0'] }, condition: cond('amount', 'equals', '-0'), expect: true },
+  { id: 'number-minus-zero-equals-zero', values: { amount: ['-0'] }, condition: cond('amount', 'equals', '0'), expect: true },
+  { id: 'number-minus-zero-not-below-zero', description: 'and is not below it', values: { amount: ['-0'] }, condition: cond('amount', 'lessThan', '0'), expect: false },
+  { id: 'number-zero-not-above-minus-zero', values: { amount: ['0'] }, condition: cond('amount', 'greaterThan', '-0'), expect: false },
+  { id: 'number-minus-zero-places-equals-zero', values: { amount: ['-0.000'] }, condition: cond('amount', 'equals', '0'), expect: true },
+  { id: 'number-10-above-9', description: 'more digits, the larger value', values: { amount: ['10'] }, condition: cond('amount', 'greaterThan', '9'), expect: true },
+  { id: 'number-10-not-below-9', values: { amount: ['10'] }, condition: cond('amount', 'lessThan', '9'), expect: false },
+  { id: 'number-minus-10-below-minus-9', description: 'negatives in order: more digits, the smaller value', values: { amount: ['-10'] }, condition: cond('amount', 'lessThan', '-9'), expect: true },
+  { id: 'number-minus-9-not-below-minus-10', values: { amount: ['-9'] }, condition: cond('amount', 'lessThan', '-10'), expect: false },
+  { id: 'number-minus-10-not-above-minus-9', values: { amount: ['-10'] }, condition: cond('amount', 'greaterThan', '-9'), expect: false },
+  { id: 'number-1-point-3-above-1-point-25', description: 'a shorter fraction can be the larger', values: { amount: ['1.3'] }, condition: cond('amount', 'greaterThan', '1.25'), expect: true },
+  { id: 'number-1-point-25-not-above-1-point-3', values: { amount: ['1.25'] }, condition: cond('amount', 'greaterThan', '1.3'), expect: false },
+  { id: 'number-12-below-12-point-0001', description: 'one more place decides', values: { amount: ['12'] }, condition: cond('amount', 'lessThan', '12.0001'), expect: true },
+  { id: 'number-12-point-0001-above-12', values: { amount: ['12.0001'] }, condition: cond('amount', 'greaterThan', '12'), expect: true },
+  { id: 'number-12-not-equals-12-point-0001', values: { amount: ['12'] }, condition: cond('amount', 'equals', '12.0001'), expect: false },
+  { id: 'number-12-point-0001-not-below-12', values: { amount: ['12.0001'] }, condition: cond('amount', 'lessThan', '12'), expect: false },
+  { id: 'number-minus-0-point-5-below-zero', values: { amount: ['-0.5'] }, condition: cond('amount', 'lessThan', '0'), expect: true },
+  { id: 'number-zero-not-below-minus-0-point-5', values: { amount: ['0'] }, condition: cond('amount', 'lessThan', '-0.5'), expect: false },
+  { id: 'number-minus-1-point-5-below-minus-1-point-25', values: { amount: ['-1.5'] }, condition: cond('amount', 'lessThan', '-1.25'), expect: true },
+  { id: 'number-minus-1-point-25-not-below-minus-1-point-5', values: { amount: ['-1.25'] }, condition: cond('amount', 'lessThan', '-1.5'), expect: false },
+  { id: 'number-thirty-digits-below-thirty-digits-plus-one', description: 'thirty digits, the last one apart', values: { amount: ['123456789012345678901234567890'] }, condition: cond('amount', 'lessThan', '123456789012345678901234567891'), expect: true },
+  { id: 'number-thirty-digits-plus-one-above-thirty-digits', values: { amount: ['123456789012345678901234567891'] }, condition: cond('amount', 'greaterThan', '123456789012345678901234567890'), expect: true },
+  { id: 'number-thirty-digits-not-equals-thirty-digits-plus-one', values: { amount: ['123456789012345678901234567890'] }, condition: cond('amount', 'equals', '123456789012345678901234567891'), expect: false },
+  { id: 'number-wire-exponent-answer-equals-nothing', description: 'read kindly, it would be 1000', values: { amount: ['1e3'] }, condition: cond('amount', 'equals', '1000'), expect: false },
+  { id: 'number-wire-exponent-operand-equals-nothing', values: { amount: ['1000'] }, condition: cond('amount', 'equals', '1e3'), expect: false },
+  { id: 'number-wire-leading-zero-refused', number: '01', expect: { error: 'not_a_number' } },
+  { id: 'number-wire-leading-zero-answer-equals-nothing', description: 'read kindly, it would be 1', values: { amount: ['01'] }, condition: cond('amount', 'equals', '1'), expect: false },
+  { id: 'number-wire-leading-zero-operand-equals-nothing', values: { amount: ['1'] }, condition: cond('amount', 'equals', '01'), expect: false },
+  { id: 'number-wire-trailing-point-refused', number: '1.', expect: { error: 'not_a_number' } },
+  { id: 'number-wire-trailing-point-answer-equals-nothing', description: 'read kindly, it would be 1', values: { amount: ['1.'] }, condition: cond('amount', 'equals', '1'), expect: false },
+  { id: 'number-wire-trailing-point-operand-equals-nothing', values: { amount: ['1'] }, condition: cond('amount', 'equals', '1.'), expect: false },
+  { id: 'number-wire-leading-point-refused', number: '.5', expect: { error: 'not_a_number' } },
+  { id: 'number-wire-leading-point-answer-equals-nothing', description: 'read kindly, it would be 0.5', values: { amount: ['.5'] }, condition: cond('amount', 'equals', '0.5'), expect: false },
+  { id: 'number-wire-leading-point-operand-equals-nothing', values: { amount: ['0.5'] }, condition: cond('amount', 'equals', '.5'), expect: false },
+  { id: 'number-wire-lone-minus-refused', number: '-', expect: { error: 'not_a_number' } },
+  { id: 'number-wire-lone-minus-answer-equals-nothing', description: 'read kindly, it would be 0', values: { amount: ['-'] }, condition: cond('amount', 'equals', '0'), expect: false },
+  { id: 'number-wire-lone-minus-operand-equals-nothing', values: { amount: ['0'] }, condition: cond('amount', 'equals', '-'), expect: false },
+  { id: 'number-wire-plus-sign-refused', number: '+1', expect: { error: 'not_a_number' } },
+  { id: 'number-wire-plus-sign-answer-equals-nothing', description: 'read kindly, it would be 1', values: { amount: ['+1'] }, condition: cond('amount', 'equals', '1'), expect: false },
+  { id: 'number-wire-plus-sign-operand-equals-nothing', values: { amount: ['1'] }, condition: cond('amount', 'equals', '+1'), expect: false },
+  { id: 'number-wire-comma-refused', number: '1,5', expect: { error: 'not_a_number' } },
+  { id: 'number-wire-comma-answer-equals-nothing', description: 'read kindly, it would be 1.5', values: { amount: ['1,5'] }, condition: cond('amount', 'equals', '1.5'), expect: false },
+  { id: 'number-wire-comma-operand-equals-nothing', values: { amount: ['1.5'] }, condition: cond('amount', 'equals', '1,5'), expect: false },
+  { id: 'number-wire-trailing-letter-refused', number: '1.5x', expect: { error: 'not_a_number' } },
+  { id: 'number-wire-trailing-letter-answer-equals-nothing', description: 'read kindly, it would be 1.5', values: { amount: ['1.5x'] }, condition: cond('amount', 'equals', '1.5'), expect: false },
+  { id: 'number-wire-trailing-letter-operand-equals-nothing', values: { amount: ['1.5'] }, condition: cond('amount', 'equals', '1.5x'), expect: false },
+  { id: 'number-wire-empty-refused', number: '', expect: { error: 'not_a_number' } },
+  { id: 'number-wire-exponent-operand-orders-nothing', values: { amount: ['1000'] }, condition: cond('amount', 'lessThan', '1e4'), expect: false },
+
+  // ---- Patterns: the run at the instruction limit with dense splits keeps within its stack (ROADMAP 4.8h) ----
+  { id: 'pattern-dense-splits-at-the-limit-allowed', description: 'four letters, then 714 optional choices of four anchors and a letter: 14 instructions each, five of them splits, 10,000 in all; anchors weigh nothing, so the weight is 718', values: { phone: ['abcd' + 'e'.repeat(714)] }, condition: cond('phone', 'matches', 'abcd((^|$|^|$|e)?){714}'), expect: true },
+  { id: 'pattern-dense-splits-all-skipped', values: { phone: ['abcd'] }, condition: cond('phone', 'matches', 'abcd((^|$|^|$|e)?){714}'), expect: true },
+  { id: 'pattern-dense-splits-one-too-many', values: { phone: ['abcd' + 'e'.repeat(715)] }, condition: cond('phone', 'matches', 'abcd((^|$|^|$|e)?){714}'), expect: false },
+  { id: 'pattern-dense-splits-other-letter', values: { phone: ['abcd' + 'e'.repeat(713) + 'f'] }, condition: cond('phone', 'matches', 'abcd((^|$|^|$|e)?){714}'), expect: false },
+  { id: 'pattern-dense-splits-over-the-limit-refused', description: 'one letter more: 10,001 instructions', values: { phone: ['abcde'] }, condition: cond('phone', 'matches', 'abcde((^|$|^|$|e)?){714}'), expect: { error: 'unsafe_pattern' } },
 ];
 
 export default { suite: 'port', defaults, fields, cases };

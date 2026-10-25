@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
 
@@ -7,7 +8,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
 /// <summary>
 /// The lists of the definition model, its value types and the public projection (ADR-0034): no cast and no list a
-/// record was built from changes them, and records compare them by their items, in order.
+/// record was built from changes them, none takes a null item, and records compare them by their items, in order.
 /// </summary>
 public sealed class ModelListTests
 {
@@ -49,6 +50,42 @@ public sealed class ModelListTests
             Assert.That(value.Values, Is.EqualTo(new[] { "keynote" }), "the default value");
             Assert.That(operand.Items, Has.Count.EqualTo(1), "the list operand");
             Assert.That(text.Texts, Has.Count.EqualTo(1), "the localised text");
+        });
+    }
+
+    [Test]
+    public void NoListOfTheModel_TakesANullItem()
+    {
+        var lists =
+            (from type in ModelProperties.Clr.Values
+             where !type.IsAbstract
+             from property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+             where property.SetMethod is not null && property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(IReadOnlyList<>)
+             let item = property.PropertyType.GetGenericArguments()[0]
+             where !item.IsValueType
+             select (Property: property, Item: item)).ToList();
+        var taken = new List<string>();
+        foreach (var (property, item) in lists)
+        {
+            var owner = RuntimeHelpers.GetUninitializedObject(property.DeclaringType!);
+            try
+            {
+                property.SetValue(owner, Array.CreateInstance(item, 1));
+                taken.Add($"{property.DeclaringType!.Name}.{property.Name}");
+            }
+            catch (TargetInvocationException exception) when (exception.InnerException is ArgumentException)
+            {
+            }
+        }
+
+        var page = Assert.Throws<ArgumentException>(() => _ = new FormDefinition { Key = Guid.NewGuid(), Pages = [null!] });
+        Assert.Multiple(() =>
+        {
+            Assert.That(lists.Select(list => $"{list.Property.DeclaringType!.Name}.{list.Property.Name}"), Is.SupersetOf(new[] { "FormDefinition.Pages", "FormPage.Groups", "FormRule.Conditions", "FieldOption.ParentValues" }), "the lists of the model");
+            Assert.That(taken, Is.Empty, "lists that take a null item");
+            Assert.That(page!.Message, Does.StartWith("A list of the definition holds no null; one of its FormPage items is null."), "a null page");
+            Assert.Throws<ArgumentException>(() => FieldDefaultValue.OfList([null!]), "a null default value");
+            Assert.Throws<ArgumentException>(() => _ = new ConditionOperand.List([null!]), "a null operand");
         });
     }
 
