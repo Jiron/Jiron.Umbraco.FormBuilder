@@ -1669,7 +1669,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Authorization handlers for the management API: the Forms section requirement and one policy per permission, singletons (§3.4), evaluated globally or against a form or folder. A user who holds nothing on the resource fails in a way that 4.7 answers with `404`, and one who lacks only the permission in a way that it answers with `403` and the permission's name.
   - The E2E global setup (3.4) grants each test role its Jiron Form Builder permissions, and seeds a restricted folder with its own grant to a separate group (ADR-0013).
   - Done when: integration tests authorize every policy as each persona, signed in through Umbraco, globally and against a form and a folder (the restricted one included); the E2E users have their grants, which a browser test reads from the test host.
-- [ ] **4.7a The management API base, the library tree and folders** (4.7 split in two, WORKLOG 2026-10-25)
+- [x] **4.7a The management API base, the library tree and folders** (4.7 split in two, WORKLOG 2026-10-25) (2026-10-25, 9280ca1)
   - **The base:**
     - a base controller, `[MapToApi("jfb")]`, and the auth policies from 4.6;
     - ProblemDetails with stable codes, and a test that each refusal keeps its `code` in the body (Umbraco's error handling and validation answers can drop it, §3.3);
