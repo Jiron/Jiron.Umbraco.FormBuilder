@@ -74,6 +74,20 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task AStateStoredInAnotherLetterCase_IsRefusedWhenRead_AsARowSomethingElseWrote()
+    {
+        var form = await CreateTestFormAsync();
+        var id = await AddEntryAsync(form.Id, form.VersionId);
+        Write(db => db.Execute($"UPDATE {T(FormBuilderTables.Entry)} SET {Q("state")} = @0 WHERE {Q("id")} = @1", "Submitted", id));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Query(db => db.ExecuteScalar<string>($"SELECT {Q("state")} FROM {T(FormBuilderTables.Entry)} WHERE {Q("id")} = @0", id)), Is.EqualTo("Submitted"));
+            Assert.That(async () => await Entries.GetByIdAsync(id), Throws.InvalidOperationException.With.Message.Contains("\"Submitted\""));
+        });
+    }
+
+    [Test]
     public async Task EntryNumbers_CountPerForm_FromTheFormsCounter()
     {
         var form = await CreateTestFormAsync();

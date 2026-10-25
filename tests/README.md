@@ -144,6 +144,13 @@ the diff gets read and committed; the management API's document is the third suc
 - SQLite's plans of every shape the query builder writes, with and without planner statistics: no scan of entries
   or values, and no temporary b-tree for a sort by a value (`EntryQueryPlanTests`), with a walk stripped of its
   unary plus that the check must catch;
+- SQLite's plans of the statements the indexes of 4.8a serve (`IndexPlanTests`): the statements a repository really
+  issues, recorded by `StatementRecorder` (in `StatementInterceptors`) and explained with their values, each naming
+  its index and scanning nothing: an entry's files and the uploads that wait for one, one form's daily statistics
+  and their delete, retention by day, and a content item's references;
+- stored names: a state written in another letter case is refused when read, as a row something else wrote, and
+  `Tests.Unit/Persistence/StoredNamesTests` shows every stored enum written as the camel case of its names, read back
+  only from that text, and fitting its column;
 - the outbox (`ActionRunRepositoryTests`, `EmailRepositoryTests`): every state change, a claim once (ten claims at
   once, which SQLite's gate takes in turn; the two-processor test is 8.1's), a token of each claim's own, outcomes
   only with the claim's token and from the states they need, the order of a batch and "stop the rest" within it,

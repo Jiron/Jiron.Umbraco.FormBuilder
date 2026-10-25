@@ -35,6 +35,25 @@ internal sealed class CommandLog : IExecutingInterceptor
 }
 
 /// <summary>
+/// Records the text and the parameter values of every statement a database runs while it is one of its interceptors, in
+/// order: how a test explains the statements a repository really issues.
+/// </summary>
+internal sealed class StatementRecorder : IExecutingInterceptor
+{
+    /// <summary>The statements, each with its parameter values in order.</summary>
+    public List<(string Text, object?[] Values)> Statements { get; } = [];
+
+    /// <inheritdoc />
+    public void OnExecutingCommand(IDatabase database, DbCommand cmd) =>
+        Statements.Add((cmd.CommandText, [.. cmd.Parameters.Cast<DbParameter>().Select(parameter => parameter.Value is DBNull ? null : parameter.Value)]));
+
+    /// <inheritdoc />
+    public void OnExecutedCommand(IDatabase database, DbCommand cmd)
+    {
+    }
+}
+
+/// <summary>
 /// Changes the text of the statements that contain <paramref name="from"/> before they run: how a test lifts a
 /// statement's own condition, to see what the database does with a writer that got past it at the same moment (on SQL
 /// Server, two servers), or what the repository does when its update finds the row moved on.

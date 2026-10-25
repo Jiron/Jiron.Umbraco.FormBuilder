@@ -193,6 +193,21 @@ public sealed class EmailRepositoryTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task ALeaseThatRanOut_ReplacesTheWholeLastError_ItsMessageToo()
+    {
+        var mail = (await Emails.AddAsync(Mail(null)))!;
+        await Emails.RetryAsync(mail.Id, await TakeAsync(mail), TimeSpan.Zero, new DeliveryError("smtp.busy", "Try again later."));
+        await TakeAsync(mail);
+        Clock.Advance(Lease + TimeSpan.FromSeconds(1));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Emails.ExpireLeasesAsync(Keep), Is.EqualTo(1));
+            Assert.That((await Emails.GetAsync(mail.Id))!.LastError, Is.EqualTo(new DeliveryError(DeliveryError.LeaseExpired)), "no message of the attempt before");
+        });
+    }
+
+    [Test]
     public async Task ALeaseThatRanOut_MakesTheMailUncertain_AndTheLateFinisherStillRecordsItsResult()
     {
         var late = (await Emails.AddAsync(Mail(null)))!;
