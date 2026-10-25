@@ -1,6 +1,7 @@
 # 0049. Authorization policies of the management API
 
-- Status: accepted
+- Status: accepted; amended by [ADR-0050](0050-management-api-base.md) (a policy for what a user sees,
+  `Jiron.FormBuilder.Policy.Visible`)
 - Date: 2026-10-25
 - Roadmap step: 4.6b (decided and built); 4.7 maps the denials to answers and puts the policies on its endpoints
 

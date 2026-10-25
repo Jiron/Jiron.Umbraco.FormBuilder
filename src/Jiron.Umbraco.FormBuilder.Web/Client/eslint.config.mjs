@@ -10,7 +10,14 @@ const noUnsafeDirectives =
   'No unsafe directives in the backoffice: Lit templates escape everything (ROADMAP section 4.10).';
 
 export default defineConfig(
-  { ignores: ['**/node_modules/**', '.build/**', 'packages/backoffice/src/api/**'] },
+  {
+    ignores: [
+      '**/node_modules/**',
+      '.build/**',
+      'packages/backoffice/src/api/**',
+      'packages/backoffice/src/.api-check-*/**',
+    ],
+  },
   js.configs.recommended,
   tseslint.configs.strict,
   tseslint.configs.stylistic,

@@ -1,5 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 
 namespace Jiron.Umbraco.FormBuilder.Core;
 
@@ -15,9 +16,19 @@ internal static class FormBuilderErrorCodes
     /// <summary>A notification handler cancelled the change.</summary>
     public const string Cancelled = "cancelled";
 
+    /// <summary>Settings with values that are not allowed.</summary>
+    public const string ValidationFailed = "validation_failed";
+
+    /// <summary>A setting that the host configuration locks.</summary>
+    public const string SettingLocked = "setting_locked";
+
+    /// <summary>A read that ran past its time budget.</summary>
+    public const string QueryTimeout = "query_timeout";
+
     /// <summary>
-    /// The code of a refusal, or null when <paramref name="exception"/> is none: a validation refusal answers with its
-    /// first problem's code, such as <c>limit_exceeded</c>, and keeps every problem.
+    /// The code of a refusal, or null when <paramref name="exception"/> is none: a validation refusal of a definition
+    /// answers with its first problem's code, such as <c>limit_exceeded</c>, and keeps every problem; one of settings
+    /// with <c>validation_failed</c>.
     /// </summary>
     public static string? Of(Exception exception)
     {
@@ -28,6 +39,9 @@ internal static class FormBuilderErrorCodes
             FormBuilderValidationException validation => validation.Problems[0].Code,
             FormBuilderConflictException conflict => Of(conflict.Conflict),
             FormBuilderCancelledException => Cancelled,
+            FormBuilderSettingsValidationException => ValidationFailed,
+            FormBuilderSettingLockedException => SettingLocked,
+            FormBuilderQueryTimeoutException => QueryTimeout,
             _ => null,
         };
     }

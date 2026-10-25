@@ -32,12 +32,13 @@ public sealed class FormBuilderAuthorizationTests
     public void EachPermissionsPolicy_IsNamedAfterItsStableName_AndHasItsConstant()
     {
         var constants = typeof(FormBuilderPolicies).GetFields(BindingFlags.Public | BindingFlags.Static)
-            .Where(field => field.IsLiteral && field.Name is not nameof(FormBuilderPolicies.Prefix) and not nameof(FormBuilderPolicies.Section))
+            .Where(field => field.IsLiteral && field.Name is not nameof(FormBuilderPolicies.Prefix) and not nameof(FormBuilderPolicies.Section) and not nameof(FormBuilderPolicies.Visible))
             .Select(field => (string)field.GetRawConstantValue()!);
 
         Assert.Multiple(() =>
         {
             Assert.That(FormBuilderPolicies.Section, Is.EqualTo("Jiron.FormBuilder.Policy.Section"));
+            Assert.That(FormBuilderPolicies.Visible, Is.EqualTo("Jiron.FormBuilder.Policy.Visible"));
             Assert.That(FormBuilderPolicies.For(FormBuilderPermissions.ViewEntries), Is.EqualTo("Jiron.FormBuilder.Policy.viewEntries"));
             Assert.That(constants, Is.EquivalentTo(PermissionRules.Each.Select(FormBuilderPolicies.For)));
             Assert.That(() => FormBuilderPolicies.For(FormBuilderPermissions.Design | FormBuilderPermissions.Export), Throws.InstanceOf<ArgumentOutOfRangeException>());
@@ -54,6 +55,7 @@ public sealed class FormBuilderAuthorizationTests
         Assert.Multiple(() =>
         {
             AssertPolicy(options.GetPolicy(FormBuilderPolicies.Section), FormBuilderSectionRequirement.Instance);
+            AssertPolicy(options.GetPolicy(FormBuilderPolicies.Visible), FormBuilderVisibilityRequirement.Instance);
             foreach (var permission in PermissionRules.Each)
             {
                 AssertPolicy(options.GetPolicy(FormBuilderPolicies.For(permission)), new FormBuilderPermissionRequirement(permission));

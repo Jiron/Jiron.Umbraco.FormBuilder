@@ -56,6 +56,10 @@ administrators unrestricted, because they could widen any group anyway.
 | `managePermissions` | this model: grants and restrictions | globally |
 | `privacyTools` | find, export and erase a person's data across every form, and the retention dry run | globally |
 
+**Amended in 4.7a ([ADR-0050](0050-management-api-base.md)):** deleting a form or folder for good removes its entries
+and everything below it, so it needs `design` and `deleteEntries` on everything it removes, and emptying the trash
+removes only what the user may delete for good.
+
 - **Dependencies:** `viewSensitive`, `editEntries`, `deleteEntries` and `export` need `viewEntries`, and
   `manageActions` needs `design`; the editor ticks the dependency with them and saving refuses a grant without it.
 - **Global-only permissions** cannot be granted on a folder or form; saving refuses them there.

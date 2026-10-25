@@ -108,6 +108,17 @@ internal sealed class FormBuilderSectionRequirement : IAuthorizationRequirement
     public static FormBuilderSectionRequirement Instance { get; } = new();
 }
 
+/// <summary>Any user of the Forms section who sees the resource of the check (ADR-0050).</summary>
+internal sealed class FormBuilderVisibilityRequirement : IAuthorizationRequirement
+{
+    private FormBuilderVisibilityRequirement()
+    {
+    }
+
+    /// <summary>The one requirement.</summary>
+    public static FormBuilderVisibilityRequirement Instance { get; } = new();
+}
+
 /// <summary>A permission, on the resource of the check or globally.</summary>
 /// <param name="Permission">Exactly one permission.</param>
 internal sealed record FormBuilderPermissionRequirement(FormBuilderPermissions Permission) : IAuthorizationRequirement;

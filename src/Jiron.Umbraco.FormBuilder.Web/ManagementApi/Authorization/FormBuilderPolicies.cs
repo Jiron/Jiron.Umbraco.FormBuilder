@@ -5,10 +5,10 @@ using OpenIddict.Validation.AspNetCore;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Authorization;
 
 /// <summary>
-/// The authorization policies of the management API (ADR-0013, ADR-0049): one for the Forms section and one per
-/// permission, named after the permission's stable name. Each needs a user signed in with the backoffice's token. A
-/// permission's policy checks globally when an endpoint carries it, and against a <see cref="FormBuilderAccessResource"/>
-/// when an endpoint asks <see cref="IAuthorizationService"/> with one.
+/// The authorization policies of the management API (ADR-0013, ADR-0049, ADR-0050): one for the Forms section, one
+/// for what a user sees, and one per permission, named after the permission's stable name. Each needs a user signed in
+/// with the backoffice's token. A permission's policy checks globally when an endpoint carries it, and against a
+/// <see cref="FormBuilderAccessResource"/> when an endpoint asks <see cref="IAuthorizationService"/> with one.
 /// </summary>
 internal static class FormBuilderPolicies
 {
@@ -17,6 +17,9 @@ internal static class FormBuilderPolicies
 
     /// <summary>Any user of the Forms section, for what every user of it may call.</summary>
     public const string Section = Prefix + "Section";
+
+    /// <summary>Any user of the Forms section who sees the folder or form of the check (ADR-0050).</summary>
+    public const string Visible = Prefix + "Visible";
 
     /// <summary>Design forms.</summary>
     public const string Design = Prefix + "design";
@@ -60,6 +63,7 @@ internal static class FormBuilderPolicies
     {
         ArgumentNullException.ThrowIfNull(options);
         options.AddPolicy(Section, policy => Backoffice(policy).AddRequirements(FormBuilderSectionRequirement.Instance));
+        options.AddPolicy(Visible, policy => Backoffice(policy).AddRequirements(FormBuilderVisibilityRequirement.Instance));
         foreach (var permission in PermissionRules.Each)
         {
             options.AddPolicy(For(permission), policy => Backoffice(policy).AddRequirements(new FormBuilderPermissionRequirement(permission)));

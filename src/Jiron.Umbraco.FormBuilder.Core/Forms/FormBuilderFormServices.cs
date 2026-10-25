@@ -20,6 +20,7 @@ internal static class FormBuilderFormServices
         builder.Services.TryAddSingleton<FormRemoval>();
         builder.Services.TryAddSingleton<IFormBuilderFormService, FormBuilderFormService>();
         builder.Services.TryAddSingleton<IFormBuilderFolderService, FormBuilderFolderService>();
+        builder.Services.TryAddSingleton<IFormBuilderLibraryService, FormBuilderLibraryService>();
         return builder;
     }
 }

@@ -86,7 +86,7 @@ database connection of its own. Its areas:
 | Area | Holds | Decided in |
 | --- | --- | --- |
 | Public API | `/jfb/api/v1`, CORS, body and time limits, the rate-limit middleware, the no-form middleware | ADR-0012, ADR-0006 |
-| Management API | `/umbraco/jfb/management/api/v1`, the authorization policies with their resources and denials, the OpenAPI document `jfb` | ADR-0013, ADR-0049, §4.7 |
+| Management API | `/umbraco/jfb/management/api/v1`: the base controller, the access declarations and their filter, the refusals with stable codes, the authorization policies with their resources and denials, the OpenAPI document `jfb`; the library tree, folders and the trash | ADR-0013, ADR-0049, ADR-0050, §4.7 |
 | Rendering | the view component, `<jfb-render>`, `<jfb-assets>`, the surface controller, output cache rules, asset serving | ADR-0004, ADR-0015 |
 | Themes | the built-in themes, their views and stylesheets | ADR-0015 |
 | Content integration | the form picker property editor, value converters, the Delivery API converter, "used on" | ADR-0017 |
@@ -279,11 +279,16 @@ codes, `no-store` except the definition, the OpenAPI document `jfb-public`
 
 `/umbraco/jfb/management/api/v1`, behind the backoffice's token and the Forms section, with one authorization policy
 per permission ([ADR-0013](decisions/0013-permissions.md)), the OpenAPI document `jfb` and a generated TypeScript
-client committed from its snapshot. Areas (§4.7) and the permission each needs:
+client committed from its snapshot ([ADR-0050](decisions/0050-management-api-base.md)). Areas (§4.7) and the
+permission each needs:
 
 | Area | Permission |
 | --- | --- |
-| Forms and folders: tree, search, create, save draft, publish, unpublish, duplicate, move, trash, restore, delete, references | `design` on the form or folder |
+| The library tree, search and the trash | any user of the section; each lists what the user sees, with the user's permissions on each item |
+| A folder | seeing it |
+| Forms and folders: create, save draft, publish, unpublish, duplicate, rename, move, trash, restore, references | `design` on the form or folder (creating: on the folder it goes in; a move: on the new one too, and `managePermissions` with a confirmation when it widens access) |
+| Forms and folders: delete for good | `design` and `deleteEntries` on everything it removes |
+| Empty the trash | any user of the section; it removes only what the user may delete for good |
 | Versions: list, get, diff, restore, pin, comment | `design` |
 | Designer support: registries, the form check, preview render, preview tickets | `design` |
 | Actions: edit, test against a sample entry | `manageActions` |
@@ -326,6 +331,20 @@ folder or form passes the resource, the folder's key (none for the root) or the 
 handler asks the evaluation. A failure says why: no Forms section, not found (the user holds nothing on the form,
 or nothing on the folder and nothing below it), or the missing permission by name, which the management API turns
 into `403` or `404` as above. A principal that is not a backoffice user gets no decision, so it is refused.
+
+**The base** ([ADR-0050](decisions/0050-management-api-base.md)): every controller derives from one base, internal and
+added to MVC by a feature provider, under Umbraco's `BackOfficeAccess` policy (`401` without the token). Every action
+declares what it needs, `[FormBuilderPermission(…)]` or `[FormBuilderSection]`, globally or on the folder or form
+whose key a route value, a query value or a body property holds. One filter reads the declaration before the
+request's body is validated: the section (`403 no_section`), the migration state (`503 migrations_pending` with
+`Retry-After`, no table read), the folder or form (`404 folder_not_found` or `form_not_found`, the same for one that
+does not exist and one the user does not see), each permission through its policy (`403 forbidden` naming it), and
+last the request (`400 invalid_request`). An action without one declaration is refused. One exception filter turns the
+services' refusals into answers with the codes of `FormBuilderErrorCodes`: `400` with every problem, `409` for
+conflicts, a cancelled change, a locked setting or a stale version, `503 query_timeout`. Every refusal is
+`application/problem+json` with a title for editors. The document `jfb` names its operations `<controller><action>`;
+its snapshot `docs/api/jfb.json` is the source of the backoffice's client (`packages/backoffice/src/api`, one function
+per operation), and tests keep the two in step.
 
 ## 7. Settings
 

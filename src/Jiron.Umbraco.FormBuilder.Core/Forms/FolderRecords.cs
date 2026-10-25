@@ -1,3 +1,5 @@
+using Jiron.Umbraco.FormBuilder.Core.Access;
+
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
 /// <summary>A folder of the form library as the folder service answers with it: named by keys, never by row ids (ADR-0047).</summary>
@@ -41,3 +43,16 @@ internal sealed record FolderChange(FolderInfo Folder, IReadOnlyList<FolderSumma
 /// <param name="Entries">How many entries went with the forms.</param>
 /// <param name="Files">How many files went with the forms.</param>
 internal sealed record LibraryDeletion(IReadOnlyList<FolderSummary> Folders, IReadOnlyList<FormSummary> Forms, long Entries, long Files);
+
+/// <summary>
+/// What a permanent delete would remove (ADR-0050): a folder with the folders below it and the forms in them, or a form
+/// in the trash on its own. A user may delete it only with <c>design</c> and <c>deleteEntries</c> on all of it.
+/// </summary>
+/// <param name="FolderKeys">The folders, the top one first.</param>
+/// <param name="Forms">The forms, as the evaluation reads them.</param>
+internal sealed record LibraryRemoval(IReadOnlyList<Guid> FolderKeys, IReadOnlyList<FormAccessTarget> Forms);
+
+/// <summary>What emptying the trash removed, and how many of its top items it left (ADR-0050).</summary>
+/// <param name="Deleted">What went.</param>
+/// <param name="Left">The top items of the trash that stayed: folders with what is below them, and forms on their own.</param>
+internal sealed record TrashEmptied(LibraryDeletion Deleted, int Left);

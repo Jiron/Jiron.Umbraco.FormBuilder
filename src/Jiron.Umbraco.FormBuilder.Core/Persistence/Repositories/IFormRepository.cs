@@ -152,6 +152,12 @@ internal sealed record FormFilter
     public string? Search { get; init; }
 
     /// <summary>
+    /// Folders whose forms the list leaves out, or null; the forms at the root stay. With <see cref="AllFolders"/> and
+    /// <see cref="Trashed"/>, the folders in the trash leave the forms the trash holds on their own (ADR-0050).
+    /// </summary>
+    public IReadOnlyCollection<int>? OutsideFolderIds { get; init; }
+
+    /// <summary>
     /// The forms a user may see (ADR-0048), applied in the query before paging; null for every form, which only Jiron
     /// Form Builder's own work asks for.
     /// </summary>
@@ -215,6 +221,12 @@ internal interface IFormRepository
 
     /// <summary>A page of the forms that <paramref name="filter"/> picks, by name.</summary>
     Task<Page<StoredForm>> ListAsync(FormFilter filter, PageRequest page, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Which of these folders hold a form in the trash (<paramref name="trashed"/>) or outside it that
+    /// <paramref name="access"/> holds (null: any form): whether a folder of the library tree has forms to show (ADR-0050).
+    /// </summary>
+    Task<IReadOnlySet<int>> ListFolderIdsWithFormsAsync(IReadOnlyCollection<int> folderIds, bool trashed, AccessScope? access, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The aliases of every form, trashed ones included, that start with <paramref name="prefix"/> in any letter case

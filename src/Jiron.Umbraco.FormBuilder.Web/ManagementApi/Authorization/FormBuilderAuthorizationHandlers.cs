@@ -19,6 +19,7 @@ internal static class FormBuilderAuthorization
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IAuthorizationHandler, FormBuilderSectionHandler>());
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IAuthorizationHandler, FormBuilderPermissionHandler>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IAuthorizationHandler, FormBuilderVisibilityHandler>());
         builder.Services.Configure<AuthorizationOptions>(FormBuilderPolicies.AddTo);
         return builder;
     }
@@ -73,27 +74,71 @@ internal sealed class FormBuilderPermissionHandler(IAuthorizationHelper users, I
         }
 
         var resource = context.Resource as FormBuilderAccessResource ?? FormBuilderAccessResource.Global;
-        var held = await HeldAsync(user, resource);
+        var held = await FormBuilderResourceAccess.HeldAsync(access, user, resource);
         if ((held & requirement.Permission) == requirement.Permission)
         {
             context.Succeed(requirement);
             return;
         }
 
-        var kind = await SeesAsync(user, resource, held) ? FormBuilderDenialKind.MissingPermission : FormBuilderDenialKind.NotFound;
+        var kind = await FormBuilderResourceAccess.SeesAsync(access, user, resource, held) ? FormBuilderDenialKind.MissingPermission : FormBuilderDenialKind.NotFound;
         context.Fail(new FormBuilderAccessDenial(this, kind, requirement.Permission));
     }
+}
 
-    private Task<FormBuilderPermissions> HeldAsync(AccessUser user, FormBuilderAccessResource resource) => resource.Kind switch
+/// <summary>
+/// Lets a user of the Forms section through who sees the resource of the check (ADR-0050): a form they hold something
+/// on, a folder they hold something on or that leads to one, the root and anything global. It refuses a user without
+/// the Forms section first, then one who does not see it, as not found.
+/// </summary>
+internal sealed class FormBuilderVisibilityHandler(IAuthorizationHelper users, IFormBuilderAccessService access)
+    : AuthorizationHandler<FormBuilderVisibilityRequirement>
+{
+    /// <inheritdoc />
+    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, FormBuilderVisibilityRequirement requirement)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        if (!users.TryGetUmbracoUser(context.User, out var umbracoUser))
+        {
+            return;
+        }
+
+        var user = AccessUser.Of(umbracoUser);
+        if (!user.HasSection)
+        {
+            context.Fail(new FormBuilderAccessDenial(this, FormBuilderDenialKind.NoSection, FormBuilderPermissions.None));
+            return;
+        }
+
+        var resource = context.Resource as FormBuilderAccessResource ?? FormBuilderAccessResource.Global;
+        var held = await FormBuilderResourceAccess.HeldAsync(access, user, resource);
+        if (await FormBuilderResourceAccess.SeesAsync(access, user, resource, held))
+        {
+            context.Succeed(requirement);
+        }
+        else
+        {
+            context.Fail(new FormBuilderAccessDenial(this, FormBuilderDenialKind.NotFound, FormBuilderPermissions.None));
+        }
+    }
+}
+
+/// <summary>What the handlers ask the evaluation about a resource (ADR-0048, ADR-0049).</summary>
+internal static class FormBuilderResourceAccess
+{
+    /// <summary>What the user holds on the resource.</summary>
+    public static Task<FormBuilderPermissions> HeldAsync(IFormBuilderAccessService access, AccessUser user, FormBuilderAccessResource resource) => resource.Kind switch
     {
         FormBuilderAccessResourceKind.Form => access.GetForFormAsync(user, resource.Form!),
         FormBuilderAccessResourceKind.Folder => access.GetForFolderAsync(user, resource.FolderKey),
         _ => access.GetGlobalAsync(user),
     };
 
-    // What the user's lists show: a form they hold something on, and a folder they hold something on or that leads to
-    // one; the root and the global checks always (ADR-0048, ADR-0049).
-    private async Task<bool> SeesAsync(AccessUser user, FormBuilderAccessResource resource, FormBuilderPermissions held) => resource switch
+    /// <summary>
+    /// What the user's lists show: a form they hold something on, and a folder they hold something on or that leads to
+    /// one; the root and the global checks always (ADR-0048, ADR-0049).
+    /// </summary>
+    public static async Task<bool> SeesAsync(IFormBuilderAccessService access, AccessUser user, FormBuilderAccessResource resource, FormBuilderPermissions held) => resource switch
     {
         { Kind: FormBuilderAccessResourceKind.Form } => held != FormBuilderPermissions.None,
         { Kind: FormBuilderAccessResourceKind.Folder, FolderKey: { } folderKey } =>

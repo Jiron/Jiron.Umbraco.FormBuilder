@@ -81,12 +81,27 @@ internal interface IFormBuilderFolderService
     Task<LibraryDeletion?> DeleteAsync(Guid key, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// What <see cref="DeleteAsync"/> would remove: the folder, the folders below it and the forms in them (ADR-0050).
+    /// Null when it does not exist.
+    /// </summary>
+    Task<LibraryRemoval?> GetRemovalAsync(Guid key, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Deletes every folder and form in the trash for good: the folders at the top of the trash as a folder's delete
     /// does, then the forms in the trash outside them.
     /// </summary>
     /// <exception cref="FormBuilderConcurrencyException">A form in the trash changed meanwhile; what is deleted stays deleted.</exception>
     /// <exception cref="FormBuilderCancelledException">A handler cancelled the delete.</exception>
     Task<LibraryDeletion> EmptyTrashAsync(Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Empties the trash as <see cref="EmptyTrashAsync(Guid?, CancellationToken)"/> does, of the top items that
+    /// <paramref name="include"/> lets go (ADR-0050): each folder at the top of the trash with everything below it, and
+    /// each form in the trash on its own. The notifications name only what goes.
+    /// </summary>
+    /// <exception cref="FormBuilderConcurrencyException">A form in the trash changed meanwhile; what is deleted stays deleted.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the delete.</exception>
+    Task<TrashEmptied> EmptyTrashAsync(Func<LibraryRemoval, CancellationToken, Task<bool>> include, Guid? userKey, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
@@ -357,8 +372,28 @@ internal sealed partial class FormBuilderFolderService(
     }
 
     /// <inheritdoc />
-    public async Task<LibraryDeletion> EmptyTrashAsync(Guid? userKey, CancellationToken cancellationToken = default)
+    public async Task<LibraryRemoval?> GetRemovalAsync(Guid key, CancellationToken cancellationToken = default)
     {
+        if (await folders.GetAsync(key, cancellationToken) is not { } folder)
+        {
+            return null;
+        }
+
+        var all = await folders.ListAllAsync(cancellationToken);
+        var below = Below(all, folder.Id, _ => true);
+        var inside = await forms.ListInFoldersAsync(Ids(folder, below), cancellationToken);
+        var keys = all.ToDictionary(row => row.Id, row => row.Key);
+        return new LibraryRemoval([folder.Key, .. below.Select(row => row.Key)], [.. inside.Select(form => Target(form, keys))]);
+    }
+
+    /// <inheritdoc />
+    public async Task<LibraryDeletion> EmptyTrashAsync(Guid? userKey, CancellationToken cancellationToken = default) =>
+        (await EmptyTrashAsync((_, _) => Task.FromResult(true), userKey, cancellationToken)).Deleted;
+
+    /// <inheritdoc />
+    public async Task<TrashEmptied> EmptyTrashAsync(Func<LibraryRemoval, CancellationToken, Task<bool>> include, Guid? userKey, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(include);
         EnsureOwnUnit();
         var all = await folders.ListAllAsync(cancellationToken);
         var trashedIds = all.Where(folder => folder.TrashedUtc is not null).Select(folder => folder.Id).ToHashSet();
@@ -376,6 +411,10 @@ internal sealed partial class FormBuilderFolderService(
             })
             .ToList();
         var loose = trashedForms.Where(form => form.FolderId is not { } folderId || !trashedIds.Contains(folderId)).ToList();
+        var keys = all.ToDictionary(folder => folder.Id, folder => folder.Key);
+        var everything = trees.Count + loose.Count;
+        trees = await WhereAsync(trees, tree => new LibraryRemoval([tree.Top.Key, .. tree.Below.Select(folder => folder.Key)], [.. tree.Forms.Select(form => Target(form, keys))]));
+        loose = await WhereAsync(loose, form => new LibraryRemoval([], [Target(form, keys)]));
         var going = new TrashEmptyingNotification(
             [.. trees.SelectMany(tree => Summaries([tree.Top, .. tree.Below]))],
             [.. trees.SelectMany(tree => Summaries(tree.Forms)), .. Summaries(loose)],
@@ -399,7 +438,21 @@ internal sealed partial class FormBuilderFolderService(
                 deleted.Sum(part => part.Files));
         });
         await PublishedAsync(new TrashEmptiedNotification(emptied.Folders, emptied.Forms, userKey));
-        return emptied;
+        return new TrashEmptied(emptied, everything - trees.Count - loose.Count);
+
+        async Task<List<T>> WhereAsync<T>(List<T> items, Func<T, LibraryRemoval> removal)
+        {
+            var kept = new List<T>();
+            foreach (var item in items)
+            {
+                if (await include(removal(item), cancellationToken))
+                {
+                    kept.Add(item);
+                }
+            }
+
+            return kept;
+        }
     }
 
     // The folders below a folder, nearest first, reached only through folders that pass: a breadth-first walk of the tree
@@ -426,6 +479,9 @@ internal sealed partial class FormBuilderFolderService(
     private static List<FormSummary> Summaries(IEnumerable<StoredForm> list) => list.Select(Summary).ToList();
 
     private static FormSummary Summary(StoredForm form) => new(form.Key, form.Alias, form.Name);
+
+    private static FormAccessTarget Target(StoredForm form, Dictionary<int, Guid> folderKeys) =>
+        new(form.Key, form.FolderId is { } folderId && folderKeys.TryGetValue(folderId, out var folderKey) ? folderKey : null, form.IsRestricted);
 
     private static FolderInfo Info(StoredFolder folder, Guid? parentKey) => new(
         folder.Key,

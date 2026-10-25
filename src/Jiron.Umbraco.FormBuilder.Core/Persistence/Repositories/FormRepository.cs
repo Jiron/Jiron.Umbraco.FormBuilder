@@ -1,4 +1,5 @@
 using System.Globalization;
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Umbraco.Cms.Infrastructure.Persistence;
@@ -134,6 +135,11 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                     where.Add(access);
                 }
 
+                if (filter.OutsideFolderIds is { Count: > 0 } outside)
+                {
+                    where.Add($"({n.C("folderId")} IS NULL OR {n.C("folderId")} NOT IN ({Literals(outside)}))");
+                }
+
                 if (!string.IsNullOrWhiteSpace(filter.Search))
                 {
                     var pattern = Arg("%" + SqlNames.Escape(filter.Search.Trim()) + "%");
@@ -147,6 +153,46 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                     ? new List<FormDto>()
                     : await db.FetchListAsync<FormDto>($"SELECT * FROM {table}{clause} ORDER BY {n.C("name")}, {n.C("id")} {n.Page(page.Skip, page.Take)}", [.. args]);
                 return new Page<StoredForm>(rows.Select(FromDto).ToList(), total);
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The folder ids go into the text as integer literals, as in the access clause: numbers read from the database,
+    /// and a page of the tree holds at most <see cref="PageRequest.MaxTake"/> folders.
+    /// </remarks>
+    public Task<IReadOnlySet<int>> ListFolderIdsWithFormsAsync(IReadOnlyCollection<int> folderIds, bool trashed, AccessScope? access, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(folderIds);
+        if (folderIds.Count == 0)
+        {
+            return Task.FromResult<IReadOnlySet<int>>(new HashSet<int>());
+        }
+
+        return database.ReadAsync<IReadOnlySet<int>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var args = new List<object?>();
+                string Arg(object? value)
+                {
+                    args.Add(value);
+                    return "@" + (args.Count - 1).ToString(CultureInfo.InvariantCulture);
+                }
+
+                var where = new List<string>
+                {
+                    $"{n.C("folderId")} IN ({Literals(folderIds)})",
+                    $"{n.C("trashedUtc")} {(trashed ? "IS NOT NULL" : "IS NULL")}",
+                };
+                if (AccessSql.FormClause(access, n, string.Empty, Arg) is { } clause)
+                {
+                    where.Add(clause);
+                }
+
+                var ids = await db.FetchListAsync<int>($"SELECT DISTINCT {n.C("folderId")} FROM {n.T(FormBuilderTables.Form)} WHERE {string.Join(" AND ", where)}", [.. args]);
+                return ids.ToHashSet();
             },
             cancellationToken);
     }
@@ -261,6 +307,9 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
             formId) == 1;
 
     private static string Raise(SqlNames n) => $"{n.C("concurrencyVersion")} = {n.C("concurrencyVersion")} + 1";
+
+    // Ids read from the database, as the statement's integer literals.
+    private static string Literals(IEnumerable<int> ids) => string.Join(", ", ids.Select(id => id.ToString(CultureInfo.InvariantCulture)));
 
     private static async Task<StoredForm?> FindAsync(IUmbracoDatabase db, string column, object value)
     {

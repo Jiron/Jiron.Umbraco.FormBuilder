@@ -19,6 +19,7 @@
 .claude/
 .impeccable/review/
 .impeccable/critique/
+**/src/.api-check-*/
 **/appsettings.Local.json
 **/appsettings.*.Local.json
 
