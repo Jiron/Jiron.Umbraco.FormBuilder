@@ -1685,14 +1685,14 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **4.7c Versions in the management API** (4.7b split in two, WORKLOG 2026-10-25) (2026-10-25, 6de9368)
   - **The endpoints** (§4.7) over the 4.5 services: versions (list, get, diff, restore, pin, comment). A restore that changes the actions needs `manageActions` (ADR-0013). Each joins 4.7a's permission matrix, which covers it by itself, and its `503 migrations_pending` test.
   - Done when: the integration tests for the endpoints pass; the permission matrix and the `503 migrations_pending` test call every new endpoint (each test names the endpoints it called); the OpenAPI snapshot and the client are regenerated and committed.
-- [ ] **4.8a Schema v1 before the freeze** (4.8 split in six, WORKLOG 2026-10-25)
+- [x] **4.8a Schema v1 before the freeze** (4.8 split in six, WORKLOG 2026-10-25) (2026-10-25, 744772a)
   - **The review:** three subagents read the Core diff of Phase 4 for SOLID, naming, async and load-balancing safety (no static mutable state) before the split. Their findings are 4.8a to 4.8e, each part fixing its own; 4.8f has the fixes reviewed.
   - **The schema's findings,** fixed while step 1 can still change (§4.5, ADR-0033):
     - **indexes for the access paths:** the references by content item, which every content save replaces (ADR-0017); one form's daily statistics over a range of days, and their delete by form, through a key that leads with the form; the uploads that wait for an entry, oldest first, through one index over the entry and the time;
     - **stored names in one letter case:** every enum stored as text (entry states, version kinds, the states and kinds of action runs and emails, trigger kinds, template kinds, permission targets, storage kinds) in camelCase, as the definitions, events and audit actions are, written and read by one converter;
     - **column names:** the action run's `seq` becomes `sortOrder`, the field catalogue's `type` becomes `fieldType` (as the action run's `actionType`), `replyTo` becomes `replyToAddress`, and the hash columns are named one way;
     - **an email's last error** in two columns, code and message, as an action run's;
-    - **a template's changes recorded** in `updatedUtc` and `updatedByUserKey`, as on every table whose rows change.
+    - **a template's changes recorded** in `updatedUtc` and `updatedByUserKey`, beside who saved it and when, as forms and folders record theirs.
   - Done when: the schema tests (`MigrationPlanTests` against `ExpectedSchemaV1`, the constraint tests) and the repository tests pass; SQLite's query plan of each query that a new index serves names that index (as `EntryQueryPlanTests` does); a stored enum in another letter case is refused when read; the SQL Server DDL snapshot and docs/database.md are regenerated and reviewed.
 - [ ] **4.8b The repositories after the review** (4.8 split in six, WORKLOG 2026-10-25)
   - **Locks and budgets** (ADR-0036, ADR-0039, ADR-0040):
