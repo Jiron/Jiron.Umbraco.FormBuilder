@@ -1686,7 +1686,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The endpoints** (§4.7) over the 4.5 services: versions (list, get, diff, restore, pin, comment). A restore that changes the actions needs `manageActions` (ADR-0013). Each joins 4.7a's permission matrix, which covers it by itself, and its `503 migrations_pending` test.
   - Done when: the integration tests for the endpoints pass; the permission matrix and the `503 migrations_pending` test call every new endpoint (each test names the endpoints it called); the OpenAPI snapshot and the client are regenerated and committed.
 - [x] **4.8a Schema v1 before the freeze** (4.8 split in six, WORKLOG 2026-10-25) (2026-10-25, 744772a)
-  - **The review:** three subagents read the Core diff of Phase 4 for SOLID, naming, async and load-balancing safety (no static mutable state) before the split. Their findings are 4.8a to 4.8e, each part fixing its own; 4.8f has the fixes reviewed.
+  - **The review:** three subagents read the Core diff of Phase 4 for SOLID, naming, async and load-balancing safety (no static mutable state) before the split. Their findings are 4.8a to 4.8f, each part fixing its own; 4.8g has the fixes reviewed.
   - **The schema's findings,** fixed while step 1 can still change (§4.5, ADR-0033):
     - **indexes for the access paths:** the references by content item, which every content save replaces (ADR-0017); one form's daily statistics over a range of days, and their delete by form, through a key that leads with the form; the uploads that wait for an entry, oldest first, through one index over the entry and the time;
     - **stored names in one letter case:** every enum stored as text (entry states, version kinds, the states and kinds of action runs and emails, trigger kinds, template kinds, permission targets, storage kinds) in camelCase, as the definitions, events and audit actions are, written and read by one converter;
@@ -1715,16 +1715,18 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **4.8d The form service in parts** (4.8 split in six, WORKLOG 2026-10-25) (2026-10-25, a86aa92)
   - The form service (ADR-0044) holds more than twenty operations over fifteen dependencies and becomes public in 15.1. Split it by job: the lifecycle with the trash, the versions, and the exchange (copies, templates, import and export). Every service of Core shares one change pipeline (a unit of its own, the cancelable notification, the write with its audit entry, the published notification), one check that a call runs in its own unit, and one trash check.
   - Done when: the form, folder, access, settings and management API tests pass unchanged in what they check; each part has its own interface and registration, and the boot test resolves each; architecture.md shows the parts.
-- [ ] **4.8e The definition model before it is public** (4.8 split in six, WORKLOG 2026-10-25)
+- [ ] **4.8e The definition model's limits, immutability and checks** (4.8 split in six, then 4.8e in two, WORKLOG 2026-10-25)
   - **Limits:** the export file's reader stops at 100 problems as every other reader does, through one shared limit.
   - **Immutable as ADR-0034 promises:** the reader gives read-only lists, the value types hand out read-only views, the public projection's lists are read-only, and how records compare their lists (by sequence, or by reference as written down) is decided once in an ADR amendment.
   - **Checks:** one-per-form types are counted per type, and the field messages are listed once, for both checks.
+  - Done when: a test for each (an export file with thousands of bad option lists answers 100 problems; a read list cannot be changed through a cast; records compare as the ADR says; two one-per-form types in one form; a message added to the record but not to the list fails a test); the shared vectors pass in both runtimes; the definition, schema and logic tests pass.
+- [ ] **4.8f The definition model's cost and names** (4.8 split in six, then 4.8e in two, WORKLOG 2026-10-25)
   - **Cost:** the rules compare numbers as parsed values without building text, the pattern engine reuses its buffers, and the rule reader reads nested groups once; 6.1 gains a ceiling on an answer's length, checked before the rules run.
   - **Names before the model is public,** with the JSON names unchanged: the condition's operator, the options' option list key, the members' access, whether the reference includes the year, and the casing of IP; inside Core, the element kind and the change kind of a comparison, Logic's own item names, the export format's file and `OnePerForm`.
   - **One home each:** the two readers' strict opening steps written once; the publish checks and the hash outside the serializer; write errors reported as what they are; a null culture key refused as documented; static data frozen; the stored serializer built once.
-  - Done when: a test for each (an export file with thousands of bad option lists answers 100 problems; a read list cannot be changed through a cast; records compare as the ADR says; two one-per-form types in one form; a message added to the record but not to the list fails a test; a rule compares a number answer of 10,000 digits in under 50 ms); the shared vectors pass in both runtimes; the definition, schema and logic tests pass.
-- [ ] **4.8f Phase review** (4.8 split in six, WORKLOG 2026-10-25)
-  - A subagent reviews the fixes of 4.8a to 4.8e for SOLID, naming, async and load-balancing safety. Fix what it finds.
+  - Done when: a test for each (a rule compares a number answer of 10,000 digits in under 50 ms); the shared vectors pass in both runtimes; the definition, schema and logic tests pass.
+- [ ] **4.8g Phase review** (4.8 split in six, then 4.8e in two, WORKLOG 2026-10-25)
+  - A subagent reviews the fixes of 4.8a to 4.8f for SOLID, naming, async and load-balancing safety. Fix what it finds.
   - Check the coverage report (≥ 85% on Core).
   - Tag the end of the phase as `baseline/schema-v1` and push the tag. Step 16.5 packs this tag as the "old version" for the upgrade test.
   - **The schema is frozen from here:** `CreateSchemaV1` is never edited again, and every change is a new migration step. A test pins the hash of the v1 snapshot DTOs.
