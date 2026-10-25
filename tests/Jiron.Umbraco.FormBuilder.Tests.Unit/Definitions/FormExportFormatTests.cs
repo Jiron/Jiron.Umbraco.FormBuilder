@@ -172,6 +172,35 @@ public sealed class FormExportFormatTests
     }
 
     [Test]
+    public void AFileWithThousandsOfBadOptionLists_AnswersItsFirstHundredProblems()
+    {
+        var envelope = JsonNode.Parse(FormExportFormat.Write(Envelope()))!.AsObject();
+        var lists = new JsonArray();
+        for (var i = 0; i < 5000; i++)
+        {
+            var list = List(envelope).DeepClone().AsObject();
+            list["key"] = "list";
+            lists.Add(list);
+        }
+
+        envelope["optionLists"] = lists;
+        var withBadForm = JsonNode.Parse(FormExportFormat.Write(Envelope()))!.AsObject();
+        withBadForm["form"]!["key"] = "form";
+        withBadForm["definition"]!["pages"] = new JsonArray([.. Enumerable.Range(0, 300).Select(_ => new JsonObject { ["colour"] = "red" })]);
+
+        var problems = Problems(envelope.ToJsonString());
+        var both = Problems(withBadForm.ToJsonString());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(problems, Is.EqualTo(Enumerable.Range(0, DefinitionProblems.Max).Select(i => (DefinitionErrors.InvalidValue, $"$.optionLists[{i}].key"))), "one problem for each of the first hundred lists");
+            Assert.That(both, Has.Count.EqualTo(DefinitionProblems.Max), "the form's problem and the definition's together");
+            Assert.That(both[0], Is.EqualTo((DefinitionErrors.InvalidValue, "$.form.key")));
+            Assert.That(both.Skip(1).Select(problem => problem.Path), Has.All.StartsWith("$.definition."));
+        });
+    }
+
+    [Test]
     public void TheDefinition_IsMeasuredWithoutItsIndentation_AgainstTheSitesLimit()
     {
         var definition = DefinitionFixtures.Read(DefinitionFixtures.Full);

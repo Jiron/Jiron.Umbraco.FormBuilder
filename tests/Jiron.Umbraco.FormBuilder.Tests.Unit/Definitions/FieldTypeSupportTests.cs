@@ -1,5 +1,8 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -66,6 +69,25 @@ public sealed class FieldTypeSupportTests
     public void TheBuiltInTypes_AreThoseOfSection432()
     {
         Assert.That(FieldTypeCatalogue.BuiltIn.All.Select(type => type.Alias).Order(StringComparer.Ordinal), Is.EqualTo(Matrix.Keys.Order(StringComparer.Ordinal)));
+    }
+
+    [Test]
+    public void TheMessageList_HoldsEveryMessageOfTheRecord_EachWithItsOwnKind()
+    {
+        var info = (JsonTypeInfo<FieldMessages>)DefinitionJsonContext.Default.Options.GetTypeInfo(typeof(FieldMessages));
+        var properties = info.Properties.Select(property => property.Name).ToList();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(FieldMessageTexts.All.Select(message => message.Name), Is.EqualTo(properties), "every message of the record, in its order");
+            Assert.That(FieldMessageTexts.All.Select(message => message.Kind), Is.EquivalentTo(Enum.GetValues<FieldMessageKinds>().Where(kind => kind != FieldMessageKinds.None)), "every error kind, once");
+            Assert.That(MessageKinds, Is.EqualTo(properties), "this test's list too");
+            foreach (var message in FieldMessageTexts.All)
+            {
+                var messages = new JsonObject { [message.Name] = new JsonObject { [string.Empty] = "A message." } }.Deserialize(info)!;
+                Assert.That(FieldMessageTexts.All.Where(each => each.Read(messages) is not null).Select(each => each.Name), Is.EqualTo(new[] { message.Name }), $"{message.Name} reads its own message");
+            }
+        });
     }
 
     [TestCaseSource(nameof(Types))]

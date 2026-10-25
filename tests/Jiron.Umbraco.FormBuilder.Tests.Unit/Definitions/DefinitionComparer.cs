@@ -6,7 +6,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
 /// <summary>
 /// Compares two definition models property by property, through every list and nested record, and names each
-/// difference by its path. Records compare lists by reference, so their own equality cannot show a lossless round trip.
+/// difference by its path. Records compare by value too (ADR-0034), but their equality cannot say where two differ.
 /// </summary>
 internal static class DefinitionComparer
 {

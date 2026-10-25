@@ -499,6 +499,26 @@ public sealed class StructureTests
     }
 
     [Test]
+    public void EachOnePerFormType_IsCountedOnItsOwn()
+    {
+        // A second one-per-form type beside the captcha, as a package of field types may bring one.
+        var types = new FieldTypeCatalogue([.. FieldTypeCatalogue.BuiltIn.All, new FieldTypeTraits { Alias = "signal", Single = true }]);
+        var one = Changed(d => d["pages"]![0]!["groups"]![1]!["fields"]!.AsArray().Add(new JsonObject { ["key"] = K(0x21), ["type"] = "signal" }));
+        var two = Changed(d =>
+        {
+            var fields = d["pages"]![0]!["groups"]![1]!["fields"]!.AsArray();
+            fields.Add(new JsonObject { ["key"] = K(0x21), ["type"] = "signal" });
+            fields.Add(new JsonObject { ["key"] = K(0x22), ["type"] = "signal" });
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(DefinitionFixtures.Serializer().CheckPublish(DefinitionFixtures.Read(one), types), Is.Empty, "a captcha and a signal");
+            AssertOneProblem(DefinitionFixtures.Serializer().CheckPublish(DefinitionFixtures.Read(two), types), DefinitionErrors.FieldNotAllowed, $"{F2(5)}.type");
+        });
+    }
+
+    [Test]
     public void ProblemsPastOneHundred_AreNotListed()
     {
         var definition = DefinitionFixtures.Read(Publishable);
