@@ -1694,14 +1694,14 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - **an email's last error** in two columns, code and message, as an action run's;
     - **a template's changes recorded** in `updatedUtc` and `updatedByUserKey`, beside who saved it and when, as forms and folders record theirs.
   - Done when: the schema tests (`MigrationPlanTests` against `ExpectedSchemaV1`, the constraint tests) and the repository tests pass; SQLite's query plan of each query that a new index serves names that index (as `EntryQueryPlanTests` does); a stored enum in another letter case is refused when read; the SQL Server DDL snapshot and docs/database.md are regenerated and reviewed.
-- [ ] **4.8b The repositories after the review** (4.8 split in six, WORKLOG 2026-10-25)
+- [x] **4.8b The repositories after the review** (4.8 split in six, WORKLOG 2026-10-25) (2026-10-25, ee97307)
   - **Locks and budgets** (ADR-0036, ADR-0039, ADR-0040):
     - the audit log's filtered list and its count run under the query budget and answer `query_timeout`, so a long search never holds the SQLite gate;
     - the due list of action runs reads without locks, and the claim goes on checking under its lock;
     - a create checks its alias and its key with one `NOT EXISTS` each, one per unique index (forms and the library tables).
   - **Units of work:** a nested unit keeps the outer unit's cancellation and deadline, a write inside a read is refused, and the migration state is read through the gate with its reruns.
   - **Safer statements:** the folder update that no service calls, and that could undo a restriction set meanwhile, goes; a trash delete whose last statement finds nothing rolls its unit back instead of committing.
-  - **One home each:** one helper builds the statements' arguments and one holds a row, for every repository; consent texts get a repository of their own; the reruns' waits are immutable; docs/database.md describes entry numbering as the code does it.
+  - **One home each:** one helper builds the statements' arguments and one holds a row, for every repository; consent texts get a repository of their own; the reruns' waits are immutable; docs/database.md describes the daily counts and the entry numbering as the code does them.
   - Done when: a test for each change (the audit query stopped by the budget, the due list's statement without lock hints, the query plans of the alias and key checks on SQLite, the kept deadline, the refused write, the migration state after a busy read, the rolled-back delete); the repository tests pass.
 - [ ] **4.8c The services after the review** (4.8 split in six, WORKLOG 2026-10-25)
   - **A delete that stops part way keeps its audit entry** (ADR-0047): the first unit that deletes anything of a form writes `form.deleting` with it, and the last writes `form.deleted` as now.
