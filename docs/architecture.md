@@ -194,7 +194,11 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   or settings class that contradicts itself, naming the type. The backoffice reads every type with its settings, rules
   and availability from `GET field-type` ([ADR-0057](decisions/0057-field-types-endpoint-and-availability.md)): a
   type that needs configuration the site lacks says why (`CheckAvailabilityAsync`, each check within 5 seconds), and
-  its names, labels and choices are `#` keys of the backoffice's English and German dictionaries.
+  its names, labels and choices are `#` keys of the backoffice's English and German dictionaries. A type also takes,
+  reads and checks visitors' answers ([ADR-0058](decisions/0058-field-answers-and-values.md)): `AnswerLimits` caps
+  every answer before the rules run, `Read` turns the texts and parts into values in the wire form, and `Validate`
+  holds a shown field's values to its settings; `FieldValues` runs the three in the pipeline's order and refuses a type
+  that breaks the contract, and `EntryValueColumns` stores each value in the typed column of its storage kind.
 - **The public projection** is built from an allowlist of public types (`Core.Definitions.Projection`) and carries no
   actions, outcomes, recipients, option-source configuration, privacy settings or switched-off rules; its SHA-256 is
   `PublicHash`. Its TypeScript types and schema ship in `schemas/` (6.6).

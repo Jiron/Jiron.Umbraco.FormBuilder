@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
@@ -17,6 +18,17 @@ public sealed class NameFieldType() : FormBuilderFieldTypeBase<NameFieldSettings
     Messages = BuiltInFieldTypes.Readable,
 })
 {
+    /// <summary>The longest part of a name a field takes.</summary>
+    public const int LongestPart = 200;
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(NameFieldSettings settings, FormField field) => new(LongestPart, Enum.GetValues<NamePart>().Length);
+
+    /// <inheritdoc />
+    /// <remarks>The parts the field asks for, each by its name (<c>first</c>), become one value in the order of <see cref="NamePart"/>.</remarks>
+    protected override void Read(NameFieldSettings settings, FieldReading reading) =>
+        BuiltInAnswers.ReadParts(reading, settings.Parts.Distinct().Order().Select(BuiltInChecks.Name));
+
     /// <inheritdoc />
     protected override void CheckSettings(NameFieldSettings settings, FieldSettingsCheck check)
     {
@@ -76,6 +88,20 @@ public sealed class AddressFieldType() : FormBuilderFieldTypeBase<AddressFieldSe
 })
 {
     private static readonly ImmutableArray<AddressPart> Always = [AddressPart.Street, AddressPart.Postcode, AddressPart.City];
+
+    /// <summary>The longest part of an address a field takes.</summary>
+    public const int LongestPart = 200;
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(AddressFieldSettings settings, FormField field) => new(LongestPart, Enum.GetValues<AddressPart>().Length);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The street, the postcode, the city and the parts the field asks for, each by its name (<c>street2</c>), become one
+    /// value in the order of <see cref="AddressPart"/>.
+    /// </remarks>
+    protected override void Read(AddressFieldSettings settings, FieldReading reading) =>
+        BuiltInAnswers.ReadParts(reading, Always.Concat(settings.Parts).Distinct().Order().Select(BuiltInChecks.Name));
 
     /// <inheritdoc />
     protected override void CheckSettings(AddressFieldSettings settings, FieldSettingsCheck check)
@@ -156,6 +182,12 @@ public sealed class FileFieldType() : FormBuilderFieldTypeBase<FileFieldSettings
     Messages = FieldMessageKinds.Required | FieldMessageKinds.FileType | FieldMessageKinds.FileSize | FieldMessageKinds.FileCount,
 })
 {
+    /// <summary>The longest upload token a file field takes (ADR-0006), with room to spare.</summary>
+    public const int LongestToken = FieldAnswerDefaults.TokenLength;
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(FileFieldSettings settings, FormField field) => new(LongestToken, settings.MaxFiles);
+
     /// <inheritdoc />
     protected override void CheckSettings(FileFieldSettings settings, FieldSettingsCheck check)
     {
@@ -241,7 +273,12 @@ public sealed class SignatureFieldType() : FormBuilderFieldTypeBase<SignatureFie
     RuleKind = FieldKind.Files,
     Features = BuiltInFieldTypes.Input,
     Messages = BuiltInFieldTypes.Readable,
-});
+})
+{
+    /// <inheritdoc />
+    /// <remarks>The token of one upload: the pad's PNG, or the typed name drawn as one.</remarks>
+    protected override FieldAnswerLimits AnswerLimits(SignatureFieldSettings settings, FormField field) => new(FileFieldType.LongestToken, 1);
+}
 
 /// <summary>The settings of a signature (ADR-0002): the pad's size in pixels, the theme's size by default.</summary>
 public sealed class SignatureFieldSettings

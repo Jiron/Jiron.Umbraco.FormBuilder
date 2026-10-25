@@ -1,3 +1,5 @@
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
+
 namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 
 /// <summary>
@@ -5,7 +7,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 /// ordered collection, <c>builder.JironFormBuilder().FieldTypes()</c>, which holds the built-in ones from its start, so
 /// a site or an add-on adds, replaces or removes types there. A type is a singleton: it holds no state of its own and may
 /// take singleton services in its constructor. <see cref="FormBuilderFieldTypeBase{TSettings}"/> builds the settings
-/// schema from a settings class.
+/// schema from a settings class. A visitor's answers go through <see cref="AnswerLimits"/>, <see cref="Read"/> and
+/// <see cref="Validate"/> (ADR-0058).
 /// </summary>
 public interface IFormBuilderFieldType
 {
@@ -35,4 +38,33 @@ public interface IFormBuilderFieldType
     /// </summary>
     /// <param name="cancellationToken">Cancelled when the request is, or when the check took too long.</param>
     ValueTask<FieldTypeAvailability> CheckAvailabilityAsync(CancellationToken cancellationToken) => ValueTask.FromResult(FieldTypeAvailability.Available);
+
+    /// <summary>
+    /// The longest answer a field of the type takes (ADR-0030, ADR-0058), which the pipeline holds every answer to before
+    /// the rules run: the type's own ceiling, never the field's own checks. By default one text, or as many as a field can
+    /// have options when the type takes several, as long as its rule kind needs (a date's ten characters, a plain text's
+    /// 2,000); none for a type that holds no value of its own. <see cref="FieldAnswerLimits.None"/> makes the pipeline
+    /// ignore what is posted for the field.
+    /// </summary>
+    /// <param name="field">The field, with its settings.</param>
+    FieldAnswerLimits AnswerLimits(FormField field) => FieldAnswerDefaults.Limits(Declaration, field);
+
+    /// <summary>
+    /// Reads a visitor's answers into values in the wire form of ADR-0005 (ADR-0058), or finds them unreadable. The
+    /// pipeline reads every field before the rules run, so rules compare what was read. By default the field's own texts
+    /// are read as its rule kind needs: texts, choices and file tokens as they are, a checkbox's <c>true</c>, a number as
+    /// posted converted exactly to the wire form, dates and times in their wire forms; two values are unreadable for a
+    /// type that takes one, and so is a value given twice. Parts are left to the types that have them.
+    /// </summary>
+    /// <param name="reading">The field, the answers, and where the values go.</param>
+    void Read(FieldReading reading) => FieldAnswerDefaults.Read(Declaration, reading);
+
+    /// <summary>
+    /// Holds a shown field's values to its settings (ADR-0058) and reports each error by its kind; it finds nothing by
+    /// default. It runs only on a field with values; a field without any fails with <c>required</c> when it is required.
+    /// </summary>
+    /// <param name="validation">The field, its answers and values, and where its errors go.</param>
+    void Validate(FieldValidation validation)
+    {
+    }
 }

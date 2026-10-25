@@ -3,9 +3,10 @@
 - Status: accepted; amends [ADR-0035](0035-structural-validation-and-public-projection.md) (the traits come from
   the registry) and [ADR-0044](0044-form-service.md) (the service's field types); the defaults of a name's and an
   address's required parts and of a file's types amended by [ADR-0056](0056-field-settings-checks.md) in 5.1b; a
-  choice's label amended by [ADR-0057](0057-field-types-endpoint-and-availability.md) in 5.1c
+  choice's label amended by [ADR-0057](0057-field-types-endpoint-and-availability.md) in 5.1c; answers, reading,
+  checking and the longest answer added to a type by [ADR-0058](0058-field-answers-and-values.md) in 5.1d
 - Date: 2026-10-25
-- Roadmap step: 5.1a (decided and built); 5.1b to 5.1e build on it
+- Roadmap step: 5.1a (decided and built); 5.1b to 5.1f build on it
 
 ## Context
 
@@ -158,9 +159,10 @@ one per form, server-only default, settings and public settings.
 - **5.1b:** the rules of the attributes (ranges, lengths, allowed values, required settings) and each type's own check
   of its settings at publish, at paths under `…settings` (ADR-0056).
 - **5.1c:** the field-types endpoint for the designer; availability ("not configured: …").
-- **5.1d:** storage kinds mapped to `jfbEntryValue` columns, the parse and validate contract, the longest answer a type
-  takes, and the change-type map.
-- **5.1e:** designer locks of settings (ADR-0042), checked against the schema.
+- **5.1d:** storage kinds mapped to `jfbEntryValue` columns, the parse and validate contract and the longest answer a
+  type takes (ADR-0058).
+- **5.1e:** the change-type map.
+- **5.1f:** designer locks of settings (ADR-0042), checked against the schema.
 
 ## Consequences
 

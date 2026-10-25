@@ -19,21 +19,27 @@ public sealed class TextFieldType() : FormBuilderFieldTypeBase<TextFieldSettings
     Messages = FieldMessageKinds.Required | FieldMessageKinds.MinLength | FieldMessageKinds.MaxLength,
 })
 {
+    /// <summary>The longest answer a one-line text takes, and the most its <c>maxLength</c> may be (ADR-0058).</summary>
+    public const int LongestAnswer = 4000;
+
     /// <inheritdoc />
     protected override void CheckSettings(TextFieldSettings settings, FieldSettingsCheck check) =>
         BuiltInChecks.NotAbove(check, "minLength", settings.MinLength, "maxLength", settings.MaxLength);
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(TextFieldSettings settings, FormField field) => new(LongestAnswer, 1);
 }
 
 /// <summary>The settings of a one-line text (ADR-0002).</summary>
 public sealed class TextFieldSettings
 {
     /// <summary>The fewest characters an answer has.</summary>
-    [Range(0, 4000)]
+    [Range(0, TextFieldType.LongestAnswer)]
     [FormBuilderSetting("#jfbFieldSettings_textMinLength", Group = FieldSettingGroup.Validation, Public = true)]
     public int MinLength { get; init; }
 
     /// <summary>The most characters an answer has.</summary>
-    [Range(1, 4000)]
+    [Range(1, TextFieldType.LongestAnswer)]
     [FormBuilderSetting("#jfbFieldSettings_textMaxLength", Group = FieldSettingGroup.Validation, Order = 1, Public = true)]
     public int MaxLength { get; init; } = 255;
 
@@ -66,12 +72,18 @@ public sealed class TextareaFieldType() : FormBuilderFieldTypeBase<TextareaField
     Messages = FieldMessageKinds.Required | FieldMessageKinds.MinLength | FieldMessageKinds.MaxLength | FieldMessageKinds.MinWords | FieldMessageKinds.MaxWords,
 })
 {
+    /// <summary>The longest answer a long text takes, and the most its <c>maxLength</c> may be (ADR-0058).</summary>
+    public const int LongestAnswer = 100000;
+
     /// <inheritdoc />
     protected override void CheckSettings(TextareaFieldSettings settings, FieldSettingsCheck check)
     {
         BuiltInChecks.NotAbove(check, "minLength", settings.MinLength, "maxLength", settings.MaxLength);
         BuiltInChecks.NotAbove(check, "minWords", settings.MinWords, "maxWords", settings.MaxWords);
     }
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(TextareaFieldSettings settings, FormField field) => new(LongestAnswer, 1);
 }
 
 /// <summary>The settings of a long text (ADR-0002).</summary>
@@ -87,12 +99,12 @@ public sealed class TextareaFieldSettings
     public bool AutoGrow { get; init; } = true;
 
     /// <summary>The fewest characters an answer has.</summary>
-    [Range(0, 100000)]
+    [Range(0, TextareaFieldType.LongestAnswer)]
     [FormBuilderSetting("#jfbFieldSettings_textareaMinLength", Group = FieldSettingGroup.Validation, Public = true)]
     public int MinLength { get; init; }
 
     /// <summary>The most characters an answer has.</summary>
-    [Range(1, 100000)]
+    [Range(1, TextareaFieldType.LongestAnswer)]
     [FormBuilderSetting("#jfbFieldSettings_textareaMaxLength", Group = FieldSettingGroup.Validation, Order = 1, Public = true)]
     public int MaxLength { get; init; } = 4000;
 
@@ -125,6 +137,15 @@ public sealed class EmailFieldType() : FormBuilderFieldTypeBase<EmailFieldSettin
     Messages = BuiltInFieldTypes.Readable,
 })
 {
+    /// <summary>The longest address an email field takes: the most a mail server's path allows (RFC 5321).</summary>
+    public const int LongestAnswer = 254;
+
+    /// <summary>The part that holds the address typed again (ADR-0058).</summary>
+    public const string ConfirmPart = "confirm";
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(EmailFieldSettings settings, FormField field) => new(LongestAnswer, settings.Confirm ? 2 : 1);
+
     /// <inheritdoc />
     protected override void CheckSettings(EmailFieldSettings settings, FieldSettingsCheck check)
     {
@@ -234,6 +255,12 @@ public sealed class PhoneFieldType() : FormBuilderFieldTypeBase<PhoneFieldSettin
     Messages = BuiltInFieldTypes.Readable,
 })
 {
+    /// <summary>The longest number a phone field takes, with room for spaces, brackets and an extension.</summary>
+    public const int LongestAnswer = 64;
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(PhoneFieldSettings settings, FormField field) => new(LongestAnswer, 1);
+
     /// <inheritdoc />
     protected override void CheckSettings(PhoneFieldSettings settings, FieldSettingsCheck check)
     {
@@ -264,7 +291,14 @@ public sealed class UrlFieldType() : FormBuilderFieldTypeBase<UrlFieldSettings>(
     RuleKind = FieldKind.Text,
     Features = BuiltInFieldTypes.TextInput,
     Messages = BuiltInFieldTypes.Readable,
-});
+})
+{
+    /// <summary>The longest web address a field takes, as long as browsers and servers reliably carry one.</summary>
+    public const int LongestAnswer = 2048;
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(UrlFieldSettings settings, FormField field) => new(LongestAnswer, 1);
+}
 
 /// <summary>The settings of a web address (ADR-0002).</summary>
 public sealed class UrlFieldSettings

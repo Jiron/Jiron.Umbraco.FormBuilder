@@ -68,6 +68,53 @@ public abstract class FormBuilderFieldTypeBase<TSettings> : IFormBuilderFieldTyp
     /// </summary>
     /// <param name="cancellationToken">Cancelled when the request is, or when the check took too long.</param>
     public virtual ValueTask<FieldTypeAvailability> CheckAvailabilityAsync(CancellationToken cancellationToken) => ValueTask.FromResult(FieldTypeAvailability.Available);
+
+    /// <inheritdoc />
+    public FieldAnswerLimits AnswerLimits(FormField field)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        return AnswerLimits(ReadSettings(field.Settings), field);
+    }
+
+    /// <inheritdoc />
+    public void Read(FieldReading reading)
+    {
+        ArgumentNullException.ThrowIfNull(reading);
+        Read(ReadSettings(reading.Field.Settings), reading);
+    }
+
+    /// <inheritdoc />
+    public void Validate(FieldValidation validation)
+    {
+        ArgumentNullException.ThrowIfNull(validation);
+        Validate(ReadSettings(validation.Field.Settings), validation);
+    }
+
+    /// <summary>
+    /// The longest answer a field takes (<see cref="IFormBuilderFieldType.AnswerLimits(FormField)"/>, ADR-0058), with its
+    /// settings read as <typeparamref name="TSettings"/>; the interface's default unless a type overrides it.
+    /// </summary>
+    /// <param name="settings">The field's settings.</param>
+    /// <param name="field">The field.</param>
+    protected virtual FieldAnswerLimits AnswerLimits(TSettings settings, FormField field) => FieldAnswerDefaults.Limits(Declaration, field);
+
+    /// <summary>
+    /// Reads a visitor's answers (<see cref="IFormBuilderFieldType.Read(FieldReading)"/>, ADR-0058), with the field's
+    /// settings read as <typeparamref name="TSettings"/>; the interface's default unless a type overrides it.
+    /// </summary>
+    /// <param name="settings">The field's settings.</param>
+    /// <param name="reading">The field, the answers, and where the values go.</param>
+    protected virtual void Read(TSettings settings, FieldReading reading) => FieldAnswerDefaults.Read(Declaration, reading);
+
+    /// <summary>
+    /// Holds a shown field's values to its settings (<see cref="IFormBuilderFieldType.Validate(FieldValidation)"/>,
+    /// ADR-0058), read as <typeparamref name="TSettings"/>; it finds nothing unless a type overrides it.
+    /// </summary>
+    /// <param name="settings">The field's settings.</param>
+    /// <param name="validation">The field, its answers and values, and where its errors go.</param>
+    protected virtual void Validate(TSettings settings, FieldValidation validation)
+    {
+    }
 }
 
 /// <summary>The settings class of a field type without settings, such as a divider.</summary>

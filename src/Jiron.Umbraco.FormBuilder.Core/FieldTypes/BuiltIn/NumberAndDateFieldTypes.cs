@@ -370,7 +370,12 @@ public sealed class CalculationFieldType() : FormBuilderFieldTypeBase<Calculatio
     Storage = FieldStorageKind.Number,
     RuleKind = FieldKind.Number,
     Features = BuiltInFieldTypes.Shown,
-});
+})
+{
+    /// <inheritdoc />
+    /// <remarks>None: the server recomputes the result (section 4.3.3), so what is posted for it is ignored.</remarks>
+    protected override FieldAnswerLimits AnswerLimits(CalculationFieldSettings settings, FormField field) => FieldAnswerLimits.None;
+}
 
 /// <summary>The settings of a calculation (ADR-0002).</summary>
 public sealed class CalculationFieldSettings

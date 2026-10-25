@@ -174,7 +174,7 @@ internal sealed partial class EntryRepository
                     value.RowIndex,
                     value.ValueIndex,
                     value.Text,
-                    value.IsText ? EntryTextKey.For(value.Text!) : null,
+                    value.IsText ? EntryTextKey.For(value.KeyText ?? value.Text!) : null,
                     value.Number,
                     value.Date,
                     value.Bool,
@@ -188,7 +188,8 @@ internal sealed partial class EntryRepository
 
     /// <summary>
     /// Refuses values the columns cannot hold as meant: a field id below 1, a negative row or item, two typed columns,
-    /// no column at all, a number that is not finite, a date that is not UTC, or two values in the same place.
+    /// no column at all, a number that is not finite, a date that is not UTC, a key's text on a value that is not text only
+    /// or an empty one, or two values in the same place.
     /// </summary>
     private static void CheckValues(IReadOnlyList<NewEntryValue> values, string parameter)
     {
@@ -204,6 +205,7 @@ internal sealed partial class EntryRepository
             Require(value.Number is null || double.IsFinite(value.Number.Value), "A value's number is finite.");
             Require(value.Date is null || value.Date.Value.Kind == DateTimeKind.Utc, "A value's date is UTC.");
             Require(value.FileId is null or > 0, "A value's file id is 1 or more.");
+            Require(value.KeyText is null || (value.IsText && value.KeyText.Length > 0), "Only a value that is text only has a text for its key, and that text is not empty.");
             Require(places.Add((value.FieldId, value.RowIndex, value.ValueIndex)), "Two values are in the same place of the same field.");
         }
 

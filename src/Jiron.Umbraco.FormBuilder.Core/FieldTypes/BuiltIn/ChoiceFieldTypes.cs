@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Logic;
 
@@ -77,9 +79,20 @@ public sealed class RadioFieldType() : FormBuilderFieldTypeBase<RadioFieldSettin
     Messages = BuiltInFieldTypes.Readable | FieldMessageKinds.Full,
 })
 {
+    /// <summary>The part that holds the visitor's own text when the field offers "Other" (ADR-0058).</summary>
+    public const string OtherPart = BuiltInAnswers.OtherPart;
+
     /// <inheritdoc />
     protected override void CheckSettings(RadioFieldSettings settings, FieldSettingsCheck check) =>
         BuiltInChecks.OtherLabelNeedsOther(check, settings.Other, settings.OtherLabel);
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(RadioFieldSettings settings, FormField field) =>
+        settings.Other ? new(FieldAnswerLimits.DefaultTextLength, 2) : new(DefinitionSaveChecks.OptionValueLength, 1);
+
+    /// <inheritdoc />
+    protected override void Read(RadioFieldSettings settings, FieldReading reading) =>
+        BuiltInAnswers.ReadChoices(reading, several: false, settings.Other);
 }
 
 /// <summary>The settings of radio buttons (ADR-0002).</summary>
@@ -120,6 +133,19 @@ public sealed class CheckboxesFieldType() : FormBuilderFieldTypeBase<CheckboxesF
         BuiltInChecks.NotMoreThanOptions(check, "minSelections", settings.MinSelections, settings.Other ? 1 : 0);
         BuiltInChecks.OtherLabelNeedsOther(check, settings.Other, settings.OtherLabel);
     }
+
+    /// <summary>The part that holds the visitor's own text when the field offers "Other" (ADR-0058).</summary>
+    public const string OtherPart = BuiltInAnswers.OtherPart;
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(CheckboxesFieldSettings settings, FormField field) =>
+        settings.Other
+            ? new(FieldAnswerLimits.DefaultTextLength, FieldAnswerLimits.DefaultManyTexts + 1)
+            : new(DefinitionSaveChecks.OptionValueLength, FieldAnswerLimits.DefaultManyTexts);
+
+    /// <inheritdoc />
+    protected override void Read(CheckboxesFieldSettings settings, FieldReading reading) =>
+        BuiltInAnswers.ReadChoices(reading, several: true, settings.Other);
 }
 
 /// <summary>The settings of checkboxes (ADR-0002).</summary>
@@ -196,6 +222,36 @@ public sealed class GridFieldType() : FormBuilderFieldTypeBase<GridFieldSettings
             check.Invalid("scale", "A grid's columns come from its options or from a scale; it has neither.");
         }
     }
+
+    /// <summary>The part that holds a row's chosen columns: the row's key in the <c>D</c> format (ADR-0058).</summary>
+    /// <param name="row">The row's key.</param>
+    public static string RowPart(Guid row) => row.ToString("D", CultureInfo.InvariantCulture);
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(GridFieldSettings settings, FormField field) =>
+        field.Rows.Count == 0
+            ? FieldAnswerLimits.None
+            : new(DefinitionSaveChecks.OptionValueLength, field.Rows.Count * (settings.Multiple ? FieldAnswerLimits.DefaultManyTexts : 1));
+
+    /// <inheritdoc />
+    /// <remarks>Each row gives its chosen columns as its own values; texts that answer no row are ignored.</remarks>
+    protected override void Read(GridFieldSettings settings, FieldReading reading)
+    {
+        foreach (var row in reading.Field.Rows)
+        {
+            var chosen = reading.Answers.Part(RowPart(row.Key));
+            if ((!settings.Multiple && chosen.Length > 1) || chosen.Distinct(StringComparer.Ordinal).Count() != chosen.Length)
+            {
+                reading.Invalid();
+                return;
+            }
+
+            foreach (var value in chosen)
+            {
+                reading.Add(value, row.Key);
+            }
+        }
+    }
 }
 
 /// <summary>
@@ -244,6 +300,44 @@ public sealed class RankingFieldType() : FormBuilderFieldTypeBase<RankingFieldSe
     /// <inheritdoc />
     protected override void CheckSettings(RankingFieldSettings settings, FieldSettingsCheck check) =>
         BuiltInChecks.NotMoreThanOptions(check, "top", settings.Top);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The options come in their order, or, from a form without JavaScript, as parts: each option's value with the
+    /// position the visitor gave it, a whole number from 1. Positions given twice, or both forms at once, are unreadable.
+    /// </remarks>
+    protected override void Read(RankingFieldSettings settings, FieldReading reading)
+    {
+        if (reading.Answers.Parts.IsEmpty)
+        {
+            base.Read(settings, reading);
+            return;
+        }
+
+        var ranked = new List<(int Position, string Value)>();
+        foreach (var (value, positions) in reading.Answers.Parts)
+        {
+            if (!reading.Answers.Values.IsEmpty || positions is not [var text]
+                || !int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var position) || position < 1)
+            {
+                reading.Invalid();
+                return;
+            }
+
+            ranked.Add((position, value));
+        }
+
+        if (ranked.Select(each => each.Position).Distinct().Count() != ranked.Count)
+        {
+            reading.Invalid();
+            return;
+        }
+
+        foreach (var (_, value) in ranked.OrderBy(each => each.Position))
+        {
+            reading.Add(value);
+        }
+    }
 }
 
 /// <summary>The settings of a ranking (ADR-0002).</summary>
@@ -290,7 +384,33 @@ public sealed class YesNoFieldType() : FormBuilderFieldTypeBase<YesNoFieldSettin
     RuleKind = FieldKind.Choice,
     Features = BuiltInFieldTypes.Input | FieldFeatures.DefaultValue | FieldFeatures.Prefill,
     Messages = FieldMessageKinds.Required,
-});
+})
+{
+    /// <summary>The value of yes.</summary>
+    public const string Yes = "yes";
+
+    /// <summary>The value of no.</summary>
+    public const string No = "no";
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(YesNoFieldSettings settings, FormField field) => new(Yes.Length, 1);
+
+    /// <inheritdoc />
+    protected override void Read(YesNoFieldSettings settings, FieldReading reading)
+    {
+        switch (reading.Answers.Values)
+        {
+            case []:
+                break;
+            case [Yes or No]:
+                reading.Add(reading.Answers.Values[0]);
+                break;
+            default:
+                reading.Invalid();
+                break;
+        }
+    }
+}
 
 /// <summary>The settings of yes or no (ADR-0002).</summary>
 public sealed class YesNoFieldSettings
@@ -326,7 +446,7 @@ public enum YesNoStyle
 /// A consent (<c>consent</c>, section 4.3.2): the exact text shown is stored (ADR-0009), so its value is the hash of the
 /// wording, as text.
 /// </summary>
-public sealed class ConsentFieldType() : FormBuilderFieldTypeBase<ConsentFieldSettings>(new FieldTypeDeclaration
+public sealed partial class ConsentFieldType() : FormBuilderFieldTypeBase<ConsentFieldSettings>(new FieldTypeDeclaration
 {
     Alias = "consent",
     Name = "#jfbFieldTypes_consent",
@@ -337,7 +457,44 @@ public sealed class ConsentFieldType() : FormBuilderFieldTypeBase<ConsentFieldSe
     RuleKind = FieldKind.Checkbox,
     Features = BuiltInFieldTypes.Input,
     Messages = FieldMessageKinds.Required,
-});
+})
+{
+    /// <summary>The part that holds the hash of the wording the visitor was shown (ADR-0009, ADR-0058).</summary>
+    public const string WordingPart = "wording";
+
+    /// <summary>The length of a wording's hash: a SHA-256 in lowercase hex.</summary>
+    public const int WordingHashLength = 64;
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(ConsentFieldSettings settings, FormField field) => new(WordingHashLength, 2);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// A tick reads as <c>true</c>, which rules compare as a ticked box, and stores the wording's hash; a tick without a
+    /// wording's hash cannot be read, and anything but a tick leaves the consent not given.
+    /// </remarks>
+    protected override void Read(ConsentFieldSettings settings, FieldReading reading)
+    {
+        if (reading.Answers.Values.Length > 1)
+        {
+            reading.Invalid();
+        }
+        else if (reading.Answers.Values is [FieldAnswerDefaults.Ticked])
+        {
+            if (reading.Answers.Part(WordingPart) is [var hash] && WordingHash().IsMatch(hash))
+            {
+                reading.Add(new FieldValue(FieldAnswerDefaults.Ticked) { StoredText = hash });
+            }
+            else
+            {
+                reading.Invalid();
+            }
+        }
+    }
+
+    [GeneratedRegex("^[0-9a-f]{64}$", RegexOptions.CultureInvariant)]
+    private static partial Regex WordingHash();
+}
 
 /// <summary>The settings of a consent (ADR-0002).</summary>
 public sealed class ConsentFieldSettings
@@ -386,6 +543,9 @@ public sealed class CountryFieldType() : FormBuilderFieldTypeBase<CountryFieldSe
             check.Invalid("default", $"The country {country} is chosen at the start, but 'allowed' leaves it out.");
         }
     }
+
+    /// <inheritdoc />
+    protected override FieldAnswerLimits AnswerLimits(CountryFieldSettings settings, FormField field) => new(2, 1);
 }
 
 /// <summary>The settings of a country (ADR-0002), each country as its ISO 3166 alpha-2 code.</summary>

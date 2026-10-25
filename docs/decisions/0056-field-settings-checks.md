@@ -149,8 +149,8 @@ size limit comes with the uploads (6.1), and the captcha placement's availabilit
 - **Lists start empty and say what empty means**, unless an empty list would mean nothing: a file field without
   types or extensions takes images and PDFs (until now it started with both, which could never be taken away to
   allow only `dwg`); a required name with no required parts requires every part it asks for; a required address
-  with none requires the street, the postcode and the city. ADR-0055's defaults are amended to these; the answers
-  read them so in 5.1d. A web address's schemes and a name's parts keep their defaults, since a field without either
+  with none requires the street, the postcode and the city. ADR-0055's defaults are amended to these; the checks of
+  the answers read them so (5.2, ADR-0058). A web address's schemes and a name's parts keep their defaults, since a field without either
   is no field, and a test holds every other list to starting empty.
 - **The "Other" option is a yes or no and a label**: `other` (false) and `otherLabel` (the type's own text when not
   given) on radio buttons and checkboxes, instead of ADR-0002's `{ "label" }` object, which settings would leave out

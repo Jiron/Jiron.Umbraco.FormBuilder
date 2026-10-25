@@ -25,8 +25,8 @@ internal enum EntryState
 /// <summary>
 /// One value of an entry to store: an answer, an item of a multi-value answer (<paramref name="ValueIndex"/>) or a value
 /// in a row of a repeater (<paramref name="RowIndex"/>). The field's storage kind decides which typed column holds it
-/// (5.1); <paramref name="Text"/> keeps the value as submitted. A value that is text only gets a key for filters and
-/// sorts (<see cref="EntryTextKey"/>).
+/// (<see cref="EntryValueColumns"/>, ADR-0058); <paramref name="Text"/> keeps the value as submitted. A value that is
+/// text only gets a key for filters and sorts (<see cref="EntryTextKey"/>), made of <see cref="KeyText"/> when it has one.
 /// </summary>
 /// <param name="FieldId">The field's row in the catalogue of the entry's form.</param>
 /// <param name="Text">The value as submitted, or null.</param>
@@ -48,6 +48,12 @@ internal sealed record NewEntryValue(
 {
     /// <summary>Whether the value is text only, and so filters and sorts by its key.</summary>
     public bool IsText => Number is null && Date is null && Bool is null && FileId is null;
+
+    /// <summary>
+    /// The text the key is made of when it is not <see cref="Text"/>: a value with parts stores a JSON object and reads as
+    /// its parts' texts (ADR-0058). Only a value that is text only has one.
+    /// </summary>
+    public string? KeyText { get; init; }
 }
 
 /// <summary>A stored value of an entry.</summary>
