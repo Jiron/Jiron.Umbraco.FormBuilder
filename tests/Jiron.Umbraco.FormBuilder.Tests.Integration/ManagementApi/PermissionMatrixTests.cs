@@ -44,6 +44,12 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["POST form/{key}/trash"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["POST form/{key}/restore"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["DELETE form/{key}"] = (FormBuilderPermissions.Design | FormBuilderPermissions.DeleteEntries, FormBuilderAccessResourceKind.Form, "key"),
+        ["GET form/{key}/versions"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["GET form/{key}/versions/{number}"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["GET form/{key}/versions/compare"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/versions/{number}/restore"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["PUT form/{key}/versions/{number}/pin"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["PUT form/{key}/versions/{number}/comment"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
     };
 
     /// <summary>The reviewed exception list: endpoints without a declaration. Only the form picker (6.7) may join it.</summary>

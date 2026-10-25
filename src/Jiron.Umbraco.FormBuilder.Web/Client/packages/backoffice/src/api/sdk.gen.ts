@@ -3,7 +3,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { FolderCreateData, FolderCreateErrors, FolderCreateResponses, FolderDeleteData, FolderDeleteErrors, FolderDeleteResponses, FolderGetData, FolderGetErrors, FolderGetResponses, FolderMoveData, FolderMoveErrors, FolderMoveResponses, FolderRenameData, FolderRenameErrors, FolderRenameResponses, FolderRestoreData, FolderRestoreErrors, FolderRestoreResponses, FolderTrashData, FolderTrashErrors, FolderTrashResponses, FormCreateData, FormCreateErrors, FormCreateResponses, FormDeleteData, FormDeleteErrors, FormDeleteResponses, FormDraftData, FormDraftErrors, FormDraftResponses, FormGetData, FormGetErrors, FormGetResponses, FormMoveData, FormMoveErrors, FormMoveResponses, FormPublishData, FormPublishErrors, FormPublishResponses, FormRenameData, FormRenameErrors, FormRenameResponses, FormRestoreData, FormRestoreErrors, FormRestoreResponses, FormSaveDraftData, FormSaveDraftErrors, FormSaveDraftResponses, FormSearchData, FormSearchErrors, FormSearchResponses, FormTrashData, FormTrashErrors, FormTrashResponses, FormUnpublishData, FormUnpublishErrors, FormUnpublishResponses, TrashEmptyData, TrashEmptyErrors, TrashEmptyResponses, TrashListData, TrashListErrors, TrashListResponses, TreeChildrenData, TreeChildrenErrors, TreeChildrenResponses, TreeRootData, TreeRootErrors, TreeRootResponses } from './types.gen';
+import type { FolderCreateData, FolderCreateErrors, FolderCreateResponses, FolderDeleteData, FolderDeleteErrors, FolderDeleteResponses, FolderGetData, FolderGetErrors, FolderGetResponses, FolderMoveData, FolderMoveErrors, FolderMoveResponses, FolderRenameData, FolderRenameErrors, FolderRenameResponses, FolderRestoreData, FolderRestoreErrors, FolderRestoreResponses, FolderTrashData, FolderTrashErrors, FolderTrashResponses, FormCreateData, FormCreateErrors, FormCreateResponses, FormDeleteData, FormDeleteErrors, FormDeleteResponses, FormDraftData, FormDraftErrors, FormDraftResponses, FormGetData, FormGetErrors, FormGetResponses, FormMoveData, FormMoveErrors, FormMoveResponses, FormPublishData, FormPublishErrors, FormPublishResponses, FormRenameData, FormRenameErrors, FormRenameResponses, FormRestoreData, FormRestoreErrors, FormRestoreResponses, FormSaveDraftData, FormSaveDraftErrors, FormSaveDraftResponses, FormSearchData, FormSearchErrors, FormSearchResponses, FormTrashData, FormTrashErrors, FormTrashResponses, FormUnpublishData, FormUnpublishErrors, FormUnpublishResponses, TrashEmptyData, TrashEmptyErrors, TrashEmptyResponses, TrashListData, TrashListErrors, TrashListResponses, TreeChildrenData, TreeChildrenErrors, TreeChildrenResponses, TreeRootData, TreeRootErrors, TreeRootResponses, VersionCommentData, VersionCommentErrors, VersionCommentResponses, VersionCompareData, VersionCompareErrors, VersionCompareResponses, VersionGetData, VersionGetErrors, VersionGetResponses, VersionListData, VersionListErrors, VersionListResponses, VersionPinData, VersionPinErrors, VersionPinResponses, VersionRestoreData, VersionRestoreErrors, VersionRestoreResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -202,5 +202,53 @@ export const treeChildren = <ThrowOnError extends boolean = false>(options?: Opt
 export const treeRoot = <ThrowOnError extends boolean = false>(options?: Options<TreeRootData, ThrowOnError>): RequestResult<TreeRootResponses, TreeRootErrors, ThrowOnError> => (options?.client ?? client).get<TreeRootResponses, TreeRootErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/tree/root',
+    ...options
+});
+
+export const versionList = <ThrowOnError extends boolean = false>(options: Options<VersionListData, ThrowOnError>): RequestResult<VersionListResponses, VersionListErrors, ThrowOnError> => (options.client ?? client).get<VersionListResponses, VersionListErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions',
+    ...options
+});
+
+export const versionGet = <ThrowOnError extends boolean = false>(options: Options<VersionGetData, ThrowOnError>): RequestResult<VersionGetResponses, VersionGetErrors, ThrowOnError> => (options.client ?? client).get<VersionGetResponses, VersionGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions/{number}',
+    ...options
+});
+
+export const versionComment = <ThrowOnError extends boolean = false>(options: Options<VersionCommentData, ThrowOnError>): RequestResult<VersionCommentResponses, VersionCommentErrors, ThrowOnError> => (options.client ?? client).put<VersionCommentResponses, VersionCommentErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions/{number}/comment',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const versionPin = <ThrowOnError extends boolean = false>(options: Options<VersionPinData, ThrowOnError>): RequestResult<VersionPinResponses, VersionPinErrors, ThrowOnError> => (options.client ?? client).put<VersionPinResponses, VersionPinErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions/{number}/pin',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const versionRestore = <ThrowOnError extends boolean = false>(options: Options<VersionRestoreData, ThrowOnError>): RequestResult<VersionRestoreResponses, VersionRestoreErrors, ThrowOnError> => (options.client ?? client).post<VersionRestoreResponses, VersionRestoreErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions/{number}/restore',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const versionCompare = <ThrowOnError extends boolean = false>(options: Options<VersionCompareData, ThrowOnError>): RequestResult<VersionCompareResponses, VersionCompareErrors, ThrowOnError> => (options.client ?? client).get<VersionCompareResponses, VersionCompareErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions/compare',
     ...options
 });

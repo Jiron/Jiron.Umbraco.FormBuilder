@@ -5,6 +5,10 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
+export type CommentVersionRequestModel = {
+    comment?: string | null;
+};
+
 export type CreateFolderRequestModel = {
     name: string;
     parentKey?: string | null;
@@ -16,10 +20,43 @@ export type CreateFormRequestModel = {
     folderKey?: string | null;
 };
 
+export type DefinitionChangeResponseModel = {
+    kind: string;
+    key?: string | null;
+    settingsGroup?: string | null;
+    parentKey?: string | null;
+    previousParentKey?: string | null;
+    change: string;
+    moved: boolean;
+    label?: string | null;
+    alias?: string | null;
+    type?: string | null;
+    before?: unknown;
+    after?: unknown;
+    properties: Array<DefinitionPropertyChangeResponseModel>;
+};
+
+export type DefinitionChangeSummaryResponseModel = {
+    kind: string;
+    key?: string | null;
+    settingsGroup?: string | null;
+    parentKey?: string | null;
+    change: string;
+    moved: boolean;
+    label?: string | null;
+    alias?: string | null;
+};
+
 export type DefinitionProblemResponseModel = {
     code: string;
     path: string;
     message: string;
+};
+
+export type DefinitionPropertyChangeResponseModel = {
+    path: Array<string>;
+    from?: unknown;
+    to?: unknown;
 };
 
 export type FolderResponseModel = {
@@ -35,6 +72,12 @@ export type FolderResponseModel = {
 
 export type FormChangeRequestModel = {
     concurrencyVersion: number;
+};
+
+export type FormComparisonResponseModel = {
+    fromVersion: number;
+    toVersion: number;
+    changes: Array<DefinitionChangeResponseModel>;
 };
 
 export type FormDraftResponseModel = {
@@ -64,6 +107,31 @@ export type FormResponseModel = {
 export type FormSavedResponseModel = {
     form: FormResponseModel;
     version?: number | null;
+};
+
+export type FormVersionDocumentResponseModel = {
+    version: FormVersionResponseModel;
+    definition?: unknown;
+    problems: Array<DefinitionProblemResponseModel>;
+};
+
+export type FormVersionEntryResponseModel = {
+    version: FormVersionResponseModel;
+    changes?: Array<DefinitionChangeSummaryResponseModel> | null;
+};
+
+export type FormVersionResponseModel = {
+    number: number;
+    kind: string;
+    publicRevision?: number | null;
+    comment?: string | null;
+    isPinned: boolean;
+    createdUtc: string;
+    createdByUserKey?: string | null;
+    publishedUtc?: string | null;
+    publishedByUserKey?: string | null;
+    isDraft: boolean;
+    isLive: boolean;
 };
 
 export type LibraryChangeResponseModel = {
@@ -102,9 +170,18 @@ export type MoveFormRequestModel = {
     widenAccess: boolean;
 };
 
+export type PagedFormVersionEntryResponseModel = {
+    total: number;
+    items: Array<FormVersionEntryResponseModel>;
+};
+
 export type PagedLibraryItemResponseModel = {
     total: number;
     items: Array<LibraryItemResponseModel>;
+};
+
+export type PinVersionRequestModel = {
+    isPinned: boolean;
 };
 
 export type ProblemDetails = {
@@ -138,6 +215,10 @@ export type RestoreFolderRequestModel = {
 export type RestoreFormRequestModel = {
     concurrencyVersion: number;
     widenAccess: boolean;
+};
+
+export type RestoreVersionRequestModel = {
+    concurrencyVersion: number;
 };
 
 export type SaveFormDraftRequestModel = {
@@ -1057,3 +1138,252 @@ export type TreeRootResponses = {
 };
 
 export type TreeRootResponse = TreeRootResponses[keyof TreeRootResponses];
+
+export type VersionListData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: {
+        includeDrafts?: boolean;
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions';
+};
+
+export type VersionListErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type VersionListError = VersionListErrors[keyof VersionListErrors];
+
+export type VersionListResponses = {
+    /**
+     * OK
+     */
+    200: PagedFormVersionEntryResponseModel;
+};
+
+export type VersionListResponse = VersionListResponses[keyof VersionListResponses];
+
+export type VersionGetData = {
+    body?: never;
+    path: {
+        key: string;
+        number: number;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions/{number}';
+};
+
+export type VersionGetErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type VersionGetError = VersionGetErrors[keyof VersionGetErrors];
+
+export type VersionGetResponses = {
+    /**
+     * OK
+     */
+    200: FormVersionDocumentResponseModel;
+};
+
+export type VersionGetResponse = VersionGetResponses[keyof VersionGetResponses];
+
+export type VersionCommentData = {
+    body?: CommentVersionRequestModel;
+    path: {
+        key: string;
+        number: number;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions/{number}/comment';
+};
+
+export type VersionCommentErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type VersionCommentError = VersionCommentErrors[keyof VersionCommentErrors];
+
+export type VersionCommentResponses = {
+    /**
+     * OK
+     */
+    200: FormVersionResponseModel;
+};
+
+export type VersionCommentResponse = VersionCommentResponses[keyof VersionCommentResponses];
+
+export type VersionPinData = {
+    body?: PinVersionRequestModel;
+    path: {
+        key: string;
+        number: number;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions/{number}/pin';
+};
+
+export type VersionPinErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type VersionPinError = VersionPinErrors[keyof VersionPinErrors];
+
+export type VersionPinResponses = {
+    /**
+     * OK
+     */
+    200: FormVersionResponseModel;
+};
+
+export type VersionPinResponse = VersionPinResponses[keyof VersionPinResponses];
+
+export type VersionRestoreData = {
+    body?: RestoreVersionRequestModel;
+    path: {
+        key: string;
+        number: number;
+    };
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions/{number}/restore';
+};
+
+export type VersionRestoreErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type VersionRestoreError = VersionRestoreErrors[keyof VersionRestoreErrors];
+
+export type VersionRestoreResponses = {
+    /**
+     * OK
+     */
+    200: FormSavedResponseModel;
+};
+
+export type VersionRestoreResponse = VersionRestoreResponses[keyof VersionRestoreResponses];
+
+export type VersionCompareData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query: {
+        from: number;
+        to: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/form/{key}/versions/compare';
+};
+
+export type VersionCompareErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type VersionCompareError = VersionCompareErrors[keyof VersionCompareErrors];
+
+export type VersionCompareResponses = {
+    /**
+     * OK
+     */
+    200: FormComparisonResponseModel;
+};
+
+export type VersionCompareResponse = VersionCompareResponses[keyof VersionCompareResponses];

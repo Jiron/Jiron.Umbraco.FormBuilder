@@ -35,6 +35,9 @@ internal static class FormBuilderProblems
     /// <summary>A move would give a group more access, and was not confirmed.</summary>
     public const string WidensAccessCode = "widens_access";
 
+    /// <summary>A form's version that does not exist.</summary>
+    public const string VersionNotFoundCode = "version_not_found";
+
     /// <summary>How long a client waits before asking again while the plan has not run.</summary>
     public static readonly TimeSpan RetryAfter = TimeSpan.FromSeconds(10);
 
@@ -56,6 +59,10 @@ internal static class FormBuilderProblems
     /// <summary>A folder or form that does not exist, or that the user does not see: the same answer for both.</summary>
     public static FormBuilderProblemResult NotFound(FormBuilderAccessResourceKind kind) =>
         Problem(StatusCodes.Status404NotFound, NotFoundCode(kind), kind == FormBuilderAccessResourceKind.Form ? "The form does not exist." : "The folder does not exist.");
+
+    /// <summary>A version of a form the user sees that does not exist (ADR-0052).</summary>
+    public static FormBuilderProblemResult VersionNotFound() =>
+        Problem(StatusCodes.Status404NotFound, VersionNotFoundCode, "The version does not exist.");
 
     /// <summary>The user sees the item but lacks <paramref name="permission"/>, which the answer names.</summary>
     public static FormBuilderProblemResult Missing(FormBuilderPermissions permission, IDictionary<string, object?>? extensions = null)
