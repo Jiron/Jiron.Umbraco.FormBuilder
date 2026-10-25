@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
@@ -216,6 +217,104 @@ public sealed class DefinitionValueTests
         });
     }
 
+    [Test]
+    public void WhatTheWriterCannotWrite_IsReportedAsWhatItIs()
+    {
+        // Past the save checks, what the writer refuses is a value it cannot carry, not a document that nests too deep.
+        var page = Minimal().Pages[0] with { Rules = [new FormRule { Key = FieldKey(5), Effect = RuleEffect.Show, Conditions = [new UnknownItem()] }] };
+        var definition = Minimal() with { Pages = [page] };
+
+        var problems = DefinitionFixtures.Serializer().CheckSave(definition);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(problems.Select(problem => (problem.Code, problem.Path)), Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, "$") }));
+            Assert.That(problems[0].Message, Does.Contain("Unknown rule item"));
+            Assert.That(() => FormDefinitionSerializer.Write(definition), Throws.ArgumentException.With.Message.Contains("Unknown rule item"));
+        });
+    }
+
+    [Test]
+    public void ACultureThatIsNull_IsRefusedAsDocumented()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.Throws<ArgumentException>(() => _ = new LocalizedText([new KeyValuePair<string, string>(null!, "Name")]));
+            Assert.Throws<ArgumentException>(() => _ = new LocalizedText([new(string.Empty, "Name"), new KeyValuePair<string, string>(null!, "Name")]), "beside the default text");
+        });
+    }
+
+    [Test]
+    public void TheReaderOfWhatTheSiteStored_IsBuiltOnce_WithTheSerializer()
+    {
+        var serializer = DefinitionFixtures.Serializer(new DefinitionLimits { MaxBytes = 1000 });
+        var ceiling = DefinitionFixtures.Serializer(DefinitionLimits.Ceiling);
+        var seen = new FormDefinitionSerializer[64];
+        Parallel.For(0, seen.Length, i => seen[i] = serializer.Stored);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(seen, Is.All.SameAs(serializer.Stored), "one reader, whoever asks first");
+            Assert.That(serializer.Stored.Limits, Is.EqualTo(DefinitionLimits.Ceiling));
+            Assert.That(ceiling.Stored, Is.SameAs(ceiling), "a serializer with the highest limits reads what is stored itself");
+        });
+    }
+
+    [Test]
+    public void BothReaders_RefuseTextAndBytesThatAreNotStrictUtf8_Alike()
+    {
+        var serializer = DefinitionFixtures.Serializer();
+        var surrogate = "{\"a\":\"" + (char)0xD800 + "\"}";
+        byte[] invalid = [0x7B, 0xFF, 0x7D];
+
+        static (string, string, string) Only(IReadOnlyList<DefinitionProblem> problems) => (problems.Single().Code, problems.Single().Path, problems.Single().Message);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Only(serializer.Read(surrogate).Problems), Is.EqualTo(Only(FormExportFormat.Read(surrogate, serializer).Problems)), "a lone surrogate");
+            Assert.That(Only(serializer.Read(invalid).Problems), Is.EqualTo(Only(FormExportFormat.Read(invalid, serializer).Problems)), "bytes that are not UTF-8");
+            Assert.That(Only(serializer.Read(surrogate).Problems).Item1, Is.EqualTo(DefinitionErrors.InvalidJson));
+        });
+    }
+
+    [Test]
+    public void AGroupNested30Deep_ReadsInAboutTheTimeOfOneLevel()
+    {
+        // The innermost condition holds a long operand: read again at every level, as it was, it would cost 30 times
+        // as much; read once, the levels cost next to nothing.
+        var shallow = Rule(1);
+        var deep = Rule(30);
+
+        Assert.That(Fastest(deep), Is.LessThan(Fastest(shallow) * 4), "30 levels against one");
+
+        static byte[] Rule(int depth)
+        {
+            JsonNode item = new JsonObject { ["field"] = FieldKey(1).ToString("D"), ["op"] = "equals", ["value"] = new string('a', 200_000) };
+            for (var level = 0; level < depth; level++)
+            {
+                item = new JsonObject { ["match"] = "any", ["conditions"] = new JsonArray(item) };
+            }
+
+            return System.Text.Encoding.UTF8.GetBytes(item.ToJsonString());
+        }
+
+        static TimeSpan Fastest(byte[] json)
+        {
+            var info = DefinitionJsonContext.Default.Options.GetTypeInfo(typeof(RuleItem));
+            var fastest = TimeSpan.MaxValue;
+            for (var run = 0; run < 7; run++)
+            {
+                var watch = System.Diagnostics.Stopwatch.StartNew();
+                var item = JsonSerializer.Deserialize(json, info);
+                watch.Stop();
+                Assert.That(item, Is.InstanceOf<RuleGroup>());
+                fastest = watch.Elapsed < fastest ? watch.Elapsed : fastest;
+            }
+
+            return fastest;
+        }
+    }
+
     [TestCase(DateTimeKind.Local, 0)]
     [TestCase(DateTimeKind.Unspecified, 0)]
     [TestCase(DateTimeKind.Utc, 1)]
@@ -254,6 +353,9 @@ public sealed class DefinitionValueTests
     }
 
     private static Guid FieldKey(int number) => new($"30000000-0000-4000-8000-{number:000000000000}");
+
+    // A rule item no converter knows, as a type of a later version might be.
+    private sealed record UnknownItem : RuleItem;
 
     // The minimal definition with fields inside each other, as many as given, the innermost with the options given.
     private static FormDefinition Nested(int fields, FieldOptions? options = null)

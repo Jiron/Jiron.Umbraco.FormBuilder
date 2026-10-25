@@ -58,6 +58,13 @@ Both runners read every `vectors/*.json` in place, one test case per vector: `Lo
 (a case is named `Vector(<suite>/<id>)`) and `packages/logic/test/vectors.test.ts` in the client's `npm test`. A case
 that passes in one runtime and fails in the other is a bug in one of them.
 
+**What long answers cost** is checked in both runtimes too, by `Logic/LogicCostTests.cs` and
+`packages/logic/test/cost.test.ts`: rules over a number answer of 10,000 digits take under 50 ms (and in Core
+allocate less than one copy of it, so no number, key or cleaned copy is built), numbers compare as the values they are
+(and what is not in the wire form compares with nothing), and a pattern's run keeps one set of buffers, which Core
+shows by what it allocates and TypeScript by its time over ten times the answer. `Logic/TextSemanticsTests.cs` shows
+that cleaning returns a text it leaves alone as it is, and puts each replacement where it belongs.
+
 **The tables check** compares the two runtimes' Unicode data. `npm run tables` in `packages/logic` writes what
 TypeScript's clean, fold and NFC recomposition do to every code point into `vectors/tables/typescript.json`; a Vitest
 test fails when the file no longer matches the running Node, and `Logic/UnicodeTablesTests.cs` compares Core with it,
@@ -76,7 +83,7 @@ and the public projection ([ADR-0035](../docs/decisions/0035-structural-validati
 | `RefusalTests` | Every save refusal with its code and JSON path, each one change to a valid document. |
 | `DefinitionSchemaTests` | `schemas/jfb-form.v1.schema.json` validates the generated definitions and the fixture, names the same objects, properties, required ones and words as the model (`ModelProperties`), and refuses the refusals a schema can say. |
 | `UpgradeTests` | A synthetic older version read through the real reader, and the chain's checks. |
-| `DefinitionValueTests` | Localised texts, default values, settings objects, instants and the string escaping. |
+| `DefinitionValueTests` | Localised texts (a null culture refused as documented), default values, settings objects, instants and the string escaping; what the writer cannot write reported as what it is; the reader of what the site stored built once; both readers refusing text and bytes alike; a group nested 30 deep read in about the time of one. |
 | `ModelListTests` | No list of a read definition, its value types or its projection can be changed through a cast or through the list a record was built from, and records compare their lists by their items, in order. |
 | `StructureTests` | A document that publishes, and each publish refusal with its code and JSON path as one change to it (aliases that differ only in letter case and option values that fold to one text included); what publishes; that a save refusal comes first; that each one-per-form type counts on its own; and 500 generated definitions checked without throwing, every path naming a part of them. |
 | `FieldTypeSupportTests` | §4.3.2 restated apart from the code: each built-in type refuses exactly the common properties, checks, rules and messages it does not support, and the one list of field messages that both checks use holds every message of the record with its own kind. |
@@ -209,6 +216,8 @@ The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made 
 - the product rows against the migration's snapshots.
 
 `Architecture/CoreDatabaseConnectionTests` reads Core's IL and fails on any connection of Core's own (ADR-0036).
+`Architecture/StaticDataTests` reads every static field of Core and fails on one that is not read-only or that holds
+an array or a collection that changes (ROADMAP 4.8f).
 `Architecture/QueryBuilderReadsTests` reads the query builder's source and fails on any database call but its one
 budgeted read, or on SQL that changes rows (ADR-0039).
 `Architecture/SqlGuardTests` reads the repositories' source and fails on a guard without a locking read (ADR-0038):
