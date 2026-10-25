@@ -13,6 +13,42 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
 internal sealed record DefinitionProblem(string Code, string Path, string Message);
 
 /// <summary>
+/// The problems one read or check collects, in the order found, at most <see cref="Max"/>: past that they would only
+/// repeat themselves (ADR-0034). The shape reader, the save checks, the structural checks and the export file's reader
+/// all collect through it, so every one of them stops at the same limit.
+/// </summary>
+internal sealed class DefinitionProblems
+{
+    /// <summary>The most problems one read or check reports.</summary>
+    public const int Max = 100;
+
+    private readonly List<DefinitionProblem> _kept = [];
+
+    /// <summary>How many problems were found, those past the limit included; a step compares it before and after.</summary>
+    public int Found { get; private set; }
+
+    /// <summary>Whether the limit is reached, so a loop over many items can stop.</summary>
+    public bool IsFull => _kept.Count == Max;
+
+    /// <summary>Records a problem. One past the limit is counted in <see cref="Found"/> but not kept.</summary>
+    public void Add(DefinitionProblem problem)
+    {
+        ArgumentNullException.ThrowIfNull(problem);
+        Found++;
+        if (!IsFull)
+        {
+            _kept.Add(problem);
+        }
+    }
+
+    /// <summary>Records a problem with its code, path and message.</summary>
+    public void Add(string code, string path, string message) => Add(new DefinitionProblem(code, path, message));
+
+    /// <summary>The problems kept, as a list nobody can change.</summary>
+    public IReadOnlyList<DefinitionProblem> ToList() => DefinitionList.Of(_kept);
+}
+
+/// <summary>
 /// The codes with which a save refuses a definition it cannot read (ADR-0002, ADR-0034), and those with which
 /// publishing refuses one whose parts do not fit together (the structural validation, ADR-0035).
 /// </summary>

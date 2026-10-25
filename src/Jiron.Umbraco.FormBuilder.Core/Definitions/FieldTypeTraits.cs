@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Logic;
 
@@ -117,6 +118,39 @@ internal enum FieldMessageKinds
 
     /// <summary><c>full</c>.</summary>
     Full = 1 << 14,
+}
+
+/// <summary>One message of <see cref="FieldMessages"/>.</summary>
+/// <param name="Name">Its JSON name.</param>
+/// <param name="Kind">The error kind it is the message of.</param>
+/// <param name="Read">Reads it from a field's messages.</param>
+internal sealed record FieldMessageText(string Name, FieldMessageKinds Kind, Func<FieldMessages, LocalizedText?> Read);
+
+/// <summary>
+/// The messages of <see cref="FieldMessages"/>, listed once for the save checks and the structural checks; a test holds
+/// the list to the record and to <see cref="FieldMessageKinds"/>.
+/// </summary>
+internal static class FieldMessageTexts
+{
+    /// <summary>Every message, in the record's order.</summary>
+    public static readonly ImmutableArray<FieldMessageText> All =
+    [
+        new("required", FieldMessageKinds.Required, messages => messages.Required),
+        new("invalid", FieldMessageKinds.Invalid, messages => messages.Invalid),
+        new("minLength", FieldMessageKinds.MinLength, messages => messages.MinLength),
+        new("maxLength", FieldMessageKinds.MaxLength, messages => messages.MaxLength),
+        new("minWords", FieldMessageKinds.MinWords, messages => messages.MinWords),
+        new("maxWords", FieldMessageKinds.MaxWords, messages => messages.MaxWords),
+        new("min", FieldMessageKinds.Min, messages => messages.Min),
+        new("max", FieldMessageKinds.Max, messages => messages.Max),
+        new("step", FieldMessageKinds.Step, messages => messages.Step),
+        new("dateWindow", FieldMessageKinds.DateWindow, messages => messages.DateWindow),
+        new("selections", FieldMessageKinds.Selections, messages => messages.Selections),
+        new("fileType", FieldMessageKinds.FileType, messages => messages.FileType),
+        new("fileSize", FieldMessageKinds.FileSize, messages => messages.FileSize),
+        new("fileCount", FieldMessageKinds.FileCount, messages => messages.FileCount),
+        new("full", FieldMessageKinds.Full, messages => messages.Full),
+    ];
 }
 
 /// <summary>

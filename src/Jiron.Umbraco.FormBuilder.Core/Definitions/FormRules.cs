@@ -23,7 +23,7 @@ public sealed record FormRule
     public RuleMatch Match { get; init; } = RuleMatch.All;
 
     /// <summary>The conditions and nested groups.</summary>
-    public IReadOnlyList<RuleItem> Conditions { get; init; } = [];
+    public IReadOnlyList<RuleItem> Conditions { get; init => field = DefinitionList.Of(value); } = DefinitionList<RuleItem>.Empty;
 }
 
 /// <summary>A condition or a nested group of conditions.</summary>
@@ -65,7 +65,7 @@ public sealed record RuleGroup : RuleItem
     public RuleMatch Match { get; init; } = RuleMatch.All;
 
     /// <summary>The conditions and further nested groups.</summary>
-    public IReadOnlyList<RuleItem> Conditions { get; init; } = [];
+    public IReadOnlyList<RuleItem> Conditions { get; init => field = DefinitionList.Of(value); } = DefinitionList<RuleItem>.Empty;
 }
 
 /// <summary>
@@ -110,7 +110,7 @@ public abstract record ConditionOperand
                 throw new ArgumentException("A list operand holds texts, answers and dates, not lists.", nameof(items));
             }
 
-            Items = [.. items];
+            Items = DefinitionList.Of(items);
         }
 
         /// <summary>The items, at least one; none is a list.</summary>
@@ -155,5 +155,5 @@ public sealed record FormValidationRule
     public RuleMatch Match { get; init; } = RuleMatch.All;
 
     /// <summary>The conditions and nested groups.</summary>
-    public IReadOnlyList<RuleItem> Conditions { get; init; } = [];
+    public IReadOnlyList<RuleItem> Conditions { get; init => field = DefinitionList.Of(value); } = DefinitionList<RuleItem>.Empty;
 }

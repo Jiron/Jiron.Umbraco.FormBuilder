@@ -18,18 +18,15 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 /// </remarks>
 internal sealed partial class DefinitionShapeReader
 {
-    /// <summary>A save reports at most this many problems; the rest would only repeat them.</summary>
-    public const int MaxProblems = 100;
-
     // A default instance of each model type, for FillDefaults: immutable records, the same on every server.
     private static readonly ConcurrentDictionary<Type, object> Defaults = new();
 
     private readonly JsonSerializerOptions _options;
-    private readonly List<DefinitionProblem> _problems = [];
+    private readonly DefinitionProblems _problems = new();
 
     public DefinitionShapeReader(JsonSerializerOptions options) => _options = options;
 
-    public IReadOnlyList<DefinitionProblem> Problems => _problems;
+    public IReadOnlyList<DefinitionProblem> Problems => _problems.ToList();
 
     /// <summary>
     /// Reads the document's root. <paramref name="skipped"/> names root properties another step has checked, such as
@@ -38,16 +35,12 @@ internal sealed partial class DefinitionShapeReader
     public JsonObject? ReadRoot(JsonElement root, Type type, IReadOnlySet<string> skipped)
     {
         var ok = TryReadObject(root, _options.GetTypeInfo(type), JsonPaths.Root, skipped, out var node);
-        return ok && _problems.Count == 0 ? (JsonObject?)node ?? new JsonObject() : null;
+        return ok && _problems.Found == 0 ? (JsonObject?)node ?? new JsonObject() : null;
     }
 
     private bool Fail(string code, string path, string message)
     {
-        if (_problems.Count < MaxProblems)
-        {
-            _problems.Add(new DefinitionProblem(code, path, message));
-        }
-
+        _problems.Add(code, path, message);
         return false;
     }
 

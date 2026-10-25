@@ -35,7 +35,7 @@ internal sealed class DefinitionSaveChecks
     private static readonly SearchValues<char> LineBreaks = SearchValues.Create([(char)13, (char)10, (char)0x85, (char)0x2028, (char)0x2029]);
 
     private readonly DefinitionLimits _limits;
-    private readonly List<DefinitionProblem> _problems = [];
+    private readonly DefinitionProblems _problems = new();
     private readonly Dictionary<Guid, string> _keys = [];
     private int _groups;
     private int _fields;
@@ -59,17 +59,17 @@ internal sealed class DefinitionSaveChecks
         ArgumentNullException.ThrowIfNull(text);
         var checks = new DefinitionSaveChecks(new DefinitionLimits());
         checks.Text(text, JsonPaths.Root, html ? TextKind.Html : TextKind.Line);
-        return checks._problems;
+        return checks._problems.ToList();
     }
 
-    /// <summary>Every problem the definition has, in document order, at most <see cref="DefinitionShapeReader.MaxProblems"/>.</summary>
+    /// <summary>Every problem the definition has, in document order, at most <see cref="DefinitionProblems.Max"/>.</summary>
     public static IReadOnlyList<DefinitionProblem> Check(FormDefinition definition, DefinitionLimits limits)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(limits);
         var checks = new DefinitionSaveChecks(limits);
         checks.CheckDefinition(definition);
-        return checks._problems;
+        return checks._problems.ToList();
     }
 
     private static string P(string path, string name) => JsonPaths.Property(path, name);
@@ -78,13 +78,7 @@ internal sealed class DefinitionSaveChecks
 
     private static bool HasLineBreak(string text) => text.AsSpan().IndexOfAny(LineBreaks) >= 0;
 
-    private void Fail(string code, string path, string message)
-    {
-        if (_problems.Count < DefinitionShapeReader.MaxProblems)
-        {
-            _problems.Add(new DefinitionProblem(code, path, message));
-        }
-    }
+    private void Fail(string code, string path, string message) => _problems.Add(code, path, message);
 
     private void CheckDefinition(FormDefinition definition)
     {
@@ -358,17 +352,9 @@ internal sealed class DefinitionSaveChecks
 
     private void Messages(FieldMessages messages, string path)
     {
-        var all = new (string Name, LocalizedText? Text)[]
+        foreach (var message in FieldMessageTexts.All)
         {
-            ("required", messages.Required), ("invalid", messages.Invalid), ("minLength", messages.MinLength),
-            ("maxLength", messages.MaxLength), ("minWords", messages.MinWords), ("maxWords", messages.MaxWords),
-            ("min", messages.Min), ("max", messages.Max), ("step", messages.Step), ("dateWindow", messages.DateWindow),
-            ("selections", messages.Selections), ("fileType", messages.FileType), ("fileSize", messages.FileSize),
-            ("fileCount", messages.FileCount), ("full", messages.Full),
-        };
-        foreach (var (name, text) in all)
-        {
-            Text(text, P(path, name), TextKind.Line);
+            Text(message.Read(messages), P(path, message.Name), TextKind.Line);
         }
     }
 

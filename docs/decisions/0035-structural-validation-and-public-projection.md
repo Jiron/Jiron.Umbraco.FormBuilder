@@ -1,7 +1,7 @@
 # 0035. Publishing's structural validation and the public projection in code
 
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the publish codes,
-  what the projection holds and what its hash covers)
+  what the projection holds and what its hash covers); amended in 4.8e (each one-per-form type counts on its own)
 - Date: 2026-10-23
 - Roadmap step: 4.2b (decided and built); 4.5 calls it when a form is published, 5.1 moves the field-type traits into
   the registry, 6.6 serves the projection, 7.2 and 8.1 add provider and action types
@@ -70,7 +70,9 @@ Option 2 for all three. In detail:
 - `Features`: label, hidden label, help, placeholder, required, default value, prefill, autocomplete, the three checks,
   show and hide rules, options, required options, places, rows and child fields;
 - `Messages`: the error kinds of §4.3.3;
-- `Single`: at most one per form and never inside a repeatable group (the captcha placement);
+- `Single`: at most one field of the type per form, and never inside a repeatable group (the captcha placement).
+  Each such type counts on its own (amended in 4.8e), so a form may hold a captcha and a field of another
+  one-per-form type;
 - `ServerOnlyDefault`: the default is resolved when the entry is submitted and never reaches the page (the hidden
   field, whose default may use member and context values, ADR-0014);
 - `PublicSettings`.
@@ -88,7 +90,8 @@ How the traits are used:
 ### Publishing
 
 `CheckPublish` runs the save checks first: limits, unique keys and ranges (ADR-0034). When they pass, it runs the
-structural validation. Like a read, it reports at most 100 problems, each with a code, a JSON path and a message.
+structural validation. Like a read, and through the same limit (ADR-0034), it reports at most 100 problems, each
+with a code, a JSON path and a message.
 
 It never throws for a definition the save checks accept. A property-style test publishes 500 generated definitions
 and resolves every reported path in the document.
@@ -98,7 +101,7 @@ and resolves every reported path in the document.
 | `unknown_type` | A field type the site does not have | `…type` |
 | `property_not_supported` | A non-default value of a property, check, message or rule effect the type does not support; places on options of a type without places; member groups when the form is not for some member groups; a captcha provider below the captcha level; a message, the answers or a delay on a redirect outcome | The property |
 | `part_missing` | A form without a page; a page without a group; a choice field without options; own options without an item; a library source without its list; a grid without rows; a repeatable group without fields; "some member groups" without a group; the captcha level without a provider; a redirect outcome without its redirect, or a redirect without a target | Where the part belongs |
-| `field_not_allowed` | A repeatable group or a captcha inside a repeatable group; a second captcha | `…type` |
+| `field_not_allowed` | A repeatable group or a captcha inside a repeatable group; a second field of a one-per-form type, such as a second captcha | `…type` |
 | `alias_invalid` | A field that holds a value without an alias, or with one outside `^[a-z][a-zA-Z0-9]{0,63}$` | `…alias`, `…formerAliases[n]` |
 | `alias_reserved` | `form`, `entry`, `page`, `member`, `query`, `context`, `site`, `date` or `ufprt`, in any letter case | The same |
 | `alias_duplicate` | An alias or former alias already used in the form, repeatable-group children included, in any letter case | The same |

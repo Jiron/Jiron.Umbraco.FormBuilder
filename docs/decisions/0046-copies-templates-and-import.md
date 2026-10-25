@@ -3,7 +3,8 @@
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (how references are
   found, the envelope's limits and layout, `unsupported_format`, when an import creates option lists) and
   [ADR-0044](0044-form-service.md) (the new-form defaults apply to forms from a template); the operations are
-  `IFormBuilderFormExchangeService`'s since [ADR-0053](0053-form-service-in-parts.md) in 4.8d
+  `IFormBuilderFormExchangeService`'s since [ADR-0053](0053-form-service-in-parts.md) in 4.8d; amended in 4.8e (the
+  reader stops at ADR-0034's one limit of 100 problems)
 - Date: 2026-10-24
 - Roadmap step: 4.5c (decided and built); 4.7 and 9.x map it to the API and the tree, 5.3, 5.5, 8.1 and 8.3 extend it,
   12.3 adds the other templates and "Save as template", 12.5 the import that replaces a form and the mirror files
@@ -150,6 +151,9 @@ importing as a new draft of an existing form):
 - **The definition** is measured without its indentation against the site's definition limit and read like every
   save: an older `schemaVersion` is upgraded, a newer one refused with `unsupported_schema_version`. Its problems keep
   their paths below `$.definition`.
+- **At most 100 problems** (amended in 4.8e): the envelope's and its definition's problems together stop at ADR-0034's
+  one limit, and the reader stops there, so a file of thousands of bad option lists costs no more than the first
+  hundred.
 - **Name and alias:** the request's, or the envelope's name and its alias (or one from the name when the envelope's is
   not valid), with the next free number when another form has it (`contact2`).
 - **A theme the site lacks** is cleared, so the form uses the default theme, and the import says so (`theme_missing`).

@@ -2,7 +2,8 @@
 
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the save codes,
   properties a type does not support, the outcome limit); amended in 4.4a (stored definitions are read with the
-  highest limits, [ADR-0042](0042-host-configuration-and-start-up-checks.md))
+  highest limits, [ADR-0042](0042-host-configuration-and-start-up-checks.md)); amended in 4.8e (one limit of 100
+  problems for every reader and check; the lists are read-only, and records compare them by their items)
 - Date: 2026-10-23
 - Roadmap step: 4.2a (decided and built); 4.2b builds the structural validation on it, 4.4 binds its limits, 4.5
   calls it from the form service
@@ -71,6 +72,16 @@ Option 3 for reading, option 2 for writing, JsonSchema.Net 8.0.5 as a test-only 
   `FieldOption`, `GridRow` and the checks (`PatternCheck`, `MatchesFieldCheck`, `UniquePerFormCheck`), `FormRule` with
   `RuleCondition` and `RuleGroup`, `FormValidationRule`, `FormAction`, `FormOutcome` and `OutcomeRedirect`, and the
   enums. Property names, defaults and enum words are ADR-0002's.
+- **Lists** (amended in 4.8e): every list that a record, a value type or the public projection holds is the model's
+  own read-only list (internal), which implements no collection interface that adds, removes or replaces items, so no
+  cast changes it. A record's `init` accessor copies the list it is given, the reader's lists included, so the list a
+  caller built a record from cannot change it later either.
+- **Records compare their lists by their items, in order** (amended in 4.8e), each item by its own equality, and hash
+  them alike, so two reads of one document are equal, as the value types always were. The other choice, comparing
+  lists by reference and writing that down, would let a public record's `Equals` say that two equal definitions
+  differ, a trap for every extension point that sees them. A comparison walks the whole record and costs time in
+  proportion to its size; nothing in the package keys a dictionary by a record, and stored versions are still compared
+  by `DefinitionHash`.
 - **Value types with their own rules:** `LocalizedText` and `LocalizedHtml` (validated and sorted when built: a
   default text, culture names, no culture twice in any letter case; `Resolve` falls back through the parent cultures
   to the default); `FieldDefaultValue` (one text or a list); `ConditionOperand` (a text, another answer, a date
@@ -104,6 +115,11 @@ path (`$.pages[0].title['']`) and a message:
 
 Reading takes time in proportion to the document's size: a path becomes text only when a problem names it, so a long
 property name over a long array costs no more than its bytes.
+
+**One limit for every reader and check** (amended in 4.8e): the shape reader, the save checks, the structural checks
+(ADR-0035), the publish checks together and the export file's reader (ADR-0046) collect their problems through one
+collection with one limit of 100. Past it a problem is counted, so a step still knows that it failed, but not kept,
+and the export file's reader stops reading.
 
 | Code | Meaning |
 | --- | --- |

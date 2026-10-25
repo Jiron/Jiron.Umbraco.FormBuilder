@@ -21,10 +21,10 @@ public sealed record PublicForm
     public PublicFormSettings Settings { get; init; } = new();
 
     /// <summary>The pages, in order.</summary>
-    public IReadOnlyList<PublicPage> Pages { get; init; } = [];
+    public IReadOnlyList<PublicPage> Pages { get; init => field = DefinitionList.Of(value); } = DefinitionList<PublicPage>.Empty;
 
     /// <summary>The switched-on checks across fields.</summary>
-    public IReadOnlyList<PublicValidationRule> ValidationRules { get; init; } = [];
+    public IReadOnlyList<PublicValidationRule> ValidationRules { get; init => field = DefinitionList.Of(value); } = DefinitionList<PublicValidationRule>.Empty;
 }
 
 /// <summary>The form settings a visitor's page needs.</summary>
@@ -76,7 +76,7 @@ public sealed record PublicFormSettings
     public string? CssClass { get; init; }
 
     /// <summary>The query values the form reads, for prefill and rules.</summary>
-    public IReadOnlyList<string> QueryValues { get; init; } = [];
+    public IReadOnlyList<string> QueryValues { get; init => field = DefinitionList.Of(value); } = DefinitionList<string>.Empty;
 }
 
 /// <summary>A page of the public projection.</summary>
@@ -92,10 +92,10 @@ public sealed record PublicPage
     public LocalizedHtml? Description { get; init; }
 
     /// <summary>The switched-on rules.</summary>
-    public IReadOnlyList<PublicRule> Rules { get; init; } = [];
+    public IReadOnlyList<PublicRule> Rules { get; init => field = DefinitionList.Of(value); } = DefinitionList<PublicRule>.Empty;
 
     /// <summary>The page's groups.</summary>
-    public IReadOnlyList<PublicGroup> Groups { get; init; } = [];
+    public IReadOnlyList<PublicGroup> Groups { get; init => field = DefinitionList.Of(value); } = DefinitionList<PublicGroup>.Empty;
 }
 
 /// <summary>A group of the public projection.</summary>
@@ -117,10 +117,10 @@ public sealed record PublicGroup
     public GroupStyle Style { get; init; } = GroupStyle.Plain;
 
     /// <summary>The switched-on rules.</summary>
-    public IReadOnlyList<PublicRule> Rules { get; init; } = [];
+    public IReadOnlyList<PublicRule> Rules { get; init => field = DefinitionList.Of(value); } = DefinitionList<PublicRule>.Empty;
 
     /// <summary>The group's fields.</summary>
-    public IReadOnlyList<PublicField> Fields { get; init; } = [];
+    public IReadOnlyList<PublicField> Fields { get; init => field = DefinitionList.Of(value); } = DefinitionList<PublicField>.Empty;
 }
 
 /// <summary>
@@ -172,19 +172,19 @@ public sealed record PublicField
     public string? CssClass { get; init; }
 
     /// <summary>The field's checks.</summary>
-    public IReadOnlyList<FieldCheck> Validation { get; init; } = [];
+    public IReadOnlyList<FieldCheck> Validation { get; init => field = DefinitionList.Of(value); } = DefinitionList<FieldCheck>.Empty;
 
     /// <summary>The switched-on rules.</summary>
-    public IReadOnlyList<PublicRule> Rules { get; init; } = [];
+    public IReadOnlyList<PublicRule> Rules { get; init => field = DefinitionList.Of(value); } = DefinitionList<PublicRule>.Empty;
 
     /// <summary>The options of a choice field.</summary>
     public PublicOptions? Options { get; init; }
 
     /// <summary>The rows of a grid.</summary>
-    public IReadOnlyList<PublicGridRow> Rows { get; init; } = [];
+    public IReadOnlyList<PublicGridRow> Rows { get; init => field = DefinitionList.Of(value); } = DefinitionList<PublicGridRow>.Empty;
 
     /// <summary>The child fields of a repeatable group.</summary>
-    public IReadOnlyList<PublicField> Fields { get; init; } = [];
+    public IReadOnlyList<PublicField> Fields { get; init => field = DefinitionList.Of(value); } = DefinitionList<PublicField>.Empty;
 
     /// <summary>The part of the type's settings the type makes public.</summary>
     public SettingsObject? Settings { get; init; }
@@ -207,7 +207,7 @@ public sealed record PublicPrefill
 public sealed record PublicOptions
 {
     /// <summary>The field's own options; empty for options from a source.</summary>
-    public IReadOnlyList<PublicOption> Items { get; init; } = [];
+    public IReadOnlyList<PublicOption> Items { get; init => field = DefinitionList.Of(value); } = DefinitionList<PublicOption>.Empty;
 
     /// <summary>Whether the options come from a library list or another source, resolved when the form is shown.</summary>
     public bool FromSource { get; init; }
@@ -232,7 +232,7 @@ public sealed record PublicOption
     public Guid? Image { get; init; }
 
     /// <summary>The answers of the parent field this option belongs to.</summary>
-    public IReadOnlyList<string> ParentValues { get; init; } = [];
+    public IReadOnlyList<string> ParentValues { get; init => field = DefinitionList.Of(value); } = DefinitionList<string>.Empty;
 }
 
 /// <summary>A row of a grid.</summary>
@@ -261,7 +261,7 @@ public sealed record PublicRule
     public RuleMatch Match { get; init; } = RuleMatch.All;
 
     /// <summary>The conditions and nested groups.</summary>
-    public IReadOnlyList<RuleItem> Conditions { get; init; } = [];
+    public IReadOnlyList<RuleItem> Conditions { get; init => field = DefinitionList.Of(value); } = DefinitionList<RuleItem>.Empty;
 }
 
 /// <summary>A switched-on check across fields: while it matches, the field shows the message as an error.</summary>
@@ -280,5 +280,5 @@ public sealed record PublicValidationRule
     public RuleMatch Match { get; init; } = RuleMatch.All;
 
     /// <summary>The conditions and nested groups.</summary>
-    public IReadOnlyList<RuleItem> Conditions { get; init; } = [];
+    public IReadOnlyList<RuleItem> Conditions { get; init => field = DefinitionList.Of(value); } = DefinitionList<RuleItem>.Empty;
 }

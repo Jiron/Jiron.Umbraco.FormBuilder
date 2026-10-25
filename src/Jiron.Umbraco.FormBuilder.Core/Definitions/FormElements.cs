@@ -15,10 +15,10 @@ public sealed record FormPage
     public LocalizedHtml? Description { get; init; }
 
     /// <summary>At most one <c>show</c> or <c>hide</c> rule: a hidden page is skipped.</summary>
-    public IReadOnlyList<FormRule> Rules { get; init; } = [];
+    public IReadOnlyList<FormRule> Rules { get; init => field = DefinitionList.Of(value); } = DefinitionList<FormRule>.Empty;
 
     /// <summary>The page's groups, at least one.</summary>
-    public IReadOnlyList<FormGroup> Groups { get; init; } = [];
+    public IReadOnlyList<FormGroup> Groups { get; init => field = DefinitionList.Of(value); } = DefinitionList<FormGroup>.Empty;
 }
 
 /// <summary>A group of fields laid out in columns.</summary>
@@ -40,10 +40,10 @@ public sealed record FormGroup
     public GroupStyle Style { get; init; } = GroupStyle.Plain;
 
     /// <summary>At most one <c>show</c> or <c>hide</c> rule.</summary>
-    public IReadOnlyList<FormRule> Rules { get; init; } = [];
+    public IReadOnlyList<FormRule> Rules { get; init => field = DefinitionList.Of(value); } = DefinitionList<FormRule>.Empty;
 
     /// <summary>The group's fields; a new group may have none.</summary>
-    public IReadOnlyList<FormField> Fields { get; init; } = [];
+    public IReadOnlyList<FormField> Fields { get; init => field = DefinitionList.Of(value); } = DefinitionList<FormField>.Empty;
 }
 
 /// <summary>
@@ -65,7 +65,7 @@ public sealed record FormField
     public string? Alias { get; init; }
 
     /// <summary>Aliases the field had in published versions; merge tags outside the form still resolve them.</summary>
-    public IReadOnlyList<string> FormerAliases { get; init; } = [];
+    public IReadOnlyList<string> FormerAliases { get; init => field = DefinitionList.Of(value); } = DefinitionList<string>.Empty;
 
     /// <summary>How many of the group's columns the field spans, 1 to the group's columns.</summary>
     public int Span { get; init; } = 1;
@@ -110,19 +110,19 @@ public sealed record FormField
     public string? CssClass { get; init; }
 
     /// <summary>The checks no type owns: a pattern, matching another field, unique per form.</summary>
-    public IReadOnlyList<FieldCheck> Validation { get; init; } = [];
+    public IReadOnlyList<FieldCheck> Validation { get; init => field = DefinitionList.Of(value); } = DefinitionList<FieldCheck>.Empty;
 
     /// <summary>At most one <c>show</c> or <c>hide</c> rule and at most one <c>require</c> rule.</summary>
-    public IReadOnlyList<FormRule> Rules { get; init; } = [];
+    public IReadOnlyList<FormRule> Rules { get; init => field = DefinitionList.Of(value); } = DefinitionList<FormRule>.Empty;
 
     /// <summary>The options of a choice type.</summary>
     public FieldOptions? Options { get; init; }
 
     /// <summary>The rows of a grid.</summary>
-    public IReadOnlyList<GridRow> Rows { get; init; } = [];
+    public IReadOnlyList<GridRow> Rows { get; init => field = DefinitionList.Of(value); } = DefinitionList<GridRow>.Empty;
 
     /// <summary>The child fields of a repeatable group; no repeatable group among them.</summary>
-    public IReadOnlyList<FormField> Fields { get; init; } = [];
+    public IReadOnlyList<FormField> Fields { get; init => field = DefinitionList.Of(value); } = DefinitionList<FormField>.Empty;
 
     /// <summary>The type's own settings, validated and read by the type.</summary>
     public SettingsObject? Settings { get; init; }
@@ -197,7 +197,7 @@ public sealed record FieldOptions
     public OptionSource Source { get; init; } = OptionSource.Items;
 
     /// <summary>The field's own options, for <see cref="OptionSource.Items"/>.</summary>
-    public IReadOnlyList<FieldOption> Items { get; init; } = [];
+    public IReadOnlyList<FieldOption> Items { get; init => field = DefinitionList.Of(value); } = DefinitionList<FieldOption>.Empty;
 
     /// <summary>The key of the library option list, for <see cref="OptionSource.List"/>.</summary>
     public Guid? List { get; init; }
@@ -228,7 +228,7 @@ public sealed record FieldOption
     public int? Places { get; init; }
 
     /// <summary>The answers of the parent field this option belongs to.</summary>
-    public IReadOnlyList<string> ParentValues { get; init; } = [];
+    public IReadOnlyList<string> ParentValues { get; init => field = DefinitionList.Of(value); } = DefinitionList<string>.Empty;
 }
 
 /// <summary>A row of a grid: a statement rated on the grid's columns, stored like a child field.</summary>

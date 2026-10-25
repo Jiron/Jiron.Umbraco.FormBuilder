@@ -111,7 +111,7 @@ public sealed record FormAvailabilitySettings
     public MemberAccess Members { get; init; } = MemberAccess.Anyone;
 
     /// <summary>For <see cref="MemberAccess.Groups"/>: the keys of the member groups.</summary>
-    public IReadOnlyList<Guid> MemberGroups { get; init; } = [];
+    public IReadOnlyList<Guid> MemberGroups { get; init => field = DefinitionList.Of(value); } = DefinitionList<Guid>.Empty;
 
     /// <summary>Whether a member may send one entry only.</summary>
     public bool OnePerMember { get; init; }
@@ -195,8 +195,8 @@ public sealed record FormDeveloperSettings
     public bool Headless { get; init; }
 
     /// <summary>The query values the form may read, for prefill and rules.</summary>
-    public IReadOnlyList<string> QueryValues { get; init; } = [];
+    public IReadOnlyList<string> QueryValues { get; init => field = DefinitionList.Of(value); } = DefinitionList<string>.Empty;
 
     /// <summary>The context values a developer passes that entries store.</summary>
-    public IReadOnlyList<string> ContextValues { get; init; } = [];
+    public IReadOnlyList<string> ContextValues { get; init => field = DefinitionList.Of(value); } = DefinitionList<string>.Empty;
 }

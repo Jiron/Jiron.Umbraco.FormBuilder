@@ -93,15 +93,24 @@ internal sealed partial class FormBuilderFormService
             return new FormVersionResult(await documents.InfoAsync(form, cancellationToken), null);
         }
 
-        var problems = new List<DefinitionProblem>();
+        // Every check's problems together, at most as many as one read reports.
+        var problems = new DefinitionProblems();
         foreach (var check in _publishChecks)
         {
-            problems.AddRange(await check.CheckAsync(definition, cancellationToken));
+            if (problems.IsFull)
+            {
+                break;
+            }
+
+            foreach (var problem in await check.CheckAsync(definition, cancellationToken))
+            {
+                problems.Add(problem);
+            }
         }
 
-        if (problems.Count > 0)
+        if (problems.Found > 0)
         {
-            throw new FormBuilderValidationException(problems);
+            throw new FormBuilderValidationException(problems.ToList());
         }
 
         await changes.CancelableAsync(new FormPublishingNotification(definition, form.Alias, form.Name, userKey, new EventMessages()));

@@ -12,7 +12,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
 /// </summary>
 public abstract partial class LocalizedString : IEquatable<LocalizedString>
 {
-    private readonly KeyValuePair<string, string>[] _texts;
+    private readonly DefinitionList<KeyValuePair<string, string>> _texts;
 
     /// <summary>Creates a text from its cultures and texts.</summary>
     /// <exception cref="ArgumentException">
@@ -22,14 +22,14 @@ public abstract partial class LocalizedString : IEquatable<LocalizedString>
     private protected LocalizedString(IEnumerable<KeyValuePair<string, string>> texts)
     {
         ArgumentNullException.ThrowIfNull(texts);
-        var sorted = texts.OrderBy(text => text.Key, StringComparer.Ordinal).ToArray();
-        if (sorted.Length == 0 || sorted[0].Key.Length != 0)
+        var sorted = DefinitionList.Of(texts.OrderBy(text => text.Key, StringComparer.Ordinal));
+        if (sorted.Count == 0 || sorted[0].Key.Length != 0)
         {
             throw new ArgumentException("A localised text needs its default text, the culture \"\".", nameof(texts));
         }
 
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (culture, text) in sorted)
+        foreach (var (culture, text) in sorted.AsSpan())
         {
             if (culture.Length > 0 && !IsCultureName(culture))
             {
@@ -70,7 +70,7 @@ public abstract partial class LocalizedString : IEquatable<LocalizedString>
     public bool TryGetText(string culture, [NotNullWhen(true)] out string? text)
     {
         ArgumentNullException.ThrowIfNull(culture);
-        foreach (var entry in _texts)
+        foreach (var entry in _texts.AsSpan())
         {
             if (string.Equals(entry.Key, culture, StringComparison.OrdinalIgnoreCase))
             {
@@ -106,7 +106,7 @@ public abstract partial class LocalizedString : IEquatable<LocalizedString>
 
     /// <inheritdoc />
     public bool Equals(LocalizedString? other) =>
-        other is not null && other.GetType() == GetType() && _texts.SequenceEqual(other._texts);
+        other is not null && other.GetType() == GetType() && _texts.Equals(other._texts);
 
     /// <inheritdoc />
     public override bool Equals(object? obj) => Equals(obj as LocalizedString);
@@ -115,7 +115,7 @@ public abstract partial class LocalizedString : IEquatable<LocalizedString>
     public override int GetHashCode()
     {
         var hash = default(HashCode);
-        foreach (var (culture, text) in _texts)
+        foreach (var (culture, text) in _texts.AsSpan())
         {
             hash.Add(culture, StringComparer.Ordinal);
             hash.Add(text, StringComparer.Ordinal);

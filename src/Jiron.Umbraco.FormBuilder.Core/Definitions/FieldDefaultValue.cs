@@ -10,9 +10,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
 [JsonConverter(typeof(FieldDefaultValueConverter))]
 public sealed class FieldDefaultValue : IEquatable<FieldDefaultValue>
 {
-    private readonly string[] _values;
+    private readonly DefinitionList<string> _values;
 
-    private FieldDefaultValue(string[] values, bool isList)
+    private FieldDefaultValue(DefinitionList<string> values, bool isList)
     {
         _values = values;
         IsList = isList;
@@ -28,7 +28,7 @@ public sealed class FieldDefaultValue : IEquatable<FieldDefaultValue>
     public static FieldDefaultValue Of(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        return new FieldDefaultValue([value], isList: false);
+        return new FieldDefaultValue(DefinitionList.Of([value]), isList: false);
     }
 
     /// <summary>A default of several values, for a type with several answers.</summary>
@@ -36,8 +36,8 @@ public sealed class FieldDefaultValue : IEquatable<FieldDefaultValue>
     public static FieldDefaultValue OfList(IEnumerable<string> values)
     {
         ArgumentNullException.ThrowIfNull(values);
-        var list = values.ToArray();
-        if (list.Length == 0 || Array.Exists(list, value => value is null))
+        var list = DefinitionList.Of(values);
+        if (list.Count == 0 || list.Any(value => value is null))
         {
             throw new ArgumentException("A list default has at least one value and no null.", nameof(values));
         }
@@ -57,7 +57,7 @@ public sealed class FieldDefaultValue : IEquatable<FieldDefaultValue>
     {
         var hash = default(HashCode);
         hash.Add(IsList);
-        foreach (var value in _values)
+        foreach (var value in _values.AsSpan())
         {
             hash.Add(value, StringComparer.Ordinal);
         }

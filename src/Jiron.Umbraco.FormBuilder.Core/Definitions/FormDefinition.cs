@@ -19,16 +19,16 @@ public sealed record FormDefinition
     public FormSettings Settings { get; init; } = new();
 
     /// <summary>The pages, at least one.</summary>
-    public IReadOnlyList<FormPage> Pages { get; init; } = [];
+    public IReadOnlyList<FormPage> Pages { get; init => field = DefinitionList.Of(value); } = DefinitionList<FormPage>.Empty;
 
     /// <summary>Checks across fields.</summary>
-    public IReadOnlyList<FormValidationRule> ValidationRules { get; init; } = [];
+    public IReadOnlyList<FormValidationRule> ValidationRules { get; init => field = DefinitionList.Of(value); } = DefinitionList<FormValidationRule>.Empty;
 
     /// <summary>What runs after a submission, in run order.</summary>
-    public IReadOnlyList<FormAction> Actions { get; init; } = [];
+    public IReadOnlyList<FormAction> Actions { get; init => field = DefinitionList.Of(value); } = DefinitionList<FormAction>.Empty;
 
     /// <summary>What the visitor gets after sending, in order: the first whose rule matches is used.</summary>
-    public IReadOnlyList<FormOutcome> Outcomes { get; init; } = [];
+    public IReadOnlyList<FormOutcome> Outcomes { get; init => field = DefinitionList.Of(value); } = DefinitionList<FormOutcome>.Empty;
 }
 
 /// <summary>An action: what runs after a submission (section 4.4).</summary>
@@ -53,7 +53,7 @@ public sealed record FormAction
     public bool StopOnFailure { get; init; }
 
     /// <summary>At most one <c>run</c> rule: the action runs only while it matches.</summary>
-    public IReadOnlyList<FormRule> Rules { get; init; } = [];
+    public IReadOnlyList<FormRule> Rules { get; init => field = DefinitionList.Of(value); } = DefinitionList<FormRule>.Empty;
 
     /// <summary>
     /// The type's settings. Secrets appear only as <c>$JironFormBuilder:Secrets:&lt;Name&gt;</c> references (section 4.10).
@@ -80,7 +80,7 @@ public sealed record FormOutcome
     public OutcomeRedirect? Redirect { get; init; }
 
     /// <summary>At most one <c>use</c> rule.</summary>
-    public IReadOnlyList<FormRule> Rules { get; init; } = [];
+    public IReadOnlyList<FormRule> Rules { get; init => field = DefinitionList.Of(value); } = DefinitionList<FormRule>.Empty;
 }
 
 /// <summary>Where an outcome sends the visitor: a content page or a URL.</summary>

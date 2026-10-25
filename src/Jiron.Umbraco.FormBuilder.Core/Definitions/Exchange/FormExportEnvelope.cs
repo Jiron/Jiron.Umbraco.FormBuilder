@@ -164,7 +164,7 @@ internal static class FormExportFormat
     // One read of one envelope, collecting its problems.
     private sealed class Reader(FormDefinitionSerializer serializer)
     {
-        private readonly List<DefinitionProblem> _problems = [];
+        private readonly DefinitionProblems _problems = new();
 
         public EnvelopeReadResult Read(JsonElement root)
         {
@@ -194,7 +194,7 @@ internal static class FormExportFormat
                 Fail(DefinitionErrors.InvalidValue, JsonPaths.Property(JsonPaths.Property(JsonPaths.Root, DefinitionProperty), "key"), "The definition's key is not the form's key.");
             }
 
-            if (_problems.Count > 0 || packageVersion is null || exportedUtc is null || form is null || definition is null || lists is null)
+            if (_problems.Found > 0 || packageVersion is null || exportedUtc is null || form is null || definition is null || lists is null)
             {
                 return Failed();
             }
@@ -282,6 +282,11 @@ internal static class FormExportFormat
             var read = serializer.Read(compact);
             foreach (var problem in read.Problems)
             {
+                if (_problems.IsFull)
+                {
+                    break;
+                }
+
                 _problems.Add(problem with { Path = path + problem.Path[JsonPaths.Root.Length..] });
             }
 
@@ -303,6 +308,12 @@ internal static class FormExportFormat
             var index = 0;
             foreach (var item in value.EnumerateArray())
             {
+                // Past the limit, a list's problems would not be reported, and the file is refused already.
+                if (_problems.IsFull)
+                {
+                    return null;
+                }
+
                 var at = JsonPaths.Index(path, index++);
                 if (OptionList(item, at) is not { } list)
                 {
@@ -357,10 +368,16 @@ internal static class FormExportFormat
                 return null;
             }
 
-            var before = _problems.Count;
+            var before = _problems.Found;
             var properties = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
             foreach (var property in value.EnumerateObject())
             {
+                // Past the limit, nothing more would be reported, and the file is refused already.
+                if (_problems.IsFull)
+                {
+                    return null;
+                }
+
                 if (JsonPaths.TryGetName(property) is not { } name)
                 {
                     Fail(DefinitionErrors.InvalidJson, path, "A property name holds a lone surrogate.");
@@ -383,7 +400,7 @@ internal static class FormExportFormat
                 }
             }
 
-            return _problems.Count == before ? properties : null;
+            return _problems.Found == before ? properties : null;
         }
 
         private string? String(JsonElement value, string path)
@@ -447,7 +464,7 @@ internal static class FormExportFormat
             return kind == JsonValueKind.Object ? JsonObject.Create(value.Clone()) : JsonArray.Create(value.Clone());
         }
 
-        private void Fail(string code, string path, string message) => _problems.Add(new DefinitionProblem(code, path, message));
+        private void Fail(string code, string path, string message) => _problems.Add(code, path, message);
 
         private EnvelopeReadResult Failed() => new(null, _problems.ToList());
     }

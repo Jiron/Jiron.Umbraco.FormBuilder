@@ -24,7 +24,7 @@ internal sealed partial class DefinitionStructureChecks
         new[] { "form", "entry", "page", "member", "query", "context", "site", "date", "ufprt" }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     private readonly FieldTypeCatalogue _types;
-    private readonly List<DefinitionProblem> _problems = [];
+    private readonly DefinitionProblems _problems = new();
 
     // Every field, repeatable group child and grid row by key; the first of two with one key wins (a save refuses both).
     private readonly Dictionary<Guid, Entry> _fields = [];
@@ -38,12 +38,14 @@ internal sealed partial class DefinitionStructureChecks
     private readonly Dictionary<string, string> _aliases = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<Node> _nodes = [];
     private readonly List<(Guid Field, Guid Parent, string Path)> _parents = [];
+
+    // The one-per-form types the form has a field of so far, by alias: each type counts on its own.
+    private readonly HashSet<string> _onePerForm = new(StringComparer.Ordinal);
     private int _cursor;
-    private bool _captcha;
 
     private DefinitionStructureChecks(FieldTypeCatalogue types) => _types = types;
 
-    /// <summary>Every structural problem of the definition, at most <see cref="DefinitionShapeReader.MaxProblems"/>.</summary>
+    /// <summary>Every structural problem of the definition, at most <see cref="DefinitionProblems.Max"/>.</summary>
     /// <param name="definition">A definition the save checks accept.</param>
     /// <param name="types">The field types the site has.</param>
     public static IReadOnlyList<DefinitionProblem> Check(FormDefinition definition, FieldTypeCatalogue types)
@@ -54,7 +56,7 @@ internal sealed partial class DefinitionStructureChecks
         checks.Index(definition);
         checks.CheckDefinition(definition);
         checks.CheckCycles();
-        return checks._problems;
+        return checks._problems.ToList();
     }
 
     private static string P(string path, string name) => JsonPaths.Property(path, name);
@@ -73,24 +75,7 @@ internal sealed partial class DefinitionStructureChecks
     private static bool IsName(string name) =>
         name.Length is >= 1 and <= MaxNameLength && name.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
 
-    private static (string Name, LocalizedText? Text, FieldMessageKinds Kind)[] MessageTexts(FieldMessages messages) =>
-    [
-        ("required", messages.Required, FieldMessageKinds.Required), ("invalid", messages.Invalid, FieldMessageKinds.Invalid),
-        ("minLength", messages.MinLength, FieldMessageKinds.MinLength), ("maxLength", messages.MaxLength, FieldMessageKinds.MaxLength),
-        ("minWords", messages.MinWords, FieldMessageKinds.MinWords), ("maxWords", messages.MaxWords, FieldMessageKinds.MaxWords),
-        ("min", messages.Min, FieldMessageKinds.Min), ("max", messages.Max, FieldMessageKinds.Max), ("step", messages.Step, FieldMessageKinds.Step),
-        ("dateWindow", messages.DateWindow, FieldMessageKinds.DateWindow), ("selections", messages.Selections, FieldMessageKinds.Selections),
-        ("fileType", messages.FileType, FieldMessageKinds.FileType), ("fileSize", messages.FileSize, FieldMessageKinds.FileSize),
-        ("fileCount", messages.FileCount, FieldMessageKinds.FileCount), ("full", messages.Full, FieldMessageKinds.Full),
-    ];
-
-    private void Fail(string code, string path, string message)
-    {
-        if (_problems.Count < DefinitionShapeReader.MaxProblems)
-        {
-            _problems.Add(new DefinitionProblem(code, path, message));
-        }
-    }
+    private void Fail(string code, string path, string message) => _problems.Add(code, path, message);
 
     // The first pass: every element that can be shown or hidden gets a node, in document order, and every field, child
     // and row is found by its key, so references may point forward.
@@ -295,14 +280,9 @@ internal sealed partial class DefinitionStructureChecks
             Fail(DefinitionErrors.FieldNotAllowed, P(path, "type"), $"{what} cannot be inside a repeatable group.");
         }
 
-        if (traits.Single)
+        if (traits.Single && !_onePerForm.Add(traits.Alias))
         {
-            if (_captcha)
-            {
-                Fail(DefinitionErrors.FieldNotAllowed, P(path, "type"), $"A form has at most one {traits.Alias} field.");
-            }
-
-            _captcha = true;
+            Fail(DefinitionErrors.FieldNotAllowed, P(path, "type"), $"A form has at most one {traits.Alias} field.");
         }
 
         Support(field, traits, path);
@@ -426,11 +406,11 @@ internal sealed partial class DefinitionStructureChecks
         }
 
         var messagesPath = P(path, "messages");
-        foreach (var (name, text, kind) in MessageTexts(field.Messages))
+        foreach (var message in FieldMessageTexts.All)
         {
-            if (text is not null && (traits.Messages & kind) == 0)
+            if (message.Read(field.Messages) is not null && (traits.Messages & message.Kind) == 0)
             {
-                Fail(DefinitionErrors.PropertyNotSupported, P(messagesPath, name), $"A {traits.Alias} field raises no '{name}' error.");
+                Fail(DefinitionErrors.PropertyNotSupported, P(messagesPath, message.Name), $"A {traits.Alias} field raises no '{message.Name}' error.");
             }
         }
 
