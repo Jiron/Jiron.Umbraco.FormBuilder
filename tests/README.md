@@ -99,6 +99,7 @@ coverage, schema and fixture tests fail.
 | `Stub/` | `StubServer`, the local HTTP stub: webhooks, captcha verification (`StubCaptcha` tokens) and scripted answers, with every call recorded. |
 | `Endpoints/` | The test-only endpoints under `/jfb-testing/`. |
 | `Startup/` | `StartupMarkerPopulator`, which logs a line once Umbraco has rebuilt its indexes, for the browser tests' start-up wait. |
+| `Settings/` | `SampleSettings`, the settings tests' section (below), and `SettingsJson.Global`, a section's global row as the settings service writes it. |
 
 A host turns these on in the `JironFormBuilderTesting` section; everything is off by default:
 
@@ -186,9 +187,14 @@ The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made 
 - a commit that fails on its way, a lost connection, and the waits between attempts;
 - the arguments each repository refuses, and how the outbox cuts and stores errors and attachments;
 - the file store's root (`Tests.Unit/Files/FileStoreRootTests`), with a site whose files would lie in its web root
-  failing its start-up validation, device paths and streams refused, and real junctions or symbolic links followed
-  into, around and out of the web root (`FileStoreRootLinkTests`, in `%TEMP%\jfb-links-*`); and audit details that
-  take no text, down to every method and field of the type (`Tests.Unit/Audit/AuditDetailsTests`);
+  failing its start-up validation, a store of the site's own, registered before the package or after it, in the
+  default's place, device paths and streams refused, and real junctions or symbolic links followed into, around and
+  out of the web root (`FileStoreRootLinkTests`, in `%TEMP%\jfb-links-*`); and audit details that take no text, down
+  to every method and field of the type (`Tests.Unit/Audit/AuditDetailsTests`);
+- the default folder on more than one server (`Tests.Unit/Files/FileStoreLoadBalancingCheckTests`): an error naming
+  the setting for a subscriber or beside other active servers, none for a single server (the elected publisher of
+  one included, without reading the registrations), a root the host set however it is written, a store of the site's
+  own or an Umbraco that does not run, and registrations that cannot be read only as a warning;
 - the entry text key against the rule vectors of `tests/vectors`: two texts share a key exactly when an `equals`
   vector says they match (`EntryTextKeyTests`);
 - the query builder's statements and refusals (`EntryQuerySqlTests`), and the time budget of a read: a timeout that
@@ -224,20 +230,23 @@ sets.
 globally and per site with their versions, stale saves, audit entries and notifications (a failing handler too); old
 rows migrated and rewritten; unreadable rows; host locks of every kind and a whole locked section
 (`LockedSectionTests`); a save refused inside a caller's unit of work or an Umbraco scope; and the cache with its
-loading token and the refresher, also as the JSON instruction other servers get. Umbraco's test host runs without
+loading token and the refresher, also as the JSON instruction other servers get. `Tests.Unit/RuntimeCacheLoadsTests`
+covers the load that the settings and the access snapshot share: misses that come together read once, a change
+during the load keeps it from being kept, a failed load (also one that throws before its first await) is cleared, and
+a caller that stops waiting leaves the load to the others. Umbraco's test host runs without
 caches (`NoAppCache`), so `SettingsServiceTests` gives its site a runtime cache, as a real site has, and a server
 messenger that records the instructions a save sends instead of delivering them (`RecordingServerMessenger`).
 
 ## The form service tests
 
 `Tests.Unit/Forms/` covers the parts of the form service without a host (ADR-0044): aliases from names (accents,
-spelled-out letters, camelCase, a leading digit, names without Latin letters, the length) and the lowest free number in
-any letter case; the field catalogue of a definition and what a publish adds, updates, brings back and ends, with the
-storage kind of every built-in type written out apart from the code; the code of every refusal and conflict; the
-notifications' arguments (also of the folder service, `FolderNotificationTests`) and the structural publish check; the
-name rule of forms and folders (`LibraryNamesTests`); and the built-in templates (`BuiltInFormTemplatesTests`:
-one per file, each reading with its key, publishing and having English and German texts) with the package version
-an export names.
+spelled-out letters, camelCase, a leading digit, names without Latin letters, the length) and the lowest free number
+in any letter case, the alias cut so its number keeps it within the longest alias; the field catalogue of a definition
+and what a publish adds, updates, brings back and ends, with the storage kind of every built-in type written out apart
+from the code; the code of every refusal and conflict; the notifications' arguments (also of the folder service,
+`FolderNotificationTests`) and the structural publish check; the name rule of forms and folders (`LibraryNamesTests`);
+and the built-in templates (`BuiltInFormTemplatesTests`: one per file, each reading with its key, publishing and
+having English and German texts) with the package version an export names.
 
 `Tests.Integration/Forms/` runs the service on a real site, with a fresh database per test: a create from blank with
 and without the consent default (and with a stored default a definition would refuse), aliases and their races,
@@ -252,10 +261,11 @@ version above the limit, a duplicate of it, copied actions into it, a saved temp
 
 `FormCopyServiceTests` covers copies, templates, imports and exports (ADR-0046) on a form designed with every kind of
 reference: a duplicate whose rules, checks, verification field and action settings name its own elements, with and
-without actions; copied actions mapped by alias with the unmapped ones reported and refused at publish; forms from
-the Contact template and from saved templates, with the consent default; an export of the draft or a version with
-its option lists that imports as a new form, a theme the site lacks, option lists by key, by alias or missing; and
-every refusal, notification and audit entry, and each operation refused inside a unit of work or a scope.
+without actions; copied actions mapped by alias with the unmapped ones reported and refused at publish; forms from the
+Contact template and from saved templates, with the consent default; an export of the draft or a version with its
+option lists that imports as a new form, a theme the site lacks, option lists by key, by alias or missing; and every
+refusal, notification and audit entry (an import's notes named once per code, with their counts), a reimport of the
+longest alias numbered within it, and each operation refused inside a unit of work or a scope.
 
 `FormVersionServiceTests` covers a form's versions (ADR-0045) on a history of six versions: the History of publishes
 or of every version with what changed into each, paged, one version, two compared either way, a restore that creates a
@@ -264,15 +274,17 @@ comments that leave the form's row alone, and every refusal. `Tests.Integration/
 cleanup by the history settings, with the versions it must keep, its rounds, its deadline and its audit entries, and the
 retention job that runs it; `Tests.Unit/Retention/` covers the job's own rules without a host.
 
-`FormTrashServiceTests` covers the trash and the permanent delete of a form (ADR-0047): a trash and a restore into
-its folder or, when that is in the trash, the root; stale changes; a delete that removes the entries with their
-values, files, events and notes, the versions, catalogue, grants, references and daily statistics, unsent mail and
-the bytes of the files (with `Support/MemoryFileStore` as the site's file store), keeping sent mail and other forms;
-a delete that stops after its first batch and finishes when run again, bytes that cannot be deleted, a late entry
-and entries that keep arriving until `in_use`. `FolderServiceTests` covers the folder service on the same rules:
-create, rename and move with every refusal, a trash and a restore that take exactly what went (a folder and a form
-trashed before stay), a subfolder restored on its own, the delete of a folder's tree, emptying the trash, and that
-none of these publishes notifications of the forms it takes.
+`FormTrashServiceTests` covers the trash and the permanent delete of a form (ADR-0047): a trash and a restore into its
+folder or, when that is in the trash, the root, refused with `landing_changed` when that changed after the check (the
+repositories refuse it too); stale changes; a delete that removes the entries with their values, files, events and
+notes, the versions, catalogue, grants, references and daily statistics, unsent mail and the bytes of the files (with
+`Support/MemoryFileStore` as the site's file store), keeping sent mail and other forms; a delete recorded as begun
+(`form.deleting`) with its first batch that removes something, one that stops after its first batch and finishes when
+run again, bytes that cannot be deleted, a late entry and entries that keep arriving until `in_use`.
+`FolderServiceTests` covers the folder service on the same rules: create, rename and move with every refusal, a trash
+and a restore that take exactly what went (a folder and a form trashed before stay), a subfolder restored on its own,
+a restore refused when where it lands changed after the check, the delete of a folder's tree, emptying the trash, and
+that none of these publishes notifications of the forms it takes.
 
 ## The access tests
 
@@ -285,12 +297,14 @@ limit of groups.
 
 `Tests.Integration/Access/` runs the access service on a real site, with a fresh database per test. `AccessPersonas`
 creates the personas of ADR-0013, one group and one user each, with their global grants, and `AccessListTests` lists
-forms and folders as each of them over a library with a restricted folder for a separate group, a restricted form
-and a form in the trash, paged and counted. `AccessServiceTests` changes grants and restrictions with their audit
-entries, refusals and stale versions, deletes a user group through Umbraco, and shows that the cached evaluation
-follows every change: it gives the site a runtime cache, the recording server messenger, and
-`HookedPermissionRepository`, which lets another server change a grant while the snapshot loads or a change writes.
-`AccessLockTests` locks the section, and `HostGrantsBootTests` boots a site whose host sets the global grants.
+forms and folders as each of them over a library with a restricted folder for a separate group, a restricted form and
+a form in the trash, paged and counted. `AccessServiceTests` changes grants and restrictions with their audit entries,
+refusals and stale versions, deletes a user group through Umbraco, and shows that the cached evaluation follows every
+change of access and of the tree, while a folder's rename keeps it, and that a change, a deleted group's grants
+included, is refused inside a caller's unit of work: it gives the site a runtime cache, the recording server
+messenger, and `HookedPermissionRepository`, which lets another server change a grant while the snapshot loads or a
+change writes. `AccessLockTests` locks the section, and `HostGrantsBootTests` boots a site whose host sets the global
+grants.
 
 The authorization policies ([ADR-0049](../docs/decisions/0049-authorization-policies.md)) are tested twice.
 `Tests.Unit/ManagementApi/FormBuilderAuthorizationTests` covers their names, scheme and requirements, the resources
@@ -321,6 +335,7 @@ tests that use it call a new endpoint by themselves:
 | `FolderApiTests` | Each folder endpoint's answer and change: the permission checked before the request's values, `design` on a move's new parent, `managePermissions` and a confirmation for a move that widens access, `design` and `deleteEntries` on everything a permanent delete removes (restricted folders and forms below it included), an emptied trash that keeps what the user may not delete, and a restore to the root (its parent in the trash) that needs what a move there needs. |
 | `FormApiTests` | Each form endpoint's answer and change: a search of what the user sees by name or alias, the form for anyone who sees it and the draft's document for `design`, a save of the document with its version (or none when nothing changed), problems with paths into the document and `409` for a stale version, `manageActions` for a save that changes the actions, publish and unpublish, rename, a move's new folder and its widened access, a restore to the root that needs what a move there needs, and a delete for good with `deleteEntries`. |
 | `VersionApiTests` | The History of a form with four versions: the publishes or every version, newest first, with what changed and paged; a version with its document; a comparison with each property before and after; a restore into a new draft that needs `manageActions` when it changes the actions, after the concurrency check; pins and comments that leave the form's concurrency version alone; `404 version_not_found`. |
+| `RestoreLandingApiTests` | A form's and a folder's restore whose folder comes back from the trash after the endpoint checked where it lands and before the write (`RestoreActionHook`, an action filter after every other, arms `HookedFolderRepository` to bring it back right after the action read it): `409 landing_changed`, and the form or folder stays in the trash where it was. |
 | `OpenApiSnapshotTests` | The document `jfb` against `docs/api/jfb.json` (rewritten with `JFB_UPDATE_SNAPSHOTS=1`, then fails), its paths and operation names, and schemas that are only its own models, never a framework type described by its properties. |
 
 `Tests.Unit/ManagementApi/` covers the same without a host: the access filter's order, refusals and fail-closed

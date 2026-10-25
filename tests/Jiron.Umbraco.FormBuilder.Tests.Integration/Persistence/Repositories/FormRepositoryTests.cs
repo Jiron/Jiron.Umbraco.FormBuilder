@@ -301,6 +301,27 @@ public sealed class FormRepositoryTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task ARestore_IsRefused_WhenItWouldLandElsewhereThanTheCallerChecked()
+    {
+        var folder = await CreateFolderAsync("Doomed");
+        var form = await CreateFormAsync(folderId: folder.Id);
+        var trashed = (await Forms.TrashAsync(form.Id, form.ConcurrencyVersion, Editor))!;
+
+        AssertConflict(() => Forms.RestoreAsync(form.Id, trashed.ConcurrencyVersion, null, Editor), FormBuilderConflict.LandingChanged, "its folder lives, so it does not land at the root");
+        await Folders.TrashAsync(folder.Id, Editor);
+        AssertConflict(() => Forms.RestoreAsync(form.Id, trashed.ConcurrencyVersion, folder.Id, Editor), FormBuilderConflict.LandingChanged, "its folder went to the trash");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Forms.GetByIdAsync(form.Id), Is.EqualTo(trashed), "still in the trash as it was");
+            Assert.That(
+                async () => await Forms.RestoreAsync(form.Id, trashed.ConcurrencyVersion - 1, null, Editor),
+                Throws.InstanceOf<FormBuilderConcurrencyException>(),
+                "a stale restore says so first");
+        });
+    }
+
+    [Test]
     public async Task Deleting_RemovesAFormInTheTrash_AtItsVersion_WithItsVersionsAndCatalogue_OnlyWithoutEntries()
     {
         var form = await CreateFormAsync();

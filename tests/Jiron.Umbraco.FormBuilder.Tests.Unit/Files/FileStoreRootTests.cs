@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Umbraco.Extensions;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Files;
 
@@ -192,6 +193,17 @@ public sealed class FileStoreRootTests
         services.AddFormBuilderFiles();
 
         Assert.That(services.Count(service => service.ServiceType == typeof(IFormBuilderFileStore)), Is.EqualTo(1));
+    }
+
+    [Test]
+    public void AStoreTheSiteRegistersAfterwards_ReplacesTheDefault()
+    {
+        var mine = Substitute.For<IFormBuilderFileStore>();
+        var services = new ServiceCollection();
+        services.AddFormBuilderFiles();
+        services.AddUnique(mine);
+
+        Assert.That(services.BuildServiceProvider().GetRequiredService<IFormBuilderFileStore>(), Is.SameAs(mine), "either order works, as the store's documentation says");
     }
 
     // A path written with slashes, in Windows' backslashes.

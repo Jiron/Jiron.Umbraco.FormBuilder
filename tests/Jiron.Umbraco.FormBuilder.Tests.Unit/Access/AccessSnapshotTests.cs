@@ -78,6 +78,18 @@ public sealed class AccessSnapshotTests
     }
 
     [Test]
+    public void TheSharedVisibilities_CannotBeChanged()
+    {
+        // Every administrator's lists get the same instances: a caller that cast one and added to it would change them all.
+        Assert.Multiple(() =>
+        {
+            Assert.That(((ICollection<Guid>)FolderVisibility.Everything.FolderKeys).IsReadOnly, Is.True);
+            Assert.That(((ICollection<int>)FormVisibility.Everything.FolderIds).IsReadOnly, Is.True);
+            Assert.That(((ICollection<Guid>)FormVisibility.Nothing.GroupKeys).IsReadOnly, Is.True);
+        });
+    }
+
+    [Test]
     public void AGlobalGrant_ReachesEveryFolderAndForm_OutsideTheRestrictions()
     {
         var snapshot = Snapshot(Grant(Viewers, PermissionTarget.Global, View));

@@ -59,6 +59,25 @@ public sealed class FormAliasTests
     public string AnAliasThatIsTaken_GetsTheLowestFreeNumber(string alias, params string[] taken) => FormAliases.FirstFree(alias, taken);
 
     [Test]
+    public void ATakenAliasTooLongForItsNumber_IsCut_SoItKeepsTheLongestAliasLength()
+    {
+        var longest = "a" + new string('b', DefinitionStructureChecks.MaxAliasLength - 2) + "c";
+        var taken = new List<string> { longest };
+        taken.AddRange(Enumerable.Range(2, 8).Select(number => longest[..^1] + number));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(FormAliases.FirstFree(longest, [longest]), Is.EqualTo(longest[..^1] + "2"));
+            Assert.That(FormAliases.FirstFree(longest, taken), Is.EqualTo(longest[..^2] + "10"), "two digits, cut by two");
+            Assert.That(FormAliases.FirstFree(longest[..^1], [longest[..^1]]), Is.EqualTo(longest[..^1] + "2"), "63 characters take one digit as they are");
+            Assert.That(FormAliases.Stem(longest), Is.EqualTo(longest[..FormAliases.MaxBaseLength]));
+            Assert.That(FormAliases.Stem("contact"), Is.EqualTo("contact"));
+            Assert.That(taken.Append(FormAliases.FirstFree(longest, taken)), Has.All.StartWith(FormAliases.Stem(longest)), "every candidate starts with the stem the database is asked about");
+            Assert.That(() => FormAliases.Stem(string.Empty), Throws.ArgumentException);
+        });
+    }
+
+    [Test]
     public void FirstFree_NeedsAnAliasAndTheTakenOnes()
     {
         Assert.Multiple(() =>

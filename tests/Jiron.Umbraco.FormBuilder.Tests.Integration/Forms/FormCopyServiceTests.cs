@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core;
+using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
@@ -472,6 +474,44 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
                 new FormImportNote(FormImportNotes.OptionListMissing, "$.definition.pages[0].groups[0].fields[7].options.list", "configs"),
                 new FormImportNote(FormImportNotes.OptionListMissing, "$.definition.pages[0].groups[0].fields[8].fields[0].options.list", null),
             }), "once per list, at the first field that names it; another kind or configuration is another list");
+        });
+    }
+
+    [Test]
+    public async Task AnImportWithMoreNotesThanAnAuditEntryLists_NamesEachCodeOnce_WithItsCount()
+    {
+        var created = await Service.CreateAsync(new NewFormRequest("Many", UserKey: Editor));
+        var fields = Enumerable.Range(1, AuditDetails.MaxListLength + 1)
+            .Select(i => Session with { Key = Guid.NewGuid(), Alias = "choice" + i.ToString(CultureInfo.InvariantCulture), Options = new FieldOptions { Source = OptionSource.List, List = Guid.NewGuid() } })
+            .ToArray();
+        await SaveAsync(created, WithFields(await DraftAsync(created), fields));
+        var file = (await Service.ExportAsync(created.Key))!;
+
+        var imported = await Service.ImportAsync(new ImportFormRequest(file.Json, UserKey: Editor));
+        var entry = (await Audit.QueryAsync(new AuditQuery { EntityKey = imported.Form.Key }, PageRequest.First(10))).Items.Single();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(imported.Notes, Has.Count.EqualTo(AuditDetails.MaxListLength + 1), "a note for each list this site lacks");
+            Assert.That(entry.Details, Does.EndWith($$""","notes":["option_list_missing"],"noteCounts":[{{AuditDetails.MaxListLength + 1}}]}"""));
+        });
+    }
+
+    [Test]
+    public async Task AReimportOfTheLongestAlias_GetsItsNumberWithinTheLongestAlias()
+    {
+        var longest = "a" + new string('b', DefinitionStructureChecks.MaxAliasLength - 2) + "c";
+        var created = await Service.CreateAsync(new NewFormRequest("Long", longest, UserKey: Editor));
+        var file = (await Service.ExportAsync(created.Key))!;
+
+        var first = await Service.ImportAsync(new ImportFormRequest(file.Json, UserKey: Editor));
+        var second = await Service.ImportAsync(new ImportFormRequest(file.Json, UserKey: Editor));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(first.Form.Alias, Is.EqualTo(longest[..^1] + "2"), "cut by one for its number");
+            Assert.That(second.Form.Alias, Is.EqualTo(longest[..^1] + "3"));
+            Assert.That(second.Form.Alias, Has.Length.EqualTo(DefinitionStructureChecks.MaxAliasLength));
         });
     }
 

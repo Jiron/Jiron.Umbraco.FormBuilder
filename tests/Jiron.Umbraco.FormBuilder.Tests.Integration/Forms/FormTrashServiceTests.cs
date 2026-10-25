@@ -92,6 +92,42 @@ public sealed class FormTrashServiceTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task ARestore_LandsWhereItWasChecked_OrIsRefusedWithLandingChanged()
+    {
+        var folder = await CreateFolderAsync();
+        var created = await CreateAsync("Contact", folder.Key);
+        var trashed = (await Service.TrashAsync(created.Key, created.ConcurrencyVersion, Editor))!;
+        var intoFolder = await Service.GetRestoreLandingAsync(created.Key);
+        Notifications.Before = async notification =>
+        {
+            if (notification is FormRestoringNotification)
+            {
+                await Folders.TrashAsync(folder.Id, Editor);
+            }
+        };
+
+        AssertCode(async () => await Service.RestoreAsync(created.Key, trashed.ConcurrencyVersion, Editor), "landing_changed");
+        Notifications.Before = null;
+        var toRoot = await Service.GetRestoreLandingAsync(created.Key);
+        AssertCode(async () => await Service.RestoreAsync(created.Key, trashed.ConcurrencyVersion, Editor, intoFolder), "landing_changed");
+        await Folders.RestoreAsync(folder.Id, null, Editor);
+        AssertCode(async () => await Service.RestoreAsync(created.Key, trashed.ConcurrencyVersion, Editor, toRoot), "landing_changed");
+        var unchanged = await Service.GetAsync(created.Key);
+        var restored = await Service.RestoreAsync(created.Key, trashed.ConcurrencyVersion, Editor, intoFolder);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(intoFolder, Is.EqualTo(new RestoreLanding(folder.Key)), "its folder, outside the trash");
+            Assert.That(toRoot, Is.EqualTo(new RestoreLanding(null)), "the root, as its folder went to the trash");
+            Assert.That(unchanged, Is.EqualTo(trashed), "the refused restores changed nothing");
+            Assert.That(restored?.FolderKey, Is.EqualTo(folder.Key), "the landing checked holds again");
+            Assert.That(await Service.GetRestoreLandingAsync(created.Key), Is.EqualTo(new RestoreLanding(folder.Key)), "outside the trash, where it is");
+            Assert.That(await Service.GetRestoreLandingAsync(Guid.NewGuid()), Is.Null);
+            Assert.That((await AuditAsync(created.Key)).Count(entry => entry.Action == "form.restored"), Is.EqualTo(1));
+        });
+    }
+
+    [Test]
     public async Task AStaleSave_TrashRestoreOrDelete_ReturnsConcurrencyConflict_AndChangesNothing()
     {
         var created = await CreateAsync("Contact");
@@ -192,6 +228,7 @@ public sealed class FormTrashServiceTests : RepositoryTestBase
             Assert.That(seen.OfType<FormDeletedNotification>().Single() is { EntryCount: 2, FileCount: 2, Alias: "contact" } done && done.FormKey == created.Key && done.UserKey == Editor, Is.True);
             Assert.That(Notifications.AnyInUnitOfWork, Is.False);
             Assert.That((await AuditAsync(created.Key)).Last(), Is.EqualTo((FormRemoval.DeletedAction, (Guid?)Editor, """{"entries":2,"files":2}""")), "the audit entry outlives the form");
+            Assert.That(Deletes(await AuditAsync(created.Key)), Is.EqualTo(new[] { FormRemoval.DeletingAction, FormRemoval.DeletedAction }), "the first batch's unit records the delete");
             Assert.That(await Service.DeleteAsync(created.Key, trashed.ConcurrencyVersion, Editor), Is.Null, "gone");
         });
     }
@@ -240,6 +277,7 @@ public sealed class FormTrashServiceTests : RepositoryTestBase
 
         Assert.That(async () => await Service.DeleteAsync(created.Key, trashed.ConcurrencyVersion, Editor, stop.Token), Throws.InstanceOf<OperationCanceledException>());
         Store.AfterDelete = null;
+        var stopped = await AuditAsync(created.Key);
         var left = Count(FormBuilderTables.Entry, $"{Q("formId")} = @0", row.Id);
         var kept = await Service.GetAsync(created.Key);
         var finished = await Service.DeleteAsync(created.Key, trashed.ConcurrencyVersion, Editor);
@@ -253,7 +291,20 @@ public sealed class FormTrashServiceTests : RepositoryTestBase
             Assert.That(await Service.GetAsync(created.Key), Is.Null);
             Assert.That(Notifications.Seen.OfType<FormDeletedNotification>().Select(notification => notification.EntryCount), Is.EqualTo(new[] { FormRemoval.EntriesPerBatch + 1L }), "announced once, when it is done");
             Assert.That((await AuditAsync(created.Key)).Count(audit => audit.Action == FormRemoval.DeletedAction), Is.EqualTo(1));
+            Assert.That(stopped.Last(), Is.EqualTo((FormRemoval.DeletingAction, (Guid?)Editor, "{}")), "the delete that stopped is on record");
+            Assert.That(Deletes(await AuditAsync(created.Key)), Is.EqualTo(new[] { FormRemoval.DeletingAction, FormRemoval.DeletingAction, FormRemoval.DeletedAction }), "each delete that deleted entries records its start");
         });
+    }
+
+    [Test]
+    public async Task ADeleteWithNothingBeforeItsLastUnit_RecordsOnlyTheDelete()
+    {
+        var created = await CreateAsync("Empty");
+        var trashed = await TrashAsync(created);
+
+        await Service.DeleteAsync(created.Key, trashed.ConcurrencyVersion, Editor);
+
+        Assert.That(Deletes(await AuditAsync(created.Key)), Is.EqualTo(new[] { FormRemoval.DeletedAction }), "one unit, so nothing could stop part way");
     }
 
     [Test]
@@ -459,6 +510,9 @@ public sealed class FormTrashServiceTests : RepositoryTestBase
             Now.UtcDateTime));
 
     // The form's audit entries after its create, oldest first: action, user and details.
+    private static string[] Deletes(IEnumerable<(string Action, Guid? UserKey, string Details)> audit) =>
+        [.. audit.Select(entry => entry.Action).Where(action => action is FormRemoval.DeletingAction or FormRemoval.DeletedAction)];
+
     private async Task<List<(string Action, Guid? UserKey, string Details)>> AuditAsync(Guid formKey) =>
         (await Audit.QueryAsync(new AuditQuery { EntityKey = formKey }, PageRequest.First(50))).Items
             .OrderBy(entry => entry.Id)

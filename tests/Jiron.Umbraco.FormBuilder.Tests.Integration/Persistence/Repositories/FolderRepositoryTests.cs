@@ -221,6 +221,20 @@ public sealed class FolderRepositoryTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task ARestore_IsRefused_WhenItWouldLandElsewhereThanTheCallerChecked()
+    {
+        var parent = await CreateFolderAsync("Parent");
+        var child = await CreateFolderAsync("Child", parent.Id);
+        await Folders.TrashAsync(child.Id, Editor);
+
+        AssertConflict(() => Folders.RestoreAsync(child.Id, null, Editor), FormBuilderConflict.LandingChanged);
+        await Folders.TrashAsync(parent.Id, Editor);
+        AssertConflict(() => Folders.RestoreAsync(child.Id, parent.Id, Editor), FormBuilderConflict.LandingChanged);
+
+        Assert.That((await Folders.GetByIdAsync(child.Id))!.TrashedUtc, Is.Not.Null, "still in the trash");
+    }
+
+    [Test]
     public async Task Restoring_KeepsTheFoldersBelowInTheirPlace_AlsoOneMadeBeforeItsParent()
     {
         // The older folder has the lower id, so a database that changes the rows in id order and lets a statement see

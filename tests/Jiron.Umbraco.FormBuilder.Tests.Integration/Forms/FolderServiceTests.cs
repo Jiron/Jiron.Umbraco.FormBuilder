@@ -316,6 +316,34 @@ public sealed class FolderServiceTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task ARestore_LandsWhereItWasChecked_OrIsRefusedWithLandingChanged()
+    {
+        var top = await CreateAsync("Events");
+        var old = await CreateAsync("Old", top.Key);
+        await Service.TrashAsync(old.Key, Editor);
+        var landing = await Service.GetRestoreLandingAsync(old.Key);
+        Notifications.Before = async notification =>
+        {
+            if (notification is FolderRestoringNotification)
+            {
+                await Service.TrashAsync(top.Key, Editor);
+            }
+        };
+
+        AssertCode(async () => await Service.RestoreAsync(old.Key, Editor), "landing_changed");
+        Notifications.Before = null;
+        AssertCode(async () => await Service.RestoreAsync(old.Key, Editor, landing), "landing_changed");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(landing, Is.EqualTo(new RestoreLanding(top.Key)), "its parent, outside the trash");
+            Assert.That(await Service.GetRestoreLandingAsync(old.Key), Is.EqualTo(new RestoreLanding(null)), "the root, now that its parent is in the trash");
+            Assert.That((await Service.GetAsync(old.Key))!.TrashedUtc, Is.Not.Null, "still in the trash");
+            Assert.That(await Service.GetRestoreLandingAsync(Guid.NewGuid()), Is.Null);
+        });
+    }
+
+    [Test]
     public async Task ADelete_RemovesAFolderInTheTrash_WithTheFoldersBelowIt_AndTheFormsInThem()
     {
         var top = await CreateAsync("Events");

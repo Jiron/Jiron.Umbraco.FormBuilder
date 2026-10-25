@@ -304,7 +304,31 @@ public sealed class AccessServiceTests : RepositoryTestBase
             Assert.That(
                 () => Database.WriteAsync(async _ => await Access.RestrictFormAsync(Guid.NewGuid(), 1, true, Editor)),
                 Throws.InvalidOperationException.With.Message.Contains("unit of work of its own"));
+            Assert.That(
+                () => Database.WriteAsync(async _ => await Access.RemoveGroupAsync(Nobody)),
+                Throws.InvalidOperationException.With.Message.Contains("unit of work of its own"),
+                "a group's removal too: the snapshot goes only after the commit");
             Assert.That(Count("jfbPermission", $"{Q("userGroupKey")} = @0", Nobody), Is.Zero);
+        });
+    }
+
+    [Test]
+    public async Task AFolderRename_KeepsTheSnapshot_WhichNamesNoFolder_AndAMove_DropsIt()
+    {
+        var folder = await FolderService.CreateAsync(new NewFolderRequest("Marketing", UserKey: Editor));
+        var target = await FolderService.CreateAsync(new NewFolderRequest("Brand", UserKey: Editor));
+        var runtime = GetRequiredService<AppCaches>().RuntimeCache;
+        var snapshot = await ((FormBuilderAccessService)Access).GetSnapshotAsync(CancellationToken.None);
+
+        await FolderService.RenameAsync(folder.Key, "Campaigns", Editor);
+        var afterRename = runtime.Get(AccessCacheKeys.Snapshot);
+        await FolderService.MoveAsync(folder.Key, target.Key, Editor);
+        var afterMove = runtime.Get(AccessCacheKeys.Snapshot);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(afterRename, Is.SameAs(snapshot), "the rename kept it");
+            Assert.That(afterMove, Is.Null, "the move changed the tree it holds");
         });
     }
 
