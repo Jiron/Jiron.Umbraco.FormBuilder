@@ -60,6 +60,14 @@ public abstract class FormBuilderFieldTypeBase<TSettings> : IFormBuilderFieldTyp
     protected virtual void CheckSettings(TSettings settings, FieldSettingsCheck check)
     {
     }
+
+    /// <summary>
+    /// Whether the site has the configuration the type needs
+    /// (<see cref="IFormBuilderFieldType.CheckAvailabilityAsync(CancellationToken)"/>, ADR-0057); available unless a type
+    /// overrides it.
+    /// </summary>
+    /// <param name="cancellationToken">Cancelled when the request is, or when the check took too long.</param>
+    public virtual ValueTask<FieldTypeAvailability> CheckAvailabilityAsync(CancellationToken cancellationToken) => ValueTask.FromResult(FieldTypeAvailability.Available);
 }
 
 /// <summary>The settings class of a field type without settings, such as a divider.</summary>

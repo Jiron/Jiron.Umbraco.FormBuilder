@@ -25,4 +25,14 @@ public interface IFormBuilderFieldType
     void CheckSettings(FieldSettingsCheck check)
     {
     }
+
+    /// <summary>
+    /// Whether the site has the configuration the type needs (ADR-0057), for the designer's palette, which greys out a
+    /// type that is not configured and shows the reason; available by default. It runs whenever the backoffice reads the
+    /// field types, for every type at once, and should answer quickly: one that takes more than 5 seconds, throws or
+    /// answers null counts as not configured, with a reason that its setup could not be checked, and is logged.
+    /// Availability does not change publishing or rendering.
+    /// </summary>
+    /// <param name="cancellationToken">Cancelled when the request is, or when the check took too long.</param>
+    ValueTask<FieldTypeAvailability> CheckAvailabilityAsync(CancellationToken cancellationToken) => ValueTask.FromResult(FieldTypeAvailability.Available);
 }

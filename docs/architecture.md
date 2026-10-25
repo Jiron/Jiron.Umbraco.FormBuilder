@@ -114,7 +114,7 @@ flowchart LR
 | Area | Holds | Decided in |
 | --- | --- | --- |
 | Public API | `/jfb/api/v1`, CORS, body and time limits, the rate-limit middleware, the no-form middleware | ADR-0012, ADR-0006 |
-| Management API | `/umbraco/jfb/management/api/v1`: the base controller, the access declarations and their filter, the refusals with stable codes, the authorization policies with their resources and denials, the OpenAPI document `jfb`; the library tree, folders, the trash, forms and their versions, a definition carried as its document | ADR-0013, ADR-0049, ADR-0050, ADR-0051, ADR-0052, §4.7 |
+| Management API | `/umbraco/jfb/management/api/v1`: the base controller, the access declarations and their filter, the refusals with stable codes, the authorization policies with their resources and denials, the OpenAPI document `jfb`; the library tree, folders, the trash, forms and their versions, a definition carried as its document; the field types for the designer | ADR-0013, ADR-0049, ADR-0050, ADR-0051, ADR-0052, ADR-0057, §4.7 |
 | Rendering | the view component, `<jfb-render>`, `<jfb-assets>`, the surface controller, output cache rules, asset serving | ADR-0004, ADR-0015 |
 | Themes | the built-in themes, their views and stylesheets | ADR-0015 |
 | Content integration | the form picker property editor, value converters, the Delivery API converter, "used on" | ADR-0017 |
@@ -191,7 +191,10 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   (kinds, defaults, editors, and which settings visitors see), with the rules that `[Required]`, `[Range]`,
   `[StringLength]`, `[Length]` and `[AllowedValues]` give it (ADR-0056). `FieldTypeRegistry` builds the traits that the
   validation, the projection and the field catalogue read; start-up refuses an alias taken twice and a declaration
-  or settings class that contradicts itself, naming the type.
+  or settings class that contradicts itself, naming the type. The backoffice reads every type with its settings, rules
+  and availability from `GET field-type` ([ADR-0057](decisions/0057-field-types-endpoint-and-availability.md)): a
+  type that needs configuration the site lacks says why (`CheckAvailabilityAsync`, each check within 5 seconds), and
+  its names, labels and choices are `#` keys of the backoffice's English and German dictionaries.
 - **The public projection** is built from an allowlist of public types (`Core.Definitions.Projection`) and carries no
   actions, outcomes, recipients, option-source configuration, privacy settings or switched-off rules; its SHA-256 is
   `PublicHash`. Its TypeScript types and schema ship in `schemas/` (6.6).
@@ -329,7 +332,8 @@ permission each needs:
 | Forms and folders: delete for good | `design` and `deleteEntries` on everything it removes |
 | Empty the trash | any user of the section; it removes only what the user may delete for good |
 | Versions: list, get, diff, restore, pin, comment | `design` (a restore that changes the actions: `manageActions` too) |
-| Designer support: registries, the form check, preview render, preview tickets | `design` |
+| Designer support: the registries (the field types, [ADR-0057](decisions/0057-field-types-endpoint-and-availability.md)) | any user of the section; they describe the site's code, the same for everyone |
+| Designer support: the form check, preview render, preview tickets | `design` |
 | Actions: edit, test against a sample entry | `manageActions` |
 | Entries: list, get, mark seen, notes, timeline, files, counts, the inbox and Spam | `viewEntries` |
 | Entries: change state, edit, forward | `editEntries` |

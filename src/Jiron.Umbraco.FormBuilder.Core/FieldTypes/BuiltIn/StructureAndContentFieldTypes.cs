@@ -149,15 +149,19 @@ public sealed class ImageFieldSettings
 public enum ImageSize
 {
     /// <summary>Small (<c>small</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_imageSizeSmall")]
     Small,
 
     /// <summary>Medium (<c>medium</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_imageSizeMedium")]
     Medium,
 
     /// <summary>Large (<c>large</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_imageSizeLarge")]
     Large,
 
     /// <summary>The width of the form (<c>full</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_imageSizeFull")]
     Full,
 }
 

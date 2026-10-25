@@ -119,9 +119,10 @@ coverage, schema and fixture tests fail.
 | Tests | What they show |
 | --- | --- |
 | `FieldTypeRegistryTests` | The collection builder holds the built-in types in palette order; a type appended, replaced or removed (a field of a removed type is `unknown_type` at publish), a custom type's field publishing with only its public settings projected; an alias taken twice named with how to replace the first, and each contradiction of a declaration refused naming the type; the start-up check on a valid site and on two broken ones. |
-| `FieldSettingsSchemaTests` | A settings class read into its schema: each property's kind and editor, defaults as settings store them, the order by group, order and declaration, the attribute's details and JSON names, public settings at the top only; every class or property that cannot be a setting refused with its reason (all reasons at once), the base class naming the type, and the strict JSON that reads settings. |
+| `FieldSettingsSchemaTests` | A settings class read into its schema: each property's kind and editor, a choice's values with their labels, defaults as settings store them, the order by group, order and declaration, the attribute's details and JSON names, public settings at the top only; every class or property that cannot be a setting refused with its reason (all reasons at once), the base class naming the type, and the strict JSON that reads settings. |
 | `FieldSettingRulesTests` | The rules each validation attribute gives a setting, on lists' items too; the limits of a setting without them; every attribute that does not fit its setting refused with its reason (all at once); and a default that breaks its rules refused, quoting it. |
 | `FieldSettingsChecksTests` | A field's settings held to its type's schema: each kind's values and wrong types, every bound, length, count and allowed value at its edge, values twice in a list as they compare, localised texts, required settings at the top and inside objects, each problem's code, path and message; the type's own check through the base class and the interface, its places, and a check that throws or cancels. |
+| `FieldTypeAvailabilityTests` | Whether a type can be used: available by default through the interface and the base class, a type's own answer with its reason, and every check that throws, faults, answers null, cancels itself, blocks or takes longer than five seconds reported as not configured with the shared reason and logged, while the request's cancellation still cancels the answer. |
 | `BuiltInSettingsTests` | The rules of every built-in type restated apart from the code and held at their edges, each type's own check through a publish, the lists that start with items, and the country codes against .NET's regions. |
 
 `TestFieldTypes` (in the Testing project) gives the unit tests the registry of the built-in types, or of a builder a
@@ -131,7 +132,8 @@ test changes, as a site's container builds it.
 before the core composer, one removes the signature after it. Both are found like any site's composers and do nothing
 unless the site sets `JironFormBuilderTests:SiteFieldTypes`, so every other test's site keeps the built-in types.
 `SiteFieldTypeTests` shows the registry, start-up, publishing, the field catalogue and the public revision with the
-site's types.
+site's types; `SiteFieldTypeApiTests` shows the backoffice's field types on that site: the colour type last, not
+configured with its reason while the site lacks its swatches, its plain labels, and no signature.
 
 ## The Testing project
 
@@ -411,16 +413,21 @@ tests that use it call a new endpoint by themselves:
 | `VersionApiTests` | The History of a form with four versions: the publishes or every version, newest first, with what changed and paged; a version with its document; a comparison with each property before and after; a restore into a new draft that needs `manageActions` when it changes the actions, after the concurrency check; pins and comments that leave the form's concurrency version alone; `404 version_not_found`. |
 | `RestoreLandingApiTests` | A form's and a folder's restore whose folder comes back from the trash after the endpoint checked where it lands and before the write (`RestoreActionHook`, an action filter after every other, arms `HookedFolderRepository` to bring it back right after the action read it): `409 landing_changed`, and the form or folder stays in the trash where it was. |
 | `OpenApiSnapshotTests` | The document `jfb` against `docs/api/jfb.json` (rewritten with `JFB_UPDATE_SNAPSHOTS=1`, then fails), its paths and operation names, and schemas that are only its own models, never a framework type described by its properties. |
+| `FieldTypeApiTests` | The field types for the designer ([ADR-0057](../docs/decisions/0057-field-types-endpoint-and-availability.md)) against `docs/api/field-types.json` (rewritten with `JFB_UPDATE_SNAPSHOTS=1`, then fails), served to a user of the section without grants; every type in the registry's order with the palette's and the inspector's groups, its declaration in camel case, its common properties and messages, its settings in the inspector's order with their kinds, choices and labels, nested settings, defaults and rules, and its availability. |
 
 `Tests.Unit/ManagementApi/` covers the same without a host: the access filter's order, refusals and fail-closed
 cases, how it reads a key (`FormBuilderAccessFilterTests`); every answer to a refusal, the exception filter, the
 declarations, the operation and schema names and the feature provider (`FormBuilderProblemsTests`); the models of the library
-(`LibraryModelsTests`) and of the versions, with the stable names of their kinds (`VersionModelsTests`); and the
+(`LibraryModelsTests`), of the versions, with the stable names of their kinds (`VersionModelsTests`), and of the field
+types, with their names in camel case and an availability for every type (`FieldTypeModelsTests`); and the
 policies and handlers (`FormBuilderAuthorizationTests`). In the client,
 `packages/backoffice/scripts/generate-client.test.mjs` generates the client from the snapshot next to the committed
 one and fails on any difference: after a change to the API, run the snapshot test with `JFB_UPDATE_SNAPSHOTS=1`, then
 `npm run generate-client -w @jfb/backoffice`, and commit both. `packages/backoffice/src/hey-api.test.ts` shows that
-the generated client starts from the backoffice's own HTTP client, whose settings win.
+the generated client starts from the backoffice's own HTTP client, whose settings win. `packages/backoffice/src/lang/lang.test.ts`
+holds the English and German dictionaries to the same keys, each a text, to every `#` key of `docs/api/field-types.json`,
+and the field types' areas to no key nothing serves; `bundle.manifests.test.ts` shows a `localization` manifest for
+each of the two languages loading its dictionary.
 
 ## Writing tests
 

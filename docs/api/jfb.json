@@ -6,6 +6,41 @@
     "version": "1.0"
   },
   "paths": {
+    "/umbraco/jfb/management/api/v1/field-type": {
+      "get": {
+        "tags": [
+          "Field type"
+        ],
+        "operationId": "FieldTypeList",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldTypesResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/folder": {
       "post": {
         "tags": [
@@ -2983,6 +3018,308 @@
         },
         "additionalProperties": false
       },
+      "FieldGroupResponseModel": {
+        "required": [
+          "alias",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FieldSettingChoiceResponseModel": {
+        "required": [
+          "label",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FieldSettingResponseModel": {
+        "required": [
+          "choices",
+          "editor",
+          "group",
+          "isPublic",
+          "kind",
+          "label",
+          "name",
+          "rules",
+          "settings",
+          "supportsMergeTags"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "itemKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FieldSettingChoiceResponseModel"
+                }
+              ]
+            }
+          },
+          "settings": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FieldSettingResponseModel"
+                }
+              ]
+            }
+          },
+          "default": {
+            "nullable": true
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "editor": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          },
+          "supportsMergeTags": {
+            "type": "boolean"
+          },
+          "isPublic": {
+            "type": "boolean"
+          },
+          "rules": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FieldSettingRulesResponseModel"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "FieldSettingRulesResponseModel": {
+        "required": [
+          "allowedValues",
+          "maximumIsExclusive",
+          "minimumIsExclusive",
+          "required"
+        ],
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "boolean"
+          },
+          "minimum": {
+            "type": "string",
+            "nullable": true
+          },
+          "minimumIsExclusive": {
+            "type": "boolean"
+          },
+          "maximum": {
+            "type": "string",
+            "nullable": true
+          },
+          "maximumIsExclusive": {
+            "type": "boolean"
+          },
+          "minimumLength": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "maximumLength": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "minimumCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "maximumCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "allowedValues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "FieldTypeAvailabilityResponseModel": {
+        "required": [
+          "isAvailable"
+        ],
+        "type": "object",
+        "properties": {
+          "isAvailable": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FieldTypeResponseModel": {
+        "required": [
+          "alias",
+          "availability",
+          "features",
+          "holdsValue",
+          "icon",
+          "messages",
+          "multipleSetting",
+          "name",
+          "onePerForm",
+          "paletteGroup",
+          "serverOnlyDefault",
+          "settings",
+          "storage"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "paletteGroup": {
+            "type": "string"
+          },
+          "holdsValue": {
+            "type": "boolean"
+          },
+          "storage": {
+            "type": "string"
+          },
+          "ruleKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "multipleSetting": {
+            "type": "boolean"
+          },
+          "onePerForm": {
+            "type": "boolean"
+          },
+          "serverOnlyDefault": {
+            "type": "boolean"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "settings": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FieldSettingResponseModel"
+                }
+              ]
+            }
+          },
+          "availability": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FieldTypeAvailabilityResponseModel"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "FieldTypesResponseModel": {
+        "required": [
+          "paletteGroups",
+          "settingGroups",
+          "types"
+        ],
+        "type": "object",
+        "properties": {
+          "paletteGroups": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FieldGroupResponseModel"
+                }
+              ]
+            }
+          },
+          "settingGroups": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FieldGroupResponseModel"
+                }
+              ]
+            }
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FieldTypeResponseModel"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "FolderResponseModel": {
         "required": [
           "createdUtc",
@@ -3698,6 +4035,9 @@
     }
   },
   "tags": [
+    {
+      "name": "Field type"
+    },
     {
       "name": "Folder"
     },

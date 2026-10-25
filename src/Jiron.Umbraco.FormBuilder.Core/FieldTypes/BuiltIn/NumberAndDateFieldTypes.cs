@@ -246,12 +246,15 @@ public sealed class RatingFieldSettings
 public enum RatingSymbol
 {
     /// <summary>Stars (<c>star</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_ratingSymbolStar")]
     Star,
 
     /// <summary>Hearts (<c>heart</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_ratingSymbolHeart")]
     Heart,
 
     /// <summary>Circles (<c>circle</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_ratingSymbolCircle")]
     Circle,
 }
 

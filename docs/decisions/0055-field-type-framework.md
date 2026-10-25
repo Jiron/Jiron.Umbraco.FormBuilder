@@ -2,7 +2,8 @@
 
 - Status: accepted; amends [ADR-0035](0035-structural-validation-and-public-projection.md) (the traits come from
   the registry) and [ADR-0044](0044-form-service.md) (the service's field types); the defaults of a name's and an
-  address's required parts and of a file's types amended by [ADR-0056](0056-field-settings-checks.md) in 5.1b
+  address's required parts and of a file's types amended by [ADR-0056](0056-field-settings-checks.md) in 5.1b; a
+  choice's label amended by [ADR-0057](0057-field-types-endpoint-and-availability.md) in 5.1c
 - Date: 2026-10-25
 - Roadmap step: 5.1a (decided and built); 5.1b to 5.1e build on it
 
@@ -103,7 +104,8 @@ editor, group, order, whether it takes merge tags, and whether visitors see it.
 - **Kinds follow from the type:** `bool` a yes or no; `int` and `long` a whole number; `string` a text, or a number,
   date or time when the attribute's `Kind` says so (numbers compared with answers are wire strings, ADR-0005);
   `LocalizedText` and `LocalizedHtml`; an enum a choice, by the names its JSON writes (camel case, or
-  `[JsonStringEnumMemberName]`), in the order the enum declares them; `Guid` a key; `JsonElement` free JSON, which the
+  `[JsonStringEnumMemberName]`), in the order the enum declares them, each with its label (`[FormBuilderChoice]`, else
+  the C# name; ADR-0057); `Guid` a key; `JsonElement` free JSON, which the
   type checks itself; `IReadOnlyList<T>` a list of whole numbers, texts, numbers, dates, times, choices or keys; and a
   class an object of settings, one level deep. Anything else is refused with the reason: a double or a date and time
   (whose JSON is not fixed), other collections, an object inside an object, a list of objects or of yes-or-no values,

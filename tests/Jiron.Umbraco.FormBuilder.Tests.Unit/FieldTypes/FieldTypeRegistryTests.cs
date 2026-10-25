@@ -234,10 +234,13 @@ public sealed class FieldTypeRegistryTests
         });
     }
 
-    // The services of a site whose composers changed the field types, as the core composer registers them.
+    // The services of a site whose composers changed the field types, as the core composer registers them, with the
+    // clock and the logging every Umbraco site has.
     private static ServiceProvider Site(Action<FormBuilderFieldTypeCollectionBuilder> change)
     {
         var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton(HostOptions.Folders());
         services.AddFormBuilderOptions(HostOptions.Configuration());
         var builder = new FormBuilderFieldTypeCollectionBuilder();

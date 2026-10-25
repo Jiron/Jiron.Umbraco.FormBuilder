@@ -208,12 +208,15 @@ public sealed class EmailDomains
 public enum EmailDomainMode
 {
     /// <summary>Any domain (<c>any</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_emailDomainModeAny")]
     Any,
 
     /// <summary>Only the listed domains (<c>allow</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_emailDomainModeAllow")]
     Allow,
 
     /// <summary>Any domain but the listed ones (<c>block</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_emailDomainModeBlock")]
     Block,
 }
 
@@ -275,8 +278,10 @@ public sealed class UrlFieldSettings
 public enum UrlScheme
 {
     /// <summary><c>https</c>.</summary>
+    [FormBuilderChoice("#jfbFieldChoices_urlSchemeHttps")]
     Https,
 
     /// <summary><c>http</c>.</summary>
+    [FormBuilderChoice("#jfbFieldChoices_urlSchemeHttp")]
     Http,
 }

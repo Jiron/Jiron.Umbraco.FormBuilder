@@ -153,15 +153,19 @@ public sealed class CheckboxesFieldSettings
 public enum FieldChoiceLayout
 {
     /// <summary>As the form's appearance says (<c>inherit</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_layoutInherit")]
     Inherit,
 
     /// <summary>One option per line (<c>vertical</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_layoutVertical")]
     Vertical,
 
     /// <summary>Options side by side (<c>horizontal</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_layoutHorizontal")]
     Horizontal,
 
     /// <summary>A card per option, with the option's image when it has one (<c>cards</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_layoutCards")]
     Cards,
 }
 
@@ -310,9 +314,11 @@ public sealed class YesNoFieldSettings
 public enum YesNoStyle
 {
     /// <summary>Two buttons (<c>buttons</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_yesnoStyleButtons")]
     Buttons,
 
     /// <summary>A switch (<c>switch</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_yesnoStyleSwitch")]
     Switch,
 }
 

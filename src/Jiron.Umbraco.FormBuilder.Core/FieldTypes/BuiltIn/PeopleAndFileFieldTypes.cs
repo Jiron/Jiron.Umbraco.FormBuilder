@@ -46,15 +46,19 @@ public sealed class NameFieldSettings
 public enum NamePart
 {
     /// <summary>A title, such as Dr (<c>title</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_namePartTitle")]
     Title,
 
     /// <summary>The first name (<c>first</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_namePartFirst")]
     First,
 
     /// <summary>A middle name (<c>middle</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_namePartMiddle")]
     Middle,
 
     /// <summary>The last name (<c>last</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_namePartLast")]
     Last,
 }
 
@@ -114,21 +118,27 @@ public sealed class AddressFieldSettings
 public enum AddressPart
 {
     /// <summary>The street and number (<c>street</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_addressPartStreet")]
     Street,
 
     /// <summary>A second street line (<c>street2</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_addressPartStreet2")]
     Street2,
 
     /// <summary>The postcode (<c>postcode</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_addressPartPostcode")]
     Postcode,
 
     /// <summary>The city (<c>city</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_addressPartCity")]
     City,
 
     /// <summary>The region, state or canton (<c>region</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_addressPartRegion")]
     Region,
 
     /// <summary>The country (<c>country</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_addressPartCountry")]
     Country,
 }
 
@@ -199,18 +209,23 @@ public sealed class FileFieldSettings
 public enum FileTypeGroup
 {
     /// <summary>Images (<c>images</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_fileTypeImages")]
     Images,
 
     /// <summary>PDF documents (<c>pdf</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_fileTypePdf")]
     Pdf,
 
     /// <summary>Office documents (<c>office</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_fileTypeOffice")]
     Office,
 
     /// <summary>Plain text (<c>text</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_fileTypeText")]
     Text,
 
     /// <summary>Archives (<c>archives</c>).</summary>
+    [FormBuilderChoice("#jfbFieldChoices_fileTypeArchives")]
     Archives,
 }
 

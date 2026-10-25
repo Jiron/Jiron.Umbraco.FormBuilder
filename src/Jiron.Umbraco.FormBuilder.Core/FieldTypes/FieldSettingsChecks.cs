@@ -300,19 +300,19 @@ internal static class FieldSettingsChecks
         return null;
     }
 
-    private static string? Choice(ImmutableArray<string> choices, JsonElement value, string path, string what, DefinitionProblems problems)
+    private static string? Choice(ImmutableArray<FieldSettingChoice> choices, JsonElement value, string path, string what, DefinitionProblems problems)
     {
         if (String(value, path, what, "a choice", problems) is not { } choice)
         {
             return null;
         }
 
-        if (choices.Contains(choice, StringComparer.Ordinal))
+        if (choices.Any(each => string.Equals(each.Value, choice, StringComparison.Ordinal)))
         {
             return choice;
         }
 
-        problems.Add(DefinitionErrors.SettingInvalid, path, $"{what} is {Names(choices)}, not '{choice}'.");
+        problems.Add(DefinitionErrors.SettingInvalid, path, $"{what} is {Names([.. choices.Select(each => each.Value)])}, not '{choice}'.");
         return null;
     }
 

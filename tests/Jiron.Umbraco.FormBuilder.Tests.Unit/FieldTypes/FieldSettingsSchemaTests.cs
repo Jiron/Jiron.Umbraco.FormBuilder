@@ -84,11 +84,25 @@ public sealed class FieldSettingsSchemaTests
         Assert.Multiple(() =>
         {
             Assert.That(schema.Find("box")!.Settings.Select(setting => setting.Name), Is.EqualTo(new[] { "to", "from", "label", "notes" }));
-            Assert.That(schema.Find("look")!.Choices, Is.EqualTo(new[] { "plain", "bigCards", "x-small" }), "In the enum's order, as its JSON writes them.");
-            Assert.That(schema.Find("looks")!.Choices, Is.EqualTo(new[] { "plain", "bigCards", "x-small" }));
+            Assert.That(schema.Find("look")!.Choices.Select(choice => choice.Value), Is.EqualTo(new[] { "plain", "bigCards", "x-small" }), "In the enum's order, as its JSON writes them.");
+            Assert.That(schema.Find("look")!.Choices.Select(choice => choice.Label), Is.EqualTo(new[] { "Plain", "#acme_bigCards", "Tiny" }), "[FormBuilderChoice], else the C# name.");
+            Assert.That(schema.Find("looks")!.Choices, Is.EqualTo(schema.Find("look")!.Choices), "A list of choices has them too.");
             Assert.That(schema.Find("title")!.Choices, Is.Empty);
             Assert.That(schema.Find("title")!.Settings, Is.Empty);
             Assert.That(schema.Find("nothing"), Is.Null);
+        });
+    }
+
+    [Test]
+    public void ASettingsOrAChoicesLabel_IsNeverBlank()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.Throws<ArgumentException>(() => _ = new FormBuilderSettingAttribute(" "), "a setting's label");
+            Assert.Throws<ArgumentNullException>(() => _ = new FormBuilderSettingAttribute(null!), "a setting without a label");
+            Assert.Throws<ArgumentException>(() => _ = new FormBuilderChoiceAttribute(" "), "a choice's label");
+            Assert.Throws<ArgumentNullException>(() => _ = new FormBuilderChoiceAttribute(null!), "a choice without a label");
+            Assert.That(new FormBuilderChoiceAttribute("#acme_bigCards").Label, Is.EqualTo("#acme_bigCards"));
         });
     }
 
@@ -236,6 +250,7 @@ public sealed class FieldSettingsSchemaTests
     public enum Look
     {
         Plain = 2,
+        [FormBuilderChoice("#acme_bigCards")]
         BigCards = 0,
         [JsonStringEnumMemberName("x-small")]
         Tiny = 1,

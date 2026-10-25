@@ -124,7 +124,7 @@ internal static class FieldSettingsReader
         var type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
         FieldSettingKind kind;
         FieldSettingKind? itemKind = null;
-        ImmutableArray<string> choices = [];
+        ImmutableArray<FieldSettingChoice> choices = [];
         ImmutableArray<FieldSettingDescriptor> settings = [];
         if (ListItem(type) is { } item)
         {
@@ -393,7 +393,7 @@ internal static class FieldSettingsReader
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
     // The kind of a value that is neither a list nor an object, or null (with the reason when problems are asked for).
-    private static FieldSettingKind? Plain(Type type, FieldSettingKind given, string where, List<string>? problems, out ImmutableArray<string> choices)
+    private static FieldSettingKind? Plain(Type type, FieldSettingKind given, string where, List<string>? problems, out ImmutableArray<FieldSettingChoice> choices)
     {
         choices = [];
         FieldSettingKind? inferred = null;
@@ -433,13 +433,13 @@ internal static class FieldSettingsReader
         }
         else if (type.IsEnum)
         {
-            if (Choices(type) is not { } names)
+            if (Choices(type) is not { } values)
             {
                 problems?.Add($"{where} is the enum {NameOf(type)}; a choice is an enum without [Flags] whose values each have one name.");
                 return null;
             }
 
-            choices = names;
+            choices = values;
             inferred = FieldSettingKind.Choice;
         }
 
@@ -468,9 +468,9 @@ internal static class FieldSettingsReader
     private static Type? ListItem(Type type) =>
         type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>) ? type.GetGenericArguments()[0] : null;
 
-    // The names of an enum's values as its JSON writes them (camel case, or the name [JsonStringEnumMemberName] gives), in
-    // the order it declares them; null for flags or a value with two names.
-    private static ImmutableArray<string>? Choices(Type type)
+    // The values of an enum as its JSON writes them (camel case, or the name [JsonStringEnumMemberName] gives) with their
+    // labels ([FormBuilderChoice], else the C# name), in the order it declares them; null for flags or a value with two names.
+    private static ImmutableArray<FieldSettingChoice>? Choices(Type type)
     {
         var fields = type.GetFields(BindingFlags.Public | BindingFlags.Static).OrderBy(field => field.MetadataToken).ToList();
         if (type.IsDefined(typeof(FlagsAttribute), inherit: false) || fields.Select(field => field.GetRawConstantValue()).Distinct().Count() != fields.Count)
@@ -478,7 +478,9 @@ internal static class FieldSettingsReader
             return null;
         }
 
-        return [.. fields.Select(field => field.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()?.Name ?? JsonNamingPolicy.CamelCase.ConvertName(field.Name))];
+        return [.. fields.Select(field => new FieldSettingChoice(
+            field.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()?.Name ?? JsonNamingPolicy.CamelCase.ConvertName(field.Name),
+            field.GetCustomAttribute<FormBuilderChoiceAttribute>()?.Label ?? field.Name))];
     }
 
     // A kind in words, for the reasons the reader gives.

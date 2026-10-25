@@ -59,6 +59,73 @@ export type DefinitionPropertyChangeResponseModel = {
     to?: unknown;
 };
 
+export type FieldGroupResponseModel = {
+    alias: string;
+    name: string;
+};
+
+export type FieldSettingChoiceResponseModel = {
+    value: string;
+    label: string;
+};
+
+export type FieldSettingResponseModel = {
+    name: string;
+    kind: string;
+    itemKind?: string | null;
+    choices: Array<FieldSettingChoiceResponseModel>;
+    settings: Array<FieldSettingResponseModel>;
+    default?: unknown;
+    label: string;
+    description?: string | null;
+    editor: string;
+    group: string;
+    supportsMergeTags: boolean;
+    isPublic: boolean;
+    rules: FieldSettingRulesResponseModel;
+};
+
+export type FieldSettingRulesResponseModel = {
+    required: boolean;
+    minimum?: string | null;
+    minimumIsExclusive: boolean;
+    maximum?: string | null;
+    maximumIsExclusive: boolean;
+    minimumLength?: number | null;
+    maximumLength?: number | null;
+    minimumCount?: number | null;
+    maximumCount?: number | null;
+    allowedValues: Array<string>;
+};
+
+export type FieldTypeAvailabilityResponseModel = {
+    isAvailable: boolean;
+    reason?: string | null;
+};
+
+export type FieldTypeResponseModel = {
+    alias: string;
+    name: string;
+    icon: string;
+    paletteGroup: string;
+    holdsValue: boolean;
+    storage: string;
+    ruleKind?: string | null;
+    multipleSetting: boolean;
+    onePerForm: boolean;
+    serverOnlyDefault: boolean;
+    features: Array<string>;
+    messages: Array<string>;
+    settings: Array<FieldSettingResponseModel>;
+    availability: FieldTypeAvailabilityResponseModel;
+};
+
+export type FieldTypesResponseModel = {
+    paletteGroups: Array<FieldGroupResponseModel>;
+    settingGroups: Array<FieldGroupResponseModel>;
+    types: Array<FieldTypeResponseModel>;
+};
+
 export type FolderResponseModel = {
     key: string;
     name: string;
@@ -231,6 +298,33 @@ export type TrashEmptiedResponseModel = {
     deleted: LibraryDeletionResponseModel;
     left: number;
 };
+
+export type FieldTypeListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/field-type';
+};
+
+export type FieldTypeListErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type FieldTypeListResponses = {
+    /**
+     * OK
+     */
+    200: FieldTypesResponseModel;
+};
+
+export type FieldTypeListResponse = FieldTypeListResponses[keyof FieldTypeListResponses];
 
 export type FolderCreateData = {
     body?: CreateFolderRequestModel;

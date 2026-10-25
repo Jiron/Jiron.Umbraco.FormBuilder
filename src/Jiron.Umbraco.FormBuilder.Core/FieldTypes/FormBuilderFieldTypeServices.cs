@@ -25,11 +25,12 @@ internal static class FormBuilderFieldTypeServices
         return builder;
     }
 
-    /// <summary>Registers the registry over the collection of field types, and its start-up check.</summary>
+    /// <summary>Registers the registry over the collection of field types, its start-up check, and the check of their availability.</summary>
     public static IServiceCollection AddFieldTypeRegistry(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddSingleton(provider => new FieldTypeRegistry(provider.GetRequiredService<FormBuilderFieldTypeCollection>()));
+        services.TryAddSingleton<FieldTypeAvailabilityService>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderStartupChecks>, FieldTypeStartupCheck>());
         return services;
     }

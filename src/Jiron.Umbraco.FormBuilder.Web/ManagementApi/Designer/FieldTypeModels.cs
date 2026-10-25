@@ -1,0 +1,263 @@
+using System.Collections.Immutable;
+using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+
+namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Designer;
+
+/// <summary>
+/// The site's field types for the designer (ADR-0057): the groups of the palette and of the inspector in the order they
+/// are shown, and every type in the registry's order. Names and enum values are in camel case, as definition documents
+/// write them; a text is plain text or a <c>#</c> key of the backoffice's localisation.
+/// </summary>
+internal sealed record FieldTypesResponseModel
+{
+    /// <summary>The groups of the palette, in its order.</summary>
+    public required IReadOnlyList<FieldGroupResponseModel> PaletteGroups { get; init; }
+
+    /// <summary>The sections of the inspector that settings sit in, in its order.</summary>
+    public required IReadOnlyList<FieldGroupResponseModel> SettingGroups { get; init; }
+
+    /// <summary>The field types: the built-in ones in palette order, then the site's.</summary>
+    public required IReadOnlyList<FieldTypeResponseModel> Types { get; init; }
+
+    /// <summary>The model of the registry's types, with the availability of each in the same order.</summary>
+    public static FieldTypesResponseModel Of(IReadOnlyList<IFormBuilderFieldType> types, IReadOnlyList<FieldTypeAvailability> availability)
+    {
+        ArgumentNullException.ThrowIfNull(types);
+        ArgumentNullException.ThrowIfNull(availability);
+        if (types.Count != availability.Count)
+        {
+            throw new ArgumentException("Every type needs its availability, in the same order.", nameof(availability));
+        }
+
+        return new FieldTypesResponseModel
+        {
+            PaletteGroups = [.. Enum.GetValues<FieldPaletteGroup>().Select(group => new FieldGroupResponseModel(FieldTypeNames.Of(group), $"#jfbFieldPalette_{FieldTypeNames.Of(group)}"))],
+            SettingGroups = [.. Enum.GetValues<FieldSettingGroup>().Select(group => new FieldGroupResponseModel(FieldTypeNames.Of(group), $"#jfbFieldSettingGroups_{FieldTypeNames.Of(group)}"))],
+            Types = [.. types.Select((type, i) => FieldTypeResponseModel.Of(type, availability[i]))],
+        };
+    }
+}
+
+/// <summary>A group of the palette or of the inspector.</summary>
+/// <param name="Alias">Its alias, as a type or a setting names it.</param>
+/// <param name="Name">Its name: a <c>#</c> key of the backoffice's localisation.</param>
+internal sealed record FieldGroupResponseModel(string Alias, string Name);
+
+/// <summary>A field type (section 4.3.2, ADR-0055): what it is, what it supports, its settings and whether it can be used.</summary>
+internal sealed record FieldTypeResponseModel
+{
+    /// <summary>The alias forms name it by, such as <c>email</c>.</summary>
+    public required string Alias { get; init; }
+
+    /// <summary>The name the palette shows.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>The Umbraco icon the palette shows.</summary>
+    public required string Icon { get; init; }
+
+    /// <summary>The alias of its group in the palette.</summary>
+    public required string PaletteGroup { get; init; }
+
+    /// <summary>Whether it holds a value, and so has an alias and a label.</summary>
+    public required bool HoldsValue { get; init; }
+
+    /// <summary>How its values are stored: <c>text</c>, <c>longText</c>, <c>number</c>, <c>date</c>, <c>bool</c>, <c>file</c>, <c>json</c> or <c>none</c>.</summary>
+    public required string Storage { get; init; }
+
+    /// <summary>What rules compare its answers as; null when rules cannot compare them.</summary>
+    public string? RuleKind { get; init; }
+
+    /// <summary>Whether its setting <c>multiple</c> turns one choice into several.</summary>
+    public required bool MultipleSetting { get; init; }
+
+    /// <summary>Whether a form has at most one field of it, never inside a repeatable group.</summary>
+    public required bool OnePerForm { get; init; }
+
+    /// <summary>Whether its default value stays on the server and never reaches the page.</summary>
+    public required bool ServerOnlyDefault { get; init; }
+
+    /// <summary>The common properties it supports, such as <c>label</c>, <c>placeholder</c> or <c>places</c>.</summary>
+    public required IReadOnlyList<string> Features { get; init; }
+
+    /// <summary>The error kinds it raises, each the name of a field's message, such as <c>required</c>.</summary>
+    public required IReadOnlyList<string> Messages { get; init; }
+
+    /// <summary>Its settings, in the order the inspector shows them.</summary>
+    public required IReadOnlyList<FieldSettingResponseModel> Settings { get; init; }
+
+    /// <summary>Whether the site has what it needs.</summary>
+    public required FieldTypeAvailabilityResponseModel Availability { get; init; }
+
+    /// <summary>The model of a type.</summary>
+    public static FieldTypeResponseModel Of(IFormBuilderFieldType type, FieldTypeAvailability availability)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(availability);
+        var declaration = type.Declaration;
+        return new FieldTypeResponseModel
+        {
+            Alias = declaration.Alias,
+            Name = declaration.Name,
+            Icon = declaration.Icon,
+            PaletteGroup = FieldTypeNames.Of(declaration.PaletteGroup),
+            HoldsValue = declaration.HoldsValue,
+            Storage = FieldTypeNames.Of(declaration.Storage),
+            RuleKind = declaration.RuleKind is { } kind ? FieldTypeNames.Of(kind) : null,
+            MultipleSetting = declaration.MultipleSetting,
+            OnePerForm = declaration.OnePerForm,
+            ServerOnlyDefault = declaration.ServerOnlyDefault,
+            Features = FieldTypeNames.OfFeatures(declaration.Features),
+            Messages = [.. FieldMessageProperties.All.Where(message => declaration.Messages.HasFlag(message.Kind)).Select(message => message.Name)],
+            Settings = FieldSettingResponseModel.Of(type.SettingsSchema.Settings),
+            Availability = new FieldTypeAvailabilityResponseModel(availability.IsAvailable, availability.Reason),
+        };
+    }
+}
+
+/// <summary>One setting of a field type (ADR-0055), with the rules its value keeps (ADR-0056).</summary>
+internal sealed record FieldSettingResponseModel
+{
+    /// <summary>Its name in the settings' JSON.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>
+    /// The kind of value it holds: <c>boolean</c>, <c>wholeNumber</c>, <c>number</c>, <c>text</c>, <c>date</c>, <c>time</c>,
+    /// <c>localizedText</c>, <c>localizedHtml</c>, <c>choice</c>, <c>key</c>, <c>list</c>, <c>nested</c> or <c>json</c>.
+    /// </summary>
+    public required string Kind { get; init; }
+
+    /// <summary>The kind of a list's items; null for any other kind.</summary>
+    public string? ItemKind { get; init; }
+
+    /// <summary>The values a choice, or a list of choices, may take, with their labels; empty for any other kind.</summary>
+    public required IReadOnlyList<FieldSettingChoiceResponseModel> Choices { get; init; }
+
+    /// <summary>The settings of an object, in the order the inspector shows them; empty for any other kind.</summary>
+    public required IReadOnlyList<FieldSettingResponseModel> Settings { get; init; }
+
+    /// <summary>The value a field has without one of its own, as settings store it; null when it has none.</summary>
+    public JsonElement? Default { get; init; }
+
+    /// <summary>The label.</summary>
+    public required string Label { get; init; }
+
+    /// <summary>A line of help, or null.</summary>
+    public string? Description { get; init; }
+
+    /// <summary>The alias of the editor the designer shows.</summary>
+    public required string Editor { get; init; }
+
+    /// <summary>The alias of the inspector's section it sits in.</summary>
+    public required string Group { get; init; }
+
+    /// <summary>Whether its text may hold merge tags.</summary>
+    public required bool SupportsMergeTags { get; init; }
+
+    /// <summary>Whether visitors see it; read for the settings at the top only.</summary>
+    public required bool IsPublic { get; init; }
+
+    /// <summary>The rules its value keeps, which publishing checks.</summary>
+    public required FieldSettingRulesResponseModel Rules { get; init; }
+
+    /// <summary>The models of settings, in their order.</summary>
+    public static IReadOnlyList<FieldSettingResponseModel> Of(ImmutableArray<FieldSettingDescriptor> settings) =>
+        [.. settings.Select(Of)];
+
+    private static FieldSettingResponseModel Of(FieldSettingDescriptor setting) => new()
+    {
+        Name = setting.Name,
+        Kind = FieldTypeNames.Of(setting.Kind),
+        ItemKind = setting.ItemKind is { } item ? FieldTypeNames.Of(item) : null,
+        Choices = [.. setting.Choices.Select(choice => new FieldSettingChoiceResponseModel(choice.Value, choice.Label))],
+        Settings = Of(setting.Settings),
+        Default = setting.Default,
+        Label = setting.Label,
+        Description = setting.Description,
+        Editor = setting.Editor,
+        Group = FieldTypeNames.Of(setting.Group),
+        SupportsMergeTags = setting.SupportsMergeTags,
+        IsPublic = setting.IsPublic,
+        Rules = FieldSettingRulesResponseModel.Of(setting.Rules),
+    };
+}
+
+/// <summary>A value a choice setting may take.</summary>
+/// <param name="Value">The value as the settings' JSON writes it.</param>
+/// <param name="Label">The label the designer shows.</param>
+internal sealed record FieldSettingChoiceResponseModel(string Value, string Label);
+
+/// <summary>
+/// The rules a setting's value keeps (ADR-0056). A bound is a number in the wire form of ADR-0005; a length counts UTF-16
+/// code units, of each culture's text for a localised text, and of each item for a list of texts; a count counts a list's
+/// items.
+/// </summary>
+internal sealed record FieldSettingRulesResponseModel
+{
+    /// <summary>Whether the field must give the setting a value of its own.</summary>
+    public required bool Required { get; init; }
+
+    /// <summary>The lowest value, or null.</summary>
+    public string? Minimum { get; init; }
+
+    /// <summary>Whether the lowest value itself is refused.</summary>
+    public required bool MinimumIsExclusive { get; init; }
+
+    /// <summary>The highest value, or null.</summary>
+    public string? Maximum { get; init; }
+
+    /// <summary>Whether the highest value itself is refused.</summary>
+    public required bool MaximumIsExclusive { get; init; }
+
+    /// <summary>The fewest characters, or null.</summary>
+    public int? MinimumLength { get; init; }
+
+    /// <summary>The most characters, or null.</summary>
+    public int? MaximumLength { get; init; }
+
+    /// <summary>The fewest items, or null.</summary>
+    public int? MinimumCount { get; init; }
+
+    /// <summary>The most items, or null.</summary>
+    public int? MaximumCount { get; init; }
+
+    /// <summary>The texts the value may be, compared exactly; empty for any text.</summary>
+    public required IReadOnlyList<string> AllowedValues { get; init; }
+
+    /// <summary>The model of a setting's rules.</summary>
+    public static FieldSettingRulesResponseModel Of(FieldSettingRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        return new FieldSettingRulesResponseModel
+        {
+            Required = rules.Required,
+            Minimum = rules.Minimum,
+            MinimumIsExclusive = rules.MinimumIsExclusive,
+            Maximum = rules.Maximum,
+            MaximumIsExclusive = rules.MaximumIsExclusive,
+            MinimumLength = rules.MinimumLength,
+            MaximumLength = rules.MaximumLength,
+            MinimumCount = rules.MinimumCount,
+            MaximumCount = rules.MaximumCount,
+            AllowedValues = rules.AllowedValues,
+        };
+    }
+}
+
+/// <summary>Whether a field type can be used on the site (ADR-0057).</summary>
+/// <param name="IsAvailable">Whether it can.</param>
+/// <param name="Reason">What is missing, a sentence for editors that the palette shows with "Not configured"; null when it can.</param>
+internal sealed record FieldTypeAvailabilityResponseModel(bool IsAvailable, string? Reason);
+
+/// <summary>The names the field types' endpoint writes for enum values: camel case, as definition documents write them.</summary>
+internal static class FieldTypeNames
+{
+    /// <summary>The name of an enum value.</summary>
+    public static string Of<TEnum>(TEnum value)
+        where TEnum : struct, Enum => JsonNamingPolicy.CamelCase.ConvertName(value.ToString());
+
+    /// <summary>The names of the common properties a type supports, in the enum's order.</summary>
+    public static IReadOnlyList<string> OfFeatures(FieldFeatures features) =>
+        [.. Enum.GetValues<FieldFeatures>().Where(feature => feature != FieldFeatures.None && features.HasFlag(feature)).Select(feature => Of(feature))];
+}

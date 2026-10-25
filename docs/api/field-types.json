@@ -1,0 +1,4035 @@
+{
+  "paletteGroups": [
+    {
+      "alias": "text",
+      "name": "#jfbFieldPalette_text"
+    },
+    {
+      "alias": "numbersAndDates",
+      "name": "#jfbFieldPalette_numbersAndDates"
+    },
+    {
+      "alias": "choices",
+      "name": "#jfbFieldPalette_choices"
+    },
+    {
+      "alias": "people",
+      "name": "#jfbFieldPalette_people"
+    },
+    {
+      "alias": "files",
+      "name": "#jfbFieldPalette_files"
+    },
+    {
+      "alias": "structure",
+      "name": "#jfbFieldPalette_structure"
+    },
+    {
+      "alias": "content",
+      "name": "#jfbFieldPalette_content"
+    },
+    {
+      "alias": "protection",
+      "name": "#jfbFieldPalette_protection"
+    }
+  ],
+  "settingGroups": [
+    {
+      "alias": "essentials",
+      "name": "#jfbFieldSettingGroups_essentials"
+    },
+    {
+      "alias": "validation",
+      "name": "#jfbFieldSettingGroups_validation"
+    },
+    {
+      "alias": "appearance",
+      "name": "#jfbFieldSettingGroups_appearance"
+    },
+    {
+      "alias": "advanced",
+      "name": "#jfbFieldSettingGroups_advanced"
+    }
+  ],
+  "types": [
+    {
+      "alias": "text",
+      "name": "#jfbFieldTypes_text",
+      "icon": "icon-autofill",
+      "paletteGroup": "text",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "text",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "placeholder",
+        "required",
+        "defaultValue",
+        "prefill",
+        "autocomplete",
+        "patternCheck",
+        "matchesFieldCheck",
+        "uniquePerFormCheck",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "minLength",
+        "maxLength"
+      ],
+      "settings": [
+        {
+          "name": "minLength",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 0,
+          "label": "#jfbFieldSettings_textMinLength",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "0",
+            "minimumIsExclusive": false,
+            "maximum": "4000",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "maxLength",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 255,
+          "label": "#jfbFieldSettings_textMaxLength",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "4000",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "prefix",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_textPrefix",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 50,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "suffix",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_textSuffix",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 50,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "counter",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbFieldSettings_textCounter",
+          "description": null,
+          "editor": "boolean",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "textarea",
+      "name": "#jfbFieldTypes_textarea",
+      "icon": "icon-text-align-left",
+      "paletteGroup": "text",
+      "holdsValue": true,
+      "storage": "longText",
+      "ruleKind": "text",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "placeholder",
+        "required",
+        "defaultValue",
+        "prefill",
+        "autocomplete",
+        "patternCheck",
+        "matchesFieldCheck",
+        "uniquePerFormCheck",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "minLength",
+        "maxLength",
+        "minWords",
+        "maxWords"
+      ],
+      "settings": [
+        {
+          "name": "minLength",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 0,
+          "label": "#jfbFieldSettings_textareaMinLength",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "0",
+            "minimumIsExclusive": false,
+            "maximum": "100000",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "maxLength",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 4000,
+          "label": "#jfbFieldSettings_textareaMaxLength",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "100000",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "minWords",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_textareaMinWords",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "20000",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "maxWords",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_textareaMaxWords",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "20000",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "rows",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 4,
+          "label": "#jfbFieldSettings_textareaRows",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "50",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "autoGrow",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": true,
+          "label": "#jfbFieldSettings_textareaAutoGrow",
+          "description": null,
+          "editor": "boolean",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "counter",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbFieldSettings_textareaCounter",
+          "description": null,
+          "editor": "boolean",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "email",
+      "name": "#jfbFieldTypes_email",
+      "icon": "icon-message",
+      "paletteGroup": "text",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "text",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "placeholder",
+        "required",
+        "defaultValue",
+        "prefill",
+        "autocomplete",
+        "patternCheck",
+        "matchesFieldCheck",
+        "uniquePerFormCheck",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid"
+      ],
+      "settings": [
+        {
+          "name": "confirm",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbFieldSettings_emailConfirm",
+          "description": null,
+          "editor": "boolean",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "confirmLabel",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_emailConfirmLabel",
+          "description": null,
+          "editor": "localizedText",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 200,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "domains",
+          "kind": "nested",
+          "itemKind": null,
+          "choices": [],
+          "settings": [
+            {
+              "name": "mode",
+              "kind": "choice",
+              "itemKind": null,
+              "choices": [
+                {
+                  "value": "any",
+                  "label": "#jfbFieldChoices_emailDomainModeAny"
+                },
+                {
+                  "value": "allow",
+                  "label": "#jfbFieldChoices_emailDomainModeAllow"
+                },
+                {
+                  "value": "block",
+                  "label": "#jfbFieldChoices_emailDomainModeBlock"
+                }
+              ],
+              "settings": [],
+              "default": "any",
+              "label": "#jfbFieldSettings_emailDomainsMode",
+              "description": null,
+              "editor": "choice",
+              "group": "essentials",
+              "supportsMergeTags": false,
+              "isPublic": false,
+              "rules": {
+                "required": false,
+                "minimum": null,
+                "minimumIsExclusive": false,
+                "maximum": null,
+                "maximumIsExclusive": false,
+                "minimumLength": null,
+                "maximumLength": null,
+                "minimumCount": null,
+                "maximumCount": null,
+                "allowedValues": []
+              }
+            },
+            {
+              "name": "list",
+              "kind": "list",
+              "itemKind": "text",
+              "choices": [],
+              "settings": [],
+              "default": null,
+              "label": "#jfbFieldSettings_emailDomainsList",
+              "description": null,
+              "editor": "list",
+              "group": "essentials",
+              "supportsMergeTags": false,
+              "isPublic": false,
+              "rules": {
+                "required": false,
+                "minimum": null,
+                "minimumIsExclusive": false,
+                "maximum": null,
+                "maximumIsExclusive": false,
+                "minimumLength": null,
+                "maximumLength": 253,
+                "minimumCount": null,
+                "maximumCount": 1000,
+                "allowedValues": []
+              }
+            }
+          ],
+          "default": null,
+          "label": "#jfbFieldSettings_emailDomains",
+          "description": null,
+          "editor": "nested",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": false,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "phone",
+      "name": "#jfbFieldTypes_phone",
+      "icon": "icon-phone",
+      "paletteGroup": "text",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "text",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "placeholder",
+        "required",
+        "defaultValue",
+        "prefill",
+        "autocomplete",
+        "patternCheck",
+        "matchesFieldCheck",
+        "uniquePerFormCheck",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid"
+      ],
+      "settings": [
+        {
+          "name": "defaultCountry",
+          "kind": "text",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_phoneDefaultCountry",
+          "description": null,
+          "editor": "text",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 2000,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "url",
+      "name": "#jfbFieldTypes_url",
+      "icon": "icon-link",
+      "paletteGroup": "text",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "text",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "placeholder",
+        "required",
+        "defaultValue",
+        "prefill",
+        "autocomplete",
+        "patternCheck",
+        "matchesFieldCheck",
+        "uniquePerFormCheck",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid"
+      ],
+      "settings": [
+        {
+          "name": "schemes",
+          "kind": "list",
+          "itemKind": "choice",
+          "choices": [
+            {
+              "value": "https",
+              "label": "#jfbFieldChoices_urlSchemeHttps"
+            },
+            {
+              "value": "http",
+              "label": "#jfbFieldChoices_urlSchemeHttp"
+            }
+          ],
+          "settings": [],
+          "default": [
+            "https"
+          ],
+          "label": "#jfbFieldSettings_urlSchemes",
+          "description": null,
+          "editor": "list",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "number",
+      "name": "#jfbFieldTypes_number",
+      "icon": "icon-binarycode",
+      "paletteGroup": "numbersAndDates",
+      "holdsValue": true,
+      "storage": "number",
+      "ruleKind": "number",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "placeholder",
+        "required",
+        "defaultValue",
+        "prefill",
+        "autocomplete",
+        "matchesFieldCheck",
+        "uniquePerFormCheck",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid",
+        "min",
+        "max",
+        "step"
+      ],
+      "settings": [
+        {
+          "name": "min",
+          "kind": "number",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_numberMin",
+          "description": null,
+          "editor": "number",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "max",
+          "kind": "number",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_numberMax",
+          "description": null,
+          "editor": "number",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "step",
+          "kind": "number",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_numberStep",
+          "description": null,
+          "editor": "number",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "decimals",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 0,
+          "label": "#jfbFieldSettings_numberDecimals",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "0",
+            "minimumIsExclusive": false,
+            "maximum": "15",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "prefix",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_numberPrefix",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 50,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "suffix",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_numberSuffix",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 50,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "date",
+      "name": "#jfbFieldTypes_date",
+      "icon": "icon-calendar",
+      "paletteGroup": "numbersAndDates",
+      "holdsValue": true,
+      "storage": "date",
+      "ruleKind": "date",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "defaultValue",
+        "prefill",
+        "autocomplete",
+        "matchesFieldCheck",
+        "uniquePerFormCheck",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid",
+        "dateWindow"
+      ],
+      "settings": [
+        {
+          "name": "defaultToday",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbFieldSettings_dateDefaultToday",
+          "description": null,
+          "editor": "boolean",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "min",
+          "kind": "json",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_dateMin",
+          "description": null,
+          "editor": "dateBound",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "max",
+          "kind": "json",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_dateMax",
+          "description": null,
+          "editor": "dateBound",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "weekdaysOnly",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbFieldSettings_dateWeekdaysOnly",
+          "description": null,
+          "editor": "boolean",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "excluded",
+          "kind": "list",
+          "itemKind": "date",
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_dateExcluded",
+          "description": null,
+          "editor": "list",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "time",
+      "name": "#jfbFieldTypes_time",
+      "icon": "icon-time",
+      "paletteGroup": "numbersAndDates",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "time",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "defaultValue",
+        "prefill",
+        "matchesFieldCheck",
+        "uniquePerFormCheck",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid",
+        "min",
+        "max",
+        "step"
+      ],
+      "settings": [
+        {
+          "name": "min",
+          "kind": "time",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_timeMin",
+          "description": null,
+          "editor": "time",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "max",
+          "kind": "time",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_timeMax",
+          "description": null,
+          "editor": "time",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "stepMinutes",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_timeStepMinutes",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "720",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "datetime",
+      "name": "#jfbFieldTypes_datetime",
+      "icon": "icon-calendar-alt",
+      "paletteGroup": "numbersAndDates",
+      "holdsValue": true,
+      "storage": "date",
+      "ruleKind": "dateTime",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "defaultValue",
+        "prefill",
+        "matchesFieldCheck",
+        "uniquePerFormCheck",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid",
+        "step",
+        "dateWindow"
+      ],
+      "settings": [
+        {
+          "name": "defaultToday",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbFieldSettings_datetimeDefaultToday",
+          "description": null,
+          "editor": "boolean",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "min",
+          "kind": "json",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_datetimeMin",
+          "description": null,
+          "editor": "dateBound",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "max",
+          "kind": "json",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_datetimeMax",
+          "description": null,
+          "editor": "dateBound",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "weekdaysOnly",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbFieldSettings_datetimeWeekdaysOnly",
+          "description": null,
+          "editor": "boolean",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "excluded",
+          "kind": "list",
+          "itemKind": "date",
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_datetimeExcluded",
+          "description": null,
+          "editor": "list",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "stepMinutes",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_datetimeStepMinutes",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "720",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "rating",
+      "name": "#jfbFieldTypes_rating",
+      "icon": "icon-star",
+      "paletteGroup": "numbersAndDates",
+      "holdsValue": true,
+      "storage": "number",
+      "ruleKind": "number",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "defaultValue",
+        "prefill",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid"
+      ],
+      "settings": [
+        {
+          "name": "count",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 5,
+          "label": "#jfbFieldSettings_ratingCount",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "3",
+            "minimumIsExclusive": false,
+            "maximum": "10",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "symbol",
+          "kind": "choice",
+          "itemKind": null,
+          "choices": [
+            {
+              "value": "star",
+              "label": "#jfbFieldChoices_ratingSymbolStar"
+            },
+            {
+              "value": "heart",
+              "label": "#jfbFieldChoices_ratingSymbolHeart"
+            },
+            {
+              "value": "circle",
+              "label": "#jfbFieldChoices_ratingSymbolCircle"
+            }
+          ],
+          "settings": [],
+          "default": "star",
+          "label": "#jfbFieldSettings_ratingSymbol",
+          "description": null,
+          "editor": "choice",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "lowLabel",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_ratingLowLabel",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 100,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "highLabel",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_ratingHighLabel",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 100,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "scale",
+      "name": "#jfbFieldTypes_scale",
+      "icon": "icon-bar-chart",
+      "paletteGroup": "numbersAndDates",
+      "holdsValue": true,
+      "storage": "number",
+      "ruleKind": "number",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "defaultValue",
+        "prefill",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid"
+      ],
+      "settings": [
+        {
+          "name": "from",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 0,
+          "label": "#jfbFieldSettings_scaleFrom",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "0",
+            "minimumIsExclusive": false,
+            "maximum": "1",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "to",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 10,
+          "label": "#jfbFieldSettings_scaleTo",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "5",
+            "minimumIsExclusive": false,
+            "maximum": "10",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "lowLabel",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_scaleLowLabel",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 100,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "highLabel",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_scaleHighLabel",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 100,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "slider",
+      "name": "#jfbFieldTypes_slider",
+      "icon": "icon-ruler",
+      "paletteGroup": "numbersAndDates",
+      "holdsValue": true,
+      "storage": "number",
+      "ruleKind": "number",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "defaultValue",
+        "prefill",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid",
+        "min",
+        "max",
+        "step"
+      ],
+      "settings": [
+        {
+          "name": "min",
+          "kind": "number",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": "0",
+          "label": "#jfbFieldSettings_sliderMin",
+          "description": null,
+          "editor": "number",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "max",
+          "kind": "number",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": "100",
+          "label": "#jfbFieldSettings_sliderMax",
+          "description": null,
+          "editor": "number",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "step",
+          "kind": "number",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": "1",
+          "label": "#jfbFieldSettings_sliderStep",
+          "description": null,
+          "editor": "number",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "unit",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_sliderUnit",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 50,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "showValue",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": true,
+          "label": "#jfbFieldSettings_sliderShowValue",
+          "description": null,
+          "editor": "boolean",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "calculation",
+      "name": "#jfbFieldTypes_calculation",
+      "icon": "icon-calculator",
+      "paletteGroup": "numbersAndDates",
+      "holdsValue": true,
+      "storage": "number",
+      "ruleKind": "number",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "visibilityRules"
+      ],
+      "messages": [],
+      "settings": [
+        {
+          "name": "formula",
+          "kind": "text",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_calculationFormula",
+          "description": null,
+          "editor": "formula",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": true,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 2000,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "visible",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": true,
+          "label": "#jfbFieldSettings_calculationVisible",
+          "description": null,
+          "editor": "boolean",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "format",
+          "kind": "nested",
+          "itemKind": null,
+          "choices": [],
+          "settings": [
+            {
+              "name": "decimals",
+              "kind": "wholeNumber",
+              "itemKind": null,
+              "choices": [],
+              "settings": [],
+              "default": null,
+              "label": "#jfbFieldSettings_calculationFormatDecimals",
+              "description": null,
+              "editor": "wholeNumber",
+              "group": "essentials",
+              "supportsMergeTags": false,
+              "isPublic": false,
+              "rules": {
+                "required": false,
+                "minimum": "0",
+                "minimumIsExclusive": false,
+                "maximum": "15",
+                "maximumIsExclusive": false,
+                "minimumLength": null,
+                "maximumLength": null,
+                "minimumCount": null,
+                "maximumCount": null,
+                "allowedValues": []
+              }
+            },
+            {
+              "name": "prefix",
+              "kind": "localizedText",
+              "itemKind": null,
+              "choices": [],
+              "settings": [],
+              "default": null,
+              "label": "#jfbFieldSettings_calculationFormatPrefix",
+              "description": null,
+              "editor": "localizedText",
+              "group": "essentials",
+              "supportsMergeTags": false,
+              "isPublic": false,
+              "rules": {
+                "required": false,
+                "minimum": null,
+                "minimumIsExclusive": false,
+                "maximum": null,
+                "maximumIsExclusive": false,
+                "minimumLength": null,
+                "maximumLength": 50,
+                "minimumCount": null,
+                "maximumCount": null,
+                "allowedValues": []
+              }
+            },
+            {
+              "name": "suffix",
+              "kind": "localizedText",
+              "itemKind": null,
+              "choices": [],
+              "settings": [],
+              "default": null,
+              "label": "#jfbFieldSettings_calculationFormatSuffix",
+              "description": null,
+              "editor": "localizedText",
+              "group": "essentials",
+              "supportsMergeTags": false,
+              "isPublic": false,
+              "rules": {
+                "required": false,
+                "minimum": null,
+                "minimumIsExclusive": false,
+                "maximum": null,
+                "maximumIsExclusive": false,
+                "minimumLength": null,
+                "maximumLength": 50,
+                "minimumCount": null,
+                "maximumCount": null,
+                "allowedValues": []
+              }
+            }
+          ],
+          "default": null,
+          "label": "#jfbFieldSettings_calculationFormat",
+          "description": null,
+          "editor": "nested",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "dropdown",
+      "name": "#jfbFieldTypes_dropdown",
+      "icon": "icon-list",
+      "paletteGroup": "choices",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "choice",
+      "multipleSetting": true,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "defaultValue",
+        "prefill",
+        "autocomplete",
+        "visibilityRules",
+        "options",
+        "needsOptions",
+        "places"
+      ],
+      "messages": [
+        "required",
+        "invalid",
+        "selections",
+        "full"
+      ],
+      "settings": [
+        {
+          "name": "multiple",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbFieldSettings_dropdownMultiple",
+          "description": null,
+          "editor": "boolean",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "minSelections",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_dropdownMinSelections",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "1000",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "maxSelections",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_dropdownMaxSelections",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "1000",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "prompt",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_dropdownPrompt",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 200,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "radio",
+      "name": "#jfbFieldTypes_radio",
+      "icon": "icon-circle-dotted-active",
+      "paletteGroup": "choices",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "choice",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "defaultValue",
+        "prefill",
+        "visibilityRules",
+        "options",
+        "needsOptions",
+        "places"
+      ],
+      "messages": [
+        "required",
+        "invalid",
+        "full"
+      ],
+      "settings": [
+        {
+          "name": "other",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbFieldSettings_radioOther",
+          "description": null,
+          "editor": "boolean",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "otherLabel",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_radioOtherLabel",
+          "description": null,
+          "editor": "localizedText",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 200,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "layout",
+          "kind": "choice",
+          "itemKind": null,
+          "choices": [
+            {
+              "value": "inherit",
+              "label": "#jfbFieldChoices_layoutInherit"
+            },
+            {
+              "value": "vertical",
+              "label": "#jfbFieldChoices_layoutVertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "#jfbFieldChoices_layoutHorizontal"
+            },
+            {
+              "value": "cards",
+              "label": "#jfbFieldChoices_layoutCards"
+            }
+          ],
+          "settings": [],
+          "default": "inherit",
+          "label": "#jfbFieldSettings_radioLayout",
+          "description": null,
+          "editor": "choice",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "checkboxes",
+      "name": "#jfbFieldTypes_checkboxes",
+      "icon": "icon-checkbox",
+      "paletteGroup": "choices",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "choices",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "defaultValue",
+        "prefill",
+        "visibilityRules",
+        "options",
+        "needsOptions",
+        "places"
+      ],
+      "messages": [
+        "required",
+        "invalid",
+        "selections",
+        "full"
+      ],
+      "settings": [
+        {
+          "name": "other",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbFieldSettings_checkboxesOther",
+          "description": null,
+          "editor": "boolean",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "otherLabel",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_checkboxesOtherLabel",
+          "description": null,
+          "editor": "localizedText",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 200,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "minSelections",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_checkboxesMinSelections",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "1000",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "maxSelections",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_checkboxesMaxSelections",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "1000",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "layout",
+          "kind": "choice",
+          "itemKind": null,
+          "choices": [
+            {
+              "value": "inherit",
+              "label": "#jfbFieldChoices_layoutInherit"
+            },
+            {
+              "value": "vertical",
+              "label": "#jfbFieldChoices_layoutVertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "#jfbFieldChoices_layoutHorizontal"
+            },
+            {
+              "value": "cards",
+              "label": "#jfbFieldChoices_layoutCards"
+            }
+          ],
+          "settings": [],
+          "default": "inherit",
+          "label": "#jfbFieldSettings_checkboxesLayout",
+          "description": null,
+          "editor": "choice",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "grid",
+      "name": "#jfbFieldTypes_grid",
+      "icon": "icon-grid",
+      "paletteGroup": "choices",
+      "holdsValue": true,
+      "storage": "none",
+      "ruleKind": null,
+      "multipleSetting": true,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "visibilityRules",
+        "options",
+        "rows"
+      ],
+      "messages": [
+        "required",
+        "invalid"
+      ],
+      "settings": [
+        {
+          "name": "multiple",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbFieldSettings_gridMultiple",
+          "description": null,
+          "editor": "boolean",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "scale",
+          "kind": "nested",
+          "itemKind": null,
+          "choices": [],
+          "settings": [
+            {
+              "name": "from",
+              "kind": "wholeNumber",
+              "itemKind": null,
+              "choices": [],
+              "settings": [],
+              "default": 1,
+              "label": "#jfbFieldSettings_gridScaleFrom",
+              "description": null,
+              "editor": "wholeNumber",
+              "group": "essentials",
+              "supportsMergeTags": false,
+              "isPublic": false,
+              "rules": {
+                "required": false,
+                "minimum": "0",
+                "minimumIsExclusive": false,
+                "maximum": "1",
+                "maximumIsExclusive": false,
+                "minimumLength": null,
+                "maximumLength": null,
+                "minimumCount": null,
+                "maximumCount": null,
+                "allowedValues": []
+              }
+            },
+            {
+              "name": "to",
+              "kind": "wholeNumber",
+              "itemKind": null,
+              "choices": [],
+              "settings": [],
+              "default": 5,
+              "label": "#jfbFieldSettings_gridScaleTo",
+              "description": null,
+              "editor": "wholeNumber",
+              "group": "essentials",
+              "supportsMergeTags": false,
+              "isPublic": false,
+              "rules": {
+                "required": false,
+                "minimum": "2",
+                "minimumIsExclusive": false,
+                "maximum": "10",
+                "maximumIsExclusive": false,
+                "minimumLength": null,
+                "maximumLength": null,
+                "minimumCount": null,
+                "maximumCount": null,
+                "allowedValues": []
+              }
+            }
+          ],
+          "default": null,
+          "label": "#jfbFieldSettings_gridScale",
+          "description": null,
+          "editor": "nested",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "ranking",
+      "name": "#jfbFieldTypes_ranking",
+      "icon": "icon-ordered-list",
+      "paletteGroup": "choices",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "choices",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "visibilityRules",
+        "options",
+        "needsOptions"
+      ],
+      "messages": [
+        "required",
+        "invalid"
+      ],
+      "settings": [
+        {
+          "name": "top",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_rankingTop",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "1000",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "checkbox",
+      "name": "#jfbFieldTypes_checkbox",
+      "icon": "icon-check",
+      "paletteGroup": "choices",
+      "holdsValue": true,
+      "storage": "bool",
+      "ruleKind": "checkbox",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "defaultValue",
+        "prefill",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required"
+      ],
+      "settings": [
+        {
+          "name": "text",
+          "kind": "localizedHtml",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_checkboxText",
+          "description": null,
+          "editor": "localizedHtml",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 20000,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "yesno",
+      "name": "#jfbFieldTypes_yesno",
+      "icon": "icon-thumb-up",
+      "paletteGroup": "choices",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "choice",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "defaultValue",
+        "prefill",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required"
+      ],
+      "settings": [
+        {
+          "name": "yesLabel",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_yesnoYesLabel",
+          "description": null,
+          "editor": "localizedText",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 100,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "noLabel",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_yesnoNoLabel",
+          "description": null,
+          "editor": "localizedText",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 100,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "style",
+          "kind": "choice",
+          "itemKind": null,
+          "choices": [
+            {
+              "value": "buttons",
+              "label": "#jfbFieldChoices_yesnoStyleButtons"
+            },
+            {
+              "value": "switch",
+              "label": "#jfbFieldChoices_yesnoStyleSwitch"
+            }
+          ],
+          "settings": [],
+          "default": "buttons",
+          "label": "#jfbFieldSettings_yesnoStyle",
+          "description": null,
+          "editor": "choice",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "consent",
+      "name": "#jfbFieldTypes_consent",
+      "icon": "icon-handshake",
+      "paletteGroup": "choices",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "checkbox",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required"
+      ],
+      "settings": [
+        {
+          "name": "text",
+          "kind": "localizedHtml",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_consentText",
+          "description": null,
+          "editor": "localizedHtml",
+          "group": "essentials",
+          "supportsMergeTags": true,
+          "isPublic": true,
+          "rules": {
+            "required": true,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 20000,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "country",
+      "name": "#jfbFieldTypes_country",
+      "icon": "icon-globe",
+      "paletteGroup": "choices",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "choice",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "defaultValue",
+        "prefill",
+        "autocomplete",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid"
+      ],
+      "settings": [
+        {
+          "name": "allowed",
+          "kind": "list",
+          "itemKind": "text",
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_countryAllowed",
+          "description": null,
+          "editor": "list",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 2000,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "top",
+          "kind": "list",
+          "itemKind": "text",
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_countryTop",
+          "description": null,
+          "editor": "list",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 2000,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "default",
+          "kind": "text",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_countryDefault",
+          "description": null,
+          "editor": "text",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 2000,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "name",
+      "name": "#jfbFieldTypes_name",
+      "icon": "icon-user",
+      "paletteGroup": "people",
+      "holdsValue": true,
+      "storage": "json",
+      "ruleKind": null,
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "prefill",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid"
+      ],
+      "settings": [
+        {
+          "name": "parts",
+          "kind": "list",
+          "itemKind": "choice",
+          "choices": [
+            {
+              "value": "title",
+              "label": "#jfbFieldChoices_namePartTitle"
+            },
+            {
+              "value": "first",
+              "label": "#jfbFieldChoices_namePartFirst"
+            },
+            {
+              "value": "middle",
+              "label": "#jfbFieldChoices_namePartMiddle"
+            },
+            {
+              "value": "last",
+              "label": "#jfbFieldChoices_namePartLast"
+            }
+          ],
+          "settings": [],
+          "default": [
+            "first",
+            "last"
+          ],
+          "label": "#jfbFieldSettings_nameParts",
+          "description": null,
+          "editor": "list",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "requiredParts",
+          "kind": "list",
+          "itemKind": "choice",
+          "choices": [
+            {
+              "value": "title",
+              "label": "#jfbFieldChoices_namePartTitle"
+            },
+            {
+              "value": "first",
+              "label": "#jfbFieldChoices_namePartFirst"
+            },
+            {
+              "value": "middle",
+              "label": "#jfbFieldChoices_namePartMiddle"
+            },
+            {
+              "value": "last",
+              "label": "#jfbFieldChoices_namePartLast"
+            }
+          ],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_nameRequiredParts",
+          "description": null,
+          "editor": "list",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "address",
+      "name": "#jfbFieldTypes_address",
+      "icon": "icon-addressbook",
+      "paletteGroup": "people",
+      "holdsValue": true,
+      "storage": "json",
+      "ruleKind": null,
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "prefill",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid"
+      ],
+      "settings": [
+        {
+          "name": "parts",
+          "kind": "list",
+          "itemKind": "choice",
+          "choices": [
+            {
+              "value": "street",
+              "label": "#jfbFieldChoices_addressPartStreet"
+            },
+            {
+              "value": "street2",
+              "label": "#jfbFieldChoices_addressPartStreet2"
+            },
+            {
+              "value": "postcode",
+              "label": "#jfbFieldChoices_addressPartPostcode"
+            },
+            {
+              "value": "city",
+              "label": "#jfbFieldChoices_addressPartCity"
+            },
+            {
+              "value": "region",
+              "label": "#jfbFieldChoices_addressPartRegion"
+            },
+            {
+              "value": "country",
+              "label": "#jfbFieldChoices_addressPartCountry"
+            }
+          ],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_addressParts",
+          "description": null,
+          "editor": "list",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "requiredParts",
+          "kind": "list",
+          "itemKind": "choice",
+          "choices": [
+            {
+              "value": "street",
+              "label": "#jfbFieldChoices_addressPartStreet"
+            },
+            {
+              "value": "street2",
+              "label": "#jfbFieldChoices_addressPartStreet2"
+            },
+            {
+              "value": "postcode",
+              "label": "#jfbFieldChoices_addressPartPostcode"
+            },
+            {
+              "value": "city",
+              "label": "#jfbFieldChoices_addressPartCity"
+            },
+            {
+              "value": "region",
+              "label": "#jfbFieldChoices_addressPartRegion"
+            },
+            {
+              "value": "country",
+              "label": "#jfbFieldChoices_addressPartCountry"
+            }
+          ],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_addressRequiredParts",
+          "description": null,
+          "editor": "list",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "file",
+      "name": "#jfbFieldTypes_file",
+      "icon": "icon-attachment",
+      "paletteGroup": "files",
+      "holdsValue": true,
+      "storage": "file",
+      "ruleKind": "files",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "fileType",
+        "fileSize",
+        "fileCount"
+      ],
+      "settings": [
+        {
+          "name": "types",
+          "kind": "list",
+          "itemKind": "choice",
+          "choices": [
+            {
+              "value": "images",
+              "label": "#jfbFieldChoices_fileTypeImages"
+            },
+            {
+              "value": "pdf",
+              "label": "#jfbFieldChoices_fileTypePdf"
+            },
+            {
+              "value": "office",
+              "label": "#jfbFieldChoices_fileTypeOffice"
+            },
+            {
+              "value": "text",
+              "label": "#jfbFieldChoices_fileTypeText"
+            },
+            {
+              "value": "archives",
+              "label": "#jfbFieldChoices_fileTypeArchives"
+            }
+          ],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_fileTypes",
+          "description": null,
+          "editor": "list",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "extensions",
+          "kind": "list",
+          "itemKind": "text",
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_fileExtensions",
+          "description": null,
+          "editor": "list",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 10,
+            "minimumCount": null,
+            "maximumCount": 1000,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "maxBytes",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_fileMaxBytes",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "999999999999999",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "maxFiles",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 1,
+          "label": "#jfbFieldSettings_fileMaxFiles",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "20",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "dropZone",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": true,
+          "label": "#jfbFieldSettings_fileDropZone",
+          "description": null,
+          "editor": "boolean",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "thumbnails",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": true,
+          "label": "#jfbFieldSettings_fileThumbnails",
+          "description": null,
+          "editor": "boolean",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "camera",
+          "kind": "boolean",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": false,
+          "label": "#jfbFieldSettings_fileCamera",
+          "description": null,
+          "editor": "boolean",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "signature",
+      "name": "#jfbFieldTypes_signature",
+      "icon": "icon-edit",
+      "paletteGroup": "files",
+      "holdsValue": true,
+      "storage": "file",
+      "ruleKind": "files",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "required",
+        "visibilityRules"
+      ],
+      "messages": [
+        "required",
+        "invalid"
+      ],
+      "settings": [
+        {
+          "name": "width",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_signatureWidth",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "200",
+            "minimumIsExclusive": false,
+            "maximum": "1200",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "height",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_signatureHeight",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "100",
+            "minimumIsExclusive": false,
+            "maximum": "600",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "repeater",
+      "name": "#jfbFieldTypes_repeater",
+      "icon": "icon-repeat",
+      "paletteGroup": "structure",
+      "holdsValue": true,
+      "storage": "none",
+      "ruleKind": null,
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "label",
+        "hideLabel",
+        "help",
+        "visibilityRules",
+        "childFields"
+      ],
+      "messages": [],
+      "settings": [
+        {
+          "name": "minRows",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 0,
+          "label": "#jfbFieldSettings_repeaterMinRows",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "0",
+            "minimumIsExclusive": false,
+            "maximum": "100",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "maxRows",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 10,
+          "label": "#jfbFieldSettings_repeaterMaxRows",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "validation",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "1",
+            "minimumIsExclusive": false,
+            "maximum": "100",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "addLabel",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_repeaterAddLabel",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 100,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "removeLabel",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_repeaterRemoveLabel",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 100,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "hidden",
+      "name": "#jfbFieldTypes_hidden",
+      "icon": "icon-readonly",
+      "paletteGroup": "structure",
+      "holdsValue": true,
+      "storage": "text",
+      "ruleKind": "text",
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": true,
+      "features": [
+        "label",
+        "defaultValue",
+        "prefill",
+        "visibilityRules"
+      ],
+      "messages": [],
+      "settings": [],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "heading",
+      "name": "#jfbFieldTypes_heading",
+      "icon": "icon-heading",
+      "paletteGroup": "content",
+      "holdsValue": false,
+      "storage": "none",
+      "ruleKind": null,
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "visibilityRules"
+      ],
+      "messages": [],
+      "settings": [
+        {
+          "name": "text",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_headingText",
+          "description": null,
+          "editor": "localizedText",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": true,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 300,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "level",
+          "kind": "wholeNumber",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": 2,
+          "label": "#jfbFieldSettings_headingLevel",
+          "description": null,
+          "editor": "wholeNumber",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": "2",
+            "minimumIsExclusive": false,
+            "maximum": "4",
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "paragraph",
+      "name": "#jfbFieldTypes_paragraph",
+      "icon": "icon-paragraph",
+      "paletteGroup": "content",
+      "holdsValue": false,
+      "storage": "none",
+      "ruleKind": null,
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "visibilityRules"
+      ],
+      "messages": [],
+      "settings": [
+        {
+          "name": "html",
+          "kind": "localizedHtml",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_paragraphHtml",
+          "description": null,
+          "editor": "localizedHtml",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": true,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 50000,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "divider",
+      "name": "#jfbFieldTypes_divider",
+      "icon": "icon-width",
+      "paletteGroup": "content",
+      "holdsValue": false,
+      "storage": "none",
+      "ruleKind": null,
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "visibilityRules"
+      ],
+      "messages": [],
+      "settings": [],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "image",
+      "name": "#jfbFieldTypes_image",
+      "icon": "icon-picture",
+      "paletteGroup": "content",
+      "holdsValue": false,
+      "storage": "none",
+      "ruleKind": null,
+      "multipleSetting": false,
+      "onePerForm": false,
+      "serverOnlyDefault": false,
+      "features": [
+        "visibilityRules"
+      ],
+      "messages": [],
+      "settings": [
+        {
+          "name": "media",
+          "kind": "key",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_imageMedia",
+          "description": null,
+          "editor": "mediaPicker",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": true,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "alt",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_imageAlt",
+          "description": null,
+          "editor": "localizedText",
+          "group": "essentials",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": true,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 300,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        },
+        {
+          "name": "size",
+          "kind": "choice",
+          "itemKind": null,
+          "choices": [
+            {
+              "value": "small",
+              "label": "#jfbFieldChoices_imageSizeSmall"
+            },
+            {
+              "value": "medium",
+              "label": "#jfbFieldChoices_imageSizeMedium"
+            },
+            {
+              "value": "large",
+              "label": "#jfbFieldChoices_imageSizeLarge"
+            },
+            {
+              "value": "full",
+              "label": "#jfbFieldChoices_imageSizeFull"
+            }
+          ],
+          "settings": [],
+          "default": "medium",
+          "label": "#jfbFieldSettings_imageSize",
+          "description": null,
+          "editor": "choice",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": null,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          }
+        }
+      ],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    },
+    {
+      "alias": "captcha",
+      "name": "#jfbFieldTypes_captcha",
+      "icon": "icon-shield",
+      "paletteGroup": "protection",
+      "holdsValue": false,
+      "storage": "none",
+      "ruleKind": null,
+      "multipleSetting": false,
+      "onePerForm": true,
+      "serverOnlyDefault": false,
+      "features": [],
+      "messages": [],
+      "settings": [],
+      "availability": {
+        "isAvailable": true,
+        "reason": null
+      }
+    }
+  ]
+}

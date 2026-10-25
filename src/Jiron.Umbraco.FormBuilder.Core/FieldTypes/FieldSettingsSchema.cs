@@ -38,8 +38,8 @@ public sealed record FieldSettingDescriptor
     /// <summary>The kind of a list's items; null for any other kind.</summary>
     public FieldSettingKind? ItemKind { get; init; }
 
-    /// <summary>The names a choice, or a list of choices, may take, in the enum's order; empty for any other kind.</summary>
-    public ImmutableArray<string> Choices { get; init; } = [];
+    /// <summary>The values a choice, or a list of choices, may take, each with its label, in the enum's order; empty for any other kind.</summary>
+    public ImmutableArray<FieldSettingChoice> Choices { get; init; } = [];
 
     /// <summary>The settings of an object, in the order the inspector shows them; empty for any other kind.</summary>
     public ImmutableArray<FieldSettingDescriptor> Settings { get; init; } = [];
@@ -74,3 +74,11 @@ public sealed record FieldSettingDescriptor
     /// <summary>The rules its value keeps (ADR-0056).</summary>
     public FieldSettingRules Rules { get; init; } = FieldSettingRules.None;
 }
+
+/// <summary>A value a choice setting may take (ADR-0055, ADR-0057).</summary>
+/// <param name="Value">The value as the settings' JSON writes it: in camel case, or the name <c>[JsonStringEnumMemberName]</c> gives.</param>
+/// <param name="Label">
+/// The label the designer shows: plain text, or a key of the backoffice's localisation that starts with <c>#</c>, from
+/// <see cref="FormBuilderChoiceAttribute"/>; without it, the value's name as C# writes it.
+/// </param>
+public sealed record FieldSettingChoice(string Value, string Label);
