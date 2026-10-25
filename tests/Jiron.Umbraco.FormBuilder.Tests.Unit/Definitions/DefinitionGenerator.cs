@@ -171,7 +171,7 @@ internal sealed class DefinitionGenerator
                 Verification = Chance() ? new EmailVerification { EmailField = Reference(), Days = _random.Next(1, 91) } : null,
                 Resume = Chance() ? new SaveAndResume { Days = _random.Next(1, 366) } : null,
                 EntryTitle = Chance() ? String(500) : null,
-                EntryReference = Chance() ? new EntryReferenceFormat { Prefix = Chance() ? String(20) : null, Year = Chance(), Digits = _random.Next(1, 11) } : null,
+                EntryReference = Chance() ? new EntryReferenceFormat { Prefix = Chance() ? String(20) : null, IncludeYear = Chance(), Digits = _random.Next(1, 11) } : null,
             },
             Availability = new FormAvailabilitySettings
             {
@@ -179,7 +179,7 @@ internal sealed class DefinitionGenerator
                 ClosesAt = Instant(),
                 MaxEntries = Maybe(1, int.MaxValue - 1),
                 ClosedMessage = Html(),
-                Members = Word<MemberAccess>(),
+                Access = Word<MemberAccess>(),
                 MemberGroups = Many(0, 3, Reference),
                 OnePerMember = Chance(),
             },
@@ -192,7 +192,7 @@ internal sealed class DefinitionGenerator
             Privacy = new FormPrivacySettings
             {
                 RetentionDays = new RetentionDaysByState { Submitted = Maybe(1, 36500), Approved = Maybe(1, 36500), Rejected = Maybe(1, 36500), Spam = Maybe(1, 36500) },
-                Ip = Word<IpHandling>(),
+                IP = Word<IPHandling>(),
                 Insights = Chance(),
             },
             Appearance = new FormAppearanceSettings
@@ -299,7 +299,7 @@ internal sealed class DefinitionGenerator
     {
         Source = Word<OptionSource>(),
         Items = Many(0, 5, Option),
-        List = Chance() ? Reference() : null,
+        OptionList = Chance() ? Reference() : null,
         Config = Extension(),
         Parent = Chance() ? Reference() : null,
     };
@@ -336,7 +336,7 @@ internal sealed class DefinitionGenerator
         {
             Field = onField || Chance(10) ? Reference() : null,
             Context = !onField || Chance(10) ? Pick(Contexts) : null,
-            Op = Pick(Operators),
+            Operator = Pick(Operators),
             Value = _random.Next(5) switch
             {
                 0 => null,

@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Jiron.Umbraco.FormBuilder.Logic;
 
 /// <summary>
@@ -34,10 +36,10 @@ internal sealed class SafePattern
     private const int End = 4; // only after the last position; then the next instruction
     private const int Match = 5;
 
-    private static readonly Range[] Digits = [new(48, 57)];
-    private static readonly Range[] Word = [new(48, 57), new(65, 90), new(95, 95), new(97, 122)];
-    private static readonly Range[] Space = [new(9, 13), new(32, 32)];
-    private static readonly Range[] LineEnds = [new(10, 10), new(13, 13), new(0x2028, 0x2029)];
+    private static readonly ImmutableArray<Range> Digits = [new(48, 57)];
+    private static readonly ImmutableArray<Range> Word = [new(48, 57), new(65, 90), new(95, 95), new(97, 122)];
+    private static readonly ImmutableArray<Range> Space = [new(9, 13), new(32, 32)];
+    private static readonly ImmutableArray<Range> LineEnds = [new(10, 10), new(13, 13), new(0x2028, 0x2029)];
 
     private readonly List<(int Op, int A, int B)> _code;
     private readonly List<CharSet> _sets;
@@ -102,7 +104,7 @@ internal sealed class SafePattern
     };
 
     /// <summary>The ranges outside the given ones, within all code points.</summary>
-    private static Range[] Complement(Range[] ranges)
+    private static ImmutableArray<Range> Complement(ImmutableArray<Range> ranges)
     {
         var output = new List<Range>();
         var next = 0;
@@ -161,21 +163,27 @@ internal sealed class SafePattern
         }
     }
 
-    /// <summary>Runs the automaton over the code points: every thread advances together, so time is linear in the length.</summary>
+    /// <summary>
+    /// Runs the automaton over the code points: every thread advances together, so time is linear in the length. One
+    /// set of buffers serves the whole run: the threads at a position, those that advance, and the closure's stack.
+    /// </summary>
     private bool Run(int[] points)
     {
         var seen = new int[_code.Count];
         Array.Fill(seen, -1);
         var generation = 0;
+        var threads = new List<int>(_code.Count);
+        var advanced = new List<int>(_code.Count);
+        var stack = new Stack<int>(_code.Count);
 
-        List<int> Closure(List<int> starts, int position)
+        // Fills threads with what the starts reach at the position without reading a character.
+        void Closure(int position)
         {
             generation++;
-            var threads = new List<int>();
-            var stack = new Stack<int>(starts.Count);
-            for (var k = starts.Count - 1; k >= 0; k--)
+            threads.Clear();
+            for (var k = advanced.Count - 1; k >= 0; k--)
             {
-                stack.Push(starts[k]);
+                stack.Push(advanced[k]);
             }
 
             while (stack.Count > 0)
@@ -216,15 +224,14 @@ internal sealed class SafePattern
                         break;
                 }
             }
-
-            return threads;
         }
 
-        var threads = Closure([0], 0);
+        advanced.Add(0);
+        Closure(0);
         for (var position = 0; position < points.Length && threads.Count > 0; position++)
         {
             var point = points[position];
-            var advanced = new List<int>(threads.Count);
+            advanced.Clear();
             foreach (var pc in threads)
             {
                 if (_code[pc].Op == Char && _sets[_code[pc].A].Contains(point))
@@ -233,17 +240,36 @@ internal sealed class SafePattern
                 }
             }
 
-            threads = Closure(advanced, position + 1);
+            Closure(position + 1);
         }
 
-        return threads.Exists(pc => _code[pc].Op == Match);
+        foreach (var pc in threads)
+        {
+            if (_code[pc].Op == Match)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private readonly record struct Range(int Low, int High);
 
-    private sealed record CharSet(Range[] Ranges, bool Negated)
+    private sealed record CharSet(ImmutableArray<Range> Ranges, bool Negated)
     {
-        public bool Contains(int point) => Array.Exists(Ranges, r => point >= r.Low && point <= r.High) != Negated;
+        public bool Contains(int point)
+        {
+            foreach (var range in Ranges)
+            {
+                if (point >= range.Low && point <= range.High)
+                {
+                    return !Negated;
+                }
+            }
+
+            return Negated;
+        }
     }
 
     private abstract record Node;
@@ -261,7 +287,7 @@ internal sealed class SafePattern
     private sealed record EndNode : Node;
 
     /// <summary>What an escape or class member stands for: one code point, or a set of ranges.</summary>
-    private readonly record struct Escaped(int Point, Range[]? Ranges, bool Raw);
+    private readonly record struct Escaped(int Point, ImmutableArray<Range>? Ranges, bool Raw);
 
     private sealed class Parser(int[] points)
     {

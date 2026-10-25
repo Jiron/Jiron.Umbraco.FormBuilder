@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -236,13 +237,13 @@ internal static class SettingsSectionJson
     private static class Fields<T>
         where T : ISettingsSection
     {
-        public static readonly IReadOnlyDictionary<string, string> ByName = Names().ToDictionary(n => n.Name, n => n.Name, StringComparer.OrdinalIgnoreCase);
+        public static readonly FrozenDictionary<string, string> ByName = Names().ToFrozenDictionary(n => n.Name, n => n.Name, StringComparer.OrdinalIgnoreCase);
 
-        public static readonly IReadOnlySet<string> All = Names().Select(n => n.Name).ToHashSet(StringComparer.Ordinal);
+        public static readonly FrozenSet<string> All = Names().Select(n => n.Name).ToFrozenSet(StringComparer.Ordinal);
 
-        public static readonly IReadOnlySet<string> Overridable = T.PerSite
-            ? Names().Where(n => !n.GlobalOnly).Select(n => n.Name).ToHashSet(StringComparer.Ordinal)
-            : new HashSet<string>(StringComparer.Ordinal);
+        public static readonly FrozenSet<string> Overridable = T.PerSite
+            ? Names().Where(n => !n.GlobalOnly).Select(n => n.Name).ToFrozenSet(StringComparer.Ordinal)
+            : FrozenSet<string>.Empty;
 
         private static IEnumerable<(string Name, bool GlobalOnly)> Names() =>
             typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)

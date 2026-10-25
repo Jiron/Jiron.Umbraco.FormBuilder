@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -190,9 +191,9 @@ public sealed partial class ProjectionTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(PublicProjection.Hash(definition, FieldTypeCatalogue.BuiltIn), Is.EqualTo(FormDefinitionSerializer.Hash(PublicProjection.Write(projection))));
+            Assert.That(PublicProjection.Hash(definition, FieldTypeCatalogue.BuiltIn), Is.EqualTo(CanonicalJson.Hash(PublicProjection.Write(projection))));
             Assert.That(PublicProjection.Hash(projection), Does.Match("^[0-9a-f]{64}$"));
-            Assert.That(PublicProjection.Hash(projection), Is.Not.EqualTo(FormDefinitionSerializer.Hash(FormDefinitionSerializer.Write(definition))), "the projection is not the definition");
+            Assert.That(PublicProjection.Hash(projection), Is.Not.EqualTo(CanonicalJson.Hash(FormDefinitionSerializer.Write(definition))), "the projection is not the definition");
         });
     }
 
@@ -334,7 +335,7 @@ public sealed partial class ProjectionTests
 
         FormRule OffRule(FormRule rule) => rule.Enabled
             ? rule
-            : rule with { Conditions = [new RuleCondition { Field = Key(), Op = Text("op"), Value = new ConditionOperand.Text(Text("operand")) }] };
+            : rule with { Conditions = [new RuleCondition { Field = Key(), Operator = Text("op"), Value = new ConditionOperand.Text(Text("operand")) }] };
 
         FormField Field(FormField field)
         {
@@ -346,7 +347,7 @@ public sealed partial class ProjectionTests
                 FormerAliases = [.. field.FormerAliases, Text("former")],
                 DefaultValue = field.Type == "hidden" ? FieldDefaultValue.Of(Text("hidden")) : field.DefaultValue,
                 Prefill = field.Prefill is { } prefill ? prefill with { Member = Text("member") } : null,
-                Options = field.Options is { } options ? options with { Config = Settings("config"), List = Key() } : null,
+                Options = field.Options is { } options ? options with { Config = Settings("config"), OptionList = Key() } : null,
                 Rules = [.. field.Rules.Select(OffRule)],
                 Fields = [.. field.Fields.Select(Field)],
                 Settings = SettingsObject.Parse(settings.ToJsonString()),

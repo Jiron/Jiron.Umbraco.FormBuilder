@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text.Json.Nodes;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison;
@@ -9,7 +10,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Comparison;
 /// </summary>
 internal static class DefinitionDiff
 {
-    private static readonly string[] SettingsGroups = ["submission", "availability", "protection", "privacy", "appearance", "developer"];
+    private static readonly ImmutableArray<string> SettingsGroups = ["submission", "availability", "protection", "privacy", "appearance", "developer"];
 
     /// <summary>What changed from <paramref name="from"/> to <paramref name="to"/>, in the order of ADR-0045.</summary>
     public static IReadOnlyList<DefinitionChange> Compare(FormDefinition from, FormDefinition to)
@@ -77,8 +78,8 @@ internal static class DefinitionDiff
         var older = from ?? new FormDefinition { Key = to.Key };
         var actions = older.Actions.Concat(to.Actions).Select(action => (Guid?)action.Key).ToHashSet();
         return Compare(older, to).Any(change =>
-            change.Kind == DefinitionElementKind.Action
-            || (change.Kind == DefinitionElementKind.Rule && (actions.Contains(change.ParentKey) || actions.Contains(change.PreviousParentKey))));
+            change.ElementKind == DefinitionElementKind.Action
+            || (change.ElementKind == DefinitionElementKind.Rule && (actions.Contains(change.ParentKey) || actions.Contains(change.PreviousParentKey))));
     }
 
     private static DefinitionChange Change(Element element, Element? before, Element? after, DefinitionChangeKind kind, bool moved, IReadOnlyList<DefinitionPropertyChange> properties) => new(

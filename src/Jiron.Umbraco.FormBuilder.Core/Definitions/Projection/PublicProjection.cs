@@ -32,7 +32,7 @@ internal static class PublicProjection
                 Progress = settings.Submission.Progress,
                 Resume = settings.Submission.Resume is not null,
                 ClosedMessage = settings.Availability.ClosedMessage,
-                MembersOnly = settings.Availability.Members != MemberAccess.Anyone,
+                MembersOnly = settings.Availability.Access != MemberAccess.Anyone,
                 Protection = protection.Level,
                 CaptchaProvider = protection.Level == ProtectionLevel.Captcha ? protection.Captcha?.Provider : null,
                 Theme = settings.Appearance.Theme,
@@ -74,7 +74,7 @@ internal static class PublicProjection
     }
 
     /// <summary>The <c>PublicHash</c> of a projection: the SHA-256 of its canonical bytes, in lowercase hex.</summary>
-    public static string Hash(PublicForm form) => FormDefinitionSerializer.Hash(Write(form));
+    public static string Hash(PublicForm form) => CanonicalJson.Hash(Write(form));
 
     /// <summary>The <c>PublicHash</c> of a definition's projection.</summary>
     public static string Hash(FormDefinition definition, FieldTypeCatalogue types) => Hash(Create(definition, types));

@@ -144,11 +144,11 @@ internal sealed record DefinitionChangeSummaryResponseModel
         ArgumentNullException.ThrowIfNull(change);
         return new DefinitionChangeSummaryResponseModel
         {
-            Kind = ApiNames.Of(change.Kind),
+            Kind = ApiNames.Of(change.ElementKind),
             Key = change.Key,
             SettingsGroup = change.SettingsGroup,
             ParentKey = change.ParentKey,
-            Change = ApiNames.Of(change.Change),
+            Change = ApiNames.Of(change.Kind),
             Moved = change.Moved,
             Label = change.Label,
             Alias = change.Alias,
@@ -229,12 +229,12 @@ internal sealed record DefinitionChangeResponseModel
         ArgumentNullException.ThrowIfNull(change);
         return new DefinitionChangeResponseModel
         {
-            Kind = ApiNames.Of(change.Kind),
+            Kind = ApiNames.Of(change.ElementKind),
             Key = change.Key,
             SettingsGroup = change.SettingsGroup,
             ParentKey = change.ParentKey,
             PreviousParentKey = change.PreviousParentKey,
-            Change = ApiNames.Of(change.Change),
+            Change = ApiNames.Of(change.Kind),
             Moved = change.Moved,
             Label = change.Label,
             Alias = change.Alias,

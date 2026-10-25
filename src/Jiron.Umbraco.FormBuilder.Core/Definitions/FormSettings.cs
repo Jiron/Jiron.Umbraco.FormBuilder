@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
 
 /// <summary>The form settings (section 4.3.4, ADR-0002), grouped as the designer shows them.</summary>
@@ -86,7 +88,8 @@ public sealed record EntryReferenceFormat
     public string? Prefix { get; init; }
 
     /// <summary>Whether the year of submission comes after the prefix.</summary>
-    public bool Year { get; init; } = true;
+    [JsonPropertyName("year")]
+    public bool IncludeYear { get; init; } = true;
 
     /// <summary>How many digits the number is padded to, 1 to 10.</summary>
     public int Digits { get; init; } = 5;
@@ -108,7 +111,8 @@ public sealed record FormAvailabilitySettings
     public LocalizedHtml? ClosedMessage { get; init; }
 
     /// <summary>Who may fill in the form.</summary>
-    public MemberAccess Members { get; init; } = MemberAccess.Anyone;
+    [JsonPropertyName("members")]
+    public MemberAccess Access { get; init; } = MemberAccess.Anyone;
 
     /// <summary>For <see cref="MemberAccess.Groups"/>: the keys of the member groups.</summary>
     public IReadOnlyList<Guid> MemberGroups { get; init => field = DefinitionList.Of(value); } = DefinitionList<Guid>.Empty;
@@ -147,7 +151,7 @@ public sealed record FormPrivacySettings
     public RetentionDaysByState RetentionDays { get; init; } = new();
 
     /// <summary>What entries keep of the visitor's IP address.</summary>
-    public IpHandling Ip { get; init; } = IpHandling.Inherit;
+    public IPHandling IP { get; init; } = IPHandling.Inherit;
 
     /// <summary>Whether the form's entries count in insights.</summary>
     public bool Insights { get; init; } = true;

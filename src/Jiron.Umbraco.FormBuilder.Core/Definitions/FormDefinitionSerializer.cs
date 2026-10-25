@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+using System.Collections.Frozen;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -39,49 +39,34 @@ internal sealed class FormDefinitionSerializer
 
     private const string SchemaVersionProperty = "schemaVersion";
 
-    private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-    private static readonly HashSet<string> Skipped = new(StringComparer.Ordinal) { SchemaVersionProperty };
+    private static readonly FrozenSet<string> Skipped = new[] { SchemaVersionProperty }.ToFrozenSet(StringComparer.Ordinal);
     private static readonly JsonSerializerOptions UpgradedText = new() { MaxDepth = 16 * MaxDepth };
 
     private readonly FormDefinitionUpgrades _upgrades;
     private readonly DefinitionLimits _limits;
-    private FormDefinitionSerializer? _stored;
 
     public FormDefinitionSerializer(FormDefinitionUpgrades upgrades, DefinitionLimits limits)
     {
         _upgrades = upgrades;
         _limits = limits;
-    }
 
-    // A second reader of the same chain, made once it is first needed; two made at the same time read alike.
-    private FormDefinitionSerializer Stored => _stored ??= _limits == DefinitionLimits.Ceiling ? this : new(_upgrades, DefinitionLimits.Ceiling);
+        // The reader of what the site stored: the same chain with the highest limits, built once with this one.
+        Stored = limits == DefinitionLimits.Ceiling ? this : new FormDefinitionSerializer(upgrades, DefinitionLimits.Ceiling);
+    }
 
     /// <summary>The limits this reader applies.</summary>
     public DefinitionLimits Limits => _limits;
 
-    /// <summary>The SHA-256 of canonical UTF-8 bytes, in lowercase hex.</summary>
-    public static string Hash(ReadOnlySpan<byte> canonical) => Convert.ToHexStringLower(SHA256.HashData(canonical));
+    /// <summary>The reader <see cref="ReadStored"/> uses: this one when its limits are the ceiling.</summary>
+    internal FormDefinitionSerializer Stored { get; }
 
     /// <summary>Reads a definition from JSON text.</summary>
     public DefinitionReadResult Read(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
-        byte[] bytes;
-        try
-        {
-            if (StrictUtf8.GetByteCount(json) > _limits.MaxBytes)
-            {
-                return TooLarge();
-            }
-
-            bytes = StrictUtf8.GetBytes(json);
-        }
-        catch (EncoderFallbackException)
-        {
-            return DefinitionReadResult.Refused(DefinitionErrors.InvalidJson, JsonPaths.Root, "The text holds a lone surrogate.");
-        }
-
-        return Read(bytes);
+        return StrictText.ToUtf8(json, _limits.MaxBytes, TooLarge(), out var problem) is { } bytes
+            ? Read(bytes)
+            : new DefinitionReadResult(null, [problem!], null);
     }
 
     /// <summary>
@@ -93,15 +78,9 @@ internal sealed class FormDefinitionSerializer
     /// <summary>Reads a definition from UTF-8 bytes.</summary>
     public DefinitionReadResult Read(ReadOnlySpan<byte> utf8)
     {
-        if (utf8.Length > _limits.MaxBytes)
+        if (StrictText.Check(utf8, _limits.MaxBytes, TooLarge()) is { } refused)
         {
-            return TooLarge();
-        }
-
-        // The JSON reader checks UTF-8 inside strings only when a string is read, so check the whole text first.
-        if (!System.Text.Unicode.Utf8.IsValid(utf8))
-        {
-            return DefinitionReadResult.Refused(DefinitionErrors.InvalidJson, JsonPaths.Root, "The bytes are not valid UTF-8.");
+            return new DefinitionReadResult(null, [refused], null);
         }
 
         using var document = Parse(utf8, out var refusal);
@@ -165,13 +144,8 @@ internal sealed class FormDefinitionSerializer
     /// The definition holds what the canonical form cannot carry, such as a lone surrogate, or nests deeper than a
     /// document may; <see cref="CheckSave"/> refuses it first.
     /// </exception>
-    public static byte[] Write(FormDefinition definition)
-    {
-        var canonical = WriteCanonical(definition);
-        return NestsDeeperThan(canonical, MaxDepth)
-            ? throw new ArgumentException($"The definition nests deeper than {MaxDepth} levels, which no reader reads.", nameof(definition))
-            : canonical;
-    }
+    public static byte[] Write(FormDefinition definition) =>
+        TryWriteCanonical(definition, out var problem) ?? throw new ArgumentException(problem!.Message, nameof(definition));
 
     /// <summary>The canonical form of a definition as text.</summary>
     public static string WriteString(FormDefinition definition) => Encoding.UTF8.GetString(Write(definition));
@@ -188,52 +162,46 @@ internal sealed class FormDefinitionSerializer
             return problems;
         }
 
-        // The checks on the model found nothing the writer refuses, so what is left is the document's size and depth.
-        byte[] canonical;
-        try
+        // The checks on the model found nothing the writer refuses, so what is left is the document's size and depth;
+        // what the writer still refuses is reported as what it is.
+        if (TryWriteCanonical(definition, out var problem) is not { } canonical)
         {
-            canonical = WriteCanonical(definition);
-        }
-        catch (ArgumentException)
-        {
-            return [new DefinitionProblem(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"The definition nests deeper than {MaxDepth} levels.")];
+            return [problem!];
         }
 
-        if (NestsDeeperThan(canonical, MaxDepth))
-        {
-            return [new DefinitionProblem(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"The definition nests deeper than {MaxDepth} levels.")];
-        }
-
-        return canonical.Length > _limits.MaxBytes ? [TooLarge().Problems[0]] : [];
+        return canonical.Length > _limits.MaxBytes ? [TooLarge()] : [];
     }
 
-    /// <summary>
-    /// The problems publishing refuses: those of a save, and when there are none, those of the structural validation
-    /// (ADR-0035), which a draft keeps.
-    /// </summary>
-    /// <param name="definition">The definition to publish.</param>
-    /// <param name="types">The field types the site has.</param>
-    public IReadOnlyList<DefinitionProblem> CheckPublish(FormDefinition definition, FieldTypeCatalogue types)
-    {
-        var problems = CheckSave(definition);
-        return problems.Count > 0 ? problems : DefinitionStructureChecks.Check(definition, types);
-    }
-
-    private static byte[] WriteCanonical(FormDefinition definition)
+    // The canonical bytes, or null with what keeps them from being written: a document deeper than a reader reads
+    // (limit_exceeded), or a value the canonical form cannot carry, such as a lone surrogate (invalid_value). The
+    // converters refuse what they cannot write with ArgumentException, so a JsonException from System.Text.Json
+    // itself means the model nests deeper than it writes.
+    private static byte[]? TryWriteCanonical(FormDefinition definition, out DefinitionProblem? problem)
     {
         ArgumentNullException.ThrowIfNull(definition);
-        byte[] serialized;
+        problem = null;
         try
         {
-            serialized = JsonSerializer.SerializeToUtf8Bytes(definition, DefinitionJsonContext.Default.FormDefinition);
+            var serialized = JsonSerializer.SerializeToUtf8Bytes(definition, DefinitionJsonContext.Default.FormDefinition);
+            using var document = JsonDocument.Parse(serialized, new JsonDocumentOptions { MaxDepth = ModelDepth });
+            var canonical = CanonicalJson.WriteUtf8(document.RootElement, sortProperties: false);
+            if (!NestsDeeperThan(canonical, MaxDepth))
+            {
+                return canonical;
+            }
         }
-        catch (JsonException exception)
+        catch (ArgumentException exception)
         {
-            throw new ArgumentException($"The definition cannot be written: {exception.Message}", nameof(definition), exception);
+            problem = new DefinitionProblem(DefinitionErrors.InvalidValue, JsonPaths.Root, $"The definition cannot be written: {exception.Message}");
+            return null;
+        }
+        catch (JsonException)
+        {
+            // Deeper than ModelDepth, so deeper than a reader reads: the problem below.
         }
 
-        using var document = JsonDocument.Parse(serialized, new JsonDocumentOptions { MaxDepth = ModelDepth });
-        return CanonicalJson.WriteUtf8(document.RootElement, sortProperties: false);
+        problem = new DefinitionProblem(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"The definition nests deeper than {MaxDepth} levels, which no reader reads.");
+        return null;
     }
 
     private static JsonDocument? Parse(ReadOnlySpan<byte> utf8, out DefinitionReadResult? refusal)
@@ -319,8 +287,8 @@ internal sealed class FormDefinitionSerializer
         }
     }
 
-    private DefinitionReadResult TooLarge() =>
-        DefinitionReadResult.Refused(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"A definition has at most {_limits.MaxBytes} bytes in UTF-8.");
+    private DefinitionProblem TooLarge() =>
+        new(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"A definition has at most {_limits.MaxBytes} bytes in UTF-8.");
 
     private DefinitionReadResult? ReadSchemaVersion(JsonElement root, out int version)
     {

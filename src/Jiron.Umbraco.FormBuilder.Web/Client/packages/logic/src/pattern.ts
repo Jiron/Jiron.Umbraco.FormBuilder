@@ -443,46 +443,61 @@ function compile(root: Node): Program {
 
 function inSet(set: CharSet | undefined, value: number): boolean {
   if (set === undefined) return false;
-  const inside = set.ranges.some(([low, high]) => value >= low && value <= high);
-  return inside !== set.negated;
+  for (const [low, high] of set.ranges) if (value >= low && value <= high) return !set.negated;
+  return set.negated;
 }
 
-/** Runs the automaton over the code points: every thread advances together, so time is linear in the length. */
+/**
+ * Runs the automaton over the code points: every thread advances together, so time is linear in the length. One set
+ * of buffers serves the whole run: the threads at a position, those that advance, and the closure's stack.
+ */
 function run(program: Program, points: readonly number[]): boolean {
   const { code, sets } = program;
   const seen = new Int32Array(code.length).fill(-1);
+  const threads = new Int32Array(code.length);
+  const advanced = new Int32Array(code.length);
+  // A closure reaches each instruction once and pushes at most two more from it, besides its starts.
+  const stack = new Int32Array(3 * code.length);
   let generation = 0;
-  const closure = (starts: readonly number[], position: number): number[] => {
+  let threadCount = 0;
+  let advancedCount = 1; // the first instruction, where every run starts
+  // Fills threads with what the advanced threads reach at the position without reading a character.
+  const closure = (position: number): void => {
     generation++;
-    const threads: number[] = [];
-    const stack = [...starts].reverse();
-    for (let pc = stack.pop(); pc !== undefined; pc = stack.pop()) {
+    threadCount = 0;
+    let top = 0;
+    for (let k = advancedCount - 1; k >= 0; k--) stack[top++] = advanced[k] ?? 0;
+    while (top > 0) {
+      const pc = stack[--top] ?? 0;
       const instruction = code[pc];
       if (instruction === undefined || seen[pc] === generation) continue;
       seen[pc] = generation;
       const [op, a, b] = instruction;
-      if (op === SPLIT) stack.push(b, a);
-      else if (op === JUMP) stack.push(a);
+      if (op === SPLIT) {
+        stack[top++] = b;
+        stack[top++] = a;
+      } else if (op === JUMP) stack[top++] = a;
       else if (op === START) {
-        if (position === 0) stack.push(pc + 1);
+        if (position === 0) stack[top++] = pc + 1;
       } else if (op === END) {
-        if (position === points.length) stack.push(pc + 1);
-      } else threads.push(pc);
+        if (position === points.length) stack[top++] = pc + 1;
+      } else threads[threadCount++] = pc;
     }
-    return threads;
   };
-  let threads = closure([0], 0);
-  for (let position = 0; position < points.length && threads.length > 0; position++) {
+  closure(0);
+  for (let position = 0; position < points.length && threadCount > 0; position++) {
     const value = points[position] ?? 0;
-    const advanced: number[] = [];
-    for (const pc of threads) {
+    advancedCount = 0;
+    for (let t = 0; t < threadCount; t++) {
+      const pc = threads[t] ?? 0;
       const instruction = code[pc];
       if (instruction !== undefined && instruction[0] === CHAR && inSet(sets[instruction[1]], value))
-        advanced.push(pc + 1);
+        advanced[advancedCount++] = pc + 1;
     }
-    threads = closure(advanced, position + 1);
+    closure(position + 1);
   }
-  return threads.some((pc) => code[pc]?.[0] === MATCH);
+  for (let t = 0; t < threadCount; t++) if (code[threads[t] ?? 0]?.[0] === MATCH) return true;
+  return false;
 }
 
 /** A compiled pattern: test() tells whether a whole value matches. */

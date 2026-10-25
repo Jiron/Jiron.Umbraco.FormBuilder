@@ -113,7 +113,7 @@
       "additionalProperties": false,
       "properties": {
         "retentionDays": { "anyOf": [ { "$ref": "#/$defs/RetentionDaysByState" }, { "type": "null" } ] },
-        "ip": { "anyOf": [ { "$ref": "#/$defs/IpHandling" }, { "type": "null" } ] },
+        "ip": { "anyOf": [ { "$ref": "#/$defs/IPHandling" }, { "type": "null" } ] },
         "insights": { "type": [ "boolean", "null" ] }
       }
     },
@@ -494,7 +494,7 @@
     "MemberAccess": { "enum": [ "anyone", "members", "groups" ] },
     "ProtectionLevel": { "enum": [ "inherit", "standard", "proofOfWork", "captcha" ] },
     "ContentRuleLevel": { "enum": [ "inherit", "off", "normal", "strict" ] },
-    "IpHandling": { "enum": [ "inherit", "none", "anonymised", "full" ] },
+    "IPHandling": { "enum": [ "inherit", "none", "anonymised", "full" ] },
     "RequiredMarker": { "enum": [ "inherit", "required", "optional", "none" ] },
     "ChoiceLayout": { "enum": [ "vertical", "horizontal", "cards" ] }
   }

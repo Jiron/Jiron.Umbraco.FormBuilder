@@ -98,7 +98,7 @@ public sealed class DefinitionKeysTests
 
             // What names things outside the form stays.
             Assert.That(copy.Settings.Availability.MemberGroups, Is.EqualTo(full.Settings.Availability.MemberGroups), "member groups");
-            Assert.That(sessions.Options.List, Is.EqualTo(full.Pages[0].Groups[1].Fields[1].Options!.List), "a library option list");
+            Assert.That(sessions.Options.OptionList, Is.EqualTo(full.Pages[0].Groups[1].Fields[1].Options!.OptionList), "a library option list");
             Assert.That(ticket.Options!.Items.Select(item => item.Image), Is.EqualTo(full.Pages[0].Groups[1].Fields[0].Options!.Items.Select(item => item.Image)), "media");
             Assert.That(copy.Outcomes[0].Redirect!.Content, Is.EqualTo(full.Outcomes[0].Redirect!.Content), "a content page");
             Assert.That(fields.Values, Has.None.EqualTo(Arrival).And.None.EqualTo(Departure));

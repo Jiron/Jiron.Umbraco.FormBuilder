@@ -20,9 +20,17 @@ internal interface IFormPublishCheck
 internal sealed class StructuralPublishCheck(FormDefinitionSerializer serializer, FieldTypeCatalogue types) : IFormPublishCheck
 {
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<DefinitionProblem>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<DefinitionProblem>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Check(definition));
+
+    /// <summary>
+    /// The problems publishing refuses: those of a save, and when there are none, those of the structural validation
+    /// (ADR-0035), which a draft keeps.
+    /// </summary>
+    public IReadOnlyList<DefinitionProblem> Check(FormDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
-        return ValueTask.FromResult(serializer.CheckPublish(definition, types));
+        var problems = serializer.CheckSave(definition);
+        return problems.Count > 0 ? problems : DefinitionStructureChecks.Check(definition, types);
     }
 }

@@ -150,7 +150,7 @@ public sealed class DefinitionValueTests
     {
         // 29 fields inside each other put the innermost one's options 64 levels deep, the deepest a document may
         // nest; the reader then fills in their empty list of items one level further down.
-        var json = FormDefinitionSerializer.WriteString(Nested(29, new FieldOptions { Source = OptionSource.List, List = FieldKey(9) }));
+        var json = FormDefinitionSerializer.WriteString(Nested(29, new FieldOptions { Source = OptionSource.List, OptionList = FieldKey(9) }));
 
         var read = DefinitionFixtures.Read(json);
 

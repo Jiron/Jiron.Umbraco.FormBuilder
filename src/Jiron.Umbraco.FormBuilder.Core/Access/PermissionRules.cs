@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Access;
@@ -34,7 +35,7 @@ internal static class PermissionRules
     public const FormBuilderPermissions All = FolderLevel | GlobalOnly;
 
     // Each permission with its name, in the order of ADR-0013's table.
-    private static readonly (FormBuilderPermissions Permission, string Name)[] Named =
+    private static readonly ImmutableArray<(FormBuilderPermissions Permission, string Name)> Named =
     [
         (FormBuilderPermissions.Design, "design"),
         (FormBuilderPermissions.ManageActions, "manageActions"),

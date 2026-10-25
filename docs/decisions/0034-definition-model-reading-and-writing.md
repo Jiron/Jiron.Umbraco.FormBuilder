@@ -3,7 +3,8 @@
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the save codes,
   properties a type does not support, the outcome limit); amended in 4.4a (stored definitions are read with the
   highest limits, [ADR-0042](0042-host-configuration-and-start-up-checks.md)); amended in 4.8e (one limit of 100
-  problems for every reader and check; the lists are read-only, and records compare them by their items)
+  problems for every reader and check; the lists are read-only, and records compare them by their items); amended in
+  4.8f (five C# names, one opening for both readers, what the writer refuses, nested groups read once)
 - Date: 2026-10-23
 - Roadmap step: 4.2a (decided and built); 4.2b builds the structural validation on it, 4.4 binds its limits, 4.5
   calls it from the form service
@@ -200,6 +201,26 @@ and the export file's reader stops reading.
   through the strict reader like any other.
 - With v1 the only version, the tests use a synthetic version 0 and a synthetic chain to version 3 through the real
   reader. A custom field type upgrades its own settings (ADR-0002).
+
+### Amended in 4.8f
+
+- **C# names before the model is public, with the JSON unchanged:** `RuleCondition.Operator` (`op`),
+  `FieldOptions.OptionList` (`list`), `FormAvailabilitySettings.Access` (`members`),
+  `EntryReferenceFormat.IncludeYear` (`year`), and `FormPrivacySettings.IP` with `IPHandling` (`ip`; the schema's
+  definition is named `IPHandling` too). The full fixture still reads and writes byte for byte.
+- **One opening for both readers:** `StrictText` turns text into strict UTF-8 within the reader's limit, refusing a
+  lone surrogate, and checks that bytes are within it and valid UTF-8 throughout; the definition reader and the export
+  file's reader (ADR-0046) take these steps from it, and the canonical writer its encoding.
+- **What the writer refuses is reported as what it is:** a value the canonical form cannot carry is `invalid_value`
+  at `$` with the writer's message, and a document deeper than a reader reads is `limit_exceeded`. The converters
+  refuse what they cannot write with `ArgumentException`, so a `JsonException` while writing can only be
+  System.Text.Json's own depth limit; before, every refusal of the writer was reported as too deep.
+- **One home each:** the hash of canonical bytes is `CanonicalJson.Hash`, beside the writer; what publishing refuses
+  is the publish check's (ADR-0035), not the serializer's; the reader of what the site stored is built with the
+  serializer, not when first asked for; the static tables of Core are frozen, and a test finds any that is not.
+- **Nested groups are read once:** the rule item reader looks at a copy of the reader for `match` or `conditions` and
+  reads the item with the model's own converter, so a group nested many levels deep costs what its text costs, not
+  that once per level.
 
 ## Consequences
 

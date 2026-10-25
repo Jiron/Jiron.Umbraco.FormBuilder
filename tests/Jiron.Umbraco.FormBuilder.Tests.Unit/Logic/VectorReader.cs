@@ -29,13 +29,13 @@ internal static class VectorReader
     public static Dictionary<string, IReadOnlyList<string>> Values(JsonElement element) =>
         element.EnumerateObject().ToDictionary(p => p.Name, p => (IReadOnlyList<string>)Strings(p.Value), StringComparer.Ordinal);
 
-    public static Rule Rule(JsonElement element) => new(
+    public static LogicRule Rule(JsonElement element) => new(
         element.GetProperty("effect").GetString()!,
         element.GetProperty("enabled").GetBoolean(),
         element.GetProperty("match").GetString()!,
         Items(element.GetProperty("conditions")));
 
-    public static Condition Condition(JsonElement element) => new(
+    public static LogicCondition Condition(JsonElement element) => new(
         OptionalString(element, "field"),
         OptionalString(element, "context"),
         element.GetProperty("op").GetString()!,
@@ -106,10 +106,10 @@ internal static class VectorReader
             ? kind
             : throw new FormatException($"Unknown field kind {element}.");
 
-    private static List<RuleItem> Items(JsonElement element) =>
+    private static List<LogicItem> Items(JsonElement element) =>
         [.. element.EnumerateArray()
             .Select(item => item.TryGetProperty("match", out var match)
-                ? (RuleItem)new Group(match.GetString()!, Items(item.GetProperty("conditions")))
+                ? (LogicItem)new LogicGroup(match.GetString()!, Items(item.GetProperty("conditions")))
                 : Condition(item))];
 
     private static string? OptionalString(JsonElement element, string name) =>

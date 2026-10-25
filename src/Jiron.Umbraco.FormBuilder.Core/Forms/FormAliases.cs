@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Globalization;
 using System.Text;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
@@ -18,7 +19,7 @@ internal static class FormAliases
 
     // Letters that have no accent to remove but a usual spelling in ASCII: German sharp s, the ligatures ae and oe, the
     // slashed o, the stroked l and d, eth, thorn and the dotless i.
-    private static readonly Dictionary<char, string> Spelled = new()
+    private static readonly FrozenDictionary<char, string> Spelled = new Dictionary<char, string>
     {
         [(char)0xDF] = "ss",
         [(char)0xE6] = "ae",
@@ -36,7 +37,7 @@ internal static class FormAliases
         [(char)0xFE] = "th",
         [(char)0xDE] = "th",
         [(char)0x131] = "i",
-    };
+    }.ToFrozenDictionary();
 
     /// <summary>Whether <paramref name="alias"/> follows the pattern <c>^[a-z][a-zA-Z0-9]{0,63}$</c>.</summary>
     public static bool IsValid(string? alias) => alias is not null && DefinitionStructureChecks.IsAlias(alias);

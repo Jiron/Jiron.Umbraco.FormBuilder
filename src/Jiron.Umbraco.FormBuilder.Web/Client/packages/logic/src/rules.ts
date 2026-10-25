@@ -2,7 +2,7 @@
 // patterns), then evaluated. Checking first means both runtimes report the same error whatever order they evaluate
 // in. Step 5.2 builds the rules engine on these.
 import { applyRelative, formatDate, parseDate, parseDateTime, parseRelative, parseTime, today } from './dates.ts';
-import { compare, formatDecimal, parseDecimal } from './decimal.ts';
+import { compareText } from './decimal.ts';
 import { LogicError, own } from './errors.ts';
 import { compilePattern } from './pattern.ts';
 import { clean, fold } from './text.ts';
@@ -216,15 +216,11 @@ function resolve(operand: unknown, subject: Subject): string[] {
 
 const text = (n: number | null): string | null => (n === null ? null : String(n));
 
-/** The key two values are equal by: folded text, an exact option key, or the parsed value; null when invalid. */
+/** The key two values other than numbers are equal by: folded text, an exact option key, or the parsed value; null when invalid. */
 function key(kind: Kind, value: string): string | null {
   switch (kind) {
     case 'text':
       return fold(value);
-    case 'number': {
-      const d = parseDecimal(value);
-      return d === null ? null : formatDecimal(d);
-    }
     case 'date':
       return text(parseDate(value));
     case 'time':
@@ -236,18 +232,16 @@ function key(kind: Kind, value: string): string | null {
   }
 }
 
+// Numbers compare as the values they are, digit by digit, without a number or a key being built (ADR-0005).
 function same(kind: Kind, a: string, b: string): boolean {
+  if (kind === 'number') return compareText(a, b) === 0;
   const x = key(kind, a);
   return x !== null && x === key(kind, b);
 }
 
 /** Orders two values of an ordered kind; null when either is not a valid value of that kind. */
 function order(kind: Kind, a: string, b: string): number | null {
-  if (kind === 'number') {
-    const x = parseDecimal(a);
-    const y = parseDecimal(b);
-    return x === null || y === null ? null : compare(x, y);
-  }
+  if (kind === 'number') return compareText(a, b);
   const read = kind === 'date' ? parseDate : kind === 'time' ? parseTime : parseDateTime;
   const x = read(a);
   const y = read(b);

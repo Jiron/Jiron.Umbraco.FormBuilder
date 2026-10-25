@@ -37,7 +37,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         Alias = "topic",
         Label = new LocalizedText("Topic"),
         Options = new FieldOptions { Items = [new FieldOption { Value = "sales", Label = new LocalizedText("Sales") }, new FieldOption { Value = "support", Label = new LocalizedText("Support") }] },
-        Rules = [new FormRule { Key = Key(3), Effect = RuleEffect.Show, Conditions = [new RuleCondition { Field = Key(1), Op = "isNotEmpty" }] }],
+        Rules = [new FormRule { Key = Key(3), Effect = RuleEffect.Show, Conditions = [new RuleCondition { Field = Key(1), Operator = "isNotEmpty" }] }],
     };
 
     private static readonly FormField Confirm = new()
@@ -55,7 +55,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         Type = "dropdown",
         Alias = "session",
         Label = new LocalizedText("Session"),
-        Options = new FieldOptions { Source = OptionSource.List, List = ListKey },
+        Options = new FieldOptions { Source = OptionSource.List, OptionList = ListKey },
     };
 
     private static readonly FormAction Notify = new()
@@ -63,7 +63,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         Key = Key(6),
         Type = "email",
         Name = "Notify sales",
-        Rules = [new FormRule { Key = Key(7), Effect = RuleEffect.Run, Conditions = [new RuleCondition { Field = Key(2), Op = "equals", Value = new ConditionOperand.Text("sales") }] }],
+        Rules = [new FormRule { Key = Key(7), Effect = RuleEffect.Run, Conditions = [new RuleCondition { Field = Key(2), Operator = "equals", Value = new ConditionOperand.Text("sales") }] }],
         Settings = SettingsObject.Parse($$"""{"replyTo":"{{Key(1)}}","to":["sales@example.com"]}"""),
     };
 
@@ -103,7 +103,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             Assert.That(((MatchesFieldCheck)definition.Pages[0].Groups[0].Fields[2].Validation[0]).Field, Is.EqualTo(fields["email"]), "a check");
             Assert.That(definition.Settings.Submission.Verification!.EmailField, Is.EqualTo(fields["email"]), "the verification field");
             Assert.That(definition.Actions[0].Settings!.TryGetProperty("replyTo", out var replyTo) ? replyTo.GetString() : null, Is.EqualTo(fields["email"].ToString("D")), "an action's setting");
-            Assert.That(definition.Pages[0].Groups[0].Fields[3].Options!.List, Is.EqualTo(ListKey), "an option list of the library stays");
+            Assert.That(definition.Pages[0].Groups[0].Fields[3].Options!.OptionList, Is.EqualTo(ListKey), "an option list of the library stays");
             Assert.That(Hash(Remapped(definition, designed)), Is.EqualTo(Hash(designed)), "nothing else changed");
             Assert.That((await Service.GetDraftAsync(source.Key))!.Definition, Is.Not.Null.And.Property(nameof(FormDefinition.Key)).EqualTo(source.Key), "the source stays as it was");
             Assert.That(await Service.PublishAsync(copy.Key, copy.ConcurrencyVersion, null, Editor), Has.Property(nameof(FormVersionResult.Version)).EqualTo(2), "the copy publishes on its own");
@@ -445,7 +445,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         await CreateListAsync(Guid.NewGuid(), "kinds");
         await CreateListAsync(Guid.NewGuid(), "configs");
         var created = await Service.CreateAsync(new NewFormRequest("Event", UserKey: Editor));
-        FormField Choice(Guid list, string alias) => Session with { Key = Guid.NewGuid(), Alias = alias, Options = new FieldOptions { Source = OptionSource.List, List = list } };
+        FormField Choice(Guid list, string alias) => Session with { Key = Guid.NewGuid(), Alias = alias, Options = new FieldOptions { Source = OptionSource.List, OptionList = list } };
         var fields = new[] { (byKey, "room"), (sameAlias, "session"), (otherItems, "meal"), (notCarried, "extra"), (byKey, "room2"), (notCarried, "extra2"), (otherKind, "kind"), (otherConfig, "config") }
             .Select(pair => Choice(pair.Item1, pair.Item2))
             .Append(new FormField { Key = Guid.NewGuid(), Type = "repeater", Alias = "guests", Label = new LocalizedText("Guests"), Fields = [Choice(inChild, "guestSession")] })
@@ -461,7 +461,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             ListJson(otherConfig, "configs", "[]", config: """{"sort":"label"}"""));
 
         var imported = await Exchange.ImportAsync(new ImportFormRequest(envelope.ToJsonString(), UserKey: Editor));
-        var lists = DefinitionKeys.Fields((await Service.GetDraftAsync(imported.Form.Key))!.Definition!).Select(field => field.Options?.List).ToList();
+        var lists = DefinitionKeys.Fields((await Service.GetDraftAsync(imported.Form.Key))!.Definition!).Select(field => field.Options?.OptionList).ToList();
 
         Assert.Multiple(() =>
         {
@@ -484,7 +484,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
     {
         var created = await Service.CreateAsync(new NewFormRequest("Many", UserKey: Editor));
         var fields = Enumerable.Range(1, AuditDetails.MaxListLength + 1)
-            .Select(i => Session with { Key = Guid.NewGuid(), Alias = "choice" + i.ToString(CultureInfo.InvariantCulture), Options = new FieldOptions { Source = OptionSource.List, List = Guid.NewGuid() } })
+            .Select(i => Session with { Key = Guid.NewGuid(), Alias = "choice" + i.ToString(CultureInfo.InvariantCulture), Options = new FieldOptions { Source = OptionSource.List, OptionList = Guid.NewGuid() } })
             .ToArray();
         await SaveAsync(created, WithFields(await DraftAsync(created), fields));
         var file = (await Exchange.ExportAsync(created.Key))!;
@@ -646,7 +646,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         {
             Settings = blank.Settings with { Submission = blank.Settings.Submission with { Verification = new EmailVerification { EmailField = Email.Key } } },
             Pages = [blank.Pages[0] with { Groups = [blank.Pages[0].Groups[0] with { Fields = [Email, Topic, Confirm] }] }],
-            ValidationRules = [new FormValidationRule { Key = Key(9), Field = Confirm.Key, Message = new LocalizedText("Fill in both."), Conditions = [new RuleCondition { Field = Email.Key, Op = "isEmpty" }] }],
+            ValidationRules = [new FormValidationRule { Key = Key(9), Field = Confirm.Key, Message = new LocalizedText("Fill in both."), Conditions = [new RuleCondition { Field = Email.Key, Operator = "isEmpty" }] }],
             Actions = [Notify, Hook],
         };
         var saved = await SaveAsync(created, published);

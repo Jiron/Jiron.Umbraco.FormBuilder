@@ -187,7 +187,8 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   actions, outcomes, recipients, option-source configuration, privacy settings or switched-off rules; its SHA-256 is
   `PublicHash`. Its TypeScript types and schema ship in `schemas/` (6.6).
 - **Reading and writing** ([ADR-0034](decisions/0034-definition-model-reading-and-writing.md)): the records are
-  public in `Jiron.Umbraco.FormBuilder.Core.Definitions`; Core's internal serializer reads strictly, reporting every
+  public in `Jiron.Umbraco.FormBuilder.Core.Definitions`, immutable, with lists that no cast changes, and compare by
+  value; Core's internal serializer reads strictly, reporting every
   problem with a code and a JSON path, and writes the canonical form, whose SHA-256 is `DefinitionHash`. The limits
   are `DefinitionLimits`, which the site can lower (4.4).
 - **Upgrades:** stored versions are never rewritten; upgraders run when they are read, one per schema version; v1 is

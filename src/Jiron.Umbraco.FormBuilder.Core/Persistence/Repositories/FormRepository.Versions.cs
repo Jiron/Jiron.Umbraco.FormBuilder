@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
 
@@ -16,7 +17,7 @@ internal sealed partial class FormRepository
     private const int HashLength = 64;
 
     // Every column of a version but its definition, for lists.
-    private static readonly string[] InfoColumnNames =
+    private static readonly ImmutableArray<string> InfoColumnNames =
     [
         "id", "formId", "number", "kind", "schemaVersion", "definitionHash", "publicHash", "publicRevision", "comment", "isPinned",
         "createdUtc", "createdByUserKey", "publishedUtc", "publishedByUserKey",

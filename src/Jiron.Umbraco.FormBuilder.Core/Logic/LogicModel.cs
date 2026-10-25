@@ -50,16 +50,16 @@ internal sealed record ListOperand(IReadOnlyList<Operand> Items) : Operand;
 internal sealed record InvalidOperand : Operand;
 
 /// <summary>A condition or a nested group.</summary>
-internal abstract record RuleItem;
+internal abstract record LogicItem;
 
 /// <summary>Looks at an answer (<see cref="Field"/>) or at the context (<see cref="Context"/>): exactly one of them.</summary>
-internal sealed record Condition(string? Field, string? Context, string Op, Operand? Value) : RuleItem;
+internal sealed record LogicCondition(string? Field, string? Context, string Operator, Operand? Value) : LogicItem;
 
 /// <summary>Conditions that must all match (<c>all</c>) or of which one must (<c>any</c>).</summary>
-internal sealed record Group(string Match, IReadOnlyList<RuleItem> Conditions) : RuleItem;
+internal sealed record LogicGroup(string Match, IReadOnlyList<LogicItem> Conditions) : LogicItem;
 
 /// <summary>A rule: its effect applies while its conditions match; a switched-off rule is kept but ignored.</summary>
-internal sealed record Rule(string Effect, bool Enabled, string Match, IReadOnlyList<RuleItem> Conditions);
+internal sealed record LogicRule(string Effect, bool Enabled, string Match, IReadOnlyList<LogicItem> Conditions);
 
 /// <summary>The member a condition can look at.</summary>
 internal sealed record Member(bool SignedIn, IReadOnlyList<string> Groups);

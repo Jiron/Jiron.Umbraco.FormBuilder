@@ -45,7 +45,7 @@ public sealed class DefinitionDiffTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(changes.Select(change => (change.Kind, change.Key, change.Change, change.Moved)), Is.EqualTo(new[]
+            Assert.That(changes.Select(change => (change.ElementKind, change.Key, change.Kind, change.Moved)), Is.EqualTo(new[]
             {
                 (DefinitionElementKind.Field, (Guid?)K(11), DefinitionChangeKind.Changed, false),
                 (DefinitionElementKind.Field, (Guid?)K(12), DefinitionChangeKind.Changed, false),
@@ -84,7 +84,7 @@ public sealed class DefinitionDiffTests
 
         var change = Diff(before, after).Single();
 
-        Assert.That((change.Kind, change.Key, change.Label), Is.EqualTo((DefinitionElementKind.Page, (Guid?)K(9), "Contact details")));
+        Assert.That((change.ElementKind, change.Key, change.Label), Is.EqualTo((DefinitionElementKind.Page, (Guid?)K(9), "Contact details")));
     }
 
     [Test]
@@ -99,7 +99,7 @@ public sealed class DefinitionDiffTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(changes.Select(change => (change.Kind, change.Key, change.Change, change.ParentKey)), Is.EqualTo(new[]
+            Assert.That(changes.Select(change => (change.ElementKind, change.Key, change.Kind, change.ParentKey)), Is.EqualTo(new[]
             {
                 (DefinitionElementKind.ValidationRule, (Guid?)K(41), DefinitionChangeKind.Changed, (Guid?)null),
                 (DefinitionElementKind.ValidationRule, (Guid?)K(42), DefinitionChangeKind.Added, (Guid?)null),
@@ -120,8 +120,8 @@ public sealed class DefinitionDiffTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(DefinitionDiff.Compare(plain, EmailTwice(DefinitionFixtures.Read(relabelled.ToJsonString()))).Select(change => (change.Key, change.Change)), Is.EqualTo(new[] { ((Guid?)K(12), DefinitionChangeKind.Changed) }));
-            Assert.That(DefinitionDiff.Compare(EmailTwice(plain), DefinitionFixtures.Read(withoutEmail.ToJsonString())).Select(change => (change.Key, change.Change)), Is.EqualTo(new[] { ((Guid?)K(12), DefinitionChangeKind.Removed) }));
+            Assert.That(DefinitionDiff.Compare(plain, EmailTwice(DefinitionFixtures.Read(relabelled.ToJsonString()))).Select(change => (change.Key, change.Kind)), Is.EqualTo(new[] { ((Guid?)K(12), DefinitionChangeKind.Changed) }));
+            Assert.That(DefinitionDiff.Compare(EmailTwice(plain), DefinitionFixtures.Read(withoutEmail.ToJsonString())).Select(change => (change.Key, change.Kind)), Is.EqualTo(new[] { ((Guid?)K(12), DefinitionChangeKind.Removed) }));
         });
     }
 
@@ -246,7 +246,7 @@ public sealed class DefinitionDiffTests
 
         Assert.Multiple(() =>
         {
-            Assert.That((change.Kind, change.Key, change.Change, change.Moved), Is.EqualTo((DefinitionElementKind.Field, (Guid?)K(12), DefinitionChangeKind.Changed, true)));
+            Assert.That((change.ElementKind, change.Key, change.Kind, change.Moved), Is.EqualTo((DefinitionElementKind.Field, (Guid?)K(12), DefinitionChangeKind.Changed, true)));
             Assert.That((change.ParentKey, change.PreviousParentKey), Is.EqualTo(((Guid?)K(3), (Guid?)K(2))));
             Assert.That(change.Properties, Is.Empty);
         });
@@ -285,10 +285,10 @@ public sealed class DefinitionDiffTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(changes.Where(change => change.Kind == DefinitionElementKind.Page).Select(change => change.Key), Has.Exactly(1).Items, "one of two pages explains a swap");
-            Assert.That(changes.Count(change => change.Kind == DefinitionElementKind.Action && change.Moved), Is.EqualTo(2), "two of three actions explain a reversal");
-            Assert.That(changes.Where(change => change.Kind == DefinitionElementKind.Action).Select(change => change.Label), Is.All.Not.Null);
-            Assert.That(changes.Where(change => change.Kind == DefinitionElementKind.Action).Select(change => change.Type), Is.All.EqualTo("email"));
+            Assert.That(changes.Where(change => change.ElementKind == DefinitionElementKind.Page).Select(change => change.Key), Has.Exactly(1).Items, "one of two pages explains a swap");
+            Assert.That(changes.Count(change => change.ElementKind == DefinitionElementKind.Action && change.Moved), Is.EqualTo(2), "two of three actions explain a reversal");
+            Assert.That(changes.Where(change => change.ElementKind == DefinitionElementKind.Action).Select(change => change.Label), Is.All.Not.Null);
+            Assert.That(changes.Where(change => change.ElementKind == DefinitionElementKind.Action).Select(change => change.Type), Is.All.EqualTo("email"));
         });
     }
 
@@ -307,7 +307,7 @@ public sealed class DefinitionDiffTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(changes.Select(change => (change.Kind, change.Key, change.Change, change.Moved, change.ParentKey)), Is.EqualTo(new[]
+            Assert.That(changes.Select(change => (change.ElementKind, change.Key, change.Kind, change.Moved, change.ParentKey)), Is.EqualTo(new[]
             {
                 (DefinitionElementKind.Rule, (Guid?)K(82), DefinitionChangeKind.Changed, false, (Guid?)K(11)),
                 (DefinitionElementKind.Rule, (Guid?)K(83), DefinitionChangeKind.Added, false, (Guid?)K(11)),
@@ -329,7 +329,7 @@ public sealed class DefinitionDiffTests
 
         Assert.Multiple(() =>
         {
-            Assert.That((change.Kind, change.Key, change.Change, change.ParentKey, change.Alias), Is.EqualTo((DefinitionElementKind.Field, (Guid?)K(93), DefinitionChangeKind.Added, (Guid?)K(91), "guestEmail")));
+            Assert.That((change.ElementKind, change.Key, change.Kind, change.ParentKey, change.Alias), Is.EqualTo((DefinitionElementKind.Field, (Guid?)K(93), DefinitionChangeKind.Added, (Guid?)K(91), "guestEmail")));
             Assert.That(change.Before, Is.Null);
             Assert.That(change.After?["type"]?.GetValue<string>(), Is.EqualTo("text"));
         });
@@ -346,7 +346,7 @@ public sealed class DefinitionDiffTests
 
         Assert.Multiple(() =>
         {
-            Assert.That((change.Kind, change.Key, change.SettingsGroup, change.Change), Is.EqualTo((DefinitionElementKind.Settings, (Guid?)null, "appearance", DefinitionChangeKind.Changed)));
+            Assert.That((change.ElementKind, change.Key, change.SettingsGroup, change.Kind), Is.EqualTo((DefinitionElementKind.Settings, (Guid?)null, "appearance", DefinitionChangeKind.Changed)));
             Assert.That(Paths(change), Is.EqualTo(new[] { "validationSummary : true -> false", "cssClass : null -> \"wide\"" }));
         });
     }
@@ -365,7 +365,7 @@ public sealed class DefinitionDiffTests
 
         var changes = Diff(before, after);
 
-        Assert.That(changes.Select(change => $"{change.Kind} {change.Key?.ToString() ?? change.SettingsGroup} {change.Change}"), Is.EqualTo(new[]
+        Assert.That(changes.Select(change => $"{change.ElementKind} {change.Key?.ToString() ?? change.SettingsGroup} {change.Kind}"), Is.EqualTo(new[]
         {
             "Settings submission Changed",
             $"Field {K(94)} Added",
@@ -405,7 +405,7 @@ public sealed class DefinitionDiffTests
 
         var change = Diff(before, after).Single();
 
-        Assert.That((change.Change, change.Label, change.Alias, change.Type, change.ParentKey, change.After), Is.EqualTo((DefinitionChangeKind.Removed, "Email", "email", "email", (Guid?)K(2), (JsonObject?)null)));
+        Assert.That((change.Kind, change.Label, change.Alias, change.Type, change.ParentKey, change.After), Is.EqualTo((DefinitionChangeKind.Removed, "Email", "email", "email", (Guid?)K(2), (JsonObject?)null)));
     }
 
     [TestCase(new int[0], new int[0])]
@@ -466,8 +466,8 @@ public sealed class DefinitionDiffTests
 
                 var olderKeys = DefinitionMutator.Keys(olderJson);
                 var newerKeys = DefinitionMutator.Keys(newerJson);
-                Assert.That(changes.Where(change => change.Change == DefinitionChangeKind.Added).Select(change => change.Key!.Value), Is.EquivalentTo(newerKeys.Except(olderKeys)), $"definition {i}: added");
-                Assert.That(changes.Where(change => change.Change == DefinitionChangeKind.Removed).Select(change => change.Key!.Value), Is.EquivalentTo(olderKeys.Except(newerKeys)), $"definition {i}: removed");
+                Assert.That(changes.Where(change => change.Kind == DefinitionChangeKind.Added).Select(change => change.Key!.Value), Is.EquivalentTo(newerKeys.Except(olderKeys)), $"definition {i}: added");
+                Assert.That(changes.Where(change => change.Kind == DefinitionChangeKind.Removed).Select(change => change.Key!.Value), Is.EquivalentTo(olderKeys.Except(newerKeys)), $"definition {i}: removed");
 
                 foreach (var change in changes)
                 {
@@ -516,10 +516,10 @@ public sealed class DefinitionDiffTests
 
     private static void AssertRebuilt(IReadOnlyList<DefinitionChange> changes, string what)
     {
-        foreach (var change in changes.Where(change => change.Change == DefinitionChangeKind.Changed))
+        foreach (var change in changes.Where(change => change.Kind == DefinitionChangeKind.Changed))
         {
             Assert.That(change.Properties.Count > 0 || change.Moved, Is.True, $"{what}: {Id(change)} differs");
-            var rebuilt = DefinitionMutator.Apply(change.Before!, change.Properties, change.Kind == DefinitionElementKind.Field);
+            var rebuilt = DefinitionMutator.Apply(change.Before!, change.Properties, change.ElementKind == DefinitionElementKind.Field);
             Assert.That(JsonNode.DeepEquals(rebuilt, change.After), Is.True, $"{what}: {Id(change)} rebuilt as {rebuilt.ToJsonString()}, not {change.After?.ToJsonString()}");
         }
     }
@@ -528,7 +528,7 @@ public sealed class DefinitionDiffTests
     // their siblings.
     private static List<DefinitionChange> Comparable(IReadOnlyList<DefinitionChange> changes) => changes
         .Select(change => change with { Properties = change.Properties.Where(property => !IsOrder(property)).ToList() })
-        .Where(change => change.Change != DefinitionChangeKind.Changed || change.Properties.Count > 0 || change.PreviousParentKey is not null)
+        .Where(change => change.Kind != DefinitionChangeKind.Changed || change.Properties.Count > 0 || change.PreviousParentKey is not null)
         .ToList();
 
     private static bool IsOrder(DefinitionPropertyChange property) =>
@@ -537,13 +537,13 @@ public sealed class DefinitionDiffTests
     // How many elements moved among their siblings, per list.
     private static IEnumerable<string> MovesInPlace(IReadOnlyList<DefinitionChange> changes) => changes
         .Where(change => change.Moved && change.PreviousParentKey is null)
-        .GroupBy(change => $"{change.Kind} under {change.ParentKey}")
+        .GroupBy(change => $"{change.ElementKind} under {change.ParentKey}")
         .Select(group => $"{group.Key}: {group.Count()}");
 
     // The element's own properties in a canonical document: what Before and After must be.
     private static JsonObject? Own(JsonObject root, DefinitionChange change)
     {
-        if (change.Kind == DefinitionElementKind.Settings)
+        if (change.ElementKind == DefinitionElementKind.Settings)
         {
             return root["settings"]?[change.SettingsGroup!]?.DeepClone() as JsonObject ?? [];
         }
@@ -556,7 +556,7 @@ public sealed class DefinitionDiffTests
         var own = (JsonObject)node.DeepClone();
         own.Remove("key");
         own.Remove("rules");
-        own.Remove(change.Kind switch
+        own.Remove(change.ElementKind switch
         {
             DefinitionElementKind.Page => "groups",
             DefinitionElementKind.Group or DefinitionElementKind.Field => "fields",
@@ -567,16 +567,16 @@ public sealed class DefinitionDiffTests
 
     private static bool SameJson(JsonNode? a, JsonNode? b) => JsonNode.DeepEquals(a, b);
 
-    private static string Id(DefinitionChange change) => $"{change.Kind}:{change.Key?.ToString() ?? change.SettingsGroup}";
+    private static string Id(DefinitionChange change) => $"{change.ElementKind}:{change.Key?.ToString() ?? change.SettingsGroup}";
 
     // A change as text, with its properties, to compare one comparison with another.
     private static string Describe(DefinitionChange change) =>
-        $"{Id(change)} {change.Change} parent={change.ParentKey} previous={change.PreviousParentKey} label={change.Label} {string.Join(" | ", Paths(change).Order(StringComparer.Ordinal))}";
+        $"{Id(change)} {change.Kind} parent={change.ParentKey} previous={change.PreviousParentKey} label={change.Label} {string.Join(" | ", Paths(change).Order(StringComparer.Ordinal))}";
 
     // What the swapped comparison must say: added and removed trade places, values swap, and a move keeps its parents swapped.
     private static IEnumerable<string> Mirror(List<DefinitionChange> changes) => changes.Select(change => Describe(change with
     {
-        Change = change.Change switch
+        Kind = change.Kind switch
         {
             DefinitionChangeKind.Added => DefinitionChangeKind.Removed,
             DefinitionChangeKind.Removed => DefinitionChangeKind.Added,
@@ -584,12 +584,12 @@ public sealed class DefinitionDiffTests
         },
         ParentKey = change.PreviousParentKey ?? change.ParentKey,
         PreviousParentKey = change.PreviousParentKey is null ? null : change.ParentKey,
-        Label = change.Change == DefinitionChangeKind.Changed ? Label(change.Before, change) : change.Label,
+        Label = change.Kind == DefinitionChangeKind.Changed ? Label(change.Before, change) : change.Label,
         Properties = Swapped(change.Properties),
     }));
 
     // The label the swapped comparison names: the older version's, once it is the newer one.
-    private static string? Label(JsonObject? own, DefinitionChange change) => change.Kind switch
+    private static string? Label(JsonObject? own, DefinitionChange change) => change.ElementKind switch
     {
         DefinitionElementKind.Page or DefinitionElementKind.Group => (own?["title"] as JsonObject)?[string.Empty]?.GetValue<string>() ?? change.Label,
         DefinitionElementKind.Field => (own?["label"] as JsonObject)?[string.Empty]?.GetValue<string>() ?? change.Label,

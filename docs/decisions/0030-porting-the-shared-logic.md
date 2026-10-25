@@ -1,6 +1,7 @@
 # 0030. Porting the shared logic: where it lives, and what the port changed
 
-- Status: accepted; the stored time zone's spelling amended in 4.4b ([ADR-0043](0043-backoffice-settings-sections.md))
+- Status: accepted; the stored time zone's spelling amended in 4.4b ([ADR-0043](0043-backoffice-settings-sections.md));
+  what long answers cost and the names of Core's logic model amended in 4.8f
 - Date: 2026-10-23
 - Roadmap step: 3.4b (decided and built); 4.4 stores the time zone as the server spells it; 5.2 and 5.3 complete the
   engines on these modules
@@ -101,5 +102,15 @@ The fixes themselves have one obvious form each. What needed deciding:
   language limits how deeply calculations nest.
 - The vector reader in the unit tests is test code: the product reads rules from the definition model (4.x), whose
   schema refuses the shapes the reader turns into `InvalidOperand`.
+- **Amended in 4.8f:** both runtimes compare numbers as the values they are, over the wire form's digits (the sign,
+  the integer digits, the fraction without its trailing zeros), so a rule over a 10,000-digit answer builds no
+  `BigInt` or `BigInteger` and costs what reading the answer costs; calculations keep the exact decimals. Core's
+  cleaning copies a text only when it replaces something in it, so such a rule allocates its own lists, not copies of
+  the answer (it made two of every value it cleaned). A pattern's run keeps one set of buffers (the threads at a
+  position, those that advance, the closure's stack) instead of new lists at every character. Core's model of the
+  logic is `LogicItem`, `LogicCondition`, `LogicGroup` and
+  `LogicRule`, apart from the definition model's `RuleItem`, `RuleCondition`, `RuleGroup` and `FormRule`; the
+  condition's operator is `Operator` in both, and the JSON keeps `op`. 6.1 holds every answer to a ceiling on its
+  length before the rules run.
 - Revisit the instruction limit if real patterns reach it: it is five times what the weight limit allows for plain
   characters.

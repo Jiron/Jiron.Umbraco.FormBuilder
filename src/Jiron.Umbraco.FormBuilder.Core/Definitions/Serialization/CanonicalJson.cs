@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -12,7 +13,11 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 /// </summary>
 internal static class CanonicalJson
 {
-    private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    /// <summary>
+    /// The SHA-256 of canonical UTF-8 bytes in lowercase hex: a version's <c>DefinitionHash</c> and a projection's
+    /// <c>PublicHash</c> (ADR-0034, ADR-0035).
+    /// </summary>
+    public static string Hash(ReadOnlySpan<byte> canonical) => Convert.ToHexStringLower(SHA256.HashData(canonical));
 
     /// <summary>The canonical text of a JSON value; <paramref name="sortProperties"/> sorts every object's properties ordinally.</summary>
     /// <exception cref="ArgumentException">A string holds a lone surrogate, which UTF-8 cannot carry.</exception>
@@ -29,7 +34,7 @@ internal static class CanonicalJson
     {
         try
         {
-            return Utf8.GetBytes(Write(value, sortProperties));
+            return StrictText.Utf8.GetBytes(Write(value, sortProperties));
         }
         catch (EncoderFallbackException exception)
         {

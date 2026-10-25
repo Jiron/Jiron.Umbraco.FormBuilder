@@ -390,7 +390,7 @@ internal sealed class DefinitionSaveChecks
             }
         }
 
-        if (options.List is { } list)
+        if (options.OptionList is { } list)
         {
             Reference(list, P(path, "list"));
         }
@@ -448,7 +448,7 @@ internal sealed class DefinitionSaveChecks
                     }
 
                     String(condition.Context, P(itemPath, "context"), LineLength, singleLine: true);
-                    String(condition.Op, P(itemPath, "op"), LineLength, singleLine: true);
+                    String(condition.Operator, P(itemPath, "op"), LineLength, singleLine: true);
                     if (condition.Value is { } value)
                     {
                         Operand(value, P(itemPath, "value"));

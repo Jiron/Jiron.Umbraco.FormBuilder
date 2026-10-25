@@ -1,5 +1,5 @@
+using System.Collections.Immutable;
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
@@ -59,11 +59,10 @@ internal static class FormExportFormat
 
     private const string DefinitionProperty = "definition";
 
-    private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true, NewLine = "\n", MaxDepth = MaxDepth };
-    private static readonly string[] RootProperties = ["format", "packageVersion", "exportedUtc", "form", DefinitionProperty, "optionLists"];
-    private static readonly string[] FormProperties = ["key", "alias", "name"];
-    private static readonly string[] ListProperties = ["key", "alias", "name", "kind", "config", "items", "cacheSeconds"];
+    private static readonly ImmutableArray<string> RootProperties = ["format", "packageVersion", "exportedUtc", "form", DefinitionProperty, "optionLists"];
+    private static readonly ImmutableArray<string> FormProperties = ["key", "alias", "name"];
+    private static readonly ImmutableArray<string> ListProperties = ["key", "alias", "name", "kind", "config", "items", "cacheSeconds"];
 
     /// <summary>The envelope as the text of its file.</summary>
     public static string Write(FormExportEnvelope envelope)
@@ -104,22 +103,9 @@ internal static class FormExportFormat
     {
         ArgumentNullException.ThrowIfNull(json);
         ArgumentNullException.ThrowIfNull(serializer);
-        byte[] bytes;
-        try
-        {
-            if (StrictUtf8.GetByteCount(json) > MaxBytes(serializer))
-            {
-                return TooLarge(serializer);
-            }
-
-            bytes = StrictUtf8.GetBytes(json);
-        }
-        catch (EncoderFallbackException)
-        {
-            return Refused(DefinitionErrors.InvalidJson, JsonPaths.Root, "The text holds a lone surrogate.");
-        }
-
-        return Read(bytes, serializer);
+        return StrictText.ToUtf8(json, MaxBytes(serializer), TooLarge(serializer), out var problem) is { } bytes
+            ? Read(bytes, serializer)
+            : new EnvelopeReadResult(null, [problem!]);
     }
 
     /// <summary>Reads an envelope from the UTF-8 bytes of its file.</summary>
@@ -128,14 +114,9 @@ internal static class FormExportFormat
     public static EnvelopeReadResult Read(ReadOnlySpan<byte> utf8, FormDefinitionSerializer serializer)
     {
         ArgumentNullException.ThrowIfNull(serializer);
-        if (utf8.Length > MaxBytes(serializer))
+        if (StrictText.Check(utf8, MaxBytes(serializer), TooLarge(serializer)) is { } refused)
         {
-            return TooLarge(serializer);
-        }
-
-        if (!System.Text.Unicode.Utf8.IsValid(utf8))
-        {
-            return Refused(DefinitionErrors.InvalidJson, JsonPaths.Root, "The bytes are not valid UTF-8.");
+            return new EnvelopeReadResult(null, [refused]);
         }
 
         JsonDocument document;
@@ -156,8 +137,8 @@ internal static class FormExportFormat
 
     private static int MaxBytes(FormDefinitionSerializer serializer) => serializer.Limits.MaxBytes * EnvelopeFactor;
 
-    private static EnvelopeReadResult TooLarge(FormDefinitionSerializer serializer) =>
-        Refused(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"An export file has at most {MaxBytes(serializer)} bytes.");
+    private static DefinitionProblem TooLarge(FormDefinitionSerializer serializer) =>
+        new(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"An export file has at most {MaxBytes(serializer)} bytes.");
 
     private static EnvelopeReadResult Refused(string code, string path, string message) => new(null, [new DefinitionProblem(code, path, message)]);
 
@@ -360,7 +341,7 @@ internal static class FormExportFormat
         }
 
         // The properties of an object, each name once and none unknown; every one but the optional one is required.
-        private Dictionary<string, JsonElement>? Properties(JsonElement value, string path, string[] known, string? optional)
+        private Dictionary<string, JsonElement>? Properties(JsonElement value, string path, ImmutableArray<string> known, string? optional)
         {
             if (value.ValueKind != JsonValueKind.Object)
             {

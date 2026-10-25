@@ -89,13 +89,49 @@ export function stored(d: Decimal): Decimal {
   return d;
 }
 
-/** Orders two values: negative, zero or positive. */
-export function compare(a: Decimal, b: Decimal): number {
-  const s = Math.max(a.s, b.s);
-  const x = a.n * pow10(s - a.s);
-  const y = b.n * pow10(s - b.s);
-  return x < y ? -1 : x > y ? 1 : 0;
+/**
+ * Orders two values in the wire form as the numbers they are, without building either: by the sign, then the integer
+ * digits, then the fraction's digits without its trailing zeros. The work is linear in their length, so a long answer
+ * costs no more than reading it. Null when either is not in the wire form (`parseDecimal`).
+ */
+export function compareText(a: string, b: string): number | null {
+  const x = readParts(a);
+  const y = readParts(b);
+  if (x === null || y === null) return null;
+  if (x.negative !== y.negative) return x.negative ? -1 : 1;
+  // Without leading zeros, the longer integer part is the larger; a fraction that is a prefix of another is smaller.
+  let magnitude = Math.sign(x.integer.length - y.integer.length);
+  if (magnitude === 0) magnitude = order(x.integer, y.integer);
+  if (magnitude === 0) magnitude = order(x.fraction, y.fraction);
+  return x.negative ? -magnitude : magnitude;
 }
+
+interface Parts {
+  readonly negative: boolean;
+  readonly integer: string;
+  readonly fraction: string;
+}
+
+// The parts of a value in the wire form, as parseDecimal reads it: the sign (never for zero, so -0 is 0), the integer
+// digits and the fraction's digits without their trailing zeros.
+function readParts(text: string): Parts | null {
+  const minus = text.charCodeAt(0) === MINUS;
+  const start = minus ? 1 : 0;
+  const intEnd = readDigits(text, start);
+  const integer = text.slice(start, intEnd);
+  if (integer.length === 0 || (integer.length > 1 && integer.charCodeAt(0) === ZERO)) return null;
+  let fraction = '';
+  if (intEnd < text.length) {
+    if (text.charCodeAt(intEnd) !== POINT) return null;
+    const fractionEnd = readDigits(text, intEnd + 1);
+    if (fractionEnd === intEnd + 1 || fractionEnd !== text.length) return null;
+    fraction = trimZeros(text.slice(intEnd + 1, fractionEnd));
+  }
+  return { negative: minus && !(integer === '0' && fraction === ''), integer, fraction };
+}
+
+// Two runs of digits in code-unit order: equal lengths for integer parts; for fractions, a prefix comes first.
+const order = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** The exact sum. */
 export function add(a: Decimal, b: Decimal): Decimal {

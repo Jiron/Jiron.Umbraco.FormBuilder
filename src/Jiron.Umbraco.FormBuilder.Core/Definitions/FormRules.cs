@@ -52,7 +52,8 @@ public sealed record RuleCondition : RuleItem
     public string? Context { get; init; }
 
     /// <summary>The operator, for example <c>equals</c> or <c>isOneOf</c>.</summary>
-    public required string Op { get; init; }
+    [JsonPropertyName("op")]
+    public required string Operator { get; init; }
 
     /// <summary>The operand, absent for operators that take none.</summary>
     public ConditionOperand? Value { get; init; }

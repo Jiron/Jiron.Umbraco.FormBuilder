@@ -2,6 +2,7 @@ using System.Text;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
@@ -27,12 +28,12 @@ internal sealed class FormDocuments(
         return new VersionDocument(
             FormDefinition.CurrentSchemaVersion,
             Encoding.UTF8.GetString(canonical),
-            FormDefinitionSerializer.Hash(canonical),
+            CanonicalJson.Hash(canonical),
             PublicProjection.Hash(definition, types));
     }
 
     /// <summary>The hash of a definition's canonical form in the current schema.</summary>
-    public static string HashOf(FormDefinition definition) => FormDefinitionSerializer.Hash(FormDefinitionSerializer.Write(definition));
+    public static string HashOf(FormDefinition definition) => CanonicalJson.Hash(FormDefinitionSerializer.Write(definition));
 
     /// <summary>The hash of a stored version once read and upgraded, or null when it cannot be read.</summary>
     public string? HashOf(StoredFormVersion version)

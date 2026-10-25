@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Globalization;
 
 namespace Jiron.Umbraco.FormBuilder.Logic;
@@ -9,12 +11,12 @@ namespace Jiron.Umbraco.FormBuilder.Logic;
 /// </summary>
 internal static class Rules
 {
-    private static readonly FieldKind[] All = Enum.GetValues<FieldKind>();
-    private static readonly FieldKind[] TextKinds = [FieldKind.Text];
-    private static readonly FieldKind[] Ordered = [FieldKind.Number, FieldKind.Date, FieldKind.Time, FieldKind.DateTime];
-    private static readonly FieldKind[] Checkable = [FieldKind.Checkbox, FieldKind.Choice, FieldKind.Choices];
+    private static readonly ImmutableArray<FieldKind> All = [.. Enum.GetValues<FieldKind>()];
+    private static readonly ImmutableArray<FieldKind> TextKinds = [FieldKind.Text];
+    private static readonly ImmutableArray<FieldKind> Ordered = [FieldKind.Number, FieldKind.Date, FieldKind.Time, FieldKind.DateTime];
+    private static readonly ImmutableArray<FieldKind> Checkable = [FieldKind.Checkbox, FieldKind.Choice, FieldKind.Choices];
 
-    private static readonly Dictionary<string, (FieldKind[] Kinds, OperandShape Operand)> Operators = new(StringComparer.Ordinal)
+    private static readonly FrozenDictionary<string, (ImmutableArray<FieldKind> Kinds, OperandShape Operand)> Operators = new Dictionary<string, (ImmutableArray<FieldKind> Kinds, OperandShape Operand)>
     {
         ["equals"] = (All, OperandShape.One),
         ["notEquals"] = (All, OperandShape.One),
@@ -34,7 +36,7 @@ internal static class Rules
         ["between"] = (Ordered, OperandShape.Pair),
         ["isChecked"] = (Checkable, OperandShape.Checked),
         ["isNotChecked"] = (Checkable, OperandShape.Checked),
-    };
+    }.ToFrozenDictionary(StringComparer.Ordinal);
 
     private enum OperandShape
     {
@@ -48,16 +50,16 @@ internal static class Rules
     }
 
     /// <summary>Checks the condition, then evaluates it.</summary>
-    public static bool EvaluateCondition(Condition condition, Subject subject)
+    public static bool EvaluateCondition(LogicCondition condition, Subject subject)
     {
         CheckCondition(condition, subject.Fields);
         return Evaluate(condition, subject);
     }
 
     /// <summary>Checks the whole rule, then evaluates it: null when the rule is switched off.</summary>
-    public static bool? EvaluateRule(Rule rule, Subject subject)
+    public static bool? EvaluateRule(LogicRule rule, Subject subject)
     {
-        var group = new Group(rule.Match, rule.Conditions);
+        var group = new LogicGroup(rule.Match, rule.Conditions);
         CheckGroup(group, subject.Fields);
         return rule.Enabled ? EvaluateGroup(group, subject) : null;
     }
@@ -68,7 +70,7 @@ internal static class Rules
     /// </summary>
     /// <param name="condition">The condition.</param>
     /// <param name="fields">The fields that hold a value rules can compare, with the kind each compares as.</param>
-    public static string? Check(Condition condition, IReadOnlyDictionary<string, FieldKind> fields)
+    public static string? Check(LogicCondition condition, IReadOnlyDictionary<string, FieldKind> fields)
     {
         try
         {
@@ -92,7 +94,7 @@ internal static class Rules
         _ => throw new LogicException(LogicErrors.UnknownField),
     };
 
-    private static FieldKind SubjectKind(Condition condition, IReadOnlyDictionary<string, FieldKind> fields)
+    private static FieldKind SubjectKind(LogicCondition condition, IReadOnlyDictionary<string, FieldKind> fields)
     {
         if ((condition.Field is null) == (condition.Context is null))
         {
@@ -130,10 +132,10 @@ internal static class Rules
         }
     }
 
-    private static void CheckCondition(Condition condition, IReadOnlyDictionary<string, FieldKind> fields)
+    private static void CheckCondition(LogicCondition condition, IReadOnlyDictionary<string, FieldKind> fields)
     {
         var kind = SubjectKind(condition, fields);
-        if (!Operators.TryGetValue(condition.Op, out var op))
+        if (!Operators.TryGetValue(condition.Operator, out var op))
         {
             throw new LogicException(LogicErrors.UnknownOperator);
         }
@@ -216,7 +218,7 @@ internal static class Rules
     private static bool IsCount(string text) =>
         text.Length is >= 1 and <= 6 && text.All(char.IsAsciiDigit) && (text.Length == 1 || text[0] != '0');
 
-    private static void CheckGroup(Group group, IReadOnlyDictionary<string, FieldKind> fields)
+    private static void CheckGroup(LogicGroup group, IReadOnlyDictionary<string, FieldKind> fields)
     {
         if (group.Match is not ("all" or "any"))
         {
@@ -225,13 +227,13 @@ internal static class Rules
 
         foreach (var item in group.Conditions)
         {
-            if (item is Group nested)
+            if (item is LogicGroup nested)
             {
                 CheckGroup(nested, fields);
             }
             else
             {
-                CheckCondition((Condition)item, fields);
+                CheckCondition((LogicCondition)item, fields);
             }
         }
     }
@@ -263,7 +265,7 @@ internal static class Rules
         return NonEmpty(raw);
     }
 
-    private static List<string> SubjectValues(Condition condition, Subject subject) =>
+    private static List<string> SubjectValues(LogicCondition condition, Subject subject) =>
         condition.Context is { } context ? ContextValues(context, subject.Context) : Answers(condition.Field!, subject);
 
     /// <summary>An operand's values, cleaned. A relative date outside years 1 to 9999 has none.</summary>
@@ -287,19 +289,24 @@ internal static class Rules
         }
     }
 
-    /// <summary>The key two values are equal by: folded text, an exact option key, or the parsed value; null when invalid.</summary>
+    /// <summary>The key two values other than numbers are equal by: folded text, an exact option key, or the parsed value; null when invalid.</summary>
     private static string? Key(FieldKind kind, string value) => kind switch
     {
         FieldKind.Text => TextSemantics.Fold(value),
-        FieldKind.Number => ExactDecimal.Parse(value)?.ToString(),
         FieldKind.Date => CalendarValues.ParseDate(value)?.ToString(CultureInfo.InvariantCulture),
         FieldKind.Time => CalendarValues.ParseTime(value)?.ToString(CultureInfo.InvariantCulture),
         FieldKind.DateTime => CalendarValues.ParseDateTime(value)?.ToString(CultureInfo.InvariantCulture),
         _ => value,
     };
 
+    // Numbers compare as the values they are, digit by digit, without a number or a key being built (ADR-0005).
     private static bool Same(FieldKind kind, string a, string b)
     {
+        if (kind == FieldKind.Number)
+        {
+            return ExactDecimal.CompareText(a, b) == 0;
+        }
+
         var x = Key(kind, a);
         return x is not null && string.Equals(x, Key(kind, b), StringComparison.Ordinal);
     }
@@ -309,7 +316,7 @@ internal static class Rules
     {
         if (kind == FieldKind.Number)
         {
-            return ExactDecimal.Parse(a) is { } x && ExactDecimal.Parse(b) is { } y ? ExactDecimal.Compare(x, y) : null;
+            return ExactDecimal.CompareText(a, b);
         }
 
         Func<string, long?> read = kind switch
@@ -324,13 +331,13 @@ internal static class Rules
     private static bool CompareFirst(FieldKind kind, List<string> values, List<string> operands, Func<int, bool> test) =>
         values.Count > 0 && operands.Count > 0 && Order(kind, values[0], operands[0]) is { } result && test(result);
 
-    private static bool IsChecked(Condition condition, FieldKind kind, List<string> values)
+    private static bool IsChecked(LogicCondition condition, FieldKind kind, List<string> values)
     {
         var expected = kind == FieldKind.Checkbox ? "true" : TextSemantics.Clean(((TextOperand)condition.Value!).Value);
         return values.Contains(expected, StringComparer.Ordinal);
     }
 
-    private static bool Evaluate(Condition condition, Subject subject)
+    private static bool Evaluate(LogicCondition condition, Subject subject)
     {
         var kind = SubjectKind(condition, subject.Fields);
         var values = SubjectValues(condition, subject);
@@ -349,7 +356,7 @@ internal static class Rules
             return values.Exists(v => list.Exists(o => test(TextSemantics.Fold(v), o)));
         }
 
-        switch (condition.Op)
+        switch (condition.Operator)
         {
             case "equals" or "isOneOf":
                 return AnyEqual();
@@ -394,9 +401,9 @@ internal static class Rules
     private static int Count(Operand? value) =>
         int.Parse(((TextOperand)value!).Value, NumberStyles.None, CultureInfo.InvariantCulture);
 
-    private static bool EvaluateGroup(Group group, Subject subject)
+    private static bool EvaluateGroup(LogicGroup group, Subject subject)
     {
-        bool Test(RuleItem item) => item is Group nested ? EvaluateGroup(nested, subject) : Evaluate((Condition)item, subject);
+        bool Test(LogicItem item) => item is LogicGroup nested ? EvaluateGroup(nested, subject) : Evaluate((LogicCondition)item, subject);
         return group.Match == "all" ? group.Conditions.All(Test) : group.Conditions.Any(Test);
     }
 }

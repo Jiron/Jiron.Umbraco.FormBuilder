@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
 
@@ -14,7 +15,7 @@ internal sealed partial class EntryRepository
     public const int ValuesPerStatement = 100;
 
     // The columns an insert of values writes, in the order of its parameters.
-    private static readonly string[] ValueColumns = ["entryId", "fieldId", "rowIndex", "valueIndex", "text", "textKey", "number", "date", "bool", "fileId"];
+    private static readonly ImmutableArray<string> ValueColumns = ["entryId", "fieldId", "rowIndex", "valueIndex", "text", "textKey", "number", "date", "bool", "fileId"];
 
     /// <inheritdoc />
     public Task<IReadOnlyList<StoredEntryValue>> ListValuesAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default)

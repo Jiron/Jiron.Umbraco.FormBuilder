@@ -225,7 +225,7 @@ public sealed class ActionCopiesTests
     {
         Key = key,
         Effect = RuleEffect.Run,
-        Conditions = [.. fields.Select(field => (RuleItem)new RuleCondition { Field = field, Op = "isNotEmpty" })],
+        Conditions = [.. fields.Select(field => (RuleItem)new RuleCondition { Field = field, Operator = "isNotEmpty" })],
     };
 
     private static SettingsObject Settings(JsonObject settings) => SettingsObject.Parse(settings.ToJsonString());

@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Logic;
@@ -207,11 +208,11 @@ internal sealed partial class DefinitionStructureChecks
 
         var availability = settings.Availability;
         var groupsPath = P(P(path, "availability"), "memberGroups");
-        if (availability.Members == MemberAccess.Groups && availability.MemberGroups.Count == 0)
+        if (availability.Access == MemberAccess.Groups && availability.MemberGroups.Count == 0)
         {
             Fail(DefinitionErrors.PartMissing, groupsPath, "A form for some member groups names at least one group.");
         }
-        else if (availability.Members != MemberAccess.Groups && availability.MemberGroups.Count > 0)
+        else if (availability.Access != MemberAccess.Groups && availability.MemberGroups.Count > 0)
         {
             Fail(DefinitionErrors.PropertyNotSupported, groupsPath, "Member groups belong only to a form for some member groups.");
         }
@@ -275,12 +276,12 @@ internal sealed partial class DefinitionStructureChecks
     private void CheckField(FormField field, FieldTypeTraits traits, string path, int node, bool inRepeater)
     {
         var what = $"A {traits.Alias} field";
-        if (inRepeater && (traits.Single || traits.Supports(FieldFeatures.ChildFields)))
+        if (inRepeater && (traits.OnePerForm || traits.Supports(FieldFeatures.ChildFields)))
         {
             Fail(DefinitionErrors.FieldNotAllowed, P(path, "type"), $"{what} cannot be inside a repeatable group.");
         }
 
-        if (traits.Single && !_onePerForm.Add(traits.Alias))
+        if (traits.OnePerForm && !_onePerForm.Add(traits.Alias))
         {
             Fail(DefinitionErrors.FieldNotAllowed, P(path, "type"), $"A form has at most one {traits.Alias} field.");
         }
@@ -303,7 +304,7 @@ internal sealed partial class DefinitionStructureChecks
             Fail(DefinitionErrors.InvalidReference, P(P(path, "prefill"), "query"), $"The form does not allow the query value '{query}' (settings.developer.queryValues).");
         }
 
-        RuleEffect[] effects = (traits.Supports(FieldFeatures.VisibilityRules), traits.Supports(FieldFeatures.Required)) switch
+        ImmutableArray<RuleEffect> effects = (traits.Supports(FieldFeatures.VisibilityRules), traits.Supports(FieldFeatures.Required)) switch
         {
             (true, true) => AnyFieldEffect,
             (true, false) => Visibility,
@@ -487,7 +488,7 @@ internal sealed partial class DefinitionStructureChecks
         switch (options.Source)
         {
             case OptionSource.Items:
-                if (options.List is not null)
+                if (options.OptionList is not null)
                 {
                     Fail(DefinitionErrors.OptionsInvalid, listPath, "A field with its own options names no library list.");
                 }
@@ -504,7 +505,7 @@ internal sealed partial class DefinitionStructureChecks
 
                 break;
             case OptionSource.List:
-                if (options.List is null)
+                if (options.OptionList is null)
                 {
                     Fail(DefinitionErrors.PartMissing, listPath, "Options from the library name the list.");
                 }
@@ -526,7 +527,7 @@ internal sealed partial class DefinitionStructureChecks
                     Fail(DefinitionErrors.OptionsInvalid, itemsPath, "Options from a source have no items of their own.");
                 }
 
-                if (options.List is not null)
+                if (options.OptionList is not null)
                 {
                     Fail(DefinitionErrors.OptionsInvalid, listPath, "Options from a source other than the library name no list.");
                 }

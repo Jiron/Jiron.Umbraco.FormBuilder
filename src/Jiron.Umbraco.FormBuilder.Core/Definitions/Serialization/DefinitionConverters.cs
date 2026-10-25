@@ -6,7 +6,8 @@ using System.Text.Json.Serialization.Metadata;
 namespace Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 
 // The converters of the definition model. The reader validates every document's shape before System.Text.Json reads
-// it (DefinitionShapeReader), so these read only well-formed input; they still refuse what they cannot read.
+// it (DefinitionShapeReader), so these read only well-formed input; they still refuse what they cannot read. What they
+// cannot write they refuse with ArgumentException, so a JsonException while writing comes from System.Text.Json itself.
 
 /// <summary>A definition word as its camelCase name, never as a number (ADR-0002).</summary>
 internal sealed class DefinitionEnumConverter<T> : JsonStringEnumConverter<T>
@@ -30,7 +31,7 @@ internal sealed class UtcInstantConverter : JsonConverter<DateTime>
     {
         if (!IsWritable(value))
         {
-            throw new JsonException("An instant is in UTC and has whole seconds.");
+            throw new ArgumentException("An instant is in UTC and has whole seconds.", nameof(value));
         }
 
         writer.WriteStringValue(value.ToString(Format, CultureInfo.InvariantCulture));
@@ -250,21 +251,24 @@ internal sealed class ConditionOperandConverter : JsonConverter<ConditionOperand
                 writer.WriteEndObject();
                 break;
             default:
-                throw new JsonException("A list operand holds no list.");
+                throw new ArgumentException("A list operand holds no list.", nameof(value));
         }
     }
 }
 
-/// <summary>A condition, or a nested group: an object with <c>match</c> or <c>conditions</c> is a group.</summary>
+/// <summary>
+/// A condition, or a nested group: an object with <c>match</c> or <c>conditions</c> is a group. The item is read once,
+/// straight from the reader: a copy of it looks at the object's own property names first, skipping their values, so a
+/// group nested many levels deep is not parsed again at every level.
+/// </summary>
 internal sealed class RuleItemConverter : JsonConverter<RuleItem>
 {
     public override RuleItem? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        using var document = JsonDocument.ParseValue(ref reader);
-        var root = document.RootElement;
-        return IsGroup(root)
-            ? root.Deserialize((JsonTypeInfo<RuleGroup>)options.GetTypeInfo(typeof(RuleGroup)))
-            : root.Deserialize((JsonTypeInfo<RuleCondition>)options.GetTypeInfo(typeof(RuleCondition)));
+        var copy = reader;
+        return IsGroup(ref copy)
+            ? Converter<RuleGroup>(options).Read(ref reader, typeof(RuleGroup), options)
+            : Converter<RuleCondition>(options).Read(ref reader, typeof(RuleCondition), options);
     }
 
     public override void Write(Utf8JsonWriter writer, RuleItem value, JsonSerializerOptions options)
@@ -278,13 +282,42 @@ internal sealed class RuleItemConverter : JsonConverter<RuleItem>
                 JsonSerializer.Serialize(writer, condition, (JsonTypeInfo<RuleCondition>)options.GetTypeInfo(typeof(RuleCondition)));
                 break;
             default:
-                throw new JsonException($"Unknown rule item {value.GetType()}.");
+                throw new ArgumentException($"Unknown rule item {value.GetType()}.", nameof(value));
         }
     }
 
     /// <summary>Whether an object is a nested group rather than a condition.</summary>
     public static bool IsGroup(JsonElement element) =>
         element.ValueKind == JsonValueKind.Object && (element.TryGetProperty("match", out _) || element.TryGetProperty("conditions", out _));
+
+    // The model's own converter of a type. Called straight on the reader, it reads the object once, where
+    // JsonSerializer.Deserialize would first skip over the whole object to find where it ends.
+    private static JsonConverter<T> Converter<T>(JsonSerializerOptions options) => (JsonConverter<T>)options.GetTypeInfo(typeof(T)).Converter;
+
+    // The same test on a reader at the start of a value; it moves the reader, so it is given a copy. The serializer
+    // hands a converter the whole value, so every property's value can be skipped.
+    private static bool IsGroup(ref Utf8JsonReader reader)
+    {
+        if (reader.TokenType != JsonTokenType.StartObject)
+        {
+            return false;
+        }
+
+        while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+        {
+            if (reader.ValueTextEquals("match"u8) || reader.ValueTextEquals("conditions"u8))
+            {
+                return true;
+            }
+
+            if (!reader.TrySkip())
+            {
+                return false;
+            }
+        }
+
+        return false;
+    }
 }
 
 /// <summary>Settings as their canonical JSON object.</summary>

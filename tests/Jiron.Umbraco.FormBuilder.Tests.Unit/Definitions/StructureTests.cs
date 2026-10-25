@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -493,8 +494,8 @@ public sealed class StructureTests
 
         Assert.Multiple(() =>
         {
-            AssertOneProblem(DefinitionFixtures.Serializer().CheckPublish(twoKeys, FieldTypeCatalogue.BuiltIn), DefinitionErrors.DuplicateKey, "$.actions[1].key");
-            AssertOneProblem(serializer.CheckPublish(definition, FieldTypeCatalogue.BuiltIn), DefinitionErrors.LimitExceeded, "$.actions");
+            AssertOneProblem(new StructuralPublishCheck(DefinitionFixtures.Serializer(), FieldTypeCatalogue.BuiltIn).Check(twoKeys), DefinitionErrors.DuplicateKey, "$.actions[1].key");
+            AssertOneProblem(new StructuralPublishCheck(serializer, FieldTypeCatalogue.BuiltIn).Check(definition), DefinitionErrors.LimitExceeded, "$.actions");
         });
     }
 
@@ -502,7 +503,7 @@ public sealed class StructureTests
     public void EachOnePerFormType_IsCountedOnItsOwn()
     {
         // A second one-per-form type beside the captcha, as a package of field types may bring one.
-        var types = new FieldTypeCatalogue([.. FieldTypeCatalogue.BuiltIn.All, new FieldTypeTraits { Alias = "signal", Single = true }]);
+        var types = new FieldTypeCatalogue([.. FieldTypeCatalogue.BuiltIn.All, new FieldTypeTraits { Alias = "signal", OnePerForm = true }]);
         var one = Changed(d => d["pages"]![0]!["groups"]![1]!["fields"]!.AsArray().Add(new JsonObject { ["key"] = K(0x21), ["type"] = "signal" }));
         var two = Changed(d =>
         {
@@ -513,8 +514,8 @@ public sealed class StructureTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(DefinitionFixtures.Serializer().CheckPublish(DefinitionFixtures.Read(one), types), Is.Empty, "a captcha and a signal");
-            AssertOneProblem(DefinitionFixtures.Serializer().CheckPublish(DefinitionFixtures.Read(two), types), DefinitionErrors.FieldNotAllowed, $"{F2(5)}.type");
+            Assert.That(new StructuralPublishCheck(DefinitionFixtures.Serializer(), types).Check(DefinitionFixtures.Read(one)), Is.Empty, "a captcha and a signal");
+            AssertOneProblem(new StructuralPublishCheck(DefinitionFixtures.Serializer(), types).Check(DefinitionFixtures.Read(two)), DefinitionErrors.FieldNotAllowed, $"{F2(5)}.type");
         });
     }
 
@@ -576,7 +577,7 @@ public sealed class StructureTests
 
     /// <summary>Publishes a definition and returns the problems.</summary>
     internal static IReadOnlyList<DefinitionProblem> Publish(FormDefinition definition) =>
-        DefinitionFixtures.Serializer().CheckPublish(definition, FieldTypeCatalogue.BuiltIn);
+        new StructuralPublishCheck(DefinitionFixtures.Serializer(), FieldTypeCatalogue.BuiltIn).Check(definition);
 
     internal static void AssertOneProblem(IReadOnlyList<DefinitionProblem> problems, string code, string path)
     {

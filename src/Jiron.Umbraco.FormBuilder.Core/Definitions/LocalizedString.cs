@@ -23,6 +23,12 @@ public abstract partial class LocalizedString : IEquatable<LocalizedString>
     {
         ArgumentNullException.ThrowIfNull(texts);
         var sorted = DefinitionList.Of(texts.OrderBy(text => text.Key, StringComparer.Ordinal));
+        // The ordinal order puts a null culture first.
+        if (sorted.Count > 0 && sorted[0].Key is null)
+        {
+            throw new ArgumentException("A culture name is null; the default text's culture is \"\".", nameof(texts));
+        }
+
         if (sorted.Count == 0 || sorted[0].Key.Length != 0)
         {
             throw new ArgumentException("A localised text needs its default text, the culture \"\".", nameof(texts));

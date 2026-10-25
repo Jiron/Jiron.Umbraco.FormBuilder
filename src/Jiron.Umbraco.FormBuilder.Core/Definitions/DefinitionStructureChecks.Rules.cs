@@ -1,6 +1,6 @@
+using System.Collections.Immutable;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Logic;
-using LogicCondition = Jiron.Umbraco.FormBuilder.Logic.Condition;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
 
@@ -9,8 +9,8 @@ internal sealed partial class DefinitionStructureChecks
 {
     private const string QueryContext = "query.";
 
-    private static readonly RuleEffect[] Visibility = [RuleEffect.Show, RuleEffect.Hide];
-    private static readonly RuleEffect[] AnyFieldEffect = [RuleEffect.Show, RuleEffect.Hide, RuleEffect.Require];
+    private static readonly ImmutableArray<RuleEffect> Visibility = [RuleEffect.Show, RuleEffect.Hide];
+    private static readonly ImmutableArray<RuleEffect> AnyFieldEffect = [RuleEffect.Show, RuleEffect.Hide, RuleEffect.Require];
 
     private static string Word(RuleEffect effect) => effect switch
     {
@@ -24,7 +24,7 @@ internal sealed partial class DefinitionStructureChecks
     // The definition's conditions in the shared logic's terms, so publishing runs the very check both runtimes run
     // before they evaluate (ADR-0005).
     private static LogicCondition ToLogic(RuleCondition condition) =>
-        new(condition.Field is { } field ? KeyText(field) : null, condition.Context, condition.Op, condition.Value is { } value ? ToLogic(value) : null);
+        new(condition.Field is { } field ? KeyText(field) : null, condition.Context, condition.Operator, condition.Value is { } value ? ToLogic(value) : null);
 
     private static Operand ToLogic(ConditionOperand operand) => operand switch
     {
@@ -39,7 +39,7 @@ internal sealed partial class DefinitionStructureChecks
     /// An element's rules: effects it takes, one rule per effect and not both show and hide, and every condition. A
     /// switched-on show or hide rule makes the element's being shown depend on the fields it looks at.
     /// </summary>
-    private void Rules(IReadOnlyList<FormRule> rules, string path, RuleEffect[] effects, string element, int? node)
+    private void Rules(IReadOnlyList<FormRule> rules, string path, ImmutableArray<RuleEffect> effects, string element, int? node)
     {
         var seen = new HashSet<RuleEffect>();
         for (var i = 0; i < rules.Count; i++)
@@ -127,9 +127,9 @@ internal sealed partial class DefinitionStructureChecks
 
         var (at, message) = code switch
         {
-            DefinitionErrors.UnknownOperator => (P(path, "op"), $"There is no operator '{condition.Op}'."),
-            DefinitionErrors.OperatorNotForKind => (P(path, "op"), $"The operator '{condition.Op}' does not take the kind of answer the condition looks at."),
-            DefinitionErrors.InvalidOperand => (P(path, "value"), $"The operand does not fit the operator '{condition.Op}'."),
+            DefinitionErrors.UnknownOperator => (P(path, "op"), $"There is no operator '{condition.Operator}'."),
+            DefinitionErrors.OperatorNotForKind => (P(path, "op"), $"The operator '{condition.Operator}' does not take the kind of answer the condition looks at."),
+            DefinitionErrors.InvalidOperand => (P(path, "value"), $"The operand does not fit the operator '{condition.Operator}'."),
             DefinitionErrors.UnsafePattern => (P(path, "value"), "The pattern uses syntax outside the safe subset or exceeds its limits (ADR-0005)."),
 
             // The fields were checked above, so what the shared check does not know is the context.

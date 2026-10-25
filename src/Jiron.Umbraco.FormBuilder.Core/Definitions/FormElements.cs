@@ -200,7 +200,8 @@ public sealed record FieldOptions
     public IReadOnlyList<FieldOption> Items { get; init => field = DefinitionList.Of(value); } = DefinitionList<FieldOption>.Empty;
 
     /// <summary>The key of the library option list, for <see cref="OptionSource.List"/>.</summary>
-    public Guid? List { get; init; }
+    [JsonPropertyName("list")]
+    public Guid? OptionList { get; init; }
 
     /// <summary>The source's configuration, for the other sources; the source validates it.</summary>
     public SettingsObject? Config { get; init; }

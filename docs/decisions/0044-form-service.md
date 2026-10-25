@@ -149,7 +149,7 @@ Publishing takes the stored draft, so what goes live is what the editor saved:
 
 1. The draft is read with `ReadStored`, which upgrades it to the current schema in memory.
 2. **The publish checks** run in order, each an `IFormPublishCheck`; the first is the structural validation of
-   ADR-0035 with the site's limits (`CheckPublish`). Every problem of every check refuses the publish at once. The form
+   ADR-0035 with the site's limits (`StructuralPublishCheck`). Every problem of every check refuses the publish at once. The form
    check (9.5b) is the next check; the mirror file (12.5) is a handler of `FormPublishedNotification`.
 3. `FormPublishingNotification` (cancelable, with the definition).
 4. **One unit:** the published version (its public revision moves only when its `PublicHash` differs from the last

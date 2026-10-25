@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Data.Common;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence;
@@ -13,28 +14,28 @@ internal static class FormBuilderDatabaseErrors
     /// SQLite's "busy" and "locked": the statement could not take the lock, nothing of it was written, and the scope
     /// rolls the rest of the transaction back.
     /// </summary>
-    private static readonly int[] SqliteBusy = [5, 6];
+    private static readonly FrozenSet<int> SqliteBusy = new[] { 5, 6 }.ToFrozenSet();
 
     /// <summary>
     /// SQL Server's deadlock victim (1205) and lock timeout (1222): the server rolled the transaction back, or the scope
     /// does when the error ends the work.
     /// </summary>
-    private static readonly int[] SqlServerLocks = [1205, 1222];
+    private static readonly FrozenSet<int> SqlServerLocks = new[] { 1205, 1222 }.ToFrozenSet();
 
     /// <summary>
     /// SQL Server's lost connections and Azure SQL's busy or moving databases, and the command timeout (-2). A read may
     /// run again; a write may not, because the connection may have dropped while its commit was on the way.
     /// </summary>
-    private static readonly int[] SqlServerConnections = [-2, 20, 64, 233, 4060, 10053, 10054, 10060, 10928, 10929, 40143, 40197, 40501, 40613, 49918, 49919, 49920];
+    private static readonly FrozenSet<int> SqlServerConnections = new[] { -2, 20, 64, 233, 4060, 10053, 10054, 10060, 10928, 10929, 40143, 40197, 40501, 40613, 49918, 49919, 49920 }.ToFrozenSet();
 
     /// <summary>SQLite's constraint error (19); its extended code says which constraint.</summary>
     private const int SqliteConstraint = 19;
 
     /// <summary>SQLite's extended codes for a unique index (2067) and a primary key (1555).</summary>
-    private static readonly int[] SqliteUnique = [2067, 1555];
+    private static readonly FrozenSet<int> SqliteUnique = new[] { 2067, 1555 }.ToFrozenSet();
 
     /// <summary>SQL Server's duplicate key in a unique index (2601) and in a unique or primary key constraint (2627).</summary>
-    private static readonly int[] SqlServerUnique = [2601, 2627];
+    private static readonly FrozenSet<int> SqlServerUnique = new[] { 2601, 2627 }.ToFrozenSet();
 
     /// <summary>
     /// True when <paramref name="exception"/> (or an exception inside it) is a database error that another attempt of

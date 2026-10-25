@@ -220,7 +220,7 @@ internal sealed record FieldTypeTraits
     public FieldMessageKinds Messages { get; init; }
 
     /// <summary>Whether a form has at most one field of the type, never inside a repeatable group (the captcha placement).</summary>
-    public bool Single { get; init; }
+    public bool OnePerForm { get; init; }
 
     /// <summary>
     /// Whether the default value stays on the server: it is resolved when the entry is submitted and never reaches the
@@ -351,6 +351,6 @@ internal sealed class FieldTypeCatalogue
         yield return Content("paragraph", "html");
         yield return Content("divider");
         yield return Content("image", "media", "alt", "size");
-        yield return new FieldTypeTraits { Alias = "captcha", Single = true };
+        yield return new FieldTypeTraits { Alias = "captcha", OnePerForm = true };
     }
 }

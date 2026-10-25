@@ -1,7 +1,8 @@
 # 0035. Publishing's structural validation and the public projection in code
 
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the publish codes,
-  what the projection holds and what its hash covers); amended in 4.8e (each one-per-form type counts on its own)
+  what the projection holds and what its hash covers); amended in 4.8e (each one-per-form type counts on its own);
+  amended in 4.8f (the publish check holds what publishing refuses; `OnePerForm`)
 - Date: 2026-10-23
 - Roadmap step: 4.2b (decided and built); 4.5 calls it when a form is published, 5.1 moves the field-type traits into
   the registry, 6.6 serves the projection, 7.2 and 8.1 add provider and action types
@@ -70,7 +71,8 @@ Option 2 for all three. In detail:
 - `Features`: label, hidden label, help, placeholder, required, default value, prefill, autocomplete, the three checks,
   show and hide rules, options, required options, places, rows and child fields;
 - `Messages`: the error kinds of §4.3.3;
-- `Single`: at most one field of the type per form, and never inside a repeatable group (the captcha placement).
+- `OnePerForm` (named `Single` until 4.8f): at most one field of the type per form, and never inside a repeatable
+  group (the captcha placement).
   Each such type counts on its own (amended in 4.8e), so a form may hold a captcha and a field of another
   one-per-form type;
 - `ServerOnlyDefault`: the default is resolved when the entry is submitted and never reaches the page (the hidden
@@ -89,9 +91,9 @@ How the traits are used:
 
 ### Publishing
 
-`CheckPublish` runs the save checks first: limits, unique keys and ranges (ADR-0034). When they pass, it runs the
-structural validation. Like a read, and through the same limit (ADR-0034), it reports at most 100 problems, each
-with a code, a JSON path and a message.
+The publish check (`StructuralPublishCheck`, ADR-0044, which holds it since 4.8f) runs the save checks first: limits,
+unique keys and ranges (ADR-0034). When they pass, it runs the structural validation. Like a read, and through the
+same limit (ADR-0034), it reports at most 100 problems, each with a code, a JSON path and a message.
 
 It never throws for a definition the save checks accept. A property-style test publishes 500 generated definitions
 and resolves every reported path in the document.

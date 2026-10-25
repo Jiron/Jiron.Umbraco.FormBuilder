@@ -2,6 +2,7 @@ using System.Text;
 using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -112,10 +113,10 @@ internal static class FormServiceTesting
         return new VersionDocument(
             FormDefinition.CurrentSchemaVersion,
             Encoding.UTF8.GetString(canonical),
-            FormDefinitionSerializer.Hash(canonical),
+            CanonicalJson.Hash(canonical),
             PublicProjection.Hash(definition, FieldTypeCatalogue.BuiltIn));
     }
 
     /// <summary>The hash of a definition's canonical form, to compare two definitions.</summary>
-    public static string Hash(FormDefinition definition) => FormDefinitionSerializer.Hash(FormDefinitionSerializer.Write(definition));
+    public static string Hash(FormDefinition definition) => CanonicalJson.Hash(FormDefinitionSerializer.Write(definition));
 }

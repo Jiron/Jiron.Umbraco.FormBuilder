@@ -249,13 +249,13 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
         Assert.Multiple(async () =>
         {
             Assert.That((forward.FromVersion, forward.ToVersion, backward.FromVersion, backward.ToVersion), Is.EqualTo((2, 5, 5, 2)));
-            Assert.That(forward.Changes.Select(change => (change.Kind, change.Key, change.Change)), Is.EqualTo(new[]
+            Assert.That(forward.Changes.Select(change => (change.ElementKind, change.Key, change.Kind)), Is.EqualTo(new[]
             {
                 (DefinitionElementKind.Field, (Guid?)Key(1), DefinitionChangeKind.Changed),
                 (DefinitionElementKind.Field, Key(2), DefinitionChangeKind.Added),
             }));
             Assert.That(forward.Changes[0].Properties.Select(property => (string.Join("/", property.Path), property.From?.GetValue<string>(), property.To?.GetValue<string>())), Is.EqualTo(new[] { ("label/", "Email address", "Your email") }));
-            Assert.That(backward.Changes.Select(change => (change.Key, change.Change)), Is.EqualTo(new[] { ((Guid?)Key(1), DefinitionChangeKind.Changed), (Key(2), DefinitionChangeKind.Removed) }));
+            Assert.That(backward.Changes.Select(change => (change.Key, change.Kind)), Is.EqualTo(new[] { ((Guid?)Key(1), DefinitionChangeKind.Changed), (Key(2), DefinitionChangeKind.Removed) }));
             Assert.That((await Versions.CompareAsync(form.Key, 2, 3))!.Changes, Is.Empty, "a publish of the same definition");
             Assert.That(await Versions.CompareAsync(form.Key, 2, 7), Is.Null);
             Assert.That(await Versions.CompareAsync(form.Key, 7, 2), Is.Null);
@@ -405,7 +405,7 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
 
     // What changed into a version, as kind, alias and change, or that nothing came before it.
     private static string Described(FormVersionEntry entry) =>
-        entry.Changes is null ? "none before it" : string.Join(", ", entry.Changes.Select(change => $"{change.Kind} {change.Alias} {change.Change}"));
+        entry.Changes is null ? "none before it" : string.Join(", ", entry.Changes.Select(change => $"{change.ElementKind} {change.Alias} {change.Kind}"));
 
     private static string Announced(INotification notification) => notification switch
     {

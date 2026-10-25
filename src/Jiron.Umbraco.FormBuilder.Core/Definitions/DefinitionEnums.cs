@@ -215,8 +215,8 @@ public enum ContentRuleLevel
 }
 
 /// <summary>What an entry keeps of the visitor's IP address (ADR-0009).</summary>
-[JsonConverter(typeof(DefinitionEnumConverter<IpHandling>))]
-public enum IpHandling
+[JsonConverter(typeof(DefinitionEnumConverter<IPHandling>))]
+public enum IPHandling
 {
     /// <summary>The site's default (<c>inherit</c>, the default).</summary>
     Inherit,

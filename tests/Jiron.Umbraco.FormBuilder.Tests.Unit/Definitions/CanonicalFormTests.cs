@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -35,7 +36,7 @@ public sealed class CanonicalFormTests
     {
         var bytes = FormDefinitionSerializer.Write(DefinitionFixtures.Read(DefinitionFixtures.Full));
 
-        var hash = FormDefinitionSerializer.Hash(bytes);
+        var hash = CanonicalJson.Hash(bytes);
 
         Assert.Multiple(() =>
         {

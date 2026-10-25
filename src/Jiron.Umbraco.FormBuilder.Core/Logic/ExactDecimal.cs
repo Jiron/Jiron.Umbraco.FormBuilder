@@ -71,16 +71,42 @@ internal readonly record struct ExactDecimal
         return new ExactDecimal(negative ? -n : n, fraction.Length);
     }
 
+    /// <summary>
+    /// Orders two values in the wire form as the numbers they are, without building either: by the sign, then the
+    /// integer digits, then the fraction's digits without its trailing zeros. The work is linear in their length, so a
+    /// long answer costs no more than reading it. Null when either is not in the wire form (<see cref="Parse"/>).
+    /// </summary>
+    public static int? CompareText(string a, string b)
+    {
+        if (!TryReadParts(a, out var aNegative, out var aInteger, out var aFraction)
+            || !TryReadParts(b, out var bNegative, out var bInteger, out var bFraction))
+        {
+            return null;
+        }
+
+        if (aNegative != bNegative)
+        {
+            return aNegative ? -1 : 1;
+        }
+
+        // Without leading zeros, the longer integer part is the larger; a fraction that is a prefix of another is smaller.
+        var magnitude = aInteger.Length.CompareTo(bInteger.Length);
+        if (magnitude == 0)
+        {
+            magnitude = aInteger.SequenceCompareTo(bInteger);
+        }
+
+        if (magnitude == 0)
+        {
+            magnitude = aFraction.SequenceCompareTo(bFraction);
+        }
+
+        return aNegative ? -Math.Sign(magnitude) : Math.Sign(magnitude);
+    }
+
     /// <summary>A value read from outside (a calculation's constant or an answer): the wire form within <see cref="MaxDigits"/>.</summary>
     public static ExactDecimal Operand(string text) =>
         InRange(Parse(text) ?? throw new LogicException(LogicErrors.NotANumber));
-
-    /// <summary>Orders two values: negative, zero or positive.</summary>
-    public static int Compare(ExactDecimal a, ExactDecimal b)
-    {
-        var s = Math.Max(a.S, b.S);
-        return (a.N * Pow10(s - a.S)).CompareTo(b.N * Pow10(s - b.S));
-    }
 
     /// <summary>The exact sum.</summary>
     public static ExactDecimal Add(ExactDecimal a, ExactDecimal b)
@@ -153,6 +179,35 @@ internal readonly record struct ExactDecimal
         }
 
         return (num.Sign < 0) != (den.Sign < 0) ? q - 1 : q + 1;
+    }
+
+    // The parts of a value in the wire form, as Parse reads it: the sign (never for zero, so -0 is 0), the integer
+    // digits and the fraction's digits without their trailing zeros.
+    private static bool TryReadParts(string text, out bool negative, out ReadOnlySpan<char> integer, out ReadOnlySpan<char> fraction)
+    {
+        negative = text.Length > 0 && text[0] == '-';
+        var start = negative ? 1 : 0;
+        var intEnd = ReadDigits(text, start);
+        integer = text.AsSpan(start, intEnd - start);
+        fraction = [];
+        if (integer.Length == 0 || (integer.Length > 1 && integer[0] == '0'))
+        {
+            return false;
+        }
+
+        if (intEnd < text.Length)
+        {
+            var fractionEnd = ReadDigits(text, intEnd + 1);
+            if (text[intEnd] != '.' || fractionEnd == intEnd + 1 || fractionEnd != text.Length)
+            {
+                return false;
+            }
+
+            fraction = text.AsSpan(intEnd + 1, fractionEnd - intEnd - 1).TrimEnd('0');
+        }
+
+        negative &= !(integer is "0" && fraction.IsEmpty);
+        return true;
     }
 
     private static int ReadDigits(string text, int start)

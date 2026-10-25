@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Text;
 
 namespace Jiron.Umbraco.FormBuilder.Logic;
@@ -13,20 +15,20 @@ internal static class TextSemantics
     private const int DotlessSmallI = 0x131;
 
     /// <summary>Code units trimmed from both ends of every value and operand: the same explicit set in both runtimes.</summary>
-    private static readonly HashSet<char> Trimmed =
-    [
+    private static readonly FrozenSet<char> Trimmed = new[]
+    {
         (char)9, (char)10, (char)11, (char)12, (char)13, (char)32, (char)0x85, (char)0xA0, (char)0x1680,
         (char)0x2000, (char)0x2001, (char)0x2002, (char)0x2003, (char)0x2004, (char)0x2005, (char)0x2006,
         (char)0x2007, (char)0x2008, (char)0x2009, (char)0x200A,
         (char)0x2028, (char)0x2029, (char)0x202F, (char)0x205F, (char)0x3000, (char)0xFEFF,
-    ];
+    }.ToFrozenSet();
 
     /// <summary>
     /// The blocks whose letters fold: Latin, Greek, Cyrillic, Armenian and the full-width Latin letters. Their case
     /// mappings have been stable in every runtime for years; other scripts gained mappings recently, so runtimes with
     /// older Unicode data (a server's ICU, an older browser) would fold them differently. Their letters compare exactly.
     /// </summary>
-    private static readonly (int Low, int High)[] Folded =
+    private static readonly ImmutableArray<(int Low, int High)> Folded =
     [
         (0x0000, 0x024F), (0x0370, 0x03FF), (0x0400, 0x052F), (0x0530, 0x058F),
         (0x1E00, 0x1EFF), (0x1F00, 0x1FFF), (0xFF21, 0xFF3A), (0xFF41, 0xFF5A),
@@ -111,28 +113,26 @@ internal static class TextSemantics
     /// </summary>
     private static string ReplaceInvalid(string value)
     {
-        var builder = new StringBuilder(value.Length);
+        // Made at the first replacement, so a text with nothing to replace is returned as it is, without a copy.
+        StringBuilder? builder = null;
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
-            if (char.IsHighSurrogate(c) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]))
+            var pair = char.IsHighSurrogate(c) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]);
+            var width = pair ? 2 : 1;
+            if (pair ? IsNoncharacter(char.ConvertToUtf32(c, value[i + 1])) : char.IsSurrogate(c) || IsNoncharacter(c))
             {
-                var low = value[++i];
-                if (IsNoncharacter(char.ConvertToUtf32(c, low)))
-                {
-                    builder.Append(Replacement);
-                }
-                else
-                {
-                    builder.Append(c).Append(low);
-                }
+                builder ??= new StringBuilder(value.Length).Append(value, 0, i);
+                builder.Append(Replacement);
             }
             else
             {
-                builder.Append(char.IsSurrogate(c) || IsNoncharacter(c) ? Replacement : c);
+                builder?.Append(value, i, width);
             }
+
+            i += width - 1;
         }
 
-        return builder.ToString();
+        return builder?.ToString() ?? value;
     }
 }

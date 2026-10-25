@@ -259,7 +259,7 @@ internal sealed partial class FormBuilderFormExchangeService(
 
         var definition = documents.Readable(stored);
         var lists = new List<ExportedOptionList>();
-        foreach (var listKey in DefinitionKeys.Fields(definition).Select(field => field.Options?.List).OfType<Guid>().Distinct())
+        foreach (var listKey in DefinitionKeys.Fields(definition).Select(field => field.Options?.OptionList).OfType<Guid>().Distinct())
         {
             if (await optionLists.GetAsync(listKey, cancellationToken) is { } list && Exported(list) is { } exported)
             {
@@ -367,7 +367,7 @@ internal sealed partial class FormBuilderFormExchangeService(
             for (var i = 0; i < fields.Count; i++)
             {
                 var at = JsonPaths.Index(JsonPaths.Property(path, "fields"), i);
-                if (fields[i].Options?.List is { } list && seen.Add(list))
+                if (fields[i].Options?.OptionList is { } list && seen.Add(list))
                 {
                     found.Add((list, JsonPaths.Property(JsonPaths.Property(at, "options"), "list")));
                 }
