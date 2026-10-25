@@ -27,7 +27,7 @@ npx playwright test --project=smoke
 | Project | What it holds |
 | --- | --- |
 | `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the management API's policies, access filter and answers (`ManagementApi/`, below), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test (each service of Core resolved, one per site), the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), the form services and the change pipeline they share (`Forms/`, below), the access service with the authorization policies (`Access/`, below) and the management API (`ManagementApi/`, below). |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test (each service of Core resolved, one per site, and each notification handler registered), the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), the form services and the change pipeline they share (`Forms/`, below), the access service with the authorization policies (`Access/`, below) and the management API (`ManagementApi/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -156,11 +156,13 @@ the diff gets read and committed; the management API's document is the third suc
 - SQLite's plans of the statements the indexes of 4.8a serve (`IndexPlanTests`): the statements a repository really
   issues, recorded by `StatementRecorder` (in `StatementInterceptors`) and explained with their values, each naming
   its index and scanning nothing: an entry's files and the uploads that wait for one, one form's daily statistics
-  and their delete, retention by day, and a content item's references; and a create's checks of its alias and its
-  key, each a search of its own unique index, never one search over both (4.8b);
+  and their delete, retention by day, and a content item's references; a create's checks of its alias and its
+  key, each a search of its own unique index, never one search over both (4.8b); and one form's uploads that wait
+  for an entry, for its delete, sought on both columns of the index that leads with the form (4.8g);
 - stored names: a state written in another letter case is refused when read, as a row something else wrote, and
   `Tests.Unit/Persistence/StoredNamesTests` shows every stored enum written as the camel case of its names, read back
-  only from that text, and fitting its column;
+  only from that text, and fitting its column; a scan state or an option list kind in another letter case is
+  refused as well, since every stored name is a camelCase word (4.8g);
 - the outbox (`ActionRunRepositoryTests`, `EmailRepositoryTests`): every state change, a claim once (ten claims at
   once, which SQLite's gate takes in turn; the two-processor test is 8.1's), a token of each claim's own, outcomes
   only with the claim's token and from the states they need, the order of a batch and "stop the rest" within it,
@@ -168,7 +170,8 @@ the diff gets read and committed; the management API's document is the third suc
   (ADR-0007, ADR-0040);
 - the audit log (`AuditRepositoryTests`): entries that commit and roll back with their change and come back as
   stored, the filters and pages newest first, a view recorded once per window (also twenty at once, and again after
-  a unit that rolled back), the purge oldest first, a filtered list past its time budget, and an entry full of
+  a unit that rolled back), the purge oldest first, a filtered list past its time budget, a budgeted query stopped
+  through its unit answered as cancelled, one inside another that keeps its own caller's token, and an entry full of
   personal data through every kind of action about entries, after which `Support/AuditLogSearch` finds none of its
   values anywhere in the log (ADR-0041);
 - the audit log's search itself: it finds a value in a column, in the details and escaped, ignoring case, and never
@@ -194,7 +197,10 @@ The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made 
 
 - a commit that fails on its way, a lost connection, and the waits between attempts;
 - the arguments each repository refuses, and how the outbox cuts and stores errors and attachments;
-- the one trash check, which the services and the repositories share (`LibraryTrashTests`);
+- the one trash check, which the services and the repositories share, with the refusal of a restore whose landing
+  changed (`LibraryTrashTests`), and where forms and folders go and land (`Tests.Unit/Forms/LibraryFoldersTests`);
+- every update of a row that keeps who changed it last requires that user, in its record and in every repository
+  method (`RepositoryUserTests`);
 - the file store's root (`Tests.Unit/Files/FileStoreRootTests`), with a site whose files would lie in its web root
   failing its start-up validation, a store of the site's own, registered before the package or after it, in the
   default's place, device paths and streams refused, and real junctions or symbolic links followed into, around and
@@ -215,7 +221,9 @@ The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made 
   and the claim with them (`ActionRunSqlTests`); and the numbering of a statement's arguments (`PersistenceHelperTests`);
 - the product rows against the migration's snapshots.
 
-`Architecture/CoreDatabaseConnectionTests` reads Core's IL and fails on any connection of Core's own (ADR-0036).
+`Architecture/CoreDatabaseConnectionTests` reads Core's IL (through `IlReader`) and fails on any connection of Core's
+own (ADR-0036). `Architecture/StoredEnumTests` reads the IL and the source of Core's persistence and fails on an enum
+parsed, turned into text, boxed or named with `nameof` anywhere but `StoredNames` (ADR-0033, 4.8g).
 `Architecture/StaticDataTests` reads every static field of Core and fails on one that is not read-only or that holds
 an array or a collection that changes (ROADMAP 4.8f).
 `Architecture/QueryBuilderReadsTests` reads the query builder's source and fails on any database call but its one
@@ -243,8 +251,9 @@ rows migrated and rewritten; unreadable rows; host locks of every kind and a who
 (`LockedSectionTests`); a save refused inside a caller's unit of work or an Umbraco scope; and the cache with its
 loading token and the refresher, also as the JSON instruction other servers get. `Tests.Unit/RuntimeCacheLoadsTests`
 covers the load that the settings and the access snapshot share: misses that come together read once, a change
-during the load keeps it from being kept, a failed load (also one that throws before its first await) is cleared, and
-a caller that stops waiting leaves the load to the others. Umbraco's test host runs without
+during the load or as it ends keeps it from being kept, a failed load (also one that throws before its first await)
+is cleared, a caller that stops waiting leaves the load to the others, and the load runs outside its first caller's
+unit, cancellation and async-local state (4.8g). Umbraco's test host runs without
 caches (`NoAppCache`), so `SettingsServiceTests` gives its site a runtime cache, as a real site has, and a server
 messenger that records the instructions a save sends instead of delivering them (`RecordingServerMessenger`).
 
@@ -271,7 +280,8 @@ definition may have, so a form saved before still opens and its save returns `li
 version above the limit, a duplicate of it, copied actions into it, a saved template and an import above it.
 
 `Tests.Integration/FormBuilderChangesTests` runs the change pipeline every service of Core shares (ADR-0053) on a real
-site: a change refused inside a unit of work or a scope with its service's reason, a write that commits with its audit
+site: a change refused inside a unit of work or a scope with its service's reason, and by the pipeline itself when it
+skipped that check, writing nothing; a write that commits with its audit
 entries in the order given (none for a write that found nothing), a write whose entry cannot be made leaving nothing,
 a cancelling handler's messages, and a handler that fails after the commit logged as the service's with what changed.
 The three parts of the form service (the lifecycle with the trash, `IFormBuilderFormVersionService` and

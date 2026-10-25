@@ -107,26 +107,6 @@ public sealed class CoreDatabaseConnectionTests
     /// <summary>Every method call, constructor call and method pointer in the IL of some types.</summary>
     private sealed class IlScan
     {
-        private static readonly OpCode[] OneByte = new OpCode[256];
-        private static readonly OpCode[] TwoByte = new OpCode[256];
-
-        static IlScan()
-        {
-            foreach (var field in typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static))
-            {
-                var code = (OpCode)field.GetValue(null)!;
-                var value = (ushort)code.Value;
-                if (code.Size == 1)
-                {
-                    OneByte[value] = code;
-                }
-                else
-                {
-                    TwoByte[value & 0xFF] = code;
-                }
-            }
-        }
-
         public List<Call> Calls { get; } = [];
 
         public List<string> Unreadable { get; } = [];
@@ -134,13 +114,9 @@ public sealed class CoreDatabaseConnectionTests
         public static IlScan Of(IEnumerable<Type> types)
         {
             var scan = new IlScan();
-            const BindingFlags All = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
-            foreach (var type in types)
+            foreach (var method in types.SelectMany(IlReader.Methods))
             {
-                foreach (var method in type.GetMethods(All).Cast<MethodBase>().Concat(type.GetConstructors(All)))
-                {
-                    scan.Read(method);
-                }
+                scan.Read(method);
             }
 
             return scan;
@@ -148,51 +124,26 @@ public sealed class CoreDatabaseConnectionTests
 
         private void Read(MethodBase method)
         {
-            var il = method.GetMethodBody()?.GetILAsByteArray();
-            if (il is null)
+            var (typeArguments, methodArguments) = IlReader.Context(method);
+            try
             {
-                return;
-            }
-
-            var typeArguments = method.DeclaringType is { IsGenericType: true } type ? type.GetGenericArguments() : null;
-            var methodArguments = method is MethodInfo { IsGenericMethod: true } generic ? generic.GetGenericArguments() : null;
-            var at = 0;
-            while (at < il.Length)
-            {
-                var code = il[at] == 0xFE ? TwoByte[il[++at]] : OneByte[il[at]];
-                at++;
-                if (code.Size == 0)
+                foreach (var instruction in IlReader.Read(method).Where(instruction => instruction.Code.OperandType == OperandType.InlineMethod))
                 {
-                    Unreadable.Add($"{Name(method)}: unknown opcode at {at - 1}");
-                    return;
-                }
-
-                if (code.OperandType == OperandType.InlineMethod)
-                {
-                    var token = BitConverter.ToInt32(il, at);
                     try
                     {
-                        Calls.Add(new Call(method, method.Module.ResolveMethod(token, typeArguments, methodArguments)!));
+                        Calls.Add(new Call(method, method.Module.ResolveMethod(instruction.Token, typeArguments, methodArguments)!));
                     }
                     catch (Exception exception) when (exception is ArgumentException or BadImageFormatException or TypeLoadException or FileNotFoundException)
                     {
-                        Unreadable.Add($"{Name(method)}: {exception.GetType().Name} for token {token:X8}");
+                        Unreadable.Add($"{Name(method)}: {exception.GetType().Name} for token {instruction.Token:X8}");
                     }
                 }
-
-                at += OperandSize(code, il, at);
+            }
+            catch (InvalidDataException exception)
+            {
+                Unreadable.Add($"{Name(method)}: {exception.Message}");
             }
         }
-
-        private static int OperandSize(OpCode code, byte[] il, int at) => code.OperandType switch
-        {
-            OperandType.InlineNone => 0,
-            OperandType.ShortInlineBrTarget or OperandType.ShortInlineI or OperandType.ShortInlineVar => 1,
-            OperandType.InlineVar => 2,
-            OperandType.InlineI8 or OperandType.InlineR => 8,
-            OperandType.InlineSwitch => 4 + (4 * BitConverter.ToInt32(il, at)),
-            _ => 4,
-        };
 
         private static string Name(MethodBase method) => $"{method.DeclaringType?.FullName}.{method.Name}";
 
