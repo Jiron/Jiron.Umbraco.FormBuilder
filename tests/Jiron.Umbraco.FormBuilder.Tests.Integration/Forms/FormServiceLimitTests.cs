@@ -25,6 +25,10 @@ public sealed class FormServiceLimitTests : RepositoryTestBase
 
     private IFormBuilderFormService Service => GetRequiredService<IFormBuilderFormService>();
 
+    private IFormBuilderFormVersionService Versions => GetRequiredService<IFormBuilderFormVersionService>();
+
+    private IFormBuilderFormExchangeService Exchange => GetRequiredService<IFormBuilderFormExchangeService>();
+
     [Test]
     public async Task AFormAboveALoweredLimit_StillOpens_AndSavingItReturnsLimitExceeded()
     {
@@ -60,13 +64,13 @@ public sealed class FormServiceLimitTests : RepositoryTestBase
         var older = (await Forms.SaveDraftAsync(row.Id, row.ConcurrencyVersion, Stored(twoPages), null, Editor))!;
         var current = (await Forms.SaveDraftAsync(row.Id, older.Form.ConcurrencyVersion, Stored(blank), null, Editor))!;
 
-        var opened = (await Service.GetVersionAsync(created.Key, 2))!;
+        var opened = (await Versions.GetVersionAsync(created.Key, 2))!;
 
         Assert.Multiple(async () =>
         {
             Assert.That(opened.Definition?.Pages, Has.Count.EqualTo(2), "it opens as it was stored");
             Assert.That(opened.Problems.Select(problem => (problem.Code, problem.Path)), Is.EqualTo(new[] { (DefinitionErrors.LimitExceeded, "$.pages") }));
-            AssertCode(async () => await Service.RestoreVersionAsync(created.Key, current.Form.ConcurrencyVersion, 2, Editor), "limit_exceeded", "$.pages");
+            AssertCode(async () => await Versions.RestoreVersionAsync(created.Key, current.Form.ConcurrencyVersion, 2, Editor), "limit_exceeded", "$.pages");
             Assert.That((await Service.GetDraftAsync(created.Key))!.DraftVersion, Is.EqualTo(3), "nothing restored");
         });
     }
@@ -79,7 +83,7 @@ public sealed class FormServiceLimitTests : RepositoryTestBase
 
         Assert.Multiple(() =>
         {
-            AssertCode(async () => await Service.DuplicateAsync(created.Key, new DuplicateFormRequest("Copy", IncludeActions: true, UserKey: Editor)), "limit_exceeded", "$.pages");
+            AssertCode(async () => await Exchange.DuplicateAsync(created.Key, new DuplicateFormRequest("Copy", IncludeActions: true, UserKey: Editor)), "limit_exceeded", "$.pages");
             Assert.That(Count(FormBuilderTables.Form), Is.EqualTo(forms));
         });
     }
@@ -91,13 +95,13 @@ public sealed class FormServiceLimitTests : RepositoryTestBase
         var within = await Service.CreateAsync(new NewFormRequest("Within", UserKey: Editor));
         var above = await TwoPagesAsync();
 
-        var copied = (await Service.CopyActionsAsync(new CopyActionsRequest(source.Key, within.Key, within.ConcurrencyVersion, UserKey: Editor)))!;
+        var copied = (await Exchange.CopyActionsAsync(new CopyActionsRequest(source.Key, within.Key, within.ConcurrencyVersion, UserKey: Editor)))!;
 
         Assert.Multiple(async () =>
         {
             Assert.That(copied.Actions, Has.Count.EqualTo(1), "a source above the limit still gives its actions");
             Assert.That((await Service.GetDraftAsync(within.Key))!.Definition!.Actions.Select(action => action.Name), Is.EqualTo(new[] { "CRM" }));
-            AssertCode(async () => await Service.CopyActionsAsync(new CopyActionsRequest(source.Key, above.Key, above.ConcurrencyVersion, UserKey: Editor)), "limit_exceeded", "$.pages");
+            AssertCode(async () => await Exchange.CopyActionsAsync(new CopyActionsRequest(source.Key, above.Key, above.ConcurrencyVersion, UserKey: Editor)), "limit_exceeded", "$.pages");
             Assert.That((await Service.GetDraftAsync(above.Key))!.Definition!.Actions, Is.Empty, "the target stays as it was");
         });
     }
@@ -109,8 +113,8 @@ public sealed class FormServiceLimitTests : RepositoryTestBase
         var definition = new FormDefinition { Key = Guid.NewGuid(), Pages = [page, page with { Key = Guid.NewGuid(), Groups = [new FormGroup { Key = Guid.NewGuid() }] }], Outcomes = [new FormOutcome { Key = Guid.NewGuid() }] };
         var template = await Templates.CreateAsync(new NewFormTemplate(Guid.NewGuid(), FormTemplateKind.Form, "Two pages", FormDefinitionSerializer.WriteString(definition), UserKey: Editor));
 
-        AssertCode(async () => await Service.CreateFromTemplateAsync(new TemplateFormRequest(template.Key, UserKey: Editor)), "limit_exceeded", "$.pages");
-        Assert.That((await Service.CreateFromTemplateAsync(new TemplateFormRequest(BuiltInFormTemplates.ContactKey, UserKey: Editor)))?.Alias, Is.EqualTo("contact"), "a built-in template has one page");
+        AssertCode(async () => await Exchange.CreateFromTemplateAsync(new TemplateFormRequest(template.Key, UserKey: Editor)), "limit_exceeded", "$.pages");
+        Assert.That((await Exchange.CreateFromTemplateAsync(new TemplateFormRequest(BuiltInFormTemplates.ContactKey, UserKey: Editor)))?.Alias, Is.EqualTo("contact"), "a built-in template has one page");
     }
 
     [Test]
@@ -118,13 +122,13 @@ public sealed class FormServiceLimitTests : RepositoryTestBase
     {
         var created = await Service.CreateAsync(new NewFormRequest("Contact", UserKey: Editor));
         var blank = (await Service.GetDraftAsync(created.Key))!.Definition!;
-        var envelope = JsonNode.Parse((await Service.ExportAsync(created.Key))!.Json)!.AsObject();
+        var envelope = JsonNode.Parse((await Exchange.ExportAsync(created.Key))!.Json)!.AsObject();
         envelope["definition"] = JsonNode.Parse(FormDefinitionSerializer.WriteString(blank with { Pages = [blank.Pages[0], new FormPage { Key = Guid.NewGuid(), Groups = [new FormGroup { Key = Guid.NewGuid() }] }] }));
         var forms = Count(FormBuilderTables.Form);
 
         Assert.Multiple(() =>
         {
-            AssertCode(async () => await Service.ImportAsync(new ImportFormRequest(envelope.ToJsonString(), UserKey: Editor)), "limit_exceeded", "$.definition.pages");
+            AssertCode(async () => await Exchange.ImportAsync(new ImportFormRequest(envelope.ToJsonString(), UserKey: Editor)), "limit_exceeded", "$.definition.pages");
             Assert.That(Count(FormBuilderTables.Form), Is.EqualTo(forms));
         });
     }

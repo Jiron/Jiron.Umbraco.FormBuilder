@@ -2,7 +2,8 @@
 
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (how references are
   found, the envelope's limits and layout, `unsupported_format`, when an import creates option lists) and
-  [ADR-0044](0044-form-service.md) (the new-form defaults apply to forms from a template)
+  [ADR-0044](0044-form-service.md) (the new-form defaults apply to forms from a template); the operations are
+  `IFormBuilderFormExchangeService`'s since [ADR-0053](0053-form-service-in-parts.md) in 4.8d
 - Date: 2026-10-24
 - Roadmap step: 4.5c (decided and built); 4.7 and 9.x map it to the API and the tree, 5.3, 5.5, 8.1 and 8.3 extend it,
   12.3 adds the other templates and "Save as template", 12.5 the import that replaces a form and the mirror files

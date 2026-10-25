@@ -70,6 +70,9 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<IDailyStatRepository, DailyStatRepository>();
         builder.Services.TryAddSingleton<IReferenceRepository, ReferenceRepository>();
 
+        // The steps every change of the services takes (ADR-0053), one per service, so each logs as its service.
+        builder.Services.TryAddSingleton(typeof(FormBuilderChanges<>));
+
         // The file store (ADR-0006, ADR-0041): the physical default, whose root the host configuration checks, and the
         // check that a load-balanced site does not keep it on each server's own disk.
         builder.Services.AddFormBuilderFiles();

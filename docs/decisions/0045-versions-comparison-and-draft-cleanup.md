@@ -2,7 +2,8 @@
 
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (where a restore
   records the version it came from, pins and comments outside the form's concurrency version, the diff's shape and the
-  draft cleanup's setting)
+  draft cleanup's setting); the operations are `IFormBuilderFormVersionService`'s since
+  [ADR-0053](0053-form-service-in-parts.md) in 4.8d
 - Date: 2026-10-24
 - Roadmap step: 4.5b (decided and built); 4.7 maps it to the management API, 10.3 builds the History view and its
   settings, 13.x adds the other parts of the retention job

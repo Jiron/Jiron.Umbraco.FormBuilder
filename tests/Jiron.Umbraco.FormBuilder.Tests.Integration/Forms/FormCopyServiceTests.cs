@@ -71,6 +71,8 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
 
     private IFormBuilderFormService Service => GetRequiredService<IFormBuilderFormService>();
 
+    private IFormBuilderFormExchangeService Exchange => GetRequiredService<IFormBuilderFormExchangeService>();
+
     private IFormBuilderSettingsService SettingsService => GetRequiredService<IFormBuilderSettingsService>();
 
     private FormNotificationLog Notifications => GetRequiredService<FormNotificationLog>();
@@ -82,7 +84,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         var (source, designed) = await DesignedAsync();
         Clock.Advance(TimeSpan.FromMinutes(1));
 
-        var copy = (await Service.DuplicateAsync(source.Key, new DuplicateFormRequest("Contact (copy)", IncludeActions: true, FolderKey: folder.Key, UserKey: Editor)))!;
+        var copy = (await Exchange.DuplicateAsync(source.Key, new DuplicateFormRequest("Contact (copy)", IncludeActions: true, FolderKey: folder.Key, UserKey: Editor)))!;
         var draft = (await Service.GetDraftAsync(copy.Key))!;
         var definition = draft.Definition!;
         var fields = DefinitionKeys.Fields(definition).ToDictionary(field => field.Alias!, field => field.Key);
@@ -115,7 +117,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         var row = await RowAsync(source);
         var restricted = (await Forms.UpdateAsync(new FormUpdate(row.Id, row.ConcurrencyVersion, row.Alias, row.Name, row.FolderId, IsRestricted: true, Editor)))!;
 
-        var copy = (await Service.DuplicateAsync(source.Key, new DuplicateFormRequest("Contact", IncludeActions: false, UserKey: Editor)))!;
+        var copy = (await Exchange.DuplicateAsync(source.Key, new DuplicateFormRequest("Contact", IncludeActions: false, UserKey: Editor)))!;
         var definition = (await Service.GetDraftAsync(copy.Key))!.Definition!;
 
         Assert.Multiple(() =>
@@ -133,7 +135,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         var (source, _) = await DesignedAsync();
         var before = Notifications.Seen.Count;
 
-        var copy = (await Service.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", IncludeActions: true, UserKey: Editor)))!;
+        var copy = (await Exchange.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", IncludeActions: true, UserKey: Editor)))!;
         var seen = Notifications.Seen.Skip(before).ToList();
         var entry = (await Audit.QueryAsync(new AuditQuery { EntityKey = copy.Key }, PageRequest.First(10))).Items.Single();
 
@@ -145,7 +147,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             Assert.That((saving.FormKey, saving.Alias, saving.IsNew, saving.CreatedFrom, saving.SourceKey, saving.ActionsCopiedFrom), Is.EqualTo((copy.Key, "copy", true, (FormSource?)FormSource.Duplicate, (Guid?)source.Key, (Guid?)null)));
             Assert.That((saved.FormKey, saved.Version, saved.IsNew, saved.CreatedFrom, saved.SourceKey), Is.EqualTo((copy.Key, 1, true, (FormSource?)FormSource.Duplicate, (Guid?)source.Key)));
             Assert.That(Notifications.AnyInUnitOfWork, Is.False);
-            Assert.That((entry.Action, entry.UserKey, entry.Details), Is.EqualTo((FormBuilderFormService.DuplicatedAction, (Guid?)Editor, $$"""{"alias":"copy","version":1,"source":"{{source.Key}}","sourceVersion":4,"actions":true}""")));
+            Assert.That((entry.Action, entry.UserKey, entry.Details), Is.EqualTo((FormBuilderFormExchangeService.DuplicatedAction, (Guid?)Editor, $$"""{"alias":"copy","version":1,"source":"{{source.Key}}","sourceVersion":4,"actions":true}""")));
         });
     }
 
@@ -160,14 +162,14 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
 
         Assert.Multiple(async () =>
         {
-            Assert.That(await Service.DuplicateAsync(Guid.NewGuid(), new DuplicateFormRequest("Copy", true)), Is.Null, "a form that does not exist");
-            AssertCode(async () => await Service.DuplicateAsync(trashed.Key, new DuplicateFormRequest("Copy", true)), "trashed");
-            AssertCode(async () => await Service.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", true, Alias: "contact")), "alias_taken");
-            AssertCode(async () => await Service.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", true, Alias: "Not valid")), "alias_invalid", "alias");
-            AssertCode(async () => await Service.DuplicateAsync(source.Key, new DuplicateFormRequest(" ", true)), "invalid_value", "name");
-            AssertCode(async () => await Service.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", true, FolderKey: Guid.NewGuid())), "folder_missing");
+            Assert.That(await Exchange.DuplicateAsync(Guid.NewGuid(), new DuplicateFormRequest("Copy", true)), Is.Null, "a form that does not exist");
+            AssertCode(async () => await Exchange.DuplicateAsync(trashed.Key, new DuplicateFormRequest("Copy", true)), "trashed");
+            AssertCode(async () => await Exchange.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", true, Alias: "contact")), "alias_taken");
+            AssertCode(async () => await Exchange.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", true, Alias: "Not valid")), "alias_invalid", "alias");
+            AssertCode(async () => await Exchange.DuplicateAsync(source.Key, new DuplicateFormRequest(" ", true)), "invalid_value", "name");
+            AssertCode(async () => await Exchange.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", true, FolderKey: Guid.NewGuid())), "folder_missing");
             Notifications.Cancel = true;
-            AssertCode(async () => await Service.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", true)), "cancelled");
+            AssertCode(async () => await Exchange.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", true)), "cancelled");
             Notifications.Cancel = false;
             Assert.That(Count(FormBuilderTables.Form), Is.EqualTo(forms), "no form was written");
         });
@@ -180,7 +182,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         var row = await RowAsync(source);
         await Forms.SaveDraftAsync(row.Id, row.ConcurrencyVersion, Document("""{"schemaVersion":1,"key":"x"}"""), null, Editor);
 
-        AssertCode(async () => await Service.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", true)), "invalid_value", "$.key");
+        AssertCode(async () => await Exchange.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", true)), "invalid_value", "$.key");
     }
 
     [Test]
@@ -193,11 +195,11 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         Clock.Advance(TimeSpan.FromMinutes(1));
         var before = Notifications.Seen.Count;
 
-        var copied = (await Service.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, saved.Form.ConcurrencyVersion, UserKey: Editor)))!;
+        var copied = (await Exchange.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, saved.Form.ConcurrencyVersion, UserKey: Editor)))!;
         var draft = (await Service.GetDraftAsync(target.Key))!;
         var notify = draft.Definition!.Actions[0];
         var seen = Notifications.Seen.Skip(before).ToList();
-        var entry = (await Audit.QueryAsync(new AuditQuery { EntityKey = target.Key, Action = FormBuilderFormService.ActionsCopiedAction }, PageRequest.First(10))).Items.Single();
+        var entry = (await Audit.QueryAsync(new AuditQuery { EntityKey = target.Key, Action = FormBuilderFormExchangeService.ActionsCopiedAction }, PageRequest.First(10))).Items.Single();
 
         Assert.Multiple(() =>
         {
@@ -226,7 +228,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         var target = await Service.CreateAsync(new NewFormRequest("Newsletter", UserKey: Editor));
         var saved = await SaveAsync(target, WithFields(await DraftAsync(target), Email with { Key = Guid.NewGuid() }, Topic with { Key = Guid.NewGuid(), Rules = [] }));
 
-        var copied = (await Service.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, saved.Form.ConcurrencyVersion, [Hook.Key, Notify.Key], Editor)))!;
+        var copied = (await Exchange.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, saved.Form.ConcurrencyVersion, [Hook.Key, Notify.Key], Editor)))!;
 
         Assert.Multiple(async () =>
         {
@@ -252,19 +254,19 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
 
         Assert.Multiple(async () =>
         {
-            Assert.That(await Service.CopyActionsAsync(new CopyActionsRequest(Guid.NewGuid(), target.Key, target.ConcurrencyVersion)), Is.Null, "no source");
-            Assert.That(await Service.CopyActionsAsync(new CopyActionsRequest(source.Key, Guid.NewGuid(), 1)), Is.Null, "no target");
-            AssertCode(async () => await Service.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, target.ConcurrencyVersion - 1)), "concurrency_conflict");
-            AssertCode(async () => await Service.CopyActionsAsync(new CopyActionsRequest(source.Key, trashed.Key, trashed.ConcurrencyVersion)), "trashed");
-            AssertCode(async () => await Service.CopyActionsAsync(new CopyActionsRequest(trashed.Key, target.Key, target.ConcurrencyVersion)), "trashed");
-            AssertCode(async () => await Service.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, target.ConcurrencyVersion, [Notify.Key, Guid.NewGuid()])), "invalid_value", "actionKeys[1]");
-            var none = (await Service.CopyActionsAsync(new CopyActionsRequest(empty.Key, target.Key, target.ConcurrencyVersion)))!;
-            var chosenNone = (await Service.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, target.ConcurrencyVersion, [])))!;
+            Assert.That(await Exchange.CopyActionsAsync(new CopyActionsRequest(Guid.NewGuid(), target.Key, target.ConcurrencyVersion)), Is.Null, "no source");
+            Assert.That(await Exchange.CopyActionsAsync(new CopyActionsRequest(source.Key, Guid.NewGuid(), 1)), Is.Null, "no target");
+            AssertCode(async () => await Exchange.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, target.ConcurrencyVersion - 1)), "concurrency_conflict");
+            AssertCode(async () => await Exchange.CopyActionsAsync(new CopyActionsRequest(source.Key, trashed.Key, trashed.ConcurrencyVersion)), "trashed");
+            AssertCode(async () => await Exchange.CopyActionsAsync(new CopyActionsRequest(trashed.Key, target.Key, target.ConcurrencyVersion)), "trashed");
+            AssertCode(async () => await Exchange.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, target.ConcurrencyVersion, [Notify.Key, Guid.NewGuid()])), "invalid_value", "actionKeys[1]");
+            var none = (await Exchange.CopyActionsAsync(new CopyActionsRequest(empty.Key, target.Key, target.ConcurrencyVersion)))!;
+            var chosenNone = (await Exchange.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, target.ConcurrencyVersion, [])))!;
             Assert.That((none.Target, none.Actions), Is.EqualTo((new FormVersionResult(target, null), (IReadOnlyList<CopiedAction>)[])).Using<(FormVersionResult, IReadOnlyList<CopiedAction>)>((x, y) => x.Item1 == y.Item1 && x.Item2.Count == y.Item2.Count), "a source without actions");
             Assert.That(chosenNone.Target, Is.EqualTo(new FormVersionResult(target, null)), "an empty choice");
             Assert.That(Notifications.Seen.Skip(before), Is.Empty, "a refusal, and nothing to copy, announce nothing");
             Notifications.Cancel = true;
-            AssertCode(async () => await Service.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, target.ConcurrencyVersion)), "cancelled");
+            AssertCode(async () => await Exchange.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, target.ConcurrencyVersion)), "cancelled");
             Notifications.Cancel = false;
             Assert.That((Count(FormBuilderTables.FormVersion), Count(FormBuilderTables.AuditEntry)), Is.EqualTo((versions, audited)), "nothing written");
             Assert.That(Notifications.Seen.Skip(before).OfType<FormSavedNotification>(), Is.Empty);
@@ -277,7 +279,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         var folder = await CreateFolderAsync();
         var before = Notifications.Seen.Count;
 
-        var created = (await Service.CreateFromTemplateAsync(new TemplateFormRequest(BuiltInFormTemplates.ContactKey, FolderKey: folder.Key, UserKey: Editor)))!;
+        var created = (await Exchange.CreateFromTemplateAsync(new TemplateFormRequest(BuiltInFormTemplates.ContactKey, FolderKey: folder.Key, UserKey: Editor)))!;
         var definition = (await Service.GetDraftAsync(created.Key))!.Definition!;
         var template = FormExportFormat.Read(BuiltInFormTemplates.Find(BuiltInFormTemplates.ContactKey)!.Envelope, DefinitionFixtures()).Envelope!.Definition;
         var seen = Notifications.Seen.Skip(before).ToList();
@@ -292,11 +294,11 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             Assert.That(DefinitionKeys.Fields(definition).Select(field => field.Label!.Resolve("de")), Is.EqualTo(new[] { "Name", "E-Mail-Adresse", "Nachricht" }));
             Assert.That(seen.OfType<FormSavingNotification>().Single() is { IsNew: true, CreatedFrom: FormSource.Template, SourceKey: { } key } && key == BuiltInFormTemplates.ContactKey, Is.True);
             Assert.That(seen.OfType<FormSavedNotification>().Single() is { IsNew: true, CreatedFrom: FormSource.Template, Version: 1 }, Is.True);
-            Assert.That((entry.Action, entry.Details), Is.EqualTo((FormBuilderFormService.CreatedFromTemplateAction, $$"""{"alias":"contact","version":1,"folder":"{{folder.Key}}","template":"{{BuiltInFormTemplates.ContactKey}}","builtIn":true}""")));
+            Assert.That((entry.Action, entry.Details), Is.EqualTo((FormBuilderFormExchangeService.CreatedFromTemplateAction, $$"""{"alias":"contact","version":1,"folder":"{{folder.Key}}","template":"{{BuiltInFormTemplates.ContactKey}}","builtIn":true}""")));
             Assert.That(await Service.PublishAsync(created.Key, created.ConcurrencyVersion, null, Editor), Has.Property(nameof(FormVersionResult.Version)).EqualTo(2));
         });
 
-        var second = (await Service.CreateFromTemplateAsync(new TemplateFormRequest(BuiltInFormTemplates.ContactKey, "Kontakt", UserKey: Editor)))!;
+        var second = (await Exchange.CreateFromTemplateAsync(new TemplateFormRequest(BuiltInFormTemplates.ContactKey, "Kontakt", UserKey: Editor)))!;
         Assert.That((second.Name, second.Alias), Is.EqualTo(("Kontakt", "kontakt")), "a name the request gives");
     }
 
@@ -308,9 +310,9 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         var withConsent = await SavedTemplateAsync(FormTemplateKind.Form, field: new FormField { Key = Guid.NewGuid(), Type = "consent", Alias = "agree", Label = new LocalizedText("Agree"), Required = true });
         var withAlias = await SavedTemplateAsync(FormTemplateKind.Form, field: new FormField { Key = Guid.NewGuid(), Type = "checkbox", Alias = "Consent", Label = new LocalizedText("Consent") });
 
-        var contact = (await Service.CreateFromTemplateAsync(new TemplateFormRequest(BuiltInFormTemplates.ContactKey, UserKey: Editor)))!;
-        var own = (await Service.CreateFromTemplateAsync(new TemplateFormRequest(withConsent.Key, UserKey: Editor)))!;
-        var aliased = (await Service.CreateFromTemplateAsync(new TemplateFormRequest(withAlias.Key, UserKey: Editor)))!;
+        var contact = (await Exchange.CreateFromTemplateAsync(new TemplateFormRequest(BuiltInFormTemplates.ContactKey, UserKey: Editor)))!;
+        var own = (await Exchange.CreateFromTemplateAsync(new TemplateFormRequest(withConsent.Key, UserKey: Editor)))!;
+        var aliased = (await Exchange.CreateFromTemplateAsync(new TemplateFormRequest(withAlias.Key, UserKey: Editor)))!;
 
         Assert.Multiple(async () =>
         {
@@ -327,7 +329,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         var saved = await SavedTemplateAsync(FormTemplateKind.Form);
         var group = await SavedTemplateAsync(FormTemplateKind.Group);
 
-        var created = (await Service.CreateFromTemplateAsync(new TemplateFormRequest(saved.Key, UserKey: Editor)))!;
+        var created = (await Exchange.CreateFromTemplateAsync(new TemplateFormRequest(saved.Key, UserKey: Editor)))!;
         var entry = (await Audit.QueryAsync(new AuditQuery { EntityKey = created.Key }, PageRequest.First(10))).Items.Single();
 
         Assert.Multiple(async () =>
@@ -335,9 +337,9 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             Assert.That((created.Name, created.Alias), Is.EqualTo(("Saved template", "savedTemplate")));
             Assert.That(await AliasesAsync(created), Is.EqualTo(new[] { "email" }));
             Assert.That(entry.Details, Is.EqualTo($$"""{"alias":"savedTemplate","version":1,"template":"{{saved.Key}}","builtIn":false}"""));
-            Assert.That(await Service.CreateFromTemplateAsync(new TemplateFormRequest(group.Key)), Is.Null, "a group template makes no form");
-            Assert.That(await Service.CreateFromTemplateAsync(new TemplateFormRequest(Guid.NewGuid())), Is.Null);
-            AssertCode(async () => await Service.CreateFromTemplateAsync(new TemplateFormRequest(saved.Key, Alias: "savedTemplate")), "alias_taken");
+            Assert.That(await Exchange.CreateFromTemplateAsync(new TemplateFormRequest(group.Key)), Is.Null, "a group template makes no form");
+            Assert.That(await Exchange.CreateFromTemplateAsync(new TemplateFormRequest(Guid.NewGuid())), Is.Null);
+            AssertCode(async () => await Exchange.CreateFromTemplateAsync(new TemplateFormRequest(saved.Key, Alias: "savedTemplate")), "alias_taken");
         });
     }
 
@@ -347,10 +349,10 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         await CreateListAsync(ListKey, "sessions");
         var (source, designed) = await DesignedAsync();
         var folder = await CreateFolderAsync();
-        var file = (await Service.ExportAsync(source.Key))!;
+        var file = (await Exchange.ExportAsync(source.Key))!;
         var before = Notifications.Seen.Count;
 
-        var imported = await Service.ImportAsync(new ImportFormRequest(file.Json, FolderKey: folder.Key, UserKey: Editor));
+        var imported = await Exchange.ImportAsync(new ImportFormRequest(file.Json, FolderKey: folder.Key, UserKey: Editor));
         var definition = (await Service.GetDraftAsync(imported.Form.Key))!.Definition!;
         var seen = Notifications.Seen.Skip(before).ToList();
         var entry = (await Audit.QueryAsync(new AuditQuery { EntityKey = imported.Form.Key }, PageRequest.First(10))).Items.Single();
@@ -363,10 +365,10 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             Assert.That(Hash(Remapped(definition, designed)), Is.EqualTo(Hash(designed)), "the same definition otherwise");
             Assert.That(seen.OfType<FormSavingNotification>().Single() is { IsNew: true, CreatedFrom: FormSource.Import, SourceKey: { } key } && key == source.Key, Is.True);
             Assert.That(seen.OfType<FormSavedNotification>().Single() is { CreatedFrom: FormSource.Import, Version: 1 }, Is.True);
-            Assert.That((entry.Action, entry.Details), Is.EqualTo((FormBuilderFormService.ImportedAction, $$"""{"alias":"contact2","version":1,"folder":"{{folder.Key}}","source":"{{source.Key}}","sourceAlias":"contact","packageVersion":"{{FormBuilderVersion.Package}}","notes":[],"noteCounts":[]}""")));
+            Assert.That((entry.Action, entry.Details), Is.EqualTo((FormBuilderFormExchangeService.ImportedAction, $$"""{"alias":"contact2","version":1,"folder":"{{folder.Key}}","source":"{{source.Key}}","sourceAlias":"contact","packageVersion":"{{FormBuilderVersion.Package}}","notes":[],"noteCounts":[]}""")));
         });
 
-        var named = await Service.ImportAsync(new ImportFormRequest(file.Json, "Kontakt", "kontaktformular", UserKey: Editor));
+        var named = await Exchange.ImportAsync(new ImportFormRequest(file.Json, "Kontakt", "kontaktformular", UserKey: Editor));
         Assert.That((named.Form.Name, named.Form.Alias), Is.EqualTo(("Kontakt", "kontaktformular")), "a name and an alias the request gives");
     }
 
@@ -377,8 +379,8 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         var (source, designed) = await DesignedAsync();
         Clock.Advance(TimeSpan.FromMinutes(5));
 
-        var draft = (await Service.ExportAsync(source.Key))!;
-        var version = (await Service.ExportAsync(source.Key, 3))!;
+        var draft = (await Exchange.ExportAsync(source.Key))!;
+        var version = (await Exchange.ExportAsync(source.Key, 3))!;
         using var document = JsonDocument.Parse(draft.Json);
         var root = document.RootElement;
         var read = FormExportFormat.Read(version.Json, DefinitionFixtures()).Envelope!;
@@ -394,14 +396,14 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             Assert.That(DefinitionKeys.Fields(read.Definition).Select(field => field.Alias), Is.EqualTo(new[] { "email", "topic", "confirmEmail" }), "the published version 3, without the field added since");
             Assert.That(root.GetProperty("optionLists").EnumerateArray().Select(item => (item.GetProperty("key").GetGuid(), item.GetProperty("alias").GetString(), item.GetProperty("kind").GetString(), item.GetProperty("cacheSeconds").GetInt32())), Is.EqualTo(new[] { (list.Key, "sessions", "Manual", 0) }));
             Assert.That(read.OptionLists, Is.Empty, "version 3 names no list");
-            Assert.That(await Service.ExportAsync(Guid.NewGuid()), Is.Null);
-            Assert.That(await Service.ExportAsync(source.Key, 99), Is.Null);
+            Assert.That(await Exchange.ExportAsync(Guid.NewGuid()), Is.Null);
+            Assert.That(await Exchange.ExportAsync(source.Key, 99), Is.Null);
         });
 
         await OptionLists.DeleteAsync(list.Id, list.ConcurrencyVersion);
         var row = await RowAsync(source);
         await Forms.TrashAsync(row.Id, row.ConcurrencyVersion, Editor);
-        var withoutList = (await Service.ExportAsync(source.Key))!;
+        var withoutList = (await Exchange.ExportAsync(source.Key))!;
         Assert.That(JsonDocument.Parse(withoutList.Json).RootElement.GetProperty("optionLists").GetArrayLength(), Is.Zero, "a list the site lacks is left out, and a form in the trash exports");
     }
 
@@ -410,10 +412,10 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
     {
         await Themes.CreateAsync(new NewTheme(Guid.NewGuid(), "brand", "Brand", "default"));
         var (source, designed) = await DesignedAsync();
-        var file = (await Service.ExportAsync(source.Key))!;
+        var file = (await Exchange.ExportAsync(source.Key))!;
 
-        var kept = await Service.ImportAsync(new ImportFormRequest(Themed(file.Json, "brand"), UserKey: Editor));
-        var cleared = await Service.ImportAsync(new ImportFormRequest(Themed(file.Json, "gone"), UserKey: Editor));
+        var kept = await Exchange.ImportAsync(new ImportFormRequest(Themed(file.Json, "brand"), UserKey: Editor));
+        var cleared = await Exchange.ImportAsync(new ImportFormRequest(Themed(file.Json, "gone"), UserKey: Editor));
         var entry = (await Audit.QueryAsync(new AuditQuery { EntityKey = cleared.Form.Key }, PageRequest.First(10))).Items.Single();
 
         Assert.Multiple(async () =>
@@ -449,7 +451,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             .Append(new FormField { Key = Guid.NewGuid(), Type = "repeater", Alias = "guests", Label = new LocalizedText("Guests"), Fields = [Choice(inChild, "guestSession")] })
             .ToArray();
         await SaveAsync(created, WithFields(await DraftAsync(created), fields));
-        var envelope = JsonNode.Parse((await Service.ExportAsync(created.Key))!.Json)!.AsObject();
+        var envelope = JsonNode.Parse((await Exchange.ExportAsync(created.Key))!.Json)!.AsObject();
         var exported = envelope["optionLists"]!.AsArray().Select(list => list!["key"]!.GetValue<string>()).ToList();
         envelope["optionLists"] = new JsonArray(
             ListJson(byKey, "rooms", "[]"),
@@ -458,7 +460,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             ListJson(otherKind, "kinds", "[]", kind: "Countries"),
             ListJson(otherConfig, "configs", "[]", config: """{"sort":"label"}"""));
 
-        var imported = await Service.ImportAsync(new ImportFormRequest(envelope.ToJsonString(), UserKey: Editor));
+        var imported = await Exchange.ImportAsync(new ImportFormRequest(envelope.ToJsonString(), UserKey: Editor));
         var lists = DefinitionKeys.Fields((await Service.GetDraftAsync(imported.Form.Key))!.Definition!).Select(field => field.Options?.List).ToList();
 
         Assert.Multiple(() =>
@@ -485,9 +487,9 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             .Select(i => Session with { Key = Guid.NewGuid(), Alias = "choice" + i.ToString(CultureInfo.InvariantCulture), Options = new FieldOptions { Source = OptionSource.List, List = Guid.NewGuid() } })
             .ToArray();
         await SaveAsync(created, WithFields(await DraftAsync(created), fields));
-        var file = (await Service.ExportAsync(created.Key))!;
+        var file = (await Exchange.ExportAsync(created.Key))!;
 
-        var imported = await Service.ImportAsync(new ImportFormRequest(file.Json, UserKey: Editor));
+        var imported = await Exchange.ImportAsync(new ImportFormRequest(file.Json, UserKey: Editor));
         var entry = (await Audit.QueryAsync(new AuditQuery { EntityKey = imported.Form.Key }, PageRequest.First(10))).Items.Single();
 
         Assert.Multiple(() =>
@@ -502,10 +504,10 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
     {
         var longest = "a" + new string('b', DefinitionStructureChecks.MaxAliasLength - 2) + "c";
         var created = await Service.CreateAsync(new NewFormRequest("Long", longest, UserKey: Editor));
-        var file = (await Service.ExportAsync(created.Key))!;
+        var file = (await Exchange.ExportAsync(created.Key))!;
 
-        var first = await Service.ImportAsync(new ImportFormRequest(file.Json, UserKey: Editor));
-        var second = await Service.ImportAsync(new ImportFormRequest(file.Json, UserKey: Editor));
+        var first = await Exchange.ImportAsync(new ImportFormRequest(file.Json, UserKey: Editor));
+        var second = await Exchange.ImportAsync(new ImportFormRequest(file.Json, UserKey: Editor));
 
         Assert.Multiple(() =>
         {
@@ -519,24 +521,24 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
     public async Task AnImport_IsRefused_WithTheFilesProblems_ANameOfTheFileThatIsNone_OrAHandler()
     {
         var (source, _) = await DesignedAsync();
-        var file = (await Service.ExportAsync(source.Key))!;
+        var file = (await Exchange.ExportAsync(source.Key))!;
         var envelope = JsonNode.Parse(file.Json)!.AsObject();
         var forms = Count(FormBuilderTables.Form);
 
         Assert.Multiple(async () =>
         {
-            AssertCode(async () => await Service.ImportAsync(new ImportFormRequest("{}")), "missing_property", "$.format");
-            AssertCode(async () => await Service.ImportAsync(new ImportFormRequest(file.Json.Replace("jfb-form-export/1", "jfb-form-export/2", StringComparison.Ordinal))), "unsupported_format", "$.format");
-            AssertCode(async () => await Service.ImportAsync(new ImportFormRequest(Changed(envelope, e => e["definition"]!["pages"]![0]!["colour"] = "red"))), "unknown_property", "$.definition.pages[0].colour");
-            AssertCode(async () => await Service.ImportAsync(new ImportFormRequest(Changed(envelope, e => e["form"]!["name"] = "  "))), "invalid_value", "$.form.name");
-            AssertCode(async () => await Service.ImportAsync(new ImportFormRequest(file.Json, Name: " ")), "invalid_value", "name");
-            AssertCode(async () => await Service.ImportAsync(new ImportFormRequest(file.Json, FolderKey: Guid.NewGuid())), "folder_missing");
-            AssertCode(async () => await Service.ImportAsync(new ImportFormRequest(file.Json, Alias: "contact")), "alias_taken");
+            AssertCode(async () => await Exchange.ImportAsync(new ImportFormRequest("{}")), "missing_property", "$.format");
+            AssertCode(async () => await Exchange.ImportAsync(new ImportFormRequest(file.Json.Replace("jfb-form-export/1", "jfb-form-export/2", StringComparison.Ordinal))), "unsupported_format", "$.format");
+            AssertCode(async () => await Exchange.ImportAsync(new ImportFormRequest(Changed(envelope, e => e["definition"]!["pages"]![0]!["colour"] = "red"))), "unknown_property", "$.definition.pages[0].colour");
+            AssertCode(async () => await Exchange.ImportAsync(new ImportFormRequest(Changed(envelope, e => e["form"]!["name"] = "  "))), "invalid_value", "$.form.name");
+            AssertCode(async () => await Exchange.ImportAsync(new ImportFormRequest(file.Json, Name: " ")), "invalid_value", "name");
+            AssertCode(async () => await Exchange.ImportAsync(new ImportFormRequest(file.Json, FolderKey: Guid.NewGuid())), "folder_missing");
+            AssertCode(async () => await Exchange.ImportAsync(new ImportFormRequest(file.Json, Alias: "contact")), "alias_taken");
             Notifications.Cancel = true;
-            AssertCode(async () => await Service.ImportAsync(new ImportFormRequest(file.Json)), "cancelled");
+            AssertCode(async () => await Exchange.ImportAsync(new ImportFormRequest(file.Json)), "cancelled");
             Notifications.Cancel = false;
             Assert.That(Count(FormBuilderTables.Form), Is.EqualTo(forms), "nothing written");
-            var renamed = await Service.ImportAsync(new ImportFormRequest(Changed(envelope, e => e["form"]!["alias"] = "Not an alias"), UserKey: Editor));
+            var renamed = await Exchange.ImportAsync(new ImportFormRequest(Changed(envelope, e => e["form"]!["alias"] = "Not an alias"), UserKey: Editor));
             Assert.That(renamed.Form.Alias, Is.EqualTo("contact2"), "an alias that is not valid gives way to one from the name");
         });
     }
@@ -545,13 +547,13 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
     public async Task EveryOperation_InsideAUnitOfWork_IsRefused()
     {
         var (source, _) = await DesignedAsync();
-        var file = (await Service.ExportAsync(source.Key))!;
+        var file = (await Exchange.ExportAsync(source.Key))!;
         var changes = new (string Name, Func<Task> Change)[]
         {
-            ("duplicate", () => Service.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", true))),
-            ("copy actions", () => Service.CopyActionsAsync(new CopyActionsRequest(source.Key, source.Key, source.ConcurrencyVersion))),
-            ("template", () => Service.CreateFromTemplateAsync(new TemplateFormRequest(BuiltInFormTemplates.ContactKey))),
-            ("import", () => Service.ImportAsync(new ImportFormRequest(file.Json))),
+            ("duplicate", () => Exchange.DuplicateAsync(source.Key, new DuplicateFormRequest("Copy", true))),
+            ("copy actions", () => Exchange.CopyActionsAsync(new CopyActionsRequest(source.Key, source.Key, source.ConcurrencyVersion))),
+            ("template", () => Exchange.CreateFromTemplateAsync(new TemplateFormRequest(BuiltInFormTemplates.ContactKey))),
+            ("import", () => Exchange.ImportAsync(new ImportFormRequest(file.Json))),
         };
 
         Assert.Multiple(() =>

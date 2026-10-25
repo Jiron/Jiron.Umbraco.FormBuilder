@@ -120,7 +120,7 @@ public sealed class VersionApiTests : ManagementApiTestBase
         var missing = await Restore("designer", 99, version);
         var designer = await Restore("designer", 2, version);
         var draft = await _api.CallAsync("designer", HttpMethod.Get, $"form/{_spring}/draft");
-        var newest = (await GetRequiredService<IFormBuilderFormService>().ListVersionsAsync(_spring, includeDrafts: true, PageRequest.First(1)))!.Items[0].Version;
+        var newest = (await GetRequiredService<IFormBuilderFormVersionService>().ListVersionsAsync(_spring, includeDrafts: true, PageRequest.First(1)))!.Items[0].Version;
 
         Assert.Multiple(() =>
         {

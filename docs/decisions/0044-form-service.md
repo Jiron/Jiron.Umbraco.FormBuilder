@@ -3,7 +3,8 @@
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (a save that
   changes nothing writes no version); the new-form defaults for forms from a template amended by
   [ADR-0046](0046-copies-templates-and-import.md) in 4.5c; the trash, the permanent delete and the folder service
-  added by [ADR-0047](0047-trash-delete-and-folders.md) in 4.5d
+  added by [ADR-0047](0047-trash-delete-and-folders.md) in 4.5d; split in three parts with one change pipeline by
+  [ADR-0053](0053-form-service-in-parts.md) in 4.8d
 - Date: 2026-10-24
 - Roadmap step: 4.5a (decided and built); 4.5b to 4.5d add versions, copies and the trash on the same rules, 4.7
   maps the refusals to the API, 5.1 takes over the storage kinds, 6.1 adds the published-form cache, 8.3 the
@@ -95,6 +96,11 @@ the repositories:
   (`GetDraftAsync`) adds the draft's definition, the draft and published version numbers, whether the draft has
   unpublished changes, and the problems of a stored definition that cannot be read at all.
 - **Field types** come from a registered `FieldTypeCatalogue`, the built-in one until 5.1 registers its registry.
+
+**Amended in 4.8d** (ADR-0053): the service keeps the lifecycle and the trash; the versions of ADR-0045 are
+`IFormBuilderFormVersionService`'s and the copies, templates, imports and exports of ADR-0046
+`IFormBuilderFormExchangeService`'s, on the same rules. Every service of Core takes the steps above through one change
+pipeline, `FormBuilderChanges<TService>`.
 
 ### Refusals and their codes
 

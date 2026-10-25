@@ -357,13 +357,7 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
         }
     }
 
-    private static void CheckLive(StoredForm current)
-    {
-        if (current.TrashedUtc is not null)
-        {
-            throw new FormBuilderConflictException(FormBuilderConflict.Trashed, "The form is in the trash; restore it first.");
-        }
-    }
+    private static void CheckLive(StoredForm current) => LibraryTrash.CheckOutside(current.TrashedUtc, "form");
 
     private static async Task<FormBuilderConflictException> RefusedCreateAsync(IUmbracoDatabase db, SqlNames n, NewForm form)
     {

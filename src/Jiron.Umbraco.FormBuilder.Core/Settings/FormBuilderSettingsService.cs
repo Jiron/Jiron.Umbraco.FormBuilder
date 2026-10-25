@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Cache;
-using Umbraco.Cms.Core.Events;
 using Umbraco.Extensions;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -58,14 +57,12 @@ internal interface IFormBuilderSettingsService
 /// <inheritdoc />
 internal sealed partial class FormBuilderSettingsService(
     ISettingsRepository repository,
-    IAuditRepository audit,
-    FormBuilderDatabase database,
     IServiceProvider services,
     IEnumerable<ISettingsSectionMigration> migrations,
     IOptions<FormBuilderOptions> options,
     AppCaches appCaches,
     DistributedCache distributedCache,
-    IEventAggregator eventAggregator,
+    FormBuilderChanges<FormBuilderSettingsService> changes,
     ILogger<FormBuilderSettingsService> logger)
     : IFormBuilderSettingsService
 {
@@ -120,10 +117,7 @@ internal sealed partial class FormBuilderSettingsService(
     {
         ArgumentNullException.ThrowIfNull(values);
         ArgumentOutOfRangeException.ThrowIfNegative(expectedVersion);
-        if (database.InUnitOfWork)
-        {
-            throw new InvalidOperationException("A settings save is a unit of work of its own: it clears caches and tells handlers once it has committed (ADR-0043).");
-        }
+        changes.EnsureOwnUnit("A settings save is a unit of work of its own: it clears caches and tells handlers once it has committed (ADR-0043).");
 
         var scope = siteKey is { } key ? SettingsScopes.ForSite(key) : SettingsScopes.Global;
         var errors = new SettingsErrors(T.Alias);
@@ -177,36 +171,25 @@ internal sealed partial class FormBuilderSettingsService(
         // others when the cache instruction reaches them.
         FormBuilderSettingsCacheRefresher.Forget(appCaches.RuntimeCache, change);
         distributedCache.RefreshByPayload(FormBuilderSettingsCacheRefresher.UniqueId, [change]);
-        try
-        {
-            await eventAggregator.PublishAsync(new SettingsSavedNotification(T.Alias, siteKey, version.Value, userKey, changed), CancellationToken.None);
-        }
-        catch (Exception exception) when (exception is not OutOfMemoryException)
-        {
-            LogHandlerFailed(logger, T.Alias, exception);
-        }
+        await changes.PublishedAsync(new SettingsSavedNotification(T.Alias, siteKey, version.Value, userKey, changed), $"the settings section {T.Alias}");
 
         return saved;
     }
 
     // Writes the row with its audit entry in one unit of work; the row's new version.
-    private Task<int?> WriteAsync<T>(string scope, Guid? siteKey, JsonObject row, int expectedVersion, Guid? userKey, IReadOnlyList<string> changed, CancellationToken cancellationToken)
+    private async Task<int?> WriteAsync<T>(string scope, Guid? siteKey, JsonObject row, int expectedVersion, Guid? userKey, IReadOnlyList<string> changed, CancellationToken cancellationToken)
         where T : class, ISettingsSection, new() =>
-        database.WriteAsync<int?>(
-            async _ =>
-            {
-                var stored = await repository.SaveAsync(new SettingsSave(scope, T.Alias, T.SchemaVersion, expectedVersion, row.ToJsonString(SettingsSectionJson.Options), userKey), cancellationToken);
-                await audit.AddAsync(Entry<T>(siteKey, stored.Version, userKey, changed), cancellationToken);
-                return stored.Version;
-            },
+        await changes.WriteAsync(
+            async () => (await repository.SaveAsync(new SettingsSave(scope, T.Alias, T.SchemaVersion, expectedVersion, row.ToJsonString(SettingsSectionJson.Options), userKey), cancellationToken)).Version,
+            version => [Entry<T>(siteKey, version, userKey, changed)],
             cancellationToken);
 
     // Removes a site's row, so it follows the global values again: 0, the version of a scope without a row, or null
     // when the site had no row to remove. A row that another save created or changed meanwhile is a conflict.
     private Task<int?> RemoveSiteRowAsync<T>(string scope, Guid siteKey, int expectedVersion, Guid? userKey, IReadOnlyList<string> changed, CancellationToken cancellationToken)
         where T : class, ISettingsSection, new() =>
-        database.WriteAsync<int?>(
-            async _ =>
+        changes.WriteAsync<int?>(
+            async () =>
             {
                 if (!await repository.DeleteAsync(scope, T.Alias, expectedVersion, cancellationToken))
                 {
@@ -215,9 +198,9 @@ internal sealed partial class FormBuilderSettingsService(
                         : throw new FormBuilderConcurrencyException($"The settings section '{T.Alias}' of the site was removed by someone else meanwhile.");
                 }
 
-                await audit.AddAsync(Entry<T>(siteKey, 0, userKey, changed), cancellationToken);
                 return 0;
             },
+            version => version is null ? [] : [Entry<T>(siteKey, 0, userKey, changed)],
             cancellationToken);
 
     // The audit entry of a save: the section, the version and the changed paths, never a value (ADR-0041).
@@ -307,9 +290,6 @@ internal sealed partial class FormBuilderSettingsService(
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Jiron Form Builder could not read the settings section {Section} of scope {Scope}; the defaults apply until it is saved again")]
     private static partial void LogUnreadable(ILogger logger, string section, string scope, Exception exception);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "A handler of SettingsSavedNotification failed after the settings section {Section} was saved")]
-    private static partial void LogHandlerFailed(ILogger logger, string section, Exception exception);
 
     // The rows a scope reads: the global row's JSON, the site row's, and the version of the scope's own row.
     private sealed record StoredScope(JsonObject Global, JsonObject? Site, int Version);

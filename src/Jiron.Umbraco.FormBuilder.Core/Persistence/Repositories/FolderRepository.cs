@@ -220,7 +220,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
                 var current = await FindAsync(db, "id", id);
                 return changed == 1 || current is null
                     ? current
-                    : throw new FormBuilderConflictException(FormBuilderConflict.Trashed, "The folder is in the trash; restore it first.");
+                    : throw LibraryTrash.InTrash("folder");
             },
             cancellationToken);
 
@@ -345,7 +345,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
                 return await FindAsync(db, "id", id) switch
                 {
                     null => false,
-                    { TrashedUtc: null } => throw new FormBuilderConflictException(FormBuilderConflict.NotTrashed, "Only a folder in the trash is deleted; put it in the trash first."),
+                    { TrashedUtc: null } => throw LibraryTrash.OutsideTrash("folder"),
                     _ => throw new FormBuilderConflictException(FormBuilderConflict.FolderNotEmpty, "The folder still holds folders or forms."),
                 };
             },
@@ -416,7 +416,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
     {
         if (folder.TrashedUtc is not null)
         {
-            return new FormBuilderConflictException(FormBuilderConflict.Trashed, "The folder is in the trash; restore it first.");
+            return LibraryTrash.InTrash("folder");
         }
 
         var tree = (await AllAsync(db, n)).ToDictionary(row => row.Id);

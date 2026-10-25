@@ -11,8 +11,80 @@ using Umbraco.Cms.Core.Events;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
-// Duplicates, copied actions, templates, imports and exports (ADR-0046).
-internal sealed partial class FormBuilderFormService
+/// <summary>
+/// Forms that come from other forms, templates and files, and the files forms go out as (ADR-0046, ADR-0053):
+/// duplicates, copied actions, forms from templates, imports and exports. A copy or a new form takes the steps of every
+/// change to a form (<see cref="IFormBuilderFormService"/>): a unit of work of its own, the cancelable notification, one
+/// unit with the change and its audit entry, then the notification that it happened. A missing form gives null.
+/// </summary>
+internal interface IFormBuilderFormExchangeService
+{
+    /// <summary>
+    /// Creates a copy of a form's draft, with or without its actions, in which every element has a new key that the
+    /// references follow (ADR-0046). Entries, versions, grants and the restriction stay with the form. Null when the
+    /// form does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">
+    /// The name or the alias is not allowed, or the draft cannot be read or is above a lowered limit.
+    /// </exception>
+    /// <exception cref="FormBuilderConflictException">The alias is taken, the folder is missing or in the trash, or the form is in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the create.</exception>
+    Task<FormInfo?> DuplicateAsync(Guid key, DuplicateFormRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Appends copies of a form's actions to another form's draft as a draft save: the fields they name map by alias,
+    /// and what has no match is kept and reported (ADR-0046). Nothing to copy writes nothing. Null when either form
+    /// does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderConcurrencyException">Someone changed the target meanwhile.</exception>
+    /// <exception cref="FormBuilderValidationException">
+    /// An action key is not the source's, a draft cannot be read, or a save refuses the target with the copies.
+    /// </exception>
+    /// <exception cref="FormBuilderConflictException">The source or the target is in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the save.</exception>
+    Task<FormActionsCopy?> CopyActionsAsync(CopyActionsRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a form from a built-in or saved form template, with new keys and the new-form defaults (ADR-0046). Null
+    /// when no form template has the key.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">The name or the alias is not allowed, or a save refuses the template.</exception>
+    /// <exception cref="FormBuilderConflictException">The alias is taken, or the folder is missing or in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the create.</exception>
+    Task<FormInfo?> CreateFromTemplateAsync(TemplateFormRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a form from an export file, always with new keys, and says what it changed or could not resolve
+    /// (ADR-0046).
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">
+    /// The name or the alias is not allowed, or the file is refused, with every problem and its path in the file.
+    /// </exception>
+    /// <exception cref="FormBuilderConflictException">The alias is taken, or the folder is missing or in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the create.</exception>
+    Task<FormImport> ImportAsync(ImportFormRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The export file of a form's draft, or of the version with this number (ADR-0046), with the library option lists
+    /// it names. Null when the form or the version does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">The stored version cannot be read.</exception>
+    Task<FormExport?> ExportAsync(Guid key, int? version = null, CancellationToken cancellationToken = default);
+}
+
+/// <inheritdoc />
+internal sealed partial class FormBuilderFormExchangeService(
+    IFormRepository forms,
+    IOptionListRepository optionLists,
+    IThemeRepository themes,
+    IFormTemplateRepository templates,
+    FormDocuments documents,
+    FormCreation creation,
+    FormDefinitionSerializer serializer,
+    TimeProvider time,
+    FormBuilderChanges<FormBuilderFormExchangeService> changes,
+    ILogger<FormBuilderFormExchangeService> logger)
+    : IFormBuilderFormExchangeService
 {
     /// <summary>The audit action of a form created from a template.</summary>
     public const string CreatedFromTemplateAction = "form.createdFromTemplate";
@@ -32,87 +104,84 @@ internal sealed partial class FormBuilderFormService
     public async Task<FormInfo?> DuplicateAsync(Guid key, DuplicateFormRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        EnsureOwnUnit();
-        var name = CheckName(request.Name);
-        CheckAlias(request.Alias);
+        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
+        var name = FormChecks.Name(request.Name);
+        FormChecks.Alias(request.Alias);
         if (await forms.GetAsync(key, cancellationToken) is not { } form)
         {
             return null;
         }
 
-        CheckOutsideTrash(form);
-        if (await DraftOfAsync(form, cancellationToken) is not { } draft)
+        FormChecks.OutsideTrash(form);
+        if (await documents.DraftOfAsync(form, cancellationToken) is not { } draft)
         {
             return null;
         }
 
         // The copy is the draft the designer shows, with new keys that its references follow; access stays with the
         // source, so the copy takes its folder's, as a new form does.
-        var definition = Readable(draft);
+        var definition = documents.Readable(draft);
         var copy = DefinitionKeys.Renew(request.IncludeActions ? definition : definition with { Actions = [] }, serializer);
-        var folder = await LiveFolderAsync(request.FolderKey, cancellationToken);
-        CheckSaveable(copy);
-        var creation = new Creation(
+        var folder = await documents.LiveFolderAsync(request.FolderKey, cancellationToken);
+        documents.CheckSaveable(copy);
+        var origin = new FormOrigin(
             FormSource.Duplicate,
             form.Key,
             DuplicatedAction,
             details => details.Add("source", form.Key).Add("sourceVersion", draft.Info.Number).Add("actions", request.IncludeActions));
-        return await CreateFormAsync(copy, name, request.Alias, FormAliases.FromName(name), folder, request.UserKey, creation, cancellationToken);
+        return await creation.CreateAsync(copy, name, request.Alias, FormAliases.FromName(name), folder, request.UserKey, origin, cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<FormActionsCopy?> CopyActionsAsync(CopyActionsRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
         if (await forms.GetAsync(request.SourceKey, cancellationToken) is not { } source
             || await forms.GetAsync(request.TargetKey, cancellationToken) is not { } target)
         {
             return null;
         }
 
-        CheckOutsideTrash(source);
-        CheckCurrent(target, request.ExpectedConcurrencyVersion);
-        if (await DraftOfAsync(source, cancellationToken) is not { } sourceDraft || await DraftOfAsync(target, cancellationToken) is not { } targetDraft)
+        FormChecks.OutsideTrash(source);
+        FormChecks.Current(target, request.ExpectedConcurrencyVersion);
+        if (await documents.DraftOfAsync(source, cancellationToken) is not { } sourceDraft || await documents.DraftOfAsync(target, cancellationToken) is not { } targetDraft)
         {
             return null;
         }
 
-        var actions = Chosen(Readable(sourceDraft), request.ActionKeys);
+        var actions = Chosen(documents.Readable(sourceDraft), request.ActionKeys);
         if (actions.Count == 0)
         {
-            return new FormActionsCopy(new FormVersionResult(await InfoAsync(target, cancellationToken), null), []);
+            return new FormActionsCopy(new FormVersionResult(await documents.InfoAsync(target, cancellationToken), null), []);
         }
 
-        var copy = ActionCopies.Copy(Readable(sourceDraft), actions, Readable(targetDraft), serializer);
+        var copy = ActionCopies.Copy(documents.Readable(sourceDraft), actions, documents.Readable(targetDraft), serializer);
         var definition = copy.Target ?? throw new FormBuilderValidationException(copy.Problems);
-        CheckSaveable(definition);
-        var document = Document(definition);
-        await CancelableAsync(new FormSavingNotification(definition, target.Alias, target.Name, isNew: false, request.UserKey, new EventMessages()) { ActionsCopiedFrom = source.Key });
-        var saved = await database.WriteAsync(
-            async _ =>
-            {
-                var stored = await forms.SaveDraftAsync(target.Id, request.ExpectedConcurrencyVersion, document, null, request.UserKey, cancellationToken);
-                if (stored is not null)
-                {
-                    var details = new AuditDetails()
+        documents.CheckSaveable(definition);
+        var document = documents.Document(definition);
+        await changes.CancelableAsync(new FormSavingNotification(definition, target.Alias, target.Name, isNew: false, request.UserKey, new EventMessages()) { ActionsCopiedFrom = source.Key });
+        var saved = await changes.WriteAsync(
+            () => forms.SaveDraftAsync(target.Id, request.ExpectedConcurrencyVersion, document, null, request.UserKey, cancellationToken),
+            stored => stored is null
+                ? []
+                : [FormDocuments.Entry(
+                    ActionsCopiedAction,
+                    stored.Form,
+                    request.UserKey,
+                    new AuditDetails()
                         .Add("version", stored.Version.Info.Number)
                         .Add("source", source.Key)
                         .Add("actions", copy.Actions.Count)
-                        .Add("unmapped", copy.Actions.Sum(action => action.Unmapped.Count));
-                    await audit.AddAsync(Entry(ActionsCopiedAction, stored.Form, request.UserKey, details), cancellationToken);
-                }
-
-                return stored;
-            },
+                        .Add("unmapped", copy.Actions.Sum(action => action.Unmapped.Count)))],
             cancellationToken);
         if (saved is null)
         {
             return null;
         }
 
-        var info = await InfoAsync(saved.Form, cancellationToken);
-        await PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, saved.Version.Info.Number, isNew: false, request.UserKey) { ActionsCopiedFrom = source.Key });
+        var info = await documents.InfoAsync(saved.Form, cancellationToken);
+        await changes.PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, saved.Version.Info.Number, isNew: false, request.UserKey) { ActionsCopiedFrom = source.Key }, FormBuilderFormService.Subject(info.Key));
         return new FormActionsCopy(new FormVersionResult(info, saved.Version.Info.Number), copy.Actions);
     }
 
@@ -120,47 +189,47 @@ internal sealed partial class FormBuilderFormService
     public async Task<FormInfo?> CreateFromTemplateAsync(TemplateFormRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        EnsureOwnUnit();
-        var requestedName = request.Name is null ? null : CheckName(request.Name);
-        CheckAlias(request.Alias);
+        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
+        var requestedName = request.Name is null ? null : FormChecks.Name(request.Name);
+        FormChecks.Alias(request.Alias);
         if (await TemplateAsync(request.TemplateKey, cancellationToken) is not { } template)
         {
             return null;
         }
 
-        var name = requestedName ?? CheckName(template.Name);
-        var folder = await LiveFolderAsync(request.FolderKey, cancellationToken);
-        var definition = await WithNewFormDefaultsAsync(DefinitionKeys.Renew(template.Definition, serializer), cancellationToken);
-        CheckSaveable(definition);
-        var creation = new Creation(
+        var name = requestedName ?? FormChecks.Name(template.Name);
+        var folder = await documents.LiveFolderAsync(request.FolderKey, cancellationToken);
+        var definition = await creation.WithNewFormDefaultsAsync(DefinitionKeys.Renew(template.Definition, serializer), cancellationToken);
+        documents.CheckSaveable(definition);
+        var origin = new FormOrigin(
             FormSource.Template,
             request.TemplateKey,
             CreatedFromTemplateAction,
             details => details.Add("template", request.TemplateKey).Add("builtIn", template.BuiltIn));
-        return await CreateFormAsync(definition, name, request.Alias, FormAliases.FromName(name), folder, request.UserKey, creation, cancellationToken);
+        return await creation.CreateAsync(definition, name, request.Alias, FormAliases.FromName(name), folder, request.UserKey, origin, cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<FormImport> ImportAsync(ImportFormRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        EnsureOwnUnit();
-        var requestedName = request.Name is null ? null : CheckName(request.Name);
-        CheckAlias(request.Alias);
+        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
+        var requestedName = request.Name is null ? null : FormChecks.Name(request.Name);
+        FormChecks.Alias(request.Alias);
         var read = FormExportFormat.Read(request.Json, serializer);
         var envelope = read.Envelope ?? throw new FormBuilderValidationException(read.Problems);
-        var name = requestedName ?? CheckName(envelope.Name, JsonPaths.Property(JsonPaths.Property(JsonPaths.Root, "form"), "name"));
+        var name = requestedName ?? FormChecks.Name(envelope.Name, JsonPaths.Property(JsonPaths.Property(JsonPaths.Root, "form"), "name"));
         var wanted = FormAliases.IsValid(envelope.Alias) ? envelope.Alias : FormAliases.FromName(name);
-        var folder = await LiveFolderAsync(request.FolderKey, cancellationToken);
+        var folder = await documents.LiveFolderAsync(request.FolderKey, cancellationToken);
 
         // Always new keys (12.5 adds the import into an existing form); the theme and the option lists as this site has them.
         var notes = new List<FormImportNote>();
         var definition = DefinitionKeys.Renew(envelope.Definition, serializer);
         definition = await WithThemeAsync(definition, notes, cancellationToken);
         definition = await WithOptionListsAsync(definition, envelope, notes, cancellationToken);
-        CheckSaveable(definition);
+        documents.CheckSaveable(definition);
         var codes = NoteCodes(notes);
-        var creation = new Creation(
+        var origin = new FormOrigin(
             FormSource.Import,
             envelope.FormKey,
             ImportedAction,
@@ -170,14 +239,9 @@ internal sealed partial class FormBuilderFormService
                 .AddIdentifier("packageVersion", AuditDetails.IsIdentifier(envelope.PackageVersion) ? envelope.PackageVersion : null)
                 .AddIdentifiers("notes", codes.Select(code => code.Code))
                 .AddNumbers("noteCounts", codes.Select(code => (long)code.Count)));
-        var form = await CreateFormAsync(definition, name, request.Alias, wanted, folder, request.UserKey, creation, cancellationToken);
+        var form = await creation.CreateAsync(definition, name, request.Alias, wanted, folder, request.UserKey, origin, cancellationToken);
         return new FormImport(form, notes);
     }
-
-    // The codes of an import's notes, each once in the order it first came, with how many notes have it: an import can
-    // note hundreds of option lists, more than an audit entry lists.
-    private static List<(string Code, int Count)> NoteCodes(IEnumerable<FormImportNote> notes) =>
-        [.. notes.GroupBy(note => note.Code, StringComparer.Ordinal).Select(group => (group.Key, group.Count()))];
 
     /// <inheritdoc />
     public async Task<FormExport?> ExportAsync(Guid key, int? version = null, CancellationToken cancellationToken = default)
@@ -187,13 +251,13 @@ internal sealed partial class FormBuilderFormService
             return null;
         }
 
-        var stored = version is { } number ? await forms.GetVersionAsync(form.Id, number, cancellationToken) : await DraftOfAsync(form, cancellationToken);
+        var stored = version is { } number ? await forms.GetVersionAsync(form.Id, number, cancellationToken) : await documents.DraftOfAsync(form, cancellationToken);
         if (stored is null)
         {
             return null;
         }
 
-        var definition = Readable(stored);
+        var definition = documents.Readable(stored);
         var lists = new List<ExportedOptionList>();
         foreach (var listKey in DefinitionKeys.Fields(definition).Select(field => field.Options?.List).OfType<Guid>().Distinct())
         {
@@ -203,57 +267,14 @@ internal sealed partial class FormBuilderFormService
             }
         }
 
-        var envelope = new FormExportEnvelope(form.Key, form.Alias, form.Name, FormBuilderVersion.Package, database.Time.GetUtcNow(), definition, lists);
+        var envelope = new FormExportEnvelope(form.Key, form.Alias, form.Name, FormBuilderVersion.Package, time.GetUtcNow(), definition, lists);
         return new FormExport(form.Alias + ".json", FormExportFormat.Write(envelope));
     }
 
-    // Creates a form from a definition the save checks took, with the alias given or the first free one from wanted,
-    // tried again when a create at the same moment takes it (ADR-0044); the notifications say where it came from.
-    private async Task<FormInfo> CreateFormAsync(FormDefinition definition, string name, string? alias, string wanted, StoredFolder? folder, Guid? userKey, Creation creation, CancellationToken cancellationToken)
-    {
-        var document = Document(definition);
-        for (var attempt = 1; ; attempt++)
-        {
-            var chosen = alias ?? FormAliases.FirstFree(wanted, await forms.ListAliasesAsync(FormAliases.Stem(wanted), cancellationToken));
-            await CancelableAsync(new FormSavingNotification(definition, chosen, name, isNew: true, userKey, new EventMessages()) { CreatedFrom = creation.Source, SourceKey = creation.SourceKey });
-            SavedVersion created;
-            try
-            {
-                created = await database.WriteAsync(
-                    async _ =>
-                    {
-                        var saved = await forms.CreateAsync(new NewForm(definition.Key, folder?.Id, chosen, name, document, UserKey: userKey), cancellationToken);
-                        var details = new AuditDetails().AddIdentifier("alias", chosen).Add("version", saved.Version.Info.Number).Add("folder", folder?.Key);
-                        await audit.AddAsync(Entry(creation.Action, saved.Form, userKey, creation.Details?.Invoke(details) ?? details), cancellationToken);
-                        return saved;
-                    },
-                    cancellationToken);
-            }
-            catch (FormBuilderConflictException exception) when (exception.Conflict == FormBuilderConflict.DuplicateAlias && alias is null && attempt < AliasAttempts)
-            {
-                // A create at the same moment took the alias: the next free one, announced again.
-                continue;
-            }
-
-            var info = Info(created.Form, folder?.Key);
-            await PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, created.Version.Info.Number, isNew: true, userKey) { CreatedFrom = creation.Source, SourceKey = creation.SourceKey });
-            return info;
-        }
-    }
-
-    // The form's draft as stored, or null.
-    private async Task<StoredFormVersion?> DraftOfAsync(StoredForm form, CancellationToken cancellationToken) =>
-        form.DraftVersionId is { } draftId ? await forms.GetVersionByIdAsync(draftId, cancellationToken) : null;
-
-    // What the service writes meets the site's limits (ADR-0042).
-    private void CheckSaveable(FormDefinition definition)
-    {
-        var problems = serializer.CheckSave(definition);
-        if (problems.Count > 0)
-        {
-            throw new FormBuilderValidationException(problems);
-        }
-    }
+    // The codes of an import's notes, each once in the order it first came, with how many notes have it: an import can
+    // note hundreds of option lists, more than an audit entry lists.
+    private static List<(string Code, int Count)> NoteCodes(IEnumerable<FormImportNote> notes) =>
+        [.. notes.GroupBy(note => note.Code, StringComparer.Ordinal).Select(group => (group.Key, group.Count()))];
 
     // The actions a copy takes, in the source's order: all of them, or those named; a key the source lacks is refused.
     private static List<FormAction> Chosen(FormDefinition source, IReadOnlyList<Guid>? keys)
@@ -407,8 +428,4 @@ internal sealed partial class FormBuilderFormService
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The option list {ListKey} was left out of an export because its stored configuration or items are not JSON of their kind")]
     private static partial void LogListLeftOut(ILogger logger, Guid listKey);
-
-    // How a new form came to be: what its notifications say, its audit action, and what the entry records besides the
-    // alias, the version and the folder.
-    private sealed record Creation(FormSource Source, Guid? SourceKey, string Action, Func<AuditDetails, AuditDetails>? Details = null);
 }

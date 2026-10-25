@@ -26,6 +26,8 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
 
     private IFormBuilderFormService Service => GetRequiredService<IFormBuilderFormService>();
 
+    private IFormBuilderFormVersionService Versions => GetRequiredService<IFormBuilderFormVersionService>();
+
     private FormNotificationLog Notifications => GetRequiredService<FormNotificationLog>();
 
     [Test]
@@ -34,7 +36,7 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
         var (form, blank) = await HistoryAsync();
         Clock.Advance(TimeSpan.FromMinutes(1));
 
-        var restored = (await Service.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 2, Editor))!;
+        var restored = (await Versions.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 2, Editor))!;
         var draft = (await Service.GetDraftAsync(form.Key))!;
 
         Assert.Multiple(async () =>
@@ -43,8 +45,8 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
             Assert.That(restored.Form, Is.EqualTo(form with { ConcurrencyVersion = form.ConcurrencyVersion + 1, UpdatedUtc = Now.AddMinutes(6) }));
             Assert.That((draft.DraftVersion, draft.PublishedVersion, draft.HasUnpublishedChanges), Is.EqualTo((7, (int?)6, true)), "the live version stays live");
             Assert.That(Hash(draft.Definition!), Is.EqualTo(Hash(WithFields(blank, Email))), "version 2's definition");
-            Assert.That((await Service.GetVersionAsync(form.Key, 7))!.Version, Is.EqualTo(new FormVersion(7, FormVersionKind.Draft, null, null, false, Now.AddMinutes(6), Editor, null, null, true, false)));
-            Assert.That(Hash((await Service.GetVersionAsync(form.Key, 2))!.Definition!), Is.EqualTo(Hash(draft.Definition!)), "version 2 stays as it was");
+            Assert.That((await Versions.GetVersionAsync(form.Key, 7))!.Version, Is.EqualTo(new FormVersion(7, FormVersionKind.Draft, null, null, false, Now.AddMinutes(6), Editor, null, null, true, false)));
+            Assert.That(Hash((await Versions.GetVersionAsync(form.Key, 2))!.Definition!), Is.EqualTo(Hash(draft.Definition!)), "version 2 stays as it was");
             Assert.That(await VersionsAsync(form), Is.EqualTo(7));
         });
     }
@@ -55,7 +57,7 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
         var (form, blank) = await HistoryAsync();
         var before = Notifications.Seen;
 
-        await Service.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 2, Editor);
+        await Versions.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 2, Editor);
 
         var restore = Notifications.Seen.Skip(before.Count).ToList();
         var saving = restore.OfType<FormSavingNotification>().Single();
@@ -81,8 +83,8 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
         var seen = Notifications.Seen.Count;
         var audited = Count(FormBuilderTables.AuditEntry);
 
-        var draft = await Service.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 5, Editor);
-        var live = await Service.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 6, Editor);
+        var draft = await Versions.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 5, Editor);
+        var live = await Versions.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 6, Editor);
 
         Assert.Multiple(async () =>
         {
@@ -102,11 +104,11 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
         var audited = Count(FormBuilderTables.AuditEntry);
         var seen = Notifications.Seen.Count;
 
-        AssertCode(async () => await Service.RestoreVersionAsync(form.Key, form.ConcurrencyVersion - 1, 2, Editor), "concurrency_conflict");
-        Assert.That(await Service.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 99, Editor), Is.Null, "a version it does not have");
-        Assert.That(await Service.RestoreVersionAsync(Guid.NewGuid(), 1, 1, Editor), Is.Null, "a form that is none");
+        AssertCode(async () => await Versions.RestoreVersionAsync(form.Key, form.ConcurrencyVersion - 1, 2, Editor), "concurrency_conflict");
+        Assert.That(await Versions.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 99, Editor), Is.Null, "a version it does not have");
+        Assert.That(await Versions.RestoreVersionAsync(Guid.NewGuid(), 1, 1, Editor), Is.Null, "a form that is none");
         Notifications.Cancel = true;
-        var cancelled = AssertCode(async () => await Service.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 2, Editor), "cancelled");
+        var cancelled = AssertCode(async () => await Versions.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 2, Editor), "cancelled");
         Notifications.Cancel = false;
         Assert.Multiple(async () =>
         {
@@ -119,7 +121,7 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
         await Forms.TrashAsync(row.Id, row.ConcurrencyVersion, Editor);
         var trashed = (await Service.GetAsync(form.Key))!;
 
-        AssertCode(async () => await Service.RestoreVersionAsync(form.Key, trashed.ConcurrencyVersion, 2, Editor), "trashed");
+        AssertCode(async () => await Versions.RestoreVersionAsync(form.Key, trashed.ConcurrencyVersion, 2, Editor), "trashed");
         Assert.Multiple(async () =>
         {
             Assert.That(await VersionsAsync(form), Is.EqualTo(6));
@@ -138,15 +140,15 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
         await Forms.SaveDraftAsync(row.Id, other.Form.ConcurrencyVersion, Document("""{"pages":"none"}"""), null, Editor);
         var form = (await Service.GetAsync(created.Key))!;
 
-        var opened = (await Service.GetVersionAsync(form.Key, 3))!;
-        var listed = (await Service.ListVersionsAsync(form.Key, includeDrafts: true, PageRequest.First(10)))!;
+        var opened = (await Versions.GetVersionAsync(form.Key, 3))!;
+        var listed = (await Versions.ListVersionsAsync(form.Key, includeDrafts: true, PageRequest.First(10)))!;
 
         Assert.Multiple(() =>
         {
-            AssertCode(async () => await Service.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 2, Editor), "invalid_value", "$.key");
-            Assert.That(() => Service.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 3, Editor), Throws.InstanceOf<FormBuilderValidationException>(), "a restore");
-            Assert.That(() => Service.CompareAsync(form.Key, 1, 3), Throws.InstanceOf<FormBuilderValidationException>(), "a comparison");
-            Assert.That(() => Service.CompareAsync(form.Key, 3, 1), Throws.InstanceOf<FormBuilderValidationException>(), "a comparison the other way");
+            AssertCode(async () => await Versions.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 2, Editor), "invalid_value", "$.key");
+            Assert.That(() => Versions.RestoreVersionAsync(form.Key, form.ConcurrencyVersion, 3, Editor), Throws.InstanceOf<FormBuilderValidationException>(), "a restore");
+            Assert.That(() => Versions.CompareAsync(form.Key, 1, 3), Throws.InstanceOf<FormBuilderValidationException>(), "a comparison");
+            Assert.That(() => Versions.CompareAsync(form.Key, 3, 1), Throws.InstanceOf<FormBuilderValidationException>(), "a comparison the other way");
             Assert.That((opened.Definition, opened.Problems.Count > 0), Is.EqualTo(((FormDefinition?)null, true)), "it opens with what is wrong with it");
             Assert.That(listed.Items.Select(entry => entry.Changes is null), Is.EqualTo(new[] { true, false, true }), "no changes into it, and none for the first");
         });
@@ -157,7 +159,7 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
     {
         var (form, _) = await HistoryAsync();
 
-        var listed = (await Service.ListVersionsAsync(form.Key, includeDrafts: false, PageRequest.First(10)))!;
+        var listed = (await Versions.ListVersionsAsync(form.Key, includeDrafts: false, PageRequest.First(10)))!;
 
         Assert.Multiple(() =>
         {
@@ -176,9 +178,9 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
     {
         var (form, _) = await HistoryAsync();
 
-        var all = (await Service.ListVersionsAsync(form.Key, includeDrafts: true, PageRequest.First(10)))!;
-        var first = (await Service.ListVersionsAsync(form.Key, includeDrafts: true, new PageRequest(0, 2)))!;
-        var last = (await Service.ListVersionsAsync(form.Key, includeDrafts: true, new PageRequest(4, 2)))!;
+        var all = (await Versions.ListVersionsAsync(form.Key, includeDrafts: true, PageRequest.First(10)))!;
+        var first = (await Versions.ListVersionsAsync(form.Key, includeDrafts: true, new PageRequest(0, 2)))!;
+        var last = (await Versions.ListVersionsAsync(form.Key, includeDrafts: true, new PageRequest(4, 2)))!;
 
         Assert.Multiple(() =>
         {
@@ -213,9 +215,9 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
 
         Assert.Multiple(async () =>
         {
-            Assert.That((await Service.ListVersionsAsync(created.Key, includeDrafts: true, PageRequest.First(50)))!.Items, Has.Count.EqualTo(1));
-            Assert.That(() => Service.ListVersionsAsync(created.Key, includeDrafts: true, PageRequest.First(51)), Throws.InstanceOf<ArgumentOutOfRangeException>());
-            Assert.That(await Service.ListVersionsAsync(Guid.NewGuid(), includeDrafts: true, PageRequest.First(10)), Is.Null);
+            Assert.That((await Versions.ListVersionsAsync(created.Key, includeDrafts: true, PageRequest.First(50)))!.Items, Has.Count.EqualTo(1));
+            Assert.That(() => Versions.ListVersionsAsync(created.Key, includeDrafts: true, PageRequest.First(51)), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(await Versions.ListVersionsAsync(Guid.NewGuid(), includeDrafts: true, PageRequest.First(10)), Is.Null);
         });
     }
 
@@ -224,15 +226,15 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
     {
         var (form, blank) = await HistoryAsync();
 
-        var opened = (await Service.GetVersionAsync(form.Key, 4))!;
+        var opened = (await Versions.GetVersionAsync(form.Key, 4))!;
 
         Assert.Multiple(async () =>
         {
             Assert.That(opened.Version, Is.EqualTo(new FormVersion(4, FormVersionKind.Draft, null, null, false, Now.AddMinutes(3), Editor, null, null, false, false)));
             Assert.That(Hash(opened.Definition!), Is.EqualTo(Hash(WithFields(blank, Email, Age))));
             Assert.That(opened.Problems, Is.Empty);
-            Assert.That(await Service.GetVersionAsync(form.Key, 7), Is.Null);
-            Assert.That(await Service.GetVersionAsync(Guid.NewGuid(), 1), Is.Null);
+            Assert.That(await Versions.GetVersionAsync(form.Key, 7), Is.Null);
+            Assert.That(await Versions.GetVersionAsync(Guid.NewGuid(), 1), Is.Null);
         });
     }
 
@@ -241,8 +243,8 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
     {
         var (form, _) = await HistoryAsync();
 
-        var forward = (await Service.CompareAsync(form.Key, 2, 5))!;
-        var backward = (await Service.CompareAsync(form.Key, 5, 2))!;
+        var forward = (await Versions.CompareAsync(form.Key, 2, 5))!;
+        var backward = (await Versions.CompareAsync(form.Key, 5, 2))!;
 
         Assert.Multiple(async () =>
         {
@@ -254,10 +256,10 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
             }));
             Assert.That(forward.Changes[0].Properties.Select(property => (string.Join("/", property.Path), property.From?.GetValue<string>(), property.To?.GetValue<string>())), Is.EqualTo(new[] { ("label/", "Email address", "Your email") }));
             Assert.That(backward.Changes.Select(change => (change.Key, change.Change)), Is.EqualTo(new[] { ((Guid?)Key(1), DefinitionChangeKind.Changed), (Key(2), DefinitionChangeKind.Removed) }));
-            Assert.That((await Service.CompareAsync(form.Key, 2, 3))!.Changes, Is.Empty, "a publish of the same definition");
-            Assert.That(await Service.CompareAsync(form.Key, 2, 7), Is.Null);
-            Assert.That(await Service.CompareAsync(form.Key, 7, 2), Is.Null);
-            Assert.That(await Service.CompareAsync(Guid.NewGuid(), 1, 2), Is.Null);
+            Assert.That((await Versions.CompareAsync(form.Key, 2, 3))!.Changes, Is.Empty, "a publish of the same definition");
+            Assert.That(await Versions.CompareAsync(form.Key, 2, 7), Is.Null);
+            Assert.That(await Versions.CompareAsync(form.Key, 7, 2), Is.Null);
+            Assert.That(await Versions.CompareAsync(Guid.NewGuid(), 1, 2), Is.Null);
         });
     }
 
@@ -269,10 +271,10 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
         var seen = Notifications.Seen.Count;
         Clock.Advance(TimeSpan.FromMinutes(1));
 
-        var pinned = (await Service.PinVersionAsync(created.Key, 1, true, Editor))!;
-        var commented = (await Service.CommentVersionAsync(created.Key, 1, "Approved by legal", Editor))!;
-        var unpinned = (await Service.PinVersionAsync(created.Key, 1, false, Editor))!;
-        var cleared = (await Service.CommentVersionAsync(created.Key, 1, "   ", Editor))!;
+        var pinned = (await Versions.PinVersionAsync(created.Key, 1, true, Editor))!;
+        var commented = (await Versions.CommentVersionAsync(created.Key, 1, "Approved by legal", Editor))!;
+        var unpinned = (await Versions.PinVersionAsync(created.Key, 1, false, Editor))!;
+        var cleared = (await Versions.CommentVersionAsync(created.Key, 1, "   ", Editor))!;
         var after = (await Service.GetAsync(created.Key))!;
         var announced = Notifications.Seen.Skip(seen).ToList();
         var audited = (await Audit.QueryAsync(new AuditQuery { EntityKey = created.Key }, PageRequest.First(50))).Items.OrderBy(entry => entry.Id).Skip(2).ToList();
@@ -309,12 +311,12 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
     public async Task APinOrACommentThatChangesNothing_WritesNothing_AndIsNotAnnounced()
     {
         var created = await CreateAsync("Contact");
-        var kept = (await Service.CommentVersionAsync(created.Key, 1, "Kept", Editor))!;
+        var kept = (await Versions.CommentVersionAsync(created.Key, 1, "Kept", Editor))!;
         var seen = Notifications.Seen.Count;
         var audited = Count(FormBuilderTables.AuditEntry);
 
-        var unpinned = await Service.PinVersionAsync(created.Key, 1, false, Editor);
-        var same = await Service.CommentVersionAsync(created.Key, 1, "Kept", Editor);
+        var unpinned = await Versions.PinVersionAsync(created.Key, 1, false, Editor);
+        var same = await Versions.CommentVersionAsync(created.Key, 1, "Kept", Editor);
 
         Assert.Multiple(() =>
         {
@@ -331,26 +333,26 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
         var audited = Count(FormBuilderTables.AuditEntry);
         var longest = new string('c', FormRepository.MaxCommentLength);
 
-        AssertCode(async () => await Service.CommentVersionAsync(created.Key, 1, longest + "c", Editor), "limit_exceeded", "comment");
-        AssertCode(async () => await Service.CommentVersionAsync(created.Key, 1, "Lone " + (char)0xD800, Editor), "invalid_value", "comment");
+        AssertCode(async () => await Versions.CommentVersionAsync(created.Key, 1, longest + "c", Editor), "limit_exceeded", "comment");
+        AssertCode(async () => await Versions.CommentVersionAsync(created.Key, 1, "Lone " + (char)0xD800, Editor), "invalid_value", "comment");
         Assert.Multiple(async () =>
         {
-            Assert.That(await Service.PinVersionAsync(created.Key, 9, true, Editor), Is.Null, "a version it does not have");
-            Assert.That(await Service.CommentVersionAsync(created.Key, 9, "x", Editor), Is.Null);
-            Assert.That(await Service.PinVersionAsync(Guid.NewGuid(), 1, true, Editor), Is.Null, "a form that is none");
-            Assert.That(await Service.CommentVersionAsync(Guid.NewGuid(), 1, "x", Editor), Is.Null);
+            Assert.That(await Versions.PinVersionAsync(created.Key, 9, true, Editor), Is.Null, "a version it does not have");
+            Assert.That(await Versions.CommentVersionAsync(created.Key, 9, "x", Editor), Is.Null);
+            Assert.That(await Versions.PinVersionAsync(Guid.NewGuid(), 1, true, Editor), Is.Null, "a form that is none");
+            Assert.That(await Versions.CommentVersionAsync(Guid.NewGuid(), 1, "x", Editor), Is.Null);
             Assert.That(Count(FormBuilderTables.AuditEntry), Is.EqualTo(audited));
         });
 
         var seen = Notifications.Seen.Count;
         Notifications.Cancel = true;
-        AssertCode(async () => await Service.PinVersionAsync(created.Key, 1, true, Editor), "cancelled");
-        AssertCode(async () => await Service.CommentVersionAsync(created.Key, 1, "x", Editor), "cancelled");
+        AssertCode(async () => await Versions.PinVersionAsync(created.Key, 1, true, Editor), "cancelled");
+        AssertCode(async () => await Versions.CommentVersionAsync(created.Key, 1, "x", Editor), "cancelled");
         Notifications.Cancel = false;
         var row = await RowAsync(created);
         await Forms.TrashAsync(row.Id, row.ConcurrencyVersion, Editor);
-        AssertCode(async () => await Service.PinVersionAsync(created.Key, 1, true, Editor), "trashed");
-        AssertCode(async () => await Service.CommentVersionAsync(created.Key, 1, "x", Editor), "trashed");
+        AssertCode(async () => await Versions.PinVersionAsync(created.Key, 1, true, Editor), "trashed");
+        AssertCode(async () => await Versions.CommentVersionAsync(created.Key, 1, "x", Editor), "trashed");
 
         Assert.Multiple(async () =>
         {
@@ -360,7 +362,7 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
         });
 
         await Forms.RestoreAsync(row.Id, (await RowAsync(created)).ConcurrencyVersion, row.FolderId, Editor);
-        Assert.That((await Service.CommentVersionAsync(created.Key, 1, longest, Editor))?.Comment, Is.EqualTo(longest), "the longest comment a version holds");
+        Assert.That((await Versions.CommentVersionAsync(created.Key, 1, longest, Editor))?.Comment, Is.EqualTo(longest), "the longest comment a version holds");
     }
 
     [Test]
@@ -371,9 +373,9 @@ public sealed class FormVersionServiceTests : RepositoryTestBase
         var version = (await Forms.GetVersionAsync(row.Id, 1))!;
         var changes = new (string Name, Func<Task> Change)[]
         {
-            ("restore", () => Service.RestoreVersionAsync(created.Key, created.ConcurrencyVersion, 1, Editor)),
-            ("pin", () => Service.PinVersionAsync(created.Key, 1, true, Editor)),
-            ("comment", () => Service.CommentVersionAsync(created.Key, 1, "x", Editor)),
+            ("restore", () => Versions.RestoreVersionAsync(created.Key, created.ConcurrencyVersion, 1, Editor)),
+            ("pin", () => Versions.PinVersionAsync(created.Key, 1, true, Editor)),
+            ("comment", () => Versions.CommentVersionAsync(created.Key, 1, "x", Editor)),
         };
 
         Assert.Multiple(async () =>

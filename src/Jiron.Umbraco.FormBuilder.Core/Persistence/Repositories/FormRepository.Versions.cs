@@ -308,7 +308,7 @@ internal sealed partial class FormRepository
                     number);
                 if (updated == 0 && row is not null)
                 {
-                    throw new FormBuilderConflictException(FormBuilderConflict.Trashed, "The form is in the trash; restore it first.");
+                    throw LibraryTrash.InTrash("form");
                 }
 
                 return row is null ? null : InfoFromDto(row);

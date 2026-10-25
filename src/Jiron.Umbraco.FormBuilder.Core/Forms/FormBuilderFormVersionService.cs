@@ -8,8 +8,66 @@ using Umbraco.Cms.Core.Events;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
-// The versions of a form: the list, one version, the comparison, restore, pins and comments (ADR-0045).
-internal sealed partial class FormBuilderFormService
+/// <summary>
+/// The versions of a form (ADR-0045, ADR-0053): the History, one version, the comparison of two, a restore into a new
+/// draft, pins and comments. Changes take the steps of every change to a form (<see cref="IFormBuilderFormService"/>):
+/// a unit of work of their own, the cancelable notification, one unit with the change and its audit entry, then the
+/// notification that it happened. A missing form or version gives null.
+/// </summary>
+internal interface IFormBuilderFormVersionService
+{
+    /// <summary>
+    /// A page of a form's versions, newest first: the publishes, and the draft saves too when <paramref name="includeDrafts"/>,
+    /// each with what changed (ADR-0045). Null when the form does not exist.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The page holds more than <see cref="FormBuilderFormVersionService.MaxVersionsPerPage"/> versions.</exception>
+    Task<Page<FormVersionEntry>?> ListVersionsAsync(Guid key, bool includeDrafts, PageRequest page, CancellationToken cancellationToken = default);
+
+    /// <summary>A version of a form with its definition, or null when the form or the version does not exist.</summary>
+    Task<FormVersionDocument?> GetVersionAsync(Guid key, int number, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// What changed from one version of a form to another, both read and upgraded first (ADR-0045). Null when the form or
+    /// a version does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">A stored version cannot be read.</exception>
+    Task<FormComparison?> CompareAsync(Guid key, int fromNumber, int toNumber, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Copies a version's definition into a new draft; the current draft stays in the History (ADR-0045). A version whose
+    /// definition is the draft's writes nothing. Null when the form or the version does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderConcurrencyException">Someone changed the form meanwhile.</exception>
+    /// <exception cref="FormBuilderValidationException">A save refuses the version's definition, for example above a lowered limit.</exception>
+    /// <exception cref="FormBuilderConflictException">The form is in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the save.</exception>
+    Task<FormVersionResult?> RestoreVersionAsync(Guid key, int expectedConcurrencyVersion, int number, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Pins or unpins a version, so the cleanup keeps it. The form's concurrency version stays as it is (ADR-0045). Null
+    /// when the form or the version does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderConflictException">The form is in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the change.</exception>
+    Task<FormVersion?> PinVersionAsync(Guid key, int number, bool isPinned, Guid? userKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets a version's comment; null, empty or blank clears it. The form's concurrency version stays as it is
+    /// (ADR-0045). Null when the form or the version does not exist.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">The comment is longer than 500 characters.</exception>
+    /// <exception cref="FormBuilderConflictException">The form is in the trash.</exception>
+    /// <exception cref="FormBuilderCancelledException">A handler cancelled the change.</exception>
+    Task<FormVersion?> CommentVersionAsync(Guid key, int number, string? comment, Guid? userKey, CancellationToken cancellationToken = default);
+}
+
+/// <inheritdoc />
+internal sealed class FormBuilderFormVersionService(
+    IFormRepository forms,
+    FormDocuments documents,
+    FormDefinitionSerializer serializer,
+    FormBuilderChanges<FormBuilderFormVersionService> changes)
+    : IFormBuilderFormVersionService
 {
     /// <summary>The most versions one page of the version list holds, since each comes with what changed.</summary>
     public const int MaxVersionsPerPage = 50;
@@ -86,69 +144,61 @@ internal sealed partial class FormBuilderFormService
             return null;
         }
 
-        return new FormComparison(fromNumber, toNumber, DefinitionDiff.Compare(Readable(older), Readable(newer)));
+        return new FormComparison(fromNumber, toNumber, DefinitionDiff.Compare(documents.Readable(older), documents.Readable(newer)));
     }
 
     /// <inheritdoc />
     public async Task<FormVersionResult?> RestoreVersionAsync(Guid key, int expectedConcurrencyVersion, int number, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
         if (await forms.GetAsync(key, cancellationToken) is not { } form || await forms.GetVersionAsync(form.Id, number, cancellationToken) is not { } version)
         {
             return null;
         }
 
         // A restore is a draft save of an older definition, held to the site's limits now (ADR-0042).
-        CheckCurrent(form, expectedConcurrencyVersion);
-        var definition = Readable(version);
+        FormChecks.Current(form, expectedConcurrencyVersion);
+        var definition = documents.Readable(version);
         if (definition.Key != form.Key)
         {
             throw FormBuilderValidationException.For(DefinitionErrors.InvalidValue, JsonPaths.Property(JsonPaths.Root, "key"), "The version's key is not the form's.");
         }
 
-        CheckSaveable(definition);
-        var document = Document(definition);
-        var draft = await DraftOfAsync(form, cancellationToken);
+        documents.CheckSaveable(definition);
+        var document = documents.Document(definition);
+        var draft = await documents.DraftOfAsync(form, cancellationToken);
         if (draft is { Info.SchemaVersion: FormDefinition.CurrentSchemaVersion } && draft.Info.DefinitionHash == document.DefinitionHash)
         {
-            return new FormVersionResult(await InfoAsync(form, cancellationToken), null);
+            return new FormVersionResult(await documents.InfoAsync(form, cancellationToken), null);
         }
 
-        await CancelableAsync(new FormSavingNotification(definition, form.Alias, form.Name, isNew: false, userKey, new EventMessages()) { RestoredFromVersion = number });
-        var saved = await database.WriteAsync(
-            async _ =>
-            {
-                var stored = await forms.SaveDraftAsync(form.Id, expectedConcurrencyVersion, document, null, userKey, cancellationToken);
-                if (stored is not null)
-                {
-                    var details = new AuditDetails().Add("version", stored.Version.Info.Number).Add("from", number);
-                    await audit.AddAsync(Entry(VersionRestoredAction, stored.Form, userKey, details), cancellationToken);
-                }
-
-                return stored;
-            },
+        await changes.CancelableAsync(new FormSavingNotification(definition, form.Alias, form.Name, isNew: false, userKey, new EventMessages()) { RestoredFromVersion = number });
+        var saved = await changes.WriteAsync(
+            () => forms.SaveDraftAsync(form.Id, expectedConcurrencyVersion, document, null, userKey, cancellationToken),
+            stored => stored is null
+                ? []
+                : [FormDocuments.Entry(VersionRestoredAction, stored.Form, userKey, new AuditDetails().Add("version", stored.Version.Info.Number).Add("from", number))],
             cancellationToken);
         if (saved is null)
         {
             return null;
         }
 
-        var info = await InfoAsync(saved.Form, cancellationToken);
-        await PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, saved.Version.Info.Number, isNew: false, userKey) { RestoredFromVersion = number });
+        var info = await documents.InfoAsync(saved.Form, cancellationToken);
+        await changes.PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, saved.Version.Info.Number, isNew: false, userKey) { RestoredFromVersion = number }, FormBuilderFormService.Subject(info.Key));
         return new FormVersionResult(info, saved.Version.Info.Number);
     }
 
     /// <inheritdoc />
     public async Task<FormVersion?> PinVersionAsync(Guid key, int number, bool isPinned, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
         if (await VersionToChangeAsync(key, number, cancellationToken) is not { } found)
         {
             return null;
         }
 
         var (form, version) = found;
-
         if (version.IsPinned == isPinned)
         {
             return Version(version, form);
@@ -168,16 +218,15 @@ internal sealed partial class FormBuilderFormService
     /// <inheritdoc />
     public async Task<FormVersion?> CommentVersionAsync(Guid key, int number, string? comment, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
         var text = string.IsNullOrWhiteSpace(comment) ? null : comment;
-        CheckComment(text);
+        FormChecks.Comment(text);
         if (await VersionToChangeAsync(key, number, cancellationToken) is not { } found)
         {
             return null;
         }
 
         var (form, version) = found;
-
         if (string.Equals(version.Comment, text, StringComparison.Ordinal))
         {
             return Version(version, form);
@@ -216,13 +265,6 @@ internal sealed partial class FormBuilderFormService
             ? DefinitionDiff.Compare(older, newer).Select(change => change.Summarize()).ToList()
             : null;
 
-    // A stored version read and upgraded; one that cannot be read is refused with what is wrong with it.
-    private FormDefinition Readable(StoredFormVersion version)
-    {
-        var read = serializer.ReadStored(version.Definition);
-        return read.Definition ?? throw new FormBuilderValidationException(read.Problems);
-    }
-
     // The form and the version a pin or a comment changes: null when either is missing; a form in the trash is refused.
     private async Task<(StoredForm Form, FormVersionInfo Version)?> VersionToChangeAsync(Guid key, int number, CancellationToken cancellationToken)
     {
@@ -231,11 +273,7 @@ internal sealed partial class FormBuilderFormService
             return null;
         }
 
-        if (form.TrashedUtc is not null)
-        {
-            throw new FormBuilderConflictException(FormBuilderConflict.Trashed, "The form is in the trash; restore it first.");
-        }
-
+        FormChecks.OutsideTrash(form);
         var versions = await forms.GetVersionsAsync(form.Id, [number], cancellationToken);
         return versions.Count == 1 ? (form, versions[0].Info) : null;
     }
@@ -252,26 +290,17 @@ internal sealed partial class FormBuilderFormService
         string action,
         CancellationToken cancellationToken)
     {
-        await CancelableAsync(new FormVersionUpdatingNotification(form.Key, form.Alias, form.Name, version.Number, comment, isPinned, userKey, new EventMessages()));
-        var updated = await database.WriteAsync(
-            async _ =>
-            {
-                var info = await change();
-                if (info is not null)
-                {
-                    var details = new AuditDetails().Add("version", info.Number).Add("hasComment", info.Comment is not null);
-                    await audit.AddAsync(Entry(action, form, userKey, details), cancellationToken);
-                }
-
-                return info;
-            },
+        await changes.CancelableAsync(new FormVersionUpdatingNotification(form.Key, form.Alias, form.Name, version.Number, comment, isPinned, userKey, new EventMessages()));
+        var updated = await changes.WriteAsync(
+            change,
+            info => info is null ? [] : [FormDocuments.Entry(action, form, userKey, new AuditDetails().Add("version", info.Number).Add("hasComment", info.Comment is not null))],
             cancellationToken);
         if (updated is null)
         {
             return null;
         }
 
-        await PublishedAsync(new FormVersionUpdatedNotification(form.Key, form.Alias, form.Name, updated.Number, updated.Comment, updated.IsPinned, userKey));
+        await changes.PublishedAsync(new FormVersionUpdatedNotification(form.Key, form.Alias, form.Name, updated.Number, updated.Comment, updated.IsPinned, userKey), FormBuilderFormService.Subject(form.Key));
         return Version(updated, form);
     }
 }

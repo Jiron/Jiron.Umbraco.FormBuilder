@@ -17,38 +17,30 @@ internal sealed partial class FormBuilderFormService
     /// <inheritdoc />
     public async Task<FormInfo?> TrashAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         if (await forms.GetAsync(key, cancellationToken) is not { } form)
         {
             return null;
         }
 
-        CheckCurrent(form, expectedConcurrencyVersion, inTrash: true);
+        FormChecks.Current(form, expectedConcurrencyVersion, inTrash: true);
         if (form.TrashedUtc is not null)
         {
-            return await InfoAsync(form, cancellationToken);
+            return await documents.InfoAsync(form, cancellationToken);
         }
 
-        await CancelableAsync(new FormTrashingNotification(form.Key, form.Alias, form.Name, userKey, new EventMessages()));
-        var changed = await database.WriteAsync(
-            async _ =>
-            {
-                var stored = await forms.TrashAsync(form.Id, expectedConcurrencyVersion, userKey, cancellationToken);
-                if (stored is not null)
-                {
-                    await audit.AddAsync(Entry(TrashedAction, stored, userKey, new AuditDetails()), cancellationToken);
-                }
-
-                return stored;
-            },
+        await changes.CancelableAsync(new FormTrashingNotification(form.Key, form.Alias, form.Name, userKey, new EventMessages()));
+        var changed = await changes.WriteAsync(
+            () => forms.TrashAsync(form.Id, expectedConcurrencyVersion, userKey, cancellationToken),
+            stored => stored is null ? [] : [FormDocuments.Entry(TrashedAction, stored, userKey, new AuditDetails())],
             cancellationToken);
         if (changed is null)
         {
             return null;
         }
 
-        var info = await InfoAsync(changed, cancellationToken);
-        await PublishedAsync(new FormTrashedNotification(info.Key, info.Alias, info.Name, userKey));
+        var info = await documents.InfoAsync(changed, cancellationToken);
+        await changes.PublishedAsync(new FormTrashedNotification(info.Key, info.Alias, info.Name, userKey), Subject(info.Key));
         return info;
     }
 
@@ -67,16 +59,16 @@ internal sealed partial class FormBuilderFormService
     /// <inheritdoc />
     public async Task<FormInfo?> RestoreAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, RestoreLanding? landing = null, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         if (await forms.GetAsync(key, cancellationToken) is not { } form)
         {
             return null;
         }
 
-        CheckCurrent(form, expectedConcurrencyVersion, inTrash: true);
+        FormChecks.Current(form, expectedConcurrencyVersion, inTrash: true);
         if (form.TrashedUtc is null)
         {
-            return await InfoAsync(form, cancellationToken);
+            return await documents.InfoAsync(form, cancellationToken);
         }
 
         // Back into its folder while that is outside the trash, otherwise to the root; there, or where the caller checked
@@ -84,9 +76,9 @@ internal sealed partial class FormBuilderFormService
         var folder = form.FolderId is { } folderId ? await folders.GetByIdAsync(folderId, cancellationToken) : null;
         var lands = landing ?? Landing(folder);
         int? landingId = lands.FolderKey is null ? null : folder is not null && folder.Key == lands.FolderKey ? folder.Id : throw LandingChanged();
-        await CancelableAsync(new FormRestoringNotification(form.Key, form.Alias, form.Name, lands.FolderKey, userKey, new EventMessages()));
-        var changed = await database.WriteAsync(
-            async _ =>
+        await changes.CancelableAsync(new FormRestoringNotification(form.Key, form.Alias, form.Name, lands.FolderKey, userKey, new EventMessages()));
+        var changed = await changes.WriteAsync(
+            async () =>
             {
                 if (await forms.RestoreAsync(form.Id, expectedConcurrencyVersion, landingId, userKey, cancellationToken) is not { } stored)
                 {
@@ -94,9 +86,9 @@ internal sealed partial class FormBuilderFormService
                 }
 
                 var folderKey = stored.FolderId is { } id ? (await folders.GetByIdAsync(id, cancellationToken))?.Key : null;
-                await audit.AddAsync(Entry(RestoredAction, stored, userKey, new AuditDetails().Add("folder", folderKey)), cancellationToken);
                 return new Restored(stored, folderKey);
             },
+            restored => restored is null ? [] : [FormDocuments.Entry(RestoredAction, restored.Form, userKey, new AuditDetails().Add("folder", restored.FolderKey))],
             cancellationToken);
         if (changed is null)
         {
@@ -104,8 +96,8 @@ internal sealed partial class FormBuilderFormService
         }
 
         var (row, back) = changed;
-        await PublishedAsync(new FormRestoredNotification(row.Key, row.Alias, row.Name, back, userKey));
-        return Info(row, back);
+        await changes.PublishedAsync(new FormRestoredNotification(row.Key, row.Alias, row.Name, back, userKey), Subject(row.Key));
+        return FormDocuments.Info(row, back);
     }
 
     // A restore goes back into the folder while that is outside the trash, otherwise to the root.
@@ -117,19 +109,15 @@ internal sealed partial class FormBuilderFormService
     /// <inheritdoc />
     public async Task<FormDeletion?> DeleteAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         if (await forms.GetAsync(key, cancellationToken) is not { } form)
         {
             return null;
         }
 
-        CheckCurrent(form, expectedConcurrencyVersion, inTrash: true);
-        if (form.TrashedUtc is null)
-        {
-            throw new FormBuilderConflictException(FormBuilderConflict.NotTrashed, "Only a form in the trash is deleted; put it in the trash first.");
-        }
-
-        await CancelableAsync(new FormDeletingNotification(form.Key, form.Alias, form.Name, userKey, new EventMessages()));
+        FormChecks.Current(form, expectedConcurrencyVersion, inTrash: true);
+        LibraryTrash.CheckInside(form.TrashedUtc, FormChecks.Item);
+        await changes.CancelableAsync(new FormDeletingNotification(form.Key, form.Alias, form.Name, userKey, new EventMessages()));
         FormDeletion? removed;
         try
         {
@@ -146,7 +134,7 @@ internal sealed partial class FormBuilderFormService
             return null;
         }
 
-        await PublishedAsync(new FormDeletedNotification(form.Key, form.Alias, form.Name, removed.Entries, removed.Files, userKey));
+        await changes.PublishedAsync(new FormDeletedNotification(form.Key, form.Alias, form.Name, removed.Entries, removed.Files, userKey), Subject(form.Key));
         return removed;
     }
 

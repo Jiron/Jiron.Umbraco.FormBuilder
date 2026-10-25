@@ -67,7 +67,7 @@ database connection of its own. Its areas:
 | Area | Holds | Decided in |
 | --- | --- | --- |
 | Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions and their comparison, and the exchange of forms (`Exchange`: element keys and their remap, copied actions, the export envelope) | ADR-0002, ADR-0045, ADR-0046 |
-| Forms | the form service: create from blank or a template, import and export, duplicate, copy actions to another form, save, publish, unpublish, rename and move, a form's versions (the History with what changed, one version, two compared, restore, pins and comments), the trash and the permanent delete; the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047 |
+| Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053 |
 | Fields and options | the field type registry, the built-in types, option sources and lists, places on options | ADR-0002, §4.3.2 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
@@ -79,7 +79,35 @@ database connection of its own. Its areas:
 | Access | the permission model (the flags, what each needs and where it may be granted), the evaluation from one cached snapshot per server with its refresher, the lists' filter, grants and restrictions with their audit entries, host grants and the access lock, and the grants of a user group Umbraco deletes | ADR-0013, ADR-0048 |
 | Settings | host options and their start-up checks; the backoffice sections with their validators, migrations and host rules, the cached reader, the save and the cache refresher | ADR-0008, ADR-0042, ADR-0043 |
 | Persistence | NPoco DTOs, repositories, the entries query builder, the outbox, the audit log and daily statistics, the migration plan, the database gate and units of work ([database.md](database.md#access)) | ADR-0003, ADR-0007, ADR-0033, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0041, D7 |
-| Platform | jobs, notifications, the audit log's details (keys, numbers, flags, enum values, times and identifiers only), the HTML and CSS sanitiser | ADR-0007, ADR-0041, §4.10 |
+| Platform | jobs, notifications, the one change pipeline of the services, the audit log's details (keys, numbers, flags, enum values, times and identifiers only), the HTML and CSS sanitiser | ADR-0007, ADR-0041, ADR-0053, §4.10 |
+
+**The form services** ([ADR-0053](decisions/0053-form-service-in-parts.md)) are three, each with its own interface and
+registration, over internal parts they share. Every change of Core's services takes the same steps through
+`FormBuilderChanges<TService>`, one per service: refused inside a caller's unit of work or an Umbraco scope, the
+cancelable notification, one unit with the write and its audit entries, then the notification that it happened.
+
+```mermaid
+flowchart LR
+  api["Management API"]
+  forms["IFormBuilderFormService<br>lifecycle and trash"]
+  versions["IFormBuilderFormVersionService<br>History, compare, restore, pins, comments"]
+  exchange["IFormBuilderFormExchangeService<br>duplicate, copy actions, templates, import, export"]
+  shared["FormDocuments, FormChecks, FormCreation"]
+  others["folder, access and settings services"]
+  changes["FormBuilderChanges: own unit, cancelable notification, write with audit, notification after"]
+  repos["repositories"]
+  api --> forms
+  api --> versions
+  forms --> shared
+  versions --> shared
+  exchange --> shared
+  forms --> changes
+  versions --> changes
+  exchange --> changes
+  others --> changes
+  shared --> repos
+  changes --> repos
+```
 
 **Web** hosts the HTTP surfaces and rendering:
 
@@ -414,8 +442,9 @@ first of each pair cancelable, the second once the change committed, [ADR-0044](
 `ActionRunning`/`ActionRunCompleted`/`ActionRunFailed`; `ExportCompleted`; `SettingsSaved`. Umbraco's webhook system
 receives entry events too.
 
-**Services:** `IFormBuilderFormService`, `IFormBuilderFolderService`, `IFormBuilderEntryService`,
-`IFormBuilderEntryReader`, `IFormBuilderRenderer`, `IFormBuilderMergeTagService`.
+**Services:** `IFormBuilderFormService` with `IFormBuilderFormVersionService` and `IFormBuilderFormExchangeService`
+(ADR-0053), `IFormBuilderFolderService`, `IFormBuilderEntryService`, `IFormBuilderEntryReader`, `IFormBuilderRenderer`,
+`IFormBuilderMergeTagService`.
 
 **The website:** the tag helpers and view component, the theme views and the markup contract (ADR-0015),
 `window.JironFormBuilder` (`init`, `get`, `consent`), the DOM events `jfb:ready`, `jfb:page`, `jfb:invalid`,

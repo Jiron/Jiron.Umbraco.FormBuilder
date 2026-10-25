@@ -216,11 +216,5 @@ internal sealed partial class FormRepository
         return folderIds.Distinct().Order().ToArray();
     }
 
-    private static void CheckTrashed(StoredForm current)
-    {
-        if (current.TrashedUtc is null)
-        {
-            throw new FormBuilderConflictException(FormBuilderConflict.NotTrashed, "Only a form in the trash is deleted; put it in the trash first.");
-        }
-    }
+    private static void CheckTrashed(StoredForm current) => LibraryTrash.CheckInside(current.TrashedUtc, "form");
 }

@@ -2,7 +2,6 @@ using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 
@@ -10,13 +9,13 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
 /// <summary>
 /// Creates, renames, moves, trashes, restores and deletes the folders of the form library, and empties the trash
-/// (ADR-0047), on the rules of the form service (ADR-0044): every change is a unit of work of its own, refused inside a
-/// caller's unit or an Umbraco scope; the checks that need no write, then the cancelable notification, then the unit with
-/// the change and its audit entry, then the notification that it happened. Folders have no concurrency version: the
-/// last rename or move wins, and a trash or a restore that has nothing to do changes nothing. A missing folder gives
-/// null; a refusal throws <see cref="FormBuilderValidationException"/>, <see cref="FormBuilderConflictException"/>,
-/// <see cref="FormBuilderConcurrencyException"/> or <see cref="FormBuilderCancelledException"/>, each with a code from
-/// <see cref="FormBuilderErrorCodes"/>.
+/// (ADR-0047), on the rules of the form service (ADR-0044, ADR-0053): every change is a unit of work of its own,
+/// refused inside a caller's unit or an Umbraco scope; the checks that need no write, then the cancelable notification,
+/// then the unit with the change and its audit entry, then the notification that it happened. Folders have no
+/// concurrency version: the last rename or move wins, and a trash or a restore that has nothing to do changes nothing.
+/// A missing folder gives null; a refusal throws <see cref="FormBuilderValidationException"/>,
+/// <see cref="FormBuilderConflictException"/>, <see cref="FormBuilderConcurrencyException"/> or
+/// <see cref="FormBuilderCancelledException"/>, each with a code from <see cref="FormBuilderErrorCodes"/>.
 /// </summary>
 internal interface IFormBuilderFolderService
 {
@@ -115,16 +114,13 @@ internal interface IFormBuilderFolderService
 }
 
 /// <inheritdoc />
-internal sealed partial class FormBuilderFolderService(
+internal sealed class FormBuilderFolderService(
     IFolderRepository folders,
     IFormRepository forms,
     IPermissionRepository permissions,
-    IAuditRepository audit,
-    FormBuilderDatabase database,
     FormRemoval removal,
     AccessSnapshotInvalidator access,
-    IEventAggregator eventAggregator,
-    ILogger<FormBuilderFolderService> logger)
+    FormBuilderChanges<FormBuilderFolderService> changes)
     : IFormBuilderFolderService
 {
     /// <summary>The audit entity type of a folder; the item is the folder's key.</summary>
@@ -148,6 +144,11 @@ internal sealed partial class FormBuilderFolderService(
     /// <summary>The audit action of a permanent delete, one per folder.</summary>
     public const string DeletedAction = "folder.deleted";
 
+    // What a folder is called in the refusals of the trash check, and what a change names when a handler fails.
+    private const string Item = "folder";
+    private const string Library = "the form library";
+    private const string OwnUnit = "A change to a folder is a unit of work of its own: it tells handlers once it has committed (ADR-0047).";
+
     /// <inheritdoc />
     public async Task<FolderInfo?> GetAsync(Guid key, CancellationToken cancellationToken = default) =>
         await folders.GetAsync(key, cancellationToken) is { } folder ? await InfoAsync(folder, cancellationToken) : null;
@@ -167,18 +168,14 @@ internal sealed partial class FormBuilderFolderService(
     public async Task<FolderInfo> CreateAsync(NewFolderRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         var name = CheckName(request.Name);
         var parent = await LiveParentAsync(request.ParentKey, cancellationToken);
         var key = Guid.NewGuid();
-        await CancelableAsync(new FolderCreatingNotification(key, name, parent?.Key, request.UserKey, new EventMessages()));
-        var created = await database.WriteAsync(
-            async _ =>
-            {
-                var stored = await folders.CreateAsync(new NewFolder(key, parent?.Id, name, UserKey: request.UserKey), cancellationToken);
-                await audit.AddAsync(Entry(CreatedAction, key, request.UserKey, new AuditDetails().Add("parent", parent?.Key)), cancellationToken);
-                return stored;
-            },
+        await changes.CancelableAsync(new FolderCreatingNotification(key, name, parent?.Key, request.UserKey, new EventMessages()));
+        var created = await changes.WriteAsync(
+            () => folders.CreateAsync(new NewFolder(key, parent?.Id, name, UserKey: request.UserKey), cancellationToken),
+            _ => [Entry(CreatedAction, key, request.UserKey, new AuditDetails().Add("parent", parent?.Key))],
             cancellationToken);
         await PublishedAsync(new FolderCreatedNotification(key, name, parent?.Key, request.UserKey));
         return Info(created, parent?.Key);
@@ -187,31 +184,23 @@ internal sealed partial class FormBuilderFolderService(
     /// <inheritdoc />
     public async Task<FolderInfo?> RenameAsync(Guid key, string name, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         var newName = CheckName(name);
         if (await folders.GetAsync(key, cancellationToken) is not { } folder)
         {
             return null;
         }
 
-        CheckOutsideTrash(folder);
+        LibraryTrash.CheckOutside(folder.TrashedUtc, Item);
         if (newName == folder.Name)
         {
             return await InfoAsync(folder, cancellationToken);
         }
 
-        await CancelableAsync(new FolderRenamingNotification(folder.Key, newName, folder.Name, userKey, new EventMessages()));
-        var changed = await database.WriteAsync(
-            async _ =>
-            {
-                var stored = await folders.RenameAsync(folder.Id, newName, userKey, cancellationToken);
-                if (stored is not null)
-                {
-                    await audit.AddAsync(Entry(RenamedAction, folder.Key, userKey, new AuditDetails()), cancellationToken);
-                }
-
-                return stored;
-            },
+        await changes.CancelableAsync(new FolderRenamingNotification(folder.Key, newName, folder.Name, userKey, new EventMessages()));
+        var changed = await changes.WriteAsync(
+            () => folders.RenameAsync(folder.Id, newName, userKey, cancellationToken),
+            stored => stored is null ? [] : [Entry(RenamedAction, folder.Key, userKey, new AuditDetails())],
             cancellationToken);
         if (changed is null)
         {
@@ -225,13 +214,13 @@ internal sealed partial class FormBuilderFolderService(
     /// <inheritdoc />
     public async Task<FolderInfo?> MoveAsync(Guid key, Guid? parentKey, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         if (await folders.GetAsync(key, cancellationToken) is not { } folder)
         {
             return null;
         }
 
-        CheckOutsideTrash(folder);
+        LibraryTrash.CheckOutside(folder.TrashedUtc, Item);
         var parent = await LiveParentAsync(parentKey, cancellationToken);
         if (parent?.Id == folder.ParentId)
         {
@@ -239,19 +228,10 @@ internal sealed partial class FormBuilderFolderService(
         }
 
         var previousParentKey = await KeyOfAsync(folder.ParentId, cancellationToken);
-        await CancelableAsync(new FolderMovingNotification(folder.Key, folder.Name, parent?.Key, previousParentKey, userKey, new EventMessages()));
-        var changed = await database.WriteAsync(
-            async _ =>
-            {
-                var stored = await folders.MoveAsync(folder.Id, parent?.Id, userKey, cancellationToken);
-                if (stored is not null)
-                {
-                    var details = new AuditDetails().Add("parent", parent?.Key).Add("previousParent", previousParentKey);
-                    await audit.AddAsync(Entry(MovedAction, folder.Key, userKey, details), cancellationToken);
-                }
-
-                return stored;
-            },
+        await changes.CancelableAsync(new FolderMovingNotification(folder.Key, folder.Name, parent?.Key, previousParentKey, userKey, new EventMessages()));
+        var changed = await changes.WriteAsync(
+            () => folders.MoveAsync(folder.Id, parent?.Id, userKey, cancellationToken),
+            stored => stored is null ? [] : [Entry(MovedAction, folder.Key, userKey, new AuditDetails().Add("parent", parent?.Key).Add("previousParent", previousParentKey))],
             cancellationToken);
         if (changed is null)
         {
@@ -265,7 +245,7 @@ internal sealed partial class FormBuilderFolderService(
     /// <inheritdoc />
     public async Task<FolderChange?> TrashAsync(Guid key, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         if (await folders.GetAsync(key, cancellationToken) is not { } folder)
         {
             return null;
@@ -280,9 +260,9 @@ internal sealed partial class FormBuilderFolderService(
         // trashed on its own keeps its own key.
         var below = Below(await folders.ListAllAsync(cancellationToken), folder.Id, child => child.TrashedUtc is null);
         var going = (await forms.ListInFoldersAsync(Ids(folder, below), cancellationToken)).Where(form => form.TrashedUtc is null);
-        await CancelableAsync(new FolderTrashingNotification(folder.Key, folder.Name, Summaries(below), Summaries(going), userKey, new EventMessages()));
-        var changed = await database.WriteAsync<TreeChange?>(
-            async _ =>
+        await changes.CancelableAsync(new FolderTrashingNotification(folder.Key, folder.Name, Summaries(below), Summaries(going), userKey, new EventMessages()));
+        var changed = await changes.WriteAsync<TreeChange?>(
+            async () =>
             {
                 if (await folders.TrashAsync(folder.Id, userKey, cancellationToken) is not { TrashKey: { } trashKey } tree)
                 {
@@ -290,10 +270,9 @@ internal sealed partial class FormBuilderFolderService(
                 }
 
                 var trashed = await forms.TrashInFoldersAsync(tree.Folders.Select(row => row.Id).ToList(), trashKey, userKey, cancellationToken);
-                var details = new AuditDetails().Add("folders", tree.Folders.Count - 1).Add("forms", trashed.Count);
-                await audit.AddAsync(Entry(TrashedAction, folder.Key, userKey, details), cancellationToken);
                 return new TreeChange(tree.Folders, trashed, await KeyOfAsync(tree.Folders[0].ParentId, cancellationToken));
             },
+            tree => tree is null ? [] : [Entry(TrashedAction, folder.Key, userKey, new AuditDetails().Add("folders", tree.Folders.Count - 1).Add("forms", tree.Forms.Count))],
             cancellationToken);
         if (changed is null)
         {
@@ -320,7 +299,7 @@ internal sealed partial class FormBuilderFolderService(
     /// <inheritdoc />
     public async Task<FolderChange?> RestoreAsync(Guid key, Guid? userKey, RestoreLanding? landing = null, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         if (await folders.GetAsync(key, cancellationToken) is not { } folder)
         {
             return null;
@@ -342,9 +321,9 @@ internal sealed partial class FormBuilderFolderService(
         var parent = all.FirstOrDefault(row => row.Id == folder.ParentId);
         var lands = landing ?? Landing(parent);
         int? landingId = lands.FolderKey is null ? null : parent is not null && parent.Key == lands.FolderKey ? parent.Id : throw LandingChanged();
-        await CancelableAsync(new FolderRestoringNotification(folder.Key, folder.Name, lands.FolderKey, Summaries(below), Summaries(coming), userKey, new EventMessages()));
-        var changed = await database.WriteAsync<TreeChange?>(
-            async _ =>
+        await changes.CancelableAsync(new FolderRestoringNotification(folder.Key, folder.Name, lands.FolderKey, Summaries(below), Summaries(coming), userKey, new EventMessages()));
+        var changed = await changes.WriteAsync<TreeChange?>(
+            async () =>
             {
                 if (await folders.RestoreAsync(folder.Id, landingId, userKey, cancellationToken) is not { } tree)
                 {
@@ -354,11 +333,9 @@ internal sealed partial class FormBuilderFolderService(
                 IReadOnlyList<StoredForm> restored = tree.TrashKey is { } restoredKey
                     ? await forms.RestoreInFoldersAsync(tree.Folders.Select(row => row.Id).ToList(), restoredKey, userKey, cancellationToken)
                     : [];
-                var parentKey = await KeyOfAsync(tree.Folders[0].ParentId, cancellationToken);
-                var details = new AuditDetails().Add("parent", parentKey).Add("folders", tree.Folders.Count - 1).Add("forms", restored.Count);
-                await audit.AddAsync(Entry(RestoredAction, folder.Key, userKey, details), cancellationToken);
-                return new TreeChange(tree.Folders, restored, parentKey);
+                return new TreeChange(tree.Folders, restored, await KeyOfAsync(tree.Folders[0].ParentId, cancellationToken));
             },
+            tree => tree is null ? [] : [Entry(RestoredAction, folder.Key, userKey, new AuditDetails().Add("parent", tree.ParentKey).Add("folders", tree.Folders.Count - 1).Add("forms", tree.Forms.Count))],
             cancellationToken);
         if (changed is null)
         {
@@ -373,16 +350,13 @@ internal sealed partial class FormBuilderFolderService(
     /// <inheritdoc />
     public async Task<LibraryDeletion?> DeleteAsync(Guid key, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         if (await folders.GetAsync(key, cancellationToken) is not { } folder)
         {
             return null;
         }
 
-        if (folder.TrashedUtc is null)
-        {
-            throw new FormBuilderConflictException(FormBuilderConflict.NotTrashed, "Only a folder in the trash is deleted; put it in the trash first.");
-        }
+        LibraryTrash.CheckInside(folder.TrashedUtc, Item);
 
         var below = Below(await folders.ListAllAsync(cancellationToken), folder.Id, _ => true);
         var inside = await forms.ListInFoldersAsync(Ids(folder, below), cancellationToken);
@@ -391,7 +365,7 @@ internal sealed partial class FormBuilderFolderService(
             throw new FormBuilderConflictException(FormBuilderConflict.FolderNotEmpty, "Something below the folder is outside the trash; move it out or put it in the trash first.");
         }
 
-        await CancelableAsync(new FolderDeletingNotification(folder.Key, folder.Name, Summaries(below), Summaries(inside), userKey, new EventMessages()));
+        await changes.CancelableAsync(new FolderDeletingNotification(folder.Key, folder.Name, Summaries(below), Summaries(inside), userKey, new EventMessages()));
         var deleted = await DeletingAsync(() => DeleteTreeAsync(folder, below, inside, userKey, cancellationToken));
         await PublishedAsync(new FolderDeletedNotification(folder.Key, folder.Name, [.. deleted.Folders.Where(summary => summary.Key != folder.Key)], deleted.Forms, userKey));
         return deleted;
@@ -420,7 +394,7 @@ internal sealed partial class FormBuilderFolderService(
     public async Task<TrashEmptied> EmptyTrashAsync(Func<DeletionCandidate, CancellationToken, Task<bool>> include, Guid? userKey, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(include);
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         var all = await folders.ListAllAsync(cancellationToken);
         var trashedIds = all.Where(folder => folder.TrashedUtc is not null).Select(folder => folder.Id).ToHashSet();
         var trashedForms = await TrashedFormsAsync(cancellationToken);
@@ -446,7 +420,7 @@ internal sealed partial class FormBuilderFolderService(
             [.. trees.SelectMany(tree => Summaries(tree.Forms)), .. Summaries(loose)],
             userKey,
             new EventMessages());
-        await CancelableAsync(going);
+        await changes.CancelableAsync(going);
 
         var emptied = await DeletingAsync(async () =>
         {
@@ -524,15 +498,6 @@ internal sealed partial class FormBuilderFolderService(
     private static NewAuditEntry Entry(string action, Guid folderKey, Guid? userKey, AuditDetails details) =>
         new(action, EntityType, folderKey, userKey, details);
 
-    // Only a restore or a delete applies to a folder in the trash.
-    private static void CheckOutsideTrash(StoredFolder folder)
-    {
-        if (folder.TrashedUtc is not null)
-        {
-            throw new FormBuilderConflictException(FormBuilderConflict.Trashed, "The folder is in the trash; restore it first.");
-        }
-    }
-
     private static string CheckName(string name) => LibraryNames.Check(name, "folder", FolderRepository.MaxNameLength);
 
     // The folder's first row, then the rest nearest first as the notification before the change named them, as the
@@ -568,8 +533,8 @@ internal sealed partial class FormBuilderFolderService(
     {
         var formsGone = await DeleteFormsAsync(inside, userKey, cancellationToken);
         List<StoredFolder> deepestFirst = [.. below.AsEnumerable().Reverse(), top];
-        var foldersGone = await database.WriteAsync(
-            async _ =>
+        var foldersGone = await changes.WriteAsync(
+            async () =>
             {
                 var gone = new List<StoredFolder>();
                 foreach (var folder in deepestFirst)
@@ -577,13 +542,13 @@ internal sealed partial class FormBuilderFolderService(
                     if (await folders.DeleteAsync(folder.Id, cancellationToken))
                     {
                         await permissions.DeleteForTargetAsync(PermissionTarget.Folder, folder.Key, cancellationToken);
-                        await audit.AddAsync(Entry(DeletedAction, folder.Key, userKey, new AuditDetails()), cancellationToken);
                         gone.Add(folder);
                     }
                 }
 
                 return gone;
             },
+            gone => gone.Select(folder => Entry(DeletedAction, folder.Key, userKey, new AuditDetails())),
             cancellationToken);
         return formsGone with { Folders = Summaries(Enumerable.Reverse(foldersGone)) };
     }
@@ -623,29 +588,11 @@ internal sealed partial class FormBuilderFolderService(
             : throw new FormBuilderConflictException(FormBuilderConflict.MissingFolder, "The folder does not exist or is in the trash.");
     }
 
-    private void EnsureOwnUnit()
-    {
-        if (database.InUnitOfWork)
-        {
-            throw new InvalidOperationException("A change to a folder is a unit of work of its own: it tells handlers once it has committed (ADR-0047).");
-        }
-    }
-
     // A restore goes back into the parent while that is outside the trash, otherwise to the root.
     private static RestoreLanding Landing(StoredFolder? parent) => new(parent is { TrashedUtc: null } ? parent.Key : null);
 
     private static FormBuilderConflictException LandingChanged() =>
         new(FormBuilderConflict.LandingChanged, "Where it lands changed since it was checked: its folder went to the trash or came back meanwhile. Check again, then restore it.");
-
-    // Publishes a notification before a change: a handler that cancels it stops the change.
-    private async Task CancelableAsync<T>(T notification)
-        where T : CancelableNotification
-    {
-        if (await eventAggregator.PublishCancelableAsync(notification))
-        {
-            throw new FormBuilderCancelledException(notification.Messages);
-        }
-    }
 
     // A permanent delete, which may stop part way: what went before it stopped took its grants with it, so the access
     // snapshot drops then too; a delete that finishes drops it as it publishes (ADR-0048).
@@ -673,18 +620,8 @@ internal sealed partial class FormBuilderFolderService(
             access.Changed();
         }
 
-        try
-        {
-            await eventAggregator.PublishAsync(notification, CancellationToken.None);
-        }
-        catch (Exception exception) when (exception is not OutOfMemoryException)
-        {
-            LogHandlerFailed(logger, typeof(T).Name, exception);
-        }
+        await changes.PublishedAsync(notification, Library);
     }
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "A handler of {Notification} failed after a change to the form library committed; the change stands")]
-    private static partial void LogHandlerFailed(ILogger logger, string notification, Exception exception);
 
     // The folders a trash or a restore changed, the folder first, the forms with them, and where the folder is now.
     private sealed record TreeChange(IReadOnlyList<StoredFolder> Folders, IReadOnlyList<StoredForm> Forms, Guid? ParentKey);

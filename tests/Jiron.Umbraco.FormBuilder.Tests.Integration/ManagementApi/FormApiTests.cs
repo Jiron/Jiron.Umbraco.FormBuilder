@@ -162,7 +162,7 @@ public sealed class FormApiTests : ManagementApiTestBase
         var otherKey = Clone(reread.Definition);
         otherKey["key"] = Guid.NewGuid().ToString();
         var elsewhere = await _api.CallAsync("designer", HttpMethod.Put, $"form/{_spring}/draft", new { concurrencyVersion = reread.Version, definition = otherKey });
-        var versions = (await Forms.ListVersionsAsync(_spring, includeDrafts: true, PageRequest.First(5)))!.Items.Select(entry => entry.Version).ToList();
+        var versions = (await Versions.ListVersionsAsync(_spring, includeDrafts: true, PageRequest.First(5)))!.Items.Select(entry => entry.Version).ToList();
 
         Assert.Multiple(() =>
         {
@@ -209,7 +209,7 @@ public sealed class FormApiTests : ManagementApiTestBase
         var published = await _api.CallAsync("designer", HttpMethod.Post, $"form/{_contact}/publish", new { concurrencyVersion = await VersionOfAsync(_contact), comment = "Live" });
         var again = await _api.CallAsync("designer", HttpMethod.Post, $"form/{_contact}/publish", new { concurrencyVersion = await VersionOfAsync(_contact) });
         var unpublished = await _api.CallAsync("drafter", HttpMethod.Post, $"form/{_contact}/unpublish", new { concurrencyVersion = await VersionOfAsync(_contact) });
-        var live = (await Forms.ListVersionsAsync(_contact, includeDrafts: false, PageRequest.First(5)))!.Items.Single().Version;
+        var live = (await Versions.ListVersionsAsync(_contact, includeDrafts: false, PageRequest.First(5)))!.Items.Single().Version;
 
         Assert.Multiple(async () =>
         {
@@ -356,6 +356,8 @@ public sealed class FormApiTests : ManagementApiTestBase
     }
 
     private IFormBuilderFormService Forms => GetRequiredService<IFormBuilderFormService>();
+
+    private IFormBuilderFormVersionService Versions => GetRequiredService<IFormBuilderFormVersionService>();
 
     private static List<string> Names(ApiAnswer page)
     {

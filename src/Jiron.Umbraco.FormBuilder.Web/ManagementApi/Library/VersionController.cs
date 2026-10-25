@@ -22,7 +22,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/form/{key:guid}/versions")]
 [ApiExplorerSettings(GroupName = "Version")]
-internal sealed class VersionController(IFormBuilderFormService forms, IFormBuilderAccessService access) : FormBuilderManagementApiController
+internal sealed class VersionController(IFormBuilderFormVersionService versions, IFormBuilderFormService forms, IFormBuilderAccessService access) : FormBuilderManagementApiController
 {
     /// <summary>A page of the form's versions, newest first: the publishes, and the draft saves too when asked.</summary>
     /// <param name="key">The form.</param>
@@ -40,9 +40,9 @@ internal sealed class VersionController(IFormBuilderFormService forms, IFormBuil
         Guid key,
         [FromQuery] bool includeDrafts = false,
         [FromQuery, Range(0, int.MaxValue)] int skip = 0,
-        [FromQuery, Range(1, FormBuilderFormService.MaxVersionsPerPage)] int take = 20,
+        [FromQuery, Range(1, FormBuilderFormVersionService.MaxVersionsPerPage)] int take = 20,
         CancellationToken cancellationToken = default) =>
-        await forms.ListVersionsAsync(key, includeDrafts, new PageRequest(skip, take), cancellationToken) is { } page
+        await versions.ListVersionsAsync(key, includeDrafts, new PageRequest(skip, take), cancellationToken) is { } page
             ? Ok(new PagedViewModel<FormVersionEntryResponseModel> { Total = page.Total, Items = page.Items.Select(FormVersionEntryResponseModel.Of).ToList() })
             : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Form);
 
@@ -56,7 +56,7 @@ internal sealed class VersionController(IFormBuilderFormService forms, IFormBuil
     [ProducesResponseType(typeof(FormVersionDocumentResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid key, int number, CancellationToken cancellationToken = default) =>
-        await forms.GetVersionAsync(key, number, cancellationToken) is { } document
+        await versions.GetVersionAsync(key, number, cancellationToken) is { } document
             ? Ok(FormVersionDocumentResponseModel.Of(document))
             : FormBuilderProblems.VersionNotFound();
 
@@ -76,7 +76,7 @@ internal sealed class VersionController(IFormBuilderFormService forms, IFormBuil
         [FromQuery, BindRequired, Range(1, int.MaxValue)] int from,
         [FromQuery, BindRequired, Range(1, int.MaxValue)] int to,
         CancellationToken cancellationToken = default) =>
-        await forms.CompareAsync(key, from, to, cancellationToken) is { } comparison
+        await versions.CompareAsync(key, from, to, cancellationToken) is { } comparison
             ? Ok(FormComparisonResponseModel.Of(comparison))
             : FormBuilderProblems.VersionNotFound();
 
@@ -98,7 +98,7 @@ internal sealed class VersionController(IFormBuilderFormService forms, IFormBuil
     public async Task<IActionResult> Restore(Guid key, int number, RestoreVersionRequestModel request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (await forms.GetVersionAsync(key, number, cancellationToken) is not { } version)
+        if (await versions.GetVersionAsync(key, number, cancellationToken) is not { } version)
         {
             return FormBuilderProblems.VersionNotFound();
         }
@@ -123,7 +123,7 @@ internal sealed class VersionController(IFormBuilderFormService forms, IFormBuil
             }
         }
 
-        if (await forms.RestoreVersionAsync(key, request.ConcurrencyVersion, number, RequestAccess.User.Key, cancellationToken) is not { } restored)
+        if (await versions.RestoreVersionAsync(key, request.ConcurrencyVersion, number, RequestAccess.User.Key, cancellationToken) is not { } restored)
         {
             return FormBuilderProblems.VersionNotFound();
         }
@@ -146,7 +146,7 @@ internal sealed class VersionController(IFormBuilderFormService forms, IFormBuil
     public async Task<IActionResult> Pin(Guid key, int number, PinVersionRequestModel request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return await forms.PinVersionAsync(key, number, request.IsPinned, RequestAccess.User.Key, cancellationToken) is { } version
+        return await versions.PinVersionAsync(key, number, request.IsPinned, RequestAccess.User.Key, cancellationToken) is { } version
             ? Ok(FormVersionResponseModel.Of(version))
             : FormBuilderProblems.VersionNotFound();
     }
@@ -166,7 +166,7 @@ internal sealed class VersionController(IFormBuilderFormService forms, IFormBuil
     public async Task<IActionResult> Comment(Guid key, int number, CommentVersionRequestModel request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return await forms.CommentVersionAsync(key, number, request.Comment, RequestAccess.User.Key, cancellationToken) is { } version
+        return await versions.CommentVersionAsync(key, number, request.Comment, RequestAccess.User.Key, cancellationToken) is { } version
             ? Ok(FormVersionResponseModel.Of(version))
             : FormBuilderProblems.VersionNotFound();
     }

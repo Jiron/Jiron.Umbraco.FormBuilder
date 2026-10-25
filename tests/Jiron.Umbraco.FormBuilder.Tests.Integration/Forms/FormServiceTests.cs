@@ -251,7 +251,7 @@ public sealed class FormServiceTests : RepositoryTestBase
 
         var created = await CreateAsync("Contact");
         var announced = Notifications.Seen.OfType<FormSavingNotification>().Select(notification => notification.Alias).ToList();
-        steals = FormBuilderFormService.AliasAttempts;
+        steals = FormCreation.AliasAttempts;
         AssertCode(async () => await CreateAsync("Contact"), "alias_taken");
         steals = 1;
         AssertCode(async () => await Service.CreateAsync(new NewFormRequest("Newsletter", Alias: "newsletter")), "alias_taken");

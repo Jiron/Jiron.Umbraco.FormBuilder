@@ -1,10 +1,7 @@
-using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
-using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
-using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Umbraco.Cms.Core.Events;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
@@ -12,80 +9,69 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 // Create, save, publish, unpublish, rename and move (ADR-0044).
 internal sealed partial class FormBuilderFormService
 {
-    /// <summary>The type of the consent field a new form starts with.</summary>
-    private const string ConsentType = "consent";
-
     /// <inheritdoc />
     public async Task<FormInfo> CreateAsync(NewFormRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        EnsureOwnUnit();
-        var name = CheckName(request.Name);
-        CheckAlias(request.Alias);
-        var folder = await LiveFolderAsync(request.FolderKey, cancellationToken);
-        var definition = await BlankAsync(cancellationToken);
-        return await CreateFormAsync(definition, name, request.Alias, FormAliases.FromName(name), folder, request.UserKey, new Creation(FormSource.Blank, null, CreatedAction), cancellationToken);
+        changes.EnsureOwnUnit(OwnUnit);
+        var name = FormChecks.Name(request.Name);
+        FormChecks.Alias(request.Alias);
+        var folder = await documents.LiveFolderAsync(request.FolderKey, cancellationToken);
+        var definition = await creation.BlankAsync(cancellationToken);
+        return await creation.CreateAsync(definition, name, request.Alias, FormAliases.FromName(name), folder, request.UserKey, new FormOrigin(FormSource.Blank, null, CreatedAction), cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<FormVersionResult?> SaveDraftAsync(Guid key, int expectedConcurrencyVersion, FormDefinition definition, string? comment, Guid? userKey, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(definition);
-        EnsureOwnUnit();
-        CheckComment(comment);
+        changes.EnsureOwnUnit(OwnUnit);
+        FormChecks.Comment(comment);
         if (await forms.GetAsync(key, cancellationToken) is not { } form)
         {
             return null;
         }
 
-        CheckCurrent(form, expectedConcurrencyVersion);
+        FormChecks.Current(form, expectedConcurrencyVersion);
         if (definition.Key != form.Key)
         {
             throw FormBuilderValidationException.For(DefinitionErrors.InvalidValue, JsonPaths.Property(JsonPaths.Root, "key"), "The definition's key is not the form's.");
         }
 
-        CheckSaveable(definition);
-        var document = Document(definition);
-        var draft = await DraftOfAsync(form, cancellationToken);
+        documents.CheckSaveable(definition);
+        var document = documents.Document(definition);
+        var draft = await documents.DraftOfAsync(form, cancellationToken);
         if (draft is { Info.SchemaVersion: FormDefinition.CurrentSchemaVersion } && draft.Info.DefinitionHash == document.DefinitionHash)
         {
-            return new FormVersionResult(await InfoAsync(form, cancellationToken), null);
+            return new FormVersionResult(await documents.InfoAsync(form, cancellationToken), null);
         }
 
-        await CancelableAsync(new FormSavingNotification(definition, form.Alias, form.Name, isNew: false, userKey, new EventMessages()));
-        var saved = await database.WriteAsync(
-            async _ =>
-            {
-                var stored = await forms.SaveDraftAsync(form.Id, expectedConcurrencyVersion, document, comment, userKey, cancellationToken);
-                if (stored is not null)
-                {
-                    await audit.AddAsync(Entry(SavedAction, stored.Form, userKey, new AuditDetails().Add("version", stored.Version.Info.Number)), cancellationToken);
-                }
-
-                return stored;
-            },
+        await changes.CancelableAsync(new FormSavingNotification(definition, form.Alias, form.Name, isNew: false, userKey, new EventMessages()));
+        var saved = await changes.WriteAsync(
+            () => forms.SaveDraftAsync(form.Id, expectedConcurrencyVersion, document, comment, userKey, cancellationToken),
+            stored => stored is null ? [] : [FormDocuments.Entry(SavedAction, stored.Form, userKey, new AuditDetails().Add("version", stored.Version.Info.Number))],
             cancellationToken);
         if (saved is null)
         {
             return null;
         }
 
-        var info = await InfoAsync(saved.Form, cancellationToken);
-        await PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, saved.Version.Info.Number, isNew: false, userKey));
+        var info = await documents.InfoAsync(saved.Form, cancellationToken);
+        await changes.PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, saved.Version.Info.Number, isNew: false, userKey), Subject(info.Key));
         return new FormVersionResult(info, saved.Version.Info.Number);
     }
 
     /// <inheritdoc />
     public async Task<FormVersionResult?> PublishAsync(Guid key, int expectedConcurrencyVersion, string? comment, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
-        CheckComment(comment);
+        changes.EnsureOwnUnit(OwnUnit);
+        FormChecks.Comment(comment);
         if (await forms.GetAsync(key, cancellationToken) is not { } form)
         {
             return null;
         }
 
-        CheckCurrent(form, expectedConcurrencyVersion);
+        FormChecks.Current(form, expectedConcurrencyVersion);
         if (form.DraftVersionId is not { } draftId || await forms.GetVersionByIdAsync(draftId, cancellationToken) is not { } draft)
         {
             return null;
@@ -99,12 +85,12 @@ internal sealed partial class FormBuilderFormService
             throw new FormBuilderValidationException(read.Problems);
         }
 
-        var document = Document(definition);
+        var document = documents.Document(definition);
         if (form.PublishedVersionId is { } liveId
             && await forms.GetVersionByIdAsync(liveId, cancellationToken) is { } live
-            && HashOf(live) == document.DefinitionHash)
+            && documents.HashOf(live) == document.DefinitionHash)
         {
-            return new FormVersionResult(await InfoAsync(form, cancellationToken), null);
+            return new FormVersionResult(await documents.InfoAsync(form, cancellationToken), null);
         }
 
         var problems = new List<DefinitionProblem>();
@@ -118,248 +104,148 @@ internal sealed partial class FormBuilderFormService
             throw new FormBuilderValidationException(problems);
         }
 
-        await CancelableAsync(new FormPublishingNotification(definition, form.Alias, form.Name, userKey, new EventMessages()));
+        await changes.CancelableAsync(new FormPublishingNotification(definition, form.Alias, form.Name, userKey, new EventMessages()));
         var catalogue = FieldCatalogue.Of(definition, types);
-        var published = await database.WriteAsync(
-            async _ =>
+        var published = await changes.WriteAsync(
+            async () =>
             {
                 var stored = await forms.PublishAsync(form.Id, expectedConcurrencyVersion, document, definition.Settings.Appearance.Theme, comment, userKey, cancellationToken);
-                if (stored is null)
+                if (stored is not null)
                 {
-                    return null;
+                    await UpdateCatalogueAsync(form.Id, catalogue, stored.Version.Info.Number, cancellationToken);
                 }
 
-                var number = stored.Version.Info.Number;
-                var fields = await forms.ListFieldsAsync(form.Id, cancellationToken);
-                var previous = await forms.GetLastPublishedNumberAsync(form.Id, number, cancellationToken);
-                foreach (var (values, isNew) in FieldCatalogue.Changes(catalogue, fields, number, previous))
-                {
-                    if (isNew)
-                    {
-                        await forms.AddFieldAsync(form.Id, values, cancellationToken);
-                    }
-                    else
-                    {
-                        await forms.UpdateFieldAsync(form.Id, values, cancellationToken);
-                    }
-                }
-
-                var details = new AuditDetails()
-                    .Add("version", number)
-                    .Add("revision", stored.Form.PublicRevision)
-                    .Add("revisionChanged", stored.Form.PublicRevision != form.PublicRevision);
-                await audit.AddAsync(Entry(PublishedAction, stored.Form, userKey, details), cancellationToken);
                 return stored;
             },
+            stored => stored is null
+                ? []
+                : [FormDocuments.Entry(PublishedAction, stored.Form, userKey, new AuditDetails().Add("version", stored.Version.Info.Number).Add("revision", stored.Form.PublicRevision).Add("revisionChanged", stored.Form.PublicRevision != form.PublicRevision))],
             cancellationToken);
         if (published is null)
         {
             return null;
         }
 
-        var info = await InfoAsync(published.Form, cancellationToken);
+        var info = await documents.InfoAsync(published.Form, cancellationToken);
         var revisionChanged = published.Form.PublicRevision != form.PublicRevision;
-        await PublishedAsync(new FormPublishedNotification(info.Key, info.Alias, info.Name, published.Version.Info.Number, info.PublicRevision, revisionChanged, userKey));
+        await changes.PublishedAsync(new FormPublishedNotification(info.Key, info.Alias, info.Name, published.Version.Info.Number, info.PublicRevision, revisionChanged, userKey), Subject(info.Key));
         return new FormVersionResult(info, published.Version.Info.Number);
     }
 
     /// <inheritdoc />
     public async Task<FormInfo?> UnpublishAsync(Guid key, int expectedConcurrencyVersion, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         if (await forms.GetAsync(key, cancellationToken) is not { } form)
         {
             return null;
         }
 
         // Taking a form offline only lessens what visitors get, so it applies in the trash too: it lets go of the theme.
-        CheckCurrent(form, expectedConcurrencyVersion, inTrash: true);
+        FormChecks.Current(form, expectedConcurrencyVersion, inTrash: true);
         if (form.PublishedVersionId is null)
         {
-            return await InfoAsync(form, cancellationToken);
+            return await documents.InfoAsync(form, cancellationToken);
         }
 
-        await CancelableAsync(new FormUnpublishingNotification(form.Key, form.Alias, form.Name, userKey, new EventMessages()));
-        var changed = await database.WriteAsync(
-            async _ =>
-            {
-                var stored = await forms.UnpublishAsync(form.Id, expectedConcurrencyVersion, userKey, cancellationToken);
-                if (stored is not null)
-                {
-                    await audit.AddAsync(Entry(UnpublishedAction, stored, userKey, new AuditDetails()), cancellationToken);
-                }
-
-                return stored;
-            },
+        await changes.CancelableAsync(new FormUnpublishingNotification(form.Key, form.Alias, form.Name, userKey, new EventMessages()));
+        var changed = await changes.WriteAsync(
+            () => forms.UnpublishAsync(form.Id, expectedConcurrencyVersion, userKey, cancellationToken),
+            stored => stored is null ? [] : [FormDocuments.Entry(UnpublishedAction, stored, userKey, new AuditDetails())],
             cancellationToken);
         if (changed is null)
         {
             return null;
         }
 
-        var info = await InfoAsync(changed, cancellationToken);
-        await PublishedAsync(new FormUnpublishedNotification(info.Key, info.Alias, info.Name, userKey));
+        var info = await documents.InfoAsync(changed, cancellationToken);
+        await changes.PublishedAsync(new FormUnpublishedNotification(info.Key, info.Alias, info.Name, userKey), Subject(info.Key));
         return info;
     }
 
     /// <inheritdoc />
     public async Task<FormInfo?> RenameAsync(Guid key, int expectedConcurrencyVersion, string name, string? alias, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
-        var newName = CheckName(name);
-        CheckAlias(alias);
+        changes.EnsureOwnUnit(OwnUnit);
+        var newName = FormChecks.Name(name);
+        FormChecks.Alias(alias);
         if (await forms.GetAsync(key, cancellationToken) is not { } form)
         {
             return null;
         }
 
-        CheckCurrent(form, expectedConcurrencyVersion);
+        FormChecks.Current(form, expectedConcurrencyVersion);
         var newAlias = alias ?? form.Alias;
         if (newName == form.Name && newAlias == form.Alias)
         {
-            return await InfoAsync(form, cancellationToken);
+            return await documents.InfoAsync(form, cancellationToken);
         }
 
-        await CancelableAsync(new FormRenamingNotification(form.Key, newAlias, newName, form.Alias, form.Name, userKey, new EventMessages()));
-        var changed = await database.WriteAsync(
-            async _ =>
-            {
-                var stored = await forms.UpdateAsync(new FormUpdate(form.Id, expectedConcurrencyVersion, newAlias, newName, form.FolderId, form.IsRestricted, userKey), cancellationToken);
-                if (stored is not null)
-                {
-                    var details = new AuditDetails().AddIdentifier("alias", newAlias).AddIdentifier("previousAlias", form.Alias).Add("nameChanged", newName != form.Name);
-                    await audit.AddAsync(Entry(RenamedAction, stored, userKey, details), cancellationToken);
-                }
-
-                return stored;
-            },
+        await changes.CancelableAsync(new FormRenamingNotification(form.Key, newAlias, newName, form.Alias, form.Name, userKey, new EventMessages()));
+        var changed = await changes.WriteAsync(
+            () => forms.UpdateAsync(new FormUpdate(form.Id, expectedConcurrencyVersion, newAlias, newName, form.FolderId, form.IsRestricted, userKey), cancellationToken),
+            stored => stored is null
+                ? []
+                : [FormDocuments.Entry(RenamedAction, stored, userKey, new AuditDetails().AddIdentifier("alias", newAlias).AddIdentifier("previousAlias", form.Alias).Add("nameChanged", newName != form.Name))],
             cancellationToken);
         if (changed is null)
         {
             return null;
         }
 
-        var info = await InfoAsync(changed, cancellationToken);
-        await PublishedAsync(new FormRenamedNotification(info.Key, info.Alias, info.Name, form.Alias, form.Name, userKey));
+        var info = await documents.InfoAsync(changed, cancellationToken);
+        await changes.PublishedAsync(new FormRenamedNotification(info.Key, info.Alias, info.Name, form.Alias, form.Name, userKey), Subject(info.Key));
         return info;
     }
 
     /// <inheritdoc />
     public async Task<FormInfo?> MoveAsync(Guid key, int expectedConcurrencyVersion, Guid? folderKey, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         if (await forms.GetAsync(key, cancellationToken) is not { } form)
         {
             return null;
         }
 
-        CheckCurrent(form, expectedConcurrencyVersion);
-        var folder = await LiveFolderAsync(folderKey, cancellationToken);
+        FormChecks.Current(form, expectedConcurrencyVersion);
+        var folder = await documents.LiveFolderAsync(folderKey, cancellationToken);
         if (folder?.Id == form.FolderId)
         {
-            return await InfoAsync(form, cancellationToken);
+            return await documents.InfoAsync(form, cancellationToken);
         }
 
         var previousFolderKey = form.FolderId is { } previousId ? (await folders.GetByIdAsync(previousId, cancellationToken))?.Key : null;
-        await CancelableAsync(new FormMovingNotification(form.Key, form.Alias, form.Name, folder?.Key, previousFolderKey, userKey, new EventMessages()));
-        var changed = await database.WriteAsync(
-            async _ =>
-            {
-                var stored = await forms.UpdateAsync(new FormUpdate(form.Id, expectedConcurrencyVersion, form.Alias, form.Name, folder?.Id, form.IsRestricted, userKey), cancellationToken);
-                if (stored is not null)
-                {
-                    var details = new AuditDetails().Add("folder", folder?.Key).Add("previousFolder", previousFolderKey);
-                    await audit.AddAsync(Entry(MovedAction, stored, userKey, details), cancellationToken);
-                }
-
-                return stored;
-            },
+        await changes.CancelableAsync(new FormMovingNotification(form.Key, form.Alias, form.Name, folder?.Key, previousFolderKey, userKey, new EventMessages()));
+        var changed = await changes.WriteAsync(
+            () => forms.UpdateAsync(new FormUpdate(form.Id, expectedConcurrencyVersion, form.Alias, form.Name, folder?.Id, form.IsRestricted, userKey), cancellationToken),
+            stored => stored is null
+                ? []
+                : [FormDocuments.Entry(MovedAction, stored, userKey, new AuditDetails().Add("folder", folder?.Key).Add("previousFolder", previousFolderKey))],
             cancellationToken);
         if (changed is null)
         {
             return null;
         }
 
-        await PublishedAsync(new FormMovedNotification(changed.Key, changed.Alias, changed.Name, folder?.Key, previousFolderKey, userKey));
-        return Info(changed, folder?.Key);
+        await changes.PublishedAsync(new FormMovedNotification(changed.Key, changed.Alias, changed.Name, folder?.Key, previousFolderKey, userKey), Subject(changed.Key));
+        return FormDocuments.Info(changed, folder?.Key);
     }
 
-    // A form from blank: one page with one group, and one outcome without text, which shows the built-in thank-you
-    // message in the visitor's language; the group starts with the consent field of the new-form defaults.
-    private Task<FormDefinition> BlankAsync(CancellationToken cancellationToken) =>
-        WithNewFormDefaultsAsync(
-            new FormDefinition
+    // The field catalogue after a publish: the fields it adds, and those it updates, brings back or ends.
+    private async Task UpdateCatalogueAsync(int formId, IReadOnlyList<CatalogueEntry> catalogue, int number, CancellationToken cancellationToken)
+    {
+        var fields = await forms.ListFieldsAsync(formId, cancellationToken);
+        var previous = await forms.GetLastPublishedNumberAsync(formId, number, cancellationToken);
+        foreach (var (values, isNew) in FieldCatalogue.Changes(catalogue, fields, number, previous))
+        {
+            if (isNew)
             {
-                Key = Guid.NewGuid(),
-                Pages = [new FormPage { Key = Guid.NewGuid(), Groups = [new FormGroup { Key = Guid.NewGuid() }] }],
-                Outcomes = [new FormOutcome { Key = Guid.NewGuid() }],
-            },
-            cancellationToken);
-
-    // A new design with the new-form defaults (ADR-0044, ADR-0046): while the consent default is set, the consent field
-    // at the end of the last group, unless the form has a consent field or a field with its alias already.
-    private async Task<FormDefinition> WithNewFormDefaultsAsync(FormDefinition definition, CancellationToken cancellationToken)
-    {
-        var general = await settings.GetAsync<GeneralSettings>(cancellationToken: cancellationToken);
-        if (general.Value.NewForms?.Consent is not { } consent
-            || definition.Pages.Count == 0
-            || definition.Pages[^1].Groups.Count == 0
-            || DefinitionKeys.Fields(definition).Any(field => field.Type == ConsentType || string.Equals(field.Alias, NewFormConsent.FieldAlias, StringComparison.OrdinalIgnoreCase)))
-        {
-            return definition;
+                await forms.AddFieldAsync(formId, values, cancellationToken);
+            }
+            else
+            {
+                await forms.UpdateFieldAsync(formId, values, cancellationToken);
+            }
         }
-
-        // The settings save validates the texts; a row written another way may hold what a definition refuses, and a new
-        // form then starts without the field rather than not at all.
-        FormField? field;
-        try
-        {
-            field = ConsentField(consent);
-        }
-        catch (ArgumentException)
-        {
-            field = null;
-        }
-
-        var page = definition.Pages[^1];
-        var group = page.Groups[^1];
-        var withConsent = field is null
-            ? null
-            : definition with { Pages = [.. definition.Pages.SkipLast(1), page with { Groups = [.. page.Groups.SkipLast(1), group with { Fields = [.. group.Fields, field] }] }] };
-        if (withConsent is null || serializer.CheckSave(withConsent).Count > 0)
-        {
-            LogConsentSkipped(logger, definition.Key);
-            return definition;
-        }
-
-        return withConsent;
-    }
-
-    // The required consent field of the new-form defaults, with the site's own label and wording (ADR-0044), or null
-    // when the wording is not rich text a definition takes: the save checks do not read a field's settings, so the
-    // wording is checked here, as the settings save checks it.
-    private static FormField? ConsentField(NewFormConsent consent)
-    {
-        var wording = new LocalizedHtml(consent.Text);
-        if (string.IsNullOrWhiteSpace(wording.Default) || DefinitionSaveChecks.CheckText(wording, html: true).Count > 0)
-        {
-            return null;
-        }
-
-        var text = new JsonObject();
-        foreach (var (culture, html) in wording.Texts)
-        {
-            text[culture] = html;
-        }
-
-        return new FormField
-        {
-            Key = Guid.NewGuid(),
-            Type = ConsentType,
-            Alias = NewFormConsent.FieldAlias,
-            Label = new LocalizedText(consent.Label),
-            Required = true,
-            Settings = SettingsObject.Parse(new JsonObject { ["text"] = text }.ToJsonString()),
-        };
     }
 }

@@ -78,12 +78,11 @@ internal sealed partial class FormBuilderAccessService(
     IPermissionRepository permissions,
     IFolderRepository folders,
     IFormRepository forms,
-    IAuditRepository audit,
-    FormBuilderDatabase database,
     IUserGroupService userGroups,
     IOptions<FormBuilderOptions> options,
     AppCaches appCaches,
     AccessSnapshotInvalidator cache,
+    FormBuilderChanges<FormBuilderAccessService> changes,
     ILogger<FormBuilderAccessService> logger)
     : IFormBuilderAccessService
 {
@@ -129,6 +128,9 @@ internal sealed partial class FormBuilderAccessService(
     /// <summary>The host configuration key of the global grants.</summary>
     public const string HostGrantsKey = FormBuilderOptions.SectionName + ":Access:Grants";
 
+    // The refusal of a change of access inside a caller's unit of work or an Umbraco scope.
+    private const string OwnUnit = "A change of access is a unit of work of its own: it drops the cached snapshot once it has committed (ADR-0048).";
+
     private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(1);
 
     /// <inheritdoc />
@@ -169,7 +171,7 @@ internal sealed partial class FormBuilderAccessService(
     public async Task<AccessGrant?> ChangeGrantAsync(AccessGrantChange change, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(change);
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         CheckLocks(change.TargetType);
         await CheckAsync(change);
         if (await TargetMissingAsync(change.TargetType, change.TargetKey, cancellationToken))
@@ -186,27 +188,17 @@ internal sealed partial class FormBuilderAccessService(
                 : throw new FormBuilderConcurrencyException("The grant changed meanwhile.");
         }
 
-        var (gone, stored) = await database.WriteAsync(
-            async _ =>
+        var (gone, stored) = await changes.WriteAsync(
+            async () =>
             {
                 var grant = await permissions.ChangeAsync(
                     new GrantChange(change.UserGroupKey, change.TargetType, change.TargetKey, (int)change.Expected, (int)change.Permissions),
                     cancellationToken);
-                if (grant is null && change.Permissions != FormBuilderPermissions.None)
-                {
-                    // The folder or form went at the same moment; the statement wrote nothing.
-                    return (true, grant);
-                }
 
-                var details = new AuditDetails()
-                    .AddIdentifier("target", StoredNames.Of(change.TargetType))
-                    .Add("group", change.UserGroupKey)
-                    .AddIdentifiers("before", PermissionRules.NamesOf(change.Expected))
-                    .AddIdentifiers("after", PermissionRules.NamesOf(change.Permissions));
-                var item = change.TargetType == PermissionTarget.Global ? (Guid?)null : change.TargetKey;
-                await audit.AddAsync(new NewAuditEntry(GrantChangedAction, EntityTypeOf(change.TargetType), item, change.UserKey, details), cancellationToken);
-                return (false, grant);
+                // Nothing written for a grant that remains: the folder or form went at the same moment.
+                return (Gone: grant is null && change.Permissions != FormBuilderPermissions.None, Grant: grant);
             },
+            written => written.Gone ? [] : [GrantEntry(change)],
             cancellationToken);
         if (gone)
         {
@@ -220,30 +212,22 @@ internal sealed partial class FormBuilderAccessService(
     /// <inheritdoc />
     public async Task<AccessRestriction?> RestrictFolderAsync(Guid folderKey, bool isRestricted, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         CheckLocks(PermissionTarget.Folder);
         if (await folders.GetAsync(folderKey, cancellationToken) is not { } folder)
         {
             return null;
         }
 
-        CheckOutsideTrash(folder.TrashedUtc, "folder");
+        LibraryTrash.CheckOutside(folder.TrashedUtc, "folder");
         if (folder.IsRestricted == isRestricted)
         {
             return new AccessRestriction(folder.Key, isRestricted, null);
         }
 
-        var changed = await database.WriteAsync(
-            async _ =>
-            {
-                if (await folders.RestrictAsync(folder.Id, isRestricted, userKey, cancellationToken) is not { } stored)
-                {
-                    return null;
-                }
-
-                await audit.AddAsync(new NewAuditEntry(RestrictionAction(isRestricted), FormBuilderFolderService.EntityType, folder.Key, userKey), cancellationToken);
-                return stored;
-            },
+        var changed = await changes.WriteAsync(
+            () => folders.RestrictAsync(folder.Id, isRestricted, userKey, cancellationToken),
+            stored => stored is null ? [] : [new NewAuditEntry(RestrictionAction(isRestricted), FormBuilderFolderService.EntityType, folder.Key, userKey)],
             cancellationToken);
         if (changed is null)
         {
@@ -257,14 +241,14 @@ internal sealed partial class FormBuilderAccessService(
     /// <inheritdoc />
     public async Task<AccessRestriction?> RestrictFormAsync(Guid formKey, int expectedConcurrencyVersion, bool isRestricted, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
+        changes.EnsureOwnUnit(OwnUnit);
         CheckLocks(PermissionTarget.Form);
         if (await forms.GetAsync(formKey, cancellationToken) is not { } form)
         {
             return null;
         }
 
-        CheckOutsideTrash(form.TrashedUtc, "form");
+        LibraryTrash.CheckOutside(form.TrashedUtc, FormChecks.Item);
         if (form.ConcurrencyVersion != expectedConcurrencyVersion)
         {
             throw new FormBuilderConcurrencyException("The form changed since it was read.");
@@ -275,18 +259,9 @@ internal sealed partial class FormBuilderAccessService(
             return new AccessRestriction(form.Key, isRestricted, form.ConcurrencyVersion);
         }
 
-        var changed = await database.WriteAsync(
-            async _ =>
-            {
-                var update = new FormUpdate(form.Id, expectedConcurrencyVersion, form.Alias, form.Name, form.FolderId, isRestricted, userKey);
-                if (await forms.UpdateAsync(update, cancellationToken) is not { } stored)
-                {
-                    return null;
-                }
-
-                await audit.AddAsync(new NewAuditEntry(RestrictionAction(isRestricted), FormBuilderFormService.EntityType, form.Key, userKey), cancellationToken);
-                return stored;
-            },
+        var changed = await changes.WriteAsync(
+            () => forms.UpdateAsync(new FormUpdate(form.Id, expectedConcurrencyVersion, form.Alias, form.Name, form.FolderId, isRestricted, userKey), cancellationToken),
+            stored => stored is null ? [] : [new NewAuditEntry(RestrictionAction(isRestricted), FormBuilderFormService.EntityType, form.Key, userKey)],
             cancellationToken);
         if (changed is null)
         {
@@ -300,18 +275,10 @@ internal sealed partial class FormBuilderAccessService(
     /// <inheritdoc />
     public async Task<int> RemoveGroupAsync(Guid userGroupKey, CancellationToken cancellationToken = default)
     {
-        EnsureOwnUnit();
-        var removed = await database.WriteAsync(
-            async _ =>
-            {
-                var count = await permissions.DeleteForGroupAsync(userGroupKey, cancellationToken);
-                if (count > 0)
-                {
-                    await audit.AddAsync(new NewAuditEntry(GroupRemovedAction, UserGroupEntityType, userGroupKey, null, new AuditDetails().Add("grants", count)), cancellationToken);
-                }
-
-                return count;
-            },
+        changes.EnsureOwnUnit(OwnUnit);
+        var removed = await changes.WriteAsync(
+            () => permissions.DeleteForGroupAsync(userGroupKey, cancellationToken),
+            count => count == 0 ? [] : [new NewAuditEntry(GroupRemovedAction, UserGroupEntityType, userGroupKey, null, new AuditDetails().Add("grants", count))],
             cancellationToken);
 
         // A host grant may name the group, so the snapshot goes even when it held no grant here.
@@ -350,12 +317,16 @@ internal sealed partial class FormBuilderAccessService(
     private static AccessGrant Grant(AccessGrantChange change, StoredGrant? stored) =>
         new(change.UserGroupKey, change.TargetType, change.TargetKey, PermissionRules.FromStored(stored?.Permissions ?? 0));
 
-    private static void CheckOutsideTrash(DateTimeOffset? trashedUtc, string item)
+    // The audit entry of a grant's change: the target, the group, the permissions before and after.
+    private static NewAuditEntry GrantEntry(AccessGrantChange change)
     {
-        if (trashedUtc is not null)
-        {
-            throw new FormBuilderConflictException(FormBuilderConflict.Trashed, $"The {item} is in the trash; restore it first.");
-        }
+        var details = new AuditDetails()
+            .AddIdentifier("target", StoredNames.Of(change.TargetType))
+            .Add("group", change.UserGroupKey)
+            .AddIdentifiers("before", PermissionRules.NamesOf(change.Expected))
+            .AddIdentifiers("after", PermissionRules.NamesOf(change.Permissions));
+        var item = change.TargetType == PermissionTarget.Global ? (Guid?)null : change.TargetKey;
+        return new NewAuditEntry(GrantChangedAction, EntityTypeOf(change.TargetType), item, change.UserKey, details);
     }
 
     private async Task<bool> TargetMissingAsync(PermissionTarget target, Guid key, CancellationToken cancellationToken) => target switch
@@ -441,14 +412,6 @@ internal sealed partial class FormBuilderAccessService(
         if (errors.Count > 0)
         {
             throw new FormBuilderSettingsValidationException(errors);
-        }
-    }
-
-    private void EnsureOwnUnit()
-    {
-        if (database.InUnitOfWork)
-        {
-            throw new InvalidOperationException("A change of access is a unit of work of its own: it drops the cached snapshot once it has committed (ADR-0048).");
         }
     }
 
