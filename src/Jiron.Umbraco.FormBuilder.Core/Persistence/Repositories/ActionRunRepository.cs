@@ -196,7 +196,7 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
     {
         if (expected is not (ActionRunState.Failed or ActionRunState.Uncertain))
         {
-            throw new ArgumentOutOfRangeException(nameof(expected), expected, "Only a failed or an uncertain run is retried from the log.");
+            throw new ArgumentOutOfRangeException(nameof(expected), StoredNames.Describe(expected), "Only a failed or an uncertain run is retried from the log.");
         }
 
         return database.WriteAsync(
@@ -223,7 +223,7 @@ internal sealed class ActionRunRepository(FormBuilderDatabase database) : IActio
                 var current = await FindAsync(db, n, runId);
                 if (changed == 0 && current is not null)
                 {
-                    throw new FormBuilderConcurrencyException($"The run was changed meanwhile (it was no longer {expected}).");
+                    throw new FormBuilderConcurrencyException($"The run was changed meanwhile (it was no longer {StoredNames.Describe(expected)}).");
                 }
 
                 return current;

@@ -18,6 +18,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
 public sealed class IndexPlanTests : RepositoryTestBase
 {
     private const string EntryFileIndex = "IX_jfbEntryFile_entryId_createdUtc";
+    private const string EntryFileFormIndex = "IX_jfbEntryFile_formId_entryId";
     private const string DailyStatDayIndex = "IX_jfbDailyStat_day_formId";
     private const string ReferenceIndex = "IX_jfbReference_contentKey";
 
@@ -33,11 +34,29 @@ public sealed class IndexPlanTests : RepositoryTestBase
         {
             await Entries.ListFilesAsync(1L);
             await Entries.ListFilesAsync([1L, 2L]);
-            await Entries.ListUploadsAsync(form.Id, 10);
             await Entries.ListOrphanFilesAsync(Now, 10);
         });
 
-        AssertEach(plans, FormBuilderTables.EntryFile, 4, EntryFileIndex);
+        AssertEach(plans, FormBuilderTables.EntryFile, 3, EntryFileIndex);
+    }
+
+    [Test]
+    public async Task OneFormsWaitingUploads_ForItsDelete_UseTheIndexThatLeadsWithTheForm_InOrder()
+    {
+        Assume.That(IsSqlite, Is.True, "plans are SQLite's");
+        var form = await CreateTestFormAsync("cv");
+        var other = await CreateTestFormAsync("other");
+        await Entries.AddFileAsync(EntryRepositoryTests.NewFile(form.Id));
+        await Entries.AddFileAsync(EntryRepositoryTests.NewFile(other.Id));
+
+        var plans = await PlansAsync(() => Entries.ListUploadsAsync(form.Id, 10));
+
+        Assert.Multiple(() =>
+        {
+            AssertEach(plans, FormBuilderTables.EntryFile, 1, EntryFileFormIndex);
+            Assert.That(plans.Single().Plan, Has.Some.Contains("(formId=? AND entryId=?)"), "a seek on both columns, so no other form's upload is read");
+            Assert.That(plans.Single().Plan, Has.None.Contains("TEMP B-TREE"), "in the order of the ids, without a sort");
+        });
     }
 
     [Test]
@@ -88,7 +107,7 @@ public sealed class IndexPlanTests : RepositoryTestBase
         Assume.That(IsSqlite, Is.True, "plans are SQLite's");
 
         var form = await PlansAsync(() => CreateFormAsync("contact"));
-        var list = await PlansAsync(() => OptionLists.CreateAsync(new NewOptionList(Guid.NewGuid(), "colours", "Colours", "Manual")));
+        var list = await PlansAsync(() => OptionLists.CreateAsync(new NewOptionList(Guid.NewGuid(), "colours", "Colours", "manual")));
 
         Assert.Multiple(() =>
         {

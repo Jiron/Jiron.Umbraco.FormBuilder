@@ -61,8 +61,9 @@ internal sealed record NewFormTemplate(
 /// <param name="Description">A description, or null.</param>
 /// <param name="Category">The gallery's category, or null.</param>
 /// <param name="Definition">The definition as JSON.</param>
-/// <param name="UserKey">Who changes it, or null.</param>
-internal sealed record FormTemplateUpdate(int Id, string Name, string? Description, string? Category, string Definition, Guid? UserKey = null);
+/// <param name="UserKey">Who changes it, or null when Jiron Form Builder does; always given, as for every update of a row
+/// that keeps who changed it last.</param>
+internal sealed record FormTemplateUpdate(int Id, string Name, string? Description, string? Category, string Definition, Guid? UserKey);
 
 /// <summary>Which templates a list holds; every condition left null holds for all.</summary>
 /// <param name="Kind">Forms or groups.</param>
@@ -112,7 +113,7 @@ internal sealed class FormTemplateRepository(FormBuilderDatabase database) : IFo
         ArgumentNullException.ThrowIfNull(template);
         if (!Enum.IsDefined(template.Kind))
         {
-            throw new ArgumentOutOfRangeException(nameof(template), template.Kind, "A template holds a form or a group.");
+            throw new ArgumentOutOfRangeException(nameof(template), StoredNames.Describe(template.Kind), "A template holds a form or a group.");
         }
 
         Check(template.Name, template.Description, template.Category, template.Definition);

@@ -162,7 +162,7 @@ internal sealed record FormFilter
     /// The forms a user may see (ADR-0048), applied in the query before paging; null for every form, which only Jiron
     /// Form Builder's own work asks for.
     /// </summary>
-    public FormVisibility? Access { get; init; }
+    public FormVisibility? Visibility { get; init; }
 }
 
 /// <summary>A field of the catalogue, by which entry values refer to it (ADR-0003).</summary>
@@ -225,9 +225,9 @@ internal interface IFormRepository
 
     /// <summary>
     /// Which of these folders hold a form in the trash (<paramref name="trashed"/>) or outside it that
-    /// <paramref name="access"/> holds (null: any form): whether a folder of the library tree has forms to show (ADR-0050).
+    /// <paramref name="visibility"/> holds (null: any form): whether a folder of the library tree has forms to show (ADR-0050).
     /// </summary>
-    Task<IReadOnlySet<int>> ListFolderIdsWithFormsAsync(IReadOnlyCollection<int> folderIds, bool trashed, FormVisibility? access, CancellationToken cancellationToken = default);
+    Task<IReadOnlySet<int>> ListFolderIdsWithFormsAsync(IReadOnlyCollection<int> folderIds, bool trashed, FormVisibility? visibility, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The aliases of every form, trashed ones included, that start with <paramref name="prefix"/> in any letter case

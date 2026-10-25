@@ -133,15 +133,14 @@ internal sealed class OptionListRepository(FormBuilderDatabase database) : IOpti
     public Task<bool> DeleteAsync(int id, int expectedConcurrencyVersion, CancellationToken cancellationToken = default) =>
         _table.DeleteAsync(id, expectedConcurrencyVersion, null, cancellationToken);
 
-    /// <summary>True for a kind of 1 to <see cref="MaxKindLength"/> ASCII letters.</summary>
-    internal static bool IsValidKind(string? kind) =>
-        kind is { Length: > 0 and <= MaxKindLength } && kind.All(char.IsAsciiLetter);
+    /// <summary>True for a kind that is a camelCase word of 1 to <see cref="MaxKindLength"/> ASCII letters, as every stored name is.</summary>
+    internal static bool IsValidKind(string? kind) => StoredNames.IsName(kind, MaxKindLength);
 
     private static LibraryColumn[] Content(string kind, string config, string items, int cacheSeconds)
     {
         if (!IsValidKind(kind))
         {
-            throw new ArgumentException($"An option list's kind is 1 to {MaxKindLength} ASCII letters.", nameof(kind));
+            throw new ArgumentException($"An option list's kind is a camelCase word of 1 to {MaxKindLength} ASCII letters, such as manual.", nameof(kind));
         }
 
         ArgumentNullException.ThrowIfNull(config);

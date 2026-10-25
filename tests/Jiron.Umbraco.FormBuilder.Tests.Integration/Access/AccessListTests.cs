@@ -65,8 +65,8 @@ public sealed class AccessListTests : RepositoryTestBase
     {
         var access = await Access.GetFormVisibilityAsync(_personas[role]);
 
-        var all = await Forms.ListAsync(new FormFilter { AllFolders = true, Access = access }, PageRequest.First(50));
-        var first = await Forms.ListAsync(new FormFilter { AllFolders = true, Access = access }, PageRequest.First(2));
+        var all = await Forms.ListAsync(new FormFilter { AllFolders = true, Visibility = access }, PageRequest.First(50));
+        var first = await Forms.ListAsync(new FormFilter { AllFolders = true, Visibility = access }, PageRequest.First(2));
 
         Assert.Multiple(() =>
         {
@@ -84,7 +84,7 @@ public sealed class AccessListTests : RepositoryTestBase
     {
         var viewing = await Access.GetFormVisibilityAsync(_personas[role], FormBuilderPermissions.ViewEntries);
 
-        var forms = await Forms.ListAsync(new FormFilter { AllFolders = true, Access = viewing }, PageRequest.First(50));
+        var forms = await Forms.ListAsync(new FormFilter { AllFolders = true, Visibility = viewing }, PageRequest.First(50));
 
         Assert.That(forms.Items.Select(form => form.Name), Is.EqualTo(expected), "the forms whose entries the persona may view");
     }
@@ -115,7 +115,7 @@ public sealed class AccessListTests : RepositoryTestBase
         var noAccess = _personas["noAccess"];
 
         var folders = await FolderService.ListAsync(await Access.GetFolderVisibilityAsync(noAccess));
-        var forms = await Forms.ListAsync(new FormFilter { AllFolders = true, Access = await Access.GetFormVisibilityAsync(noAccess) }, PageRequest.First(50));
+        var forms = await Forms.ListAsync(new FormFilter { AllFolders = true, Visibility = await Access.GetFormVisibilityAsync(noAccess) }, PageRequest.First(50));
 
         Assert.Multiple(() =>
         {
@@ -134,13 +134,13 @@ public sealed class AccessListTests : RepositoryTestBase
 
         Assert.Multiple(async () =>
         {
-            Assert.That((await Forms.ListAsync(new FormFilter { Trashed = true, AllFolders = true, Access = viewer }, PageRequest.First(50))).Items.Select(form => form.Name), Is.EqualTo(new[] { "Gone" }), "the trash");
-            Assert.That((await Forms.ListAsync(new FormFilter { Trashed = true, AllFolders = true, Access = hr }, PageRequest.First(50))).Items, Is.Empty);
-            Assert.That((await Forms.ListAsync(new FormFilter { AllFolders = true, Search = "spring", Access = viewer }, PageRequest.First(50))).Items.Select(form => form.Name), Is.EqualTo(new[] { "Spring" }), "search");
-            Assert.That((await Forms.ListAsync(new FormFilter { AllFolders = true, Search = "payroll", Access = viewer }, PageRequest.First(50))).Items, Is.Empty);
-            Assert.That((await Forms.ListAsync(new FormFilter { FolderId = await IdOf(events.Key), Access = viewer }, PageRequest.First(50))).Items.Select(form => form.Name), Is.EqualTo(new[] { "Autumn", "Spring" }), "one folder");
-            Assert.That((await Forms.ListAsync(new FormFilter { FolderId = null, Access = viewer }, PageRequest.First(50))).Items.Select(form => form.Name), Is.EqualTo(new[] { "Welcome" }), "the root, without Board");
-            Assert.That((await Forms.ListAsync(new FormFilter { AllFolders = true, Access = FormVisibility.Nothing }, PageRequest.First(50))).Total, Is.Zero);
+            Assert.That((await Forms.ListAsync(new FormFilter { Trashed = true, AllFolders = true, Visibility = viewer }, PageRequest.First(50))).Items.Select(form => form.Name), Is.EqualTo(new[] { "Gone" }), "the trash");
+            Assert.That((await Forms.ListAsync(new FormFilter { Trashed = true, AllFolders = true, Visibility = hr }, PageRequest.First(50))).Items, Is.Empty);
+            Assert.That((await Forms.ListAsync(new FormFilter { AllFolders = true, Search = "spring", Visibility = viewer }, PageRequest.First(50))).Items.Select(form => form.Name), Is.EqualTo(new[] { "Spring" }), "search");
+            Assert.That((await Forms.ListAsync(new FormFilter { AllFolders = true, Search = "payroll", Visibility = viewer }, PageRequest.First(50))).Items, Is.Empty);
+            Assert.That((await Forms.ListAsync(new FormFilter { FolderId = await IdOf(events.Key), Visibility = viewer }, PageRequest.First(50))).Items.Select(form => form.Name), Is.EqualTo(new[] { "Autumn", "Spring" }), "one folder");
+            Assert.That((await Forms.ListAsync(new FormFilter { FolderId = null, Visibility = viewer }, PageRequest.First(50))).Items.Select(form => form.Name), Is.EqualTo(new[] { "Welcome" }), "the root, without Board");
+            Assert.That((await Forms.ListAsync(new FormFilter { AllFolders = true, Visibility = FormVisibility.Nothing }, PageRequest.First(50))).Total, Is.Zero);
             Assert.That((await Forms.ListAsync(new FormFilter { AllFolders = true }, PageRequest.First(50))).Total, Is.EqualTo(6), "no filter: Jiron Form Builder's own work");
         });
     }

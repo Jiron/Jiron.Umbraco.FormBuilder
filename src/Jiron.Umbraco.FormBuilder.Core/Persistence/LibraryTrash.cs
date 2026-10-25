@@ -4,6 +4,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence;
 /// The one check of the trash for forms and folders (ADR-0047, ADR-0053), for the services before a change and for the
 /// repositories inside the write: only a restore, an unpublish or a delete applies to a form in the trash, only a
 /// restore or a delete to a folder, nothing is copied from either, and only what is in the trash is deleted for good.
+/// A restore whose landing changed after the caller checked it is refused in the same words wherever it is found.
 /// </summary>
 internal static class LibraryTrash
 {
@@ -15,7 +16,7 @@ internal static class LibraryTrash
     {
         if (trashedUtc is not null)
         {
-            throw InTrash(item);
+            throw Trashed(item);
         }
     }
 
@@ -27,17 +28,24 @@ internal static class LibraryTrash
     {
         if (trashedUtc is null)
         {
-            throw OutsideTrash(item);
+            throw NotTrashed(item);
         }
     }
 
     /// <summary>The refusal of a change to a form or folder in the trash, for a write that finds it there.</summary>
-    public static FormBuilderConflictException InTrash(string item) =>
+    public static FormBuilderConflictException Trashed(string item) =>
         new(FormBuilderConflict.Trashed, $"The {Item(item)} is in the trash; restore it first.");
 
     /// <summary>The refusal of a permanent delete of a form or folder outside the trash, for a write that finds it there.</summary>
-    public static FormBuilderConflictException OutsideTrash(string item) =>
+    public static FormBuilderConflictException NotTrashed(string item) =>
         new(FormBuilderConflict.NotTrashed, $"Only a {Item(item)} in the trash is deleted; put it in the trash first.");
+
+    /// <summary>
+    /// The refusal of a restore whose landing changed since the caller checked it (<c>landing_changed</c>): the folder
+    /// the form or folder goes back into went to the trash or came back meanwhile.
+    /// </summary>
+    public static FormBuilderConflictException LandingChanged(string item) =>
+        new(FormBuilderConflict.LandingChanged, $"Where the {Item(item)} lands changed since it was checked: the folder it goes back into went to the trash or came back meanwhile. Check again, then restore it.");
 
     private static string Item(string item)
     {

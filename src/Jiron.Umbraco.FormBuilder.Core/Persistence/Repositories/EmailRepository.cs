@@ -203,7 +203,7 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
     {
         if (expected is not (EmailState.Failed or EmailState.Uncertain))
         {
-            throw new ArgumentOutOfRangeException(nameof(expected), expected, "Only a failed or an uncertain mail is retried from the log.");
+            throw new ArgumentOutOfRangeException(nameof(expected), StoredNames.Describe(expected), "Only a failed or an uncertain mail is retried from the log.");
         }
 
         return database.WriteAsync(
@@ -218,7 +218,7 @@ internal sealed class EmailRepository(FormBuilderDatabase database) : IEmailRepo
                 var current = await FindAsync(db, n, emailId);
                 if (changed == 0 && current is not null)
                 {
-                    throw new FormBuilderConcurrencyException($"The mail was changed meanwhile (it was no longer {expected}).");
+                    throw new FormBuilderConcurrencyException($"The mail was changed meanwhile (it was no longer {StoredNames.Describe(expected)}).");
                 }
 
                 return current;

@@ -2,7 +2,8 @@
 
 - Status: accepted; amends [ADR-0044](0044-form-service.md) (the form service in three parts),
   [ADR-0045](0045-versions-comparison-and-draft-cleanup.md) (the versions in a service of their own) and
-  [ADR-0046](0046-copies-templates-and-import.md) (copies, templates, imports and exports in the exchange)
+  [ADR-0046](0046-copies-templates-and-import.md) (copies, templates, imports and exports in the exchange);
+  amended in 4.8g (one home for each shared job, the pipeline's own check)
 - Date: 2026-10-25
 - Roadmap step: 4.8d (decided and built); 15.1 makes the parts public
 
@@ -70,6 +71,21 @@ save have no cancelable notification and take the steps they have. A form's perm
 `LibraryTrash` (`Core.Persistence`) words the refusals once, for the services before a change and for the repositories
 inside the write: `trashed` ("The form is in the trash; restore it first.") and `not_trashed` ("Only a form in the
 trash is deleted; put it in the trash first."), for forms and folders alike.
+
+**Amended in 4.8g** (the review of the Phase 4 fixes):
+
+- **One home for each shared job.** `FormDocuments` keeps the stored versions: a definition as the stored document
+  and back, the draft and the site's limits. `FormInfos` makes a form as the services answer with it, `FormAudit`
+  names a change to a form in the audit log (its entity type and entries) and in the error log, and `FormChecks`
+  gains the refusal of a change inside a unit. Before, the lifecycle part held the entity type, the refusal and the
+  subject, and the other parts and three jobs read them from it.
+- **Where things go, once.** `LibraryFolders` holds where forms and folders go, for the form and folder services
+  alike: into a folder outside the trash or to the root (`folder_missing` otherwise), and from the trash back into
+  the folder they were in while that is outside the trash. `LibraryTrash` words `landing_changed` once too, for the
+  services and both repositories; its four copies before said "its folder", which for a folder meant its parent.
+- **The pipeline's own check.** `CancelableAsync` and `WriteAsync` refuse a change inside a unit as well, in the
+  pipeline's words, so a change that skipped `EnsureOwnUnit` is still refused before it writes. The services keep
+  their own check, which comes before they read anything.
 
 ## Consequences
 

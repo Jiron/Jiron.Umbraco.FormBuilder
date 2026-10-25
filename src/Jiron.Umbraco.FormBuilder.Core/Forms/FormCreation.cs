@@ -119,7 +119,7 @@ internal sealed partial class FormCreation(
                     saved =>
                     {
                         var details = new AuditDetails().AddIdentifier("alias", chosen).Add("version", saved.Version.Info.Number).Add("folder", folder?.Key);
-                        return [FormDocuments.Entry(origin.Action, saved.Form, userKey, origin.Details?.Invoke(details) ?? details)];
+                        return [FormAudit.Entry(origin.Action, saved.Form, userKey, origin.Details?.Invoke(details) ?? details)];
                     },
                     cancellationToken);
             }
@@ -129,8 +129,8 @@ internal sealed partial class FormCreation(
                 continue;
             }
 
-            var info = FormDocuments.Info(created.Form, folder?.Key);
-            await changes.PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, created.Version.Info.Number, isNew: true, userKey) { CreatedFrom = origin.Source, SourceKey = origin.SourceKey }, FormBuilderFormService.Subject(info.Key));
+            var info = FormInfos.Info(created.Form, folder?.Key);
+            await changes.PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, created.Version.Info.Number, isNew: true, userKey) { CreatedFrom = origin.Source, SourceKey = origin.SourceKey }, FormAudit.Subject(info.Key));
             return info;
         }
     }

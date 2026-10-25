@@ -116,18 +116,16 @@ internal sealed partial class FormBuilderFormService(
     IFormRepository forms,
     IFolderRepository folders,
     FormDocuments documents,
+    FormInfos infos,
     FormCreation creation,
     FormDefinitionSerializer serializer,
     FieldTypeCatalogue types,
     IEnumerable<IFormPublishCheck> publishChecks,
     FormRemoval removal,
-    AccessSnapshotInvalidator access,
+    AccessSnapshotInvalidator snapshots,
     FormBuilderChanges<FormBuilderFormService> changes)
     : IFormBuilderFormService
 {
-    /// <summary>The audit entity type of a form; the item is the form's key.</summary>
-    public const string EntityType = "form";
-
     /// <summary>The audit action of a create.</summary>
     public const string CreatedAction = "form.created";
 
@@ -146,20 +144,17 @@ internal sealed partial class FormBuilderFormService(
     /// <summary>The audit action of a move.</summary>
     public const string MovedAction = "form.moved";
 
-    /// <summary>The refusal of a change to a form inside a caller's unit of work or an Umbraco scope.</summary>
-    internal const string OwnUnit = "A change to a form is a unit of work of its own: it tells handlers once it has committed (ADR-0044).";
-
     private readonly IReadOnlyList<IFormPublishCheck> _publishChecks = publishChecks.ToList();
 
     /// <inheritdoc />
     public async Task<FormInfo?> GetAsync(Guid key, CancellationToken cancellationToken = default) =>
-        await forms.GetAsync(key, cancellationToken) is { } form ? await documents.InfoAsync(form, cancellationToken) : null;
+        await forms.GetAsync(key, cancellationToken) is { } form ? await infos.InfoAsync(form, cancellationToken) : null;
 
     /// <inheritdoc />
     public async Task<FormInfo?> GetByAliasAsync(string alias, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(alias);
-        return await forms.GetByAliasAsync(alias, cancellationToken) is { } form ? await documents.InfoAsync(form, cancellationToken) : null;
+        return await forms.GetByAliasAsync(alias, cancellationToken) is { } form ? await infos.InfoAsync(form, cancellationToken) : null;
     }
 
     /// <inheritdoc />
@@ -176,9 +171,6 @@ internal sealed partial class FormBuilderFormService(
         var problems = read.Definition is { } definition ? serializer.CheckSave(definition) : read.Problems;
         var live = form.PublishedVersionId is { } liveId ? await forms.GetVersionByIdAsync(liveId, cancellationToken) : null;
         var unpublished = live is null || read.Definition is null || documents.HashOf(live) != FormDocuments.HashOf(read.Definition);
-        return new FormDraft(await documents.InfoAsync(form, cancellationToken), read.Definition, problems, draft.Info.Number, live?.Info.Number, unpublished);
+        return new FormDraft(await infos.InfoAsync(form, cancellationToken), read.Definition, problems, draft.Info.Number, live?.Info.Number, unpublished);
     }
-
-    /// <summary>What a change names when a handler of its notification fails: the form.</summary>
-    internal static string Subject(Guid formKey) => $"the form {formKey}";
 }

@@ -47,7 +47,7 @@ internal sealed partial class FormRepository
 
                 // Fresh and still in the trash, so only the landing kept it there.
                 return restored is { TrashedUtc: not null }
-                    ? throw new FormBuilderConflictException(FormBuilderConflict.LandingChanged, "Where it lands changed since it was checked: its folder went to the trash or came back meanwhile. Check again, then restore it.")
+                    ? throw LibraryTrash.LandingChanged("form")
                     : restored;
             },
             cancellationToken);

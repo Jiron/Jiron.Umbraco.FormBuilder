@@ -201,15 +201,18 @@ public sealed class RepositoryArgumentTests
         });
     }
 
-    [TestCase("Manual", true)]
-    [TestCase("DataType", true)]
-    [TestCase("Countries", true)]
+    [TestCase("manual", true)]
+    [TestCase("dataType", true)]
+    [TestCase("countries", true)]
     [TestCase("abcdefghijklmnop", true)]
     [TestCase("abcdefghijklmnopq", false)]
     [TestCase("", false)]
     [TestCase("data-type", false)]
-    [TestCase("Code2", false)]
-    public void OptionLists_KindsAreAsciiLetters(string kind, bool valid) =>
+    [TestCase("code2", false)]
+    [TestCase("Manual", false)]
+    [TestCase("DataType", false)]
+    [TestCase("MANUAL", false)]
+    public void OptionLists_KindsAreCamelCaseWordsOfAsciiLetters(string kind, bool valid) =>
         Assert.That(OptionListRepository.IsValidKind(kind), Is.EqualTo(valid));
 
     [Test]
@@ -220,7 +223,7 @@ public sealed class RepositoryArgumentTests
         var layouts = new EmailLayoutRepository(_database);
         var alias = new string('a', AliasedLibraryTable<OptionListDto>.MaxAliasLength + 1);
         var name = new string('n', AliasedLibraryTable<OptionListDto>.MaxNameLength + 1);
-        var list = new NewOptionList(Guid.NewGuid(), "colours", "Colours", "Manual");
+        var list = new NewOptionList(Guid.NewGuid(), "colours", "Colours", "manual");
         var theme = new NewTheme(Guid.NewGuid(), "brand", "Brand", "default");
 
         Assert.Multiple(() =>
@@ -232,9 +235,9 @@ public sealed class RepositoryArgumentTests
             Assert.That(() => lists.CreateAsync(list with { Kind = "Kind1" }), Throws.ArgumentException);
             Assert.That(() => lists.CreateAsync(list with { CacheSeconds = -1 }), Throws.InstanceOf<ArgumentOutOfRangeException>());
             Assert.That(() => lists.CreateAsync(list with { Items = null! }), Throws.InstanceOf<ArgumentNullException>());
-            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, alias, "Colours", "Manual", "{}", "[]", 0)), Throws.ArgumentException);
+            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, alias, "Colours", "manual", "{}", "[]", 0)), Throws.ArgumentException);
             Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, "colours", "Colours", string.Empty, "{}", "[]", 0)), Throws.ArgumentException);
-            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, null!, "Colours", "Manual", "{}", "[]", 0)), Throws.InstanceOf<ArgumentNullException>(), "an alias is never kept by leaving it out");
+            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, null!, "Colours", "manual", "{}", "[]", 0)), Throws.InstanceOf<ArgumentNullException>(), "an alias is never kept by leaving it out");
             Assert.That(() => themes.CreateAsync(theme with { Alias = alias }), Throws.ArgumentException);
             Assert.That(() => themes.CreateAsync(theme with { BaseTheme = string.Empty }), Throws.ArgumentException);
             Assert.That(() => themes.CreateAsync(theme with { BaseTheme = new string('b', ThemeRepository.MaxBaseThemeLength + 1) }), Throws.ArgumentException);
@@ -263,8 +266,8 @@ public sealed class RepositoryArgumentTests
             Assert.That(() => repository.CreateAsync(template with { Category = string.Empty }), Throws.ArgumentException, "null stands for none");
             Assert.That(() => repository.CreateAsync(template with { Category = new string('c', FormTemplateRepository.MaxCategoryLength + 1) }), Throws.ArgumentException);
             Assert.That(() => repository.CreateAsync(template with { Definition = string.Empty }), Throws.ArgumentException);
-            Assert.That(() => repository.UpdateAsync(new FormTemplateUpdate(1, string.Empty, null, null, "{}")), Throws.ArgumentException);
-            Assert.That(() => repository.UpdateAsync(new FormTemplateUpdate(1, "Contact", null, null, string.Empty)), Throws.ArgumentException);
+            Assert.That(() => repository.UpdateAsync(new FormTemplateUpdate(1, string.Empty, null, null, "{}", null)), Throws.ArgumentException);
+            Assert.That(() => repository.UpdateAsync(new FormTemplateUpdate(1, "Contact", null, null, string.Empty, null)), Throws.ArgumentException);
         });
     }
 

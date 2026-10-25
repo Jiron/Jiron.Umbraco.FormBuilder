@@ -30,7 +30,7 @@ internal interface IFormBuilderAccessService
     Task<FormBuilderPermissions> GetForFormAsync(AccessUser user, FormAccessTarget form, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// The forms the user's lists hold, for <see cref="FormFilter.Access"/>: those where they hold one of
+    /// The forms the user's lists hold, for <see cref="FormFilter.Visibility"/>: those where they hold one of
     /// <paramref name="anyOf"/>, by default any permission.
     /// </summary>
     Task<FormVisibility> GetFormVisibilityAsync(AccessUser user, FormBuilderPermissions anyOf = PermissionRules.FolderLevel, CancellationToken cancellationToken = default);
@@ -81,7 +81,7 @@ internal sealed partial class FormBuilderAccessService(
     IUserGroupService userGroups,
     IOptions<FormBuilderOptions> options,
     AppCaches appCaches,
-    AccessSnapshotInvalidator cache,
+    AccessSnapshotInvalidator snapshots,
     FormBuilderChanges<FormBuilderAccessService> changes,
     ILogger<FormBuilderAccessService> logger)
     : IFormBuilderAccessService
@@ -205,7 +205,7 @@ internal sealed partial class FormBuilderAccessService(
             return null;
         }
 
-        cache.Changed();
+        snapshots.Changed();
         return Grant(change, stored);
     }
 
@@ -234,7 +234,7 @@ internal sealed partial class FormBuilderAccessService(
             return null;
         }
 
-        cache.Changed();
+        snapshots.Changed();
         return new AccessRestriction(changed.Key, changed.IsRestricted, null);
     }
 
@@ -261,14 +261,14 @@ internal sealed partial class FormBuilderAccessService(
 
         var changed = await changes.WriteAsync(
             () => forms.UpdateAsync(new FormUpdate(form.Id, expectedConcurrencyVersion, form.Alias, form.Name, form.FolderId, isRestricted, userKey), cancellationToken),
-            stored => stored is null ? [] : [new NewAuditEntry(RestrictionAction(isRestricted), FormBuilderFormService.EntityType, form.Key, userKey)],
+            stored => stored is null ? [] : [new NewAuditEntry(RestrictionAction(isRestricted), FormAudit.EntityType, form.Key, userKey)],
             cancellationToken);
         if (changed is null)
         {
             return null;
         }
 
-        cache.Changed();
+        snapshots.Changed();
         return new AccessRestriction(changed.Key, changed.IsRestricted, changed.ConcurrencyVersion);
     }
 
@@ -282,7 +282,7 @@ internal sealed partial class FormBuilderAccessService(
             cancellationToken);
 
         // A host grant may name the group, so the snapshot goes even when it held no grant here.
-        cache.Changed();
+        snapshots.Changed();
         return removed;
     }
 
@@ -308,7 +308,7 @@ internal sealed partial class FormBuilderAccessService(
     private static string EntityTypeOf(PermissionTarget target) => target switch
     {
         PermissionTarget.Folder => FormBuilderFolderService.EntityType,
-        PermissionTarget.Form => FormBuilderFormService.EntityType,
+        PermissionTarget.Form => FormAudit.EntityType,
         _ => GlobalEntityType,
     };
 

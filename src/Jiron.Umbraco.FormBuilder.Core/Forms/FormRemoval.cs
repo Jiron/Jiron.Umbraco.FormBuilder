@@ -63,7 +63,7 @@ internal sealed partial class FormRemoval(
         ArgumentNullException.ThrowIfNull(form);
         long entryCount = 0;
         long fileCount = 0;
-        var deleting = new NewAuditEntry(DeletingAction, FormBuilderFormService.EntityType, form.Key, userKey);
+        var deleting = new NewAuditEntry(DeletingAction, FormAudit.EntityType, form.Key, userKey);
         var recorded = false;
         for (var attempt = 1; ; attempt++)
         {
@@ -173,7 +173,7 @@ internal sealed partial class FormRemoval(
                 await references.DeleteFormAsync(form.Id, cancellationToken);
                 await stats.DeleteFormAsync(form.Id, cancellationToken);
                 var details = new AuditDetails().Add("entries", entryCount).Add("files", fileCount);
-                await audit.AddAsync(new NewAuditEntry(DeletedAction, FormBuilderFormService.EntityType, form.Key, userKey, details), cancellationToken);
+                await audit.AddAsync(new NewAuditEntry(DeletedAction, FormAudit.EntityType, form.Key, userKey, details), cancellationToken);
                 return true;
             },
             cancellationToken);

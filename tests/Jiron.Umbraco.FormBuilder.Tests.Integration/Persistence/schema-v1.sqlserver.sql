@@ -175,6 +175,8 @@ CREATE UNIQUE NONCLUSTERED INDEX [IX_jfbEntryFile_key] ON [jfbEntryFile] ([key])
 
 CREATE NONCLUSTERED INDEX [IX_jfbEntryFile_entryId_createdUtc] ON [jfbEntryFile] ([entryId],[createdUtc]);
 
+CREATE NONCLUSTERED INDEX [IX_jfbEntryFile_formId_entryId] ON [jfbEntryFile] ([formId],[entryId]);
+
 ALTER TABLE [jfbEntryFile] WITH CHECK ADD CONSTRAINT [FK_jfbEntryFile_jfbEntry] FOREIGN KEY ([entryId]) REFERENCES [jfbEntry] ([id]) ON DELETE CASCADE;
 
 CREATE TABLE [jfbEntryValue] ([id] BIGINT NOT NULL IDENTITY(1,1),

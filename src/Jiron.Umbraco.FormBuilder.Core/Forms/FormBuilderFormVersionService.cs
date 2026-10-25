@@ -65,6 +65,7 @@ internal interface IFormBuilderFormVersionService
 internal sealed class FormBuilderFormVersionService(
     IFormRepository forms,
     FormDocuments documents,
+    FormInfos infos,
     FormDefinitionSerializer serializer,
     FormBuilderChanges<FormBuilderFormVersionService> changes)
     : IFormBuilderFormVersionService
@@ -150,7 +151,7 @@ internal sealed class FormBuilderFormVersionService(
     /// <inheritdoc />
     public async Task<FormVersionResult?> RestoreVersionAsync(Guid key, int expectedConcurrencyVersion, int number, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
+        changes.EnsureOwnUnit(FormChecks.OwnUnit);
         if (await forms.GetAsync(key, cancellationToken) is not { } form || await forms.GetVersionAsync(form.Id, number, cancellationToken) is not { } version)
         {
             return null;
@@ -169,7 +170,7 @@ internal sealed class FormBuilderFormVersionService(
         var draft = await documents.DraftOfAsync(form, cancellationToken);
         if (draft is { Info.SchemaVersion: FormDefinition.CurrentSchemaVersion } && draft.Info.DefinitionHash == document.DefinitionHash)
         {
-            return new FormVersionResult(await documents.InfoAsync(form, cancellationToken), null);
+            return new FormVersionResult(await infos.InfoAsync(form, cancellationToken), null);
         }
 
         await changes.CancelableAsync(new FormSavingNotification(definition, form.Alias, form.Name, isNew: false, userKey, new EventMessages()) { RestoredFromVersion = number });
@@ -177,22 +178,22 @@ internal sealed class FormBuilderFormVersionService(
             () => forms.SaveDraftAsync(form.Id, expectedConcurrencyVersion, document, null, userKey, cancellationToken),
             stored => stored is null
                 ? []
-                : [FormDocuments.Entry(VersionRestoredAction, stored.Form, userKey, new AuditDetails().Add("version", stored.Version.Info.Number).Add("from", number))],
+                : [FormAudit.Entry(VersionRestoredAction, stored.Form, userKey, new AuditDetails().Add("version", stored.Version.Info.Number).Add("from", number))],
             cancellationToken);
         if (saved is null)
         {
             return null;
         }
 
-        var info = await documents.InfoAsync(saved.Form, cancellationToken);
-        await changes.PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, saved.Version.Info.Number, isNew: false, userKey) { RestoredFromVersion = number }, FormBuilderFormService.Subject(info.Key));
+        var info = await infos.InfoAsync(saved.Form, cancellationToken);
+        await changes.PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, saved.Version.Info.Number, isNew: false, userKey) { RestoredFromVersion = number }, FormAudit.Subject(info.Key));
         return new FormVersionResult(info, saved.Version.Info.Number);
     }
 
     /// <inheritdoc />
     public async Task<FormVersion?> PinVersionAsync(Guid key, int number, bool isPinned, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
+        changes.EnsureOwnUnit(FormChecks.OwnUnit);
         if (await VersionToChangeAsync(key, number, cancellationToken) is not { } found)
         {
             return null;
@@ -218,7 +219,7 @@ internal sealed class FormBuilderFormVersionService(
     /// <inheritdoc />
     public async Task<FormVersion?> CommentVersionAsync(Guid key, int number, string? comment, Guid? userKey, CancellationToken cancellationToken = default)
     {
-        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
+        changes.EnsureOwnUnit(FormChecks.OwnUnit);
         var text = string.IsNullOrWhiteSpace(comment) ? null : comment;
         FormChecks.Comment(text);
         if (await VersionToChangeAsync(key, number, cancellationToken) is not { } found)
@@ -293,14 +294,14 @@ internal sealed class FormBuilderFormVersionService(
         await changes.CancelableAsync(new FormVersionUpdatingNotification(form.Key, form.Alias, form.Name, version.Number, comment, isPinned, userKey, new EventMessages()));
         var updated = await changes.WriteAsync(
             change,
-            info => info is null ? [] : [FormDocuments.Entry(action, form, userKey, new AuditDetails().Add("version", info.Number).Add("hasComment", info.Comment is not null))],
+            info => info is null ? [] : [FormAudit.Entry(action, form, userKey, new AuditDetails().Add("version", info.Number).Add("hasComment", info.Comment is not null))],
             cancellationToken);
         if (updated is null)
         {
             return null;
         }
 
-        await changes.PublishedAsync(new FormVersionUpdatedNotification(form.Key, form.Alias, form.Name, updated.Number, updated.Comment, updated.IsPinned, userKey), FormBuilderFormService.Subject(form.Key));
+        await changes.PublishedAsync(new FormVersionUpdatedNotification(form.Key, form.Alias, form.Name, updated.Number, updated.Comment, updated.IsPinned, userKey), FormAudit.Subject(form.Key));
         return Version(updated, form);
     }
 }

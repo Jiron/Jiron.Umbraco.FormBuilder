@@ -248,7 +248,7 @@ public sealed class FormExportFormatTests
         "17.0.0-alpha.0",
         Exported,
         DefinitionFixtures.Read(DefinitionFixtures.Full),
-        [new ExportedOptionList(ListKey, "sessions", "Sessions", "Manual", new JsonObject { ["sort"] = "label" }, [new JsonObject { ["value"] = "keynote", ["label"] = new JsonObject { [string.Empty] = "Keynote" } }], 60)]);
+        [new ExportedOptionList(ListKey, "sessions", "Sessions", "manual", new JsonObject { ["sort"] = "label" }, [new JsonObject { ["value"] = "keynote", ["label"] = new JsonObject { [string.Empty] = "Keynote" } }], 60)]);
 
     private static JsonObject List(JsonObject envelope) => envelope["optionLists"]![0]!.AsObject();
 

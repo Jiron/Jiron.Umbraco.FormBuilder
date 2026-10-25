@@ -294,7 +294,7 @@ internal sealed class PermissionRepository(FormBuilderDatabase database) : IPerm
     {
         if (!Enum.IsDefined(targetType))
         {
-            throw new ArgumentOutOfRangeException(nameof(targetType), targetType, "A grant applies globally, to a folder or to a form.");
+            throw new ArgumentOutOfRangeException(nameof(targetType), StoredNames.Describe(targetType), "A grant applies globally, to a folder or to a form.");
         }
 
         if ((targetType == PermissionTarget.Global) != (targetKey == Guid.Empty))

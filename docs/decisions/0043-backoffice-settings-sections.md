@@ -1,6 +1,6 @@
 # 0043. The backoffice settings sections
 
-- Status: accepted
+- Status: accepted; amended in 4.8c and 4.8g (the shared load)
 - Date: 2026-10-24
 - Roadmap step: 4.4b (decided and built); every step that adds a section or a field (4.5, 6.x, 7.x, 8.x, 13.x),
   6.1 (the first reader of the time zone), 12.4a (the screens and endpoints), 14.4 (the site of a request)
@@ -124,6 +124,12 @@ the rows once instead of once per request. The load runs without any caller's ca
 it; a caller that stops waiting leaves it to them. A load that fails, before or after its first await, is cleared, so
 the next miss reads again. A save that clears the token during a load still lets that load answer its callers, once,
 without keeping it. The access snapshot of ADR-0048 uses the same load.
+
+**Amended in 4.8g** (the review of the Phase 4 fixes): a save that comes as the load ends leaves nothing stale either.
+The load keeps its value only while its token is still there, and when a save clears the token between that check
+and the insert, the load takes its value out again. The load also runs outside the context of the caller that
+started it: not in its unit of work or Umbraco scope, and without its cancellation or its other async-local state.
+So a first caller inside a unit neither lends the load its connection nor stops it when it stops waiting.
 
 ## Consequences
 

@@ -141,7 +141,7 @@ public sealed class EntryRepositoryArgumentTests
     public void AFile_IsRefused_WhenAColumnCannotHoldIt()
     {
         var repository = new EntryRepository(_database);
-        var file = new NewEntryFile(Guid.NewGuid(), 1, Guid.NewGuid(), "cv.pdf", new string('b', 32), "application/pdf", 1, Hash, "Pending");
+        var file = new NewEntryFile(Guid.NewGuid(), 1, Guid.NewGuid(), "cv.pdf", new string('b', 32), "application/pdf", 1, Hash, "pending");
 
         Assert.Multiple(() =>
         {
@@ -154,11 +154,14 @@ public sealed class EntryRepositoryArgumentTests
             Assert.That(() => repository.AddFileAsync(file with { SizeBytes = -1 }), Throws.ArgumentException);
             Assert.That(() => repository.AddFileAsync(file with { FileHash = Hash[1..] }), Throws.ArgumentException);
             Assert.That(() => repository.AddFileAsync(file with { ScanState = string.Empty }), Throws.ArgumentException);
-            Assert.That(() => repository.AddFileAsync(file with { ScanState = new string('S', EntryRepository.MaxScanStateLength + 1) }), Throws.ArgumentException);
-            Assert.That(() => repository.AddFileAsync(file with { ScanState = "Pending1" }), Throws.ArgumentException);
+            Assert.That(() => repository.AddFileAsync(file with { ScanState = new string('s', EntryRepository.MaxScanStateLength + 1) }), Throws.ArgumentException);
+            Assert.That(() => repository.AddFileAsync(file with { ScanState = "pending1" }), Throws.ArgumentException);
+            Assert.That(() => repository.AddFileAsync(file with { ScanState = "Pending" }), Throws.ArgumentException, "a stored name is camelCase");
             Assert.That(() => repository.AddFileAsync(null!), Throws.ArgumentNullException);
-            Assert.That(() => repository.ChangeScanStateAsync(1, "Pending", "In progress"), Throws.ArgumentException);
-            Assert.That(() => repository.ChangeScanStateAsync(1, string.Empty, "Clean"), Throws.ArgumentException);
+            Assert.That(() => repository.ChangeScanStateAsync(1, "pending", "in progress"), Throws.ArgumentException);
+            Assert.That(() => repository.ChangeScanStateAsync(1, string.Empty, "clean"), Throws.ArgumentException);
+            Assert.That(() => repository.ChangeScanStateAsync(1, "pending", "Clean"), Throws.ArgumentException, "a stored name is camelCase");
+            Assert.That(() => repository.ChangeScanStateAsync(1, "PENDING", "clean"), Throws.ArgumentException, "the expected state too");
             Assert.That(() => repository.ListOrphanFilesAsync(DateTimeOffset.UnixEpoch, 0), Throws.InstanceOf<ArgumentOutOfRangeException>());
             Assert.That(() => repository.ListOrphanFilesAsync(DateTimeOffset.UnixEpoch, EntryRepository.MaxOrphansPerList + 1), Throws.InstanceOf<ArgumentOutOfRangeException>());
         });

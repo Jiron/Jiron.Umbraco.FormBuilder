@@ -29,7 +29,9 @@ from the migration's snapshot classes, and a test (`DatabaseDocsTests`) fails wh
 - **JSON columns** hold camelCase JSON; a missing property means the default.
 - **Stored names.** An enum stored as text is the camel case of its name (`pending`, `published`, `longText`), as in
   the definitions, the events and the audit actions. Every repository writes and reads it through one converter, which
-  refuses any other spelling, another letter case included, as a row something else wrote (ADR-0033).
+  refuses any other spelling, another letter case included, as a row something else wrote (ADR-0033). A scan state
+  and an option list kind, free words until their enums come, are camelCase words of ASCII letters too, and a
+  message names a value as it is stored.
 - **Hashes** are SHA-256 in lowercase hex, in columns named for what they hash: `definitionHash`, `publicHash`,
   `submissionHash`, `fileHash`, `textHash`, `valueHash`, `resumeTokenHash`.
 - **Deletes.** Deleting an entry deletes its values, files, events, notes and action runs; its emails stay until their
@@ -517,7 +519,9 @@ cleaned up (ADR-0006). `fileHash` is the SHA-256 of the bytes.
 
 - `IX_jfbEntryFile_key`: unique.
 - `IX_jfbEntryFile_entryId_createdUtc`: the files of an entry, and the uploads that wait for one, oldest first, for
-  their cleanup and a form's delete.
+  their cleanup.
+- `IX_jfbEntryFile_formId_entryId`: one form's uploads that wait for an entry, for the form's delete, without reading
+  those of other forms.
 
 ### `jfbEntryValue`
 

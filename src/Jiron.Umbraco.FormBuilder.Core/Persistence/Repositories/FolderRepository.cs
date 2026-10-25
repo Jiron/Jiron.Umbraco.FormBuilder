@@ -220,7 +220,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
                 var current = await FindAsync(db, "id", id);
                 return changed == 1 || current is null
                     ? current
-                    : throw LibraryTrash.InTrash("folder");
+                    : throw LibraryTrash.Trashed("folder");
             },
             cancellationToken);
 
@@ -302,7 +302,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
                     && await db.ScalarAsync<int>($"SELECT COUNT(*) FROM {table}{n.LockingRead} WHERE {n.C("id")} = @0 AND {n.C("trashedUtc")} IS NULL", parentId) == 1;
                 if ((intoParent ? held.ParentId : null) != landingParentId)
                 {
-                    throw new FormBuilderConflictException(FormBuilderConflict.LandingChanged, "Where it lands changed since it was checked: its folder went to the trash or came back meanwhile. Check again, then restore it.");
+                    throw LibraryTrash.LandingChanged("folder");
                 }
 
                 // What went to the trash with it: the folders below it with its key, reached only through such folders.
@@ -345,7 +345,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
                 return await FindAsync(db, "id", id) switch
                 {
                     null => false,
-                    { TrashedUtc: null } => throw LibraryTrash.OutsideTrash("folder"),
+                    { TrashedUtc: null } => throw LibraryTrash.NotTrashed("folder"),
                     _ => throw new FormBuilderConflictException(FormBuilderConflict.FolderNotEmpty, "The folder still holds folders or forms."),
                 };
             },
@@ -416,7 +416,7 @@ internal sealed class FolderRepository(FormBuilderDatabase database) : IFolderRe
     {
         if (folder.TrashedUtc is not null)
         {
-            return LibraryTrash.InTrash("folder");
+            return LibraryTrash.Trashed("folder");
         }
 
         var tree = (await AllAsync(db, n)).ToDictionary(row => row.Id);

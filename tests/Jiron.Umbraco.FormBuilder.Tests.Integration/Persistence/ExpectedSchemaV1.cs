@@ -75,6 +75,7 @@ internal static class ExpectedSchemaV1
         "jfbEntryEvent.IX_jfbEntryEvent_entryId_occurredUtc(entryId,occurredUtc)",
         "jfbDailyStat.IX_jfbDailyStat_day_formId(day,formId)",
         "jfbEntryFile.IX_jfbEntryFile_entryId_createdUtc(entryId,createdUtc)",
+        "jfbEntryFile.IX_jfbEntryFile_formId_entryId(formId,entryId)",
         "jfbEntryFile.IX_jfbEntryFile_key(key) unique",
         "jfbEntryNote.IX_jfbEntryNote_entryId(entryId)",
         "jfbEntryValue.IX_jfbEntryValue_entryId_fieldId(entryId,fieldId)",

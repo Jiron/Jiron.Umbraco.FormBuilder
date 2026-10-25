@@ -20,6 +20,7 @@ internal static class FormBuilderFormServices
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormPublishCheck, StructuralPublishCheck>());
         builder.Services.TryAddSingleton<FormRemoval>();
         builder.Services.TryAddSingleton<FormDocuments>();
+        builder.Services.TryAddSingleton<FormInfos>();
         builder.Services.TryAddSingleton<FormCreation>();
         builder.Services.TryAddSingleton<IFormBuilderFormService, FormBuilderFormService>();
         builder.Services.TryAddSingleton<IFormBuilderFormVersionService, FormBuilderFormVersionService>();

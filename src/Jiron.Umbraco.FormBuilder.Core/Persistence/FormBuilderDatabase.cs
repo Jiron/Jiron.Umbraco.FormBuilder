@@ -68,7 +68,7 @@ internal sealed partial class FormBuilderDatabase(
             _ => gate.RunAsync(
                 async () =>
                 {
-                    using var linked = Keep(cancellationToken, out var token);
+                    using var linked = UnitToken(cancellationToken, out var token);
                     FormBuilderDbExtensions.CurrentToken = token;
                     _reading.Value = true;
                     using var scope = scopeProvider.CreateScope(autoComplete: true);
@@ -82,7 +82,8 @@ internal sealed partial class FormBuilderDatabase(
     /// Runs read-only work under a time budget (ADR-0003, ADR-0039): past <paramref name="budget"/> the running
     /// statement stops and the read fails with <see cref="FormBuilderQueryTimeoutException"/>, which never runs again.
     /// The budget starts once the gate lets the read through. A budgeted read inside another one keeps the outer
-    /// budget.
+    /// budget and adds its own caller's token. A statement stopped through the unit's token, its caller's or an outer
+    /// unit's, fails with <see cref="OperationCanceledException"/>.
     /// </summary>
     public Task<T> QueryAsync<T>(Func<IUmbracoDatabase, Task<T>> read, TimeSpan budget, CancellationToken cancellationToken = default)
     {
@@ -96,13 +97,14 @@ internal sealed partial class FormBuilderDatabase(
                     _reading.Value = true;
                     using var scope = scopeProvider.CreateScope(autoComplete: true);
                     var db = scope.Database;
+                    using var linked = UnitToken(cancellationToken, out var token);
+                    FormBuilderDbExtensions.CurrentToken = token;
                     if (_budgeted.Value)
                     {
-                        return await read(db);
+                        // Inside another budgeted read: its budget holds, and this caller's token joins it.
+                        return await AsCancelledAsync(() => read(db), token);
                     }
 
-                    using var linked = Keep(cancellationToken, out var token);
-                    FormBuilderDbExtensions.CurrentToken = token;
                     var sqlite = new SqlNames(db).IsSqlite;
                     if (sqlite && db.Connection is null)
                     {
@@ -120,17 +122,12 @@ internal sealed partial class FormBuilderDatabase(
                     FormBuilderDbExtensions.CurrentToken = deadline.Token;
                     try
                     {
-                        return await read(db);
+                        return await AsCancelledAsync(() => read(db), token);
                     }
                     // A refusal stays a refusal; any other failure past the deadline is the stopped statement's.
-                    catch (Exception exception) when (deadline.Expired && !cancellationToken.IsCancellationRequested && exception is not ArgumentException)
+                    catch (Exception exception) when (deadline.Expired && !token.IsCancellationRequested && exception is not ArgumentException)
                     {
                         throw new FormBuilderQueryTimeoutException($"The query ran past its time budget of {budget.TotalSeconds:0.###} s and was stopped.", exception);
-                    }
-                    catch (Exception exception) when (cancellationToken.IsCancellationRequested && exception is not OperationCanceledException and not ArgumentException)
-                    {
-                        // On SQLite the progress handler interrupted the statement for the caller: say so as .NET does.
-                        throw new OperationCanceledException("The query was cancelled.", exception, cancellationToken);
                     }
                 },
                 cancellationToken),
@@ -154,7 +151,7 @@ internal sealed partial class FormBuilderDatabase(
             committing => gate.RunAsync(
                 async () =>
                 {
-                    using var linked = Keep(cancellationToken, out var token);
+                    using var linked = UnitToken(cancellationToken, out var token);
                     FormBuilderDbExtensions.CurrentToken = token;
                     using var scope = scopeProvider.CreateScope();
                     var result = await write(scope.Database);
@@ -169,11 +166,28 @@ internal sealed partial class FormBuilderDatabase(
     }
 
     /// <summary>
-    /// The token of a unit: its caller's, or, inside another unit, the outer unit's too, so a nested unit never drops
-    /// the cancellation or the deadline of the unit it runs in. It returns the source to dispose when both can be
+    /// A read's failure because its token was cancelled, reported as .NET reports a cancellation: on SQLite the progress
+    /// handler interrupts the statement, which the provider answers with an error of its own. The token is the unit's,
+    /// so a statement stopped for an outer unit's caller is a cancellation too. A refusal stays a refusal.
+    /// </summary>
+    private static async Task<T> AsCancelledAsync<T>(Func<Task<T>> read, CancellationToken token)
+    {
+        try
+        {
+            return await read();
+        }
+        catch (Exception exception) when (token.IsCancellationRequested && exception is not OperationCanceledException and not ArgumentException)
+        {
+            throw new OperationCanceledException("The query was cancelled.", exception, token);
+        }
+    }
+
+    /// <summary>
+    /// Links the token of a unit: its caller's, or, inside another unit, the outer unit's too, so a nested unit never
+    /// drops the cancellation or the deadline of the unit it runs in. It returns the source to dispose when both can be
     /// cancelled, and null otherwise.
     /// </summary>
-    private static CancellationTokenSource? Keep(CancellationToken own, out CancellationToken token)
+    private static CancellationTokenSource? UnitToken(CancellationToken own, out CancellationToken token)
     {
         var outer = FormBuilderDbExtensions.CurrentToken;
         if (!outer.CanBeCanceled || outer == own)

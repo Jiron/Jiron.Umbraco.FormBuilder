@@ -191,7 +191,7 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
                 if (changed == 0 && current is not null)
                 {
                     // Not in the state the user saw when the update ran, whatever it is in now: it may have come back since.
-                    throw new FormBuilderConcurrencyException($"The entry was changed by someone else meanwhile (it was no longer {expected}).");
+                    throw new FormBuilderConcurrencyException($"The entry was changed by someone else meanwhile (it was no longer {StoredNames.Describe(expected)}).");
                 }
 
                 return current;
@@ -302,7 +302,7 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
     {
         if (current is not null && current.State != expected)
         {
-            throw new FormBuilderConcurrencyException($"The entry was changed by someone else meanwhile (it is {current.State}, not {expected}).");
+            throw new FormBuilderConcurrencyException($"The entry was changed by someone else meanwhile (it is {StoredNames.Describe(current.State)}, not {StoredNames.Describe(expected)}).");
         }
     }
 
@@ -310,7 +310,7 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
     {
         if (!Enum.IsDefined(state))
         {
-            throw new ArgumentOutOfRangeException(parameter, state, "Not an entry state.");
+            throw new ArgumentOutOfRangeException(parameter, StoredNames.Describe(state), "Not an entry state.");
         }
     }
 

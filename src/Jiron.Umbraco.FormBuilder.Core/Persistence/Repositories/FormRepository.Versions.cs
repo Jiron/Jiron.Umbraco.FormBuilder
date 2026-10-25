@@ -309,7 +309,7 @@ internal sealed partial class FormRepository
                     number);
                 if (updated == 0 && row is not null)
                 {
-                    throw LibraryTrash.InTrash("form");
+                    throw LibraryTrash.Trashed("form");
                 }
 
                 return row is null ? null : InfoFromDto(row);

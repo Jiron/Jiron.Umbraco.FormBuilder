@@ -117,8 +117,9 @@ read (`FormBuilderDatabase.QueryAsync`). The query (`EntryQuery`) holds:
 **The budget** is 10 seconds per read unit. Past it the statement is interrupted, the read ends without a result,
 and `FormBuilderQueryTimeoutException` (`query_timeout`, 4.7) says so. It is never run again, and the gate is free
 for the next unit at once. A refusal of the builder stays a refusal, also past the deadline. A budgeted read
-inside another one keeps the outer one's budget. The SQLite progress handler is cleared before the connection goes
-back to Umbraco.
+inside another one keeps the outer one's budget and adds its own caller's cancellation (4.8g); a read stopped through
+its caller's token or a unit's ends with `OperationCanceledException`, never with the provider's error. The SQLite
+progress handler is cleared before the connection goes back to Umbraco.
 
 **The cursor** (`EntryCursor`) names the sort it belongs to, the last entry, its submission time and, in the walk, its
 value row and value. A cursor of another sort is refused. 4.7 carries it as an opaque token: it names a position,

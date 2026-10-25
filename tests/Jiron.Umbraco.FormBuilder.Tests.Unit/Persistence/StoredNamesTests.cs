@@ -32,6 +32,20 @@ public sealed class StoredNamesTests
     }
 
     [TestCase("pending", true)]
+    [TestCase("dataType", true)]
+    [TestCase("p", true)]
+    [TestCase("abcdefghijklmnop", true)]
+    [TestCase("abcdefghijklmnopq", false)]
+    [TestCase("Pending", false)]
+    [TestCase("PENDING", false)]
+    [TestCase("pending1", false)]
+    [TestCase("data-type", false)]
+    [TestCase("", false)]
+    [TestCase(null, false)]
+    public void AStoredNameThatNoEnumHoldsYet_IsACamelCaseWordOfAsciiLetters(string? text, bool valid) =>
+        Assert.That(StoredNames.IsName(text, 16), Is.EqualTo(valid));
+
+    [TestCase("pending", true)]
     [TestCase("Pending", false)]
     [TestCase("PENDING", false)]
     [TestCase("pending ", false)]
@@ -67,6 +81,17 @@ public sealed class StoredNamesTests
         {
             Assert.That(() => StoredNames.Of((EntryState)99), Throws.InstanceOf<ArgumentOutOfRangeException>());
             Assert.That(() => StoredNames.Parse<EntryState>(null!), Throws.ArgumentNullException);
+        });
+    }
+
+    [Test]
+    public void AMessage_NamesAValueAsItIsStored_AndOneWithoutANameByItsNumber()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(StoredNames.Describe(FieldStorageKind.LongText), Is.EqualTo("longText"));
+            Assert.That(StoredNames.Describe(EntryState.Approved), Is.EqualTo(StoredNames.Of(EntryState.Approved)));
+            Assert.That(StoredNames.Describe((EntryState)99), Is.EqualTo("99"), "a refused value, named in its refusal");
         });
     }
 

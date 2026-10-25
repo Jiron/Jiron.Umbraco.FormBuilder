@@ -394,7 +394,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             Assert.That(root.GetProperty("form").ToString(), Is.EqualTo($$"""{"key":"{{source.Key}}","alias":"contact","name":"Contact"}""").Using<string>((x, y) => JsonNode.DeepEquals(JsonNode.Parse(x), JsonNode.Parse(y)) ? 0 : 1));
             Assert.That(Hash(FormExportFormat.Read(draft.Json, DefinitionFixtures()).Envelope!.Definition), Is.EqualTo(Hash(designed)), "the draft");
             Assert.That(DefinitionKeys.Fields(read.Definition).Select(field => field.Alias), Is.EqualTo(new[] { "email", "topic", "confirmEmail" }), "the published version 3, without the field added since");
-            Assert.That(root.GetProperty("optionLists").EnumerateArray().Select(item => (item.GetProperty("key").GetGuid(), item.GetProperty("alias").GetString(), item.GetProperty("kind").GetString(), item.GetProperty("cacheSeconds").GetInt32())), Is.EqualTo(new[] { (list.Key, "sessions", "Manual", 0) }));
+            Assert.That(root.GetProperty("optionLists").EnumerateArray().Select(item => (item.GetProperty("key").GetGuid(), item.GetProperty("alias").GetString(), item.GetProperty("kind").GetString(), item.GetProperty("cacheSeconds").GetInt32())), Is.EqualTo(new[] { (list.Key, "sessions", "manual", 0) }));
             Assert.That(read.OptionLists, Is.Empty, "version 3 names no list");
             Assert.That(await Exchange.ExportAsync(Guid.NewGuid()), Is.Null);
             Assert.That(await Exchange.ExportAsync(source.Key, 99), Is.Null);
@@ -457,7 +457,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             ListJson(byKey, "rooms", "[]"),
             ListJson(sameAlias, "sessions", """[{"value":"a"}]"""),
             ListJson(otherItems, "meals", """[{"value":"b"}]"""),
-            ListJson(otherKind, "kinds", "[]", kind: "Countries"),
+            ListJson(otherKind, "kinds", "[]", kind: "countries"),
             ListJson(otherConfig, "configs", "[]", config: """{"sort":"label"}"""));
 
         var imported = await Exchange.ImportAsync(new ImportFormRequest(envelope.ToJsonString(), UserKey: Editor));
@@ -625,7 +625,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         return copy.ToJsonString();
     }
 
-    private static JsonObject ListJson(Guid key, string alias, string items, string kind = "Manual", string config = "{}") => new()
+    private static JsonObject ListJson(Guid key, string alias, string items, string kind = "manual", string config = "{}") => new()
     {
         ["key"] = key.ToString("D"),
         ["alias"] = alias,
@@ -668,7 +668,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         DefinitionKeys.Fields((await Service.GetDraftAsync(form.Key))!.Definition!).Select(field => field.Alias).ToList();
 
     private Task<StoredOptionList> CreateListAsync(Guid key, string alias, string items = "[]") =>
-        OptionLists.CreateAsync(new NewOptionList(key, alias, alias, "Manual", Items: items));
+        OptionLists.CreateAsync(new NewOptionList(key, alias, alias, "manual", Items: items));
 
     // A saved template of one group with an email field, and one more field when given.
     private async Task<StoredFormTemplate> SavedTemplateAsync(FormTemplateKind kind, FormField? field = null)

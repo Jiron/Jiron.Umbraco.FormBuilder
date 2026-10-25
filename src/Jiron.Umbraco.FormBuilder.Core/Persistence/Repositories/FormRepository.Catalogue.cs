@@ -158,7 +158,7 @@ internal sealed partial class FormRepository
         Check(field.Type, 1, MaxTypeLength, "type");
         if (!Enum.IsDefined(field.StorageKind))
         {
-            throw new ArgumentOutOfRangeException(nameof(field), field.StorageKind, "A field's storage kind is one of the kinds of section 4.3.2.");
+            throw new ArgumentOutOfRangeException(nameof(field), StoredNames.Describe(field.StorageKind), "A field's storage kind is one of the kinds of section 4.3.2.");
         }
 
         static void Check(string value, int min, int max, string what)

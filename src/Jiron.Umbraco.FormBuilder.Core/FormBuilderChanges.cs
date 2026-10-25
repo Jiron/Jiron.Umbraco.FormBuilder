@@ -11,7 +11,8 @@ namespace Jiron.Umbraco.FormBuilder.Core;
 /// The steps every change of Core's services takes (ADR-0053): it is refused inside a caller's unit of work or an
 /// Umbraco scope, then the cancelable notification goes out, then one unit of work writes the change with its audit
 /// entries, then the notification that it happened goes out. A handler that fails after the commit is logged as
-/// <typeparamref name="TService"/>'s, and the change stands.
+/// <typeparamref name="TService"/>'s, and the change stands. A service refuses a change inside a unit before it reads
+/// anything (<see cref="EnsureOwnUnit"/>), and the pipeline refuses it again at its own steps, so none can forget it.
 /// </summary>
 /// <typeparam name="TService">The service whose changes these are; it names the log category.</typeparam>
 internal sealed class FormBuilderChanges<TService>(
@@ -39,6 +40,7 @@ internal sealed class FormBuilderChanges<TService>(
         where TNotification : CancelableNotification
     {
         ArgumentNullException.ThrowIfNull(notification);
+        RefuseInsideAUnit();
         if (await eventAggregator.PublishCancelableAsync(notification))
         {
             throw new FormBuilderCancelledException(notification.Messages);
@@ -53,6 +55,7 @@ internal sealed class FormBuilderChanges<TService>(
     {
         ArgumentNullException.ThrowIfNull(write);
         ArgumentNullException.ThrowIfNull(entries);
+        RefuseInsideAUnit();
         return database.WriteAsync(
             async _ =>
             {
@@ -84,6 +87,10 @@ internal sealed class FormBuilderChanges<TService>(
             FormBuilderChangeLog.HandlerFailed(logger, typeof(TNotification).Name, subject, exception);
         }
     }
+
+    // The pipeline's own check, so a change that skipped EnsureOwnUnit is refused as well, in the pipeline's words.
+    private void RefuseInsideAUnit() =>
+        EnsureOwnUnit($"A change of {typeof(TService).Name} is a unit of work of its own: it tells handlers, drops caches or both once it has committed (ADR-0053).");
 }
 
 /// <summary>The log line of <see cref="FormBuilderChanges{TService}"/>, which a generic type cannot hold itself.</summary>

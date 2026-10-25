@@ -92,7 +92,7 @@ flowchart LR
   forms["IFormBuilderFormService<br>lifecycle and trash"]
   versions["IFormBuilderFormVersionService<br>History, compare, restore, pins, comments"]
   exchange["IFormBuilderFormExchangeService<br>duplicate, copy actions, templates, import, export"]
-  shared["FormDocuments, FormChecks, FormCreation"]
+  shared["FormDocuments, FormInfos, FormChecks, FormAudit, FormCreation"]
   others["folder, access and settings services"]
   changes["FormBuilderChanges: own unit, cancelable notification, write with audit, notification after"]
   repos["repositories"]

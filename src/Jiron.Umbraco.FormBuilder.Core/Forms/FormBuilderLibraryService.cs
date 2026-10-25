@@ -65,10 +65,10 @@ internal interface IFormBuilderLibraryService
     Task<Page<LibraryItem>> SearchFormsAsync(AccessUser user, string text, PageRequest page, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// What the user lacks of <c>design</c> and <c>deleteEntries</c> on anything the removal takes (ADR-0050); none when
+    /// What the user lacks of <c>design</c> and <c>deleteEntries</c> on anything the candidate holds (ADR-0050); none when
     /// they may delete it for good.
     /// </summary>
-    Task<FormBuilderPermissions> MissingToDeleteAsync(AccessUser user, DeletionCandidate removal, CancellationToken cancellationToken = default);
+    Task<FormBuilderPermissions> MissingToDeleteAsync(AccessUser user, DeletionCandidate candidate, CancellationToken cancellationToken = default);
 
     /// <summary>Empties the trash of what the user may delete for good, and leaves the rest (ADR-0050).</summary>
     /// <exception cref="FormBuilderConcurrencyException">A form in the trash changed meanwhile; what is deleted stays deleted.</exception>
@@ -103,7 +103,7 @@ internal sealed class FormBuilderLibraryService(
         var shown = all
             .Where(folder => folder.ParentId == parent?.Id && folder.TrashedUtc is not null == trashed && visibility.Allows(folder.Key))
             .ToList();
-        var filter = new FormFilter { FolderId = parent?.Id, Trashed = trashed, Access = await access.GetFormVisibilityAsync(user, cancellationToken: cancellationToken) };
+        var filter = new FormFilter { FolderId = parent?.Id, Trashed = trashed, Visibility = await access.GetFormVisibilityAsync(user, cancellationToken: cancellationToken) };
         return await PageAsync(user, all, visibility, shown, filter, page, cancellationToken);
     }
 
@@ -122,7 +122,7 @@ internal sealed class FormBuilderLibraryService(
             AllFolders = true,
             Trashed = true,
             OutsideFolderIds = trashedIds,
-            Access = await access.GetFormVisibilityAsync(user, cancellationToken: cancellationToken),
+            Visibility = await access.GetFormVisibilityAsync(user, cancellationToken: cancellationToken),
         };
         return await PageAsync(user, all, visibility, shown, filter, page, cancellationToken);
     }
@@ -133,7 +133,7 @@ internal sealed class FormBuilderLibraryService(
         ArgumentNullException.ThrowIfNull(user);
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
         var keys = (await folders.ListAllAsync(cancellationToken)).ToDictionary(folder => folder.Id, folder => folder.Key);
-        var filter = new FormFilter { AllFolders = true, Trashed = false, Search = text, Access = await access.GetFormVisibilityAsync(user, cancellationToken: cancellationToken) };
+        var filter = new FormFilter { AllFolders = true, Trashed = false, Search = text, Visibility = await access.GetFormVisibilityAsync(user, cancellationToken: cancellationToken) };
         var found = await forms.ListAsync(filter, page, cancellationToken);
         var items = new List<LibraryItem>(found.Items.Count);
         foreach (var form in found.Items)
@@ -145,17 +145,17 @@ internal sealed class FormBuilderLibraryService(
     }
 
     /// <inheritdoc />
-    public async Task<FormBuilderPermissions> MissingToDeleteAsync(AccessUser user, DeletionCandidate removal, CancellationToken cancellationToken = default)
+    public async Task<FormBuilderPermissions> MissingToDeleteAsync(AccessUser user, DeletionCandidate candidate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(user);
-        ArgumentNullException.ThrowIfNull(removal);
+        ArgumentNullException.ThrowIfNull(candidate);
         var missing = FormBuilderPermissions.None;
-        foreach (var folderKey in removal.FolderKeys)
+        foreach (var folderKey in candidate.FolderKeys)
         {
             missing |= ToDelete & ~await access.GetForFolderAsync(user, folderKey, cancellationToken);
         }
 
-        foreach (var form in removal.Forms)
+        foreach (var form in candidate.Forms)
         {
             missing |= ToDelete & ~await access.GetForFormAsync(user, form, cancellationToken);
         }
@@ -168,7 +168,7 @@ internal sealed class FormBuilderLibraryService(
     {
         ArgumentNullException.ThrowIfNull(user);
         return folderService.EmptyTrashAsync(
-            async (removal, token) => await MissingToDeleteAsync(user, removal, token) == FormBuilderPermissions.None,
+            async (candidate, token) => await MissingToDeleteAsync(user, candidate, token) == FormBuilderPermissions.None,
             userKey,
             cancellationToken);
     }
@@ -192,7 +192,7 @@ internal sealed class FormBuilderLibraryService(
         var items = new List<LibraryItem>(page.Take);
         if (folderPart.Count > 0)
         {
-            var withForms = await forms.ListFolderIdsWithFormsAsync([.. folderPart.Select(folder => folder.Id)], filter.Trashed == true, filter.Access, cancellationToken);
+            var withForms = await forms.ListFolderIdsWithFormsAsync([.. folderPart.Select(folder => folder.Id)], filter.Trashed == true, filter.Visibility, cancellationToken);
             foreach (var folder in folderPart)
             {
                 var hasFolders = all.Any(child => child.ParentId == folder.Id && child.TrashedUtc is not null == folder.TrashedUtc is not null && visibility.Allows(child.Key));

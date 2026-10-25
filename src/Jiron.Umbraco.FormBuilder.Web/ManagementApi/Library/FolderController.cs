@@ -176,12 +176,12 @@ internal sealed class FolderController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(Guid key, CancellationToken cancellationToken = default)
     {
-        if (await folders.GetDeletionCandidateAsync(key, cancellationToken) is not { } removal)
+        if (await folders.GetDeletionCandidateAsync(key, cancellationToken) is not { } candidate)
         {
             return FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder);
         }
 
-        var missing = await library.MissingToDeleteAsync(RequestAccess.User, removal, cancellationToken);
+        var missing = await library.MissingToDeleteAsync(RequestAccess.User, candidate, cancellationToken);
         if (missing != FormBuilderPermissions.None)
         {
             return FormBuilderProblems.Missing(PermissionRules.Each.First(permission => (missing & permission) != FormBuilderPermissions.None));

@@ -256,7 +256,7 @@ public sealed class SchemaConstraintTests : FormBuilderMigrationTestBase
         Write(db =>
         {
             db.Insert(new Schema.FormDto { Key = Guid.NewGuid(), Alias = "contactForm", Name = "Contact", CreatedUtc = now, UpdatedUtc = now });
-            db.Insert(new Schema.OptionListDto { Key = Guid.NewGuid(), Alias = "countries", Name = "Countries", Kind = "Countries", CreatedUtc = now, UpdatedUtc = now });
+            db.Insert(new Schema.OptionListDto { Key = Guid.NewGuid(), Alias = "countries", Name = "Countries", Kind = "countries", CreatedUtc = now, UpdatedUtc = now });
             db.Insert(new Schema.ThemeDto { Key = Guid.NewGuid(), Alias = "brand", Name = "Brand", BaseTheme = "default", CreatedUtc = now, UpdatedUtc = now });
             db.Insert(new Schema.EmailLayoutDto { Key = Guid.NewGuid(), Alias = "newsletter", Name = "Newsletter", CreatedUtc = now, UpdatedUtc = now });
         });
@@ -268,7 +268,7 @@ public sealed class SchemaConstraintTests : FormBuilderMigrationTestBase
                 Assert.That(() => Write(db => db.Insert(new Schema.FormDto { Key = Guid.NewGuid(), Alias = alias, Name = "Again", CreatedUtc = now, UpdatedUtc = now })), Throws.Exception, $"form {alias}");
             }
 
-            Assert.That(() => Write(db => db.Insert(new Schema.OptionListDto { Key = Guid.NewGuid(), Alias = "Countries", Name = "Again", Kind = "Manual", CreatedUtc = now, UpdatedUtc = now })), Throws.Exception, "option list");
+            Assert.That(() => Write(db => db.Insert(new Schema.OptionListDto { Key = Guid.NewGuid(), Alias = "Countries", Name = "Again", Kind = "manual", CreatedUtc = now, UpdatedUtc = now })), Throws.Exception, "option list");
             Assert.That(() => Write(db => db.Insert(new Schema.ThemeDto { Key = Guid.NewGuid(), Alias = "BRAND", Name = "Again", BaseTheme = "default", CreatedUtc = now, UpdatedUtc = now })), Throws.Exception, "theme");
             Assert.That(() => Write(db => db.Insert(new Schema.EmailLayoutDto { Key = Guid.NewGuid(), Alias = "Newsletter", Name = "Again", CreatedUtc = now, UpdatedUtc = now })), Throws.Exception, "email layout");
             Assert.That(() => Write(db => db.Insert(new Schema.FormDto { Key = Guid.NewGuid(), Alias = "contactForm2", Name = "Another", CreatedUtc = now, UpdatedUtc = now })), Throws.Nothing);
@@ -401,7 +401,7 @@ public sealed class SchemaConstraintTests : FormBuilderMigrationTestBase
             ContentType = "application/pdf",
             SizeBytes = 1024,
             FileHash = Hex(32),
-            ScanState = "Clean",
+            ScanState = "clean",
             CreatedUtc = DateTime.UtcNow,
         };
         db.Insert(file);

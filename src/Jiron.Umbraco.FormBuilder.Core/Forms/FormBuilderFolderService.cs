@@ -119,7 +119,7 @@ internal sealed class FormBuilderFolderService(
     IFormRepository forms,
     IPermissionRepository permissions,
     FormRemoval removal,
-    AccessSnapshotInvalidator access,
+    AccessSnapshotInvalidator snapshots,
     FormBuilderChanges<FormBuilderFolderService> changes)
     : IFormBuilderFolderService
 {
@@ -170,7 +170,7 @@ internal sealed class FormBuilderFolderService(
         ArgumentNullException.ThrowIfNull(request);
         changes.EnsureOwnUnit(OwnUnit);
         var name = CheckName(request.Name);
-        var parent = await LiveParentAsync(request.ParentKey, cancellationToken);
+        var parent = await LibraryFolders.LiveAsync(folders, request.ParentKey, cancellationToken);
         var key = Guid.NewGuid();
         await changes.CancelableAsync(new FolderCreatingNotification(key, name, parent?.Key, request.UserKey, new EventMessages()));
         var created = await changes.WriteAsync(
@@ -221,7 +221,7 @@ internal sealed class FormBuilderFolderService(
         }
 
         LibraryTrash.CheckOutside(folder.TrashedUtc, Item);
-        var parent = await LiveParentAsync(parentKey, cancellationToken);
+        var parent = await LibraryFolders.LiveAsync(folders, parentKey, cancellationToken);
         if (parent?.Id == folder.ParentId)
         {
             return await InfoAsync(folder, cancellationToken);
@@ -293,7 +293,7 @@ internal sealed class FormBuilderFolderService(
         }
 
         var parent = folder.ParentId is { } parentId ? await folders.GetByIdAsync(parentId, cancellationToken) : null;
-        return folder.TrashedUtc is null ? new RestoreLanding(parent?.Key) : Landing(parent);
+        return folder.TrashedUtc is null ? new RestoreLanding(parent?.Key) : LibraryFolders.Landing(parent);
     }
 
     /// <inheritdoc />
@@ -319,8 +319,8 @@ internal sealed class FormBuilderFolderService(
         // Back into its parent while that is outside the trash, otherwise to the root; there, or where the caller checked
         // it lands, and the write refuses another landing.
         var parent = all.FirstOrDefault(row => row.Id == folder.ParentId);
-        var lands = landing ?? Landing(parent);
-        int? landingId = lands.FolderKey is null ? null : parent is not null && parent.Key == lands.FolderKey ? parent.Id : throw LandingChanged();
+        var lands = landing ?? LibraryFolders.Landing(parent);
+        var landingId = LibraryFolders.LandingId(lands, parent, Item);
         await changes.CancelableAsync(new FolderRestoringNotification(folder.Key, folder.Name, lands.FolderKey, Summaries(below), Summaries(coming), userKey, new EventMessages()));
         var changed = await changes.WriteAsync<TreeChange?>(
             async () =>
@@ -440,12 +440,12 @@ internal sealed class FormBuilderFolderService(
         await PublishedAsync(new TrashEmptiedNotification(emptied.Folders, emptied.Forms, userKey));
         return new TrashEmptied(emptied, everything - trees.Count - loose.Count);
 
-        async Task<List<T>> WhereAsync<T>(List<T> items, Func<T, DeletionCandidate> removal)
+        async Task<List<T>> WhereAsync<T>(List<T> items, Func<T, DeletionCandidate> candidate)
         {
             var kept = new List<T>();
             foreach (var item in items)
             {
-                if (await include(removal(item), cancellationToken))
+                if (await include(candidate(item), cancellationToken))
                 {
                     kept.Add(item);
                 }
@@ -575,25 +575,6 @@ internal sealed class FormBuilderFolderService(
     private async Task<Guid?> KeyOfAsync(int? folderId, CancellationToken cancellationToken) =>
         folderId is { } id ? (await folders.GetByIdAsync(id, cancellationToken))?.Key : null;
 
-    // A folder something may go into: outside the trash. Null for the root.
-    private async Task<StoredFolder?> LiveParentAsync(Guid? parentKey, CancellationToken cancellationToken)
-    {
-        if (parentKey is not { } key)
-        {
-            return null;
-        }
-
-        return await folders.GetAsync(key, cancellationToken) is { TrashedUtc: null } parent
-            ? parent
-            : throw new FormBuilderConflictException(FormBuilderConflict.MissingFolder, "The folder does not exist or is in the trash.");
-    }
-
-    // A restore goes back into the parent while that is outside the trash, otherwise to the root.
-    private static RestoreLanding Landing(StoredFolder? parent) => new(parent is { TrashedUtc: null } ? parent.Key : null);
-
-    private static FormBuilderConflictException LandingChanged() =>
-        new(FormBuilderConflict.LandingChanged, "Where it lands changed since it was checked: its folder went to the trash or came back meanwhile. Check again, then restore it.");
-
     // A permanent delete, which may stop part way: what went before it stopped took its grants with it, so the access
     // snapshot drops then too; a delete that finishes drops it as it publishes (ADR-0048).
     private async Task<T> DeletingAsync<T>(Func<Task<T>> delete)
@@ -604,7 +585,7 @@ internal sealed class FormBuilderFolderService(
         }
         catch
         {
-            access.Changed();
+            snapshots.Changed();
             throw;
         }
     }
@@ -617,7 +598,7 @@ internal sealed class FormBuilderFolderService(
     {
         if (treeChanged)
         {
-            access.Changed();
+            snapshots.Changed();
         }
 
         await changes.PublishedAsync(notification, Library);

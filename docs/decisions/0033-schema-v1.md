@@ -1,7 +1,7 @@
 # 0033. Schema v1: conventions, the migration plan and its checks
 
 - Status: accepted; the trash key of folders and forms added by [ADR-0047](0047-trash-delete-and-folders.md) in 4.5d;
-  amended in 4.8a (the review before the freeze, below)
+  amended in 4.8a (the review before the freeze, below) and in 4.8g (one more index, camelCase free words)
 - Date: 2026-10-23
 - Roadmap step: 4.1 (decided and built); 4.2 and 4.3 follow its text rules; 4.7, 6.1, 6.2, 8.1 and 9.1 check the
   migration state
@@ -76,6 +76,14 @@ classes are nested in each step and never edited; repositories (4.3) get product
   dimension)`, so one form's days and its delete are a seek, with `IX_jfbDailyStat_day_formId` for retention by day
   (ADR-0041); and one `IX_jfbEntryFile_entryId_createdUtc` instead of an index on each column, so the uploads that
   wait for an entry are found oldest first without reading every old file. `IndexPlanTests` shows SQLite using each.
+- **CamelCase free words, in 4.8g:** the option list kinds and scan states that stay free words until 5.5 and 7.3
+  are camelCase words of ASCII letters already (`StoredNames.IsName`), so the rows written before then read as the
+  enums' names; before, a word in any letter case was taken. Messages name an enum value as it is stored too
+  (`StoredNames.Describe`), and `StoredEnumTests` reads the compiled persistence code and fails on an enum parsed,
+  turned into text or boxed anywhere but the converter.
+- **One more index, in 4.8g:** `IX_jfbEntryFile_formId_entryId`, because a form's delete takes its uploads that wait for
+  an entry in batches, and through the index over the entry and the time each batch read the waiting uploads of every
+  form. The seek on both columns returns them in the order of their ids, without a sort.
 
 **Additions to §4.5.** `jfbEntry` gets `IX_jfbEntry_formVersionId`, and `jfbEntryValue` the filtered
 `IX_jfbEntryValue_fileId` (only file fields have a file), so the deletes above use an index. `jfbEmailLayout` gets

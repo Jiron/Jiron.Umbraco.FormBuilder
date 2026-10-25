@@ -184,7 +184,9 @@ internal sealed partial class CreateSchemaV1
         [Index(IndexTypes.NonClustered, Name = "IX_jfbEntryFile_entryId_createdUtc", ForColumns = "entryId,createdUtc")]
         public long? EntryId { get; set; }
 
+        // With the entry, the index finds one form's uploads that wait for an entry, for the form's delete (4.8g).
         [Column("formId")]
+        [Index(IndexTypes.NonClustered, Name = "IX_jfbEntryFile_formId_entryId", ForColumns = "formId,entryId")]
         public int FormId { get; set; }
 
         [Column("fieldKey")]

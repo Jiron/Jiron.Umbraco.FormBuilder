@@ -84,7 +84,7 @@ internal sealed partial class DraftVersionCleanup(
                 if (pruned.Count > 0 && await forms.GetByIdAsync(formId, cancellationToken) is { } form)
                 {
                     var details = new AuditDetails().AddNumbers("versions", pruned);
-                    await audit.AddAsync(new NewAuditEntry(PrunedAction, FormBuilderFormService.EntityType, form.Key, null, details), cancellationToken);
+                    await audit.AddAsync(new NewAuditEntry(PrunedAction, FormAudit.EntityType, form.Key, null, details), cancellationToken);
                 }
 
                 return pruned.Count;

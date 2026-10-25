@@ -135,8 +135,8 @@ public sealed class FormRepositoryTests : RepositoryTestBase
 
         Assert.Multiple(async () =>
         {
-            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, trashed: false, access: null), Is.EquivalentTo(new[] { events.Id, hr.Id }));
-            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, trashed: true, access: null), Is.EquivalentTo(new[] { archive.Id }));
+            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, trashed: false, visibility: null), Is.EquivalentTo(new[] { events.Id, hr.Id }));
+            Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, trashed: true, visibility: null), Is.EquivalentTo(new[] { archive.Id }));
             Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, false, new FormVisibility { FolderIds = [events.Id] }), Is.EquivalentTo(new[] { events.Id }), "only the forms the scope holds");
             Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, false, FormVisibility.Nothing), Is.Empty);
             Assert.That(await Forms.ListFolderIdsWithFormsAsync(all, false, FormVisibility.Everything), Is.EquivalentTo(new[] { events.Id, hr.Id }));

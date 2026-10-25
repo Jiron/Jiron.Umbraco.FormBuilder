@@ -83,7 +83,7 @@ public sealed class FormTemplateRepositoryTests : RepositoryTestBase
                 Is.EqualTo(saved with { Name = "Contact, second", Description = "New", Category = "Support", Definition = Newer, UpdatedUtc = Now.AddMinutes(10), UpdatedByUserKey = reviser }),
                 "the kind and who saved it when stay; the change and who made it are the last ones");
             Assert.That(await Templates.GetByIdAsync(saved.Id), Is.EqualTo(last));
-            Assert.That(await Templates.UpdateAsync(new FormTemplateUpdate(-1, "Missing", null, null, Definition)), Is.Null);
+            Assert.That(await Templates.UpdateAsync(new FormTemplateUpdate(-1, "Missing", null, null, Definition, Editor)), Is.Null);
         });
     }
 

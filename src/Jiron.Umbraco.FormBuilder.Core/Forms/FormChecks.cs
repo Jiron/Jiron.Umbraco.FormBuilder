@@ -5,11 +5,17 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
-/// <summary>The checks a change of a form makes before it writes, shared by the form services (ADR-0044, ADR-0053).</summary>
+/// <summary>
+/// The checks a change of a form makes before it writes, shared by the form services (ADR-0044, ADR-0053): its own unit,
+/// the version the caller read, the trash, the name, the alias and the comment.
+/// </summary>
 internal static class FormChecks
 {
     /// <summary>What a form is called in the refusals of the trash check.</summary>
     public const string Item = "form";
+
+    /// <summary>The refusal of a change to a form inside a caller's unit of work or an Umbraco scope.</summary>
+    public const string OwnUnit = "A change to a form is a unit of work of its own: it tells handlers once it has committed (ADR-0044).";
 
     /// <summary>
     /// A change starts from the version the caller read, on a form outside the trash unless it applies in the trash

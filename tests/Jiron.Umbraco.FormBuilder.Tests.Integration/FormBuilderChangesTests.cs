@@ -44,6 +44,32 @@ public sealed class FormBuilderChangesTests : RepositoryTestBase
     }
 
     [Test]
+    public void AChangeThatSkippedItsOwnCheck_IsRefusedByThePipeline_InAUnitOfWorkOrAScope_AndWritesNothing()
+    {
+        var key = Guid.NewGuid();
+        Task<string> Write() => Changes.WriteAsync(
+            async () =>
+            {
+                await KeyValues.SetAsync("jfbtest.inside", "yes");
+                return "yes";
+            },
+            value => [Entry("test.inside", key, value)],
+            CancellationToken.None);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(() => Database.WriteAsync(_ => Write()), Throws.InvalidOperationException.With.Message.Contains("ADR-0053"), "the write");
+            Assert.That(() => Database.ReadAsync(async _ => { await Changes.CancelableAsync(new TestChangingNotification(refuse: false)); return 0; }), Throws.InvalidOperationException.With.Message.Contains("ADR-0053"), "the notification before it");
+            using (GetRequiredService<ICoreScopeProvider>().CreateCoreScope())
+            {
+                Assert.That(Write, Throws.InvalidOperationException.With.Message.Contains("ADR-0053"), "in a scope");
+            }
+
+            Assert.That(await KeyValues.GetAsync("jfbtest.inside"), Is.Null, "nothing written");
+        });
+    }
+
+    [Test]
     public async Task TheWrite_AndItsAuditEntries_CommitTogether()
     {
         var key = Guid.NewGuid();

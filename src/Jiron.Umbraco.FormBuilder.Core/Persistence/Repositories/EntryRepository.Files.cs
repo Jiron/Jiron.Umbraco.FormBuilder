@@ -227,9 +227,9 @@ internal sealed partial class EntryRepository
     private static void CheckScanState(string scanState, string parameter)
     {
         ArgumentNullException.ThrowIfNull(scanState, parameter);
-        if (scanState.Length is 0 or > MaxScanStateLength || !scanState.All(char.IsAsciiLetter))
+        if (!StoredNames.IsName(scanState, MaxScanStateLength))
         {
-            throw new ArgumentException($"A scan state is 1 to {MaxScanStateLength} ASCII letters.", parameter);
+            throw new ArgumentException($"A scan state is a camelCase word of 1 to {MaxScanStateLength} ASCII letters, such as pending.", parameter);
         }
     }
 

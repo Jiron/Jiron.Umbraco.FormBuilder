@@ -123,6 +123,111 @@ public sealed class AuditRepositoryTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task ABudgetedQuery_StoppedThroughItsUnit_AnswersAsCancelled_NotWithTheProvidersError()
+    {
+        await Audit.AddAsync(new NewAuditEntry("settings.saved", "settings", Guid.NewGuid(), Editor));
+        var where = T(FormBuilderTables.AuditEntry) + " WHERE ";
+        var slowly = new CommandRewriter(where, where + SlowCondition);
+        var budgeted = new AuditRepository(Database, TimeSpan.FromMinutes(1));
+        using var unit = new CancellationTokenSource();
+        var watch = Stopwatch.StartNew();
+
+        // The query has no token of its own: the unit it runs in is what the caller cancels. SQLite runs the statement
+        // as the call is made, so the cancellation is set going first.
+        unit.CancelAfter(TimeSpan.FromMilliseconds(250));
+        var reading = Database.ReadAsync(
+            async db =>
+            {
+                db.Interceptors.Add(slowly);
+                try
+                {
+                    return await budgeted.QueryAsync(new AuditQuery { Action = "settings.saved" }, PageRequest.First(10));
+                }
+                finally
+                {
+                    db.Interceptors.Remove(slowly);
+                }
+            },
+            unit.Token);
+
+        Assert.That(async () => await reading, Throws.InstanceOf<OperationCanceledException>());
+        Assert.That(watch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(30)), "interrupted for the unit, long before the budget");
+    }
+
+    [Test]
+    public async Task ABudgetedQueryInsideAnother_StoppedThroughTheUnit_AnswersItsOwnCallerAsCancelled()
+    {
+        await Audit.AddAsync(new NewAuditEntry("settings.saved", "settings", Guid.NewGuid(), Editor));
+        var where = T(FormBuilderTables.AuditEntry) + " WHERE ";
+        var slowly = new CommandRewriter(where, where + SlowCondition);
+        var budgeted = new AuditRepository(Database, TimeSpan.FromMinutes(1));
+        using var unit = new CancellationTokenSource();
+        Exception? heard = null;
+
+        // The inner query's caller catches what the query answers, as code between two reads may: it hears of the
+        // cancellation as one, not as the provider's error, before the outer read does.
+        unit.CancelAfter(TimeSpan.FromMilliseconds(250));
+        try
+        {
+            await Database.ReadAsync(
+                _ => Database.QueryAsync(
+                    async db =>
+                    {
+                        db.Interceptors.Add(slowly);
+                        try
+                        {
+                            await budgeted.QueryAsync(new AuditQuery { Action = "settings.saved" }, PageRequest.First(10));
+                        }
+                        catch (Exception exception)
+                        {
+                            heard = exception;
+                        }
+                        finally
+                        {
+                            db.Interceptors.Remove(slowly);
+                        }
+
+                        return 0;
+                    },
+                    TimeSpan.FromMinutes(1)),
+                unit.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+
+        Assert.That(heard, Is.InstanceOf<OperationCanceledException>());
+    }
+
+    [Test]
+    public async Task ABudgetedQueryInsideAnother_KeepsItsOwnCallersToken()
+    {
+        using var own = new CancellationTokenSource();
+        var seen = false;
+
+        // The inner caller cancels while its read runs; what follows the read may answer that as a cancellation.
+        try
+        {
+            await Database.QueryAsync(
+                _ => Database.QueryAsync(
+                    async _ =>
+                    {
+                        await own.CancelAsync();
+                        seen = FormBuilderDbExtensions.CurrentToken.IsCancellationRequested;
+                        return 0;
+                    },
+                    TimeSpan.FromSeconds(30),
+                    own.Token),
+                TimeSpan.FromSeconds(30));
+        }
+        catch (OperationCanceledException)
+        {
+        }
+
+        Assert.That(seen, Is.True, "the inner read's statements carry its caller's token, inside the outer budget");
+    }
+
+    [Test]
     public async Task AddOnce_RecordsOneEntryPerUserItemAndAction_WithinTheWindow()
     {
         var entry = Guid.NewGuid();

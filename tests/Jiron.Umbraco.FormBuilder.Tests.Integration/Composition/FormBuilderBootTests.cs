@@ -1,6 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Testing;
@@ -9,9 +10,12 @@ using Jiron.Umbraco.FormBuilder.Testing.Startup;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.Composing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Composing;
+using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Examine;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -27,6 +31,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Composition;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
 {
+    // What the composers registered, read as the site booted.
+    private IServiceCollection? _services;
+
     /// <summary>The configuration of every test's site, as a host passes it in its environment.</summary>
     public FormBuilderBootTests() => InMemoryConfiguration[FormBuilderTestingOptions.SectionName + ":Clock"] = "true";
 
@@ -73,6 +80,27 @@ public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
     }
 
     [Test]
+    public void Boot_EveryNotificationHandlerOfJironFormBuilder_IsRegistered_ForEachNotificationItHandles()
+    {
+        Type[] kinds = [typeof(INotificationHandler<>), typeof(INotificationAsyncHandler<>)];
+        var handlers = new[] { typeof(FormBuilderCoreComposer).Assembly, typeof(FormBuilderWebComposer).Assembly }
+            .SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type is { IsClass: true, IsAbstract: false })
+            .SelectMany(type => type.GetInterfaces()
+                .Where(service => service.IsGenericType && kinds.Contains(service.GetGenericTypeDefinition()))
+                .Select(service => (Service: service, Handler: type)))
+            .ToList();
+        var registered = _services!.Where(descriptor => !descriptor.IsKeyedService).Select(descriptor => (descriptor.ServiceType, descriptor.ImplementationType)).ToHashSet();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(registered, Has.Member((typeof(INotificationHandler<UmbracoApplicationStartedNotification>), typeof(FileStoreLoadBalancingCheck))), "the start-up check of the file store's root");
+            Assert.That(handlers.Where(pair => !registered.Contains(pair)).Select(pair => $"{pair.Handler.Name} for {pair.Service.GetGenericArguments()[0].Name}"), Is.Empty, "handlers no composer registers");
+            Assert.That(handlers, Has.Count.GreaterThanOrEqualTo(4), "the handlers found");
+        });
+    }
+
+    [Test]
     public void Boot_WithoutTheStartupMarker_RegistersNoMarkerPopulator()
     {
         Assert.That(GetRequiredService<IEnumerable<IIndexPopulator>>().OfType<StartupMarkerPopulator>(), Is.Empty);
@@ -93,6 +121,7 @@ public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
 
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
+        _services = builder.Services;
         builder.AddComposers();
         builder.Services.AddLogCapture();
     }

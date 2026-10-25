@@ -332,7 +332,7 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
         Assert.Multiple(async () =>
         {
             Assert.That(async () => await WatchedAsync(states, () => Entries.ChangeStateAsync(entry!.Id, EntryState.Submitted, EntryState.Approved, Editor)), Throws.InstanceOf<FormBuilderConcurrencyException>());
-            Assert.That(async () => await WatchedAsync(scans, () => Entries.ChangeScanStateAsync(file!.Id, "Pending", "Clean")), Throws.InstanceOf<FormBuilderConcurrencyException>());
+            Assert.That(async () => await WatchedAsync(scans, () => Entries.ChangeScanStateAsync(file!.Id, "pending", "clean")), Throws.InstanceOf<FormBuilderConcurrencyException>());
             Assert.That((states.Rewritten, scans.Rewritten), Is.EqualTo((1, 1)));
             Assert.That(await Entries.GetByIdAsync(entry!.Id), Is.EqualTo(entry));
         });
@@ -622,16 +622,16 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
         var form = await CreateTestFormAsync();
         var file = await Entries.AddFileAsync(NewFile(form.Id));
 
-        var clean = await Entries.ChangeScanStateAsync(file!.Id, "Pending", "Clean");
+        var clean = await Entries.ChangeScanStateAsync(file!.Id, "pending", "clean");
 
         Assert.Multiple(async () =>
         {
-            Assert.That(clean, Is.EqualTo(file with { ScanState = "Clean" }));
-            Assert.That(await Entries.ChangeScanStateAsync(file.Id, "Clean", "Clean"), Is.EqualTo(clean));
-            Assert.That(async () => await Entries.ChangeScanStateAsync(file.Id, "Pending", "Infected"), Throws.InstanceOf<FormBuilderConcurrencyException>());
-            Assert.That(async () => await Entries.ChangeScanStateAsync(file.Id, "Pending", "Pending"), Throws.InstanceOf<FormBuilderConcurrencyException>());
+            Assert.That(clean, Is.EqualTo(file with { ScanState = "clean" }));
+            Assert.That(await Entries.ChangeScanStateAsync(file.Id, "clean", "clean"), Is.EqualTo(clean));
+            Assert.That(async () => await Entries.ChangeScanStateAsync(file.Id, "pending", "infected"), Throws.InstanceOf<FormBuilderConcurrencyException>());
+            Assert.That(async () => await Entries.ChangeScanStateAsync(file.Id, "pending", "pending"), Throws.InstanceOf<FormBuilderConcurrencyException>());
             Assert.That(await Entries.GetFileAsync(file.Key), Is.EqualTo(clean));
-            Assert.That(await Entries.ChangeScanStateAsync(file.Id + 1, "Pending", "Clean"), Is.Null);
+            Assert.That(await Entries.ChangeScanStateAsync(file.Id + 1, "pending", "clean"), Is.Null);
         });
     }
 
@@ -688,7 +688,7 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
         {
             OriginalName = new string('n', EntryRepository.MaxOriginalNameLength),
             ContentType = new string('t', EntryRepository.MaxContentTypeLength),
-            ScanState = new string('S', EntryRepository.MaxScanStateLength),
+            ScanState = new string('s', EntryRepository.MaxScanStateLength),
         };
 
         var stored = await Entries.CreateAsync(entry);
@@ -751,7 +751,7 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
     }
 
     internal static NewEntryFile NewFile(int formId, string name = "JFB_TEST.pdf") =>
-        new(Guid.NewGuid(), formId, Guid.NewGuid(), name, Hex(16), "application/pdf", 1234, Hex(32), "Pending");
+        new(Guid.NewGuid(), formId, Guid.NewGuid(), name, Hex(16), "application/pdf", 1234, Hex(32), "pending");
 
     private static StoredEntry Expected(NewEntry entry, long id, int number) => new()
     {

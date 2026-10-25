@@ -20,7 +20,7 @@ public sealed class LibraryTrashTests
         {
             Assert.That(() => LibraryTrash.CheckOutside(Trashed, item), Refused(FormBuilderConflict.Trashed, $"The {item} is in the trash; restore it first."));
             Assert.That(() => LibraryTrash.CheckOutside(null, item), Throws.Nothing);
-            Assert.That(LibraryTrash.InTrash(item), Has.Property(nameof(FormBuilderConflictException.Conflict)).EqualTo(FormBuilderConflict.Trashed));
+            Assert.That(LibraryTrash.Trashed(item), Has.Property(nameof(FormBuilderConflictException.Conflict)).EqualTo(FormBuilderConflict.Trashed));
         });
     }
 
@@ -32,8 +32,17 @@ public sealed class LibraryTrashTests
         {
             Assert.That(() => LibraryTrash.CheckInside(null, item), Refused(FormBuilderConflict.NotTrashed, $"Only a {item} in the trash is deleted; put it in the trash first."));
             Assert.That(() => LibraryTrash.CheckInside(Trashed, item), Throws.Nothing);
-            Assert.That(LibraryTrash.OutsideTrash(item), Has.Property(nameof(FormBuilderConflictException.Conflict)).EqualTo(FormBuilderConflict.NotTrashed));
+            Assert.That(LibraryTrash.NotTrashed(item), Has.Property(nameof(FormBuilderConflictException.Conflict)).EqualTo(FormBuilderConflict.NotTrashed));
         });
+    }
+
+    [TestCase("form")]
+    [TestCase("folder")]
+    public void ARestoreWhoseLandingChanged_IsRefused_WithLandingChanged_InTheSameWords(string item)
+    {
+        Assert.That(
+            () => throw LibraryTrash.LandingChanged(item),
+            Refused(FormBuilderConflict.LandingChanged, $"Where the {item} lands changed since it was checked: the folder it goes back into went to the trash or came back meanwhile. Check again, then restore it."));
     }
 
     [Test]

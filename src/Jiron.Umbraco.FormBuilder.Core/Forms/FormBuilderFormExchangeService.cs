@@ -75,10 +75,12 @@ internal interface IFormBuilderFormExchangeService
 /// <inheritdoc />
 internal sealed partial class FormBuilderFormExchangeService(
     IFormRepository forms,
+    IFolderRepository folders,
     IOptionListRepository optionLists,
     IThemeRepository themes,
     IFormTemplateRepository templates,
     FormDocuments documents,
+    FormInfos infos,
     FormCreation creation,
     FormDefinitionSerializer serializer,
     TimeProvider time,
@@ -104,7 +106,7 @@ internal sealed partial class FormBuilderFormExchangeService(
     public async Task<FormInfo?> DuplicateAsync(Guid key, DuplicateFormRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
+        changes.EnsureOwnUnit(FormChecks.OwnUnit);
         var name = FormChecks.Name(request.Name);
         FormChecks.Alias(request.Alias);
         if (await forms.GetAsync(key, cancellationToken) is not { } form)
@@ -122,7 +124,7 @@ internal sealed partial class FormBuilderFormExchangeService(
         // source, so the copy takes its folder's, as a new form does.
         var definition = documents.Readable(draft);
         var copy = DefinitionKeys.Renew(request.IncludeActions ? definition : definition with { Actions = [] }, serializer);
-        var folder = await documents.LiveFolderAsync(request.FolderKey, cancellationToken);
+        var folder = await LibraryFolders.LiveAsync(folders, request.FolderKey, cancellationToken);
         documents.CheckSaveable(copy);
         var origin = new FormOrigin(
             FormSource.Duplicate,
@@ -136,7 +138,7 @@ internal sealed partial class FormBuilderFormExchangeService(
     public async Task<FormActionsCopy?> CopyActionsAsync(CopyActionsRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
+        changes.EnsureOwnUnit(FormChecks.OwnUnit);
         if (await forms.GetAsync(request.SourceKey, cancellationToken) is not { } source
             || await forms.GetAsync(request.TargetKey, cancellationToken) is not { } target)
         {
@@ -153,7 +155,7 @@ internal sealed partial class FormBuilderFormExchangeService(
         var actions = Chosen(documents.Readable(sourceDraft), request.ActionKeys);
         if (actions.Count == 0)
         {
-            return new FormActionsCopy(new FormVersionResult(await documents.InfoAsync(target, cancellationToken), null), []);
+            return new FormActionsCopy(new FormVersionResult(await infos.InfoAsync(target, cancellationToken), null), []);
         }
 
         var copy = ActionCopies.Copy(documents.Readable(sourceDraft), actions, documents.Readable(targetDraft), serializer);
@@ -165,7 +167,7 @@ internal sealed partial class FormBuilderFormExchangeService(
             () => forms.SaveDraftAsync(target.Id, request.ExpectedConcurrencyVersion, document, null, request.UserKey, cancellationToken),
             stored => stored is null
                 ? []
-                : [FormDocuments.Entry(
+                : [FormAudit.Entry(
                     ActionsCopiedAction,
                     stored.Form,
                     request.UserKey,
@@ -180,8 +182,8 @@ internal sealed partial class FormBuilderFormExchangeService(
             return null;
         }
 
-        var info = await documents.InfoAsync(saved.Form, cancellationToken);
-        await changes.PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, saved.Version.Info.Number, isNew: false, request.UserKey) { ActionsCopiedFrom = source.Key }, FormBuilderFormService.Subject(info.Key));
+        var info = await infos.InfoAsync(saved.Form, cancellationToken);
+        await changes.PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, saved.Version.Info.Number, isNew: false, request.UserKey) { ActionsCopiedFrom = source.Key }, FormAudit.Subject(info.Key));
         return new FormActionsCopy(new FormVersionResult(info, saved.Version.Info.Number), copy.Actions);
     }
 
@@ -189,7 +191,7 @@ internal sealed partial class FormBuilderFormExchangeService(
     public async Task<FormInfo?> CreateFromTemplateAsync(TemplateFormRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
+        changes.EnsureOwnUnit(FormChecks.OwnUnit);
         var requestedName = request.Name is null ? null : FormChecks.Name(request.Name);
         FormChecks.Alias(request.Alias);
         if (await TemplateAsync(request.TemplateKey, cancellationToken) is not { } template)
@@ -198,7 +200,7 @@ internal sealed partial class FormBuilderFormExchangeService(
         }
 
         var name = requestedName ?? FormChecks.Name(template.Name);
-        var folder = await documents.LiveFolderAsync(request.FolderKey, cancellationToken);
+        var folder = await LibraryFolders.LiveAsync(folders, request.FolderKey, cancellationToken);
         var definition = await creation.WithNewFormDefaultsAsync(DefinitionKeys.Renew(template.Definition, serializer), cancellationToken);
         documents.CheckSaveable(definition);
         var origin = new FormOrigin(
@@ -213,14 +215,14 @@ internal sealed partial class FormBuilderFormExchangeService(
     public async Task<FormImport> ImportAsync(ImportFormRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        changes.EnsureOwnUnit(FormBuilderFormService.OwnUnit);
+        changes.EnsureOwnUnit(FormChecks.OwnUnit);
         var requestedName = request.Name is null ? null : FormChecks.Name(request.Name);
         FormChecks.Alias(request.Alias);
         var read = FormExportFormat.Read(request.Json, serializer);
         var envelope = read.Envelope ?? throw new FormBuilderValidationException(read.Problems);
         var name = requestedName ?? FormChecks.Name(envelope.Name, JsonPaths.Property(JsonPaths.Property(JsonPaths.Root, "form"), "name"));
         var wanted = FormAliases.IsValid(envelope.Alias) ? envelope.Alias : FormAliases.FromName(name);
-        var folder = await documents.LiveFolderAsync(request.FolderKey, cancellationToken);
+        var folder = await LibraryFolders.LiveAsync(folders, request.FolderKey, cancellationToken);
 
         // Always new keys (12.5 adds the import into an existing form); the theme and the option lists as this site has them.
         var notes = new List<FormImportNote>();
