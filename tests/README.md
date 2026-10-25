@@ -242,11 +242,14 @@ The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made 
 
 `Architecture/CoreDatabaseConnectionTests` reads Core's IL (through `IlReader`) and fails on any connection of Core's
 own (ADR-0036). `Architecture/StoredEnumTests` reads the IL and the source of Core's persistence and fails on an enum
-parsed, turned into text, boxed or named with `nameof` anywhere but `StoredNames` (ADR-0033, 4.8g).
+parsed, turned into text, boxed or named with `nameof` anywhere but `StoredNames` and its table of names (ADR-0033,
+4.8g); it reads local functions and lambdas too, and leaves out only what the compiler writes for a record (4.8i).
 `Architecture/StaticDataTests` reads every static field of Core and Web and fails on one that is not read-only or that
 holds anything but what cannot change, all the way down: values, frozen and immutable collections, read-only
-serializer options and contexts, and the package's own types with read-only fields (ROADMAP 4.8f, 4.8h). A test of
-its own samples shows it finds a concurrent dictionary, options that can change and a list behind a read-only view.
+serializer options and contexts, reflection's members, and the package's own types with read-only fields (ROADMAP
+4.8f, 4.8h). A lazy value not made yet is judged by what its type can hold, without making it (4.8i). A test of its
+own samples shows it finds a concurrent dictionary, options that can change, a list behind a read-only view and a
+lazy list.
 `Architecture/QueryBuilderReadsTests` reads the query builder's source and fails on any database call but its one
 budgeted read, or on SQL that changes rows (ADR-0039).
 `Architecture/SqlGuardTests` reads the repositories' source and fails on a guard without a locking read (ADR-0038):

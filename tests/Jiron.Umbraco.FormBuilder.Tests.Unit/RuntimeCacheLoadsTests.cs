@@ -7,8 +7,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit;
 /// <summary>
 /// One load per cached value and server (ADR-0043, ADR-0048, amended in 4.8c and 4.8g), on Umbraco's own runtime
 /// cache: concurrent misses share a load, a change during it or as it ends keeps it from being cached, a failed load is
-/// not kept, a caller that stops waiting leaves the load to the others, and the load runs outside its first caller's
-/// unit, cancellation and async-local state.
+/// not kept, even when it fails after every caller stopped waiting (4.8i), a caller that stops waiting leaves the load
+/// to the others, and the load runs outside its first caller's unit, cancellation and async-local state.
 /// </summary>
 [TestFixture]
 public sealed class RuntimeCacheLoadsTests
@@ -83,6 +83,27 @@ public sealed class RuntimeCacheLoadsTests
         {
             Assert.That(loading, Is.Null, "the failure is not kept");
             Assert.That(next, Is.EqualTo("value"));
+            Assert.That(_loads, Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public async Task ALoadThatFailsAfterItsCallersLeft_IsForgottenAsItFails()
+    {
+        var gate = Gate();
+        using var stop = new CancellationTokenSource();
+
+        var gone = GetAsync(() => Counted(gate.Task), stop.Token);
+        await stop.CancelAsync();
+        Assert.That(async () => await gone, Throws.InstanceOf<OperationCanceledException>());
+        gate.SetException(new InvalidOperationException("JFB_TEST: the database is away"));
+        var forgotten = SpinWait.SpinUntil(() => _cache.Get(Loading) is null, TimeSpan.FromSeconds(5));
+        var next = await GetAsync(() => Counted(Task.FromResult("value")));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(forgotten, Is.True, "no caller waited for it, and still the failure is not kept");
+            Assert.That(next, Is.EqualTo("value"), "the next miss reads anew instead of hearing of the old failure");
             Assert.That(_loads, Is.EqualTo(2));
         });
     }

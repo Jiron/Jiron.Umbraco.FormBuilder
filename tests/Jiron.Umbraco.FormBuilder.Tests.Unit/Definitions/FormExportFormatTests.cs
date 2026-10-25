@@ -12,10 +12,14 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 /// <summary>
 /// The export file, <c>jfb-form-export/1</c> (ADR-0002, ADR-0046): what the writer writes reads back as it was and
 /// validates against its schema; the reader checks the format first, is as strict as the definition reader, measures
-/// the definition without its indentation, upgrades an older one and refuses a newer one, with paths into the file.
+/// the definition without its indentation, upgrades an older one and refuses a newer one, with paths into the file. An
+/// option list keeps every value it holds, and an escaped lone surrogate is refused where it is (ROADMAP 4.8i).
 /// </summary>
 public sealed class FormExportFormatTests
 {
+    private const char Backslash = (char)92;
+    private const string Mark = "JFB_MARK";
+
     private static readonly Guid FormKey = Guid.Parse("f0000000-0000-4000-8000-000000000001");
     private static readonly Guid ListKey = Guid.Parse("72000000-0000-4000-8000-000000000001");
     private static readonly DateTimeOffset Exported = new(2026, 10, 23, 8, 30, 15, 123, TimeSpan.Zero);
@@ -85,7 +89,7 @@ public sealed class FormExportFormatTests
             Assert.That(read.Problems, Is.Empty);
             Assert.That((back.FormKey, back.Alias, back.Name, back.PackageVersion, back.ExportedUtc), Is.EqualTo((FormKey, "contact", "Contact us", "17.0.0-alpha.0", Exported)));
             Assert.That(FormDefinitionSerializer.WriteString(back.Definition), Is.EqualTo(FormDefinitionSerializer.WriteString(envelope.Definition)));
-            Assert.That(back.OptionLists.Single(), Is.EqualTo(envelope.OptionLists[0]), "the list, with its configuration and items as canonical JSON text");
+            Assert.That(back.OptionLists.Single(), Is.EqualTo(envelope.OptionLists[0]), "the list, with its configuration and items as compact JSON text");
             Assert.That(FormExportFormat.Write(back), Is.EqualTo(text), "written again, the same file");
             Assert.That(FormExportFormat.Write(envelope), Is.EqualTo(text), "the same envelope written twice, which it lends its lists to");
             Assert.That(FormExportFormat.Read(Encoding.UTF8.GetBytes(text), DefinitionFixtures.Serializer()).Problems, Is.Empty, "as bytes too");
@@ -255,6 +259,109 @@ public sealed class FormExportFormatTests
         });
     }
 
+    [Test]
+    public void AnOptionList_KeepsEveryValue_NullsAndEmptyValuesToo()
+    {
+        const string Config = """{"sort":"label","note":null,"tags":[],"more":{}}""";
+        const string Items = """[{"value":"a","label":{"":"A"},"hint":null,"tags":[]}]""";
+        var envelope = Envelope() with { OptionLists = [Envelope().OptionLists[0] with { Config = Config, Items = Items }] };
+
+        var back = FormExportFormat.Read(FormExportFormat.Write(envelope), DefinitionFixtures.Serializer()).Envelope!.OptionLists.Single();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((back.Config, back.Items), Is.EqualTo((Config, Items)), "read back as the site has them");
+            Assert.That(FormExportFormat.ListJson(Config, JsonValueKind.Object), Is.EqualTo(Config), "as an export takes the site's list");
+            Assert.That(FormExportFormat.ListJson(" { \"b\" : [ 1 , null ] } ", JsonValueKind.Object), Is.EqualTo("""{"b":[1,null]}"""), "without whitespace");
+        });
+    }
+
+    [TestCase("not json", JsonValueKind.Object, TestName = "ListJson_IsNull(text that is not JSON)")]
+    [TestCase("[]", JsonValueKind.Object, TestName = "ListJson_IsNull(an array for a configuration)")]
+    [TestCase("{}", JsonValueKind.Array, TestName = "ListJson_IsNull(an object for items)")]
+    public void ListJson_IsNull_ForWhatAnExportCannotCarry(string json, JsonValueKind kind) =>
+        Assert.That(FormExportFormat.ListJson(json, kind), Is.Null);
+
+    [Test]
+    public void ListJson_IsNull_ForALoneSurrogate()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(FormExportFormat.ListJson("{\"a\":\"" + Backslash + "ud800\"}", JsonValueKind.Object), Is.Null, "escaped in a string");
+            Assert.That(FormExportFormat.ListJson("{\"" + Backslash + "ud800\":null}", JsonValueKind.Object), Is.Null, "escaped in a name");
+            Assert.That(FormExportFormat.ListJson("{\"a\":\"" + (char)0xD800 + "\"}", JsonValueKind.Object), Is.Null, "in the text");
+        });
+    }
+
+    [TestCase(true, TestName = "AnOptionList_NestsAsDeeplyAsADefinition_AndNoDeeper(the configuration)")]
+    [TestCase(false, TestName = "AnOptionList_NestsAsDeeplyAsADefinition_AndNoDeeper(the items)")]
+    public void AnOptionList_NestsAsDeeplyAsADefinition_AndNoDeeper(bool config)
+    {
+        // The list's object or array is a level itself, so the value inside it takes the rest.
+        static string Nested(int levels) => new string('[', levels) + "1" + new string(']', levels);
+        string File(int depth) => FormExportFormat.Write(Envelope() with { OptionLists = [Envelope().OptionLists[0] with { Config = config ? "{\"x\":0}" : "{}", Items = config ? "[]" : "[0]" }] })
+            .Replace(config ? "\"x\": 0" : "[\n        0\n      ]", config ? "\"x\": " + Nested(depth - 1) : "[" + Nested(depth - 1) + "]", StringComparison.Ordinal);
+        var path = config ? "$.optionLists[0].config" : "$.optionLists[0].items";
+
+        var deepest = FormExportFormat.Read(File(FormExportFormat.ListDepth), DefinitionFixtures.Serializer());
+        var deeper = Problems(File(FormExportFormat.ListDepth + 1));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(deepest.Problems, Is.Empty, "as deep as a definition");
+            var list = deepest.Envelope!.OptionLists.Single();
+            Assert.That(FormExportFormat.ListJson(config ? list.Config : list.Items, config ? JsonValueKind.Object : JsonValueKind.Array), Is.Not.Null, "and an export carries it");
+            Assert.That(deeper, Is.EqualTo(new[] { (DefinitionErrors.LimitExceeded, path) }), "one level deeper");
+            Assert.That(FormExportFormat.ListJson("[" + Nested(FormExportFormat.ListDepth) + "]", JsonValueKind.Array), Is.Null, "which an export leaves out");
+        });
+    }
+
+    [TestCase("""{"a":1,"b":[2,null]}""", """{"b":[2,null],"a":1}""", JsonValueKind.Object, true, TestName = "SameListJson(the same properties in another order)")]
+    [TestCase("""{"a":1}""", """{ "a" : 1 }""", JsonValueKind.Object, true, TestName = "SameListJson(the same object written another way)")]
+    [TestCase("""{"a":1}""", """{"a":2}""", JsonValueKind.Object, false, TestName = "SameListJson(another value)")]
+    [TestCase("""{"a":null}""", "{}", JsonValueKind.Object, false, TestName = "SameListJson(a null against nothing)")]
+    [TestCase("[1,2]", "[2,1]", JsonValueKind.Array, false, TestName = "SameListJson(items in another order)")]
+    [TestCase("""{"a":1,"a":2}""", """{"a":1,"a":2}""", JsonValueKind.Object, true, TestName = "SameListJson(a name given twice, alike)")]
+    [TestCase("""{"a":1,"a":2}""", """{"a":1}""", JsonValueKind.Object, false, TestName = "SameListJson(a name given twice against once)")]
+    [TestCase("not json", "{}", JsonValueKind.Object, false, TestName = "SameListJson(text that is not JSON)")]
+    [TestCase("[]", "[]", JsonValueKind.Object, false, TestName = "SameListJson(JSON of another kind)")]
+    public void SameListJson_ComparesTheValues_InAnyOrderOfProperties(string one, string other, JsonValueKind kind, bool same) =>
+        Assert.That(FormExportFormat.SameListJson(one, other, kind), Is.EqualTo(same));
+
+    [TestCase("""{"sort":"JFB_MARK"}""", "[]", "$.optionLists[0].config.sort", TestName = "AnEscapedLoneSurrogate_InAnOptionList_IsRefusedWhereItIs(a string of the configuration)")]
+    [TestCase("{}", """[{"value":"a"},{"JFB_MARK":null}]""", "$.optionLists[0].items[1]", TestName = "AnEscapedLoneSurrogate_InAnOptionList_IsRefusedWhereItIs(a name of an item)")]
+    public void AnEscapedLoneSurrogate_InAnOptionList_IsRefusedWhereItIs(string config, string items, string path)
+    {
+        var text = Escaped(FormExportFormat.Write(Envelope() with { OptionLists = [Envelope().OptionLists[0] with { Config = config, Items = items }] }));
+
+        Assert.That(Problems(text), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, path) }));
+    }
+
+    [TestCase(false, "$.definition.pages[0].title['']", TestName = "AnEscapedLoneSurrogate_InTheDefinition_IsRefusedAsTheDefinitionReaderRefusesIt(a string)")]
+    [TestCase(true, "$.definition.pages[0]", TestName = "AnEscapedLoneSurrogate_InTheDefinition_IsRefusedAsTheDefinitionReaderRefusesIt(the name of a null)")]
+    public void AnEscapedLoneSurrogate_InTheDefinition_IsRefusedAsTheDefinitionReaderRefusesIt(bool name, string path)
+    {
+        var file = JsonNode.Parse(FormExportFormat.Write(Envelope()))!;
+        var page = file["definition"]!["pages"]![0]!.AsObject();
+        if (name)
+        {
+            page[Mark] = null;
+        }
+        else
+        {
+            page["title"]![""] = Mark;
+        }
+
+        var problems = Problems(Escaped(file.ToJsonString()));
+        var alone = DefinitionFixtures.Serializer().Read(Escaped(file["definition"]!.ToJsonString())).Problems.Single();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(problems, Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, path) }), "one problem, where it is, even where the canonical text leaves the value out");
+            Assert.That((alone.Code, "$.definition" + alone.Path[1..]), Is.EqualTo(problems.Single()), "as the definition reader names it, below $");
+        });
+    }
+
     // A definition as the full fixture has it, with one library option list.
     private static FormExportEnvelope Envelope() => new(
         FormKey,
@@ -266,6 +373,9 @@ public sealed class FormExportFormatTests
         [new ExportedOptionList(ListKey, "sessions", "Sessions", "manual", """{"sort":"label"}""", """[{"value":"keynote","label":{"":"Keynote"}}]""", 60)]);
 
     private static JsonObject List(JsonObject envelope) => envelope["optionLists"]![0]!.AsObject();
+
+    // The text with the mark turned into an escaped lone surrogate, which no JSON writer writes.
+    private static string Escaped(string text) => text.Replace(Mark, "a" + Backslash + "ud800", StringComparison.Ordinal);
 
     private static List<(string Code, string Path)> Problems(string text) =>
         FormExportFormat.Read(text, DefinitionFixtures.Serializer()).Problems.Select(problem => (problem.Code, problem.Path)).ToList();

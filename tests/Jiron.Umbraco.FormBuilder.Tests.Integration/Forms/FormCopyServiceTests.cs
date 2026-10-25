@@ -480,6 +480,52 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task AnExportedOptionList_WithNullsAndEmptyValues_IsTheSameListOnImport()
+    {
+        // The site's list, and the key of another site's list with its alias that the file names instead.
+        var site = Guid.Parse("72000000-0000-4000-8000-000000000021");
+        var other = Guid.Parse("72000000-0000-4000-8000-000000000022");
+        await OptionLists.CreateAsync(new NewOptionList(site, "sessions", "Sessions", "manual", """{"sort":"label","note":null,"tags":[],"more":{}}""", """[{"value":"a","label":{"":"A"},"hint":null,"tags":[]}]"""));
+        var created = await Service.CreateAsync(new NewFormRequest("Event", UserKey: Editor));
+        await SaveAsync(created, WithFields(await DraftAsync(created), [Session with { Options = new FieldOptions { Source = OptionSource.List, OptionList = site } }]));
+        var file = (await Exchange.ExportAsync(created.Key))!.Json.Replace(site.ToString("D"), other.ToString("D"), StringComparison.Ordinal);
+
+        var imported = await Exchange.ImportAsync(new ImportFormRequest(file, UserKey: Editor));
+        var lists = DefinitionKeys.Fields((await Service.GetDraftAsync(imported.Form.Key))!.Definition!).Select(field => field.Options?.OptionList).ToList();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(file, Does.Contain("\"note\": null").And.Contain("\"tags\": []"), "the file carries every value");
+            Assert.That(imported.Notes, Is.EqualTo(new[] { new FormImportNote(FormImportNotes.OptionListReused, "$.definition.pages[0].groups[0].fields[0].options.list", "sessions") }), "the site's list, by its alias and the same options");
+            Assert.That(lists, Is.EqualTo(new Guid?[] { site }));
+        });
+    }
+
+    [Test]
+    public async Task AStoredListThatDoesNotRead_IsLeftOutOfAnExport_AndIsNotTheSameOnImport()
+    {
+        // An escaped lone surrogate, which the JSON reader takes but .NET cannot read as a string.
+        var broken = "[{\"value\":\"a" + (char)92 + "ud800\"}]";
+        var site = Guid.Parse("72000000-0000-4000-8000-000000000023");
+        var other = Guid.Parse("72000000-0000-4000-8000-000000000024");
+        await OptionLists.CreateAsync(new NewOptionList(site, "rooms", "Rooms", "manual", Items: broken));
+        var created = await Service.CreateAsync(new NewFormRequest("Event", UserKey: Editor));
+        await SaveAsync(created, WithFields(await DraftAsync(created), [Session with { Options = new FieldOptions { Source = OptionSource.List, OptionList = site } }]));
+        var envelope = JsonNode.Parse((await Exchange.ExportAsync(created.Key))!.Json)!.AsObject();
+        var carried = envelope["optionLists"]!.AsArray().Count;
+        envelope["definition"]!["pages"]![0]!["groups"]![0]!["fields"]![0]!["options"]!["list"] = other.ToString("D");
+        envelope["optionLists"] = new JsonArray(ListJson(other, "rooms", """[{"value":"a"}]"""));
+
+        var imported = await Exchange.ImportAsync(new ImportFormRequest(envelope.ToJsonString(), UserKey: Editor));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(carried, Is.Zero, "left out of the export, which an import then reports as missing");
+            Assert.That(imported.Notes, Is.EqualTo(new[] { new FormImportNote(FormImportNotes.OptionListMissing, "$.definition.pages[0].groups[0].fields[0].options.list", "rooms") }), "the site's list that does not read is not the file's list");
+        });
+    }
+
+    [Test]
     public async Task AnImportWithMoreNotesThanAnAuditEntryLists_NamesEachCodeOnce_WithItsCount()
     {
         var created = await Service.CreateAsync(new NewFormRequest("Many", UserKey: Editor));

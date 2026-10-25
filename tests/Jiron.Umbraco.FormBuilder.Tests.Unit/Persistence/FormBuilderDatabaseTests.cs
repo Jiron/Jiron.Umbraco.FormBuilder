@@ -326,6 +326,23 @@ public sealed class FormBuilderDatabaseTests
     }
 
     [Test]
+    public void AStatementStoppedInsideAReadForTheCaller_IsACancellation()
+    {
+        // A read inside a budgeted query runs on the connection that the progress handler interrupts.
+        using var cancel = new CancellationTokenSource();
+
+        Assert.That(
+            () => _database.ReadAsync<int>(
+                async _ =>
+                {
+                    await cancel.CancelAsync();
+                    throw new SqliteException(9);
+                },
+                cancel.Token).WaitAsync(Patience),
+            Throws.InstanceOf<OperationCanceledException>().With.InnerException.InstanceOf<SqliteException>());
+    }
+
+    [Test]
     public async Task ARefusalPastTheDeadline_StaysARefusal()
     {
         var query = _database.QueryAsync<int>(

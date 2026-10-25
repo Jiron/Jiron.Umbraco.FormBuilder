@@ -199,6 +199,51 @@ public sealed class AuditRepositoryTests : RepositoryTestBase
         Assert.That(heard, Is.InstanceOf<OperationCanceledException>());
     }
 
+    [TestCase(false, TestName = "AUnitInsideABudgetedQuery_IsStoppedForItsOwnCaller(a read)")]
+    [TestCase(true, TestName = "AUnitInsideABudgetedQuery_IsStoppedForItsOwnCaller(a budgeted query)")]
+    public async Task AUnitInsideABudgetedQuery_IsStoppedForItsOwnCaller(bool budgetedInside)
+    {
+        await Audit.AddAsync(new NewAuditEntry("settings.saved", "settings", Guid.NewGuid(), Editor));
+        var where = T(FormBuilderTables.AuditEntry) + " WHERE ";
+        var slowly = new CommandRewriter(where, where + SlowCondition);
+        var budgeted = new AuditRepository(Database, TimeSpan.FromMinutes(1));
+        using var own = new CancellationTokenSource();
+        Exception? heard = null;
+        var watch = Stopwatch.StartNew();
+
+        // Only the inner unit's caller cancels; the outer query's caller and budget run on. SQLite runs the statement as
+        // the call is made, so the cancellation is set going first.
+        await Database.QueryAsync(
+            async db =>
+            {
+                db.Interceptors.Add(slowly);
+                own.CancelAfter(TimeSpan.FromMilliseconds(250));
+                try
+                {
+                    _ = budgetedInside
+                        ? (await budgeted.QueryAsync(new AuditQuery { Action = "settings.saved" }, PageRequest.First(10), own.Token)).Items.Count
+                        : await Database.ReadAsync(inner => inner.ScalarAsync<int>($"SELECT COUNT(*) FROM {where}1 = 1"), own.Token);
+                }
+                catch (Exception exception)
+                {
+                    heard = exception;
+                }
+                finally
+                {
+                    db.Interceptors.Remove(slowly);
+                }
+
+                return 0;
+            },
+            TimeSpan.FromMinutes(1));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(heard, Is.InstanceOf<OperationCanceledException>(), "its caller hears of a cancellation, not the provider's error");
+            Assert.That(watch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(30)), "the statement stopped for the inner caller, long before the budget");
+        });
+    }
+
     [Test]
     public async Task ABudgetedQueryInsideAnother_KeepsItsOwnCallersToken()
     {

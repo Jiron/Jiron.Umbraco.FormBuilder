@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
@@ -7,7 +8,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Persistence;
 
 /// <summary>
 /// The one converter for enums stored as text (ROADMAP 4.8a, ADR-0033): every stored enum is written as the camel case
-/// of its names, read back only from exactly that text, and fits its column.
+/// of its names, read back only from exactly that text, and fits its column. The names are the definition's words,
+/// from one table (4.8i).
 /// </summary>
 public sealed class StoredNamesTests
 {
@@ -28,6 +30,17 @@ public sealed class StoredNamesTests
             RoundTrips<FormTemplateKind>();
             RoundTrips<PermissionTarget>();
             RoundTrips<FieldStorageKind>();
+        });
+    }
+
+    [Test]
+    public void AValueWithTwoNames_HasOneName_TheSameInTheDefinitionAndTheDatabase()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(DefinitionWords<Aliased>.All, Is.EqualTo(new[] { "first", "second" }).Or.EqualTo(new[] { "first", "again" }), "each value once");
+            Assert.That(DefinitionWords<Aliased>.Of(Aliased.Again), Is.EqualTo(StoredNames.Of(Aliased.Second)));
+            Assert.That(StoredNames.Parse<Aliased>(StoredNames.Of(Aliased.Again)), Is.EqualTo(Aliased.Second));
         });
     }
 
@@ -105,5 +118,13 @@ public sealed class StoredNamesTests
             Assert.That(stored, Has.Length.InRange(1, ColumnLength).And.Match("^[a-z][a-zA-Z0-9]*$"), $"{typeof(TEnum).Name}.{value}");
             Assert.That(StoredNames.Parse<TEnum>(stored), Is.EqualTo(value), $"{typeof(TEnum).Name}.{value}");
         }
+    }
+
+    // A value with a second name, as an enum may give one when a name changes.
+    private enum Aliased
+    {
+        First = 1,
+        Second = 2,
+        Again = Second,
     }
 }
