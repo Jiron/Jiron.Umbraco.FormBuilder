@@ -7,16 +7,17 @@ using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Web.Common.Routing;
 
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Library;
 
 /// <summary>
-/// The library's folders (ADR-0047, ADR-0050): get, create, rename, move, trash, restore and delete for good. Creating
-/// needs <c>design</c> on the parent, every change <c>design</c> on the folder, a move also on the new parent (and
-/// <c>managePermissions</c> with a confirmation when it gives a group more access), and a permanent delete
-/// <c>design</c> and <c>deleteEntries</c> on everything it removes.
+/// The library's folders (ADR-0047, ADR-0050, ADR-0051): get, create, rename, move, trash, restore and delete for good.
+/// Creating needs <c>design</c> on the parent, every change <c>design</c> on the folder, a move (and a restore that lands
+/// somewhere else) also on the new parent, and <c>managePermissions</c> with a confirmation when it gives a group more
+/// access; a permanent delete needs <c>design</c> and <c>deleteEntries</c> on everything it removes.
 /// </summary>
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/folder")]
@@ -103,30 +104,10 @@ internal sealed class FolderController(
             return FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder);
         }
 
-        var onTarget = await authorization.AuthorizeAsync(User, FormBuilderAccessResource.ForFolder(parentKey), FormBuilderPolicies.Design);
-        if (!onTarget.Succeeded)
+        var move = new AccessMove(PermissionTarget.Folder, folder.Key, folder.IsRestricted, folder.ParentKey, parentKey);
+        if (await LibraryMoves.RefusalAsync(access, authorization, User, move, request.WidenAccess, cancellationToken) is { } refusal)
         {
-            return FormBuilderProblems.Refused(onTarget, FormBuilderAccessResourceKind.Folder);
-        }
-
-        var gains = await access.GetMoveGainsAsync(new AccessMove(PermissionTarget.Folder, folder.Key, folder.IsRestricted, folder.ParentKey, parentKey), cancellationToken);
-        if (gains.Count > 0)
-        {
-            var listed = new Dictionary<string, object?> { ["gains"] = gains.Select(gain => new AccessGainResponseModel(gain.UserGroupKey, PermissionRules.NamesOf(gain.Gained))).ToList() };
-            if (!(await authorization.AuthorizeAsync(User, FormBuilderPolicies.ManagePermissions)).Succeeded)
-            {
-                return FormBuilderProblems.Missing(FormBuilderPermissions.ManagePermissions, listed);
-            }
-
-            if (!request.WidenAccess)
-            {
-                return FormBuilderProblems.Problem(
-                    StatusCodes.Status409Conflict,
-                    FormBuilderProblems.WidensAccessCode,
-                    "The move gives other user groups access to this folder.",
-                    "Confirm the move to give them that access.",
-                    listed);
-            }
+            return refusal;
         }
 
         return await folders.MoveAsync(key, parentKey, RequestAccess.User.Key, cancellationToken) is { } moved
@@ -148,8 +129,12 @@ internal sealed class FolderController(
             ? Ok(LibraryChangeResponseModel.Of(change))
             : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder);
 
-    /// <summary>Takes a folder out of the trash with what went there with it, into its parent or to the root.</summary>
+    /// <summary>
+    /// Takes a folder out of the trash with what went there with it, into its parent, or to the root when the parent is
+    /// in the trash. A restore to the root needs what a move there needs.
+    /// </summary>
     /// <param name="key">The folder.</param>
+    /// <param name="request">The confirmation of a restore that gives user groups more access; none for a restore without it.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>
     [HttpPost("{key:guid}/restore")]
     [MapToApiVersion("1.0")]
@@ -157,10 +142,23 @@ internal sealed class FolderController(
     [ProducesResponseType(typeof(LibraryChangeResponseModel), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Restore(Guid key, CancellationToken cancellationToken = default) =>
-        await folders.RestoreAsync(key, RequestAccess.User.Key, cancellationToken) is { } change
+    public async Task<IActionResult> Restore(Guid key, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] RestoreFolderRequestModel? request = null, CancellationToken cancellationToken = default)
+    {
+        var folder = RequestAccess.Folder!;
+        if (folder.TrashedUtc is not null)
+        {
+            var landing = folder.ParentKey is { } parentKey && await folders.GetAsync(parentKey, cancellationToken) is { TrashedUtc: null } ? parentKey : (Guid?)null;
+            var move = new AccessMove(PermissionTarget.Folder, folder.Key, folder.IsRestricted, folder.ParentKey, landing);
+            if (landing != folder.ParentKey && await LibraryMoves.RefusalAsync(access, authorization, User, move, request?.WidenAccess == true, cancellationToken) is { } refusal)
+            {
+                return refusal;
+            }
+        }
+
+        return await folders.RestoreAsync(key, RequestAccess.User.Key, cancellationToken) is { } change
             ? Ok(LibraryChangeResponseModel.Of(change))
             : FormBuilderProblems.NotFound(FormBuilderAccessResourceKind.Folder);
+    }
 
     /// <summary>
     /// Deletes a folder in the trash for good, with the folders below it, the forms in them and their entries. It needs

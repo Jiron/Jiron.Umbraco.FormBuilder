@@ -60,6 +60,10 @@ administrators unrestricted, because they could widen any group anyway.
 and everything below it, so it needs `design` and `deleteEntries` on everything it removes, and emptying the trash
 removes only what the user may delete for good.
 
+**Amended in 4.7b ([ADR-0051](0051-form-endpoints.md)):** a restore that puts a form or folder somewhere else than it
+was (the root, when its folder is in the trash) counts as a move there, and a save of a draft that changes its actions
+needs `manageActions`.
+
 - **Dependencies:** `viewSensitive`, `editEntries`, `deleteEntries` and `export` need `viewEntries`, and
   `manageActions` needs `design`; the editor ticks the dependency with them and saving refuses a grant without it.
 - **Global-only permissions** cannot be granted on a folder or form; saving refuses them there.

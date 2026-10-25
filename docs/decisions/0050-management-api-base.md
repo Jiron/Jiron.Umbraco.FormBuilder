@@ -1,7 +1,8 @@
 # 0050. The management API's base
 
 - Status: accepted; amends [ADR-0013](0013-permissions.md) (what a permanent delete and emptying the trash need) and
-  [ADR-0049](0049-authorization-policies.md) (a policy for what a user sees)
+  [ADR-0049](0049-authorization-policies.md) (a policy for what a user sees); amended by
+  [ADR-0051](0051-form-endpoints.md) (a folder's restore that lands somewhere else)
 - Date: 2026-10-25
 - Roadmap step: 4.7a (decided and built); 4.7b adds forms, search and versions on it
 

@@ -32,6 +32,18 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["DELETE folder/{key}"] = (FormBuilderPermissions.Design | FormBuilderPermissions.DeleteEntries, FormBuilderAccessResourceKind.Folder, "key"),
         ["GET trash"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
         ["DELETE trash"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["GET form/search"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["GET form/{key}"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Form, "key"),
+        ["GET form/{key}/draft"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Folder, "folderKey"),
+        ["PUT form/{key}/draft"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/publish"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/unpublish"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["PUT form/{key}"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["PUT form/{key}/move"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/trash"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["POST form/{key}/restore"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
+        ["DELETE form/{key}"] = (FormBuilderPermissions.Design | FormBuilderPermissions.DeleteEntries, FormBuilderAccessResourceKind.Form, "key"),
     };
 
     /// <summary>The reviewed exception list: endpoints without a declaration. Only the form picker (6.7) may join it.</summary>
@@ -42,6 +54,8 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
 
     private Guid _events;
     private Guid _hr;
+    private Guid _spring;
+    private Guid _payroll;
 
     [SetUp]
     public async Task CreateTheLibraryAsync()
@@ -52,6 +66,9 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         _hr = (await folders.CreateAsync(new NewFolderRequest("HR"))).Key;
         await access.RestrictFolderAsync(_hr, true, null);
         await access.ChangeGrantAsync(new AccessGrantChange(People.GroupKeys["hr"], PermissionTarget.Folder, _hr, FormBuilderPermissions.None, FormBuilderPermissions.ViewEntries | FormBuilderPermissions.EditEntries, null));
+        var forms = GetRequiredService<IFormBuilderFormService>();
+        _spring = (await forms.CreateAsync(new NewFormRequest("Spring", FolderKey: _events))).Key;
+        _payroll = (await forms.CreateAsync(new NewFormRequest("Payroll", FolderKey: _hr))).Key;
     }
 
     [Test]
@@ -87,9 +104,10 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         var answers = new List<string>();
         foreach (var endpoint in Endpoints())
         {
-            answers.Add($"{endpoint.Name}: {(await CallAsync("outsider", endpoint, _events)).Outcome}");
+            answers.Add($"{endpoint.Name}: {(await CallAsync("outsider", endpoint, Visible(endpoint))).Outcome}");
         }
 
+        await WriteAsync(answers);
         Assert.That(answers, Is.All.EndsWith(": 403 no_section"), string.Join("\n", answers));
     }
 
@@ -104,11 +122,12 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
             var on = Declared[endpoint.Name].On;
             var role = Seers.First(seer => Sees(seer, on) && (Held(seer, on) & needs) != needs);
             var missing = PermissionRules.Each.First(permission => (needs & permission) != FormBuilderPermissions.None && (Held(role, on) & permission) == FormBuilderPermissions.None);
-            var answer = await CallAsync(role, endpoint, _events);
+            var answer = await CallAsync(role, endpoint, Visible(endpoint));
             answers.Add($"{endpoint.Name} as {role}: {answer.Outcome} {answer.Body?["permission"]?.GetValue<string>()}");
             expected.Add($"{endpoint.Name} as {role}: 403 forbidden {PermissionRules.NameOf(missing)}");
         }
 
+        await WriteAsync(answers);
         Assert.That(answers, Is.Not.Empty);
         Assert.That(answers, Is.EqualTo(expected));
     }
@@ -121,12 +140,13 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         foreach (var endpoint in Endpoints().Where(endpoint => Declared.TryGetValue(endpoint.Name, out var declared) && declared.On != FormBuilderAccessResourceKind.Global))
         {
             var code = Declared[endpoint.Name].On == FormBuilderAccessResourceKind.Form ? "form_not_found" : "folder_not_found";
-            answers.Add($"{endpoint.Name} as designer on HR: {(await CallAsync("designer", endpoint, _hr)).Outcome}");
+            answers.Add($"{endpoint.Name} as designer on HR: {(await CallAsync("designer", endpoint, Declared[endpoint.Name].On == FormBuilderAccessResourceKind.Form ? _payroll : _hr)).Outcome}");
             expected.Add($"{endpoint.Name} as designer on HR: 404 {code}");
             answers.Add($"{endpoint.Name} as admin on none: {(await CallAsync("admin", endpoint, Guid.NewGuid())).Outcome}");
             expected.Add($"{endpoint.Name} as admin on none: 404 {code}");
         }
 
+        await WriteAsync(answers);
         Assert.That(answers, Is.Not.Empty);
         Assert.That(answers, Is.EqualTo(expected));
     }
@@ -140,6 +160,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
             answers.Add($"{endpoint.Name}: {(await CallAsync("noAccess", endpoint, _events)).Outcome}");
         }
 
+        await WriteAsync(answers);
         Assert.That(answers, Is.Not.Empty);
         Assert.That(answers, Is.All.EndsWith(": 200"), string.Join("\n", answers));
     }
@@ -154,7 +175,20 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
 
     private static bool Sees(string role, FormBuilderAccessResourceKind on) => on == FormBuilderAccessResourceKind.Global || Held(role, on) != FormBuilderPermissions.None;
 
+    // Names each endpoint the test called, with its answer, in the test's output.
+    private static async Task WriteAsync(List<string> answers)
+    {
+        foreach (var answer in answers)
+        {
+            await TestContext.Out.WriteLineAsync(answer);
+        }
+    }
+
     private Task<ApiAnswer> CallAsync(string role, ManagementApiEndpoint endpoint, Guid key) => Api.CallAsync(role, endpoint, key);
+
+    // The key that Events stands for: Events itself, or its form Spring for an endpoint on a form.
+    private Guid Visible(ManagementApiEndpoint endpoint) =>
+        Declared.TryGetValue(endpoint.Name, out var declared) && declared.On == FormBuilderAccessResourceKind.Form ? _spring : _events;
 
     private List<ManagementApiEndpoint> Endpoints() => ManagementApiEndpoints.All(Services);
 }

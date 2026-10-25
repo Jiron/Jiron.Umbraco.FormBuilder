@@ -66,6 +66,21 @@ internal static class DefinitionDiff
         return changes;
     }
 
+    /// <summary>
+    /// Whether <paramref name="to"/> adds, removes, changes or moves an action of <paramref name="from"/>, or a rule of
+    /// one (ADR-0051): what a save without <c>manageActions</c> may not do. A <paramref name="from"/> that could not be
+    /// read counts as one without actions.
+    /// </summary>
+    public static bool ChangesActions(FormDefinition? from, FormDefinition to)
+    {
+        ArgumentNullException.ThrowIfNull(to);
+        var older = from ?? new FormDefinition { Key = to.Key };
+        var actions = older.Actions.Concat(to.Actions).Select(action => (Guid?)action.Key).ToHashSet();
+        return Compare(older, to).Any(change =>
+            change.Kind == DefinitionElementKind.Action
+            || (change.Kind == DefinitionElementKind.Rule && (actions.Contains(change.ParentKey) || actions.Contains(change.PreviousParentKey))));
+    }
+
     private static DefinitionChange Change(Element element, Element? before, Element? after, DefinitionChangeKind kind, bool moved, IReadOnlyList<DefinitionPropertyChange> properties) => new(
         element.Kind,
         element.Key,

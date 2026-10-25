@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -63,12 +64,19 @@ internal sealed record ManagementApiEndpoint(ApiDescription Description, IReadOn
         Description.ParameterDescriptions.FirstOrDefault(parameter => parameter.Name == key)?.Source
         ?? (Description.ParameterDescriptions.Any(parameter => parameter.Source == BindingSource.Body && parameter.Type.GetProperty(key, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase) is not null) ? BindingSource.Body : null);
 
-    /// <summary>Its path with every route value filled, and the declared key in the query when it lives there.</summary>
+    /// <summary>
+    /// Its path with every route value filled, and in the query the declared key when it lives there and every other
+    /// value it requires, each by its type.
+    /// </summary>
     public string PathFor(Guid key)
     {
         var path = ManagementApiEndpoints.RouteValue().Replace(Template[Prefix.Length..], match =>
             Description.ParameterDescriptions.FirstOrDefault(parameter => parameter.Source == BindingSource.Path && parameter.Name == match.Groups[1].Value)?.Type == typeof(int) ? "1" : key.ToString());
-        return Key is { } name && KeySource(name) == BindingSource.Query ? $"{path}?{name}={key}" : path;
+        var query = Description.ParameterDescriptions
+            .Where(parameter => parameter.Source == BindingSource.Query && (parameter.Name == Key || IsRequired(parameter)))
+            .Select(parameter => $"{parameter.Name}={(parameter.Name == Key ? key.ToString() : QueryValueOf(parameter.Type))}")
+            .ToList();
+        return query.Count == 0 ? path : $"{path}?{string.Join("&", query)}";
     }
 
     /// <summary>A body that reads, when it takes one: each property filled by its type, the declared key with the key.</summary>
@@ -79,4 +87,10 @@ internal sealed record ManagementApiEndpoint(ApiDescription Description, IReadOn
                 property => string.Equals(property.Name, Key, StringComparison.OrdinalIgnoreCase) ? key : ValueOf(property.PropertyType));
 
     private static object? ValueOf(Type type) => type == typeof(string) ? "Calls" : type == typeof(bool) ? false : type == typeof(int) ? 1 : null;
+
+    // Required by [BindRequired], which the API explorer reports, or by [Required], which it leaves to validation.
+    private static bool IsRequired(ApiParameterDescription parameter) =>
+        parameter.IsRequired || (parameter.ParameterDescriptor as ControllerParameterDescriptor)?.ParameterInfo.GetCustomAttribute<RequiredAttribute>() is not null;
+
+    private static string QueryValueOf(Type type) => type == typeof(bool) ? "false" : Convert.ToString(ValueOf(type), System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
 }

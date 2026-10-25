@@ -131,6 +131,16 @@ internal sealed record MoveFolderRequestModel
     public bool WidenAccess { get; init; }
 }
 
+/// <summary>A folder's restore from the trash.</summary>
+internal sealed record RestoreFolderRequestModel
+{
+    /// <summary>
+    /// Confirms a restore to the root, because the folder's parent is in the trash, that gives user groups more access
+    /// to it; it needs <c>managePermissions</c>.
+    /// </summary>
+    public bool WidenAccess { get; init; }
+}
+
 /// <summary>What a user group would gain from a move.</summary>
 /// <param name="UserGroupKey">The Umbraco user group.</param>
 /// <param name="Permissions">The permissions it would hold on the folder or form and does not now.</param>
@@ -177,6 +187,13 @@ internal sealed record LibraryDeletionResponseModel
     {
         ArgumentNullException.ThrowIfNull(deletion);
         return new LibraryDeletionResponseModel { Folders = deletion.Folders.Count, Forms = deletion.Forms.Count, Entries = deletion.Entries, Files = deletion.Files };
+    }
+
+    /// <summary>The model of a form's deletion.</summary>
+    public static LibraryDeletionResponseModel Of(FormDeletion deletion)
+    {
+        ArgumentNullException.ThrowIfNull(deletion);
+        return new LibraryDeletionResponseModel { Folders = 0, Forms = 1, Entries = deletion.Entries, Files = deletion.Files };
     }
 }
 

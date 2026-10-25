@@ -3,7 +3,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { FolderCreateData, FolderCreateErrors, FolderCreateResponses, FolderDeleteData, FolderDeleteErrors, FolderDeleteResponses, FolderGetData, FolderGetErrors, FolderGetResponses, FolderMoveData, FolderMoveErrors, FolderMoveResponses, FolderRenameData, FolderRenameErrors, FolderRenameResponses, FolderRestoreData, FolderRestoreErrors, FolderRestoreResponses, FolderTrashData, FolderTrashErrors, FolderTrashResponses, TrashEmptyData, TrashEmptyErrors, TrashEmptyResponses, TrashListData, TrashListErrors, TrashListResponses, TreeChildrenData, TreeChildrenErrors, TreeChildrenResponses, TreeRootData, TreeRootErrors, TreeRootResponses } from './types.gen';
+import type { FolderCreateData, FolderCreateErrors, FolderCreateResponses, FolderDeleteData, FolderDeleteErrors, FolderDeleteResponses, FolderGetData, FolderGetErrors, FolderGetResponses, FolderMoveData, FolderMoveErrors, FolderMoveResponses, FolderRenameData, FolderRenameErrors, FolderRenameResponses, FolderRestoreData, FolderRestoreErrors, FolderRestoreResponses, FolderTrashData, FolderTrashErrors, FolderTrashResponses, FormCreateData, FormCreateErrors, FormCreateResponses, FormDeleteData, FormDeleteErrors, FormDeleteResponses, FormDraftData, FormDraftErrors, FormDraftResponses, FormGetData, FormGetErrors, FormGetResponses, FormMoveData, FormMoveErrors, FormMoveResponses, FormPublishData, FormPublishErrors, FormPublishResponses, FormRenameData, FormRenameErrors, FormRenameResponses, FormRestoreData, FormRestoreErrors, FormRestoreResponses, FormSaveDraftData, FormSaveDraftErrors, FormSaveDraftResponses, FormSearchData, FormSearchErrors, FormSearchResponses, FormTrashData, FormTrashErrors, FormTrashResponses, FormUnpublishData, FormUnpublishErrors, FormUnpublishResponses, TrashEmptyData, TrashEmptyErrors, TrashEmptyResponses, TrashListData, TrashListErrors, TrashListResponses, TreeChildrenData, TreeChildrenErrors, TreeChildrenResponses, TreeRootData, TreeRootErrors, TreeRootResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -64,12 +64,120 @@ export const folderMove = <ThrowOnError extends boolean = false>(options: Option
 export const folderRestore = <ThrowOnError extends boolean = false>(options: Options<FolderRestoreData, ThrowOnError>): RequestResult<FolderRestoreResponses, FolderRestoreErrors, ThrowOnError> => (options.client ?? client).post<FolderRestoreResponses, FolderRestoreErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/folder/{key}/restore',
-    ...options
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 export const folderTrash = <ThrowOnError extends boolean = false>(options: Options<FolderTrashData, ThrowOnError>): RequestResult<FolderTrashResponses, FolderTrashErrors, ThrowOnError> => (options.client ?? client).post<FolderTrashResponses, FolderTrashErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/folder/{key}/trash',
+    ...options
+});
+
+export const formCreate = <ThrowOnError extends boolean = false>(options?: Options<FormCreateData, ThrowOnError>): RequestResult<FormCreateResponses, FormCreateErrors, ThrowOnError> => (options?.client ?? client).post<FormCreateResponses, FormCreateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
+});
+
+export const formDelete = <ThrowOnError extends boolean = false>(options: Options<FormDeleteData, ThrowOnError>): RequestResult<FormDeleteResponses, FormDeleteErrors, ThrowOnError> => (options.client ?? client).delete<FormDeleteResponses, FormDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}',
+    ...options
+});
+
+export const formGet = <ThrowOnError extends boolean = false>(options: Options<FormGetData, ThrowOnError>): RequestResult<FormGetResponses, FormGetErrors, ThrowOnError> => (options.client ?? client).get<FormGetResponses, FormGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}',
+    ...options
+});
+
+export const formRename = <ThrowOnError extends boolean = false>(options: Options<FormRenameData, ThrowOnError>): RequestResult<FormRenameResponses, FormRenameErrors, ThrowOnError> => (options.client ?? client).put<FormRenameResponses, FormRenameErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const formDraft = <ThrowOnError extends boolean = false>(options: Options<FormDraftData, ThrowOnError>): RequestResult<FormDraftResponses, FormDraftErrors, ThrowOnError> => (options.client ?? client).get<FormDraftResponses, FormDraftErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/draft',
+    ...options
+});
+
+export const formSaveDraft = <ThrowOnError extends boolean = false>(options: Options<FormSaveDraftData, ThrowOnError>): RequestResult<FormSaveDraftResponses, FormSaveDraftErrors, ThrowOnError> => (options.client ?? client).put<FormSaveDraftResponses, FormSaveDraftErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/draft',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const formMove = <ThrowOnError extends boolean = false>(options: Options<FormMoveData, ThrowOnError>): RequestResult<FormMoveResponses, FormMoveErrors, ThrowOnError> => (options.client ?? client).put<FormMoveResponses, FormMoveErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/move',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const formPublish = <ThrowOnError extends boolean = false>(options: Options<FormPublishData, ThrowOnError>): RequestResult<FormPublishResponses, FormPublishErrors, ThrowOnError> => (options.client ?? client).post<FormPublishResponses, FormPublishErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/publish',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const formRestore = <ThrowOnError extends boolean = false>(options: Options<FormRestoreData, ThrowOnError>): RequestResult<FormRestoreResponses, FormRestoreErrors, ThrowOnError> => (options.client ?? client).post<FormRestoreResponses, FormRestoreErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/restore',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const formTrash = <ThrowOnError extends boolean = false>(options: Options<FormTrashData, ThrowOnError>): RequestResult<FormTrashResponses, FormTrashErrors, ThrowOnError> => (options.client ?? client).post<FormTrashResponses, FormTrashErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/trash',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const formUnpublish = <ThrowOnError extends boolean = false>(options: Options<FormUnpublishData, ThrowOnError>): RequestResult<FormUnpublishResponses, FormUnpublishErrors, ThrowOnError> => (options.client ?? client).post<FormUnpublishResponses, FormUnpublishErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/{key}/unpublish',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const formSearch = <ThrowOnError extends boolean = false>(options: Options<FormSearchData, ThrowOnError>): RequestResult<FormSearchResponses, FormSearchErrors, ThrowOnError> => (options.client ?? client).get<FormSearchResponses, FormSearchErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/form/search',
     ...options
 });
 

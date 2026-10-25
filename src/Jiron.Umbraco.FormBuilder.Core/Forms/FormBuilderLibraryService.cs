@@ -58,6 +58,13 @@ internal interface IFormBuilderLibraryService
     Task<Page<LibraryItem>> ListTrashAsync(AccessUser user, PageRequest page, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The forms outside the trash whose name or alias contains <paramref name="text"/>, that the user sees, by name
+    /// (ADR-0051).
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="text"/> is empty or only white space.</exception>
+    Task<Page<LibraryItem>> SearchFormsAsync(AccessUser user, string text, PageRequest page, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// What the user lacks of <c>design</c> and <c>deleteEntries</c> on anything the removal takes (ADR-0050); none when
     /// they may delete it for good.
     /// </summary>
@@ -118,6 +125,23 @@ internal sealed class FormBuilderLibraryService(
             Access = await access.GetFormScopeAsync(user, cancellationToken: cancellationToken),
         };
         return await PageAsync(user, all, visibility, shown, filter, page, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<Page<LibraryItem>> SearchFormsAsync(AccessUser user, string text, PageRequest page, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        var keys = (await folders.ListAllAsync(cancellationToken)).ToDictionary(folder => folder.Id, folder => folder.Key);
+        var filter = new FormFilter { AllFolders = true, Trashed = false, Search = text, Access = await access.GetFormScopeAsync(user, cancellationToken: cancellationToken) };
+        var found = await forms.ListAsync(filter, page, cancellationToken);
+        var items = new List<LibraryItem>(found.Items.Count);
+        foreach (var form in found.Items)
+        {
+            items.Add(await FormItemAsync(user, form, keys, cancellationToken));
+        }
+
+        return new Page<LibraryItem>(items, found.Total);
     }
 
     /// <inheritdoc />
@@ -190,21 +214,27 @@ internal sealed class FormBuilderLibraryService(
         {
             foreach (var form in formPage.Items)
             {
-                var folderKey = form.FolderId is { } folderId && keys.TryGetValue(folderId, out var key) ? key : (Guid?)null;
-                items.Add(new LibraryItem(
-                    LibraryItemKind.Form,
-                    form.Key,
-                    form.Name,
-                    form.Alias,
-                    folderKey,
-                    form.IsRestricted,
-                    form.PublishedVersionId is not null,
-                    form.TrashedUtc,
-                    false,
-                    await access.GetForFormAsync(user, new FormAccessTarget(form.Key, folderKey, form.IsRestricted), cancellationToken)));
+                items.Add(await FormItemAsync(user, form, keys, cancellationToken));
             }
         }
 
         return new Page<LibraryItem>(items, shown.Count + formPage.Total);
+    }
+
+    // A form as the user sees it, named by the key of its folder.
+    private async Task<LibraryItem> FormItemAsync(AccessUser user, StoredForm form, Dictionary<int, Guid> folderKeys, CancellationToken cancellationToken)
+    {
+        var folderKey = form.FolderId is { } folderId && folderKeys.TryGetValue(folderId, out var key) ? key : (Guid?)null;
+        return new LibraryItem(
+            LibraryItemKind.Form,
+            form.Key,
+            form.Name,
+            form.Alias,
+            folderKey,
+            form.IsRestricted,
+            form.PublishedVersionId is not null,
+            form.TrashedUtc,
+            false,
+            await access.GetForFormAsync(user, new FormAccessTarget(form.Key, folderKey, form.IsRestricted), cancellationToken));
     }
 }

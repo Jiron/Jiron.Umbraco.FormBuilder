@@ -86,7 +86,7 @@ database connection of its own. Its areas:
 | Area | Holds | Decided in |
 | --- | --- | --- |
 | Public API | `/jfb/api/v1`, CORS, body and time limits, the rate-limit middleware, the no-form middleware | ADR-0012, ADR-0006 |
-| Management API | `/umbraco/jfb/management/api/v1`: the base controller, the access declarations and their filter, the refusals with stable codes, the authorization policies with their resources and denials, the OpenAPI document `jfb`; the library tree, folders and the trash | ADR-0013, ADR-0049, ADR-0050, §4.7 |
+| Management API | `/umbraco/jfb/management/api/v1`: the base controller, the access declarations and their filter, the refusals with stable codes, the authorization policies with their resources and denials, the OpenAPI document `jfb`; the library tree, folders, the trash and forms, a definition carried as its document | ADR-0013, ADR-0049, ADR-0050, ADR-0051, §4.7 |
 | Rendering | the view component, `<jfb-render>`, `<jfb-assets>`, the surface controller, output cache rules, asset serving | ADR-0004, ADR-0015 |
 | Themes | the built-in themes, their views and stylesheets | ADR-0015 |
 | Content integration | the form picker property editor, value converters, the Delivery API converter, "used on" | ADR-0017 |
@@ -279,14 +279,14 @@ codes, `no-store` except the definition, the OpenAPI document `jfb-public`
 
 `/umbraco/jfb/management/api/v1`, behind the backoffice's token and the Forms section, with one authorization policy
 per permission ([ADR-0013](decisions/0013-permissions.md)), the OpenAPI document `jfb` and a generated TypeScript
-client committed from its snapshot ([ADR-0050](decisions/0050-management-api-base.md)). Areas (§4.7) and the
-permission each needs:
+client committed from its snapshot ([ADR-0050](decisions/0050-management-api-base.md),
+[ADR-0051](decisions/0051-form-endpoints.md)). Areas (§4.7) and the permission each needs:
 
 | Area | Permission |
 | --- | --- |
 | The library tree, search and the trash | any user of the section; each lists what the user sees, with the user's permissions on each item |
-| A folder | seeing it |
-| Forms and folders: create, save draft, publish, unpublish, duplicate, rename, move, trash, restore, references | `design` on the form or folder (creating: on the folder it goes in; a move: on the new one too, and `managePermissions` with a confirmation when it widens access) |
+| A folder, a form's name and state | seeing it |
+| Forms and folders: the draft, create, save draft, publish, unpublish, duplicate, rename, move, trash, restore, references | `design` on the form or folder (creating: on the folder it goes in; a move, and a restore that lands somewhere else: on the new one too, and `managePermissions` with a confirmation when it widens access; a save that changes the actions: `manageActions` too) |
 | Forms and folders: delete for good | `design` and `deleteEntries` on everything it removes |
 | Empty the trash | any user of the section; it removes only what the user may delete for good |
 | Versions: list, get, diff, restore, pin, comment | `design` |
