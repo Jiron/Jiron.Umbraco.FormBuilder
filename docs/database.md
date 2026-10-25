@@ -51,9 +51,11 @@ idempotent, so a rerun changes nothing.
 | `jfb-002-default-settings` | `CreateDefaultSettingsV1` | Adds the global row of each settings section (General, Email, Protection, Files, Privacy, Integrations) at version 1, holding no values: the defaults live in code. |
 | `jfb-003-grant-forms-section` | `GrantFormsSectionV1` | Gives Umbraco's administrators group the Forms section, once. A flag in `jfbKeyValue` records it, so an administrator who removes the section later is not overruled. |
 
-A step that has shipped is never edited; a change to the schema is a new step with snapshot classes of its own. Until
-the stored state is the plan's last one, `IFormBuilderMigrationState` reports the migrations as pending, and the parts
-of Jiron Form Builder that use the tables check it first (ADR-0033).
+A step that has shipped is never edited; a change to the schema is a new step with snapshot classes of its own. Step 1
+is frozen since the end of Phase 4, the tag `baseline/schema-v1`: `SchemaV1FreezeTests` pins the SHA-256 of a
+description of its snapshots and has no switch that rewrites it (ADR-0054). Until the stored state is the plan's last
+one, `IFormBuilderMigrationState` reports the migrations as pending, and the parts of Jiron Form Builder that use the
+tables check it first (ADR-0033).
 
 ## Access
 

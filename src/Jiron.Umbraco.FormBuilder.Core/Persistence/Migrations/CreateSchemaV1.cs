@@ -13,11 +13,12 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The snapshots describe the tables exactly as this step leaves them and are never edited (the schema freezes in
-/// 4.8). Later steps get snapshots of their own; repositories use separate product DTOs. Conventions: columns in
-/// camelCase, a single-column primary key is <c>id</c>, indexes <c>IX_&lt;table&gt;_&lt;columns&gt;</c>, foreign keys
-/// <c>FK_&lt;table&gt;_&lt;referencedTable&gt;</c> (plus the column when a table has two to one table), times in UTC,
-/// enums as short text, hashes as lowercase hex, and every string with an explicit length or <c>NVARCHAR(MAX)</c>.
+/// The snapshots describe the tables exactly as this step leaves them and are never edited: schema v1 is frozen since
+/// 4.8i, and <c>SchemaV1FreezeTests</c> pins them (ADR-0054). Later steps get snapshots of their own; repositories use
+/// separate product DTOs. Conventions: columns in camelCase, a single-column primary key is <c>id</c>, indexes
+/// <c>IX_&lt;table&gt;_&lt;columns&gt;</c>, foreign keys <c>FK_&lt;table&gt;_&lt;referencedTable&gt;</c> (plus the column
+/// when a table has two to one table), times in UTC, enums as short text, hashes as lowercase hex, and every string with
+/// an explicit length or <c>NVARCHAR(MAX)</c>.
 /// </para>
 /// <para>
 /// On SQLite the foreign keys are part of <c>CREATE TABLE</c>, which may name a table that does not exist yet. On SQL

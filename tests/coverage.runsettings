@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Line coverage of the product assemblies for the phase reviews (scripts/coverage.mjs run): coverlet's collector,
+  Cobertura reports, Core and Web only, so Umbraco's assemblies and the Testing project never count.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[Jiron.Umbraco.FormBuilder.Core]*,[Jiron.Umbraco.FormBuilder.Web]*</Include>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

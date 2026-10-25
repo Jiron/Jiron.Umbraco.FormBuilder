@@ -1,7 +1,8 @@
 # 0033. Schema v1: conventions, the migration plan and its checks
 
 - Status: accepted; the trash key of folders and forms added by [ADR-0047](0047-trash-delete-and-folders.md) in 4.5d;
-  amended in 4.8a (the review before the freeze, below) and in 4.8g (one more index, camelCase free words)
+  amended in 4.8a (the review before the freeze, below) and in 4.8g (one more index, camelCase free words); step 1
+  frozen in 4.8i by [ADR-0054](0054-schema-freeze.md)
 - Date: 2026-10-23
 - Roadmap step: 4.1 (decided and built); 4.2 and 4.3 follow its text rules; 4.7, 6.1, 6.2, 8.1 and 9.1 check the
   migration state

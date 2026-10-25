@@ -14,6 +14,17 @@ dotnet test Jiron.Umbraco.FormBuilder.slnx --blame-hang-timeout 10m
 The hang timeout names a test that hangs instead of stalling the run. The integration tests use SQLite and need nothing
 installed; Umbraco works in `Tests.Integration/TEMP/`, which git ignores.
 
+Every phase review measures the line coverage of Core, which must be 85% or more (ROADMAP §4.12 and the phase-review
+gate):
+
+```
+node scripts/coverage.mjs --run
+```
+
+It empties `.local/coverage`, runs the .NET tests in Release with coverlet's collector over Core and Web only
+(`tests/coverage.runsettings`), merges the reports of both test projects (a line counts once, as covered when any
+report hit it) and prints each assembly's coverage. Without `--run` it reads the reports already there.
+
 The browser tests start a fresh demo host of their own and run in Edge (Playwright's Chromium in CI):
 
 ```
@@ -134,6 +145,11 @@ the diff gets read and committed; the management API's document is the third suc
 - `SchemaV1DdlTests`: the SQL Server statements of step 1, rendered without a server, in
   `Persistence/schema-v1.sqlserver.sql`;
 - `DatabaseDocsTests`: the diagram in [docs/database.md](../docs/database.md).
+
+Step 1 itself is frozen ([ADR-0054](../docs/decisions/0054-schema-freeze.md)): `Tests.Unit/Persistence/SchemaV1FreezeTests`
+describes its snapshot DTOs and filtered indexes from their declarations and compares the SHA-256 of that description
+with a constant, which no switch rewrites. Its other tests show that every kind of declaration that shapes a table
+changes the description, and that the class names and the layout of the source do not. A schema change is a new step.
 
 ## The repository tests
 
