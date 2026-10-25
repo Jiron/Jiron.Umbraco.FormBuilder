@@ -1682,7 +1682,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **4.7b Forms and search in the management API** (4.7 split in two, then 4.7b in two, WORKLOG 2026-10-25) (2026-10-25, 48599eb)
   - **The endpoints** (§4.7) over the 4.5 services: forms (search, get, create, save draft, publish, unpublish, rename, move, trash, restore, delete). A form's move that gives a group more access needs `managePermissions` (ADR-0013, ADR-0048), and so does a restore that puts a form or a folder somewhere else than it was, such as the root when its folder is in the trash. A save that changes the actions needs `manageActions` (ADR-0013). Each joins 4.7a's permission matrix, which covers it by itself, and its `503 migrations_pending` test.
   - Done when: the integration tests for the endpoints pass; the permission matrix and the `503 migrations_pending` test call every new endpoint (each test names the endpoints it called); the OpenAPI snapshot and the client are regenerated and committed.
-- [ ] **4.7c Versions in the management API** (4.7b split in two, WORKLOG 2026-10-25)
+- [x] **4.7c Versions in the management API** (4.7b split in two, WORKLOG 2026-10-25) (2026-10-25, 6de9368)
   - **The endpoints** (§4.7) over the 4.5 services: versions (list, get, diff, restore, pin, comment). A restore that changes the actions needs `manageActions` (ADR-0013). Each joins 4.7a's permission matrix, which covers it by itself, and its `503 migrations_pending` test.
   - Done when: the integration tests for the endpoints pass; the permission matrix and the `503 migrations_pending` test call every new endpoint (each test names the endpoints it called); the OpenAPI snapshot and the client are regenerated and committed.
 - [ ] **4.8 Phase review**
