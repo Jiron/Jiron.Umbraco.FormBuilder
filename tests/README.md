@@ -27,7 +27,7 @@ npx playwright test --project=smoke
 | Project | What it holds |
 | --- | --- |
 | `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the management API's policies, access filter and answers (`ManagementApi/`, below), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test, the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), the form service (`Forms/`, below), the access service with the authorization policies (`Access/`, below) and the management API (`ManagementApi/`, below). |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test (each service of Core resolved, one per site), the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), the form services and the change pipeline they share (`Forms/`, below), the access service with the authorization policies (`Access/`, below) and the management API (`ManagementApi/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -186,6 +186,7 @@ The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made 
 
 - a commit that fails on its way, a lost connection, and the waits between attempts;
 - the arguments each repository refuses, and how the outbox cuts and stores errors and attachments;
+- the one trash check, which the services and the repositories share (`LibraryTrashTests`);
 - the file store's root (`Tests.Unit/Files/FileStoreRootTests`), with a site whose files would lie in its web root
   failing its start-up validation, a store of the site's own, registered before the package or after it, in the
   default's place, device paths and streams refused, and real junctions or symbolic links followed into, around and
@@ -258,6 +259,13 @@ notification and whether a unit was open, and cancels, fails or changes the form
 `TestPublishCheck` is a second publish check whose problems a test sets. `FormServiceLimitTests` lowers the pages a
 definition may have, so a form saved before still opens and its save returns `limit_exceeded`, as do a restore of a
 version above the limit, a duplicate of it, copied actions into it, a saved template and an import above it.
+
+`Tests.Integration/FormBuilderChangesTests` runs the change pipeline every service of Core shares (ADR-0053) on a real
+site: a change refused inside a unit of work or a scope with its service's reason, a write that commits with its audit
+entries in the order given (none for a write that found nothing), a write whose entry cannot be made leaving nothing,
+a cancelling handler's messages, and a handler that fails after the commit logged as the service's with what changed.
+The three parts of the form service (the lifecycle with the trash, `IFormBuilderFormVersionService` and
+`IFormBuilderFormExchangeService`) are tested below, each with what it does.
 
 `FormCopyServiceTests` covers copies, templates, imports and exports (ADR-0046) on a form designed with every kind of
 reference: a duplicate whose rules, checks, verification field and action settings name its own elements, with and

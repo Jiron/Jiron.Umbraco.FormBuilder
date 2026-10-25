@@ -1,4 +1,8 @@
+using Jiron.Umbraco.FormBuilder.Core;
+using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Testing.People;
 using Jiron.Umbraco.FormBuilder.Testing.Startup;
@@ -51,6 +55,24 @@ public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
     }
 
     [Test]
+    public void Boot_EachServiceOfCore_ResolvesAsOneOfItsOwnPerSite()
+    {
+        // The form service in its parts (ADR-0053), each with its own interface and registration, beside the other services.
+        Assert.Multiple(() =>
+        {
+            AssertOnePerSite<IFormBuilderFormService, FormBuilderFormService>();
+            AssertOnePerSite<IFormBuilderFormVersionService, FormBuilderFormVersionService>();
+            AssertOnePerSite<IFormBuilderFormExchangeService, FormBuilderFormExchangeService>();
+            AssertOnePerSite<IFormBuilderFolderService, FormBuilderFolderService>();
+            AssertOnePerSite<IFormBuilderLibraryService, FormBuilderLibraryService>();
+            AssertOnePerSite<IFormBuilderAccessService, FormBuilderAccessService>();
+            AssertOnePerSite<IFormBuilderSettingsService, FormBuilderSettingsService>();
+            AssertOnePerSite<FormBuilderChanges<FormBuilderFormService>, FormBuilderChanges<FormBuilderFormService>>();
+            AssertOnePerSite<FormBuilderChanges<FormBuilderFolderService>, FormBuilderChanges<FormBuilderFolderService>>();
+        });
+    }
+
+    [Test]
     public void Boot_WithoutTheStartupMarker_RegistersNoMarkerPopulator()
     {
         Assert.That(GetRequiredService<IEnumerable<IIndexPopulator>>().OfType<StartupMarkerPopulator>(), Is.Empty);
@@ -73,6 +95,14 @@ public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
     {
         builder.AddComposers();
         builder.Services.AddLogCapture();
+    }
+
+    private void AssertOnePerSite<TService, TImplementation>()
+        where TService : class
+    {
+        var first = GetRequiredService<TService>();
+        Assert.That(first, Is.TypeOf<TImplementation>(), typeof(TService).Name);
+        Assert.That(GetRequiredService<TService>(), Is.SameAs(first), typeof(TService).Name + " is one per site");
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Captured {Number}")]
