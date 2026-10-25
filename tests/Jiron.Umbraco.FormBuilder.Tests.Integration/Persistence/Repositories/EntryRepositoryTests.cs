@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -450,8 +451,9 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
     [Test]
     public async Task TextKeys_AreTheCleanedAndFoldedText_OfTextValuesOnly()
     {
-        var form = await CreateTestFormAsync("city", "amount", "agree", "notes");
+        var form = await CreateTestFormAsync("city", "amount", "agree", "notes", "name");
         var city = " " + (char)0x130 + "STANBUL" + (char)0x2003;
+        var name = EntryValueColumns.Of(FieldStorageKind.Json, new FieldValue("""{"first":"Ada","last":"LOVELACE"}"""), form["name"]);
         var notes = new string('X', EntryTextKey.MaxLength + 44);
 
         var entry = await Entries.CreateAsync(NewEntry(
@@ -460,15 +462,19 @@ public sealed class EntryRepositoryTests : RepositoryTestBase
             new NewEntryValue(form["city"], city),
             new NewEntryValue(form["amount"], "12.50", Number: 12.5),
             new NewEntryValue(form["agree"], "Yes", Bool: true),
-            new NewEntryValue(form["notes"], notes)));
+            new NewEntryValue(form["notes"], notes),
+            name));
 
-        var keys = (await Entries.ListValuesAsync([entry!.Id])).ToDictionary(value => value.FieldId, value => value.TextKey);
+        var values = await Entries.ListValuesAsync([entry!.Id]);
+        var keys = values.ToDictionary(value => value.FieldId, value => value.TextKey);
         Assert.Multiple(() =>
         {
             Assert.That(keys[form["city"]], Is.EqualTo("istanbul"), "cleaned (trimmed) and folded as rules compare");
             Assert.That(keys[form["amount"]], Is.Null, "a number filters by its number");
             Assert.That(keys[form["agree"]], Is.Null, "a yes or no filters by its bool");
             Assert.That(keys[form["notes"]], Is.EqualTo(new string('x', EntryTextKey.MaxLength)), "cut to the column");
+            Assert.That(keys[form["name"]], Is.EqualTo("ada lovelace"), "a value with parts, by what its parts read");
+            Assert.That(values.Single(value => value.FieldId == form["name"]).Text, Is.EqualTo("""{"first":"Ada","last":"LOVELACE"}"""), "which stores its object");
         });
     }
 

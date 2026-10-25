@@ -103,6 +103,8 @@ public sealed class EntryRepositoryArgumentTests
             Refused(repository, Entry(new NewEntryValue(1, "cv.pdf", FileId: 0)) with { FileIds = [] }, "file id 0");
             Refused(repository, Entry(new NewEntryValue(1, "cv.pdf", FileId: 7)) with { FileIds = [8] }, "a file the entry does not take");
             Refused(repository, Entry(new NewEntryValue(1, "a"), new NewEntryValue(1, "b")), "two values in one place");
+            Refused(repository, Entry(new NewEntryValue(1, "1", Number: 1) { KeyText = "one" }), "a key's text on a typed value");
+            Refused(repository, Entry(new NewEntryValue(1, "{}") { KeyText = string.Empty }), "an empty key's text");
             Refused(repository, Entry(new NewEntryValue[] { null! }), "a null value");
         });
     }

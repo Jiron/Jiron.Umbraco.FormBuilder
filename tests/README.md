@@ -114,7 +114,8 @@ coverage, schema and fixture tests fail.
 ## The field type tests
 
 `Tests.Unit/FieldTypes/` covers the field type framework without a host
-([ADR-0055](../docs/decisions/0055-field-type-framework.md), [ADR-0056](../docs/decisions/0056-field-settings-checks.md)):
+([ADR-0055](../docs/decisions/0055-field-type-framework.md), [ADR-0056](../docs/decisions/0056-field-settings-checks.md),
+[ADR-0058](../docs/decisions/0058-field-answers-and-values.md)):
 
 | Tests | What they show |
 | --- | --- |
@@ -124,6 +125,10 @@ coverage, schema and fixture tests fail.
 | `FieldSettingsChecksTests` | A field's settings held to its type's schema: each kind's values and wrong types, every bound, length, count and allowed value at its edge, values twice in a list as they compare, localised texts, required settings at the top and inside objects, each problem's code, path and message; the type's own check through the base class and the interface, its places, and a check that throws or cancels. |
 | `FieldTypeAvailabilityTests` | Whether a type can be used: available by default through the interface and the base class, a type's own answer with its reason, and every check that throws, faults, answers null, cancels itself, blocks or takes longer than five seconds reported as not configured with the shared reason and logged, while the request's cancellation still cancels the answer. |
 | `BuiltInSettingsTests` | The rules of every built-in type restated apart from the code and held at their edges, each type's own check through a publish, the lists that start with items, and the country codes against .NET's regions. |
+| `FieldAnswersTests` | What a type receives and gives back: a field's texts and parts, with empty, nameless and repeated ones refused; the longest answer at its edges and none; a value with its row and the text it stores; a reading that refuses a row the field lacks and keeps nothing once unreadable; a validation that keeps each error once and refuses kinds the type does not declare. |
+| `FieldValuesTests` | The contract as the pipeline runs it, through a type on the interface alone (one text, choices, a `multiple` setting, no value), one with settings on the base class, and the built-in number: the limits with `maxLength` or `invalid`, the reading, and the order of `invalid`, `required` and the type's own errors; a type without limits, with an undeclared error kind, or reading a value its storage kind cannot hold refused by name, without the answer. |
+| `PostedNumbersTests` | Numbers as posted (leading zeros, a point first, an exponent) converted exactly to the canonical wire form, and everything else refused: no number, other digits, or past 15 digits. |
+| `BuiltInAnswersTests` | The longest answer of every built-in type, restated from ADR-0058 apart from the code, and how they read: wire forms, choices with "Other", grids by row, rankings in order or by position, a consent's tick with its wording's hash, names and addresses as one object of their parts in order. |
 
 `TestFieldTypes` (in the Testing project) gives the unit tests the registry of the built-in types, or of a builder a
 test changes, as a site's container builds it.
@@ -180,7 +185,8 @@ changes the description, and that the class names and the layout of the source d
 `Tests.Integration/Persistence/Repositories/` migrates a fresh database per test, with a clock that stands still
 (`RepositoryTestBase`). The tests cover:
 
-- each repository's reads and writes, and every refusal, with nothing written (for entries, the number too). A
+- each repository's reads and writes, and every refusal, with nothing written (for entries, the number too), the text
+  keys of values with parts made of what their parts read included. A
   refusal must come from the statement's own condition: `AssertRefused` fails when the unique index refused instead;
 - the unique index as the backstop: `CommandRewriter` (in `StatementInterceptors`) takes the condition out of one
   statement, so the test shows the index's refusal classified as the condition's would be;
@@ -255,6 +261,9 @@ The unit tests (`Tests.Unit/Persistence/`) cover what a database cannot be made 
   own or an Umbraco that does not run, and registrations that cannot be read only as a warning;
 - the entry text key against the rule vectors of `tests/vectors`: two texts share a key exactly when an `equals`
   vector says they match (`EntryTextKeyTests`);
+- the row each storage kind stores a value as (`EntryValueColumnsTests`): numbers exact to 15 digits and text only
+  past them, dates as their wall-clock values in UTC and text only before 1753, a file as the entry's file, a value with
+  parts as its canonical object keyed by its parts' texts, and every value not in its kind's form refused;
 - the query builder's statements and refusals (`EntryQuerySqlTests`), and the time budget of a read: a timeout that
   never runs again, a caller's cancellation, a read inside another (`FormBuilderDatabaseTests`);
 - units inside units (`FormBuilderDatabaseTests`): an inner unit keeps the outer unit's cancellation and deadline and
