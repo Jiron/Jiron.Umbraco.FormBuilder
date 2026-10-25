@@ -17,6 +17,7 @@ internal sealed class FieldTypeTraits
     public FieldTypeTraits(IFormBuilderFieldType type)
     {
         ArgumentNullException.ThrowIfNull(type);
+        Type = type;
         var declaration = type.Declaration;
         Alias = declaration.Alias;
         HoldsValue = declaration.HoldsValue;
@@ -29,6 +30,9 @@ internal sealed class FieldTypeTraits
         ServerOnlyDefault = declaration.ServerOnlyDefault;
         PublicSettings = type.SettingsSchema.Settings.Where(setting => setting.IsPublic).Select(setting => setting.Name).ToFrozenSet(StringComparer.Ordinal);
     }
+
+    /// <summary>The type itself, whose settings schema and own check publishing holds a field's settings to (ADR-0056).</summary>
+    public IFormBuilderFieldType Type { get; }
 
     /// <summary>The type's alias, for example <c>email</c>.</summary>
     public string Alias { get; }

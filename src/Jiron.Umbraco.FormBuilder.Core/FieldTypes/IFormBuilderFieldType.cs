@@ -14,4 +14,15 @@ public interface IFormBuilderFieldType
 
     /// <summary>The type's settings, as the designer's settings editor and the checks read them.</summary>
     FieldSettingsSchema SettingsSchema { get; }
+
+    /// <summary>
+    /// The type's own check of a field's settings at publish (ADR-0056): what the rules of the schema cannot say, such as
+    /// a minimum above the maximum. It runs only once the settings keep the schema and its rules, and reports each
+    /// problem to <paramref name="check"/>; it finds nothing by default. An exception it throws is reported as a problem
+    /// with the field's settings, so a broken check never stops a publish from listing what it found.
+    /// </summary>
+    /// <param name="check">The field and where its problems go.</param>
+    void CheckSettings(FieldSettingsCheck check)
+    {
+    }
 }

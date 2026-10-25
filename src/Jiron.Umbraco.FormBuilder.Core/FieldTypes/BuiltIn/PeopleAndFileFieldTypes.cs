@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
@@ -13,7 +15,20 @@ public sealed class NameFieldType() : FormBuilderFieldTypeBase<NameFieldSettings
     Storage = FieldStorageKind.Json,
     Features = BuiltInFieldTypes.Input | FieldFeatures.Prefill,
     Messages = BuiltInFieldTypes.Readable,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(NameFieldSettings settings, FieldSettingsCheck check)
+    {
+        for (var i = 0; i < settings.RequiredParts.Count; i++)
+        {
+            if (!settings.Parts.Contains(settings.RequiredParts[i]))
+            {
+                check.Invalid(BuiltInChecks.At("requiredParts", i), $"The part '{BuiltInChecks.Name(settings.RequiredParts[i])}' is required, but 'parts' does not ask for it.");
+            }
+        }
+    }
+}
 
 /// <summary>The settings of a name (ADR-0002).</summary>
 public sealed class NameFieldSettings
@@ -22,9 +37,9 @@ public sealed class NameFieldSettings
     [FormBuilderSetting("#jfbFieldSettings_nameParts", Public = true)]
     public IReadOnlyList<NamePart> Parts { get; init; } = [NamePart.First, NamePart.Last];
 
-    /// <summary>The parts an answer has.</summary>
+    /// <summary>The parts a required name has; with none listed, every part the field asks for.</summary>
     [FormBuilderSetting("#jfbFieldSettings_nameRequiredParts", Group = FieldSettingGroup.Validation, Public = true)]
-    public IReadOnlyList<NamePart> RequiredParts { get; init; } = [NamePart.First, NamePart.Last];
+    public IReadOnlyList<NamePart> RequiredParts { get; init; } = [];
 }
 
 /// <summary>A part of a name.</summary>
@@ -54,7 +69,31 @@ public sealed class AddressFieldType() : FormBuilderFieldTypeBase<AddressFieldSe
     Storage = FieldStorageKind.Json,
     Features = BuiltInFieldTypes.Input | FieldFeatures.Prefill,
     Messages = BuiltInFieldTypes.Readable,
-});
+})
+{
+    private static readonly ImmutableArray<AddressPart> Always = [AddressPart.Street, AddressPart.Postcode, AddressPart.City];
+
+    /// <inheritdoc />
+    protected override void CheckSettings(AddressFieldSettings settings, FieldSettingsCheck check)
+    {
+        for (var i = 0; i < settings.Parts.Count; i++)
+        {
+            if (Always.Contains(settings.Parts[i]))
+            {
+                check.Invalid(BuiltInChecks.At("parts", i), $"The part '{BuiltInChecks.Name(settings.Parts[i])}' is always asked for, so 'parts' leaves it out.");
+            }
+        }
+
+        for (var i = 0; i < settings.RequiredParts.Count; i++)
+        {
+            var part = settings.RequiredParts[i];
+            if (!Always.Contains(part) && !settings.Parts.Contains(part))
+            {
+                check.Invalid(BuiltInChecks.At("requiredParts", i), $"The part '{BuiltInChecks.Name(part)}' is required, but 'parts' does not ask for it.");
+            }
+        }
+    }
+}
 
 /// <summary>
 /// The settings of an address (ADR-0002): the street, the postcode and the city are always asked for; the second
@@ -66,9 +105,9 @@ public sealed class AddressFieldSettings
     [FormBuilderSetting("#jfbFieldSettings_addressParts", Public = true)]
     public IReadOnlyList<AddressPart> Parts { get; init; } = [];
 
-    /// <summary>The parts an answer has.</summary>
+    /// <summary>The parts a required address has; with none listed, the street, the postcode and the city.</summary>
     [FormBuilderSetting("#jfbFieldSettings_addressRequiredParts", Group = FieldSettingGroup.Validation, Public = true)]
-    public IReadOnlyList<AddressPart> RequiredParts { get; init; } = [AddressPart.Street, AddressPart.Postcode, AddressPart.City];
+    public IReadOnlyList<AddressPart> RequiredParts { get; init; } = [];
 }
 
 /// <summary>A part of an address.</summary>
@@ -105,24 +144,41 @@ public sealed class FileFieldType() : FormBuilderFieldTypeBase<FileFieldSettings
     RuleKind = FieldKind.Files,
     Features = BuiltInFieldTypes.Input,
     Messages = FieldMessageKinds.Required | FieldMessageKinds.FileType | FieldMessageKinds.FileSize | FieldMessageKinds.FileCount,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(FileFieldSettings settings, FieldSettingsCheck check)
+    {
+        for (var i = 0; i < settings.Extensions.Count; i++)
+        {
+            var extension = settings.Extensions[i];
+            if (extension.Length == 0 || !extension.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c)))
+            {
+                check.Invalid(BuiltInChecks.At("extensions", i), $"An extension is lowercase letters and digits without the point, such as dwg, not '{extension}'.");
+            }
+        }
+    }
+}
 
 /// <summary>The settings of file uploads (ADR-0002).</summary>
 public sealed class FileFieldSettings
 {
-    /// <summary>The groups of file types a visitor may upload.</summary>
+    /// <summary>The groups of file types a visitor may upload; with none listed and no extensions, images and PDFs.</summary>
     [FormBuilderSetting("#jfbFieldSettings_fileTypes", Group = FieldSettingGroup.Validation, Public = true)]
-    public IReadOnlyList<FileTypeGroup> Types { get; init; } = [FileTypeGroup.Images, FileTypeGroup.Pdf];
+    public IReadOnlyList<FileTypeGroup> Types { get; init; } = [];
 
     /// <summary>Further extensions a visitor may upload, such as <c>dwg</c>, which the site's blocked extensions still refuse.</summary>
+    [StringLength(10)]
     [FormBuilderSetting("#jfbFieldSettings_fileExtensions", Group = FieldSettingGroup.Validation, Order = 1, Public = true)]
     public IReadOnlyList<string> Extensions { get; init; } = [];
 
     /// <summary>The most bytes a file has; the site's limit by default (<c>Files:MaxFileBytes</c>).</summary>
+    [Range(typeof(long), "1", "999999999999999")]
     [FormBuilderSetting("#jfbFieldSettings_fileMaxBytes", Group = FieldSettingGroup.Validation, Order = 2, Public = true)]
     public long? MaxBytes { get; init; }
 
     /// <summary>The most files a visitor uploads.</summary>
+    [Range(1, 20)]
     [FormBuilderSetting("#jfbFieldSettings_fileMaxFiles", Group = FieldSettingGroup.Validation, Order = 3, Public = true)]
     public int MaxFiles { get; init; } = 1;
 
@@ -176,10 +232,12 @@ public sealed class SignatureFieldType() : FormBuilderFieldTypeBase<SignatureFie
 public sealed class SignatureFieldSettings
 {
     /// <summary>The pad's width.</summary>
+    [Range(200, 1200)]
     [FormBuilderSetting("#jfbFieldSettings_signatureWidth", Group = FieldSettingGroup.Appearance, Public = true)]
     public int? Width { get; init; }
 
     /// <summary>The pad's height.</summary>
+    [Range(100, 600)]
     [FormBuilderSetting("#jfbFieldSettings_signatureHeight", Group = FieldSettingGroup.Appearance, Order = 1, Public = true)]
     public int? Height { get; init; }
 }

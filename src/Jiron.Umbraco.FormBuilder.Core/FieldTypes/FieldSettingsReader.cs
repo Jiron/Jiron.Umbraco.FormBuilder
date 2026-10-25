@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -6,6 +8,7 @@ using System.Text.Json.Serialization.Metadata;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
+using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 
@@ -16,6 +19,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 /// </summary>
 internal static class FieldSettingsReader
 {
+    private static readonly string IntMinimum = int.MinValue.ToString(CultureInfo.InvariantCulture);
+    private static readonly string IntMaximum = int.MaxValue.ToString(CultureInfo.InvariantCulture);
+
     /// <summary>The schema of a settings class.</summary>
     /// <exception cref="InvalidOperationException">The class cannot be a settings class; the message gives every reason.</exception>
     public static FieldSettingsSchema Read(Type settingsType)
@@ -179,7 +185,7 @@ internal static class FieldSettingsReader
             return null;
         }
 
-        return new FieldSettingDescriptor
+        var setting = new FieldSettingDescriptor
         {
             Name = name,
             Kind = kind,
@@ -195,7 +201,196 @@ internal static class FieldSettingsReader
             SupportsMergeTags = attribute.SupportsMergeTags,
             IsPublic = attribute.Public && !nested,
         };
+        if (Rules(property, setting, ListItem(type) ?? type, where, problems) is not { } rules)
+        {
+            return null;
+        }
+
+        setting = setting with { Rules = rules };
+        return setting.Default is not { } start || KeepsRules(setting, start, where, problems) ? setting : null;
     }
+
+    // The rules of a setting from its validation attributes, with the limits of a setting without them (ADR-0056); null,
+    // with every reason, when an attribute does not fit the setting.
+    private static FieldSettingRules? Rules(PropertyInfo property, FieldSettingDescriptor setting, Type valueType, string where, List<string> problems)
+    {
+        // Bounds, lengths and allowed values apply to a list's items; the count to the list.
+        var kind = setting.ItemKind ?? setting.Kind;
+        var isList = setting.Kind == FieldSettingKind.List;
+        var count = problems.Count;
+        var rules = FieldSettingRules.None;
+        var (ranged, measured, counted) = (false, false, false);
+        foreach (var attribute in property.GetCustomAttributes<ValidationAttribute>().OrderBy(each => each.GetType().Name, StringComparer.Ordinal))
+        {
+            var name = $"[{AttributeName(attribute.GetType())}]";
+            switch (attribute)
+            {
+                case RequiredAttribute required when attribute.GetType() == typeof(RequiredAttribute):
+                    if (required.AllowEmptyStrings)
+                    {
+                        problems.Add($"{where} has {name} with AllowEmptyStrings; a required text is never blank.");
+                    }
+                    else if (setting.Default is not null)
+                    {
+                        problems.Add($"{where} has {name} and starts with a value; {name} asks each field for a value of its own, so the class starts it null or empty.");
+                    }
+                    else
+                    {
+                        rules = rules with { Required = true };
+                    }
+
+                    break;
+                case RangeAttribute range when attribute.GetType() == typeof(RangeAttribute):
+                    ranged = true;
+                    rules = Range(range, kind, valueType, rules, $"{where} has {name}", problems);
+                    break;
+                case StringLengthAttribute length when attribute.GetType() == typeof(StringLengthAttribute):
+                    measured = true;
+                    if (kind is not (FieldSettingKind.Text or FieldSettingKind.LocalizedText or FieldSettingKind.LocalizedHtml))
+                    {
+                        problems.Add($"{where} has {name}, which measures texts, not {Describe(kind, null)}.");
+                    }
+                    else if (length.MaximumLength < 1 || length.MinimumLength < 0 || length.MinimumLength > length.MaximumLength)
+                    {
+                        problems.Add(Invariant($"{where} has {name} of {length.MinimumLength} to {length.MaximumLength} characters, which no text keeps."));
+                    }
+                    else
+                    {
+                        rules = rules with { MinimumLength = length.MinimumLength > 0 ? length.MinimumLength : null, MaximumLength = length.MaximumLength };
+                    }
+
+                    break;
+                case LengthAttribute length when attribute.GetType() == typeof(LengthAttribute):
+                    counted = true;
+                    if (!isList)
+                    {
+                        problems.Add($"{where} has {name}, which counts the items of a list; a text's length is [StringLength].");
+                    }
+                    else if (length.MaximumLength < 1 || length.MinimumLength < 0 || length.MinimumLength > length.MaximumLength)
+                    {
+                        problems.Add(Invariant($"{where} has {name} of {length.MinimumLength} to {length.MaximumLength} items, which no list keeps."));
+                    }
+                    else
+                    {
+                        rules = rules with { MinimumCount = length.MinimumLength > 0 ? length.MinimumLength : null, MaximumCount = length.MaximumLength };
+                    }
+
+                    break;
+                case AllowedValuesAttribute allowed when attribute.GetType() == typeof(AllowedValuesAttribute):
+                    if (kind != FieldSettingKind.Text)
+                    {
+                        problems.Add($"{where} has {name}, which lists the texts a text may be; a setting of a few choices is an enum.");
+                    }
+                    else if (allowed.Values.Length == 0 || allowed.Values.Any(each => each is not string))
+                    {
+                        problems.Add($"{where} has {name} with no values, or with one that is not a text.");
+                    }
+                    else
+                    {
+                        rules = rules with { AllowedValues = [.. allowed.Values.Cast<string>().Distinct(StringComparer.Ordinal)] };
+                    }
+
+                    break;
+                default:
+                    problems.Add($"{where} has {name}, which settings do not read: their rules are [Required], [Range], [StringLength], [Length] and [AllowedValues].");
+                    break;
+            }
+        }
+
+        // Without an attribute, the limits every setting keeps: those of the save checks for texts, and what an int holds.
+        if (!ranged && valueType == typeof(int))
+        {
+            rules = rules with { Minimum = IntMinimum, Maximum = IntMaximum };
+        }
+
+        if (!measured && kind is FieldSettingKind.Text or FieldSettingKind.LocalizedText or FieldSettingKind.LocalizedHtml)
+        {
+            rules = rules with { MaximumLength = kind == FieldSettingKind.LocalizedHtml ? FieldSettingRules.HtmlLength : FieldSettingRules.TextLength };
+        }
+
+        if (!counted && isList)
+        {
+            rules = rules with { MaximumCount = FieldSettingRules.ListCount };
+        }
+
+        if (rules.MinimumCount is { } fewest && !rules.Required && setting.Default is null)
+        {
+            problems.Add($"{where} has at least {FieldSettingsChecks.Count(fewest, "item")} and starts with none; give it [Required], or a default of {FieldSettingsChecks.Count(fewest, "item")}.");
+        }
+
+        foreach (var allowed in rules.AllowedValues)
+        {
+            if (allowed.Length > rules.MaximumLength || allowed.Length < rules.MinimumLength)
+            {
+                problems.Add($"{where} allows '{allowed}', which is longer or shorter than its [StringLength] allows.");
+            }
+        }
+
+        return problems.Count == count ? rules : null;
+    }
+
+    // [Range] for whole numbers and numbers, its bounds as the wire form writes them (ADR-0005).
+    private static FieldSettingRules Range(RangeAttribute range, FieldSettingKind kind, Type valueType, FieldSettingRules rules, string what, List<string> problems)
+    {
+        if (kind is not (FieldSettingKind.WholeNumber or FieldSettingKind.Number))
+        {
+            problems.Add($"{what}, which bounds whole numbers and numbers, not {Describe(kind, null)}.");
+            return rules;
+        }
+
+        var whole = kind == FieldSettingKind.WholeNumber;
+        if (Bound(range.Minimum, whole) is not { } lowest || Bound(range.Maximum, whole) is not { } highest)
+        {
+            problems.Add($"{what} with a bound that is not {(whole ? "a whole number" : "a number")} of at most 15 digits.");
+            return rules;
+        }
+
+        if (valueType == typeof(int) && (ExactDecimal.CompareText(lowest, IntMinimum) < 0 || ExactDecimal.CompareText(highest, IntMaximum) > 0))
+        {
+            problems.Add($"{what} beyond what an int holds, {IntMinimum} to {IntMaximum}.");
+            return rules;
+        }
+
+        var order = ExactDecimal.CompareText(lowest, highest);
+        if (order > 0 || (order == 0 && (range.MinimumIsExclusive || range.MaximumIsExclusive)))
+        {
+            problems.Add($"{what} from {lowest} to {highest}, which no value keeps.");
+            return rules;
+        }
+
+        return rules with { Minimum = lowest, MinimumIsExclusive = range.MinimumIsExclusive, Maximum = highest, MaximumIsExclusive = range.MaximumIsExclusive };
+    }
+
+    // A bound of [Range] (an int, a double, or a text given with its type) in the wire form, or null when it is none.
+    private static string? Bound(object? bound, bool whole)
+    {
+        var text = bound switch
+        {
+            int number => number.ToString(CultureInfo.InvariantCulture),
+            double number when double.IsFinite(number) && Math.Abs(number) < 1e15 => ((decimal)number).ToString(CultureInfo.InvariantCulture),
+            string number => number,
+            _ => null,
+        };
+        return text is not null && ExactDecimal.Parse(text) is { } parsed && ExactDecimal.Fits(parsed) && (!whole || parsed.S == 0) ? parsed.ToString() : null;
+    }
+
+    // A default the field takes without a value of its own keeps the setting's rules, so every field does.
+    private static bool KeepsRules(FieldSettingDescriptor setting, JsonElement start, string where, List<string> problems)
+    {
+        var found = new DefinitionProblems();
+        FieldSettingsChecks.CheckDefault(setting, start, found);
+        if (found.Found == 0)
+        {
+            return true;
+        }
+
+        problems.Add($"{where} starts as {start.GetRawText()}, which breaks its rules: {string.Join(" ", found.ToReadOnlyList().Select(problem => problem.Message))}");
+        return false;
+    }
+
+    private static string AttributeName(Type type) => type.Name.EndsWith("Attribute", StringComparison.Ordinal) ? type.Name[..^"Attribute".Length] : type.Name;
+
+    private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
     // The kind of a value that is neither a list nor an object, or null (with the reason when problems are asked for).
     private static FieldSettingKind? Plain(Type type, FieldSettingKind given, string where, List<string>? problems, out ImmutableArray<string> choices)

@@ -114,12 +114,15 @@ coverage, schema and fixture tests fail.
 ## The field type tests
 
 `Tests.Unit/FieldTypes/` covers the field type framework without a host
-([ADR-0055](../docs/decisions/0055-field-type-framework.md)):
+([ADR-0055](../docs/decisions/0055-field-type-framework.md), [ADR-0056](../docs/decisions/0056-field-settings-checks.md)):
 
 | Tests | What they show |
 | --- | --- |
 | `FieldTypeRegistryTests` | The collection builder holds the built-in types in palette order; a type appended, replaced or removed (a field of a removed type is `unknown_type` at publish), a custom type's field publishing with only its public settings projected; an alias taken twice named with how to replace the first, and each contradiction of a declaration refused naming the type; the start-up check on a valid site and on two broken ones. |
 | `FieldSettingsSchemaTests` | A settings class read into its schema: each property's kind and editor, defaults as settings store them, the order by group, order and declaration, the attribute's details and JSON names, public settings at the top only; every class or property that cannot be a setting refused with its reason (all reasons at once), the base class naming the type, and the strict JSON that reads settings. |
+| `FieldSettingRulesTests` | The rules each validation attribute gives a setting, on lists' items too; the limits of a setting without them; every attribute that does not fit its setting refused with its reason (all at once); and a default that breaks its rules refused, quoting it. |
+| `FieldSettingsChecksTests` | A field's settings held to its type's schema: each kind's values and wrong types, every bound, length, count and allowed value at its edge, values twice in a list as they compare, localised texts, required settings at the top and inside objects, each problem's code, path and message; the type's own check through the base class and the interface, its places, and a check that throws or cancels. |
+| `BuiltInSettingsTests` | The rules of every built-in type restated apart from the code and held at their edges, each type's own check through a publish, the lists that start with items, and the country codes against .NET's regions. |
 
 `TestFieldTypes` (in the Testing project) gives the unit tests the registry of the built-in types, or of a builder a
 test changes, as a site's container builds it.
@@ -315,7 +318,7 @@ having English and German texts) with the package version an export names.
 and without the consent default (and with a stored default a definition would refuse), aliases and their races,
 folders outside the trash, draft saves that change something or nothing, stale changes and a change between the
 checks and the write, publishes with the catalogue, the theme and the public revision, every publish check at once,
-unpublish, rename and move, the trash, cancelling and failing handlers, the order of the notifications, the audit
+settings that break their type's rules refused at their paths and published once put right, unpublish, rename and move, the trash, cancelling and failing handlers, the order of the notifications, the audit
 entries, and a change refused inside a unit of work or an Umbraco scope. `FormNotificationRecorder` records every
 notification and whether a unit was open, and cancels, fails or changes the form when a test says so;
 `TestPublishCheck` is a second publish check whose problems a test sets. `FormServiceLimitTests` lowers the pages a

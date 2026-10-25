@@ -98,6 +98,18 @@ internal static class DefinitionErrors
     /// <summary>A field type where it may not be: a repeatable group in a repeatable group, a second captcha placement.</summary>
     public const string FieldNotAllowed = "field_not_allowed";
 
+    /// <summary>A field's settings have a setting its type does not have, at the top or inside an object of settings (ADR-0056).</summary>
+    public const string SettingUnknown = "setting_unknown";
+
+    /// <summary>A setting the field's type requires is not given, or is a blank text (ADR-0056).</summary>
+    public const string SettingMissing = "setting_missing";
+
+    /// <summary>
+    /// A setting's value is not of its kind, breaks a rule of its type's settings schema (a bound, a length, a count, an
+    /// allowed value, a value twice in a list), or is refused by the type's own check (ADR-0056).
+    /// </summary>
+    public const string SettingInvalid = "setting_invalid";
+
     /// <summary>A field that holds a value has no alias, or an alias that is not <c>^[a-z][a-zA-Z0-9]{0,63}$</c>.</summary>
     public const string AliasInvalid = "alias_invalid";
 

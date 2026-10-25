@@ -70,4 +70,7 @@ public sealed record FieldSettingDescriptor
 
     /// <summary>Whether visitors see it in the public projection (ADR-0002); read for the settings at the top only.</summary>
     public bool IsPublic { get; init; }
+
+    /// <summary>The rules its value keeps (ADR-0056).</summary>
+    public FieldSettingRules Rules { get; init; } = FieldSettingRules.None;
 }

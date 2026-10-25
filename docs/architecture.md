@@ -181,13 +181,15 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   own rows with its grants, references and daily statistics; the bytes of the files go after each commit.
 - **Publishing** ([ADR-0035](decisions/0035-structural-validation-and-public-projection.md)) runs the save checks and
   then the structural validation: aliases, names and option values, references, what each field type supports (its
-  traits, from the field-type registry), rule effects, cycles of visibility through rules and containment, safe
-  patterns and redirects. Every problem has a code and a JSON path.
+  traits, from the field-type registry), each field's settings against its type's schema and the type's own check
+  ([ADR-0056](decisions/0056-field-settings-checks.md)), rule effects, cycles of visibility through rules and
+  containment, safe patterns and redirects. Every problem has a code and a JSON path.
 - **Field types** ([ADR-0055](decisions/0055-field-type-framework.md)): `builder.JironFormBuilder().FieldTypes()` is
   a collection builder that holds the 33 built-in types from its start, so a site's composer adds, replaces or removes
   one whatever order the composers run in. Each type declares its alias, icon, palette group, storage, rule kind,
   common properties and error kinds, and its settings class with `[FormBuilderSetting]` becomes its settings schema
-  (kinds, defaults, editors, and which settings visitors see). `FieldTypeRegistry` builds the traits that the
+  (kinds, defaults, editors, and which settings visitors see), with the rules that `[Required]`, `[Range]`,
+  `[StringLength]`, `[Length]` and `[AllowedValues]` give it (ADR-0056). `FieldTypeRegistry` builds the traits that the
   validation, the projection and the field catalogue read; start-up refuses an alias taken twice and a declaration
   or settings class that contradicts itself, naming the type.
 - **The public projection** is built from an allowlist of public types (`Core.Definitions.Projection`) and carries no

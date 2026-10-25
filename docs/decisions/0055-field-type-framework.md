@@ -1,9 +1,10 @@
 # 0055. The field type framework
 
 - Status: accepted; amends [ADR-0035](0035-structural-validation-and-public-projection.md) (the traits come from
-  the registry) and [ADR-0044](0044-form-service.md) (the service's field types)
+  the registry) and [ADR-0044](0044-form-service.md) (the service's field types); the defaults of a name's and an
+  address's required parts and of a file's types amended by [ADR-0056](0056-field-settings-checks.md) in 5.1b
 - Date: 2026-10-25
-- Roadmap step: 5.1a (decided and built); 5.1b, 5.1c and 5.1d build on it
+- Roadmap step: 5.1a (decided and built); 5.1b to 5.1e build on it
 
 ## Context
 
@@ -109,7 +110,7 @@ editor, group, order, whether it takes merge tags, and whether visitors see it.
   a `[Flags]` enum or one whose values have two names, and a `Kind` the type cannot be stored as.
 - **The editor** is the kind's name in camel case (`boolean`, `localizedText`, `list`, `nested` and so on) unless the
   attribute names one; a key, a list of keys and free JSON have no editor of their own and must name one (the
-  built-in types use `mediaPicker`, `dateBound` and `formula`). 5.1b serves the schema to the designer, and a
+  built-in types use `mediaPicker`, `dateBound` and `formula`). 5.1c serves the schema to the designer, and a
   `jfbSettingEditor` manifest can add an editor (15.1).
 - **The default** is what a new instance holds, written as settings store it (ADR-0002): canonical, so `null`, `[]`
   and an object with nothing left have no default. A property that the class says cannot be null but that starts
@@ -133,13 +134,15 @@ the schema's, and 5.1b's settings check holds stored settings to them before the
 
 Each type of §4.3.2 is a public sealed class in `Core.FieldTypes.BuiltIn` with its declaration and settings class,
 with the settings and defaults of ADR-0002's table. Names and labels are `#jfbFieldTypes_<alias>` and
-`#jfbFieldSettings_<type><Setting>` keys, which 5.1b's English and German dictionaries fill. Where ADR-0002 gives no
+`#jfbFieldSettings_<type><Setting>` keys, which 5.1c's English and German dictionaries fill. Where ADR-0002 gives no
 default, this ADR chooses one:
 
-- a name asks for and requires the first and last name;
-- an address always asks for the street, the postcode and the city and requires them, and asks for the second street
-  line, the region and the country only when the field says so;
-- a file takes images and PDFs, one file;
+- a name asks for the first and last name, and a required name requires every part it asks for unless
+  `requiredParts` names some (ADR-0056);
+- an address always asks for the street, the postcode and the city, and asks for the second street line, the region
+  and the country only when the field says so; a required address requires the street, the postcode and the city
+  unless `requiredParts` names others (ADR-0056);
+- a file without types or extensions takes images and PDFs (ADR-0056), one file;
 - a grid's scale runs from 1 to 5, an image is medium, a scale starts at 0;
 - an email field's allowed and blocked domains stay on the server (ADR-0035); every other built-in setting is public,
   because a browser needs it to show or check the field.
@@ -151,18 +154,18 @@ one per form, server-only default, settings and public settings.
 ### What comes next
 
 - **5.1b:** the rules of the attributes (ranges, lengths, allowed values, required settings) and each type's own check
-  of its settings at publish, at paths under `…settings`; the field-types endpoint for the designer; availability
-  ("not configured: …").
-- **5.1c:** storage kinds mapped to `jfbEntryValue` columns, the parse and validate contract, the longest answer a type
+  of its settings at publish, at paths under `…settings` (ADR-0056).
+- **5.1c:** the field-types endpoint for the designer; availability ("not configured: …").
+- **5.1d:** storage kinds mapped to `jfbEntryValue` columns, the parse and validate contract, the longest answer a type
   takes, and the change-type map.
-- **5.1d:** designer locks of settings (ADR-0042), checked against the schema.
+- **5.1e:** designer locks of settings (ADR-0042), checked against the schema.
 
 ## Consequences
 
 - A site adds a field type with a class and a composer, and the validation, projection and catalogue treat it as a
-  built-in one; the designer's editor for it comes in 5.1b without JavaScript.
+  built-in one; the designer's editor for it comes in 5.1c without JavaScript.
 - The traits test against the registry, so a change to a built-in declaration fails `FieldTypeSupportTests` unless
   the restatement changes with it.
 - Reflection metadata costs a little at start-up per settings class; settings classes are small and read once.
 - Revisit if a settings shape needs a kind the reader refuses (a decimal as a JSON number, a list of objects): such a
-  kind would be added to the reader, the schema and 5.1b's editors together, never read loosely.
+  kind would be added to the reader, the schema and 5.1c's editors together, never read loosely.

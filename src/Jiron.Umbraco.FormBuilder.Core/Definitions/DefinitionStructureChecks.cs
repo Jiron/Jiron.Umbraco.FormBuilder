@@ -288,6 +288,7 @@ internal sealed partial class DefinitionStructureChecks
         }
 
         Support(field, traits, path);
+        CheckTypeSettings(field, traits, path, what);
         if (traits.HoldsValue)
         {
             if (field.Alias is null)
@@ -322,6 +323,26 @@ internal sealed partial class DefinitionStructureChecks
         if (traits.Supports(FieldFeatures.ChildFields) && field.Fields.Count == 0)
         {
             Fail(DefinitionErrors.PartMissing, P(path, "fields"), $"{what} has at least one field.");
+        }
+    }
+
+    // The type's settings (ADR-0056): first the schema and the rules of its attributes, then, once they hold, the
+    // type's own check, which reads them as its settings class.
+    private void CheckTypeSettings(FormField field, FieldTypeTraits traits, string path, string what)
+    {
+        var settingsPath = P(path, "settings");
+        if (!FieldSettingsChecks.Check(traits.Type.SettingsSchema, field.Settings, settingsPath, what, _problems))
+        {
+            return;
+        }
+
+        try
+        {
+            traits.Type.CheckSettings(new FieldSettingsCheck(field, settingsPath, _problems));
+        }
+        catch (Exception exception) when (exception is not (OperationCanceledException or OutOfMemoryException))
+        {
+            Fail(DefinitionErrors.SettingInvalid, settingsPath, $"The field type '{traits.Alias}' failed to check these settings: {exception.Message}");
         }
     }
 

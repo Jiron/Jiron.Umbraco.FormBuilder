@@ -175,7 +175,7 @@ On every publish, in the publish's unit:
   group themselves, with the storage kind `none`, so the columns of their parts have a heading even after a later
   version drops them. The label is the default text, empty without one.
 - **Storage kinds** are the ones of §4.3.2 (`text`, `longText`, `number`, `date`, `bool`, `file`, `json`, `none`), a
-  trait each field type declares in the registry since 5.1a (ADR-0055); 5.1c maps them to the typed columns of
+  trait each field type declares in the registry since 5.1a (ADR-0055); 5.1d maps them to the typed columns of
   ADR-0003. The built-in types store as: text
   for the one-line text and choice types (yes/no and ranking among them), country, time, hidden and consent (a consent
   value stores the wording's hash, ADR-0009); longText for long text; json for name and address, whose values have

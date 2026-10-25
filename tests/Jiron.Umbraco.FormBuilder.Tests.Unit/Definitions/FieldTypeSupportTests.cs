@@ -77,8 +77,8 @@ public sealed class FieldTypeSupportTests
         ["slider"] = ("NumbersAndDates", "Number", "Number", "", "min max step unit showValue", ""),
         ["calculation"] = ("NumbersAndDates", "Number", "Number", "", "formula format visible", ""),
         ["dropdown"] = ("Choices", "Text", "Choice", "multiple", "prompt multiple minSelections maxSelections", ""),
-        ["radio"] = ("Choices", "Text", "Choice", "", "layout other", ""),
-        ["checkboxes"] = ("Choices", "Text", "Choices", "", "layout minSelections maxSelections other", ""),
+        ["radio"] = ("Choices", "Text", "Choice", "", "layout other otherLabel", ""),
+        ["checkboxes"] = ("Choices", "Text", "Choices", "", "layout minSelections maxSelections other otherLabel", ""),
         ["grid"] = ("Choices", "None", null, "multiple", "multiple scale", ""),
         ["ranking"] = ("Choices", "Text", "Choices", "", "top", ""),
         ["checkbox"] = ("Choices", "Bool", "Checkbox", "", "text", ""),
@@ -241,18 +241,34 @@ public sealed class FieldTypeSupportTests
 
     private static JsonObject Child() => new() { ["key"] = "30000000-0000-4000-8000-000000000003", ["type"] = "text", ["alias"] = "child" };
 
-    // A field of the type with the parts it cannot do without.
+    // A field of the type with the parts it cannot do without, its required settings among them (ADR-0056).
     private static JsonObject Base(string type, HashSet<string> supports)
     {
+        static JsonObject Text(string text) => new() { [string.Empty] = text };
         var field = new JsonObject { ["key"] = "30000000-0000-4000-8000-000000000001", ["type"] = type };
         if (supports.Contains("value"))
         {
             field["alias"] = "subject";
         }
 
-        if (type is "dropdown" or "radio" or "checkboxes" or "ranking")
+        // A grid's columns come from its options here.
+        if (type is "dropdown" or "radio" or "checkboxes" or "ranking" or "grid")
         {
             field["options"] = OptionsWith(new JsonObject { ["value"] = "a" });
+        }
+
+        JsonObject? settings = type switch
+        {
+            "calculation" => new() { ["formula"] = "1 + 1" },
+            "consent" => new() { ["text"] = Text("I agree to the terms.") },
+            "heading" => new() { ["text"] = Text("Your visit") },
+            "paragraph" => new() { ["html"] = Text("<p>Welcome.</p>") },
+            "image" => new() { ["media"] = "5c0f9b5e-3a4d-4b8e-9b51-6f1d2c3a4b5c", ["alt"] = Text("A view of the lake") },
+            _ => null,
+        };
+        if (settings is not null)
+        {
+            field["settings"] = settings;
         }
 
         if (supports.Contains("rows"))

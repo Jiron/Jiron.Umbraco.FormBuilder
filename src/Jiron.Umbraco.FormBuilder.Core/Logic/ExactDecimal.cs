@@ -118,8 +118,10 @@ internal readonly record struct ExactDecimal
         a.S <= scale ? a : InRange(Normalise(RoundedQuotient(a.N, Pow10(a.S - scale)), scale));
 
     /// <summary>Applies the storage limits: at most 15 digits in all (leading zeros don't count), at most 15 after the point.</summary>
-    public static ExactDecimal Stored(ExactDecimal d) =>
-        Digits(d.N) > StoredDigits || d.S > StoredDigits ? throw new LogicException(LogicErrors.TooManyDigits) : d;
+    public static ExactDecimal Stored(ExactDecimal d) => Fits(d) ? d : throw new LogicException(LogicErrors.TooManyDigits);
+
+    /// <summary>Whether a value keeps the storage limits of <see cref="Stored"/>.</summary>
+    public static bool Fits(ExactDecimal d) => Digits(d.N) <= StoredDigits && d.S <= StoredDigits;
 
     /// <summary>The canonical wire form: no trailing fraction zeros, no "-0".</summary>
     public override string ToString()

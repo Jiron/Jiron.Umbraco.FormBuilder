@@ -3,10 +3,12 @@
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the publish codes,
   what the projection holds and what its hash covers); amended in 4.8e (each one-per-form type counts on its own);
   amended in 4.8f (the publish check holds what publishing refuses; `OnePerForm`); amended in 5.1a by
-  [ADR-0055](0055-field-type-framework.md) (the traits come from the registry)
+  [ADR-0055](0055-field-type-framework.md) (the traits come from the registry); amended in 5.1b by
+  [ADR-0056](0056-field-settings-checks.md) (each field's settings checked, `setting_unknown`, `setting_missing` and
+  `setting_invalid`)
 - Date: 2026-10-23
 - Roadmap step: 4.2b (decided and built); 4.5 calls it when a form is published, 5.1a moved the field-type traits
-  into the registry, 6.6 serves the projection, 7.2 and 8.1 add provider and action types
+  into the registry, 5.1b checks the settings, 6.6 serves the projection, 7.2 and 8.1 add provider and action types
 
 ## Context
 
@@ -106,6 +108,9 @@ and resolves every reported path in the document.
 | `property_not_supported` | A non-default value of a property, check, message or rule effect the type does not support; places on options of a type without places; member groups when the form is not for some member groups; a captcha provider below the captcha level; a message, the answers or a delay on a redirect outcome | The property |
 | `part_missing` | A form without a page; a page without a group; a choice field without options; own options without an item; a library source without its list; a grid without rows; a repeatable group without fields; "some member groups" without a group; the captcha level without a provider; a redirect outcome without its redirect, or a redirect without a target | Where the part belongs |
 | `field_not_allowed` | A repeatable group or a captcha inside a repeatable group; a second field of a one-per-form type, such as a second captcha | `…type` |
+| `setting_unknown` | A setting the field's type does not have, at the top of its settings or inside an object of them (ADR-0056) | `…settings.<name>` |
+| `setting_missing` | A required setting not given, or given as a blank text | Where the setting goes |
+| `setting_invalid` | A setting's value that breaks its kind or its rules, or that the type's own check refuses; a type whose check fails | The value, or `…settings` |
 | `alias_invalid` | A field that holds a value without an alias, or with one outside `^[a-z][a-zA-Z0-9]{0,63}$` | `…alias`, `…formerAliases[n]` |
 | `alias_reserved` | `form`, `entry`, `page`, `member`, `query`, `context`, `site`, `date` or `ufprt`, in any letter case | The same |
 | `alias_duplicate` | An alias or former alias already used in the form, repeatable-group children included, in any letter case | The same |

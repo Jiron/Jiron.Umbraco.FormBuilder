@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Logic;
 
@@ -13,24 +14,33 @@ public sealed class RepeaterFieldType() : FormBuilderFieldTypeBase<RepeaterField
     HoldsValue = true,
     Storage = FieldStorageKind.None,
     Features = BuiltInFieldTypes.Shown | FieldFeatures.ChildFields,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(RepeaterFieldSettings settings, FieldSettingsCheck check) =>
+        BuiltInChecks.NotAbove(check, "minRows", settings.MinRows, "maxRows", settings.MaxRows);
+}
 
 /// <summary>The settings of a repeatable group (ADR-0002).</summary>
 public sealed class RepeaterFieldSettings
 {
     /// <summary>The fewest rows an answer has.</summary>
+    [Range(0, 100)]
     [FormBuilderSetting("#jfbFieldSettings_repeaterMinRows", Group = FieldSettingGroup.Validation, Public = true)]
     public int MinRows { get; init; }
 
     /// <summary>The most rows an answer has.</summary>
+    [Range(1, 100)]
     [FormBuilderSetting("#jfbFieldSettings_repeaterMaxRows", Group = FieldSettingGroup.Validation, Order = 1, Public = true)]
     public int MaxRows { get; init; } = 10;
 
     /// <summary>The label of the button that adds a row; the type's own text by default.</summary>
+    [StringLength(100)]
     [FormBuilderSetting("#jfbFieldSettings_repeaterAddLabel", Group = FieldSettingGroup.Appearance, Public = true)]
     public LocalizedText? AddLabel { get; init; }
 
     /// <summary>The label of the button that removes a row; the type's own text by default.</summary>
+    [StringLength(100)]
     [FormBuilderSetting("#jfbFieldSettings_repeaterRemoveLabel", Group = FieldSettingGroup.Appearance, Order = 1, Public = true)]
     public LocalizedText? RemoveLabel { get; init; }
 }
@@ -66,10 +76,13 @@ public sealed class HeadingFieldType() : FormBuilderFieldTypeBase<HeadingFieldSe
 public sealed class HeadingFieldSettings
 {
     /// <summary>The heading's text.</summary>
+    [Required]
+    [StringLength(300)]
     [FormBuilderSetting("#jfbFieldSettings_headingText", Public = true)]
     public LocalizedText? Text { get; init; }
 
     /// <summary>Its level, 2 to 4.</summary>
+    [Range(2, 4)]
     [FormBuilderSetting("#jfbFieldSettings_headingLevel", Group = FieldSettingGroup.Appearance, Public = true)]
     public int Level { get; init; } = 2;
 }
@@ -88,6 +101,7 @@ public sealed class ParagraphFieldType() : FormBuilderFieldTypeBase<ParagraphFie
 public sealed class ParagraphFieldSettings
 {
     /// <summary>The text.</summary>
+    [Required]
     [FormBuilderSetting("#jfbFieldSettings_paragraphHtml", Public = true)]
     public LocalizedHtml? Html { get; init; }
 }
@@ -116,10 +130,13 @@ public sealed class ImageFieldType() : FormBuilderFieldTypeBase<ImageFieldSettin
 public sealed class ImageFieldSettings
 {
     /// <summary>The media item.</summary>
+    [Required]
     [FormBuilderSetting("#jfbFieldSettings_imageMedia", Editor = "mediaPicker", Public = true)]
     public Guid? Media { get; init; }
 
     /// <summary>The alternative text, which publishing requires.</summary>
+    [Required]
+    [StringLength(300)]
     [FormBuilderSetting("#jfbFieldSettings_imageAlt", Order = 1, Public = true)]
     public LocalizedText? Alt { get; init; }
 

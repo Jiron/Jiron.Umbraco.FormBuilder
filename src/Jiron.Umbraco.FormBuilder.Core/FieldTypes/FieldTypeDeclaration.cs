@@ -208,7 +208,7 @@ public enum FieldMessageKinds
 
 /// <summary>
 /// How a field's values are stored, one of the kinds of section 4.3.2, as the field catalogue records it (ADR-0044).
-/// Step 5.1c maps each kind to the typed columns of the entry values (ADR-0003).
+/// Step 5.1d maps each kind to the typed columns of the entry values (ADR-0003).
 /// </summary>
 public enum FieldStorageKind
 {

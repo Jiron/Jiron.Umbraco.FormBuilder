@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Logic;
 
@@ -15,24 +17,33 @@ public sealed class TextFieldType() : FormBuilderFieldTypeBase<TextFieldSettings
     RuleKind = FieldKind.Text,
     Features = BuiltInFieldTypes.TextInput,
     Messages = FieldMessageKinds.Required | FieldMessageKinds.MinLength | FieldMessageKinds.MaxLength,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(TextFieldSettings settings, FieldSettingsCheck check) =>
+        BuiltInChecks.NotAbove(check, "minLength", settings.MinLength, "maxLength", settings.MaxLength);
+}
 
 /// <summary>The settings of a one-line text (ADR-0002).</summary>
 public sealed class TextFieldSettings
 {
     /// <summary>The fewest characters an answer has.</summary>
+    [Range(0, 4000)]
     [FormBuilderSetting("#jfbFieldSettings_textMinLength", Group = FieldSettingGroup.Validation, Public = true)]
     public int MinLength { get; init; }
 
     /// <summary>The most characters an answer has.</summary>
+    [Range(1, 4000)]
     [FormBuilderSetting("#jfbFieldSettings_textMaxLength", Group = FieldSettingGroup.Validation, Order = 1, Public = true)]
     public int MaxLength { get; init; } = 255;
 
     /// <summary>A text shown before the input, such as a currency.</summary>
+    [StringLength(50)]
     [FormBuilderSetting("#jfbFieldSettings_textPrefix", Group = FieldSettingGroup.Appearance, Public = true)]
     public LocalizedText? Prefix { get; init; }
 
     /// <summary>A text shown after the input, such as a unit.</summary>
+    [StringLength(50)]
     [FormBuilderSetting("#jfbFieldSettings_textSuffix", Group = FieldSettingGroup.Appearance, Order = 1, Public = true)]
     public LocalizedText? Suffix { get; init; }
 
@@ -53,12 +64,21 @@ public sealed class TextareaFieldType() : FormBuilderFieldTypeBase<TextareaField
     RuleKind = FieldKind.Text,
     Features = BuiltInFieldTypes.TextInput,
     Messages = FieldMessageKinds.Required | FieldMessageKinds.MinLength | FieldMessageKinds.MaxLength | FieldMessageKinds.MinWords | FieldMessageKinds.MaxWords,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(TextareaFieldSettings settings, FieldSettingsCheck check)
+    {
+        BuiltInChecks.NotAbove(check, "minLength", settings.MinLength, "maxLength", settings.MaxLength);
+        BuiltInChecks.NotAbove(check, "minWords", settings.MinWords, "maxWords", settings.MaxWords);
+    }
+}
 
 /// <summary>The settings of a long text (ADR-0002).</summary>
 public sealed class TextareaFieldSettings
 {
     /// <summary>How many lines the input shows at first.</summary>
+    [Range(1, 50)]
     [FormBuilderSetting("#jfbFieldSettings_textareaRows", Group = FieldSettingGroup.Appearance, Public = true)]
     public int Rows { get; init; } = 4;
 
@@ -67,18 +87,22 @@ public sealed class TextareaFieldSettings
     public bool AutoGrow { get; init; } = true;
 
     /// <summary>The fewest characters an answer has.</summary>
+    [Range(0, 100000)]
     [FormBuilderSetting("#jfbFieldSettings_textareaMinLength", Group = FieldSettingGroup.Validation, Public = true)]
     public int MinLength { get; init; }
 
     /// <summary>The most characters an answer has.</summary>
+    [Range(1, 100000)]
     [FormBuilderSetting("#jfbFieldSettings_textareaMaxLength", Group = FieldSettingGroup.Validation, Order = 1, Public = true)]
     public int MaxLength { get; init; } = 4000;
 
     /// <summary>The fewest words an answer has, or null for no limit.</summary>
+    [Range(1, 20000)]
     [FormBuilderSetting("#jfbFieldSettings_textareaMinWords", Group = FieldSettingGroup.Validation, Order = 2, Public = true)]
     public int? MinWords { get; init; }
 
     /// <summary>The most words an answer has, or null for no limit.</summary>
+    [Range(1, 20000)]
     [FormBuilderSetting("#jfbFieldSettings_textareaMaxWords", Group = FieldSettingGroup.Validation, Order = 3, Public = true)]
     public int? MaxWords { get; init; }
 
@@ -99,7 +123,53 @@ public sealed class EmailFieldType() : FormBuilderFieldTypeBase<EmailFieldSettin
     RuleKind = FieldKind.Text,
     Features = BuiltInFieldTypes.TextInput,
     Messages = BuiltInFieldTypes.Readable,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(EmailFieldSettings settings, FieldSettingsCheck check)
+    {
+        if (settings.Domains is not { } domains)
+        {
+            return;
+        }
+
+        for (var i = 0; i < domains.List.Count; i++)
+        {
+            if (!IsDomain(domains.List[i]))
+            {
+                check.Invalid(BuiltInChecks.At("domains.list", i), $"A domain is a host name in lowercase, such as example.com, not '{domains.List[i]}'.");
+            }
+        }
+
+        if (domains.Mode == EmailDomainMode.Any && domains.List.Count > 0)
+        {
+            check.Invalid("domains.list", "An email field that takes any domain lists none; allow or block the listed domains instead.");
+        }
+        else if (domains.Mode != EmailDomainMode.Any && domains.List.Count == 0)
+        {
+            check.Invalid("domains.list", "An email field that allows or blocks domains lists at least one.");
+        }
+    }
+
+    // A host name of at least two labels in lowercase, as IDNA reads it: an internationalised name, or its xn-- form.
+    private static bool IsDomain(string domain)
+    {
+        if (domain.Any(char.IsUpper))
+        {
+            return false;
+        }
+
+        try
+        {
+            var labels = new IdnMapping { UseStd3AsciiRules = true }.GetAscii(domain).Split('.');
+            return labels.Length >= 2 && labels.All(label => label.Length is >= 1 and <= 63);
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+}
 
 /// <summary>
 /// The settings of an email address (ADR-0002). The domains it takes are the site's policy and stay on the server, which
@@ -112,6 +182,7 @@ public sealed class EmailFieldSettings
     public bool Confirm { get; init; }
 
     /// <summary>The label of the second input; the type's own text by default.</summary>
+    [StringLength(200)]
     [FormBuilderSetting("#jfbFieldSettings_emailConfirmLabel", Order = 1, Public = true)]
     public LocalizedText? ConfirmLabel { get; init; }
 
@@ -128,6 +199,7 @@ public sealed class EmailDomains
     public EmailDomainMode Mode { get; init; }
 
     /// <summary>The domains, such as <c>example.com</c>.</summary>
+    [StringLength(253)]
     [FormBuilderSetting("#jfbFieldSettings_emailDomainsList", Order = 1)]
     public IReadOnlyList<string> List { get; init; } = [];
 }
@@ -157,7 +229,17 @@ public sealed class PhoneFieldType() : FormBuilderFieldTypeBase<PhoneFieldSettin
     RuleKind = FieldKind.Text,
     Features = BuiltInFieldTypes.TextInput,
     Messages = BuiltInFieldTypes.Readable,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(PhoneFieldSettings settings, FieldSettingsCheck check)
+    {
+        if (settings.DefaultCountry is { } country)
+        {
+            BuiltInChecks.IsCountry(check, "defaultCountry", country);
+        }
+    }
+}
 
 /// <summary>The settings of a phone number (ADR-0002).</summary>
 public sealed class PhoneFieldSettings

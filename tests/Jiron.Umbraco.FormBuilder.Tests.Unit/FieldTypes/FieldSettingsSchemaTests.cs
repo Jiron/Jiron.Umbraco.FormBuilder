@@ -140,6 +140,7 @@ public sealed class FieldSettingsSchemaTests
             Order = 3,
             SupportsMergeTags = true,
             IsPublic = true,
+            Rules = new FieldSettingRules { MaximumLength = FieldSettingRules.TextLength },
         }).Using<FieldSettingDescriptor>(SameSetting));
     }
 

@@ -50,7 +50,7 @@ public sealed class StructureTests
                   "rules": [ { "key": "40000000-0000-4000-8000-000000000001", "effect": "show",
                     "conditions": [ { "field": "30000000-0000-4000-8000-000000000004", "op": "equals", "value": "ch" } ] } ] },
                 { "key": "30000000-0000-4000-8000-000000000007", "type": "name", "alias": "fullName" },
-                { "key": "30000000-0000-4000-8000-000000000008", "type": "heading", "settings": { "level": 2 } }
+                { "key": "30000000-0000-4000-8000-000000000008", "type": "heading", "settings": { "level": 2, "text": { "": "Your visit" } } }
               ]
             }, {
               "key": "20000000-0000-4000-8000-000000000002",
@@ -195,6 +195,12 @@ public sealed class StructureTests
             Field2(d, 1)["fields"]!.AsArray().Add(new JsonObject { ["key"] = K(0x21), ["type"] = "captcha" });
         }, DefinitionErrors.FieldNotAllowed, $"{F2(1)}.fields[1].type");
         yield return Case("a second captcha", d => d["pages"]![0]!["groups"]![1]!["fields"]!.AsArray().Add(new JsonObject { ["key"] = K(0x21), ["type"] = "captcha" }), DefinitionErrors.FieldNotAllowed, $"{F2(4)}.type");
+
+        // A field's settings (ADR-0056): the schema of its type, then the type's own check.
+        yield return Case("a setting the type lacks", d => Field(d, 0)["settings"] = new JsonObject { ["colour"] = "red" }, DefinitionErrors.SettingUnknown, $"{F(0)}.settings.colour");
+        yield return Case("a heading without its text", d => Field(d, 7)["settings"]!.AsObject().Remove("text"), DefinitionErrors.SettingMissing, $"{F(7)}.settings.text");
+        yield return Case("a heading level out of its range", d => Field(d, 7)["settings"]!["level"] = 5, DefinitionErrors.SettingInvalid, $"{F(7)}.settings.level");
+        yield return Case("a text field's fewest characters above its most", d => Field(d, 0)["settings"] = new JsonObject { ["minLength"] = 10, ["maxLength"] = 5 }, DefinitionErrors.SettingInvalid, $"{F(0)}.settings.minLength");
 
         // Aliases.
         yield return Case("a text field without an alias", d => Field(d, 0).Remove("alias"), DefinitionErrors.AliasInvalid, $"{F(0)}.alias");
@@ -587,15 +593,15 @@ public sealed class StructureTests
         Assert.That(problems[0].Message, Is.Not.Empty);
     }
 
-    // Whether a problem's path leads into the canonical document: every step but the last exists, and the last may be a
-    // property the document leaves out (a missing alias, an absent list).
+    // Whether a problem's path leads into the canonical document: every index names an item that is there, and from the
+    // first step that is missing on, each is a property the document leaves out (a missing alias, an absent list, a
+    // missing setting inside settings the field may not have either).
     private static bool JsonPathResolves(JsonNode root, string path)
     {
         var steps = JsonPathSteps.Parse(path);
         JsonNode? node = root;
         for (var i = 0; i < steps.Count; i++)
         {
-            var last = i == steps.Count - 1;
             node = steps[i] switch
             {
                 int index when node is JsonArray array => index < array.Count ? array[index] : null,
@@ -604,7 +610,7 @@ public sealed class StructureTests
             };
             if (node is null)
             {
-                return last && steps[i] is string;
+                return steps.Skip(i).All(step => step is string);
             }
         }
 

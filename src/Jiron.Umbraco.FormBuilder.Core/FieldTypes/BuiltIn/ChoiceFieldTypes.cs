@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Logic;
 
@@ -16,12 +17,34 @@ public sealed class DropdownFieldType() : FormBuilderFieldTypeBase<DropdownField
     MultipleSetting = true,
     Features = BuiltInFieldTypes.Input | FieldFeatures.DefaultValue | FieldFeatures.Prefill | FieldFeatures.Autocomplete | BuiltInFieldTypes.Choices | FieldFeatures.Places,
     Messages = BuiltInFieldTypes.Readable | FieldMessageKinds.Selections | FieldMessageKinds.Full,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(DropdownFieldSettings settings, FieldSettingsCheck check)
+    {
+        if (!settings.Multiple)
+        {
+            foreach (var (name, value) in new[] { ("minSelections", settings.MinSelections), ("maxSelections", settings.MaxSelections) })
+            {
+                if (value is not null)
+                {
+                    check.Invalid(name, $"A dropdown takes one choice unless 'multiple' is on, so it has no '{name}'.");
+                }
+            }
+
+            return;
+        }
+
+        BuiltInChecks.NotAbove(check, "minSelections", settings.MinSelections, "maxSelections", settings.MaxSelections);
+        BuiltInChecks.NotMoreThanOptions(check, "minSelections", settings.MinSelections);
+    }
+}
 
 /// <summary>The settings of a dropdown (ADR-0002).</summary>
 public sealed class DropdownFieldSettings
 {
     /// <summary>The first line of a dropdown before anything is chosen; the type's own text by default.</summary>
+    [StringLength(200)]
     [FormBuilderSetting("#jfbFieldSettings_dropdownPrompt", Group = FieldSettingGroup.Appearance, Public = true)]
     public LocalizedText? Prompt { get; init; }
 
@@ -30,10 +53,12 @@ public sealed class DropdownFieldSettings
     public bool Multiple { get; init; }
 
     /// <summary>The fewest options a visitor chooses when several may be chosen; no limit by default.</summary>
+    [Range(1, 1000)]
     [FormBuilderSetting("#jfbFieldSettings_dropdownMinSelections", Group = FieldSettingGroup.Validation, Public = true)]
     public int? MinSelections { get; init; }
 
     /// <summary>The most options a visitor chooses when several may be chosen; no limit by default.</summary>
+    [Range(1, 1000)]
     [FormBuilderSetting("#jfbFieldSettings_dropdownMaxSelections", Group = FieldSettingGroup.Validation, Order = 1, Public = true)]
     public int? MaxSelections { get; init; }
 }
@@ -50,7 +75,12 @@ public sealed class RadioFieldType() : FormBuilderFieldTypeBase<RadioFieldSettin
     RuleKind = FieldKind.Choice,
     Features = BuiltInFieldTypes.Input | FieldFeatures.DefaultValue | FieldFeatures.Prefill | BuiltInFieldTypes.Choices | FieldFeatures.Places,
     Messages = BuiltInFieldTypes.Readable | FieldMessageKinds.Full,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(RadioFieldSettings settings, FieldSettingsCheck check) =>
+        BuiltInChecks.OtherLabelNeedsOther(check, settings.Other, settings.OtherLabel);
+}
 
 /// <summary>The settings of radio buttons (ADR-0002).</summary>
 public sealed class RadioFieldSettings
@@ -59,9 +89,14 @@ public sealed class RadioFieldSettings
     [FormBuilderSetting("#jfbFieldSettings_radioLayout", Group = FieldSettingGroup.Appearance, Public = true)]
     public FieldChoiceLayout Layout { get; init; }
 
-    /// <summary>An "Other" option with a text of its own; none by default.</summary>
+    /// <summary>Whether the options end with "Other", whose text the visitor types.</summary>
     [FormBuilderSetting("#jfbFieldSettings_radioOther", Public = true)]
-    public OtherOption? Other { get; init; }
+    public bool Other { get; init; }
+
+    /// <summary>The label of the "Other" option; the type's own text by default.</summary>
+    [StringLength(200)]
+    [FormBuilderSetting("#jfbFieldSettings_radioOtherLabel", Order = 1, Public = true)]
+    public LocalizedText? OtherLabel { get; init; }
 }
 
 /// <summary>Checkboxes, any number of which may be ticked (<c>checkboxes</c>, section 4.3.2).</summary>
@@ -76,7 +111,16 @@ public sealed class CheckboxesFieldType() : FormBuilderFieldTypeBase<CheckboxesF
     RuleKind = FieldKind.Choices,
     Features = BuiltInFieldTypes.Input | FieldFeatures.DefaultValue | FieldFeatures.Prefill | BuiltInFieldTypes.Choices | FieldFeatures.Places,
     Messages = BuiltInFieldTypes.Readable | FieldMessageKinds.Selections | FieldMessageKinds.Full,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(CheckboxesFieldSettings settings, FieldSettingsCheck check)
+    {
+        BuiltInChecks.NotAbove(check, "minSelections", settings.MinSelections, "maxSelections", settings.MaxSelections);
+        BuiltInChecks.NotMoreThanOptions(check, "minSelections", settings.MinSelections, settings.Other ? 1 : 0);
+        BuiltInChecks.OtherLabelNeedsOther(check, settings.Other, settings.OtherLabel);
+    }
+}
 
 /// <summary>The settings of checkboxes (ADR-0002).</summary>
 public sealed class CheckboxesFieldSettings
@@ -86,16 +130,23 @@ public sealed class CheckboxesFieldSettings
     public FieldChoiceLayout Layout { get; init; }
 
     /// <summary>The fewest options a visitor ticks; no limit by default.</summary>
+    [Range(1, 1000)]
     [FormBuilderSetting("#jfbFieldSettings_checkboxesMinSelections", Group = FieldSettingGroup.Validation, Public = true)]
     public int? MinSelections { get; init; }
 
     /// <summary>The most options a visitor ticks; no limit by default.</summary>
+    [Range(1, 1000)]
     [FormBuilderSetting("#jfbFieldSettings_checkboxesMaxSelections", Group = FieldSettingGroup.Validation, Order = 1, Public = true)]
     public int? MaxSelections { get; init; }
 
-    /// <summary>An "Other" option with a text of its own; none by default.</summary>
+    /// <summary>Whether the options end with "Other", whose text the visitor types.</summary>
     [FormBuilderSetting("#jfbFieldSettings_checkboxesOther", Public = true)]
-    public OtherOption? Other { get; init; }
+    public bool Other { get; init; }
+
+    /// <summary>The label of the "Other" option; the type's own text by default.</summary>
+    [StringLength(200)]
+    [FormBuilderSetting("#jfbFieldSettings_checkboxesOtherLabel", Order = 1, Public = true)]
+    public LocalizedText? OtherLabel { get; init; }
 }
 
 /// <summary>How a choice field lays out its options.</summary>
@@ -114,14 +165,6 @@ public enum FieldChoiceLayout
     Cards,
 }
 
-/// <summary>The "Other" option of radio buttons or checkboxes, whose text the visitor types.</summary>
-public sealed class OtherOption
-{
-    /// <summary>Its label; the type's own text by default.</summary>
-    [FormBuilderSetting("#jfbFieldSettings_otherLabel")]
-    public LocalizedText? Label { get; init; }
-}
-
 /// <summary>Statements rated on shared columns (<c>grid</c>, section 4.3.2); each row is stored as a field of its own.</summary>
 public sealed class GridFieldType() : FormBuilderFieldTypeBase<GridFieldSettings>(new FieldTypeDeclaration
 {
@@ -134,7 +177,22 @@ public sealed class GridFieldType() : FormBuilderFieldTypeBase<GridFieldSettings
     MultipleSetting = true,
     Features = BuiltInFieldTypes.Input | FieldFeatures.Options | FieldFeatures.Rows,
     Messages = BuiltInFieldTypes.Readable,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(GridFieldSettings settings, FieldSettingsCheck check)
+    {
+        var hasOptions = check.Field.Options is { } options && (options.Source != OptionSource.Items || options.Items.Count > 0);
+        if (settings.Scale is not null && hasOptions)
+        {
+            check.Invalid("scale", "A grid's columns come from its options or from a scale, not from both.");
+        }
+        else if (settings.Scale is null && !hasOptions)
+        {
+            check.Invalid("scale", "A grid's columns come from its options or from a scale; it has neither.");
+        }
+    }
+}
 
 /// <summary>
 /// The settings of a grid (ADR-0002): its columns come from its options or from a numbered scale, its rows from the
@@ -155,10 +213,12 @@ public sealed class GridFieldSettings
 public sealed class GridScale
 {
     /// <summary>The first number.</summary>
+    [Range(0, 1)]
     [FormBuilderSetting("#jfbFieldSettings_gridScaleFrom")]
     public int From { get; init; } = 1;
 
     /// <summary>The last number.</summary>
+    [Range(2, 10)]
     [FormBuilderSetting("#jfbFieldSettings_gridScaleTo", Order = 1)]
     public int To { get; init; } = 5;
 }
@@ -175,12 +235,18 @@ public sealed class RankingFieldType() : FormBuilderFieldTypeBase<RankingFieldSe
     RuleKind = FieldKind.Choices,
     Features = BuiltInFieldTypes.Input | BuiltInFieldTypes.Choices,
     Messages = BuiltInFieldTypes.Readable,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(RankingFieldSettings settings, FieldSettingsCheck check) =>
+        BuiltInChecks.NotMoreThanOptions(check, "top", settings.Top);
+}
 
 /// <summary>The settings of a ranking (ADR-0002).</summary>
 public sealed class RankingFieldSettings
 {
     /// <summary>How many options the visitor ranks; all of them by default.</summary>
+    [Range(1, 1000)]
     [FormBuilderSetting("#jfbFieldSettings_rankingTop", Public = true)]
     public int? Top { get; init; }
 }
@@ -203,6 +269,7 @@ public sealed class CheckboxFieldType() : FormBuilderFieldTypeBase<CheckboxField
 public sealed class CheckboxFieldSettings
 {
     /// <summary>The text beside the box, which may hold links.</summary>
+    [StringLength(20000)]
     [FormBuilderSetting("#jfbFieldSettings_checkboxText", Public = true)]
     public LocalizedHtml? Text { get; init; }
 }
@@ -225,10 +292,12 @@ public sealed class YesNoFieldType() : FormBuilderFieldTypeBase<YesNoFieldSettin
 public sealed class YesNoFieldSettings
 {
     /// <summary>The label of yes; the type's own text by default.</summary>
+    [StringLength(100)]
     [FormBuilderSetting("#jfbFieldSettings_yesnoYesLabel", Public = true)]
     public LocalizedText? YesLabel { get; init; }
 
     /// <summary>The label of no; the type's own text by default.</summary>
+    [StringLength(100)]
     [FormBuilderSetting("#jfbFieldSettings_yesnoNoLabel", Order = 1, Public = true)]
     public LocalizedText? NoLabel { get; init; }
 
@@ -268,6 +337,8 @@ public sealed class ConsentFieldType() : FormBuilderFieldTypeBase<ConsentFieldSe
 public sealed class ConsentFieldSettings
 {
     /// <summary>The consent text, which may link to the privacy page and use merge tags that are the same for every visitor (ADR-0014).</summary>
+    [Required]
+    [StringLength(20000)]
     [FormBuilderSetting("#jfbFieldSettings_consentText", SupportsMergeTags = true, Public = true)]
     public LocalizedHtml? Text { get; init; }
 }
@@ -284,7 +355,32 @@ public sealed class CountryFieldType() : FormBuilderFieldTypeBase<CountryFieldSe
     RuleKind = FieldKind.Choice,
     Features = BuiltInFieldTypes.Input | FieldFeatures.DefaultValue | FieldFeatures.Prefill | FieldFeatures.Autocomplete,
     Messages = BuiltInFieldTypes.Readable,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void CheckSettings(CountryFieldSettings settings, FieldSettingsCheck check)
+    {
+        for (var i = 0; i < settings.Allowed.Count; i++)
+        {
+            BuiltInChecks.IsCountry(check, BuiltInChecks.At("allowed", i), settings.Allowed[i]);
+        }
+
+        for (var i = 0; i < settings.Top.Count; i++)
+        {
+            var top = settings.Top[i];
+            if (BuiltInChecks.IsCountry(check, BuiltInChecks.At("top", i), top) && settings.Allowed.Count > 0 && !settings.Allowed.Contains(top, StringComparer.Ordinal))
+            {
+                check.Invalid(BuiltInChecks.At("top", i), $"The country {top} is shown first, but 'allowed' leaves it out.");
+            }
+        }
+
+        if (settings.Default is { } country && BuiltInChecks.IsCountry(check, "default", country) && settings.Allowed.Count > 0
+            && !settings.Allowed.Contains(country, StringComparer.Ordinal))
+        {
+            check.Invalid("default", $"The country {country} is chosen at the start, but 'allowed' leaves it out.");
+        }
+    }
+}
 
 /// <summary>The settings of a country (ADR-0002), each country as its ISO 3166 alpha-2 code.</summary>
 public sealed class CountryFieldSettings

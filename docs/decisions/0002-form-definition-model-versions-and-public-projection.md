@@ -7,7 +7,8 @@
   that change nothing amended by [ADR-0044](0044-form-service.md) in 4.5a; restore, pins, comments, the diff and the
   draft cleanup amended by [ADR-0045](0045-versions-comparison-and-draft-cleanup.md) in 4.5b; how copies find
   references, the envelope's limits and layout, `unsupported_format` and when an import creates option lists amended
-  by [ADR-0046](0046-copies-templates-and-import.md) in 4.5c
+  by [ADR-0046](0046-copies-templates-and-import.md) in 4.5c; the "Other" option, the empty lists of required parts
+  and file types, and the check of every field's settings amended by [ADR-0056](0056-field-settings-checks.md) in 5.1b
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2a (the model, the schema, upgraders), 4.2b (structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
@@ -266,17 +267,17 @@ strings (ADR-0005); counts are JSON integers; relative dates use the operand for
 | `slider` | `min` ("0"), `max` ("100"), `step` ("1"), `unit`, `showValue` (true) |
 | `calculation` | `formula`, `format` (`{ "decimals", "prefix", "suffix" }`; `decimals` 0 to 15, 2 when unset), `visible` (true) |
 | `dropdown` | `prompt`, `multiple` (false), `minSelections`, `maxSelections` |
-| `radio` | `layout` (`inherit`, `vertical`, `horizontal`, `cards`: a card per option, with the option's image when it has one), `other` (`{ "label" }` or null) |
-| `checkboxes` | `layout`, `minSelections`, `maxSelections`, `other` |
+| `radio` | `layout` (`inherit`, `vertical`, `horizontal`, `cards`: a card per option, with the option's image when it has one), `other` (false), `otherLabel` (the type's own label when not given) |
+| `checkboxes` | `layout`, `minSelections`, `maxSelections`, `other`, `otherLabel` |
 | `grid` | `multiple` (false); columns come from `options` or `scale` (`{ "from", "to" }`); rows from `rows`. A required grid requires every row; otherwise each row's `required` decides. |
 | `ranking` | `top` (null = rank all) |
 | `checkbox` | `text` (LocalizedHtml beside the box) |
 | `yesno` | `yesLabel`, `noLabel`, `style` (`buttons` or `switch`) |
 | `consent` | `text` (LocalizedHtml, required). `required` defaults to true for this type. No `defaultValue`: a consent is never ticked in advance (§3.7). |
 | `country` | `allowed` (alpha-2 codes; empty = all), `top`, `default` |
-| `name` | `parts` (`title`, `first`, `middle`, `last`), `requiredParts` |
-| `address` | `parts` (`street2`, `region`, `country`), `requiredParts` |
-| `file` | `types` (`images`, `pdf`, `office`, `text`, `archives`), `extensions`, `maxBytes`, `maxFiles` (1), `dropZone` (true), `thumbnails` (true), `camera` (false) |
+| `name` | `parts` (`title`, `first`, `middle`, `last`), `requiredParts` (none: every part asked for) |
+| `address` | `parts` (`street2`, `region`, `country`), `requiredParts` (none: the street, the postcode and the city) |
+| `file` | `types` (`images`, `pdf`, `office`, `text`, `archives`; with none and no extensions, images and PDFs), `extensions`, `maxBytes`, `maxFiles` (1), `dropZone` (true), `thumbnails` (true), `camera` (false) |
 | `signature` | `width`, `height` |
 | `repeater` | `minRows` (0), `maxRows` (10), `addLabel`, `removeLabel` |
 | `hidden` | none: its value is `defaultValue` or `prefill.query` |
@@ -286,7 +287,8 @@ strings (ADR-0005); counts are JSON integers; relative dates use the operand for
 | `image` | `media` (key), `alt` (LocalizedText, required), `size` (`small`, `medium`, `large`, `full`) |
 | `captcha` | none |
 
-A custom type's `settings` belong to it: it validates them, and it reads older shapes of its own settings itself.
+A type's `settings` belong to it: publishing holds them to its settings schema and to the type's own check
+(ADR-0056), and a type reads older shapes of its own settings itself.
 
 ### Reading and writing
 
