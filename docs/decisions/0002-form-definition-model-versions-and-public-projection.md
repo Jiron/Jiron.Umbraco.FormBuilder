@@ -11,7 +11,8 @@
   and file types, and the check of every field's settings amended by [ADR-0056](0056-field-settings-checks.md) in 5.1b;
   the message kind `confirmation` and the effective public settings in the projection amended by
   [ADR-0062](0062-the-built-in-types-checks.md) in 5.2b; the message kind `digits` amended by
-  [ADR-0069](0069-the-checks-from-text-to-country.md) in 5.4a
+  [ADR-0069](0069-the-checks-from-text-to-country.md) in 5.4a, and `rowCount` by
+  [ADR-0071](0071-the-advanced-types-own-checks.md) in 5.4c
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2a (the model, the schema, upgraders), 4.2b (structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
@@ -135,7 +136,7 @@ not support keeps its default (ADR-0034: booleans and numbers are always written
 | `hideLabel` | boolean | false | The label stays for screen readers. |
 | `help`, `placeholder` | LocalizedText | null | |
 | `required` | boolean | false | |
-| `messages` | object | empty | A custom message per error kind of the type (`required`, `invalid`, `minLength`, `maxLength`, `minWords`, `maxWords`, `min`, `max`, `step`, `dateWindow`, `selections`, `fileType`, `fileSize`, `fileCount`, `full`, `confirmation`, `digits`). |
+| `messages` | object | empty | A custom message per error kind of the type (`required`, `invalid`, `minLength`, `maxLength`, `minWords`, `maxWords`, `min`, `max`, `step`, `dateWindow`, `selections`, `fileType`, `fileSize`, `fileCount`, `full`, `confirmation`, `digits`, `rowCount`). |
 | `defaultValue` | string, string[] or null | null | Merge tags allowed (ADR-0014). A list for types with several answers. |
 | `prefill` | object or null | null | `{ "query": name or null, "member": property alias or null, "memberMode": "show" or "hide" }`. |
 | `sensitive` | boolean | false | §4.10. |

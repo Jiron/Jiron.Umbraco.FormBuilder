@@ -6,7 +6,8 @@
   check sees, a file field's most texts and a country's reading in 5.2c; how merge tags show the values a type read,
   written by the type, added by [ADR-0066](0066-answers-as-merge-tags.md) in 5.3d; a number read up to 60 digits and a
   ranking's repeated option or position read, for the checks to refuse, amended by
-  [ADR-0069](0069-the-checks-from-text-to-country.md) in 5.4a
+  [ADR-0069](0069-the-checks-from-text-to-country.md) in 5.4a; a type's limit and check of its uploads and its check
+  of a field's rows added by [ADR-0071](0071-the-advanced-types-own-checks.md) in 5.4c
 - Date: 2026-10-25
 - Roadmap step: 5.1d (decided and built); 5.2 gives the built-in types their checks, 6.1 runs the pipeline on them,
   6.2 posts the answers without JavaScript

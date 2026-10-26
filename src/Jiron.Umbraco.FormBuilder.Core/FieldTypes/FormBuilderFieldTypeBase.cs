@@ -91,6 +91,27 @@ public abstract class FormBuilderFieldTypeBase<TSettings> : IFormBuilderFieldTyp
     }
 
     /// <inheritdoc />
+    public long? UploadLimit(FormField field)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        return UploadLimit(ReadSettings(field.Settings), field);
+    }
+
+    /// <inheritdoc />
+    public void CheckUpload(FieldUploadCheck check)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        CheckUpload(ReadSettings(check.Field.Settings), check);
+    }
+
+    /// <inheritdoc />
+    public void ValidateRows(FieldRowsValidation validation)
+    {
+        ArgumentNullException.ThrowIfNull(validation);
+        ValidateRows(ReadSettings(validation.Field.Settings), validation);
+    }
+
+    /// <inheritdoc />
     public void Display(FieldDisplay display)
     {
         ArgumentNullException.ThrowIfNull(display);
@@ -120,6 +141,35 @@ public abstract class FormBuilderFieldTypeBase<TSettings> : IFormBuilderFieldTyp
     /// <param name="settings">The field's settings.</param>
     /// <param name="validation">The field, its answers and values, and where its errors go.</param>
     protected virtual void Validate(TSettings settings, FieldValidation validation)
+    {
+    }
+
+    /// <summary>
+    /// The most bytes one file of a field may have (<see cref="IFormBuilderFieldType.UploadLimit(FormField)"/>,
+    /// ADR-0071), with its settings read as <typeparamref name="TSettings"/>; the host's limit unless a type overrides it.
+    /// </summary>
+    /// <param name="settings">The field's settings.</param>
+    /// <param name="field">The field.</param>
+    protected virtual long? UploadLimit(TSettings settings, FormField field) => null;
+
+    /// <summary>
+    /// Checks an upload's name and first bytes (<see cref="IFormBuilderFieldType.CheckUpload(FieldUploadCheck)"/>,
+    /// ADR-0071), with the field's settings read as <typeparamref name="TSettings"/>; it finds nothing unless a type
+    /// overrides it.
+    /// </summary>
+    /// <param name="settings">The field's settings.</param>
+    /// <param name="check">The field, the file's name and first bytes, and where its errors go.</param>
+    protected virtual void CheckUpload(TSettings settings, FieldUploadCheck check)
+    {
+    }
+
+    /// <summary>
+    /// Holds a field's number of rows to its settings (<see cref="IFormBuilderFieldType.ValidateRows(FieldRowsValidation)"/>,
+    /// ADR-0071), read as <typeparamref name="TSettings"/>; it finds nothing unless a type overrides it.
+    /// </summary>
+    /// <param name="settings">The field's settings.</param>
+    /// <param name="validation">The field, its number of rows, and where its errors go.</param>
+    protected virtual void ValidateRows(TSettings settings, FieldRowsValidation validation)
     {
     }
 

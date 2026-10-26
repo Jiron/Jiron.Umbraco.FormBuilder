@@ -50,7 +50,7 @@ public sealed class FieldTypeSupportTests
         ["address"] = (Input + " prefill", "required invalid"),
         ["file"] = (Input, "required fileType fileSize fileCount"),
         ["signature"] = (Input, "required invalid"),
-        ["repeater"] = ("value label hideLabel help show fields", string.Empty),
+        ["repeater"] = ("value label hideLabel help show fields", "rowCount"),
         ["hidden"] = ("value label defaultValue prefill show", string.Empty),
         ["heading"] = ("show", string.Empty),
         ["paragraph"] = ("show", string.Empty),
@@ -101,7 +101,7 @@ public sealed class FieldTypeSupportTests
     private static readonly string[] MessageKinds =
     [
         "required", "invalid", "minLength", "maxLength", "minWords", "maxWords", "min", "max", "step", "dateWindow",
-        "selections", "fileType", "fileSize", "fileCount", "full", "confirmation", "digits",
+        "selections", "fileType", "fileSize", "fileCount", "full", "confirmation", "digits", "rowCount",
     ];
 
     public static IEnumerable<TestCaseData> Types() =>

@@ -288,6 +288,7 @@ internal sealed class DefinitionGenerator
         Full = Text(),
         Confirmation = Text(),
         Digits = Text(),
+        RowCount = Text(),
     };
 
     private FieldCheck Check() => _random.Next(3) switch

@@ -1,6 +1,4 @@
-using System.Collections.Frozen;
 using System.Collections.Immutable;
-using System.Numerics;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 
 namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
@@ -14,19 +12,14 @@ namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 /// </summary>
 public sealed class FieldValidation
 {
-    // Each error kind on its own: a value the enum names that is one flag, so neither none, nor a combination (even one
-    // the enum might name some day), nor a flag it does not name.
-    private static readonly FrozenSet<FieldMessageKinds> Kinds = Enum.GetValues<FieldMessageKinds>().Where(kind => BitOperations.IsPow2((uint)kind)).ToFrozenSet();
-
-    private readonly FieldMessageKinds _declared;
-    private readonly List<FieldMessageKinds> _errors = [];
+    private readonly FieldErrorList _errors;
 
     internal FieldValidation(FormField field, FieldAnswers answers, ImmutableArray<FieldValue> values, FieldMessageKinds declared, FieldCheckInput input)
     {
         Field = field;
         Answers = answers;
         Values = values;
-        _declared = declared;
+        _errors = new FieldErrorList(declared);
         IsRequired = input.IsRequired;
         Today = input.Today;
         Files = input.Files;
@@ -57,7 +50,7 @@ public sealed class FieldValidation
     public ImmutableArray<FieldFile> Files { get; }
 
     /// <summary>The errors reported, in order, each once.</summary>
-    public ImmutableArray<FieldMessageKinds> Errors => [.. _errors];
+    public ImmutableArray<FieldMessageKinds> Errors => _errors.Errors;
 
     /// <summary>Reports an error.</summary>
     /// <param name="kind">
@@ -65,21 +58,5 @@ public sealed class FieldValidation
     /// lists in <see cref="FieldTypeDeclaration.Messages"/>.
     /// </param>
     /// <exception cref="ArgumentException">The kind is not exactly one kind, or the type does not declare it.</exception>
-    public void Fail(FieldMessageKinds kind)
-    {
-        if (!Kinds.Contains(kind))
-        {
-            throw new ArgumentException($"'{kind}' is not exactly one error kind.", nameof(kind));
-        }
-
-        if (kind != FieldMessageKinds.Invalid && !_declared.HasFlag(kind))
-        {
-            throw new ArgumentException($"The field type does not declare the error kind '{kind}'.", nameof(kind));
-        }
-
-        if (!_errors.Contains(kind))
-        {
-            _errors.Add(kind);
-        }
-    }
+    public void Fail(FieldMessageKinds kind) => _errors.Fail(kind);
 }

@@ -14,23 +14,37 @@ public sealed class RepeaterFieldType() : FormBuilderFieldTypeBase<RepeaterField
     HoldsValue = true,
     Storage = FieldStorageKind.None,
     Features = BuiltInFieldTypes.Shown | FieldFeatures.ChildFields,
+    Messages = FieldMessageKinds.RowCount,
 })
 {
+    /// <summary>The most rows a repeatable group has.</summary>
+    public const int MostRows = 100;
+
     /// <inheritdoc />
     protected override void CheckSettings(RepeaterFieldSettings settings, FieldSettingsCheck check) =>
         BuiltInChecks.NotAbove(check, "minRows", settings.MinRows, "maxRows", settings.MaxRows);
+
+    /// <inheritdoc />
+    /// <remarks>At least <c>minRows</c> and at most <c>maxRows</c> rows; otherwise <c>rowCount</c>.</remarks>
+    protected override void ValidateRows(RepeaterFieldSettings settings, FieldRowsValidation validation)
+    {
+        if (validation.Rows < settings.MinRows || validation.Rows > settings.MaxRows)
+        {
+            validation.Fail(FieldMessageKinds.RowCount);
+        }
+    }
 }
 
 /// <summary>The settings of a repeatable group (ADR-0002).</summary>
 public sealed class RepeaterFieldSettings
 {
     /// <summary>The fewest rows an answer has.</summary>
-    [Range(0, 100)]
+    [Range(0, RepeaterFieldType.MostRows)]
     [FormBuilderSetting("#jfbFieldSettings_repeaterMinRows", Group = FieldSettingGroup.Validation, Public = true)]
     public int MinRows { get; init; }
 
     /// <summary>The most rows an answer has.</summary>
-    [Range(1, 100)]
+    [Range(1, RepeaterFieldType.MostRows)]
     [FormBuilderSetting("#jfbFieldSettings_repeaterMaxRows", Group = FieldSettingGroup.Validation, Order = 1, Public = true)]
     public int MaxRows { get; init; } = 10;
 

@@ -155,6 +155,11 @@ internal sealed partial class FieldTypeRegistry
             yield return "raises the 'required' error exactly when it supports being required.";
         }
 
+        if ((declaration.Messages & FieldMessageKinds.RowCount) != 0 && (features & FieldFeatures.ChildFields) == 0)
+        {
+            yield return "raises the 'rowCount' error, which counts the rows of child fields, so it has child fields.";
+        }
+
         if ((features & (FieldFeatures.MatchesFieldCheck | FieldFeatures.UniquePerFormCheck)) != 0 && declaration.RuleKind is null)
         {
             yield return "supports a matchesField or uniquePerForm check, which compare answers, so it has a rule kind.";

@@ -38,7 +38,8 @@ internal sealed record FieldErrors(ImmutableArray<FieldMessageKinds> Errors, Imm
 /// <summary>
 /// The three steps a visitor's answers to one field take through its type (ADR-0058), in the order the pipeline runs them
 /// (6.1): the limits of every answer before the rules; each field read before the rules, so rules compare what was read;
-/// and, for a field the rules leave visible, an unreadable answer, a missing required value or the type's checks.
+/// and, for a field the rules leave visible, an unreadable answer, a missing required value or the type's checks. A
+/// repeatable group's own check is of its number of rows (ADR-0071).
 /// </summary>
 internal static class FieldValues
 {
@@ -129,6 +130,30 @@ internal static class FieldValues
         var validation = new FieldValidation(field, read.Answers, read.Values, type.Declaration.Messages, input);
         type.Validate(validation);
         return new(validation.Errors, OwnChecks(type, field, [.. read.Values.Select(value => value.Text)], input.Values));
+    }
+
+    /// <summary>
+    /// The errors of a visible field's rows (ADR-0071): what its type's check of the number of rows a submission gives
+    /// it reports, in order, each once; none when they are fine. The child fields' checks run row by row, apart.
+    /// </summary>
+    /// <param name="type">The field's type, which has child fields.</param>
+    /// <param name="field">The field.</param>
+    /// <param name="rows">The number of rows.</param>
+    /// <exception cref="ArgumentException">The type has no child fields.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The number of rows is negative.</exception>
+    public static ImmutableArray<FieldMessageKinds> CheckRows(IFormBuilderFieldType type, FormField field, int rows)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(field);
+        ArgumentOutOfRangeException.ThrowIfNegative(rows);
+        if (!type.Declaration.Features.HasFlag(FieldFeatures.ChildFields))
+        {
+            throw new ArgumentException($"The field type '{type.Declaration.Alias}' has no child fields, so its fields have no rows.", nameof(type));
+        }
+
+        var validation = new FieldRowsValidation(field, rows, type.Declaration.Messages);
+        type.ValidateRows(validation);
+        return validation.Errors;
     }
 
     // The indexes of the field's own checks that fail, of those that need no other entry (ADR-0062): every value matches

@@ -214,6 +214,12 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   every answer before the rules run, `Read` turns the texts and parts into values in the wire form, and `Validate`
   holds a shown field's values to its settings, with whether it is required, today and its files; `FieldValues` runs
   the three in the pipeline's order, then the field's own checks, and refuses a type that breaks the contract, and `EntryValueColumns` stores each value in the typed column of its storage kind.
+  A type that stores files also declares its uploads' limit (`UploadLimit`) and checks a file's name and first bytes
+  before it is stored (`CheckUpload`), which `FieldUploads` runs for the upload endpoint under the host's limit: a
+  signature is a well-formed PNG header within three times its pad in pixels and at most a mebibyte (`PngHeader`), a
+  file field takes its extensions; and a type with child fields holds a submission's number of rows to its settings
+  (`ValidateRows`, run by `FieldValues.CheckRows`), a repeatable group failing `rowCount`
+  ([ADR-0071](decisions/0071-the-advanced-types-own-checks.md)).
   `EntryAnswerStore` stores an entry's answers as its rows, with the uploads they name and the consent wordings
   (`ConsentWordings`) they agreed to, in one unit of work, and reads them back typed, each value also as its type
   read it ([ADR-0070](decisions/0070-storing-answers-and-reading-them-back.md)).

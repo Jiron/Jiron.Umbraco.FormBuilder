@@ -3714,7 +3714,9 @@
         "visibilityRules",
         "childFields"
       ],
-      "messages": [],
+      "messages": [
+        "rowCount"
+      ],
       "settings": [
         {
           "name": "minRows",

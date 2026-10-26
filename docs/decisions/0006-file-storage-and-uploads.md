@@ -1,6 +1,7 @@
 # 0006. File storage and uploads
 
-- Status: accepted; narrows §1.1 (amended in 1.8)
+- Status: accepted; narrows §1.1 (amended in 1.8); the field's limit and its type's check of a file's first bytes
+  amended by [ADR-0071](0071-the-advanced-types-own-checks.md) in 5.4c
 - Date: 2026-10-23
 - Roadmap step: 1.4b (decided); built in 4.3 (the physical store), 6.1 (the upload endpoint), 6.2 (no-JS posts with
   files), 6.4 (the runtime's uploads), 7.3 (hardening, downloads), 15.2 (the blob sample); reviewed in 7.4 and 16.x
@@ -98,13 +99,15 @@ option 2 for no-JS posts.
 - **The streamed upload** (`POST /jfb/api/v1/forms/{key}/uploads`, one file per request):
   - An Umbraco pipeline filter registers, before routing, a middleware that gives every request under the public API
     base the no-form feature. The action also removes the form value providers.
-  - In order: a declared `Content-Length` over the field's limit plus 64 KB is refused with `413` before a byte is
-    read; Kestrel's limit for the request is set to the same sum; the body must be `multipart/form-data` with a
+  - In order: a declared `Content-Length` over the field's limit (its type's or the host's, whichever is smaller,
+    ADR-0071) plus 64 KB is refused with `413` before a byte is read; Kestrel's limit for the request is set to the
+    same sum; the body must be `multipart/form-data` with a
     boundary of at most 70 characters; the reader allows at most 8 headers and 4 KB of headers per part; the
     `challenge` part (at most 4 KB) must come first and is verified before the file's first byte is read; the first
     bytes of the `file` part are sniffed, and the file is refused with `415` unless its extension is allowed for the
     field and the bytes match that type, and always when they are an executable (PE, ELF, Mach-O or a `#!` script);
-    the store then reads through a stream that enforces the limit on every read and answers `413` past it.
+    the field's type checks the name and those bytes itself (ADR-0071: a signature is a PNG within its size in
+    pixels); the store then reads through a stream that enforces the limit on every read and answers `413` past it.
   - Refusals close the connection and are strict: the server never reads past the limit. The runtime checks size and
     type in the browser first, with the same signature table, so the server's refusal is for clients that skip it.
 - **No-JS posts with files:**

@@ -3,7 +3,7 @@
 - Status: accepted
 - Date: 2026-10-26
 - Roadmap step: 5.4b (decided and built); 6.1 calls it from the pipeline, 6.2 renders the consent wording into the
-  markup, 5.4c adds the values the server works out (calculations, hidden fields)
+  markup, 5.4d adds the values the server works out (calculations, hidden fields)
 
 ## Context
 
@@ -101,6 +101,6 @@ as they render a submission. A field whose type the site no longer has reads by 
 - The pipeline (6.1) only reads, validates and hands over; the rows' shape is decided once, here.
 - A stored entry's answers read back the same in every consumer, and a value never reads back rounded.
 - A ranking's posted gaps are not kept; its order is.
-- 5.4c's calculations and hidden fields store through the same writer, with the values the server works out.
+- 5.4d's calculations and hidden fields store through the same writer, with the values the server works out.
 - **Revisit** if a site's own type needs a wording of its own, or if a reader needs a stored value that no wire form
   can say.

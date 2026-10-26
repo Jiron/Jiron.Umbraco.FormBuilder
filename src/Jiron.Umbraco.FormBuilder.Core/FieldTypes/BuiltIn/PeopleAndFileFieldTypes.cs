@@ -290,8 +290,7 @@ public sealed class FileFieldType() : FormBuilderFieldTypeBase<FileFieldSettings
             validation.Fail(FieldMessageKinds.FileCount);
         }
 
-        IEnumerable<FileTypeGroup> groups = settings.Types.Count == 0 && settings.Extensions.Count == 0 ? [FileTypeGroup.Images, FileTypeGroup.Pdf] : settings.Types;
-        var taken = groups.SelectMany(group => ExtensionsOf(group)).Concat(settings.Extensions).ToHashSet(StringComparer.Ordinal);
+        var taken = Taken(settings);
         if (validation.Files.Any(file => !taken.Contains(ExtensionOf(file.Name))))
         {
             validation.Fail(FieldMessageKinds.FileType);
@@ -300,6 +299,20 @@ public sealed class FileFieldType() : FormBuilderFieldTypeBase<FileFieldSettings
         if (settings.MaxBytes is { } most && validation.Files.Any(file => file.Size > most))
         {
             validation.Fail(FieldMessageKinds.FileSize);
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>The field's <c>maxBytes</c>; the host's limit without one.</remarks>
+    protected override long? UploadLimit(FileFieldSettings settings, FormField field) => settings.MaxBytes;
+
+    /// <inheritdoc />
+    /// <remarks>An extension the field takes, the same list its check of a submission holds the files to; otherwise <c>fileType</c>.</remarks>
+    protected override void CheckUpload(FileFieldSettings settings, FieldUploadCheck check)
+    {
+        if (!Taken(settings).Contains(ExtensionOf(check.Name)))
+        {
+            check.Fail(FieldMessageKinds.FileType);
         }
     }
 
@@ -314,6 +327,13 @@ public sealed class FileFieldType() : FormBuilderFieldTypeBase<FileFieldSettings
                 check.Invalid(BuiltInChecks.At("extensions", i), $"An extension is lowercase letters and digits without the point, such as dwg, not '{extension}'.");
             }
         }
+    }
+
+    // The extensions a field takes: those of its type groups and its own, or those of images and PDFs when it lists none.
+    private static HashSet<string> Taken(FileFieldSettings settings)
+    {
+        IEnumerable<FileTypeGroup> groups = settings.Types.Count == 0 && settings.Extensions.Count == 0 ? [FileTypeGroup.Images, FileTypeGroup.Pdf] : settings.Types;
+        return groups.SelectMany(group => ExtensionsOf(group)).Concat(settings.Extensions).ToHashSet(StringComparer.Ordinal);
     }
 }
 
@@ -390,21 +410,55 @@ public sealed class SignatureFieldType() : FormBuilderFieldTypeBase<SignatureFie
     Messages = BuiltInFieldTypes.Readable,
 })
 {
+    /// <summary>The most bytes a signature's PNG has (ADR-0071), whatever more the host allows.</summary>
+    public const long MaxBytes = 1_048_576;
+
+    /// <summary>The widest pad, in pixels.</summary>
+    public const int WidestPad = 1200;
+
+    /// <summary>The tallest pad, in pixels.</summary>
+    public const int TallestPad = 600;
+
+    /// <summary>
+    /// How many times the pad's size in pixels a signature's PNG may be (ADR-0071): the runtime draws at the device's
+    /// pixel ratio, at most 3.
+    /// </summary>
+    public const int MostPixelRatio = 3;
+
     /// <inheritdoc />
     /// <remarks>The token of one upload: the pad's PNG, or the typed name drawn as one.</remarks>
     protected override FieldAnswerLimits AnswerLimits(SignatureFieldSettings settings, FormField field) => new(FileFieldType.LongestToken, 1);
+
+    /// <inheritdoc />
+    /// <remarks><see cref="MaxBytes"/>.</remarks>
+    protected override long? UploadLimit(SignatureFieldSettings settings, FormField field) => MaxBytes;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// A PNG's signature and a well-formed <c>IHDR</c> chunk, at most <see cref="MostPixelRatio"/> times the pad's width
+    /// and height in pixels, or the widest and the tallest pad's without them; otherwise <c>invalid</c>.
+    /// </remarks>
+    protected override void CheckUpload(SignatureFieldSettings settings, FieldUploadCheck check)
+    {
+        if (PngHeader.Read(check.Head.Span) is not { } size
+            || size.Width > MostPixelRatio * (settings.Width ?? WidestPad)
+            || size.Height > MostPixelRatio * (settings.Height ?? TallestPad))
+        {
+            check.Fail(FieldMessageKinds.Invalid);
+        }
+    }
 }
 
 /// <summary>The settings of a signature (ADR-0002): the pad's size in pixels, the theme's size by default.</summary>
 public sealed class SignatureFieldSettings
 {
     /// <summary>The pad's width.</summary>
-    [Range(200, 1200)]
+    [Range(200, SignatureFieldType.WidestPad)]
     [FormBuilderSetting("#jfbFieldSettings_signatureWidth", Group = FieldSettingGroup.Appearance, Public = true)]
     public int? Width { get; init; }
 
     /// <summary>The pad's height.</summary>
-    [Range(100, 600)]
+    [Range(100, SignatureFieldType.TallestPad)]
     [FormBuilderSetting("#jfbFieldSettings_signatureHeight", Group = FieldSettingGroup.Appearance, Order = 1, Public = true)]
     public int? Height { get; init; }
 }

@@ -213,6 +213,12 @@ public enum FieldMessageKinds
     /// point (ADR-0003, ADR-0069).
     /// </summary>
     Digits = 1 << 16,
+
+    /// <summary>
+    /// <c>rowCount</c>: a repeatable group with fewer rows than its least or more than its most; only a type with child
+    /// fields raises it (ADR-0071).
+    /// </summary>
+    RowCount = 1 << 17,
 }
 
 /// <summary>

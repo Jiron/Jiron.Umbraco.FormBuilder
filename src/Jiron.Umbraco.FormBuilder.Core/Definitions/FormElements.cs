@@ -181,6 +181,9 @@ public sealed record FieldMessages
 
     /// <summary>A number has more digits than a stored number keeps exactly.</summary>
     public LocalizedText? Digits { get; init; }
+
+    /// <summary>A repeatable group has fewer rows than its least or more than its most.</summary>
+    public LocalizedText? RowCount { get; init; }
 }
 
 /// <summary>Where a field's value may be prefilled from.</summary>

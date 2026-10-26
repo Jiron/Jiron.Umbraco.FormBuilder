@@ -224,7 +224,8 @@
         "fileCount": { "$ref": "#/$defs/LocalizedLine" },
         "full": { "$ref": "#/$defs/LocalizedLine" },
         "confirmation": { "$ref": "#/$defs/LocalizedLine" },
-        "digits": { "$ref": "#/$defs/LocalizedLine" }
+        "digits": { "$ref": "#/$defs/LocalizedLine" },
+        "rowCount": { "$ref": "#/$defs/LocalizedLine" }
       }
     },
     "FieldPrefill": {

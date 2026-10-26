@@ -35,5 +35,6 @@ internal static class FieldMessageProperties
         new("full", FieldMessageKinds.Full, messages => messages.Full),
         new("confirmation", FieldMessageKinds.Confirmation, messages => messages.Confirmation),
         new("digits", FieldMessageKinds.Digits, messages => messages.Digits),
+        new("rowCount", FieldMessageKinds.RowCount, messages => messages.RowCount),
     ];
 }

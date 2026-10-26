@@ -688,7 +688,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - **Publishing refuses** cycles, rules that point at missing fields, groups nested deeper than both runtimes read, and any condition that fails the check both runtimes run before they evaluate (ADR-0005): unknown operators, an operator the field's kind does not take, a malformed operand and an unsafe pattern. A draft keeps them, so an editor never loses work, and the form check lists each one with a fix; the preview shows a broken rule as an issue instead of evaluating it (ADR-0002).
 - **Validation kinds** (the error kinds of ADR-0002, which messages, statistics, the insights beacon and the vectors use):
   - `required`, `invalid` (a value the type cannot read, such as a date that is no date, or whose form is wrong, such as a malformed email address, ADR-0069), `minLength`/`maxLength`, `minWords`/`maxWords`, `min`/`max`, `step`, `confirmation` (an email address typed again that is missing or another, ADR-0062), `digits` (a number with more than 15 digits in all or after the point, ADR-0069; `too_many_digits` in the spike's vectors);
-  - `dateWindow`, `selections`, `fileType`/`fileSize`/`fileCount`, `full` (no places left on a chosen option);
+  - `dateWindow`, `selections`, `fileType`/`fileSize`/`fileCount`, `full` (no places left on a chosen option), `rowCount` (a repeatable group with fewer rows than its least or more than its most, ADR-0071);
   - the checks of a field's `validation` list: `pattern`, `matchesField`, `uniquePerForm`;
   - plus form-level validation rules ("show this message on field X when the rule matches").
   - **Where they live** (ADR-0002): the limits a field type owns (lengths, ranges, steps, date windows, selections, file rules) are its settings, with custom messages per error kind; a field's `validation` list holds only `pattern`, `matchesField` and `uniquePerForm`.
@@ -945,7 +945,7 @@ A settings change raises a notification and a cache refresher: the saving server
 ### 4.9 Extension points (documented, with samples)
 
 - **C# types** (each registered through `builder.JironFormBuilder()…`):
-  - `IFormBuilderFieldType` (or the `FormBuilderFieldTypeBase<TSettings>` helper): a custom field with a settings schema, parsing, validation, storage kind, Razor partial and client behaviour name;
+  - `IFormBuilderFieldType` (or the `FormBuilderFieldTypeBase<TSettings>` helper): a custom field with a settings schema, parsing, validation (of its values, of its uploads' size and first bytes, and of its rows, ADR-0071), storage kind, Razor partial and client behaviour name;
   - `IFormBuilderActionType` (`FormBuilderActionTypeBase<TSettings>`): a custom action with settings, a test run and retry semantics;
   - `IFormBuilderOptionSource`: options from code, with optional parent filtering for cascades;
   - `IFormBuilderExportFormat`: a custom export;
@@ -1860,13 +1860,15 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - **Consent text hashing into `jfbConsentText`** (ADR-0009): the wording a consent field shows in a culture, with only the merge tags that are the same for every visitor (ADR-0014), hashed as the form posts it and stored once with the entry, so a consent value reads back with the exact wording the visitor agreed to.
   - **Reading back:** an entry's stored values read back typed, field by field: a number as a number, a date as a date, a yes or no, a file, the parts of a name or an address, a grid's rows, a ranking in its order and a repeatable group's rows.
   - Done when: unit tests per type cover the values each answer is stored as, at their edges; an integration test stores every type and reads it back typed, including a grid's rows, a ranking's positions, a repeatable group's rows, an "Other" text, a file and a consent with its wording.
-- [ ] **5.4c The advanced types** (C#; 5.4 split in three, WORKLOG 2026-10-26)
-  - **Advanced fields:**
-    - **Files and signatures:** file (its upload tokens linked in 5.4b, its checks built in 5.2c) and signature (PNG checks on size, dimensions and magic number).
-    - **Composite:** name and address (their parts read and checked in 5.2c, stored in 5.4b), and repeater (rows, limits, per-row validation).
-    - **Computed and hidden:** calculation (server recompute: the value the form engine works out is the one stored, whatever was posted), hidden (server-only sources resolved on submit, never rendered).
-    - **Content types** and captcha placement.
-  - Done when: unit tests per type cover valid, invalid and edge values, including a signature that is no PNG, one too large and one too big in pixels, a repeatable group with too few and too many rows and a child field's error in its row, a calculation's posted value replaced by the server's, and a hidden field whose member value is resolved on submit and never appears in the public projection; the rendered markup's check of that hidden field is 6.2's.
+- [ ] **5.4c The advanced types' own checks** (C#; 5.4 split in three, WORKLOG 2026-10-26; then 5.4c in two, WORKLOG 2026-10-27)
+  - **Files and signatures** (ADR-0071): file (its upload tokens linked in 5.4b, its checks built in 5.2c) and signature (PNG checks on size, dimensions and magic number), through a field type's check of an upload, which 6.1's `uploads` endpoint runs on a file's first bytes before it stores the file (ADR-0006): the most bytes a field's file may have, the file field's extensions, and the signature's PNG header, its size in pixels and its size in bytes.
+  - **Composite:** name and address (their parts read and checked in 5.2c, stored in 5.4b), and repeater (its rows held to their limits, with a message kind of their own, `rowCount`).
+  - **The types without answers of their own:** the calculation, whose value the server works out (5.4d), the content types and the captcha placement ignore what is posted for them.
+  - Done when: unit tests per type cover valid, invalid and edge values, including a signature that is no PNG, one too large and one too big in pixels, a repeatable group with too few and too many rows, and the calculation, the content types and the captcha placement ignoring what is posted for them.
+- [ ] **5.4d A submission's answers** (C#; 5.4c split in two, WORKLOG 2026-10-27)
+  - **The whole form at once** (ADR-0061, ADR-0071): the step between a post's answers and the entry's answers 5.4b stores, which 6.1's pipeline runs: every field read by its type, the rules over what was read, then each visible field's checks; a repeatable group's rows counted as the runtime shows them and held to its limits, its child fields read and checked row by row, each error in its row; the errors by field and row.
+  - **Computed and hidden:** calculation (server recompute: the value the form engine works out is the one stored, whatever was posted), hidden (server-only sources resolved on submit, never rendered).
+  - Done when: unit tests show a repeatable group's rows counted, with too few and too many rows, and a child field's error in its row; a calculation's posted value replaced by the server's; and a hidden field whose member value is resolved on submit and never appears in the public projection; the rendered markup's check of that hidden field is 6.2's.
 - [ ] **5.5 Option lists and phase review**
   - **Kinds:**
     - manual;
