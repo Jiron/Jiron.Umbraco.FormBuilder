@@ -197,7 +197,11 @@ configured with its reason while the site lacks its swatches, its plain labels, 
 `Tests.Unit/MergeTags/` covers the merge-tag service, its places and its sources without a host ([ADR-0065](../docs/decisions/0065-the-merge-tag-service-and-its-sources.md)), over
 `MergeTagTestSite`: the service of a site with its own sources and filters, a time zone, a clock and field types, and a
 logger that keeps what it is given. `MergeTagAnswerForms` makes forms of any fields and their answers
-([ADR-0066](../docs/decisions/0066-answers-as-merge-tags.md)).
+([ADR-0066](../docs/decisions/0066-answers-as-merge-tags.md)). `TestUmbraco` stands in for the Umbraco services the
+Umbraco sources read ([ADR-0067](../docs/decisions/0067-the-umbraco-sources-and-the-base-url.md)): published pages with
+names and properties per culture, their ancestors, the addresses Umbraco gives them, domains, languages with their
+fallbacks, dictionary items and members with their types; it counts the dictionary's reads and keeps the current
+address each URL was asked with.
 
 | Tests | What they show |
 | --- | --- |
@@ -206,12 +210,28 @@ logger that keeps what it is given. `MergeTagAnswerForms` makes forms of any fie
 | `SiteMergeTagExtensionsTests` | A site's source and filter through their interfaces: the request each gets, values escaped, lists, unknown paths; a source or filter that throws rendering empty and logged with its type and stack but not its message, a cancelled rendering cancelling; arguments refused at the filter; the check's warnings before any value; a taken name left out so the built-in one stays; and the start-up check naming each name that is taken or outside the grammar, and a source the container cannot create. |
 | `FieldMergeTagSourceTests` | For every built-in type that holds a value (a test fails when one has no case), the answer as its type shows it, its values and its label; answers in the culture (option labels, numbers, dates, countries, the words of yes and no); the wire number or date behind a text for the filters; lists whatever the count; a value's parts; a repeatable group's child as a list across its rows and the group as its rows; former aliases after current ones; what the rules hid empty; unknown paths when checked and rendered; the picker's paths; and a type whose display throws, logged without its message and shown as the default would. |
 | `EntryAnswersTests` | `entry.answers` as lines and as an escaped table, through a filter as text, in JSON; what the rules hid, unanswered fields, hidden values and unseen calculations left out; fields not for mail left out of mail only; and a sensitive field's tag and line in every place, named by the action to include it or not. |
+| `PageMergeTagSourceTests` | `page.name` in the culture; `page.url` as Umbraco gives it with the base URL as the current address, never the request, and empty without a base URL; a property in the culture as its kind shows; `page.up.<alias>` the page's own value or its nearest ancestor's that has one; every path empty without a page or for one that is gone, with no problem; other paths unknown when checked and rendered; and any property alias known to the check without a page. |
+| `SiteMergeTagSourceTests` | `site.name` as the root's name in the culture; `site.url` and `entry.url` from the base URL setting, then the site's first `https` domain, then Umbraco's application URL, and empty without one; the entry's link empty before the visitor submits and written as text in an HTML mail. |
+| `MemberMergeTagSourceTests` | The member's name, email and a property they may see; values escaped by the place's context; a property the member may not see, a sensitive one or one their type lacks empty; every path empty without a member or for one who is gone; deeper paths unknown, and the places whose pages may be cached refusing `member`. |
+| `DictionaryMergeTagSourceTests` | An item in the culture, its parent cultures, Umbraco's fallback languages and the default language, in that order; fallbacks in a circle ending at the default language; an item without a text in any language tried empty and a missing item `unknown_path`; the text escaped by the context and taken by consent texts; any key known to the check, the source's name alone not. |
+| `DictionaryAnswersTests` | Labels, option labels and grid rows that name an item (`#key`) showing its text in the culture in `field.*` and in `entry.answers` as lines and in the table; the dictionary read once per rendering and not at all for a form that names no item; and a text naming an item only when it is the key alone. |
+| `MergeTagPropertyValuesTests` | Content and member values as the tags show them: texts, numbers, dates and times in the culture's formats with the wire form behind, yes and no in the culture's words, rich text as its text, several values as a list and other kinds as nothing, a content item's name in the culture or its invariant one, and a value only where Umbraco says the property has one. |
 | `DotNetCultureFormatsTests` | For every culture .NET knows, dates, times, numbers and the culture's own amounts printed with the written formats as .NET prints them, the cultures whose patterns leave the subset listed from the data with the invariant culture's pattern taken; the medium date derived from the long one; the separators escaped; the Gregorian calendar for a culture with another; the region's currency; and a name .NET does not know. |
 
 `Tests.Integration/MergeTags/` boots a real site whose composers add two sources and a filter through
 `builder.JironFormBuilder()`, one before the core composer and one after it, switched on by
 `JironFormBuilderTests:SiteMergeTags`: the site starts, and the service renders and offers them beside the built-in
 ones; with the site's colour type switched on too, answers show as their types write them, the site's own type's too.
+
+`UmbracoMergeTagSourceTests` renders the Umbraco sources over real content, with a fresh database per test: a library
+in English and German under two domains, with a page type, a German language that falls back to English, dictionary
+items and a member type with a property the member may see and one they may not. A mail rendered without a request
+gets the page's name, German address, property and ancestor's property, the site's name and address, dictionary texts
+with their fallback, the member's name, email and visible property (the hidden one empty), the entry's link and an
+answer whose label names a dictionary item; the site's own base URL, saved through the settings service, comes before
+its domains while a page under a domain keeps the domain's address; and during a request the addresses are the site's,
+not the request's host. Content changes reach Umbraco's navigation and URLs through the cache refreshers on a local
+server messenger, as on a site with one server.
 
 ## The Testing project
 
@@ -369,7 +389,12 @@ as text, nulls left out, unknown properties dropped), each migration step and a 
 combines with the global row, the changed field paths, the host rules of every kind and a save's lock check, every
 validator and default (`general`'s time zone: IANA ids pass; Windows names, offsets, untrimmed text and another letter
 case do not, even once the exact spelling is cached; the consent default's texts, refused as a definition refuses them),
-the cache keys and what a refresher instruction clears.
+the cache keys and what a refresher instruction clears. `SiteBaseUrlTests` covers the base URL (ADR-0067): the
+setting first and asked for the site, then the root's `https` domains in their order (wildcards and `http` skipped),
+the nearest domain below a root without one and none of another site, then Umbraco's application URL as its origin,
+none otherwise; without a site only the global setting and the application URL; the origins the setting takes and the
+ones a domain gives; and the setting's check, which stores an origin as its origin, white space as the default and
+refuses anything after the host and port.
 `Testing/Settings/SampleSettings` is a section with every kind of field (texts, a number, an enum, a nested object, a
 list, a `[GlobalOnly]` field, one stored under a name of its own) and what is no field (a worked-out value, an
 indexer), two migrations, a validator that normalises and checks across fields, and a host rule whose locks a test
