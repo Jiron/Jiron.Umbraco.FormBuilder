@@ -482,6 +482,24 @@ and a restore that take exactly what went (a folder and a form trashed before st
 a restore refused when where it lands changed after the check, the delete of a folder's tree, emptying the trash, and
 that none of these publishes notifications of the forms it takes.
 
+## The entry tests
+
+`Tests.Unit/Entries/` covers how an entry's answers are stored and read back (ADR-0070) on `EntryTestForm`, a form with
+a field of every built-in type that holds a value, its catalogue as a publish stores it, and answers read by the types
+as the pipeline reads them. `EntryValueWriterTests` gives the rows of every type at its edges: the longest texts,
+numbers exact to 15 digits and text only past them, dates where both databases keep them and text only outside,
+choices in their order with the "Other" text in its place, a ranking in rank order with its gaps closed, a grid's
+columns at its rows, values of parts, files with their uploads, a consent's hash with its wording once, and a
+repeatable group's rows; and every refusal, by name and without a value. `EntryValueReaderTests` reads them back typed
+from their text (long numbers, dates before 1753, times, a grid by its rows, a group by row, a file whose row is gone,
+a consent without its stored wording), a text its kind cannot read and a type the site lost by storage alone, and the
+answers merge tags show. `ConsentWordingsTests` covers the wording: the culture's text with its fallback, a dictionary
+item, merge tags rendered as consent texts render them, and none for a field that shows no text.
+
+`Tests.Integration/Entries/EntryAnswerStoreTests` publishes a form with every type through the form service, stores
+an entry with uploads and a consent wording in SQLite, and reads every type back typed, each value as its type read it;
+a wording is stored once for many entries, and an entry refused for an upload another entry took stores nothing.
+
 ## The access tests
 
 `Tests.Unit/Access/` covers the permission model without a host (ADR-0013, ADR-0048): the flags' names in any letter
