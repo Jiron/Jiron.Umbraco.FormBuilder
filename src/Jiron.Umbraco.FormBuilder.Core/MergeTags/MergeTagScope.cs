@@ -44,6 +44,13 @@ public sealed record MergeTagScope
     /// <summary>The key of the member who is signed in, which <c>member.*</c> reads (ADR-0067); null when no one is.</summary>
     public Guid? Member { get; init; }
 
+    /// <summary>
+    /// For a visitor text, the key of the page, group or field whose text it is (its title, description, label, help or
+    /// placeholder, or a text block's text): answer recall names only the fields before it (ADR-0068). Null, or a key the
+    /// form lacks, for a text after every field, such as the submit button's label.
+    /// </summary>
+    public Guid? TextOwner { get; init; }
+
     /// <summary>The entry, once the visitor has submitted it; null before.</summary>
     public MergeTagEntry? Entry { get; init; }
 

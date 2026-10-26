@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Microsoft.Extensions.Logging;
 using MergeTagEngine = Jiron.Umbraco.FormBuilder.Logic.MergeTags;
@@ -65,17 +66,17 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
     }
 
     /// <summary>
-    /// The field a tag names by its alias: a field whose alias it is, before one that had it before (ADR-0002); null for
-    /// none. A child of a repeatable group is found by its own alias too.
+    /// The field a tag names by its alias: a field whose alias it is, before one that had it before (ADR-0002) when
+    /// <paramref name="formerAliases"/> count; null for none. A child of a repeatable group is found by its own alias too.
     /// </summary>
-    public AnswerField? Find(FormDefinition form, string alias) =>
+    public AnswerField? Find(FormDefinition form, string alias, bool formerAliases = true) =>
         Fields(form).FirstOrDefault(found => found.Field.Alias == alias)
-        ?? Fields(form).FirstOrDefault(found => found.Field.FormerAliases.Contains(alias, StringComparer.Ordinal));
+        ?? (formerAliases ? Fields(form).FirstOrDefault(found => found.Field.FormerAliases.Contains(alias, StringComparer.Ordinal)) : null);
 
-    /// <summary>A repeatable group's child by its alias, before one that had it before; null for none.</summary>
-    public static FormField? FindChild(FormField repeater, string alias) =>
+    /// <summary>A repeatable group's child by its alias, before one that had it before when <paramref name="formerAliases"/> count; null for none.</summary>
+    public static FormField? FindChild(FormField repeater, string alias, bool formerAliases = true) =>
         repeater.Fields.FirstOrDefault(child => child.Alias == alias)
-        ?? repeater.Fields.FirstOrDefault(child => child.FormerAliases.Contains(alias, StringComparer.Ordinal));
+        ?? (formerAliases ? repeater.Fields.FirstOrDefault(child => child.FormerAliases.Contains(alias, StringComparer.Ordinal)) : null);
 
     /// <summary>Whether a field is a repeatable group: its answers are its children's, row by row.</summary>
     public static bool IsRepeater(FormField field) => field.Fields.Count > 0;
@@ -108,7 +109,7 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
 
     /// <summary><c>field.&lt;alias&gt;</c>: the answer as its type shows it, a list where the type takes several values.</summary>
     public MergeTagValue Display(AnswerField target, MergeTagScope scope, MergeTagPlace place, DictionaryTexts texts) =>
-        Resolve(target, scope, place, answer => Items(Texts(target.Field, answer, scope.Culture, listing: false, texts)));
+        Resolve(target, scope, place, answer => Items(Texts(target.Field, answer, scope.Culture, listing: false, texts, Shared(place))));
 
     /// <summary><c>field.&lt;alias&gt;.value</c>: the values in the wire form, with the wire number or date behind each.</summary>
     public MergeTagValue Value(AnswerField target, MergeTagScope scope, MergeTagPlace place)
@@ -171,7 +172,7 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
             }
             else if (scope.Answers.Find(field.Key) is { } answer)
             {
-                var answerText = showing == Showing.Masked ? Masked : Joined(Texts(field, answer, scope.Culture, listing: true, texts));
+                var answerText = showing == Showing.Masked ? Masked : Joined(Texts(field, answer, scope.Culture, listing: true, texts, shared: false));
                 if (answerText.Length > 0)
                 {
                     listed.Add((label, answerText, []));
@@ -222,9 +223,10 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
     /// <summary>
     /// The texts a field's answer shows as, in a culture, as its type writes them, with the dictionary's texts for the
     /// field's texts that name an item; the values as they are for a type the site no longer has, and the default display
-    /// for a type whose own throws.
+    /// for a type whose own throws. Where the browser renders the same texts (<paramref name="shared"/>, ADR-0068), only
+    /// a built-in type writes its own; a site's type shows the default of its rule kind, which the browser knows too.
     /// </summary>
-    public IReadOnlyList<FieldDisplay.DisplayText> Texts(FormField field, MergeTagAnswer answer, string culture, bool listing, DictionaryTexts texts)
+    public IReadOnlyList<FieldDisplay.DisplayText> Texts(FormField field, MergeTagAnswer answer, string culture, bool listing, DictionaryTexts texts, bool shared = false)
     {
         if (types.FindType(field.Type) is not { } type)
         {
@@ -235,7 +237,15 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
         var display = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts);
         try
         {
-            type.Display(display);
+            if (shared && !BuiltInFieldTypes.All.Contains(type.GetType()))
+            {
+                FieldDisplayDefaults.Display(type.Declaration, display);
+            }
+            else
+            {
+                type.Display(display);
+            }
+
             return display.Texts;
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
@@ -297,7 +307,7 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
                     continue;
                 }
 
-                var answerText = showing == Showing.Masked ? Masked : Joined(Texts(child, answer, scope.Culture, listing, texts));
+                var answerText = showing == Showing.Masked ? Masked : Joined(Texts(child, answer, scope.Culture, listing, texts, !listing && Shared(place)));
                 if (answerText.Length > 0)
                 {
                     pieces.Add(Label(child, scope.Culture, texts) + ": " + answerText);
@@ -314,12 +324,13 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
     }
 
     /// <summary>
-    /// How a field's tag shows in a place (ADR-0014): nothing where the rules hid it or its repeatable group; a sensitive
-    /// one masked, empty in entry titles, and shown only in mail and the other actions that name it to include it.
+    /// How a field's tag shows in a place (ADR-0014): nothing where the rules hid it or its repeatable group, or in a
+    /// visitor text when its value stays on the server (a hidden field, ADR-0068); a sensitive one masked, empty in entry
+    /// titles, and shown only in mail and the other actions that name it to include it.
     /// </summary>
-    private static Showing Of(AnswerField target, MergeTagScope scope, MergeTagPlace place)
+    private Showing Of(AnswerField target, MergeTagScope scope, MergeTagPlace place)
     {
-        if (IsHidden(target, scope))
+        if (IsHidden(target, scope) || (place == MergeTagPlace.VisitorText && types.Find(target.Field.Type) is { ServerOnlyDefault: true }))
         {
             return Showing.Nothing;
         }
@@ -351,6 +362,9 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
 
         return place == MergeTagPlace.Outcome ? Showing.Masked : Showing.Nothing;
     }
+
+    /// <summary>Whether the browser renders the place's texts too, from the same answers (ADR-0068).</summary>
+    private static bool Shared(MergeTagPlace place) => place == MergeTagPlace.VisitorText;
 
     private static bool IsHidden(AnswerField target, MergeTagScope scope) =>
         scope.Answers.Hidden.Contains(target.Field.Key) || (target.Repeater is { } repeater && scope.Answers.Hidden.Contains(repeater.Key));

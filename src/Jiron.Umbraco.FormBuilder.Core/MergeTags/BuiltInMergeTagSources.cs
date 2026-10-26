@@ -12,10 +12,11 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 /// </summary>
 internal interface IFiniteMergeTagSource : IFormBuilderMergeTagSource
 {
-    /// <summary>Whether a whole path is one of the source's for a form; by default, one of those the picker offers.</summary>
+    /// <summary>Whether a whole path is one of the source's for a form in a place; by default, one of those the picker offers.</summary>
     /// <param name="path">The whole path, the source's name first.</param>
     /// <param name="form">The form whose template is checked.</param>
-    bool Knows(string path, FormDefinition form) => Paths(form).Any(known => known.Path == path);
+    /// <param name="place">Where the template is used.</param>
+    bool Knows(string path, FormDefinition form, MergeTagPlace place) => Paths(form).Any(known => known.Path == path);
 }
 
 /// <summary>The site's time and time zone, in which entry dates and <c>date.now</c> are written (ADR-0005, ADR-0065).</summary>

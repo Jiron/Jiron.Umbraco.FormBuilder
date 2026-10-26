@@ -21,7 +21,7 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(scope);
-        var parsed = MergeTagEngine.Parse(text, context, Rules(place, context, scope.Culture));
+        var parsed = MergeTagEngine.Parse(text, context, Rules(place, context, scope.Culture, scope.Form, scope.TextOwner));
         var values = new Dictionary<string, MergeTagValue?>(StringComparer.Ordinal);
         foreach (var part in parsed.Parts)
         {
@@ -36,15 +36,15 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<MergeTagProblem> Check(string text, MergeTagPlace place, MergeTagContext context, FormDefinition form)
+    public IReadOnlyList<MergeTagProblem> Check(string text, MergeTagPlace place, MergeTagContext context, FormDefinition form, Guid? textOwner = null)
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(form);
-        var parsed = MergeTagEngine.Parse(text, context, Rules(place, context, string.Empty));
+        var parsed = MergeTagEngine.Parse(text, context, Rules(place, context, string.Empty, form, textOwner));
         var problems = new List<MergeTagProblem>(parsed.Problems);
         foreach (var part in parsed.Parts)
         {
-            if (part is TagPart { Path: { } path } tag && !IsKnown(path, form))
+            if (part is TagPart { Path: { } path } tag && !IsKnown(path, form, place))
             {
                 problems.Add(new MergeTagProblem(MergeTagProblems.UnknownPath, tag.PathAt));
             }
@@ -79,8 +79,11 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
         return paths;
     }
 
-    /// <summary>What the place adds to the language: the site's filters, whether it takes them, and the sources it takes.</summary>
-    private TemplateRules Rules(MergeTagPlace place, MergeTagContext context, string culture)
+    /// <summary>
+    /// What the place adds to the language: the site's filters, whether it takes them, the sources it takes, and in a
+    /// visitor text the fields before the text.
+    /// </summary>
+    private TemplateRules Rules(MergeTagPlace place, MergeTagContext context, string culture, FormDefinition form, Guid? textOwner)
     {
         var rules = MergeTagPlaces.For(place);
         if (!rules.Contexts.Contains(context))
@@ -91,19 +94,28 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
         return new TemplateRules(
             name => registry.Filters.TryGetValue(name, out var filter) ? Run(filter, culture) : null,
             rules.TakesSiteFilters,
-            path => PathProblem(path, rules, place));
+            path => PathProblem(path, rules, place, form, textOwner));
     }
 
     /// <summary>
-    /// The problem a path has in a place: a built-in source the place's list lacks, or a site's source whose traits the
-    /// place does not take. A source no one has is a warning when the tag renders, not a problem of the place.
+    /// The problem a path has in a place: a built-in source the place's list lacks, a site's source whose traits the
+    /// place does not take, or in a visitor text a field that does not come before the text (ADR-0068). A source no one
+    /// has is a warning when the tag renders, not a problem of the place.
     /// </summary>
-    private string? PathProblem(string path, PlaceRules rules, MergeTagPlace place)
+    private string? PathProblem(string path, PlaceRules rules, MergeTagPlace place, FormDefinition form, Guid? textOwner)
     {
         var name = SourceName(path);
         if (MergeTagPlaces.BuiltInSources.ContainsKey(name))
         {
-            return rules.Sources is null || rules.Sources.Contains(name) ? null : MergeTagProblems.SourceNotForPlace;
+            if (rules.Sources is not null && !rules.Sources.Contains(name))
+            {
+                return MergeTagProblems.SourceNotForPlace;
+            }
+
+            return place == MergeTagPlace.VisitorText && registry.Sources.GetValueOrDefault(name) is FieldMergeTagSource fields
+                && fields.FieldOf(path["field.".Length..], form, place) is { } field && !MergeTagRecall.IsBefore(form, field, textOwner)
+                ? MergeTagProblems.FieldAfterText
+                : null;
         }
 
         return registry.Sources.TryGetValue(name, out var source) && !MergeTagPlaces.TakesSiteSource(rules, place, source) ? MergeTagProblems.SourceNotForPlace : null;
@@ -115,15 +127,15 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
             ? rules.Sources is null || rules.Sources.Contains(source.Name)
             : MergeTagPlaces.TakesSiteSource(rules, place, source);
 
-    /// <summary>Whether a path is known before any value: any path of a source whose paths are not all listed, and a listed one of the others.</summary>
-    private bool IsKnown(string path, FormDefinition form)
+    /// <summary>Whether a path is known in a place before any value: any path of a source whose paths are not all listed, and a listed one of the others.</summary>
+    private bool IsKnown(string path, FormDefinition form, MergeTagPlace place)
     {
         if (!registry.Sources.TryGetValue(SourceName(path), out var source))
         {
             return false;
         }
 
-        return source is not IFiniteMergeTagSource finite || finite.Knows(path, form);
+        return source is not IFiniteMergeTagSource finite || finite.Knows(path, form, place);
     }
 
     /// <summary>A path's value from its source, null when no source knows it; a failing source gives the empty text.</summary>

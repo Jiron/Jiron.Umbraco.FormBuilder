@@ -60,7 +60,11 @@ export function normalise(value: string): string {
  * from both ends.
  */
 export function clean(value: string): string {
-  const text = normalise(value);
+  return trim(normalise(value));
+}
+
+/** The text without the explicit set at either end, as cleaning trims it; nothing else changes. */
+export function trim(text: string): string {
   let start = 0;
   let end = text.length;
   while (start < end && TRIMMED.has(text.charCodeAt(start))) start++;

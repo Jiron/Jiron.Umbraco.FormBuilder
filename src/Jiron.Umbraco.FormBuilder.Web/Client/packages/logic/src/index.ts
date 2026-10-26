@@ -4,7 +4,7 @@
  * shared vectors in tests/vectors. It has no DOM and no dependencies: its compiler settings leave out the DOM's types,
  * and the lint refuses imports from anywhere else. Step 3.4b ported the modules of the 1.5 spike; 5.2a added
  * the form engine (ADR-0061), 5.2b and 5.2c the built-in types' checks (ADR-0062), 5.3a the calculation language
- * (ADR-0063), and 5.3b and 5.3c the merge tags.
+ * (ADR-0063), 5.3b and 5.3c the merge tags, and 5.3f answer recall with the answers' display texts (ADR-0068).
  */
 export {
   calculate,
@@ -40,6 +40,14 @@ export {
   type NumberFormat,
 } from './culture.ts';
 export { formatDecimal, parseDecimal, type Decimal } from './decimal.ts';
+export {
+  displayAnswer,
+  type AnswerValue,
+  type DisplayedField,
+  type DisplayOption,
+  type DisplayRow,
+  type DisplayWords,
+} from './display.ts';
 export { LogicError, type LogicErrorCode } from './errors.ts';
 export {
   evaluateForm,
@@ -57,6 +65,17 @@ export {
   type RowState,
 } from './form.ts';
 export { compilePattern, type Pattern } from './pattern.ts';
+export {
+  MASKED,
+  recallAnswers,
+  type Recall,
+  type RecallAnswer,
+  type RecallAnswers,
+  type RecallField,
+  type RecallForm,
+  type RecallGroup,
+  type RecallPage,
+} from './recall.ts';
 export {
   evaluateCondition,
   evaluateRule,
@@ -81,6 +100,7 @@ export {
   type MergeValue,
   type MergeValues,
   type ParsedTemplate,
+  type PathProblem,
   type RenderedTemplate,
   type TemplateContext,
   type TemplateProblem,

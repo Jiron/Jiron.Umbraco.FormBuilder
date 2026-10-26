@@ -25,7 +25,7 @@ internal sealed class PageMergeTagSource(MergeTagUmbraco umbraco, SiteBaseUrl ba
 
     /// <inheritdoc />
     /// <remarks>The name, the address, any property alias, and <c>up.</c> with any property alias.</remarks>
-    public bool Knows(string path, FormDefinition form) => path.StartsWith("page.", StringComparison.Ordinal) && IsPath(path["page.".Length..]);
+    public bool Knows(string path, FormDefinition form, MergeTagPlace place) => path.StartsWith("page.", StringComparison.Ordinal) && IsPath(path["page.".Length..]);
 
     /// <inheritdoc />
     public async ValueTask<MergeTagValue?> ResolveAsync(MergeTagSourceRequest request, CancellationToken cancellationToken)
@@ -138,7 +138,7 @@ internal sealed class MemberMergeTagSource(MergeTagUmbraco umbraco, MergeTagCult
 
     /// <inheritdoc />
     /// <remarks>The name, the email address and any property alias.</remarks>
-    public bool Knows(string path, FormDefinition form) =>
+    public bool Knows(string path, FormDefinition form, MergeTagPlace place) =>
         path.StartsWith("member.", StringComparison.Ordinal) && path.Length > "member.".Length && path.IndexOf('.', "member.".Length) < 0;
 
     /// <inheritdoc />
@@ -193,7 +193,7 @@ internal sealed class DictionaryMergeTagSource(MergeTagDictionary dictionary) : 
 
     /// <inheritdoc />
     /// <remarks>Any key: whether an item has it shows only when the template renders.</remarks>
-    public bool Knows(string path, FormDefinition form) => path.StartsWith("dictionary.", StringComparison.Ordinal) && path.Length > "dictionary.".Length;
+    public bool Knows(string path, FormDefinition form, MergeTagPlace place) => path.StartsWith("dictionary.", StringComparison.Ordinal) && path.Length > "dictionary.".Length;
 
     /// <inheritdoc />
     public async ValueTask<MergeTagValue?> ResolveAsync(MergeTagSourceRequest request, CancellationToken cancellationToken) =>

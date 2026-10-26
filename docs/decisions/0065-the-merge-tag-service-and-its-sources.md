@@ -4,7 +4,8 @@
   in rather than contexts, and a site's filter is server-only) and [ADR-0064](0064-the-merge-tag-engine.md) (the
   problems a place adds, and the form check's messages move to the form check); the scope's answers, the `field`
   source and `entry.answers` added by [ADR-0066](0066-answers-as-merge-tags.md) in 5.3d; the scope's page and member
-  and the Umbraco sources added by [ADR-0067](0067-the-umbraco-sources-and-the-base-url.md) in 5.3e
+  and the Umbraco sources added by [ADR-0067](0067-the-umbraco-sources-and-the-base-url.md) in 5.3e; the text's owner
+  in the scope and in `Check`, and a source's paths per place, added by [ADR-0068](0068-answer-recall.md) in 5.3f
 - Date: 2026-10-26
 - Roadmap step: 5.3c (decided and built); 5.3d adds the answers (`field.*`, `entry.answers`), 5.3e the Umbraco
   sources (`page`, `member`, `site`, `dictionary`, `entry.url`), 5.3f answer recall and the copied-actions report
@@ -63,7 +64,9 @@ the culture formats from .NET. Five questions were open:
 - **`Check(text, place, context, form)`** gives a template's problems before any value: the language's, those of the
   place, and an `unknown_path` warning for a path no source knows. A built-in source whose paths are all known in
   advance (`form`, `entry`, `query`, `date`) warns of any other path; `context` and a site's source know any path, so
-  only their name is checked.
+  only their name is checked. Since 5.3f (ADR-0068) it takes the page, group or field whose text it is, so that a
+  visitor text that names a later field gets `field_after_text`, and a source knows its paths per place (the `field`
+  source knows former aliases outside visitor texts only).
 - **`Paths(place, form)`** gives the picker's paths, of the sources the place takes, the built-in ones first.
 
 A context the place does not render in is a programming error and throws `ArgumentException`; nothing else in a

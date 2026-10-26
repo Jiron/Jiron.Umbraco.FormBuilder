@@ -16,6 +16,25 @@ internal sealed class MergeTagCultures
 
     private readonly ConcurrentDictionary<string, CultureFormats> _formats = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>The formats of every culture from .NET's data.</summary>
+    public MergeTagCultures()
+    {
+    }
+
+    /// <summary>
+    /// The formats given for some cultures, and .NET's for the others: the shared vectors print with cultures written as
+    /// data, which pin the formatter rather than a platform's culture data (ADR-0064).
+    /// </summary>
+    /// <param name="given">The formats by culture name.</param>
+    internal MergeTagCultures(IEnumerable<KeyValuePair<string, CultureFormats>> given)
+    {
+        ArgumentNullException.ThrowIfNull(given);
+        foreach (var (name, formats) in given)
+        {
+            _formats[name] = formats;
+        }
+    }
+
     /// <summary>The formats of a culture.</summary>
     /// <param name="name">A culture name such as <c>de-CH</c>; empty for the invariant culture.</param>
     public CultureFormats For(string name)

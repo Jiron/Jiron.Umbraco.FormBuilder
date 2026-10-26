@@ -41,9 +41,11 @@ internal static class TextSemantics
     /// Lone surrogates and noncharacters become U+FFFD, the text is normalised to NFC, and the explicit set is trimmed
     /// from both ends.
     /// </summary>
-    public static string Clean(string value)
+    public static string Clean(string value) => Trim(Normalise(value));
+
+    /// <summary>The text without the explicit set at either end, as cleaning trims it; nothing else changes.</summary>
+    public static string Trim(string text)
     {
-        var text = Normalise(value);
         var start = 0;
         var end = text.Length;
         while (start < end && Trimmed.Contains(text[start]))

@@ -50,7 +50,8 @@ export type TemplateProblemCode =
   | 'too_many_filters'
   | 'too_long'
   | 'unknown_path'
-  | 'unknown_filter';
+  | 'unknown_filter'
+  | 'field_after_text';
 
 /** A problem and the UTF-16 index where it starts. */
 export interface TemplateProblem {
@@ -1195,10 +1196,17 @@ const problemsOf = (part: TemplatePart): readonly TemplateProblem[] =>
 const ordered = (problems: readonly TemplateProblem[]): TemplateProblem[] => [...problems].sort((a, b) => a.at - b.at);
 
 /**
- * Parses a template for the context it renders in (ADR-0064): its text, each tag's path or string and filters, how
- * each tag is written where it stands, and every problem that does not depend on values. Never throws.
+ * The problem a tag's path has where the template stands (ADR-0068): answer recall refuses a field that comes after the
+ * text with `field_after_text`. A tag whose path has one renders as it is written, like any tag with an error.
  */
-export function parseTemplate(text: string, context: TemplateContext): ParsedTemplate {
+export type PathProblem = (path: string) => TemplateProblemCode | null;
+
+/**
+ * Parses a template for the context it renders in (ADR-0064): its text, each tag's path or string and filters, how
+ * each tag is written where it stands, and every problem that does not depend on values; with `pathProblem`, the
+ * problem a path has where the template stands, as Core's template rules give it. Never throws.
+ */
+export function parseTemplate(text: string, context: TemplateContext, pathProblem?: PathProblem): ParsedTemplate {
   const scan = scanFor(context);
   const parts: TemplatePart[] = [];
   const written = (at: number, end: number, code: TemplateProblemCode, where: number): void => {
@@ -1241,6 +1249,11 @@ export function parseTemplate(text: string, context: TemplateContext): ParsedTem
     }
     let pathAt = start + 2;
     while (text.charCodeAt(pathAt) === 32 || text.charCodeAt(pathAt) === 9) pathAt++;
+    const refused = reading.path === null ? null : (pathProblem?.(reading.path) ?? null);
+    if (refused !== null) {
+      written(start, position, refused, pathAt);
+      continue;
+    }
     const problems = filterProblems(reading.filters, place);
     parts.push({
       kind: 'tag',

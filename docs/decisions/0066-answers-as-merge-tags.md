@@ -4,7 +4,8 @@
   parts and groups, and a sensitive field without an answer), [ADR-0055](0055-field-type-framework.md) and
   [ADR-0058](0058-field-answers-and-values.md) (a type also writes its values' display texts), and
   [ADR-0065](0065-the-merge-tag-service-and-its-sources.md) (the scope carries the answers; the `field` source and
-  `entry.answers`)
+  `entry.answers`); the display texts in TypeScript, a site's type by its rule kind in visitor texts and the trimmed
+  prefix and suffix added by [ADR-0068](0068-answer-recall.md) in 5.3f
 - Date: 2026-10-26
 - Roadmap step: 5.3d (decided and built); 5.3e resolves dictionary texts in labels, 5.3f gives answer recall and the
   display texts to the browser's runtime, 5.5 the labels of options from a list, 14.2 the answer words in five more
@@ -77,7 +78,7 @@ neither does a type whose default value stays on the server (the hidden field, w
 
 | Type | Shows |
 | --- | --- |
-| `number` | the number in the culture's format between the field's prefix and suffix, each apart by a space: `CHF 1,234.5 net` |
+| `number` | the number in the culture's format between the field's prefix and suffix, each trimmed with the set both runtimes share and apart by a space: `CHF 1,234.5 net` |
 | `slider` | the number with the field's unit: `75 %` |
 | `calculation` | the result with the format's places (two by default) between its prefix and suffix; in the list of the answers nothing when visitors do not see it |
 | `grid` | each answered row as `Statement: column`, the columns' labels or the scale's numbers, several columns of a row apart by " / " |

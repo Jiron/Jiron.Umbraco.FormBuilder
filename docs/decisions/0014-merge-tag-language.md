@@ -4,7 +4,8 @@
   a tag may stand and the problems amended in 5.3b ([ADR-0064](0064-the-merge-tag-engine.md)); a site's sources and
   filters amended in 5.3c ([ADR-0065](0065-the-merge-tag-service-and-its-sources.md)); the `field` source's values,
   parts and groups and a sensitive field without an answer amended in 5.3d ([ADR-0066](0066-answers-as-merge-tags.md));
-  `page.url`, a member's properties and the dictionary's fallback amended in 5.3e ([ADR-0067](0067-the-umbraco-sources-and-the-base-url.md))
+  `page.url`, a member's properties and the dictionary's fallback amended in 5.3e ([ADR-0067](0067-the-umbraco-sources-and-the-base-url.md));
+  answer recall amended in 5.3f ([ADR-0068](0068-answer-recall.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 5.3 (both runtimes and the vectors), used by 6.x (texts, defaults, outcomes),
   8.x (emails, webhooks, content), 9.4 and 10.2 (the picker) and 11.x (entry titles)
@@ -105,6 +106,11 @@ type takes several values and one item otherwise; `field.<alias>.<part>` gives a
 sensitive field without an answer renders empty rather than `•••`; and ADR-0066 lists what each place shows of a
 sensitive field.
 
+**Amended in 5.3f (ADR-0068):** a field is above a visitor text when it comes before the text's page, group or field
+in the order of the form and does not hold it; visitor texts name fields by their current aliases only; a hidden
+field, whose value stays on the server, is empty in them; and a site's own type shows there by its rule kind, since
+the browser has no display of its own.
+
 ### Filters
 
 | Filter | Effect |
@@ -159,7 +165,7 @@ never on the template's own text.
 
 | Where | Context | Sources |
 | --- | --- | --- |
-| Labels, help, placeholders, page and group titles, text blocks | `html` or `text` | `field.*` (answer recall) of fields above the text or on earlier pages; `form`, `page`, `site`, `date`, `dictionary` |
+| Labels, help, placeholders, page and group titles, text blocks | `html` or `text` | `field.*` (answer recall) of fields above the text or on earlier pages, by their current aliases (ADR-0068); `form`, `page`, `site`, `date`, `dictionary` |
 | Consent texts | `html` | `form`, `page`, `site`, `dictionary` only, so the stored wording is the same for every visitor and holds no personal data (ADR-0009); any other source is a form-check error |
 | Default values | `text` | `form`, `page`, `site`, `date`, `dictionary`, `query` (allowed names) |
 | Hidden field values | `text` | all, `member` and `context` included, resolved when the entry is submitted and never rendered into the page (§4.3.2) |
@@ -171,7 +177,8 @@ never on the template's own text.
 
 - **Visitor texts before submission are cache-safe:** they use only what is the same for every visitor on that page.
   The server resolves everything but `field.*`, and the runtime fills in `field.*` as the visitor types (answer
-  recall, §4.3.3). A text that names a later field, or a per-visitor source, is a form-check error.
+  recall, §4.3.3). A text that names a later field (`field_after_text`, ADR-0068), or a per-visitor source, is a
+  form-check error.
 - **Query values on cached pages** are filled in by the runtime in the browser, because Umbraco's cache key ignores the
   query string (§3.4); the server fills them in only on renders that are not cached.
 - **The picker** (9.4, 10.2) offers exactly the sources and filters that the context allows, with the form's fields

@@ -51,9 +51,12 @@ internal static class FieldDisplayDefaults
         }
     }
 
-    /// <summary>A text between an editor's prefix and suffix, such as a currency and a unit, each apart by a space when it has one.</summary>
+    /// <summary>
+    /// A text between an editor's prefix and suffix, such as a currency and a unit, each trimmed as cleaning trims a
+    /// value (the set both runtimes share) and apart by a space when it has one.
+    /// </summary>
     public static string Around(string prefix, string text, string suffix) =>
-        string.Join(' ', new[] { prefix.Trim(), text, suffix.Trim() }.Where(piece => piece.Length > 0));
+        string.Join(' ', new[] { TextSemantics.Trim(prefix), text, TextSemantics.Trim(suffix) }.Where(piece => piece.Length > 0));
 }
 
 /// <summary>

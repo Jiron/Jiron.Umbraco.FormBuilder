@@ -4,7 +4,8 @@
   tag may stand in each context, the problems and what each renders) and
   [ADR-0005](0005-shared-logic-and-test-vectors.md) (the `template` case, the cultures in a vector file's defaults, and
   the case mappings in the tables check); the problems of a place and the form check's messages amended by
-  [ADR-0065](0065-the-merge-tag-service-and-its-sources.md) in 5.3c
+  [ADR-0065](0065-the-merge-tag-service-and-its-sources.md) in 5.3c; `field_after_text` and the parser's check of a
+  path where the text stands added by [ADR-0068](0068-answer-recall.md) in 5.3f
 - Date: 2026-10-26
 - Roadmap step: 5.3b (decided and built); 5.3c to 5.3f add the sources, answer recall and the culture formats from
   .NET (ADR-0065), 6.x renders texts, outcomes and redirects with it, 8.x mail and webhooks, 9.4 and 10.2 the picker
@@ -92,6 +93,7 @@ the template.
 | `too_many_tags` | limit | the 201st tag | more than 200 tags |
 | `too_many_filters` | limit | the eleventh `\|` | a tag with more than 10 filters |
 | `too_long` | limit | the text or tag that reached it | the output would pass 100,000 UTF-16 code units; it stops there, never inside a surrogate pair |
+| `field_after_text` | error | the path | a visitor text names a field that does not come before it (5.3f, ADR-0068) |
 | `unknown_path` | warning | the path | no source knows the path |
 | `unknown_filter` | warning | the filter | no filter has the name |
 

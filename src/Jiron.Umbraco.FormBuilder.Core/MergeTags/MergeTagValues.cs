@@ -140,6 +140,9 @@ public static class MergeTagProblems
     /// <summary>The place does not take a site's own filter, since the browser renders it too (ADR-0065), at the filter.</summary>
     public const string FilterNotForPlace = "filter_not_for_place";
 
+    /// <summary>A visitor text names a field that does not come before the text, whose answer it cannot recall (ADR-0068), at the path.</summary>
+    public const string FieldAfterText = "field_after_text";
+
     /// <summary>Whether a tag with this problem renders empty, rather than as it is written.</summary>
     /// <param name="code">The problem's code.</param>
     public static bool IsWarning(string code) => code is UnknownPath or UnknownFilter;
