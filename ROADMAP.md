@@ -1811,7 +1811,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a fuzz test of 10,000 random formulas in each runtime never throws an unhandled exception and never takes longer than 50 ms per input;
     - publish tests refuse a calculation that names no field, one that depends on itself (directly, through another calculation and through a rule) and a formula that does not parse, each at its path;
     - 5.2a's mutation check covers the calculations in TypeScript, with every survivor written down as an equivalent change or killed by a new vector.
-- [ ] **5.3b The merge-tag language** (C# and `packages/logic`; 5.3 split in three, WORKLOG 2026-10-26)
+- [x] **5.3b The merge-tag language** (C# and `packages/logic`; 5.3 split in three, WORKLOG 2026-10-26) (2026-10-26, ddbf6f9)
   - Implement the grammar, the filters and the escaping contexts of §4.3.3 (ADR-0014), plus unknown-tag handling (unknown tags render empty with a warning, malformed ones render as their text with an error, nothing throws), the limits, lists, and formatting with the culture patterns the server writes for dates, numbers and currencies.
   - **Vectors:** `merge-tags.json` (the `template` case), run by both runners, over sources given as data.
   - Done when:
