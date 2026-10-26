@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 /**
- * The mutation check of the shared logic (ROADMAP 5.2a, ADR-0061), and since 5.3a of the calculations (ADR-0063).
+ * The mutation check of the shared logic (ROADMAP 5.2a, ADR-0061), since 5.3a of the calculations (ADR-0063), and since
+ * 5.3f of answer recall (ADR-0068).
  * Each mutant changes one piece of code in one runtime; that runtime's vector runner runs, and the file is put back. A
  * mutant that no vector catches survives, and the check fails unless the mutant is written down here as an equivalent
  * change, with the reason. A mutant written down as equivalent that a vector catches fails the check too, so the notes
@@ -43,6 +44,10 @@ const negated = (op, body) => [
 /** The merge-tag modules (ROADMAP 5.3b, ADR-0064). */
 const tpl = (name, from, to, more) => ts(`tpl-${name}`, 'template.ts', from, to, more);
 const cul = (name, from, to, more) => ts(`cul-${name}`, 'culture.ts', from, to, more);
+/** Answer recall (ROADMAP 5.3f, ADR-0068): the answers' texts in TypeScript, and in C# the service's merge-tag code. */
+const dsp = (name, from, to, more) => ts(`dsp-${name}`, 'display.ts', from, to, more);
+const rcl = (name, from, to, more) => ts(`rcl-${name}`, 'recall.ts', from, to, more);
+const csm = (name, file, from, to, more = {}) => ({ runtime: 'cs', name, file: 'src/Jiron.Umbraco.FormBuilder.Core/MergeTags/' + file, from, to, ...more });
 /** No vector can hold a lone surrogate, since .NET's JSON reader refuses one, so the template tests cover them. */
 const TEMPLATES_TS = [...VECTORS_TS, 'test/templates.test.ts'];
 /** The tables check sees every code point's case mapping, of which the vectors hold a few. */
@@ -897,6 +902,64 @@ const mutants = [
   ts('text-case-leaving-the-blocks', 'text.ts', 'return folds(one.codePointAt(0) ?? 0) ? one : ch;', 'return one;', { tests: TABLES_TS }),
   ts('text-lower-as-upper', 'text.ts', 'for (const ch of value) out += mapCase(ch, ch.toLowerCase());', 'for (const ch of value) out += mapCase(ch, ch.toUpperCase());'),
 
+  // ---- Answer recall (ROADMAP 5.3f, ADR-0068): the answers' texts ----
+  dsp('number-without-its-wire-form', '  if (text.length > 0) display.texts.push({ text, number });', '  if (text.length > 0) display.texts.push(text);'),
+  dsp('date-without-its-wire-form', '  if (text.length > 0) display.texts.push({ text, date });', '  if (text.length > 0) display.texts.push(text);'),
+  dsp('date-time-as-a-date', "const format = text.length > 10 && text.charAt(10) === 'T' ? 'dateTime' : text.includes(':') ? 'time' : 'short';", "const format = text.includes(':') ? 'time' : 'short';"),
+  dsp('time-as-a-date', "const format = text.length > 10 && text.charAt(10) === 'T' ? 'dateTime' : text.includes(':') ? 'time' : 'short';", "const format = text.length > 10 && text.charAt(10) === 'T' ? 'dateTime' : 'short';"),
+  dsp('option-by-its-value', '  return label.length > 0 ? label : value;', '  return label;'),
+  dsp('prefix-untrimmed', '[trim(prefix), text, trim(suffix)]', '[prefix, text, trim(suffix)]'),
+  dsp('suffix-untrimmed', '[trim(prefix), text, trim(suffix)]', '[trim(prefix), text, suffix]'),
+  dsp('around-unspaced', "  [trim(prefix), text, trim(suffix)].filter((piece) => piece.length > 0).join(' ');", "  [trim(prefix), text, trim(suffix)].filter((piece) => piece.length > 0).join('');"),
+  dsp('ticked-as-no', "add(display, text === 'true' ? display.words.yes : display.words.no);", "add(display, text === 'false' ? display.words.yes : display.words.no);"),
+  dsp('file-by-its-token', "if (files.length > 0) add(display, files[i]?.name ?? '');", 'add(display, text);'),
+  dsp('kind-choice-by-its-value', '        add(display, optionLabel(display, text));', '        add(display, text);'),
+  dsp('kind-number-unformatted', '        addNumber(display, number(display, text), text);', '        addNumber(display, text, text);'),
+  dsp('kind-date-unformatted', '        addDate(display, date(display, text), text);', '        addDate(display, text, text);'),
+  dsp('kind-parts-spaced', "add(display, parts === null ? text : parts.map(([, part]) => part).join(', '));", "add(display, parts === null ? text : parts.map(([, part]) => part).join(' '));"),
+  dsp('kind-parts-as-json', '        const parts = field.parts === true ? valueParts(text) : null;', '        const parts = null;'),
+  dsp('grid-rows-unlabelled', 'add(display, row.label.length > 0 ? `${row.label}: ${chosen}` : chosen);', 'add(display, chosen);'),
+  dsp('grid-columns-by-their-values', '.map(({ text }) => (numbered ? number(display, text) : optionLabel(display, text)));', '.map(({ text }) => (numbered ? number(display, text) : text));'),
+  dsp('yes-label-ignored', 'add(display, label.length > 0 ? label : yes ? display.words.yes : display.words.no);', 'add(display, yes ? display.words.yes : display.words.no);'),
+  dsp('yes-as-no', "      const yes = text === 'yes';", "      const yes = text === 'no';"),
+  dsp('name-apart-by-commas', "add(display, parts === null ? text : parts.map(([, part]) => part).join(' '));", "add(display, parts === null ? text : parts.map(([, part]) => part).join(', '));"),
+  dsp('postcode-and-city-apart', "[of('postcode'), of('city')].filter((piece) => piece.length > 0).join(' '),", "[of('postcode'), of('city')].filter((piece) => piece.length > 0).join(', '),"),
+  dsp('address-country-by-its-code', '    optionLabel(display, country),', '    country,'),
+  dsp('calculation-places-default', "const places = typeof decimals === 'number' ? decimals : 2;", "const places = typeof decimals === 'number' ? decimals : null;"),
+  dsp('calculation-places-ignored', "const places = typeof decimals === 'number' ? decimals : 2;", 'const places = 2;'),
+  dsp('slider-unit-ignored', "for (const { text } of values) addNumber(display, around('', number(display, text), unit), text);", 'for (const { text } of values) addNumber(display, number(display, text), text);'),
+  dsp('site-type-as-built-in', 'const builtIn = field.builtIn === true ? own(BUILT_IN, field.type) : undefined;', 'const builtIn = own(BUILT_IN, field.type);'),
+
+  // ---- Answer recall: where a visitor text may look, and what it shows ----
+  tpl('path-problem-ignored', '    const refused = reading.path === null ? null : (pathProblem?.(reading.path) ?? null);', '    const refused = null;'),
+  tpl('path-problem-at-the-tag', '      written(start, position, refused, pathAt);', '      written(start, position, refused, start);'),
+  rcl('the-field-itself-before', 'return position !== undefined && position < at && !holding.has(target.field.id);', 'return position !== undefined && position <= at && !holding.has(target.field.id);'),
+  rcl('holders-before', 'return position !== undefined && position < at && !holding.has(target.field.id);', 'return position !== undefined && position < at;'),
+  rcl('an-unknown-owner-first', '    if (at === undefined) return true;', '    if (at === undefined) return owner === null;'),
+  rcl('a-later-field-shown', "return found !== null && !before(found.target) ? 'field_after_text' : null;", 'return null;'),
+  rcl('hidden-group-shows-children', 'hiddenIds.has(target.field.id) || (target.repeater !== null && hiddenIds.has(target.repeater.id));', 'hiddenIds.has(target.field.id);'),
+  rcl('hidden-ignored', "const shows = (target: Target): boolean => !isHidden(target) && target.field.recall !== 'none';", "const shows = (target: Target): boolean => target.field.recall !== 'none';"),
+  rcl('server-value-shown', "const shows = (target: Target): boolean => !isHidden(target) && target.field.recall !== 'none';", 'const shows = (target: Target): boolean => !isHidden(target);'),
+  rcl('masked-unanswered', "      if (isMasked(target)) return answer === null ? '' : MASKED;", '      if (isMasked(target)) return MASKED;'),
+  rcl('masked-shown', "      if (isMasked(target)) return answer === null ? '' : MASKED;" + NL, ''),
+  rcl('masked-child-unanswered', "    if (isMasked(target)) return given.length === 0 ? '' : MASKED;", '    if (isMasked(target)) return MASKED;'),
+  rcl('masked-child-shown', "    if (isMasked(target)) return given.length === 0 ? '' : MASKED;" + NL, ''),
+  rcl('masked-child-in-the-rows', 'const text = isMasked(target) ? MASKED : joined(texts(child, answer));', 'const text = joined(texts(child, answer));'),
+  rcl('one-of-many-as-one', '      if (isMany(target.field) || found.length > 1) return found;', '      if (found.length > 1) return found;'),
+  rcl('rows-unlabelled', '        if (text.length > 0) pieces.push(`${labelOf(child)}: ${text}`);', '        if (text.length > 0) pieces.push(text);'),
+  rcl('rows-apart-by-commas', "      if (pieces.length > 0) lines.push(pieces.join('; '));", "      if (pieces.length > 0) lines.push(pieces.join(', '));"),
+  rcl('hidden-group-rows', "    if (!shows(group)) return '';" + NL, ''),
+  rcl('hidden-child-in-the-rows', '        if (!shows(target) || answer === null) continue;', '        if (answer === null) continue;'),
+  rcl('label-without-the-alias', "  return label.length > 0 ? label : (field.alias ?? '');", '  return label;'),
+  rcl('value-without-its-number', "          if (kind === 'number') return { text, number: text };" + NL, ''),
+  rcl('value-without-its-date', "          if (kind === 'date' || kind === 'time' || kind === 'dateTime') return { text, date: text };" + NL, '', {
+    equivalent: "a value's text is its wire form, so the date filter reads the same date from it; the date behind keeps the item Core's shape",
+  }),
+  rcl('a-groups-value', '    if (isGroup) return null;' + NL, ''),
+  rcl('parts-of-any-field', '    return member.length > 0 && target.field.parts === true ? { target, member } : null;', '    return member.length > 0 ? { target, member } : null;'),
+  rcl('child-not-reached', '        rest = rest.slice(1);' + NL, ''),
+  rcl('the-first-part', '  valueParts(text)?.find(([key]) => key === name)?.[1] ?? null;', '  valueParts(text)?.[0]?.[1] ?? null;'),
+
   // ---- C#: where .NET differs (ROADMAP 5.2a) ----
   // .NET's invariant casing maps neither Turkish i, so Core folds both itself.
   cs('cs-fold-dotted-capital-i', 'TextSemantics.cs', '            if (rune.Value is DottedCapitalI or DotlessSmallI)', '            if (rune.Value is DotlessSmallI)'),
@@ -981,6 +1044,17 @@ const mutants = [
   cs('cs-tpl-letters-of-any-script', 'MergeTags.cs', "private static bool IsLetter(int c) => c is >= 'A' and <= 'Z' || IsLowerLetter(c);", 'private static bool IsLetter(int c) => c >= 0 && char.IsLetter((char)c);'),
   cs('cs-tpl-digits-of-any-script', 'MergeTags.cs', "private static bool IsDigit(int c) => c is >= '0' and <= '9';", 'private static bool IsDigit(int c) => c >= 0 && char.IsDigit((char)c);'),
   cs('cs-tpl-name-kept-to-nine', 'MergeTags.Scans.cs', 'private const int NameKept = 10;', 'private const int NameKept = 9;'),
+
+  // ---- C#: answer recall in the merge-tag service (ROADMAP 5.3f, ADR-0068) ----
+  csm('cs-recall-the-field-itself-before', 'MergeTagRecall.cs', 'position < at && !holders[owner].Contains(field)', 'position <= at && !holders[owner].Contains(field)'),
+  csm('cs-recall-holders-before', 'MergeTagRecall.cs', ' && !holders[owner].Contains(field)', ''),
+  csm('cs-recall-an-unknown-owner-first', 'MergeTagRecall.cs',
+    lines('        if (!order.TryGetValue(owner, out var at))', '        {', '            return true;'),
+    lines('        if (!order.TryGetValue(owner, out var at))', '        {', '            return false;')),
+  csm('cs-recall-a-later-field-shown', 'FormBuilderMergeTagService.cs', 'return place == MergeTagPlace.VisitorText && registry.Sources', 'return place == (MergeTagPlace)(-1) && registry.Sources'),
+  csm('cs-recall-former-aliases', 'FieldMergeTagSource.cs', 'var formerAliases = place != MergeTagPlace.VisitorText;', 'var formerAliases = place != (MergeTagPlace)(-1);'),
+  csm('cs-recall-site-display-used', 'MergeTagAnswerTexts.cs', 'private static bool Shared(MergeTagPlace place) => place == MergeTagPlace.VisitorText;', 'private static bool Shared(MergeTagPlace place) => place == (MergeTagPlace)(-1);'),
+  csm('cs-recall-server-value-shown', 'MergeTagAnswerTexts.cs', '(place == MergeTagPlace.VisitorText && types.Find(target.Field.Type) is { ServerOnlyDefault: true })', '(place == (MergeTagPlace)(-1) && types.Find(target.Field.Type) is { ServerOnlyDefault: true })'),
 ];
 
 // ---- Running ----

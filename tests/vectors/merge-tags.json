@@ -790,6 +790,912 @@
           "negative": "-$n"
         }
       }
+    },
+    "words": {
+      "de-CH": {
+        "yes": "Ja",
+        "no": "Nein"
+      },
+      "en-US": {
+        "yes": "Yes",
+        "no": "No"
+      }
+    },
+    "forms": {
+      "library": {
+        "pages": [
+          {
+            "id": "00000000-0000-4000-8000-e829b84a9f36",
+            "groups": [
+              {
+                "id": "00000000-0000-4000-8000-f610e8c2aa69",
+                "fields": [
+                  {
+                    "id": "00000000-0000-4000-8000-2e3d90b1c448",
+                    "type": "heading",
+                    "builtIn": true,
+                    "kind": null,
+                    "alias": null,
+                    "holdsValue": false
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-8d39bde6cc2f",
+                    "type": "name",
+                    "builtIn": true,
+                    "kind": null,
+                    "alias": "name",
+                    "holdsValue": true,
+                    "parts": true,
+                    "label": "Your name",
+                    "settings": {
+                      "parts": [
+                        "first",
+                        "last"
+                      ]
+                    }
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-8a8753c7c21f",
+                    "type": "email",
+                    "builtIn": true,
+                    "kind": "text",
+                    "alias": "email",
+                    "holdsValue": true,
+                    "label": "Email"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-39baa08807f4",
+                    "type": "number",
+                    "builtIn": true,
+                    "kind": "number",
+                    "alias": "budget",
+                    "holdsValue": true,
+                    "label": "Budget",
+                    "settings": {
+                      "prefix": {
+                        "": " CHF "
+                      },
+                      "suffix": {
+                        "": " net "
+                      }
+                    }
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-c294a9c43f34",
+                    "type": "radio",
+                    "builtIn": true,
+                    "kind": "choice",
+                    "alias": "topic",
+                    "holdsValue": true,
+                    "label": "Topic",
+                    "settings": {
+                      "other": true
+                    },
+                    "options": [
+                      {
+                        "value": "events",
+                        "label": "Events"
+                      },
+                      {
+                        "value": "books",
+                        "label": "Books"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-192c6ce056a9",
+                    "type": "checkboxes",
+                    "builtIn": true,
+                    "kind": "choices",
+                    "alias": "interests",
+                    "holdsValue": true,
+                    "label": "Interests",
+                    "options": [
+                      {
+                        "value": "reading",
+                        "label": "Reading"
+                      },
+                      {
+                        "value": "music",
+                        "label": "Music"
+                      },
+                      {
+                        "value": "games",
+                        "label": "Games"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-8827595ffdb4",
+                    "type": "text",
+                    "builtIn": true,
+                    "kind": "text",
+                    "alias": "card",
+                    "holdsValue": true,
+                    "label": "Library card",
+                    "recall": "masked"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-bed023b35d26",
+                    "type": "hidden",
+                    "builtIn": true,
+                    "kind": "text",
+                    "alias": "campaign",
+                    "holdsValue": true,
+                    "recall": "none",
+                    "label": "Campaign"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-77427a8446ed",
+                    "type": "stamp",
+                    "builtIn": false,
+                    "kind": "choice",
+                    "alias": "stamp",
+                    "holdsValue": true,
+                    "label": "Stamp",
+                    "options": [
+                      {
+                        "value": "gold",
+                        "label": "Gold"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-50a09eb901b2",
+                    "type": "measure",
+                    "builtIn": false,
+                    "kind": "number",
+                    "alias": "weight",
+                    "holdsValue": true,
+                    "label": "Weight"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-3564827887e8",
+                    "type": "badge",
+                    "builtIn": false,
+                    "kind": null,
+                    "alias": "badge",
+                    "holdsValue": true,
+                    "parts": true,
+                    "label": "Badge"
+                  }
+                ]
+              },
+              {
+                "id": "00000000-0000-4000-8000-474573fe2203",
+                "fields": [
+                  {
+                    "id": "00000000-0000-4000-8000-e44f21fd79cb",
+                    "type": "date",
+                    "builtIn": true,
+                    "kind": "date",
+                    "alias": "day",
+                    "holdsValue": true,
+                    "label": "Day"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-4578deb22ac7",
+                    "type": "time",
+                    "builtIn": true,
+                    "kind": "time",
+                    "alias": "arrival",
+                    "holdsValue": true,
+                    "label": "Arrival"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-652b04df3cf5",
+                    "type": "datetime",
+                    "builtIn": true,
+                    "kind": "dateTime",
+                    "alias": "start",
+                    "holdsValue": true,
+                    "label": "Start"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-2ae5e1c391fa",
+                    "type": "yesno",
+                    "builtIn": true,
+                    "kind": "choice",
+                    "alias": "member",
+                    "holdsValue": true,
+                    "label": "Member",
+                    "settings": {
+                      "yesLabel": {
+                        "": "I am a member"
+                      }
+                    }
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-6a99dc1abf49",
+                    "type": "checkbox",
+                    "builtIn": true,
+                    "kind": "checkbox",
+                    "alias": "newsletter",
+                    "holdsValue": true,
+                    "label": "Newsletter"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-a59115d1a140",
+                    "type": "country",
+                    "builtIn": true,
+                    "kind": "choice",
+                    "alias": "country",
+                    "holdsValue": true,
+                    "label": "Country",
+                    "options": [
+                      {
+                        "value": "CH",
+                        "label": "Schweiz"
+                      },
+                      {
+                        "value": "DE",
+                        "label": "Deutschland"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-2c6a2953c449",
+                    "type": "address",
+                    "builtIn": true,
+                    "kind": null,
+                    "alias": "address",
+                    "holdsValue": true,
+                    "parts": true,
+                    "label": "Address",
+                    "options": [
+                      {
+                        "value": "CH",
+                        "label": "Schweiz"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-56dfde641cc6",
+                    "type": "grid",
+                    "builtIn": true,
+                    "kind": null,
+                    "alias": "service",
+                    "holdsValue": true,
+                    "label": "Service",
+                    "options": [
+                      {
+                        "value": "good",
+                        "label": "Good"
+                      },
+                      {
+                        "value": "poor",
+                        "label": "Poor"
+                      }
+                    ],
+                    "rows": [
+                      {
+                        "id": "00000000-0000-4000-8000-675ca4d15ad7",
+                        "label": "Staff"
+                      },
+                      {
+                        "id": "00000000-0000-4000-8000-2c95c42b57be",
+                        "label": "Rooms"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-c6e11a12ac6b",
+                    "type": "grid",
+                    "builtIn": true,
+                    "kind": null,
+                    "alias": "scores",
+                    "holdsValue": true,
+                    "label": "Scores",
+                    "settings": {
+                      "scale": {
+                        "from": 1,
+                        "to": 5
+                      }
+                    },
+                    "rows": [
+                      {
+                        "id": "00000000-0000-4000-8000-3d5073c9ffc8",
+                        "label": "Food"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-622b002635f5",
+                    "type": "rating",
+                    "builtIn": true,
+                    "kind": "number",
+                    "alias": "stars",
+                    "holdsValue": true
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-9a89646291bc",
+                    "type": "slider",
+                    "builtIn": true,
+                    "kind": "number",
+                    "alias": "loudness",
+                    "holdsValue": true,
+                    "label": "Loudness",
+                    "settings": {
+                      "unit": {
+                        "": "%"
+                      }
+                    }
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-04d092fdf681",
+                    "type": "calculation",
+                    "builtIn": true,
+                    "kind": "number",
+                    "alias": "total",
+                    "holdsValue": true,
+                    "label": "Total",
+                    "settings": {
+                      "formula": "budget * 2",
+                      "format": {
+                        "decimals": 0,
+                        "prefix": {
+                          "": "CHF"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-d3be3f675a95",
+                    "type": "calculation",
+                    "builtIn": true,
+                    "kind": "number",
+                    "alias": "plain",
+                    "holdsValue": true,
+                    "label": "Plain",
+                    "settings": {
+                      "formula": "budget / 3"
+                    }
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-3ee74090718e",
+                    "type": "file",
+                    "builtIn": true,
+                    "kind": "files",
+                    "alias": "files",
+                    "holdsValue": true,
+                    "label": "Files"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-f9fdf011dd23",
+                    "type": "ranking",
+                    "builtIn": true,
+                    "kind": "choices",
+                    "alias": "ranking",
+                    "holdsValue": true,
+                    "label": "Ranking",
+                    "options": [
+                      {
+                        "value": "events",
+                        "label": "Events"
+                      },
+                      {
+                        "value": "books",
+                        "label": "Books"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-2079274348eb",
+                    "type": "consent",
+                    "builtIn": true,
+                    "kind": "checkbox",
+                    "alias": "agree",
+                    "holdsValue": true,
+                    "label": "Consent"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-2c2d8a8014c3",
+                    "type": "repeater",
+                    "builtIn": true,
+                    "kind": null,
+                    "alias": "guests",
+                    "holdsValue": true,
+                    "label": "Guests",
+                    "fields": [
+                      {
+                        "id": "00000000-0000-4000-8000-746423181f97",
+                        "type": "text",
+                        "builtIn": true,
+                        "kind": "text",
+                        "alias": "guestName",
+                        "holdsValue": true,
+                        "label": "Guest"
+                      },
+                      {
+                        "id": "00000000-0000-4000-8000-2c41499cafeb",
+                        "type": "number",
+                        "builtIn": true,
+                        "kind": "number",
+                        "alias": "age",
+                        "holdsValue": true,
+                        "label": "Age"
+                      },
+                      {
+                        "id": "00000000-0000-4000-8000-6517b3e53fc0",
+                        "type": "text",
+                        "builtIn": true,
+                        "kind": "text",
+                        "alias": "ticket",
+                        "holdsValue": true,
+                        "label": "Ticket",
+                        "recall": "masked"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-65654a948800",
+            "groups": [
+              {
+                "id": "00000000-0000-4000-8000-1d6e06678aef",
+                "fields": [
+                  {
+                    "id": "00000000-0000-4000-8000-7bc54fc66475",
+                    "type": "textarea",
+                    "builtIn": true,
+                    "kind": "text",
+                    "alias": "remarks",
+                    "holdsValue": true,
+                    "label": "Remarks",
+                    "formerAliases": [
+                      "notes"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "english": {
+        "pages": [
+          {
+            "id": "00000000-0000-4000-8000-8a23819f9eb1",
+            "groups": [
+              {
+                "id": "00000000-0000-4000-8000-04779b413083",
+                "fields": [
+                  {
+                    "id": "00000000-0000-4000-8000-e85c33389923",
+                    "type": "number",
+                    "builtIn": true,
+                    "kind": "number",
+                    "alias": "cost",
+                    "holdsValue": true,
+                    "label": "Cost",
+                    "settings": {
+                      "prefix": {
+                        "": "USD"
+                      }
+                    }
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-d472dc5994c9",
+                    "type": "date",
+                    "builtIn": true,
+                    "kind": "date",
+                    "alias": "date",
+                    "holdsValue": true,
+                    "label": "Date"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-57251588399c",
+                    "type": "time",
+                    "builtIn": true,
+                    "kind": "time",
+                    "alias": "at",
+                    "holdsValue": true,
+                    "label": "At"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-7f778519a36e",
+                    "type": "datetime",
+                    "builtIn": true,
+                    "kind": "dateTime",
+                    "alias": "when",
+                    "holdsValue": true,
+                    "label": "When"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-c66c36652ceb",
+                    "type": "checkbox",
+                    "builtIn": true,
+                    "kind": "checkbox",
+                    "alias": "optIn",
+                    "holdsValue": true,
+                    "label": "Opt in"
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-6d072a8d47b6",
+                    "type": "yesno",
+                    "builtIn": true,
+                    "kind": "choice",
+                    "alias": "club",
+                    "holdsValue": true,
+                    "label": "Club"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "site": {
+        "pages": [
+          {
+            "id": "00000000-0000-4000-8000-dac8073a1b12",
+            "groups": [
+              {
+                "id": "00000000-0000-4000-8000-5e299e58879f",
+                "fields": [
+                  {
+                    "id": "00000000-0000-4000-8000-b6a817170fda",
+                    "type": "yesno",
+                    "builtIn": false,
+                    "kind": "choice",
+                    "alias": "regular",
+                    "holdsValue": true,
+                    "label": "Regular",
+                    "settings": {
+                      "yesLabel": {
+                        "": "A regular"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "answers": {
+      "library": {
+        "fields": {
+          "00000000-0000-4000-8000-8d39bde6cc2f": {
+            "values": [
+              {
+                "text": "{\"first\":\"Anna\",\"last\":\"Muster\"}"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-8a8753c7c21f": {
+            "values": [
+              {
+                "text": "anna@example.com"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-39baa08807f4": {
+            "values": [
+              {
+                "text": "1234.5"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-c294a9c43f34": {
+            "values": [
+              {
+                "text": "events"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-192c6ce056a9": {
+            "values": [
+              {
+                "text": "reading"
+              },
+              {
+                "text": "games"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-8827595ffdb4": {
+            "values": [
+              {
+                "text": "4111"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-bed023b35d26": {
+            "values": [
+              {
+                "text": "spring"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-77427a8446ed": {
+            "values": [
+              {
+                "text": "gold"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-50a09eb901b2": {
+            "values": [
+              {
+                "text": "1234.5"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-3564827887e8": {
+            "values": [
+              {
+                "text": "{\"first\":\"Anna\",\"last\":\"Muster\"}"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-e44f21fd79cb": {
+            "values": [
+              {
+                "text": "2026-03-07"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-4578deb22ac7": {
+            "values": [
+              {
+                "text": "14:30"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-652b04df3cf5": {
+            "values": [
+              {
+                "text": "2026-03-07T09:05"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-2ae5e1c391fa": {
+            "values": [
+              {
+                "text": "yes"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-6a99dc1abf49": {
+            "values": [
+              {
+                "text": "true"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-a59115d1a140": {
+            "values": [
+              {
+                "text": "CH"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-2c6a2953c449": {
+            "values": [
+              {
+                "text": "{\"street\":\"Bahnhofstrasse 1\",\"postcode\":\"8001\",\"city\":\"Zurich\",\"country\":\"CH\"}"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-56dfde641cc6": {
+            "values": [
+              {
+                "text": "good",
+                "row": "00000000-0000-4000-8000-675ca4d15ad7"
+              },
+              {
+                "text": "poor",
+                "row": "00000000-0000-4000-8000-2c95c42b57be"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-c6e11a12ac6b": {
+            "values": [
+              {
+                "text": "4",
+                "row": "00000000-0000-4000-8000-3d5073c9ffc8"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-622b002635f5": {
+            "values": [
+              {
+                "text": "4"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-9a89646291bc": {
+            "values": [
+              {
+                "text": "75"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-04d092fdf681": {
+            "values": [
+              {
+                "text": "2469"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-d3be3f675a95": {
+            "values": [
+              {
+                "text": "411.5"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-3ee74090718e": {
+            "values": [
+              {
+                "text": "token-1"
+              }
+            ],
+            "files": [
+              {
+                "name": "plan.pdf",
+                "size": 1200
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-f9fdf011dd23": {
+            "values": [
+              {
+                "text": "books"
+              },
+              {
+                "text": "events"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-2079274348eb": {
+            "values": [
+              {
+                "text": "true"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-7bc54fc66475": {
+            "values": [
+              {
+                "text": "Nothing"
+              }
+            ]
+          }
+        },
+        "rows": {
+          "00000000-0000-4000-8000-2c2d8a8014c3": [
+            {
+              "00000000-0000-4000-8000-746423181f97": {
+                "values": [
+                  {
+                    "text": "Ben"
+                  }
+                ]
+              },
+              "00000000-0000-4000-8000-2c41499cafeb": {
+                "values": [
+                  {
+                    "text": "7"
+                  }
+                ]
+              },
+              "00000000-0000-4000-8000-6517b3e53fc0": {
+                "values": [
+                  {
+                    "text": "T-1"
+                  }
+                ]
+              }
+            },
+            {},
+            {
+              "00000000-0000-4000-8000-746423181f97": {
+                "values": [
+                  {
+                    "text": "Cleo"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "other": {
+        "fields": {
+          "00000000-0000-4000-8000-8d39bde6cc2f": {
+            "values": [
+              {
+                "text": "{\"first\":\"Tom & Jerry\"}"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-c294a9c43f34": {
+            "values": [
+              {
+                "text": "Tom & Jerry"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-2ae5e1c391fa": {
+            "values": [
+              {
+                "text": "no"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-6a99dc1abf49": {
+            "values": [
+              {
+                "text": "false"
+              }
+            ]
+          }
+        }
+      },
+      "none": {},
+      "english": {
+        "fields": {
+          "00000000-0000-4000-8000-e85c33389923": {
+            "values": [
+              {
+                "text": "1234.5"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-d472dc5994c9": {
+            "values": [
+              {
+                "text": "2026-03-07"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-57251588399c": {
+            "values": [
+              {
+                "text": "14:30"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-7f778519a36e": {
+            "values": [
+              {
+                "text": "2026-03-07T21:05"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-c66c36652ceb": {
+            "values": [
+              {
+                "text": "true"
+              }
+            ]
+          },
+          "00000000-0000-4000-8000-6d072a8d47b6": {
+            "values": [
+              {
+                "text": "no"
+              }
+            ]
+          }
+        }
+      },
+      "site": {
+        "fields": {
+          "00000000-0000-4000-8000-b6a817170fda": {
+            "values": [
+              {
+                "text": "yes"
+              }
+            ]
+          }
+        }
+      }
     }
   },
   "fields": {},
@@ -11365,6 +12271,1354 @@
             "at": 31
           }
         ]
+      }
+    },
+    {
+      "id": "recall-a-field-above",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-8a8753c7c21f",
+        "hidden": [],
+        "text": "Thanks, {{ field.name.first }}. Your email?",
+        "context": "text"
+      },
+      "expect": {
+        "text": "Thanks, Anna. Your email?",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-field-on-an-earlier-page",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-7bc54fc66475",
+        "hidden": [],
+        "text": "{{ field.name }} from {{ field.country }}",
+        "context": "text"
+      },
+      "expect": {
+        "text": "Anna Muster from Schweiz",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-field-the-rules-hid-is-empty",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-7bc54fc66475",
+        "hidden": [
+          "00000000-0000-4000-8000-8a8753c7c21f"
+        ],
+        "text": "Mail: {{ field.email }}.",
+        "context": "text"
+      },
+      "expect": {
+        "text": "Mail: .",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-later-field-is-refused",
+      "description": "written as it stands, as any tag with an error, in both runtimes",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-8a8753c7c21f",
+        "hidden": [],
+        "text": "Hi {{ field.remarks }}!",
+        "context": "text"
+      },
+      "expect": {
+        "text": "Hi {{ field.remarks }}!",
+        "problems": [
+          {
+            "code": "field_after_text",
+            "at": 6
+          }
+        ]
+      }
+    },
+    {
+      "id": "recall-the-field-itself-is-refused",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-8a8753c7c21f",
+        "hidden": [],
+        "text": "Is {{ field.email }} right?",
+        "context": "text"
+      },
+      "expect": {
+        "text": "Is {{ field.email }} right?",
+        "problems": [
+          {
+            "code": "field_after_text",
+            "at": 6
+          }
+        ]
+      }
+    },
+    {
+      "id": "recall-a-later-fields-label-is-refused-too",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-8a8753c7c21f",
+        "hidden": [],
+        "text": "{{ field.remarks.label }}",
+        "context": "text"
+      },
+      "expect": {
+        "text": "{{ field.remarks.label }}",
+        "problems": [
+          {
+            "code": "field_after_text",
+            "at": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "recall-before-and-after-in-one-text",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-e44f21fd79cb",
+        "hidden": [],
+        "text": "{{ field.name.first }} / {{ field.remarks }} / {{ field.email }}",
+        "context": "text"
+      },
+      "expect": {
+        "text": "Anna / {{ field.remarks }} / anna@example.com",
+        "problems": [
+          {
+            "code": "field_after_text",
+            "at": 28
+          }
+        ]
+      }
+    },
+    {
+      "id": "recall-a-text-block-takes-the-fields-above-it",
+      "description": "the heading comes before every field of its group",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-2e3d90b1c448",
+        "hidden": [],
+        "text": "{{ field.name }}",
+        "context": "text"
+      },
+      "expect": {
+        "text": "{{ field.name }}",
+        "problems": [
+          {
+            "code": "field_after_text",
+            "at": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "recall-a-page-title-takes-the-earlier-pages",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-65654a948800",
+        "hidden": [],
+        "text": "{{ field.name.first }}, one more page",
+        "context": "text"
+      },
+      "expect": {
+        "text": "Anna, one more page",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-the-first-page-title-takes-nothing",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-e829b84a9f36",
+        "hidden": [],
+        "text": "{{ field.name.first }}",
+        "context": "text"
+      },
+      "expect": {
+        "text": "{{ field.name.first }}",
+        "problems": [
+          {
+            "code": "field_after_text",
+            "at": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "recall-a-group-title-takes-the-groups-before-it",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-474573fe2203",
+        "hidden": [],
+        "text": "{{ field.email }} / {{ field.day }}",
+        "context": "text"
+      },
+      "expect": {
+        "text": "anna@example.com / {{ field.day }}",
+        "problems": [
+          {
+            "code": "field_after_text",
+            "at": 23
+          }
+        ]
+      }
+    },
+    {
+      "id": "recall-a-child-takes-a-child-before-it-across-the-rows",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-2c41499cafeb",
+        "hidden": [],
+        "text": "{{ field.guestName }}",
+        "context": "text"
+      },
+      "expect": {
+        "text": "Ben, Cleo",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-child-refuses-its-own-group",
+      "description": "the repeatable group holds the text, so it does not come before it",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-2c41499cafeb",
+        "hidden": [],
+        "text": "{{ field.guests }}",
+        "context": "text"
+      },
+      "expect": {
+        "text": "{{ field.guests }}",
+        "problems": [
+          {
+            "code": "field_after_text",
+            "at": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "recall-a-group-refuses-its-children",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-2c2d8a8014c3",
+        "hidden": [],
+        "text": "{{ field.guests.age }}",
+        "context": "text"
+      },
+      "expect": {
+        "text": "{{ field.guests.age }}",
+        "problems": [
+          {
+            "code": "field_after_text",
+            "at": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "recall-after-every-field",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "{{ field.remarks }}",
+        "context": "text"
+      },
+      "expect": {
+        "text": "Nothing",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-an-owner-the-form-lacks-is-after-every-field",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": "00000000-0000-4000-8000-5cc41041bd25",
+        "hidden": [],
+        "text": "{{ field.remarks }}",
+        "context": "text"
+      },
+      "expect": {
+        "text": "Nothing",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-names-fields-by-their-current-aliases",
+      "description": "the former alias \"notes\" of remarks is not in the projection, so neither runtime resolves it",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.notes }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[]",
+        "problems": [
+          {
+            "code": "unknown_path",
+            "at": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "recall-an-unknown-field",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.nope }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[]",
+        "problems": [
+          {
+            "code": "unknown_path",
+            "at": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "recall-a-path-a-field-lacks",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.email.first }}][{{ field.guests.value }}][{{ field.name.first.x }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[][][]",
+        "problems": [
+          {
+            "code": "unknown_path",
+            "at": 4
+          },
+          {
+            "code": "unknown_path",
+            "at": 29
+          },
+          {
+            "code": "unknown_path",
+            "at": 55
+          }
+        ]
+      }
+    },
+    {
+      "id": "recall-a-masked-field-once-answered",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.card }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[\u2022\u2022\u2022]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-masked-field-without-an-answer-is-empty",
+      "recall": {
+        "form": "library",
+        "answers": "other",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.card }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-masked-fields-value-is-masked-too",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.card.value }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[\u2022\u2022\u2022]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-masked-child-once-answered",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.guests.ticket }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[\u2022\u2022\u2022]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-masked-child-without-an-answer-is-empty",
+      "recall": {
+        "form": "library",
+        "answers": "other",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.ticket }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-hidden-fields-value-stays-on-the-server",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.campaign }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-hidden-fields-label-shows",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.campaign.label }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Campaign]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-group-the-rules-hid-hides-its-children",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [
+          "00000000-0000-4000-8000-2c2d8a8014c3"
+        ],
+        "text": "[{{ field.guestName }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-group-the-rules-hid-is-no-list",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [
+          "00000000-0000-4000-8000-2c2d8a8014c3"
+        ],
+        "text": "[{{ field.guests | json }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[\"\"]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-group-the-rules-hid-is-empty",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [
+          "00000000-0000-4000-8000-2c2d8a8014c3"
+        ],
+        "text": "[{{ field.guests }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-child-the-rules-hid-is-empty",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [
+          "00000000-0000-4000-8000-2c41499cafeb"
+        ],
+        "text": "[{{ field.guests }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Guest: Ben; Ticket: \u2022\u2022\u2022, Guest: Cleo]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-an-unanswered-field-is-empty",
+      "recall": {
+        "form": "library",
+        "answers": "none",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.email }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-name-by-its-parts",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.name }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Anna Muster]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-part",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.name.last }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Muster]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-part-not-given-is-empty",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.name.middle }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-text-as-it-is",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.email }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[anna@example.com]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-number-between-its-prefix-and-suffix",
+      "description": "the prefix and the suffix are trimmed, then each is apart from the number by a space",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.budget }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[CHF 1\u2019234.5 net]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-numbers-wire-form-behind-it",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.budget | number: 0 }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[1\u2019235]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-numbers-value",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.budget.value }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[1234.5]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-numbers-value-with-the-number-behind",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.budget.value | number: 2 }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[1\u2019234.50]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-numbers-value-is-a-number-in-json",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.budget.value | json }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[1234.5]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-choice-by-its-label",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.topic }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Events]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-visitors-other-text",
+      "recall": {
+        "form": "library",
+        "answers": "other",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.topic }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Tom & Jerry]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-choices-as-a-list",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.interests }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Reading, Games]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-choices-joined",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.interests | join: \" + \" }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Reading + Games]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-choices-values",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.interests.value | json }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[[\"reading\",\"games\"]]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-site-type-by-its-kind",
+      "description": "the server's own display of the site's type is not used where the browser renders too",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.stamp }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Gold]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-site-types-number-by-its-kind",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.weight }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[1\u2019234.5]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-site-types-parts-by-its-kind",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.badge }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Anna, Muster]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-site-type-of-a-built-in-alias-by-its-kind",
+      "description": "a site's type that replaces a built-in one shows as a choice by default: the label of its option, here the value",
+      "recall": {
+        "form": "site",
+        "answers": "site",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.regular }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[yes]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-date-in-the-short-format",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.day }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[07.03.2026]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-dates-wire-form-behind-it",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.day | date: \"long\" }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Samstag, 7. M\u00e4rz 2026]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-dates-value-with-the-date-behind",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.day.value | date: \"long\" }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Samstag, 7. M\u00e4rz 2026]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-time",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.arrival }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[14:30]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-date-and-time",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.start }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[07.03.2026 09:05]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-yes-by-its-label",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.member }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[I am a member]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-no-without-a-label-by-the-word",
+      "recall": {
+        "form": "library",
+        "answers": "other",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.member }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Nein]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-ticked-box",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.newsletter }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Ja]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-an-unticked-box",
+      "recall": {
+        "form": "library",
+        "answers": "other",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.newsletter }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Nein]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-consent",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.agree }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Ja]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-country-by-its-name",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.country }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Schweiz]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-an-address-on-one-line",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.address }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Bahnhofstrasse 1, 8001 Zurich, Schweiz]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-grid-by-its-rows",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.service }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Staff: Good, Rooms: Poor]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-grid-of-a-scale",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.scores }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Food: 4]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-grid-of-one-row-is-a-list",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.scores | json }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[[\"Food: 4\"]]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-rating",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.stars }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[4]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-label-or-the-alias",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.stars.label }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[stars]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-slider-with-its-unit",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.loudness }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[75 %]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-calculation-in-its-format",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.total }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[CHF 2\u2019469]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-calculation-with-two-places",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.plain }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[411.50]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-file-by-its-name",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.files }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[plan.pdf]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-ranking-in-its-order",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.ranking }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Books, Events]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-repeatable-group-by-its-rows",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.guests }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Guest: Ben; Age: 7; Ticket: \u2022\u2022\u2022, Guest: Cleo]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-child-across-the-rows",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.guests.guestName }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Ben, Cleo]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-child-by-its-own-alias",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.age }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[7]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-groups-label",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.guests.label }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Guests]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-a-childs-label",
+      "recall": {
+        "form": "library",
+        "answers": "library",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.guests.age.label }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Age]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-escaped-in-html",
+      "recall": {
+        "form": "library",
+        "answers": "other",
+        "owner": null,
+        "hidden": [],
+        "text": "<p>{{ field.topic }} and {{ field.name }}</p>",
+        "context": "html"
+      },
+      "expect": {
+        "text": "<p>Tom &amp; Jerry and Tom &amp; Jerry</p>",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-in-another-culture-a-number",
+      "context": {
+        "culture": "en-US"
+      },
+      "recall": {
+        "form": "english",
+        "answers": "english",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.cost }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[USD 1,234.5]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-in-another-culture-a-date",
+      "context": {
+        "culture": "en-US"
+      },
+      "recall": {
+        "form": "english",
+        "answers": "english",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.date }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[3/7/2026]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-in-another-culture-a-time",
+      "context": {
+        "culture": "en-US"
+      },
+      "recall": {
+        "form": "english",
+        "answers": "english",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.at }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[2:30 PM]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-in-another-culture-a-date-and-time",
+      "context": {
+        "culture": "en-US"
+      },
+      "recall": {
+        "form": "english",
+        "answers": "english",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.when }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[3/7/2026 9:05 PM]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-in-another-culture-the-words",
+      "context": {
+        "culture": "en-US"
+      },
+      "recall": {
+        "form": "english",
+        "answers": "english",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.optIn }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[Yes]",
+        "problems": []
+      }
+    },
+    {
+      "id": "recall-in-another-culture-a-no",
+      "context": {
+        "culture": "en-US"
+      },
+      "recall": {
+        "form": "english",
+        "answers": "english",
+        "owner": null,
+        "hidden": [],
+        "text": "[{{ field.club }}]",
+        "context": "text"
+      },
+      "expect": {
+        "text": "[No]",
+        "problems": []
       }
     }
   ]

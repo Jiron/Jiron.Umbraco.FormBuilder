@@ -13,7 +13,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 [TestFixture]
 public sealed class VectorTests
 {
-    private static readonly string[] Runnable = ["condition", "rule", "number", "calc", "formula", "form", "field", "template"];
+    private static readonly string[] Runnable = ["condition", "rule", "number", "calc", "formula", "form", "field", "template", "recall"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, JsonDocument>> Files = new(Load);
 
@@ -51,13 +51,13 @@ public sealed class VectorTests
     }
 
     [TestCaseSource(nameof(Cases))]
-    public void Vector(string name, string id)
+    public async Task Vector(string name, string id)
     {
         var root = Files.Value[name].RootElement;
         var vector = root.GetProperty("cases").EnumerateArray().Single(c => c.GetProperty("id").GetString() == id);
         var expected = JsonNode.Parse(vector.GetProperty("expect").GetRawText());
 
-        var actual = Run(root, vector);
+        var actual = vector.TryGetProperty("recall", out var recall) ? await RecallVector.RunAsync(id, root, recall, Culture(root, vector)) : Run(root, vector);
 
         Assert.That(JsonNode.DeepEquals(actual, expected), Is.True, $"expected {Show(expected)}, got {Show(actual)}");
     }
@@ -71,6 +71,13 @@ public sealed class VectorTests
     }
 
     private static string Show(JsonNode? node) => node?.ToJsonString() ?? "null";
+
+    /// <summary>The culture a case renders in: its own, or the file's default.</summary>
+    private static string Culture(JsonElement root, JsonElement vector)
+    {
+        var defaults = VectorReader.Context(root.GetProperty("defaults").GetProperty("context"));
+        return (vector.TryGetProperty("context", out var context) ? VectorReader.Context(context, defaults) : defaults).Culture;
+    }
 
     private static JsonObject Json(FormState state) => new()
     {

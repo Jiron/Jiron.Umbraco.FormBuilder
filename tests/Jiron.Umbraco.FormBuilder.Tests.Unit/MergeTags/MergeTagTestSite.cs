@@ -68,7 +68,7 @@ internal static class MergeTagTestSite
     /// <summary>
     /// The service of a site with its own sources and filters, whose time zone is <paramref name="zone"/> and whose
     /// general settings give <paramref name="baseUrl"/>, on a clock that starts at 2026-01-01 00:00 UTC unless the test
-    /// gives one, over the Umbraco the test gives.
+    /// gives one, over the Umbraco the test gives, printing with .NET's culture data unless the test gives formats.
     /// </summary>
     public static Site Create(
         IEnumerable<IFormBuilderMergeTagSource>? sources = null,
@@ -77,12 +77,13 @@ internal static class MergeTagTestSite
         TimeProvider? time = null,
         FieldTypeRegistry? types = null,
         TestUmbraco? umbraco = null,
-        string? baseUrl = null)
+        string? baseUrl = null,
+        MergeTagCultures? cultures = null)
     {
         umbraco ??= new TestUmbraco();
         var settings = Settings(zone, baseUrl);
         var clock = new MergeTagClock(settings, time ?? new TestTimeProvider());
-        var cultures = new MergeTagCultures();
+        cultures ??= new MergeTagCultures();
         var log = new RecordingLogger();
         var dictionary = umbraco.DictionaryTexts();
         var answers = new MergeTagAnswerTexts(types ?? TestFieldTypes.Registry, cultures, dictionary, log);

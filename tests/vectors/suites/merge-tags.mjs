@@ -1099,6 +1099,413 @@ const limits = [
   }),
 ];
 
+// ---- Answer recall (ROADMAP 5.3f, ADR-0068) ----
+// A `recall` case renders a visitor text over the answers given so far, as the browser's runtime does with
+// `recallAnswers` and the server with the visitor-text place: a form of the file's defaults (each field as both
+// runtimes read it: its type, whether it is the built-in one, its kind, alias, label, whether it holds a value or
+// parts, how recall shows it, its settings as the definition stores them, a text as an object of its cultures, and its
+// options' and rows' labels in the culture), a set of answers of the file's defaults, the page, group or field whose
+// text it is, the fields the rules hid, the text and its context. Fields, pages and groups have keys made from names.
+
+/** FNV-1a over a text's code points, from a seed. */
+function fnv(text, seed) {
+  let hash = seed >>> 0;
+  for (const character of text) {
+    hash ^= character.codePointAt(0);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  return hash;
+}
+
+const keysByName = new Map();
+/** The key of a field, page or group by its name: the same name, the same key, and no two names alike. */
+function key(name) {
+  const known = keysByName.get(name);
+  if (known !== undefined) return known;
+  const hex = (fnv(name, 2166136261).toString(16).padStart(8, '0') + fnv(name, 84696351).toString(16).padStart(8, '0')).slice(0, 12);
+  const made = `00000000-0000-4000-8000-${hex}`;
+  if ([...keysByName.values()].includes(made)) throw new Error(`the key of "${name}" is taken`);
+  keysByName.set(name, made);
+  return made;
+}
+
+/** The kind each built-in type's answers compare as (docs/api/field-types.json); none for the others. */
+const KINDS = {
+  text: 'text', textarea: 'text', email: 'text', phone: 'text', url: 'text', hidden: 'text',
+  number: 'number', rating: 'number', scale: 'number', slider: 'number', calculation: 'number',
+  date: 'date', time: 'time', datetime: 'dateTime',
+  dropdown: 'choice', radio: 'choice', yesno: 'choice', country: 'choice',
+  checkboxes: 'choices', ranking: 'choices', checkbox: 'checkbox', consent: 'checkbox',
+  file: 'files', signature: 'files',
+};
+const WITH_PARTS = new Set(['name', 'address']);
+const WITHOUT_VALUE = new Set(['heading', 'paragraph', 'divider', 'image', 'captcha']);
+
+/** A built-in field by its alias and type, as the projection writes it; `more` gives its label, settings and the rest. */
+function rf(alias, type, more = {}) {
+  return {
+    id: key(alias),
+    type,
+    builtIn: true,
+    kind: KINDS[type] ?? null,
+    alias,
+    holdsValue: !WITHOUT_VALUE.has(type),
+    ...(WITH_PARTS.has(type) ? { parts: true } : {}),
+    ...(type === 'hidden' ? { recall: 'none' } : {}),
+    ...more,
+  };
+}
+const option = (value, label) => ({ value, label });
+const gridRow = (name, label) => ({ id: key(name), label });
+/** A text setting as the definition stores it: an object of cultures, the default one only. */
+const text = (value) => ({ '': value });
+
+defaults.words = {
+  'de-CH': { yes: 'Ja', no: 'Nein' },
+  'en-US': { yes: 'Yes', no: 'No' },
+};
+
+defaults.forms = {
+  library: {
+    pages: [
+      {
+        id: key('page-about'),
+        groups: [
+          {
+            id: key('group-you'),
+            fields: [
+              rf('intro', 'heading', { alias: null }),
+              rf('name', 'name', { label: 'Your name', settings: { parts: ['first', 'last'] } }),
+              rf('email', 'email', { label: 'Email' }),
+              rf('budget', 'number', { label: 'Budget', settings: { prefix: text(' CHF '), suffix: text(' net ') } }),
+              rf('topic', 'radio', {
+                label: 'Topic',
+                settings: { other: true },
+                options: [option('events', 'Events'), option('books', 'Books')],
+              }),
+              rf('interests', 'checkboxes', {
+                label: 'Interests',
+                options: [option('reading', 'Reading'), option('music', 'Music'), option('games', 'Games')],
+              }),
+              rf('card', 'text', { label: 'Library card', recall: 'masked' }),
+              rf('campaign', 'hidden', { label: 'Campaign' }),
+              rf('stamp', 'stamp', { builtIn: false, kind: 'choice', label: 'Stamp', options: [option('gold', 'Gold')] }),
+              rf('weight', 'measure', { builtIn: false, kind: 'number', label: 'Weight' }),
+              rf('badge', 'badge', { builtIn: false, parts: true, label: 'Badge' }),
+            ],
+          },
+          {
+            id: key('group-visit'),
+            fields: [
+              rf('day', 'date', { label: 'Day' }),
+              rf('arrival', 'time', { label: 'Arrival' }),
+              rf('start', 'datetime', { label: 'Start' }),
+              rf('member', 'yesno', { label: 'Member', settings: { yesLabel: text('I am a member') } }),
+              rf('newsletter', 'checkbox', { label: 'Newsletter' }),
+              rf('country', 'country', { label: 'Country', options: [option('CH', 'Schweiz'), option('DE', 'Deutschland')] }),
+              rf('address', 'address', { label: 'Address', options: [option('CH', 'Schweiz')] }),
+              rf('service', 'grid', {
+                label: 'Service',
+                options: [option('good', 'Good'), option('poor', 'Poor')],
+                rows: [gridRow('staff', 'Staff'), gridRow('rooms', 'Rooms')],
+              }),
+              rf('scores', 'grid', { label: 'Scores', settings: { scale: { from: 1, to: 5 } }, rows: [gridRow('food', 'Food')] }),
+              rf('stars', 'rating'),
+              rf('loudness', 'slider', { label: 'Loudness', settings: { unit: text('%') } }),
+              rf('total', 'calculation', {
+                label: 'Total',
+                settings: { formula: 'budget * 2', format: { decimals: 0, prefix: text('CHF') } },
+              }),
+              rf('plain', 'calculation', { label: 'Plain', settings: { formula: 'budget / 3' } }),
+              rf('files', 'file', { label: 'Files' }),
+              rf('ranking', 'ranking', { label: 'Ranking', options: [option('events', 'Events'), option('books', 'Books')] }),
+              rf('agree', 'consent', { label: 'Consent' }),
+              rf('guests', 'repeater', {
+                label: 'Guests',
+                fields: [
+                  rf('guestName', 'text', { label: 'Guest' }),
+                  rf('age', 'number', { label: 'Age' }),
+                  rf('ticket', 'text', { label: 'Ticket', recall: 'masked' }),
+                ],
+              }),
+            ],
+          },
+        ],
+      },
+      {
+        id: key('page-more'),
+        groups: [{ id: key('group-later'), fields: [rf('remarks', 'textarea', { label: 'Remarks', formerAliases: ['notes'] })] }],
+      },
+    ],
+  },
+  english: {
+    pages: [
+      {
+        id: key('page-english'),
+        groups: [
+          {
+            id: key('group-english'),
+            fields: [
+              rf('cost', 'number', { label: 'Cost', settings: { prefix: text('USD') } }),
+              rf('date', 'date', { label: 'Date' }),
+              rf('at', 'time', { label: 'At' }),
+              rf('when', 'datetime', { label: 'When' }),
+              rf('optIn', 'checkbox', { label: 'Opt in' }),
+              rf('club', 'yesno', { label: 'Club' }),
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  // A site whose own yes/no type replaces the built-in one, whose display the browser does not have.
+  site: {
+    pages: [
+      {
+        id: key('page-site'),
+        groups: [
+          {
+            id: key('group-site'),
+            fields: [rf('regular', 'yesno', { builtIn: false, label: 'Regular', settings: { yesLabel: text('A regular') } })],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+/** An answer of values in the wire form; `files` for a field that stores files. */
+const answer = (...values) => ({ values: values.map((value) => (typeof value === 'string' ? { text: value } : value)) });
+const NAME = '{"first":"Anna","last":"Muster"}';
+
+const library = {
+  [key('name')]: answer(NAME),
+  [key('email')]: answer('anna@example.com'),
+  [key('budget')]: answer('1234.5'),
+  [key('topic')]: answer('events'),
+  [key('interests')]: answer('reading', 'games'),
+  [key('card')]: answer('4111'),
+  [key('campaign')]: answer('spring'),
+  [key('stamp')]: answer('gold'),
+  [key('weight')]: answer('1234.5'),
+  [key('badge')]: answer(NAME),
+  [key('day')]: answer('2026-03-07'),
+  [key('arrival')]: answer('14:30'),
+  [key('start')]: answer('2026-03-07T09:05'),
+  [key('member')]: answer('yes'),
+  [key('newsletter')]: answer('true'),
+  [key('country')]: answer('CH'),
+  [key('address')]: answer('{"street":"Bahnhofstrasse 1","postcode":"8001","city":"Zurich","country":"CH"}'),
+  [key('service')]: answer({ text: 'good', row: key('staff') }, { text: 'poor', row: key('rooms') }),
+  [key('scores')]: answer({ text: '4', row: key('food') }),
+  [key('stars')]: answer('4'),
+  [key('loudness')]: answer('75'),
+  [key('total')]: answer('2469'),
+  [key('plain')]: answer('411.5'),
+  [key('files')]: { ...answer('token-1'), files: [{ name: 'plan.pdf', size: 1200 }] },
+  [key('ranking')]: answer('books', 'events'),
+  [key('agree')]: answer('true'),
+  [key('remarks')]: answer('Nothing'),
+};
+const guests = [
+  { [key('guestName')]: answer('Ben'), [key('age')]: answer('7'), [key('ticket')]: answer('T-1') },
+  {},
+  { [key('guestName')]: answer('Cleo') },
+];
+
+defaults.answers = {
+  library: { fields: library, rows: { [key('guests')]: guests } },
+  other: {
+    fields: {
+      [key('name')]: answer('{"first":"Tom & Jerry"}'),
+      [key('topic')]: answer('Tom & Jerry'),
+      [key('member')]: answer('no'),
+      [key('newsletter')]: answer('false'),
+    },
+  },
+  none: {},
+  english: {
+    fields: {
+      [key('cost')]: answer('1234.5'),
+      [key('date')]: answer('2026-03-07'),
+      [key('at')]: answer('14:30'),
+      [key('when')]: answer('2026-03-07T21:05'),
+      [key('optIn')]: answer('true'),
+      [key('club')]: answer('no'),
+    },
+  },
+  site: { fields: { [key('regular')]: answer('yes') } },
+};
+
+const MASK = x('{2022}{2022}{2022}');
+
+/**
+ * A recall case: a visitor text, the expected text and its problems as `[code, token, nth]`; `more` gives the text's
+ * owner by name (none for a text after every field), the names of the fields the rules hid, the form and answers by
+ * name, the context, a culture or a description.
+ */
+function r(id, template, expected, problems = [], more = {}) {
+  const { owner = null, hidden = [], form = 'library', answers = 'library', context = 'text', culture: name, description } = more;
+  return {
+    id,
+    ...(description === undefined ? {} : { description }),
+    ...(name === undefined ? {} : { context: { culture: name } }),
+    recall: { form, answers, owner: owner === null ? null : key(owner), hidden: hidden.map(key), text: template, context },
+    expect: {
+      text: expected,
+      problems: problems.map(([code, token, nth]) => ({ code, at: find(template, token, nth) })),
+    },
+  };
+}
+
+/** A case whose text recalls one tag after every field, and shows what it gives. */
+const shows = (id, tag, expected, more = {}) => r(id, `[{{ ${tag} }}]`, `[${expected}]`, [], more);
+
+const recalling = [
+  // Where a text may look: fields before it in the order of the form.
+  r('recall-a-field-above', 'Thanks, {{ field.name.first }}. Your email?', 'Thanks, Anna. Your email?', [], { owner: 'email' }),
+  r('recall-a-field-on-an-earlier-page', '{{ field.name }} from {{ field.country }}', 'Anna Muster from Schweiz', [], {
+    owner: 'remarks',
+  }),
+  r('recall-a-field-the-rules-hid-is-empty', 'Mail: {{ field.email }}.', 'Mail: .', [], { owner: 'remarks', hidden: ['email'] }),
+  r('recall-a-later-field-is-refused', 'Hi {{ field.remarks }}!', 'Hi {{ field.remarks }}!', [['field_after_text', 'field.remarks']], {
+    owner: 'email',
+    description: 'written as it stands, as any tag with an error, in both runtimes',
+  }),
+  r('recall-the-field-itself-is-refused', 'Is {{ field.email }} right?', 'Is {{ field.email }} right?', [['field_after_text', 'field.email']], {
+    owner: 'email',
+  }),
+  r('recall-a-later-fields-label-is-refused-too', '{{ field.remarks.label }}', '{{ field.remarks.label }}', [['field_after_text', 'field.remarks']], {
+    owner: 'email',
+  }),
+  r(
+    'recall-before-and-after-in-one-text',
+    '{{ field.name.first }} / {{ field.remarks }} / {{ field.email }}',
+    'Anna / {{ field.remarks }} / anna@example.com',
+    [['field_after_text', 'field.remarks']],
+    { owner: 'day' },
+  ),
+  r('recall-a-text-block-takes-the-fields-above-it', '{{ field.name }}', '{{ field.name }}', [['field_after_text', 'field.name']], {
+    owner: 'intro',
+    description: 'the heading comes before every field of its group',
+  }),
+  r('recall-a-page-title-takes-the-earlier-pages', '{{ field.name.first }}, one more page', 'Anna, one more page', [], {
+    owner: 'page-more',
+  }),
+  r('recall-the-first-page-title-takes-nothing', '{{ field.name.first }}', '{{ field.name.first }}', [['field_after_text', 'field.name']], {
+    owner: 'page-about',
+  }),
+  r(
+    'recall-a-group-title-takes-the-groups-before-it',
+    '{{ field.email }} / {{ field.day }}',
+    'anna@example.com / {{ field.day }}',
+    [['field_after_text', 'field.day']],
+    { owner: 'group-visit' },
+  ),
+  r('recall-a-child-takes-a-child-before-it-across-the-rows', '{{ field.guestName }}', 'Ben, Cleo', [], { owner: 'age' }),
+  r('recall-a-child-refuses-its-own-group', '{{ field.guests }}', '{{ field.guests }}', [['field_after_text', 'field.guests']], {
+    owner: 'age',
+    description: 'the repeatable group holds the text, so it does not come before it',
+  }),
+  r('recall-a-group-refuses-its-children', '{{ field.guests.age }}', '{{ field.guests.age }}', [['field_after_text', 'field.guests.age']], {
+    owner: 'guests',
+  }),
+  r('recall-after-every-field', '{{ field.remarks }}', 'Nothing'),
+  r('recall-an-owner-the-form-lacks-is-after-every-field', '{{ field.remarks }}', 'Nothing', [], { owner: 'nowhere' }),
+  r('recall-names-fields-by-their-current-aliases', '[{{ field.notes }}]', '[]', [['unknown_path', 'field.notes']], {
+    description: 'the former alias "notes" of remarks is not in the projection, so neither runtime resolves it',
+  }),
+  r('recall-an-unknown-field', '[{{ field.nope }}]', '[]', [['unknown_path', 'field.nope']]),
+  r('recall-a-path-a-field-lacks', '[{{ field.email.first }}][{{ field.guests.value }}][{{ field.name.first.x }}]', '[][][]', [
+    ['unknown_path', 'field.email.first'],
+    ['unknown_path', 'field.guests.value'],
+    ['unknown_path', 'field.name.first.x'],
+  ]),
+
+  // What a field shows: masked, nothing, the rules' hiding.
+  shows('recall-a-masked-field-once-answered', 'field.card', MASK),
+  shows('recall-a-masked-field-without-an-answer-is-empty', 'field.card', '', { answers: 'other' }),
+  shows('recall-a-masked-fields-value-is-masked-too', 'field.card.value', MASK),
+  shows('recall-a-masked-child-once-answered', 'field.guests.ticket', MASK),
+  shows('recall-a-masked-child-without-an-answer-is-empty', 'field.ticket', '', { answers: 'other' }),
+  shows('recall-a-hidden-fields-value-stays-on-the-server', 'field.campaign', ''),
+  shows('recall-a-hidden-fields-label-shows', 'field.campaign.label', 'Campaign'),
+  shows('recall-a-group-the-rules-hid-hides-its-children', 'field.guestName', '', { hidden: ['guests'] }),
+  shows('recall-a-group-the-rules-hid-is-no-list', 'field.guests | json', '""', { hidden: ['guests'] }),
+  shows('recall-a-group-the-rules-hid-is-empty', 'field.guests', '', { hidden: ['guests'] }),
+  shows('recall-a-child-the-rules-hid-is-empty', 'field.guests', 'Guest: Ben; Ticket: ' + MASK + ', Guest: Cleo', { hidden: ['age'] }),
+  shows('recall-an-unanswered-field-is-empty', 'field.email', '', { answers: 'none' }),
+
+  // The answers as their types write them.
+  shows('recall-a-name-by-its-parts', 'field.name', 'Anna Muster'),
+  shows('recall-a-part', 'field.name.last', 'Muster'),
+  shows('recall-a-part-not-given-is-empty', 'field.name.middle', ''),
+  shows('recall-a-text-as-it-is', 'field.email', 'anna@example.com'),
+  shows('recall-a-number-between-its-prefix-and-suffix', 'field.budget', 'CHF 1' + QUOTE + '234.5 net', {
+    description: 'the prefix and the suffix are trimmed, then each is apart from the number by a space',
+  }),
+  shows('recall-a-numbers-wire-form-behind-it', 'field.budget | number: 0', '1' + QUOTE + '235'),
+  shows('recall-a-numbers-value', 'field.budget.value', '1234.5'),
+  shows('recall-a-numbers-value-with-the-number-behind', 'field.budget.value | number: 2', '1' + QUOTE + '234.50'),
+  shows('recall-a-numbers-value-is-a-number-in-json', 'field.budget.value | json', '1234.5'),
+  shows('recall-a-choice-by-its-label', 'field.topic', 'Events'),
+  shows('recall-a-visitors-other-text', 'field.topic', 'Tom & Jerry', { answers: 'other' }),
+  shows('recall-choices-as-a-list', 'field.interests', 'Reading, Games'),
+  shows('recall-choices-joined', 'field.interests | join: " + "', 'Reading + Games'),
+  shows('recall-choices-values', 'field.interests.value | json', '["reading","games"]'),
+  shows('recall-a-site-type-by-its-kind', 'field.stamp', 'Gold', {
+    description: "the server's own display of the site's type is not used where the browser renders too",
+  }),
+  shows('recall-a-site-types-number-by-its-kind', 'field.weight', '1' + QUOTE + '234.5'),
+  shows('recall-a-site-types-parts-by-its-kind', 'field.badge', 'Anna, Muster'),
+  shows('recall-a-site-type-of-a-built-in-alias-by-its-kind', 'field.regular', 'yes', {
+    form: 'site',
+    answers: 'site',
+    description: "a site's type that replaces a built-in one shows as a choice by default: the label of its option, here the value",
+  }),
+  shows('recall-a-date-in-the-short-format', 'field.day', '07.03.2026'),
+  shows('recall-a-dates-wire-form-behind-it', 'field.day | date: "long"', 'Samstag, 7. M' + x('{e4}') + 'rz 2026'),
+  shows('recall-a-dates-value-with-the-date-behind', 'field.day.value | date: "long"', 'Samstag, 7. M' + x('{e4}') + 'rz 2026'),
+  shows('recall-a-time', 'field.arrival', '14:30'),
+  shows('recall-a-date-and-time', 'field.start', '07.03.2026 09:05'),
+  shows('recall-a-yes-by-its-label', 'field.member', 'I am a member'),
+  shows('recall-a-no-without-a-label-by-the-word', 'field.member', 'Nein', { answers: 'other' }),
+  shows('recall-a-ticked-box', 'field.newsletter', 'Ja'),
+  shows('recall-an-unticked-box', 'field.newsletter', 'Nein', { answers: 'other' }),
+  shows('recall-a-consent', 'field.agree', 'Ja'),
+  shows('recall-a-country-by-its-name', 'field.country', 'Schweiz'),
+  shows('recall-an-address-on-one-line', 'field.address', 'Bahnhofstrasse 1, 8001 Zurich, Schweiz'),
+  shows('recall-a-grid-by-its-rows', 'field.service', 'Staff: Good, Rooms: Poor'),
+  shows('recall-a-grid-of-a-scale', 'field.scores', 'Food: 4'),
+  shows('recall-a-grid-of-one-row-is-a-list', 'field.scores | json', '["Food: 4"]'),
+  shows('recall-a-rating', 'field.stars', '4'),
+  shows('recall-a-label-or-the-alias', 'field.stars.label', 'stars'),
+  shows('recall-a-slider-with-its-unit', 'field.loudness', '75 %'),
+  shows('recall-a-calculation-in-its-format', 'field.total', 'CHF 2' + QUOTE + '469'),
+  shows('recall-a-calculation-with-two-places', 'field.plain', '411.50'),
+  shows('recall-a-file-by-its-name', 'field.files', 'plan.pdf'),
+  shows('recall-a-ranking-in-its-order', 'field.ranking', 'Books, Events'),
+  shows('recall-a-repeatable-group-by-its-rows', 'field.guests', 'Guest: Ben; Age: 7; Ticket: ' + MASK + ', Guest: Cleo'),
+  shows('recall-a-child-across-the-rows', 'field.guests.guestName', 'Ben, Cleo'),
+  shows('recall-a-child-by-its-own-alias', 'field.age', '7'),
+  shows('recall-a-groups-label', 'field.guests.label', 'Guests'),
+  shows('recall-a-childs-label', 'field.guests.age.label', 'Age'),
+  r('recall-escaped-in-html', '<p>{{ field.topic }} and {{ field.name }}</p>', '<p>Tom &amp; Jerry and Tom &amp; Jerry</p>', [], {
+    answers: 'other',
+    context: 'html',
+  }),
+  shows('recall-in-another-culture-a-number', 'field.cost', 'USD 1,234.5', { form: 'english', answers: 'english', culture: 'en-US' }),
+  shows('recall-in-another-culture-a-date', 'field.date', '3/7/2026', { form: 'english', answers: 'english', culture: 'en-US' }),
+  shows('recall-in-another-culture-a-time', 'field.at', '2:30 PM', { form: 'english', answers: 'english', culture: 'en-US' }),
+  shows('recall-in-another-culture-a-date-and-time', 'field.when', '3/7/2026 9:05 PM', {
+    form: 'english',
+    answers: 'english',
+    culture: 'en-US',
+  }),
+  shows('recall-in-another-culture-the-words', 'field.optIn', 'Yes', { form: 'english', answers: 'english', culture: 'en-US' }),
+  shows('recall-in-another-culture-a-no', 'field.club', 'No', { form: 'english', answers: 'english', culture: 'en-US' }),
+];
+
 export default {
   suite: 'merge-tags',
   defaults,
@@ -1120,5 +1527,6 @@ export default {
     ...places,
     ...lists,
     ...limits,
+    ...recalling,
   ],
 };

@@ -14,6 +14,7 @@ import {
   formatDecimal,
   LogicError,
   parseTemplate,
+  recallAnswers,
   renderTemplate,
   storedNumber,
   type Calculation,
@@ -21,12 +22,16 @@ import {
   type Condition,
   type Context,
   type CultureFormats,
+  type DisplayWords,
   type FieldAnswers,
   type FormAnswers,
   type FormulaScope,
   type Kind,
   type LogicForm,
   type MergeValue,
+  type RecallAnswers,
+  type RecallField,
+  type RecallForm,
   type Rule,
   type Subject,
   type TemplateContext,
@@ -50,6 +55,7 @@ interface VectorCase {
   readonly field?: CheckedField;
   readonly answers?: FieldAnswers;
   readonly template?: VectorTemplate;
+  readonly recall?: VectorRecall;
   readonly expect: unknown;
 }
 
@@ -58,6 +64,32 @@ interface VectorTemplate {
   readonly text: string;
   readonly context: TemplateContext;
   readonly sources: Readonly<Record<string, MergeValue>>;
+}
+
+/**
+ * A visitor text rendered with answer recall (ADR-0068): a form and a set of answers of the file's defaults by name,
+ * the page, group or field whose text it is, the fields the rules hid, the text and its context.
+ */
+interface VectorRecall {
+  readonly form: string;
+  readonly answers: string;
+  readonly owner: string | null;
+  readonly hidden: readonly string[];
+  readonly text: string;
+  readonly context: TemplateContext;
+}
+
+/** A field of a recall form as the vectors write it: settings as the definition stores them, the server's own extras. */
+interface VectorRecallField extends Omit<RecallField, 'fields'> {
+  readonly fields?: readonly VectorRecallField[];
+  readonly formerAliases?: readonly string[];
+}
+
+interface VectorRecallForm {
+  readonly pages: readonly {
+    readonly id: string;
+    readonly groups?: readonly { readonly id: string; readonly fields?: readonly VectorRecallField[] }[];
+  }[];
 }
 
 /** A built-in type as the reviewed snapshot of the field types endpoint serves it (docs/api/field-types.json). */
@@ -127,13 +159,19 @@ function heldToItsType(id: string, field: CheckedField, answers: FieldAnswers): 
 interface VectorFile {
   readonly format: string;
   readonly suite: string;
-  readonly defaults: { readonly context: Context; readonly cultures?: Readonly<Record<string, CultureFormats>> };
+  readonly defaults: {
+    readonly context: Context;
+    readonly cultures?: Readonly<Record<string, CultureFormats>>;
+    readonly words?: Readonly<Record<string, DisplayWords>>;
+    readonly forms?: Readonly<Record<string, VectorRecallForm>>;
+    readonly answers?: Readonly<Record<string, RecallAnswers>>;
+  };
   readonly fields: Readonly<Record<string, Kind>>;
   readonly cases: readonly VectorCase[];
 }
 
 /** The things a case can run; each case has exactly one. */
-const RUNNABLE = ['condition', 'rule', 'number', 'calc', 'formula', 'form', 'field', 'template'] as const;
+const RUNNABLE = ['condition', 'rule', 'number', 'calc', 'formula', 'form', 'field', 'template', 'recall'] as const;
 
 const folder = vectorsFolder();
 const names = readdirSync(folder)
@@ -148,6 +186,39 @@ function formulaScope(subject: Subject): FormulaScope {
     kind: (alias) => own(subject.fields, alias),
     answers: (alias) => (subject.context.hidden.includes(alias) ? undefined : own(subject.values, alias)),
     today: () => today(subject.context.now, subject.context.timeZone),
+  };
+}
+
+/**
+ * A setting as the projection gives it to the browser: a text of the definition's (an object with the default culture)
+ * as its text in the page's culture, and an object's settings each in turn.
+ */
+function resolved(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) return value;
+  if (Array.isArray(value)) return value.map(resolved);
+  const record = value as Readonly<Record<string, unknown>>;
+  if (Object.hasOwn(record, '')) return record[''];
+  return Object.fromEntries(Object.entries(record).map(([name, inner]) => [name, resolved(inner)]));
+}
+
+/** A recall form's field as the browser's runtime reads it: its texts in the culture, without the server's extras. */
+function recallField(field: VectorRecallField): RecallField {
+  const { fields, settings, ...rest } = field;
+  const own: Record<string, unknown> = { ...rest };
+  delete own.formerAliases;
+  return {
+    ...(own as Omit<RecallField, 'fields' | 'settings'>),
+    ...(settings === undefined ? {} : { settings: resolved(settings) as Readonly<Record<string, unknown>> }),
+    ...(fields === undefined ? {} : { fields: fields.map(recallField) }),
+  };
+}
+
+function recallForm(form: VectorRecallForm): RecallForm {
+  return {
+    pages: form.pages.map((page) => ({
+      id: page.id,
+      groups: (page.groups ?? []).map((group) => ({ id: group.id, fields: (group.fields ?? []).map(recallField) })),
+    })),
   };
 }
 
@@ -182,6 +253,18 @@ function run(file: VectorFile, vector: VectorCase): unknown {
         throw new Error(`${vector.id}: the file has no formats for ${subject.context.culture}`);
       const parsed = parseTemplate(text, context);
       return renderTemplate(parsed, (path) => (Object.hasOwn(sources, path) ? sources[path] : undefined), culture);
+    }
+    if (vector.recall !== undefined) {
+      const { form, answers, owner, hidden, text, context } = vector.recall;
+      const name = subject.context.culture;
+      const culture = file.defaults.cultures?.[name];
+      const words = file.defaults.words?.[name];
+      const read = file.defaults.forms?.[form];
+      const given = file.defaults.answers?.[answers];
+      if (culture === undefined || words === undefined || read === undefined || given === undefined)
+        throw new Error(`${vector.id}: the file lacks the formats or words of ${name}, the form or the answers`);
+      const recall = recallAnswers(recallForm(read), owner, given, hidden, words, culture);
+      return renderTemplate(parseTemplate(text, context, recall.pathProblem), recall.values, culture);
     }
   } catch (error) {
     if (error instanceof LogicError)
