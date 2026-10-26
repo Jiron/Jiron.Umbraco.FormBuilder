@@ -46,6 +46,9 @@ internal sealed partial class FormBuilderFormService
             return new FormVersionResult(await infos.InfoAsync(form, cancellationToken), null);
         }
 
+        // A locked setting keeps the lock's value, or the one the draft held from before the lock came (ADR-0060).
+        locks.CheckSave(definition, draft is null ? null : serializer.ReadStored(draft.Definition).Definition);
+
         await changes.CancelableAsync(new FormSavingNotification(definition, form.Alias, form.Name, isNew: false, userKey, new EventMessages()));
         var saved = await changes.WriteAsync(
             () => forms.SaveDraftAsync(form.Id, expectedConcurrencyVersion, document, comment, userKey, cancellationToken),
@@ -93,7 +96,9 @@ internal sealed partial class FormBuilderFormService
             return new FormVersionResult(await infos.InfoAsync(form, cancellationToken), null);
         }
 
-        // Every check's problems together, at most as many as one read reports.
+        // Every check's problems together, at most as many as one read reports, over the draft as the site will run it:
+        // with the host's designer locks applied (ADR-0060).
+        var running = locks.Apply(definition);
         var problems = new DefinitionProblems();
         foreach (var check in _publishChecks)
         {
@@ -102,7 +107,7 @@ internal sealed partial class FormBuilderFormService
                 break;
             }
 
-            foreach (var problem in await check.CheckAsync(definition, cancellationToken))
+            foreach (var problem in await check.CheckAsync(running, cancellationToken))
             {
                 problems.Add(problem);
             }

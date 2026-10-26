@@ -1,7 +1,9 @@
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi.Designer;
+using Microsoft.Extensions.Options;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.ManagementApi;
 
@@ -13,26 +15,28 @@ public sealed class FieldTypeModelsTests
 {
     private static readonly FieldTypeRegistry Registry = TestFieldTypes.Registry;
 
+    private static readonly FieldSettingLocks NoLocks = new(Options.Create(new FormBuilderOptions()), Registry);
+
     [Test]
     public void EachType_KeepsItsAvailability_AndTheCountsMustAgree()
     {
         var availability = Registry.Types.Select((type, i) => i == 1 ? FieldTypeAvailability.NotConfigured("#acme_noKeys") : FieldTypeAvailability.Available).ToList();
 
-        var model = FieldTypesResponseModel.Of(Registry.Types, availability);
+        var model = FieldTypesResponseModel.Of(Registry.Types, availability, NoLocks);
 
         Assert.Multiple(() =>
         {
             Assert.That(model.Types.Select(type => type.Alias), Is.EqualTo(Registry.Types.Select(type => type.Declaration.Alias)));
             Assert.That(model.Types[1].Availability, Is.EqualTo(new FieldTypeAvailabilityResponseModel(false, "#acme_noKeys")));
             Assert.That(model.Types[0].Availability, Is.EqualTo(new FieldTypeAvailabilityResponseModel(true, null)));
-            Assert.Throws<ArgumentException>(() => FieldTypesResponseModel.Of(Registry.Types, availability.Take(3).ToList()), "an availability for every type");
+            Assert.Throws<ArgumentException>(() => FieldTypesResponseModel.Of(Registry.Types, availability.Take(3).ToList(), NoLocks), "an availability for every type");
         });
     }
 
     [Test]
     public void TheGroups_AreEveryValueOfTheirEnums_InOrder_EachWithItsKey()
     {
-        var model = FieldTypesResponseModel.Of([], []);
+        var model = FieldTypesResponseModel.Of([], [], NoLocks);
 
         Assert.Multiple(() =>
         {
@@ -55,7 +59,7 @@ public sealed class FieldTypeModelsTests
             Assert.That(FieldTypeNames.OfFeatures(FieldFeatures.Label | FieldFeatures.Places), Is.EqualTo(new[] { "label", "places" }));
             foreach (var type in Registry.Types)
             {
-                var messages = FieldTypeResponseModel.Of(type, FieldTypeAvailability.Available).Messages;
+                var messages = FieldTypeResponseModel.Of(type, FieldTypeAvailability.Available, []).Messages;
                 Assert.That(messages, Is.EqualTo(FieldMessageProperties.All.Where(message => type.Declaration.Messages.HasFlag(message.Kind)).Select(message => message.Name)), type.Declaration.Alias);
             }
         });
@@ -64,7 +68,7 @@ public sealed class FieldTypeModelsTests
     [Test]
     public void ASetting_CarriesItsKindChoicesNestedSettingsDefaultAndRules()
     {
-        var email = FieldTypeResponseModel.Of(Registry.FindType("email")!, FieldTypeAvailability.Available);
+        var email = FieldTypeResponseModel.Of(Registry.FindType("email")!, FieldTypeAvailability.Available, []);
         var domains = email.Settings.Single(setting => setting.Name == "domains");
         var mode = domains.Settings.Single(setting => setting.Name == "mode");
         var list = domains.Settings.Single(setting => setting.Name == "list");
@@ -81,7 +85,7 @@ public sealed class FieldTypeModelsTests
             Assert.That(mode.Default?.GetString(), Is.EqualTo("any"));
             Assert.That((list.Kind, list.ItemKind, list.Rules.MaximumLength, list.Rules.MaximumCount), Is.EqualTo(("list", "text", 253, FieldSettingRules.ListCount)));
             Assert.That(email.RuleKind, Is.EqualTo("text"));
-            Assert.That(FieldTypeResponseModel.Of(Registry.FindType("captcha")!, FieldTypeAvailability.Available).RuleKind, Is.Null);
+            Assert.That(FieldTypeResponseModel.Of(Registry.FindType("captcha")!, FieldTypeAvailability.Available, []).RuleKind, Is.Null);
         });
     }
 

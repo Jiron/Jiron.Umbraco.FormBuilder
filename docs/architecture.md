@@ -67,7 +67,7 @@ database connection of its own. Its areas:
 | Area | Holds | Decided in |
 | --- | --- | --- |
 | Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions and their comparison, and the exchange of forms (`Exchange`: element keys and their remap, copied actions, the export envelope) | ADR-0002, ADR-0045, ADR-0046 |
-| Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053 |
+| Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good, and the published form as the site runs it), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053, ADR-0060 |
 | Fields and options | the field type registry, the built-in types, option sources and lists, places on options | ADR-0002, §4.3.2 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
@@ -202,7 +202,12 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   `FieldTypeChanges` works out which types a field may become and what each change keeps and loses (its settings, by
   name, kind and rules; common properties; messages; the operators of rules; the columns of older answers), from the
   declarations and schemas alone ([ADR-0059](decisions/0059-changing-field-types.md)), for the inspector's "Change
-  type" (9.4).
+  type" (9.4). `FieldSettingLocks` resolves the host's designer locks of field settings against the registry
+  ([ADR-0060](decisions/0060-designer-locks-of-field-settings.md)): start-up refuses a lock on a type or a setting the
+  site lacks, or with a value the setting refuses; `GET field-type` marks a locked setting read-only with its value, or
+  hidden without it; a draft save refuses another value (`409 setting_locked`) unless the stored draft held it; and
+  the published form the site runs (`GetPublishedAsync`) and every publish check use the locked values, while stored
+  definitions keep the editors' own.
 - **The public projection** is built from an allowlist of public types (`Core.Definitions.Projection`) and carries no
   actions, outcomes, recipients, option-source configuration, privacy settings or switched-off rules; its SHA-256 is
   `PublicHash`. Its TypeScript types and schema ship in `schemas/` (6.6).

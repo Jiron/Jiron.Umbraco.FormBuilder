@@ -12,7 +12,7 @@ internal static class FormBuilderFieldTypeServices
 {
     /// <summary>
     /// Registers the collection of field types (the built-in ones, and whatever the site's composers change), the
-    /// registry over it, and the start-up check of both.
+    /// registry over it and the host's locks of their settings, with their start-up checks.
     /// </summary>
     public static IUmbracoBuilder AddFormBuilderFieldTypes(this IUmbracoBuilder builder)
     {
@@ -25,13 +25,18 @@ internal static class FormBuilderFieldTypeServices
         return builder;
     }
 
-    /// <summary>Registers the registry over the collection of field types, its start-up check, and the check of their availability.</summary>
+    /// <summary>
+    /// Registers the registry over the collection of field types and the host's locks of their settings (ADR-0060), with
+    /// the start-up check of each, and the check of their availability.
+    /// </summary>
     public static IServiceCollection AddFieldTypeRegistry(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddSingleton(provider => new FieldTypeRegistry(provider.GetRequiredService<FormBuilderFieldTypeCollection>()));
+        services.TryAddSingleton<FieldSettingLocks>();
         services.TryAddSingleton<FieldTypeAvailabilityService>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderStartupChecks>, FieldTypeStartupCheck>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderStartupChecks>, FieldSettingLockStartupCheck>());
         return services;
     }
 }

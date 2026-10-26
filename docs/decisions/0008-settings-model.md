@@ -2,7 +2,8 @@
 
 - Status: accepted, the site of a request without content amended in 1.7b; host defaults and the validation status
   amended in 1.8; site rows, host rules, the save and the time zone's spelling amended in 4.4b
-  ([ADR-0043](0043-backoffice-settings-sections.md))
+  ([ADR-0043](0043-backoffice-settings-sections.md)); designer locks of field settings amended in 5.1f
+  ([ADR-0060](0060-designer-locks-of-field-settings.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.4 (the framework), each section in the step that builds its service, the
   screens in Phase 9 and later
@@ -98,7 +99,9 @@ setting that says `inherit` (ADR-0002), the effective site value is its default.
   type in every form: `{ "kind": "action", "type": "email", "setting": "from", "value": "noreply@example.com", "hidden": true }`,
   with `kind` `field` or `action`. The designer shows a locked setting read-only (or not at all when hidden), the
   management API refuses another value with `409 setting_locked`, and the runtime uses the locked value whatever a
-  stored definition says.
+  stored definition says. **Amended in 5.1f (ADR-0060):** a draft save also takes the value the stored draft already
+  holds for the same field, so a lock that comes later never stops a form from saving; publishing checks the draft with
+  the locked values; and the draft, versions and exports show what editors stored.
 - The management API returns, per field, the effective value, whether and how it is locked, and the key that locks
   it. The screen shows a locked field read-only with that key (§4.13, "Safe by design").
 

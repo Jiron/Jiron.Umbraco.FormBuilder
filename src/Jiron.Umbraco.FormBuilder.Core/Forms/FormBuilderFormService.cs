@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
@@ -28,6 +29,13 @@ internal interface IFormBuilderFormService
     /// <summary>A form opened for editing, with its draft, or null.</summary>
     Task<FormDraft?> GetDraftAsync(Guid key, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// A form's published version as the website runs it: read and upgraded, with the host's designer locks applied
+    /// (ADR-0060). Null when the form does not exist, is in the trash or is not published.
+    /// </summary>
+    /// <exception cref="FormBuilderValidationException">The published version cannot be read, with what is wrong with it.</exception>
+    Task<PublishedForm?> GetPublishedAsync(Guid key, CancellationToken cancellationToken = default);
+
     /// <summary>Creates a form from blank, with the new-form defaults of the general settings (section 4.8).</summary>
     /// <exception cref="FormBuilderValidationException">The name or the alias is not allowed.</exception>
     /// <exception cref="FormBuilderConflictException">The alias is taken, or the folder is missing or in the trash.</exception>
@@ -39,13 +47,18 @@ internal interface IFormBuilderFormService
     /// </summary>
     /// <exception cref="FormBuilderConcurrencyException">Someone changed the form meanwhile.</exception>
     /// <exception cref="FormBuilderValidationException">A save refuses the definition, for example above a lowered limit.</exception>
+    /// <exception cref="FormBuilderSettingLockedException">
+    /// The definition gives a setting that the host locks another value than the lock's, or than the stored draft held
+    /// (<c>setting_locked</c>, ADR-0060).
+    /// </exception>
     /// <exception cref="FormBuilderConflictException">The form is in the trash.</exception>
     /// <exception cref="FormBuilderCancelledException">A handler cancelled the save.</exception>
     Task<FormVersionResult?> SaveDraftAsync(Guid key, int expectedConcurrencyVersion, FormDefinition definition, string? comment, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Publishes the stored draft after every publish check, and updates the field catalogue. A draft that is the live
-    /// version already writes nothing. Null when the form does not exist.
+    /// Publishes the stored draft after every publish check, which reads it with the host's designer locks applied
+    /// (ADR-0060), and updates the field catalogue. A draft that is the live version already writes nothing. Null when the
+    /// form does not exist.
     /// </summary>
     /// <exception cref="FormBuilderConcurrencyException">Someone changed the form meanwhile.</exception>
     /// <exception cref="FormBuilderValidationException">A publish check refuses the draft.</exception>
@@ -121,6 +134,7 @@ internal sealed partial class FormBuilderFormService(
     FormCreation creation,
     FormDefinitionSerializer serializer,
     FieldTypeRegistry types,
+    FieldSettingLocks locks,
     IEnumerable<IFormPublishCheck> publishChecks,
     FormRemoval removal,
     AccessSnapshotInvalidator snapshots,
@@ -173,5 +187,17 @@ internal sealed partial class FormBuilderFormService(
         var live = form.PublishedVersionId is { } liveId ? await forms.GetVersionByIdAsync(liveId, cancellationToken) : null;
         var unpublished = live is null || read.Definition is null || documents.HashOf(live) != FormDocuments.HashOf(read.Definition);
         return new FormDraft(await infos.InfoAsync(form, cancellationToken), read.Definition, problems, draft.Info.Number, live?.Info.Number, unpublished);
+    }
+
+    /// <inheritdoc />
+    public async Task<PublishedForm?> GetPublishedAsync(Guid key, CancellationToken cancellationToken = default)
+    {
+        if (await forms.GetAsync(key, cancellationToken) is not { TrashedUtc: null, PublishedVersionId: { } liveId } form
+            || await forms.GetVersionByIdAsync(liveId, cancellationToken) is not { } live)
+        {
+            return null;
+        }
+
+        return new PublishedForm(await infos.InfoAsync(form, cancellationToken), locks.Apply(documents.Readable(live)), live.Info.Number);
     }
 }

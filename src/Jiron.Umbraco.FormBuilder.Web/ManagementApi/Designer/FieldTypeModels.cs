@@ -7,8 +7,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Designer;
 
 /// <summary>
 /// The site's field types for the designer (ADR-0057): the groups of the palette and of the inspector in the order they
-/// are shown, and every type in the registry's order. Names and enum values are in camel case, as definition documents
-/// write them; a text is plain text or a <c>#</c> key of the backoffice's localisation.
+/// are shown, and every type in the registry's order with the host's locks of its settings (ADR-0060). Names and enum
+/// values are in camel case, as definition documents write them; a text is plain text or a <c>#</c> key of the
+/// backoffice's localisation.
 /// </summary>
 internal sealed record FieldTypesResponseModel
 {
@@ -21,11 +22,12 @@ internal sealed record FieldTypesResponseModel
     /// <summary>The field types: the built-in ones in palette order, then the site's.</summary>
     public required IReadOnlyList<FieldTypeResponseModel> Types { get; init; }
 
-    /// <summary>The model of the registry's types, with the availability of each in the same order.</summary>
-    public static FieldTypesResponseModel Of(IReadOnlyList<IFormBuilderFieldType> types, IReadOnlyList<FieldTypeAvailability> availability)
+    /// <summary>The model of the registry's types, with the availability of each in the same order and the host's locks.</summary>
+    public static FieldTypesResponseModel Of(IReadOnlyList<IFormBuilderFieldType> types, IReadOnlyList<FieldTypeAvailability> availability, FieldSettingLocks locks)
     {
         ArgumentNullException.ThrowIfNull(types);
         ArgumentNullException.ThrowIfNull(availability);
+        ArgumentNullException.ThrowIfNull(locks);
         if (types.Count != availability.Count)
         {
             throw new ArgumentException("Every type needs its availability, in the same order.", nameof(availability));
@@ -35,7 +37,7 @@ internal sealed record FieldTypesResponseModel
         {
             PaletteGroups = [.. Enum.GetValues<FieldPaletteGroup>().Select(group => new FieldGroupResponseModel(FieldTypeNames.Of(group), $"#jfbFieldPalette_{FieldTypeNames.Of(group)}"))],
             SettingGroups = [.. Enum.GetValues<FieldSettingGroup>().Select(group => new FieldGroupResponseModel(FieldTypeNames.Of(group), $"#jfbFieldSettingGroups_{FieldTypeNames.Of(group)}"))],
-            Types = [.. types.Select((type, i) => FieldTypeResponseModel.Of(type, availability[i]))],
+            Types = [.. types.Select((type, i) => FieldTypeResponseModel.Of(type, availability[i], locks.Of(type.Declaration.Alias)))],
         };
     }
 }
@@ -84,17 +86,18 @@ internal sealed record FieldTypeResponseModel
     /// <summary>The error kinds it raises, each the name of a field's message, such as <c>required</c>.</summary>
     public required IReadOnlyList<string> Messages { get; init; }
 
-    /// <summary>Its settings, in the order the inspector shows them.</summary>
+    /// <summary>Its settings, in the order the inspector shows them, each with the host's lock of it.</summary>
     public required IReadOnlyList<FieldSettingResponseModel> Settings { get; init; }
 
     /// <summary>Whether the site has what it needs.</summary>
     public required FieldTypeAvailabilityResponseModel Availability { get; init; }
 
-    /// <summary>The model of a type.</summary>
-    public static FieldTypeResponseModel Of(IFormBuilderFieldType type, FieldTypeAvailability availability)
+    /// <summary>The model of a type, with the host's locks of its settings.</summary>
+    public static FieldTypeResponseModel Of(IFormBuilderFieldType type, FieldTypeAvailability availability, IReadOnlyList<FieldSettingLock> locks)
     {
         ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(availability);
+        ArgumentNullException.ThrowIfNull(locks);
         var declaration = type.Declaration;
         return new FieldTypeResponseModel
         {
@@ -110,7 +113,7 @@ internal sealed record FieldTypeResponseModel
             ServerOnlyDefault = declaration.ServerOnlyDefault,
             Features = FieldTypeNames.OfFeatures(declaration.Features),
             Messages = [.. FieldMessageProperties.All.Where(message => declaration.Messages.HasFlag(message.Kind)).Select(message => message.Name)],
-            Settings = FieldSettingResponseModel.Of(type.SettingsSchema.Settings),
+            Settings = FieldSettingResponseModel.Of(type.SettingsSchema.Settings, locks),
             Availability = new FieldTypeAvailabilityResponseModel(availability.IsAvailable, availability.Reason),
         };
     }
@@ -161,17 +164,20 @@ internal sealed record FieldSettingResponseModel
     /// <summary>The rules its value keeps, which publishing checks.</summary>
     public required FieldSettingRulesResponseModel Rules { get; init; }
 
-    /// <summary>The models of settings, in their order.</summary>
-    public static IReadOnlyList<FieldSettingResponseModel> Of(ImmutableArray<FieldSettingDescriptor> settings) =>
-        [.. settings.Select(Of)];
+    /// <summary>The host's lock of it, for the settings at the top only; null when it is not locked.</summary>
+    public FieldSettingLockResponseModel? Lock { get; init; }
 
-    private static FieldSettingResponseModel Of(FieldSettingDescriptor setting) => new()
+    /// <summary>The models of settings, in their order, with the host's locks of those at the top.</summary>
+    public static IReadOnlyList<FieldSettingResponseModel> Of(ImmutableArray<FieldSettingDescriptor> settings, IReadOnlyList<FieldSettingLock> locks) =>
+        [.. settings.Select(setting => Of(setting, locks.FirstOrDefault(each => string.Equals(each.Setting.Name, setting.Name, StringComparison.Ordinal))))];
+
+    private static FieldSettingResponseModel Of(FieldSettingDescriptor setting, FieldSettingLock? settingLock) => new()
     {
         Name = setting.Name,
         Kind = FieldTypeNames.Of(setting.Kind),
         ItemKind = setting.ItemKind is { } item ? FieldTypeNames.Of(item) : null,
         Choices = [.. setting.Choices.Select(choice => new FieldSettingChoiceResponseModel(choice.Value, choice.Label))],
-        Settings = Of(setting.Settings),
+        Settings = Of(setting.Settings, []),
         Default = setting.Default,
         Label = setting.Label,
         Description = setting.Description,
@@ -180,8 +186,20 @@ internal sealed record FieldSettingResponseModel
         SupportsMergeTags = setting.SupportsMergeTags,
         IsPublic = setting.IsPublic,
         Rules = FieldSettingRulesResponseModel.Of(setting.Rules),
+        Lock = settingLock is null ? null : new FieldSettingLockResponseModel(settingLock.Hidden, settingLock.ConfigurationKey, settingLock.Hidden ? null : settingLock.Value),
     };
 }
+
+/// <summary>
+/// A host's lock of a setting (ADR-0060): every field of the type has the locked value, which the designer shows
+/// read-only, or leaves out when the lock hides the setting.
+/// </summary>
+/// <param name="Hidden">Whether the designer leaves the setting out.</param>
+/// <param name="ConfigurationKey">The key that locks it, such as <c>JironFormBuilder:Designer:SettingLocks:0</c>, which the designer names.</param>
+/// <param name="Value">
+/// The value every field has, as settings store it; null when the setting keeps its default, and always for a hidden lock.
+/// </param>
+internal sealed record FieldSettingLockResponseModel(bool Hidden, string ConfigurationKey, JsonElement? Value);
 
 /// <summary>A value a choice setting may take.</summary>
 /// <param name="Value">The value as the settings' JSON writes it.</param>

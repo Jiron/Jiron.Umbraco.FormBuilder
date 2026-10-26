@@ -34,6 +34,12 @@ internal sealed record FormInfo(
     Guid? CreatedByUserKey,
     Guid? UpdatedByUserKey);
 
+/// <summary>A form's published version as the website runs it (ADR-0060).</summary>
+/// <param name="Form">The form.</param>
+/// <param name="Definition">The published version, read, upgraded and with the host's designer locks applied.</param>
+/// <param name="Version">The number of the published version.</param>
+internal sealed record PublishedForm(FormInfo Form, FormDefinition Definition, int Version);
+
 /// <summary>A form opened for editing: its draft with what the designer needs to know about it.</summary>
 /// <param name="Form">The form.</param>
 /// <param name="Definition">

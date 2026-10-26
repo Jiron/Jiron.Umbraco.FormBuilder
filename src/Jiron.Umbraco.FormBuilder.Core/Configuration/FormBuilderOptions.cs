@@ -58,8 +58,9 @@ public sealed class FormBuilderDesignerOptions
 /// <summary>
 /// A setting of a field type or an action type that is fixed in every form, for example
 /// <c>{ "kind": "action", "type": "email", "setting": "from", "value": "noreply@example.com", "hidden": true }</c>. The
-/// designer shows it read-only, or not at all when hidden, a save with another value is refused, and the site uses the
-/// locked value whatever a form says.
+/// designer shows it read-only, or not at all when hidden, a save that gives it another value is refused, and the site
+/// uses the locked value whatever a form says (ADR-0060). The site does not start when a field type or its setting is
+/// missing, or the setting refuses the value.
 /// </summary>
 public sealed class DesignerSettingLock
 {
@@ -76,10 +77,14 @@ public sealed class DesignerSettingLock
     /// <summary>The type's alias, for example <c>email</c>: a letter, then letters, digits, '.', '-' and '_', at most 64 characters.</summary>
     public string? Type { get; set; }
 
-    /// <summary>The setting's name in the type's settings, for example <c>from</c>.</summary>
+    /// <summary>The setting's name at the top of the type's settings, for example <c>from</c>, spelt exactly as the type names it.</summary>
     public string? Setting { get; set; }
 
-    /// <summary>The value every form uses, as text, at most 50,000 characters. Without one, the setting keeps its default.</summary>
+    /// <summary>
+    /// The value every form uses, as text, at most 50,000 characters: a text, a number, a date, a time, a choice or a key
+    /// as it is, true or false, a whole number as digits, a localised text as the text of every culture, and a list, an
+    /// object or JSON written as JSON. Without one, the setting keeps its default.
+    /// </summary>
     public string? Value { get; set; }
 
     /// <summary>Hides the setting in the designer instead of showing it read-only.</summary>

@@ -1,6 +1,7 @@
 # 0042. Host configuration and start-up checks
 
-- Status: accepted
+- Status: accepted; the designer locks of field settings checked and applied in 5.1f
+  ([ADR-0060](0060-designer-locks-of-field-settings.md))
 - Date: 2026-10-24
 - Roadmap step: 4.4a (decided and built); 4.4b (the backoffice sections and their host rules), 4.5 (reading stored
   definitions), 5.1 and 8.1 (applying designer locks), every step that adds a host key, 17.x (the configuration
@@ -97,7 +98,9 @@ its list index, and what is allowed.
   There is one lock per kind, type and setting. Whether the type and the setting exist, and whether the value fits the
   setting, the field type framework (5.1) and the action framework (8.1) check when the site starts. Those steps also
   apply the locks: read-only or hidden in the designer, `409 setting_locked` for a save with another value, and the
-  locked value at run time.
+  locked value at run time. **Amended in 5.1f (ADR-0060):** the type and the setting are compared exactly, a value is
+  read by the setting's kind (JSON text for a list or an object), a required setting cannot be locked without a value,
+  and no message repeats a value.
 - **`LockedSections`** names sections of ADR-0008 (`general`, `email`, `protection`, `files`, `privacy`,
   `integrations`) in any case. A section can be locked before its record exists.
 

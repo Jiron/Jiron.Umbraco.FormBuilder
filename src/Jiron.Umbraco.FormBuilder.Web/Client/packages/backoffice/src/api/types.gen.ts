@@ -69,6 +69,12 @@ export type FieldSettingChoiceResponseModel = {
     label: string;
 };
 
+export type FieldSettingLockResponseModel = {
+    hidden: boolean;
+    configurationKey: string;
+    value?: unknown;
+};
+
 export type FieldSettingResponseModel = {
     name: string;
     kind: string;
@@ -83,6 +89,7 @@ export type FieldSettingResponseModel = {
     supportsMergeTags: boolean;
     isPublic: boolean;
     rules: FieldSettingRulesResponseModel;
+    lock?: FieldSettingLockResponseModel | null;
 };
 
 export type FieldSettingRulesResponseModel = {
