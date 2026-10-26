@@ -166,7 +166,7 @@ public sealed class BuiltInValidationTests
     [TestCase("block", "anna@example.com", false)]
     [TestCase("block", "anna@mail.example.com", false)]
     [TestCase("block", "anna@example.org", true)]
-    [TestCase("block", "anna", true)]
+    [TestCase("block", "anna@example.com.other.test", true)]
     [TestCase("any", "anna@example.org", true)]
     public void AnEmail_TakesOnlyTheDomainsItsFieldTakes(string mode, string address, bool taken) =>
         Assert.That(Errors("email", $$$"""{"domains":{"mode":"{{{mode}}}","list":["example.com"]}}""", new FieldAnswers([address])), Is.EqualTo(taken ? Array.Empty<string>() : ["invalid"]));
@@ -195,7 +195,6 @@ public sealed class BuiltInValidationTests
             Is.EqualTo(new[] { "confirmation", "invalid" }));
 
     // The types that have no checks of their own, each with an answer it reads (ADR-0058).
-    [TestCase("phone", "not a phone number at all")]
     [TestCase("checkbox", "true")]
     [TestCase("yesno", "no")]
     [TestCase("signature", "an-upload-token")]

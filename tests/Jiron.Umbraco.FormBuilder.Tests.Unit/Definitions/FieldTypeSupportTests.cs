@@ -29,7 +29,7 @@ public sealed class FieldTypeSupportTests
         ["email"] = (TextInput, "required invalid confirmation"),
         ["phone"] = (TextInput, "required invalid"),
         ["url"] = (TextInput, "required invalid"),
-        ["number"] = (Input + " placeholder defaultValue prefill autocomplete matchesField uniquePerForm", "required invalid min max step"),
+        ["number"] = (Input + " placeholder defaultValue prefill autocomplete matchesField uniquePerForm", "required invalid min max step digits"),
         ["date"] = (Input + " defaultValue prefill autocomplete matchesField uniquePerForm", "required invalid dateWindow"),
         ["time"] = (Input + " defaultValue prefill matchesField uniquePerForm", "required invalid min max step"),
         ["datetime"] = (Input + " defaultValue prefill matchesField uniquePerForm", "required invalid dateWindow step"),
@@ -101,7 +101,7 @@ public sealed class FieldTypeSupportTests
     private static readonly string[] MessageKinds =
     [
         "required", "invalid", "minLength", "maxLength", "minWords", "maxWords", "min", "max", "step", "dateWindow",
-        "selections", "fileType", "fileSize", "fileCount", "full", "confirmation",
+        "selections", "fileType", "fileSize", "fileCount", "full", "confirmation", "digits",
     ];
 
     public static IEnumerable<TestCaseData> Types() =>

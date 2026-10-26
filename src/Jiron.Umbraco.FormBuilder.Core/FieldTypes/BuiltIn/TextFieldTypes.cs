@@ -186,12 +186,18 @@ public sealed class EmailFieldType() : FormBuilderFieldTypeBase<EmailFieldSettin
 
     /// <inheritdoc />
     /// <remarks>
-    /// The address typed again is compared as rules compare text (ADR-0005), so another letter case is the same address.
-    /// The domains stay on the server, which alone refuses an address whose domain the field does not take (ADR-0062).
+    /// The address has the form of ADR-0069. The address typed again is compared as rules compare text (ADR-0005), so
+    /// another letter case is the same address. The domains stay on the server, which alone refuses an address whose
+    /// domain the field does not take (ADR-0062).
     /// </remarks>
     protected override void Validate(EmailFieldSettings settings, FieldValidation validation)
     {
         var address = validation.Values[0].Text;
+        if (!BuiltInForms.IsEmailAddress(address))
+        {
+            validation.Fail(FieldMessageKinds.Invalid);
+        }
+
         if (settings.Confirm && (validation.Answers.Part(ConfirmPart) is not [var again] || TextSemantics.Fold(again) != TextSemantics.Fold(address)))
         {
             validation.Fail(FieldMessageKinds.Confirmation);
@@ -319,6 +325,19 @@ public sealed class PhoneFieldType() : FormBuilderFieldTypeBase<PhoneFieldSettin
     protected override FieldAnswerLimits AnswerLimits(PhoneFieldSettings settings, FormField field) => new(LongestAnswer, 1);
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The number has the lenient international form of ADR-0069 and is kept as typed; <c>defaultCountry</c> is the
+    /// renderer's.
+    /// </remarks>
+    protected override void Validate(PhoneFieldSettings settings, FieldValidation validation)
+    {
+        if (!BuiltInForms.IsPhoneNumber(validation.Values[0].Text))
+        {
+            validation.Fail(FieldMessageKinds.Invalid);
+        }
+    }
+
+    /// <inheritdoc />
     protected override void CheckSettings(PhoneFieldSettings settings, FieldSettingsCheck check)
     {
         if (settings.DefaultCountry is { } country)
@@ -357,13 +376,15 @@ public sealed class UrlFieldType() : FormBuilderFieldTypeBase<UrlFieldSettings>(
     protected override FieldAnswerLimits AnswerLimits(UrlFieldSettings settings, FormField field) => new(LongestAnswer, 1);
 
     /// <inheritdoc />
-    /// <remarks>The scheme is the text before the first colon, its ASCII capitals made small.</remarks>
+    /// <remarks>
+    /// The scheme is the text before the first colon, its ASCII capitals made small; the rest has the form of ADR-0069.
+    /// </remarks>
     protected override void Validate(UrlFieldSettings settings, FieldValidation validation)
     {
         var address = validation.Values[0].Text;
         var colon = address.IndexOf(':', StringComparison.Ordinal);
         var scheme = colon < 0 ? null : BuiltInValidation.AsciiLower(address[..colon]);
-        if (!settings.Schemes.Any(allowed => BuiltInChecks.Name(allowed) == scheme))
+        if (!settings.Schemes.Any(allowed => BuiltInChecks.Name(allowed) == scheme) || !BuiltInForms.IsWebAddress(address))
         {
             validation.Fail(FieldMessageKinds.Invalid);
         }

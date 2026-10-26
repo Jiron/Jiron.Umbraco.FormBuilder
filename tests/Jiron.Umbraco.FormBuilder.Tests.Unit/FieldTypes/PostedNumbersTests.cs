@@ -70,14 +70,14 @@ public sealed class PostedNumbersTests
     public void ToWire_DigitsOtherThanAscii_AreNoNumber() =>
         Assert.That(PostedNumbers.ToWire(new string((char)0x0661, 2)), Is.Null);
 
-    [TestCase("1e15")]
-    [TestCase("1234567890123456")]
-    [TestCase("1234567890123.456")]
-    [TestCase("1e-16")]
-    [TestCase("0.1234567890123456")]
+    [TestCase("1e60")]
+    [TestCase("1234567890123456789012345678901234567890123456789012345678901")]
+    [TestCase("123456789012345678901234567890.1234567890123456789012345678901")]
+    [TestCase("1e-61")]
+    [TestCase("0.1234567890123456789012345678901234567890123456789012345678901")]
     [TestCase("1e9999999999")]
     [TestCase("1e-9999999999")]
-    public void ToWire_ANumberTooLongToStore_IsNull(string posted) => Assert.That(PostedNumbers.ToWire(posted), Is.Null);
+    public void ToWire_ANumberTooLongToRead_IsNull(string posted) => Assert.That(PostedNumbers.ToWire(posted), Is.Null);
 
     [Test]
     public void ToWire_RefusesNull() => Assert.That(() => PostedNumbers.ToWire(null!), Throws.ArgumentNullException);

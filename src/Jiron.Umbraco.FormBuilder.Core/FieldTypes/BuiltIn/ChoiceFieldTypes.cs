@@ -279,6 +279,7 @@ public sealed class GridFieldType() : FormBuilderFieldTypeBase<GridFieldSettings
     /// <inheritdoc />
     /// <remarks>
     /// Each row's values are among the columns: the scale's whole numbers when the grid has one, otherwise its options.
+    /// Then each row it needs has an answer: every row of a required grid, otherwise the rows marked required (ADR-0069).
     /// </remarks>
     protected override void Validate(GridFieldSettings settings, FieldValidation validation)
     {
@@ -288,6 +289,11 @@ public sealed class GridFieldType() : FormBuilderFieldTypeBase<GridFieldSettings
         if (column is not null && !validation.Values.All(value => column(value.Text)))
         {
             validation.Fail(FieldMessageKinds.Invalid);
+        }
+
+        if (validation.Field.Rows.Any(row => (validation.IsRequired || row.Required) && !validation.Values.Any(value => value.Row == row.Key)))
+        {
+            validation.Fail(FieldMessageKinds.Required);
         }
     }
 
@@ -362,13 +368,19 @@ public sealed class RankingFieldType() : FormBuilderFieldTypeBase<RankingFieldSe
     /// <inheritdoc />
     /// <remarks>
     /// The options come in their order, or, from a form without JavaScript, as parts: each option's value with the
-    /// position the visitor gave it, a whole number from 1. Positions given twice, or both forms at once, are unreadable.
+    /// position the visitor gave it, a whole number from 1, ordered by it, options that share a position in the order of
+    /// their values. A position that is no whole number from 1, or both forms at once, is unreadable; an option or a
+    /// position given twice is read, and the check refuses it (ADR-0069).
     /// </remarks>
     protected override void Read(RankingFieldSettings settings, FieldReading reading)
     {
         if (reading.Answers.Parts.IsEmpty)
         {
-            base.Read(settings, reading);
+            foreach (var value in reading.Answers.Values)
+            {
+                reading.Add(value);
+            }
+
             return;
         }
 
@@ -385,12 +397,6 @@ public sealed class RankingFieldType() : FormBuilderFieldTypeBase<RankingFieldSe
             ranked.Add((position, value));
         }
 
-        if (ranked.Select(each => each.Position).Distinct().Count() != ranked.Count)
-        {
-            reading.Invalid();
-            return;
-        }
-
         foreach (var (_, value) in ranked.OrderBy(each => each.Position))
         {
             reading.Add(value);
@@ -399,11 +405,19 @@ public sealed class RankingFieldType() : FormBuilderFieldTypeBase<RankingFieldSe
 
     /// <inheritdoc />
     /// <remarks>
-    /// Each value is one of the options, which reading takes once each, and there are as many as <c>top</c>, or as all
-    /// the options when it is not given or exceeds them.
+    /// Each option comes once and each position once (ADR-0069); each value is one of the options, and there are as
+    /// many as <c>top</c>, or as all the options when it is not given or exceeds them.
     /// </remarks>
     protected override void Validate(RankingFieldSettings settings, FieldValidation validation)
     {
+        // Reading took each part's position as a whole number, so each part holds one.
+        var positions = validation.Answers.Parts.Values.Select(texts => int.Parse(texts[0], NumberStyles.None, CultureInfo.InvariantCulture)).ToList();
+        if (validation.Values.Select(value => value.Text).Distinct(StringComparer.Ordinal).Count() != validation.Values.Length
+            || positions.Distinct().Count() != positions.Count)
+        {
+            validation.Fail(FieldMessageKinds.Invalid);
+        }
+
         if (BuiltInValidation.OwnOptions(validation.Field) is not { } options)
         {
             return;

@@ -17,7 +17,7 @@ public sealed class NumberFieldType() : FormBuilderFieldTypeBase<NumberFieldSett
     Storage = FieldStorageKind.Number,
     RuleKind = FieldKind.Number,
     Features = BuiltInFieldTypes.Input | FieldFeatures.Placeholder | FieldFeatures.DefaultValue | FieldFeatures.Prefill | FieldFeatures.Autocomplete | BuiltInFieldTypes.Comparable,
-    Messages = BuiltInFieldTypes.Ranged,
+    Messages = BuiltInFieldTypes.Ranged | FieldMessageKinds.Digits,
 })
 {
     /// <inheritdoc />

@@ -207,13 +207,12 @@ public sealed class BuiltInAnswersTests
         });
     }
 
-    [TestCase("1", "1")]
     [TestCase("0", "1")]
     [TestCase("-1", "1")]
     [TestCase("x", "1")]
     [TestCase("+1", "2")]
     [TestCase("1 ", "2")]
-    public void ARanking_CannotReadPositionsThatAreNoneOrRepeat(string a, string b) =>
+    public void ARanking_CannotReadPositionsThatAreNone(string a, string b) =>
         Assert.That(Read("ranking", null, new FieldAnswers([], [Part("a", a), Part("b", b)])).IsUnreadable, Is.True);
 
     [Test]

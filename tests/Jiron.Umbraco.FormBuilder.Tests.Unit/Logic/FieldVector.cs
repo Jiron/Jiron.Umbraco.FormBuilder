@@ -60,7 +60,7 @@ internal static class FieldVector
             Options = hasOptions
                 ? new FieldOptions { Items = [.. VectorReader.Strings(options).Select(value => new FieldOption { Value = value })] }
                 : type.Declaration.Features.HasFlag(FieldFeatures.Options) ? new FieldOptions { Source = OptionSource.List, OptionList = List } : null,
-            Rows = hasRows ? [.. VectorReader.Strings(rows).Select(row => new GridRow { Key = Guid.Parse(row, CultureInfo.InvariantCulture) })] : [],
+            Rows = hasRows ? [.. rows.EnumerateArray().Select(Row)] : [],
             Validation = field.TryGetProperty("checks", out var checks) ? [.. checks.EnumerateArray().Select(Check)] : [],
         };
         var posted = new FieldAnswers(
@@ -123,6 +123,13 @@ internal static class FieldVector
             }
         }
     }
+
+    // A grid's row as the projection writes it: its id, and whether it is marked required (ADR-0069).
+    private static GridRow Row(JsonElement row) => new()
+    {
+        Key = Guid.Parse(row.GetProperty("id").GetString()!, CultureInfo.InvariantCulture),
+        Required = row.TryGetProperty("required", out var required) && required.GetBoolean(),
+    };
 
     private static FieldCheck Check(JsonElement check) => check.GetProperty("kind").GetString() switch
     {

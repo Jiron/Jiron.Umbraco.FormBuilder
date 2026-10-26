@@ -804,7 +804,8 @@
         "invalid",
         "min",
         "max",
-        "step"
+        "step",
+        "digits"
       ],
       "settings": [
         {

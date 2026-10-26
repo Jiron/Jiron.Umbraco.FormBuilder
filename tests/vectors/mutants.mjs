@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 /**
- * The mutation check of the shared logic (ROADMAP 5.2a, ADR-0061), since 5.3a of the calculations (ADR-0063), and since
- * 5.3f of answer recall (ADR-0068).
+ * The mutation check of the shared logic (ROADMAP 5.2a, ADR-0061), since 5.3a of the calculations (ADR-0063), since
+ * 5.3f of answer recall (ADR-0068), and since 5.4a of the forms of email addresses, phone numbers and web addresses
+ * (ADR-0069).
  * Each mutant changes one piece of code in one runtime; that runtime's vector runner runs, and the file is put back. A
  * mutant that no vector catches survives, and the check fails unless the mutant is written down here as an equivalent
  * change, with the reason. A mutant written down as equivalent that a vector catches fails the check too, so the notes
@@ -53,6 +54,12 @@ const TEMPLATES_TS = [...VECTORS_TS, 'test/templates.test.ts'];
 /** The tables check sees every code point's case mapping, of which the vectors hold a few. */
 const TABLES_TS = [...VECTORS_TS, 'test/tables.test.ts'];
 const TABLES_CS = `${VECTORS_CS}|FullyQualifiedName~UnicodeTablesTests`;
+/** The forms of email addresses, phone numbers and web addresses (ROADMAP 5.4a, ADR-0069), in TypeScript and in C#. */
+const frm = (name, from, to, more) => ts(`frm-${name}`, 'forms.ts', from, to, more);
+const csf = (name, from, to, more = {}) => ({ runtime: 'cs', name: `cs-frm-${name}`, file: 'src/Jiron.Umbraco.FormBuilder.Core/FieldTypes/BuiltIn/BuiltInForms.cs', from, to, ...more });
+/** The symbols an atom of an email address's local part may hold, as forms.ts writes them. */
+const ATOM_SYMBOLS = "!#$%&'*+-/=?^_" + '`{|}~';
+const quoted = (text) => '"' + text + '"';
 
 const mutants = [
   // ---- Every operator, flipped (ROADMAP 5.2a: each needs a failing vector) ----
@@ -300,11 +307,10 @@ const mutants = [
     equivalent: 'only the Kelvin sign lowercases to an ASCII letter, k, and no scheme a field allows (https, http) holds one',
   }),
   ts('check-scheme-any', 'checks.ts', "texts(v.settings, 'schemes').some((allowed) => allowed === scheme)", "texts(v.settings, 'schemes').some((allowed) => allowed !== scheme)"),
-  ts('check-required-for-optional', 'checks.ts', "errors: field.required === true ? ['required'] : []", "errors: field.required !== false ? ['required'] : []"),
-  ts('check-required-never', 'checks.ts', "errors: field.required === true ? ['required'] : []", 'errors: []'),
-  ts('check-kinds-twice', 'checks.ts', '      if (!errors.includes(kind)) errors.push(kind);', '      errors.push(kind);', {
-    equivalent: 'no check of a built-in type reports a kind twice; the guard keeps the promise of each kind once for a check that might',
-  }),
+  ts('check-required-for-optional', 'checks.ts', 'errors: field.required === true || rows.some(', 'errors: field.required !== false || rows.some('),
+  ts('check-required-never', 'checks.ts', "errors: field.required === true || rows.some((row) => row.required === true) ? ['required'] : [],", 'errors: [],'),
+  // Since 5.4a a web address can fail its scheme and its form, and a ranking its repeats and its count (ADR-0069).
+  ts('check-kinds-twice', 'checks.ts', '      if (!errors.includes(kind)) errors.push(kind);', '      errors.push(kind);'),
 
   // ---- The choice, people and file types' checks, and the field's own checks (ROADMAP 5.2c, ADR-0062) ----
   ts('check-options-some', 'checks.ts', '!v.answers.values.every((value) => options.has(value))', '!v.answers.values.some((value) => options.has(value))'),
@@ -327,7 +333,7 @@ const mutants = [
   ts('read-checkboxes-other-ignored', 'checks.ts', 'return other === undefined || answers.values.includes(other) ? answers.values : [...answers.values, other];', 'return answers.values;'),
   ts('read-checkboxes-other-repeat-counted', 'checks.ts', 'return other === undefined || answers.values.includes(other) ?', 'return other === undefined ?'),
   ts('read-other-not-offered-taken', 'checks.ts', "return settings['other'] === true && other.length === 1", 'return other.length === 1'),
-  ts('read-grid-unknown-rows-taken', 'checks.ts', 'grid: (field, answers) => (field.rows ?? []).flatMap((row) => part(answers, row)),', 'grid: (_, answers) => Object.values(answers.parts ?? {}).flat(),'),
+  ts('read-grid-unknown-rows-taken', 'checks.ts', 'grid: (field, answers) => (field.rows ?? []).flatMap((row) => part(answers, row.id)),', 'grid: (_, answers) => Object.values(answers.parts ?? {}).flat(),'),
   ts('read-name-unasked-parts-taken', 'checks.ts', "name: (_, answers, settings) => partsOf(answers, texts(settings, 'parts')),", 'name: (_, answers) => Object.values(answers.parts ?? {}).flat(),'),
   ts('read-address-unasked-parts-taken', 'checks.ts', "address: (_, answers, settings) => partsOf(answers, [...ADDRESS, ...texts(settings, 'parts')]),", 'address: (_, answers) => Object.values(answers.parts ?? {}).flat(),'),
   ts('read-address-without-the-three', 'checks.ts', "address: (_, answers, settings) => partsOf(answers, [...ADDRESS, ...texts(settings, 'parts')]),", "address: (_, answers, settings) => partsOf(answers, texts(settings, 'parts')),"),
@@ -368,7 +374,9 @@ const mutants = [
   ts('check-extension-without-a-point', 'checks.ts', "return point < 0 ? '' :", 'return point < 0 ? name :'),
   ts('check-extension-not-lowered', 'checks.ts', 'asciiLower(name.slice(point + 1))', 'name.slice(point + 1)'),
   ts('check-extension-with-its-point', 'checks.ts', 'asciiLower(name.slice(point + 1))', 'asciiLower(name.slice(point))'),
-  ts('own-checks-without-values', 'checks.ts', ": [], checks: [] };", ': [], checks: ownChecks(field, read, values) };'),
+  ts('own-checks-without-values', 'checks.ts',
+    lines('      checks: [],', '    };', '  }', "  if (field.kind === 'number'"),
+    lines('      checks: ownChecks(field, read, values),', '    };', '  }', "  if (field.kind === 'number'")),
   ts('own-pattern-ignored', 'checks.ts', "    if (check.kind === 'pattern') {", "    if (check.kind === 'patterns') {"),
   ts('own-pattern-unsafe-fails', 'checks.ts', 'holds = pattern === null || values.every(', 'holds = pattern !== null && values.every('),
   ts('own-matches-ignored', 'checks.ts', "} else if (check.kind === 'matchesField') {", "} else if (check.kind === 'matches') {"),
@@ -377,6 +385,133 @@ const mutants = [
   ts('own-checks-counted-not-indexed', 'checks.ts', '    if (!holds) failing.push(index);', '    if (!holds) failing.push(failing.length);'),
   ts('same-values-any-count', 'rules.ts', 'return values.length === others.length && values.every(', 'return values.every('),
   ts('same-values-numbers-as-text', 'rules.ts', "    if (kind === 'number') return compareText(a, b) === 0;" + NL, ''),
+
+  // ---- The forms of email addresses, phone numbers and web addresses (ROADMAP 5.4a, ADR-0069) ----
+  frm('digits-from-one', 'unit >= 0x30 &&', 'unit >= 0x31 &&'),
+  frm('digits-to-eight', 'unit <= 0x39;', 'unit <= 0x38;'),
+  frm('letters-without-digits', '  isDigit(unit) || (unit >= 0x41', '  (unit >= 0x41'),
+  frm('letters-without-capitals', '(unit >= 0x41 && unit <= 0x5a) || ', ''),
+  frm('capitals-from-b', 'unit >= 0x41 &&', 'unit >= 0x42 &&'),
+  frm('capitals-to-y', 'unit <= 0x5a)', 'unit <= 0x59)'),
+  frm('letters-without-small-ones', ' || (unit >= 0x61 && unit <= 0x7a)', ''),
+  frm('small-letters-from-b', 'unit >= 0x61 &&', 'unit >= 0x62 &&'),
+  frm('small-letters-to-y', 'unit <= 0x7a)', 'unit <= 0x79)'),
+  frm('outside-ascii-from-0x80', 'unit >= 0xa0 && !isTrimmed(unit)', 'unit >= 0x80 && !isTrimmed(unit)'),
+  frm('outside-ascii-trimmed-taken', 'unit >= 0xa0 && !isTrimmed(unit)', 'unit >= 0xa0'),
+  frm('atom-symbols-none', quoted(ATOM_SYMBOLS), "''"),
+  frm('atom-symbols-without-the-first', quoted(ATOM_SYMBOLS), quoted(ATOM_SYMBOLS.slice(1))),
+  frm('atom-symbols-without-the-last', quoted(ATOM_SYMBOLS), quoted(ATOM_SYMBOLS.slice(0, -1))),
+  frm('atoms-without-other-scripts', 'ATOM_SYMBOLS.includes(String.fromCharCode(unit)) || isOutsideAscii(unit);', 'ATOM_SYMBOLS.includes(String.fromCharCode(unit));'),
+  frm('labels-without-hyphens', 'isLetterOrDigit(unit) || unit === 0x2d || isOutsideAscii(unit);', 'isLetterOrDigit(unit) || isOutsideAscii(unit);'),
+  frm('labels-without-other-scripts', 'isLetterOrDigit(unit) || unit === 0x2d || isOutsideAscii(unit);', 'isLetterOrDigit(unit) || unit === 0x2d;'),
+  frm('host-of-254', 'value.length <= 253 &&', 'value.length <= 254 &&'),
+  frm('host-of-253-refused', 'value.length <= 253 &&', 'value.length < 253 &&'),
+  frm('host-of-one-label', 'labels.length >= 2 &&', 'labels.length >= 1 &&'),
+  frm('host-empty-labels', 'label.length >= 1 &&', 'label.length >= 0 &&'),
+  frm('host-a-label-of-64', 'label.length <= 63 &&', 'label.length <= 64 &&'),
+  frm('host-a-label-of-63-refused', 'label.length <= 63 &&', 'label.length < 63 &&'),
+  frm('host-a-hyphen-first', "        !label.startsWith('-') &&" + NL, ''),
+  frm('host-a-hyphen-last', "        !label.endsWith('-') &&" + NL, ''),
+  frm('host-label-units-some', 'units(label).every(isLabelUnit)', 'units(label).some(isLabelUnit)'),
+  frm('host-labels-some', '    labels.every(', '    labels.some('),
+  frm('host-any-last-label', "    !units(labels[labels.length - 1] ?? '').every(isDigit)", '    true'),
+  frm('host-the-first-label-for-the-last', 'labels[labels.length - 1]', 'labels[0]'),
+  frm('host-a-last-label-with-digits', "?? '').every(isDigit)", "?? '').some(isDigit)"),
+  frm('email-without-an-at-taken', '    at >= 1 &&' + NL, ''),
+  frm('email-an-empty-local-part', 'at >= 1 &&', 'at >= 0 &&', { equivalent: 'an empty local part is one empty atom, which the atoms refuse' }),
+  frm('email-a-local-part-of-65', 'at <= 64 &&', 'at <= 65 &&'),
+  frm('email-a-local-part-of-64-refused', 'at <= 64 &&', 'at < 64 &&'),
+  frm('email-empty-atoms', 'atom.length > 0 && ', ''),
+  frm('email-atoms-some', '.every((atom) =>', '.some((atom) =>'),
+  frm('email-atom-units-some', 'units(atom).every(isAtomUnit)', 'units(atom).some(isAtomUnit)'),
+  frm('email-host-unchecked', 'isHostName(value.slice(at + 1))', 'true'),
+  frm('email-host-with-its-at', 'value.slice(at + 1)', 'value.slice(at)'),
+  frm('ext-without-digits', 'if (count === 0 || count > 6) return value;', 'if (count > 6) return value;'),
+  frm('ext-of-seven', 'count > 6)', 'count > 7)'),
+  frm('ext-of-six-refused', 'count > 6)', 'count > 5)'),
+  frm('ext-without-ext-point', "['ext.', 'ext', 'x', '#']", "['ext', 'x', '#']"),
+  frm('ext-without-ext', "['ext.', 'ext', 'x', '#']", "['ext.', 'x', '#']"),
+  frm('ext-without-x', "['ext.', 'ext', 'x', '#']", "['ext.', 'ext', '#']"),
+  frm('ext-without-hash', "['ext.', 'ext', 'x', '#']", "['ext.', 'ext', 'x']"),
+  frm('ext-in-small-letters-only', '.replace(/[A-Z]/g, (letter) => letter.toLowerCase())', ''),
+  frm('ext-no-spaces-before-its-digits', 'const markerEnd = spacesBefore(value, digitsAt);', 'const markerEnd = digitsAt;'),
+  frm('ext-the-spaces-before-it-kept', 'return value.slice(0, spacesBefore(value, start));', 'return value.slice(0, start);'),
+  frm('ext-before-the-start', 'start >= 0 && ', '', {
+    equivalent: 'a marker longer than the text before it never matches, since slice then gives fewer code units; the guard is the one Core needs',
+  }),
+  frm('phone-a-plus-first-refused', 'first === 0x2b || first === 0x28 || isDigit(first)', 'first === 0x28 || isDigit(first)'),
+  frm('phone-a-bracket-first-refused', 'first === 0x2b || first === 0x28 || isDigit(first)', 'first === 0x2b || isDigit(first)'),
+  frm('phone-a-digit-first-refused', 'first === 0x2b || first === 0x28 || isDigit(first)', 'first === 0x2b || first === 0x28'),
+  frm('phone-anything-first', '  if (!(first === 0x2b || first === 0x28 || isDigit(first))) return false;' + NL, ''),
+  frm('phone-anything-last', '  if (!isDigit(number.charCodeAt(number.length - 1))) return false;' + NL, ''),
+  frm('phone-brackets-reopened', '} else if (unit === 0x28 && open < 0) {', '} else if (unit === 0x28) {'),
+  frm('phone-closed-anywhere', '} else if (unit === 0x29 && inBrackets) {', '} else if (unit === 0x29) {'),
+  frm('phone-a-plus-anywhere', '} else if (unit === 0x2b && i === 0) {', '} else if (unit === 0x2b) {'),
+  frm('phone-separators-in-brackets', 'inBrackets ? !isTrimmed(unit) : !isSeparator(unit)', '!isSeparator(unit)'),
+  frm('phone-only-spaces-outside-brackets', 'inBrackets ? !isTrimmed(unit) : !isSeparator(unit)', '!isTrimmed(unit)'),
+  frm('phone-every-digit-bracketed', '      if (inBrackets) bracketed++;', '      bracketed++;'),
+  frm('phone-four-digits-refused', 'digits >= 4 &&', 'digits > 4 &&'),
+  frm('phone-three-digits-taken', 'digits >= 4 &&', 'digits >= 3 &&'),
+  frm('phone-seventeen-digits-refused', 'digits <= 17 &&', 'digits < 17 &&'),
+  frm('phone-eighteen-digits-taken', 'digits <= 17 &&', 'digits <= 18 &&'),
+  frm('phone-brackets-unpaired', ' && open < 0 === close < 0', ''),
+  frm('phone-empty-brackets-taken', ' && (open < 0 || bracketed > 0)', ''),
+  frm('phone-separators-without-hyphens', 'unit === 0x2d || unit === 0x2e || unit === 0x2f || isTrimmed(unit)', 'unit === 0x2e || unit === 0x2f || isTrimmed(unit)'),
+  frm('phone-separators-without-dots', 'unit === 0x2d || unit === 0x2e || unit === 0x2f || isTrimmed(unit)', 'unit === 0x2d || unit === 0x2f || isTrimmed(unit)'),
+  frm('phone-separators-without-slashes', 'unit === 0x2d || unit === 0x2e || unit === 0x2f || isTrimmed(unit)', 'unit === 0x2d || unit === 0x2e || isTrimmed(unit)'),
+  frm('phone-separators-without-spaces', 'unit === 0x2d || unit === 0x2e || unit === 0x2f || isTrimmed(unit)', 'unit === 0x2d || unit === 0x2e || unit === 0x2f'),
+  frm('url-without-the-slashes', "  if (!value.startsWith('//', colon + 1)) return false;" + NL, ''),
+  frm('url-the-host-from-a-slash', 'const start = colon + 3;', 'const start = colon + 2;'),
+  frm('url-a-path-in-the-host', 'unit === 0x2f || unit === 0x3f', 'unit === 0x3f'),
+  frm('url-a-query-in-the-host', 'unit === 0x2f || unit === 0x3f || unit === 0x23', 'unit === 0x2f || unit === 0x23'),
+  frm('url-a-fragment-in-the-host', ' || unit === 0x23', ''),
+  frm('url-the-first-colon-for-the-port', "authority.lastIndexOf(':')", "authority.indexOf(':')", {
+    equivalent: 'a host name holds no colon, so with two colons in the authority the host or the port holds one, and either is refused',
+  }),
+  frm('url-the-host-unchecked', '    isHostName(host) &&', '    true &&'),
+  frm('url-an-empty-port', 'port.length >= 1 &&', 'port.length >= 0 &&', {
+    equivalent: 'an empty port reads as the number 0, which the lowest port refuses; the guard is the one Core needs',
+  }),
+  frm('url-a-port-of-six-digits', 'port.length <= 5 &&', 'port.length <= 6 &&'),
+  frm('url-a-port-of-five-refused', 'port.length <= 5 &&', 'port.length < 5 &&'),
+  frm('url-a-port-of-any-characters', '        units(port).every(isDigit) &&' + NL, ''),
+  frm('url-port-zero', 'Number(port) >= 1 &&', 'Number(port) >= 0 &&'),
+  frm('url-the-highest-port-refused', 'Number(port) <= 65535)', 'Number(port) < 65535)'),
+  frm('url-past-the-highest-port', 'Number(port) <= 65535)', 'Number(port) <= 65536)'),
+  frm('url-controls-in-the-rest', 'unit < 0x20 || ', ''),
+  frm('url-the-last-control-in-the-rest', 'unit < 0x20 ||', 'unit < 0x1f ||'),
+  frm('url-delete-and-c1-in-the-rest', ' || (unit >= 0x7f && unit < 0xa0)', ''),
+  frm('url-delete-in-the-rest', 'unit >= 0x7f &&', 'unit > 0x7f &&'),
+  frm('url-the-last-c1-in-the-rest', 'unit < 0xa0) ||', 'unit < 0x9f) ||'),
+  frm('url-spaces-in-the-rest', ' || isTrimmed(unit))', ')'),
+  ts('check-email-form-skipped', 'checks.ts', "    if (!isEmailAddress(v.value)) v.fail('invalid');" + NL, ''),
+  ts('check-phone-form-skipped', 'checks.ts', "if (!isPhoneNumber(v.value)) v.fail('invalid');", ''),
+  ts('check-url-form-skipped', 'checks.ts', "    if (!isWebAddress(v.value)) v.fail('invalid');" + NL, ''),
+  ts('check-grid-rows-of-a-required-grid', 'checks.ts', 'v.rows.filter((row) => v.required || row.required === true)', 'v.rows.filter((row) => row.required === true)'),
+  ts('check-grid-marked-rows-ignored', 'checks.ts', 'v.rows.filter((row) => v.required || row.required === true)', 'v.rows.filter(() => v.required)'),
+  ts('check-grid-unmarked-rows-needed', 'checks.ts', 'v.required || row.required === true)', 'v.required || row.required !== false)'),
+  ts('check-grid-every-needed-row-missing', 'checks.ts', 'if (needed.some((row) =>', 'if (needed.every((row) =>'),
+  ts('check-grid-needed-rows-answered', 'checks.ts', 'part(v.answers, row.id).length === 0', 'part(v.answers, row.id).length === 1'),
+  ts('check-grid-rows-lost', 'checks.ts', lines('    rows,', '    required: field.required === true,'), lines('    rows: [],', '    required: field.required === true,')),
+  ts('check-required-rows-ignored', 'checks.ts', " || rows.some((row) => row.required === true) ? ['required']", " ? ['required']"),
+  ts('check-required-unmarked-rows', 'checks.ts', 'rows.some((row) => row.required === true)', 'rows.some((row) => row.required !== false)'),
+  ts('check-ranking-an-option-twice', 'checks.ts', 'new Set(v.values).size !== v.values.length || ', ''),
+  ts('check-ranking-a-position-twice', 'checks.ts', ' || new Set(positions).size !== positions.length', ''),
+  ts('check-ranking-positions-as-text', 'checks.ts', '.map((texts) => Number(texts[0]))', '.map((texts) => texts[0])'),
+  ts('read-ranking-positions-ignored', 'checks.ts', 'Object.keys(answers.parts ?? {}).length === 0 ? answers.values : Object.keys(answers.parts ?? {}),', 'answers.values,'),
+  ts('read-ranking-values-ignored', 'checks.ts', 'Object.keys(answers.parts ?? {}).length === 0 ? answers.values : Object.keys(answers.parts ?? {}),', 'Object.keys(answers.parts ?? {}),'),
+  ts('check-digits-ignored', 'checks.ts', "  if (field.kind === 'number' && read.some(", "  if (field.kind === 'numbers' && read.some("),
+  ts('check-digits-for-any-kind', 'checks.ts', "field.kind === 'number' && read.some(", 'read.some('),
+  ts('check-digits-for-every-type', 'checks.ts', "[field.type === 'number' ? 'digits' : 'invalid']", "['digits']"),
+  ts('check-digits-invalid-for-numbers', 'checks.ts', "[field.type === 'number' ? 'digits' : 'invalid']", "['invalid']"),
+  ts('check-digits-with-own-checks', 'checks.ts', "'invalid'], checks: [] };", "'invalid'], checks: ownChecks(field, read, values) };"),
+  ts('check-digits-unreadable-refused', 'checks.ts', 'return d === null || fits(d);', 'return d !== null && fits(d);', {
+    equivalent: 'a field that compares as a number holds only numbers once Core reads it, and the vectors hold only answers Core reads',
+  }),
+  ts('fits-places-ignored', 'decimal.ts', 'digits(d.n) <= STORED_DIGITS && d.s <= STORED_DIGITS;', 'digits(d.n) <= STORED_DIGITS;'),
+  ts('fits-digits-ignored', 'decimal.ts', 'digits(d.n) <= STORED_DIGITS && d.s <= STORED_DIGITS;', 'd.s <= STORED_DIGITS;'),
+  ts('fits-fifteen-digits-refused', 'decimal.ts', 'digits(d.n) <= STORED_DIGITS &&', 'digits(d.n) < STORED_DIGITS &&'),
+  ts('fits-fifteen-places-refused', 'decimal.ts', '&& d.s <= STORED_DIGITS;', '&& d.s < STORED_DIGITS;'),
 
   // ---- The calculation language and calculations in forms (ROADMAP 5.3a, ADR-0063) ----
   ts('calc-length-one-more', 'calc.ts', 'if (this.text.length > MAX_FORMULA_LENGTH) throw', 'if (this.text.length > MAX_FORMULA_LENGTH + 1) throw'),
@@ -1055,6 +1190,10 @@ const mutants = [
   csm('cs-recall-former-aliases', 'FieldMergeTagSource.cs', 'var formerAliases = place != MergeTagPlace.VisitorText;', 'var formerAliases = place != (MergeTagPlace)(-1);'),
   csm('cs-recall-site-display-used', 'MergeTagAnswerTexts.cs', 'private static bool Shared(MergeTagPlace place) => place == MergeTagPlace.VisitorText;', 'private static bool Shared(MergeTagPlace place) => place == (MergeTagPlace)(-1);'),
   csm('cs-recall-server-value-shown', 'MergeTagAnswerTexts.cs', '(place == MergeTagPlace.VisitorText && types.Find(target.Field.Type) is { ServerOnlyDefault: true })', '(place == (MergeTagPlace)(-1) && types.Find(target.Field.Type) is { ServerOnlyDefault: true })'),
+
+  // ---- C#: where .NET differs in the forms (ROADMAP 5.4a, ADR-0069) ----
+  csf('last-label-of-other-digits', '!labels[^1].All(char.IsAsciiDigit)', '!labels[^1].All(char.IsDigit)'),
+  csf('extension-of-other-digits', 'while (digitsAt > 0 && char.IsAsciiDigit(value[digitsAt - 1]))', 'while (digitsAt > 0 && char.IsDigit(value[digitsAt - 1]))'),
 ];
 
 // ---- Running ----

@@ -2,10 +2,12 @@
 
 - Status: accepted; amends [ADR-0058](0058-field-answers-and-values.md) (what a type's check sees),
   [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the message kind `confirmation`, and the
-  settings in the public projection) and [ADR-0055](0055-field-type-framework.md) (the email type's message kinds)
+  settings in the public projection) and [ADR-0055](0055-field-type-framework.md) (the email type's message kinds);
+  the forms of an email address, a phone number and a web address, a grid's required rows, a ranking's positions and
+  a number's stored digits added by [ADR-0069](0069-the-checks-from-text-to-country.md) in 5.4a
 - Date: 2026-10-26
 - Roadmap step: 5.2b (decided; builds the contract and the text, number and date types), 5.2c (the choice, people and
-  file types, `pattern` and `matchesField`); 5.4 adds the grid's required rows and a ranking's positions, 5.5 the
+  file types, `pattern` and `matchesField`); 5.4a adds the grid's required rows and a ranking's positions, 5.5 the
   options of lists and other sources, 6.1 runs the checks in the pipeline, 6.4 in the visitor's browser
 
 ## Context
@@ -147,9 +149,10 @@ In the order they are reported:
 | --- | --- | --- |
 | `text` | the value's length within `minLength` and `maxLength` | `minLength`, `maxLength` |
 | `textarea` | the length, then the words within `minWords` and `maxWords` | `minLength`, `maxLength`, `minWords`, `maxWords` |
-| `email` | with `confirm`, the address typed again and the same; then, on the server only, the domain allowed or not blocked | `confirmation`, `invalid` |
-| `url` | the scheme, before the first colon in ASCII lowercase, among the allowed ones | `invalid` |
-| `number` | at least `min`, at most `max`, on the step | `min`, `max`, `step` |
+| `email` | its form (ADR-0069); with `confirm`, the address typed again and the same; then, on the server only, the domain allowed or not blocked | `invalid`, `confirmation` |
+| `phone` (5.4a) | its lenient international form (ADR-0069) | `invalid` |
+| `url` | the scheme, before the first colon in ASCII lowercase, among the allowed ones; then its form (ADR-0069) | `invalid` |
+| `number` | at most 15 digits in all and after the point, alone (5.4a, ADR-0069); at least `min`, at most `max`, on the step | `digits`, `min`, `max`, `step` |
 | `slider` | at least `min`, at most `max`, on the step from `min` | `min`, `max`, `step` |
 | `rating` | a whole number from 1 to `count` | `invalid` |
 | `scale` | a whole number from `from` to `to` | `invalid` |
@@ -159,17 +162,17 @@ In the order they are reported:
 | `dropdown` (5.2c) | each value an option; with `multiple`, the count within `minSelections` and `maxSelections` | `invalid`, `selections` |
 | `radio` (5.2c) | the value an option, or the "Other" text | `invalid` |
 | `checkboxes` (5.2c) | each value an option; the count within the selections | `invalid`, `selections` |
-| `grid` (5.2c) | each row's values among its columns: the options, or the scale's whole numbers | `invalid` |
-| `ranking` (5.2c) | each value an option, each once, as many as `top` or as all the options | `invalid` |
+| `grid` (5.2c) | each row's values among its columns: the options, or the scale's whole numbers; then the rows it needs answered (5.4a, ADR-0069) | `invalid`, `required` |
+| `ranking` (5.2c) | each option once and each position once (5.4a, ADR-0069); each value an option, as many as `top` or as all the options | `invalid` |
 | `country` (5.2c) | among `allowed`, when it lists some | `invalid` |
 | `name` (5.2c) | the required parts: `requiredParts`, or every part asked for when the field is required and lists none | `required` |
 | `address` (5.2c) | the required parts: `requiredParts`, or the street, the postcode and the city when the field is required and lists none | `required` |
 | `file` (5.2c) | at most `maxFiles` files; each file's extension taken; each file at most `maxBytes` | `fileCount`, `fileType`, `fileSize` |
 
-The other built-in types (`phone`, `checkbox`, `yesno`, `consent`, `signature`, `hidden`, `calculation`, `repeater`
+The other built-in types (`checkbox`, `yesno`, `consent`, `signature`, `hidden`, `calculation`, `repeater`
 and the content types) have no check of their settings: their reading, the pipeline or a later step decides what they
 take. A choice whose options come from a list or another source has its options checked by 5.5, which resolves them,
-together with cascading options; the grid's required rows and a ranking's positions come with 5.4, in both runtimes
+together with cascading options; the grid's required rows and a ranking's positions come with 5.4a (ADR-0069), in both runtimes
 through the same vectors.
 
 ### The vectors

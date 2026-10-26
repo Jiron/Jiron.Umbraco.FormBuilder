@@ -147,7 +147,7 @@ public sealed class FieldValuesTests
             Assert.That(Values(FieldValues.Read(number, field, new FieldAnswers(["1.50e1"]))), Is.EqualTo(new[] { "15" }), "converted exactly to the wire form");
             Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["-0.25"])), new FieldCheckInput(true, Today)).Errors, Is.Empty);
             Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["1,5"])), new FieldCheckInput(false, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Invalid }));
-            Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["1234567890123456"])), new FieldCheckInput(false, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Invalid }), "past 15 digits");
+            Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["1234567890123456"])), new FieldCheckInput(false, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Digits }), "past 15 digits");
             Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["1", "2"])), new FieldCheckInput(false, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Invalid }));
             Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, FieldAnswers.None), new FieldCheckInput(true, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Required }));
         });

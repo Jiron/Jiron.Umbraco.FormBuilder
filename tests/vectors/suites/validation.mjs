@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
-// The validation vectors of ROADMAP 5.2b and 5.2c (section 4.3.3, ADR-0058, ADR-0062): each built-in type's checks of
-// its settings at their edges, and a field's own pattern and matchesField checks, run by both runners over the same
-// answers. A field starts from the public settings its
+// The validation vectors of ROADMAP 5.2b, 5.2c and 5.4a (section 4.3.3, ADR-0058, ADR-0062, ADR-0069): each built-in
+// type's checks of its settings at their edges, the forms of an email address, a phone number and a web address, a
+// number's stored digits, a grid's required rows and a ranking's positions, and a field's own pattern and
+// matchesField checks, run by both runners over the same answers. A field starts from the public settings its
 // type has defaults for, read from the reviewed snapshot of the field types endpoint (docs/api/field-types.json), as
 // the public projection writes them; a case adds its own. Every expectation is written out here, never computed by
 // the code under test. Special characters are built from code points, so this file stays ASCII.
@@ -68,7 +69,6 @@ const required = [
   c('required-text-with-answer', field('text', {}, { required: true }), ['Anna'], []),
   c('required-date-without-answer', field('date', {}, { required: true }), [], ['required']),
   c('optional-number-without-answer-ignores-its-limits', field('number', { min: '5' }), [], []),
-  c('phone-has-no-check-of-its-own', field('phone'), ['+41 44 668 18 00'], []),
   c('checkbox-has-no-check-of-its-own', field('checkbox'), ['true'], []),
   c('yesno-has-no-check-of-its-own', field('yesno'), ['no'], []),
   c('signature-has-no-check-of-its-own', field('signature'), ['token-1'], [], { files: [{ name: 'signature.png', size: 4096 }] }),
@@ -84,6 +84,9 @@ const text = [
   c('text-above-its-max-length', field('text', { minLength: 2, maxLength: 5 }), ['abcdef'], ['maxLength']),
   c('text-default-max-length-holds-255', field('text'), ['a'.repeat(255)], []),
   c('text-default-max-length-refuses-256', field('text'), ['a'.repeat(256)], ['maxLength']),
+  c('text-sixteen-digits-are-text', field('text'), ['1234567890123456'], [], {
+    description: 'only a field that compares as a number keeps to the digits a stored number holds',
+  }),
   c('text-an-emoji-is-two-code-units', field('text', { maxLength: 1 }), [EMOJI], ['maxLength'], {
     description: 'browsers count maxlength in UTF-16 code units, so a character outside the BMP counts twice',
   }),
@@ -119,8 +122,47 @@ const textarea = [
   c('textarea-default-max-length-refuses-4001', field('textarea'), ['a'.repeat(4001)], ['maxLength']),
 ];
 
-// ---- email: the address typed again, compared as rules compare text ----
+// ---- email: its form (ADR-0069), then the address typed again, compared as rules compare text ----
 const email = [
+  c('email-the-plain-form', field('email'), ['anna@example.com'], []),
+  c('email-dots-plus-and-subdomains', field('email'), ['anna.maria+news@mail.example.co.uk'], []),
+  c('email-every-symbol-an-atom-takes', field('email'), ["!#$%&'*+-/=?^_`{|}~@example.com"], []),
+  c('email-letters-of-other-scripts', field('email'), ['j' + u(0xf6) + 'rg@m' + u(0xfc) + 'nchen.de'], []),
+  c('email-an-emoji-is-outside-ascii', field('email'), [EMOJI + '@example.com'], []),
+  c('email-a-hyphen-inside-a-label', field('email'), ['anna@my-example.com'], []),
+  c('email-digits-in-labels', field('email'), ['anna@123.example.com'], []),
+  c('email-a-top-level-label-with-digits', field('email'), ['anna@example.xn--p1ai'], [], { description: 'only a last label of digits alone is refused' }),
+  c('email-a-top-level-label-of-other-digits', field('email'), ['anna@example.' + u(0x663) + u(0x664)], [], {
+    description: 'only ASCII digits count; the digits of other scripts are characters outside ASCII',
+  }),
+  c('email-the-letters-and-digits-at-the-ends', field('email'), ['azAZ09@zaZA90.example'], []),
+  c('email-without-an-at', field('email'), ['anna.example.com'], ['invalid']),
+  c('email-without-a-local-part', field('email'), ['@example.com'], ['invalid']),
+  c('email-without-a-domain', field('email'), ['anna@'], ['invalid']),
+  c('email-a-domain-of-one-label', field('email'), ['anna@localhost'], ['invalid']),
+  c('email-two-ats', field('email'), ['anna@home@example.com'], ['invalid']),
+  c('email-a-dot-first', field('email'), ['.anna@example.com'], ['invalid']),
+  c('email-a-dot-last', field('email'), ['anna.@example.com'], ['invalid']),
+  c('email-two-dots', field('email'), ['an..na@example.com'], ['invalid']),
+  c('email-a-quoted-local-part', field('email'), ['"anna"@example.com'], ['invalid']),
+  c('email-a-space', field('email'), ['an na@example.com'], ['invalid']),
+  c('email-a-no-break-space', field('email'), ['an' + NBSP + 'na@example.com'], ['invalid'], {
+    description: 'cleaning trims U+00A0, so it is a space and no letter',
+  }),
+  c('email-a-c1-control', field('email'), ['an' + u(0x80) + 'na@example.com'], ['invalid']),
+  c('email-a-comma', field('email'), ['anna,maria@example.com'], ['invalid']),
+  c('email-an-ip-literal', field('email'), ['anna@[192.168.0.1]'], ['invalid']),
+  c('email-an-ip-address', field('email'), ['anna@192.168.0.1'], ['invalid'], { description: 'the last label is only digits' }),
+  c('email-an-underscore-in-the-domain', field('email'), ['anna@my_example.com'], ['invalid']),
+  c('email-a-hyphen-first-in-a-label', field('email'), ['anna@-example.com'], ['invalid']),
+  c('email-a-hyphen-last-in-a-label', field('email'), ['anna@example-.com'], ['invalid']),
+  c('email-an-empty-label', field('email'), ['anna@example..com'], ['invalid']),
+  c('email-a-trailing-dot', field('email'), ['anna@example.com.'], ['invalid']),
+  c('email-a-local-part-of-64', field('email'), ['a'.repeat(64) + '@example.com'], []),
+  c('email-a-local-part-of-65', field('email'), ['a'.repeat(65) + '@example.com'], ['invalid']),
+  c('email-a-label-of-63', field('email'), ['anna@' + 'b'.repeat(63) + '.com'], []),
+  c('email-a-label-of-64', field('email'), ['anna@' + 'b'.repeat(64) + '.com'], ['invalid']),
+  c('email-malformed-and-not-confirmed', field('email', { confirm: true }), ['anna'], ['invalid', 'confirmation']),
   c('email-without-confirm-ignores-the-part', field('email'), ['anna@example.com'], [], { parts: { confirm: ['other@example.com'] } }),
   c('email-confirmed', field('email', { confirm: true }), ['anna@example.com'], [], { parts: { confirm: ['anna@example.com'] } }),
   c('email-confirmed-in-another-case', field('email', { confirm: true }), ['Anna@Example.com'], [], { parts: { confirm: ['anna@EXAMPLE.COM'] } }),
@@ -138,7 +180,50 @@ const email = [
   }),
 ];
 
-// ---- url: the scheme, in ASCII lowercase, among the allowed ones ----
+// ---- phone: a lenient international form (ADR-0069) ----
+const phone = [
+  c('phone-international', field('phone'), ['+41 44 668 18 00'], []),
+  c('phone-a-trunk-prefix-in-brackets', field('phone'), ['+41 (0)44 668 18 00'], []),
+  c('phone-national', field('phone'), ['044 668 18 00'], []),
+  c('phone-an-international-prefix', field('phone'), ['0041 44 668 18 00'], []),
+  c('phone-brackets-hyphens', field('phone'), ['+1 (555) 123-4567'], []),
+  c('phone-dots', field('phone'), ['555.123.4567'], []),
+  c('phone-a-slash', field('phone'), ['030/1234567'], []),
+  c('phone-a-no-break-space', field('phone'), ['044' + NBSP + '668 18 00'], []),
+  c('phone-brackets-first', field('phone'), ['(044) 668 18 00'], []),
+  c('phone-four-digits', field('phone'), ['1234'], []),
+  c('phone-three-digits', field('phone'), ['123'], ['invalid']),
+  c('phone-seventeen-digits', field('phone'), ['12345678901234567'], []),
+  c('phone-eighteen-digits', field('phone'), ['123456789012345678'], ['invalid']),
+  c('phone-an-extension', field('phone'), ['+44 20 7946 0958 ext. 12'], []),
+  c('phone-an-extension-in-capitals', field('phone'), ['+44 20 7946 0958 EXT 12'], []),
+  c('phone-an-x-extension', field('phone'), ['+44 20 7946 0958x12'], []),
+  c('phone-a-hash-extension', field('phone'), ['0800 123 456 # 99'], []),
+  c('phone-an-extension-of-six', field('phone'), ['044 668 18 00 x 123456'], []),
+  c('phone-an-extension-of-seven', field('phone'), ['044 668 18 00 x 1234567'], ['invalid']),
+  c('phone-an-extension-without-digits', field('phone'), ['044 668 18 00 ext'], ['invalid']),
+  c('phone-an-extension-of-other-digits', field('phone'), ['044 668 18 00 x ' + u(0x661) + u(0x662)], ['invalid'], {
+    description: 'only ASCII digits make an extension',
+  }),
+  c('phone-the-extension-counts-no-digits', field('phone'), ['123 x 4567'], ['invalid'], {
+    description: 'three digits before the extension are too few, whatever the extension holds',
+  }),
+  c('phone-letters', field('phone'), ['0800 FLOWERS'], ['invalid']),
+  c('phone-a-plus-inside', field('phone'), ['41+44 668 18 00'], ['invalid']),
+  c('phone-two-pluses', field('phone'), ['++41 44 668 18 00'], ['invalid']),
+  c('phone-a-separator-first', field('phone'), ['-044 668 18 00'], ['invalid']),
+  c('phone-a-separator-last', field('phone'), ['044 668 18 00-'], ['invalid']),
+  c('phone-a-bracket-left-open', field('phone'), ['(044 668 18 00'], ['invalid']),
+  c('phone-a-bracket-closed-unopened', field('phone'), ['044) 668 18 00'], ['invalid']),
+  c('phone-empty-brackets', field('phone'), ['+41 ( ) 44 668 18 00'], ['invalid']),
+  c('phone-two-pairs-of-brackets', field('phone'), ['(044) (668) 18 00'], ['invalid']),
+  c('phone-two-opening-brackets', field('phone'), ['((044) 668 18 00'], ['invalid']),
+  c('phone-a-hyphen-in-brackets', field('phone'), ['+41 (0-44) 668 18 00'], ['invalid']),
+  c('phone-a-space-in-brackets', field('phone'), ['+1 ( 555 ) 123 4567'], []),
+  c('phone-a-second-closing-bracket', field('phone'), ['+41 (0)44) 668 18 00'], ['invalid']),
+];
+
+// ---- url: the scheme, in ASCII lowercase, among the allowed ones, then the form of ADR-0069 ----
 const url = [
   c('url-https-by-default', field('url'), ['https://example.com/path'], []),
   c('url-scheme-in-capitals', field('url'), ['HTTPS://example.com'], []),
@@ -149,6 +234,32 @@ const url = [
   c('url-scheme-before-the-first-colon', field('url'), ['mailto:https://example.com'], ['invalid']),
   c('url-a-port-after-the-scheme', field('url'), ['https://example.com:8443/path'], []),
   c('url-empty-scheme', field('url'), ['://example.com'], ['invalid']),
+  c('url-a-path-query-and-fragment', field('url'), ['https://www.example.co.uk/a/b?c=d&e=f#g'], []),
+  c('url-a-query-after-the-host', field('url'), ['https://example.com?q=1'], []),
+  c('url-a-fragment-after-the-host', field('url'), ['https://example.com#top'], []),
+  c('url-letters-of-other-scripts', field('url'), ['https://m' + u(0xfc) + 'nchen.de/caf' + u(0xe9)], []),
+  c('url-an-encoded-space', field('url'), ['https://example.com/a%20b'], []),
+  c('url-the-highest-port', field('url'), ['https://example.com:65535'], []),
+  c('url-a-port-past-the-highest', field('url'), ['https://example.com:65536'], ['invalid']),
+  c('url-port-zero', field('url'), ['https://example.com:0'], ['invalid']),
+  c('url-an-empty-port', field('url'), ['https://example.com:/'], ['invalid']),
+  c('url-a-port-of-six-digits', field('url'), ['https://example.com:000080'], ['invalid']),
+  c('url-a-port-in-hexadecimal', field('url'), ['https://example.com:0x50'], ['invalid']),
+  c('url-a-host-of-253', field('url'), ['https://' + ['a'.repeat(63), 'b'.repeat(63), 'c'.repeat(63), 'd'.repeat(61)].join('.') + '/'], []),
+  c('url-a-host-of-254', field('url'), ['https://' + ['a'.repeat(63), 'b'.repeat(63), 'c'.repeat(63), 'd'.repeat(62)].join('.') + '/'], ['invalid']),
+  c('url-without-the-slashes', field('url'), ['https:example.com'], ['invalid']),
+  c('url-without-a-host', field('url'), ['https://'], ['invalid']),
+  c('url-a-host-of-one-label', field('url'), ['https://localhost/'], ['invalid']),
+  c('url-an-ip-address', field('url'), ['https://192.168.0.1/'], ['invalid']),
+  c('url-a-trailing-dot', field('url'), ['https://example.com./'], ['invalid']),
+  c('url-a-space-in-the-host', field('url'), ['https://exa mple.com'], ['invalid']),
+  c('url-a-space-in-the-path', field('url'), ['https://example.com/a b'], ['invalid']),
+  c('url-a-no-break-space-in-the-path', field('url'), ['https://example.com/a' + NBSP + 'b'], ['invalid']),
+  c('url-delete-in-the-path', field('url'), ['https://example.com/a' + u(0x7f)], ['invalid']),
+  c('url-a-c1-control-in-the-query', field('url'), ['https://example.com/?a=' + u(0x9f)], ['invalid']),
+  c('url-a-control-character-in-the-fragment', field('url'), ['https://example.com/#a' + u(0x1f)], ['invalid']),
+  c('url-a-user-name', field('url'), ['https://anna@example.com/'], ['invalid']),
+  c('url-a-user-name-and-password', field('url'), ['https://anna:JFB_FAKE@example.com/'], ['invalid']),
 ];
 
 // ---- number: limits and the step, exactly ----
@@ -185,6 +296,16 @@ const number = [
     description: 'publishing refuses it (ADR-0056); the preview of a draft checks nothing with it',
   }),
   c('number-fifteen-digits-at-its-maximum', field('number', { max: '999999999999999' }), ['999999999999999'], []),
+  c('number-sixteen-digits', field('number'), ['1234567890123456'], ['digits']),
+  c('number-sixteen-digits-negative', field('number'), ['-1234567890123456'], ['digits']),
+  c('number-sixteen-digits-of-trailing-zeros', field('number'), ['1000000000000000'], ['digits']),
+  c('number-sixteen-digits-with-places', field('number', { decimals: 15 }), ['1234567.123456789'], ['digits']),
+  c('number-fifteen-places', field('number', { decimals: 15 }), ['0.000000000000001'], []),
+  c('number-sixteen-places', field('number', { decimals: 15 }), ['0.0000000000000001'], ['digits']),
+  c('number-sixty-digits', field('number'), ['1' + '0'.repeat(59)], ['digits']),
+  c('number-digits-alone', field('number', { max: '10', step: '3' }), ['1234567890123456'], ['digits'], {
+    description: 'a number a stored double cannot keep is reported alone: no limit or step is checked',
+  }),
   c('number-places-and-a-large-step', field('number', { step: '0.001', decimals: 3 }), ['12345678901.234'], []),
 ];
 
@@ -198,6 +319,9 @@ const slider = [
   c('slider-step-from-its-minimum', field('slider', { min: '10', max: '50', step: '5' }), ['15'], []),
   c('slider-off-the-step-from-its-minimum', field('slider', { min: '10', max: '50', step: '5' }), ['17'], ['step']),
   c('slider-half-steps', field('slider', { min: '0', max: '1', step: '0.5' }), ['0.5'], []),
+  c('slider-sixteen-digits-are-invalid', field('slider'), ['1234567890123456'], ['invalid'], {
+    description: 'a slider has no kind of its own for too many digits, and its maximum is not checked',
+  }),
 ];
 
 // ---- rating and scale: whole numbers in their range ----
@@ -304,7 +428,8 @@ const checkboxes = [
 ];
 
 // ---- grid: each row's values among its columns, the scale's whole numbers or its options ----
-const ROWS = [PRICE_ROW, STAFF_ROW];
+const ROWS = [{ id: PRICE_ROW }, { id: STAFF_ROW }];
+const STAFF_REQUIRED = [{ id: PRICE_ROW }, { id: STAFF_ROW, required: true }];
 const AGREEMENT = ['agree', 'neutral', 'disagree'];
 const grid = [
   c('grid-each-row-a-column', field('grid', {}, { options: AGREEMENT, rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['agree'], [STAFF_ROW]: ['disagree'] } }),
@@ -315,6 +440,7 @@ const grid = [
   c('grid-a-row-it-does-not-have-is-left', field('grid', {}, { options: AGREEMENT, rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['agree'], [UNKNOWN_ROW]: ['maybe'] } }),
   c('grid-only-a-row-it-does-not-have', field('grid', {}, { options: AGREEMENT, rows: ROWS, required: true }), [], ['required'], { parts: { [UNKNOWN_ROW]: ['agree'] } }),
   c('grid-required-without-answers', field('grid', {}, { options: AGREEMENT, rows: ROWS, required: true }), [], ['required']),
+  c('grid-optional-without-answers', field('grid', {}, { options: AGREEMENT, rows: ROWS }), [], []),
   c('grid-the-ends-of-its-scale', field('grid', { scale: { from: 1, to: 5 } }, { rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['1'], [STAFF_ROW]: ['5'] } }),
   c('grid-above-its-scale', field('grid', { scale: { from: 1, to: 5 } }, { rows: ROWS }), [], ['invalid'], { parts: { [PRICE_ROW]: ['6'] } }),
   c('grid-below-its-scale', field('grid', { scale: { from: 1, to: 5 } }, { rows: ROWS }), [], ['invalid'], { parts: { [PRICE_ROW]: ['0'] } }),
@@ -327,6 +453,31 @@ const grid = [
     description: 'publishing refuses columns from both (ADR-0056); in a draft the scale decides',
   }),
   c('grid-options-from-a-list-are-the-lists', field('grid', {}, { rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['whatever'] } }),
+  c('grid-required-with-every-row-answered', field('grid', {}, { options: AGREEMENT, rows: ROWS, required: true }), [], [], {
+    parts: { [PRICE_ROW]: ['agree'], [STAFF_ROW]: ['neutral'] },
+  }),
+  c('grid-required-with-a-row-missing', field('grid', {}, { options: AGREEMENT, rows: ROWS, required: true }), [], ['required'], {
+    parts: { [PRICE_ROW]: ['agree'] },
+    description: 'a required grid needs every row',
+  }),
+  c('grid-a-marked-row-missing', field('grid', {}, { options: AGREEMENT, rows: STAFF_REQUIRED }), [], ['required'], {
+    parts: { [PRICE_ROW]: ['agree'] },
+  }),
+  c('grid-a-marked-row-answered-alone', field('grid', {}, { options: AGREEMENT, rows: STAFF_REQUIRED }), [], [], {
+    parts: { [STAFF_ROW]: ['neutral'] },
+  }),
+  c('grid-a-marked-row-without-any-answer', field('grid', {}, { options: AGREEMENT, rows: STAFF_REQUIRED }), [], ['required'], {
+    description: 'a row marked required needs an answer even when the grid is not required',
+  }),
+  c('grid-not-a-column-then-a-marked-row-missing', field('grid', {}, { options: AGREEMENT, rows: STAFF_REQUIRED }), [], ['invalid', 'required'], {
+    parts: { [PRICE_ROW]: ['strongly'] },
+  }),
+  c('grid-required-over-a-row-marked-optional', field('grid', {}, { options: AGREEMENT, rows: [{ id: PRICE_ROW, required: false }, { id: STAFF_ROW }], required: true }), [], ['required'], {
+    parts: { [STAFF_ROW]: ['agree'] },
+  }),
+  c('grid-a-marked-row-answered-on-its-scale', field('grid', { scale: { from: 1, to: 5 } }, { rows: STAFF_REQUIRED }), [], [], {
+    parts: { [STAFF_ROW]: ['4'] },
+  }),
 ];
 
 // ---- ranking: each value an option, as many as top or as all the options ----
@@ -342,6 +493,24 @@ const ranking = [
     description: 'publishing refuses a top above the options (ADR-0056); a draft ranks them all',
   }),
   c('ranking-options-from-a-list-are-the-lists', field('ranking', { top: 2 }), ['looks'], []),
+  c('ranking-an-option-twice', field('ranking', {}, { options: ASPECTS }), ['quality', 'quality', 'speed', 'service'], ['invalid']),
+  c('ranking-an-option-twice-from-a-list', field('ranking', { top: 2 }), ['looks', 'looks'], ['invalid']),
+  c('ranking-positions-without-script', field('ranking', {}, { options: ASPECTS }), [], [], {
+    parts: { price: ['2'], quality: ['1'], service: ['4'], speed: ['3'] },
+  }),
+  c('ranking-two-options-in-one-position', field('ranking', {}, { options: ASPECTS }), [], ['invalid'], {
+    parts: { price: ['1'], quality: ['1'], service: ['3'], speed: ['4'] },
+  }),
+  c('ranking-positions-compare-as-numbers', field('ranking', { top: 2 }, { options: ASPECTS }), [], ['invalid'], {
+    parts: { price: ['01'], quality: ['1'] },
+    description: '01 and 1 are one position',
+  }),
+  c('ranking-positions-with-a-gap', field('ranking', { top: 2 }, { options: ASPECTS }), [], [], { parts: { speed: ['1'], price: ['3'] } }),
+  c('ranking-positions-for-more-than-its-top', field('ranking', { top: 2 }, { options: ASPECTS }), [], ['invalid'], {
+    parts: { speed: ['1'], price: ['2'], quality: ['3'] },
+  }),
+  c('ranking-a-position-for-no-option', field('ranking', { top: 2 }, { options: ASPECTS }), [], ['invalid'], { parts: { speed: ['1'], looks: ['2'] } }),
+  c('ranking-positions-in-one-from-a-list', field('ranking', { top: 2 }), [], ['invalid'], { parts: { a: ['2'], b: ['2'] } }),
 ];
 
 // ---- country: among the allowed ones, when the field lists some ----
@@ -476,6 +645,10 @@ const matches = [
   c('matches-not-without-an-answer', field('text', {}, { checks: [SAME] }), [], [], { others: { [OTHER_FIELD]: ['Ada'] } }),
   c('matches-numbers-as-numbers', field('number', {}, { checks: [SAME] }), ['15'], [], { others: { [OTHER_FIELD]: ['15.0'] } }),
   c('matches-another-number', field('number', {}, { checks: [SAME] }), ['15'], [], { others: { [OTHER_FIELD]: ['16'] }, checks: [0] }),
+  c('matches-not-for-a-number-past-its-digits', field('number', {}, { checks: [SAME] }), ['1234567890123456'], ['digits'], {
+    others: { [OTHER_FIELD]: ['5'] },
+    description: 'too many digits are reported alone, without the checks the field has',
+  }),
   c('matches-a-number-not-in-the-wire-form', field('number', {}, { checks: [SAME] }), ['15'], [], { others: { [OTHER_FIELD]: ['015'] }, checks: [0] }),
   c('matches-the-same-date', field('date', {}, { checks: [SAME] }), ['2026-06-15'], [], { others: { [OTHER_FIELD]: ['2026-06-15'] } }),
   c('matches-another-date', field('date', {}, { checks: [SAME] }), ['2026-06-15'], [], { others: { [OTHER_FIELD]: ['2026-06-16'] }, checks: [0] }),
@@ -584,6 +757,7 @@ export default {
     ...text,
     ...textarea,
     ...email,
+    ...phone,
     ...url,
     ...number,
     ...slider,

@@ -85,9 +85,11 @@ internal static class FieldValues
     }
 
     /// <summary>
-    /// The errors of a field the rules leave visible (ADR-0062): <c>invalid</c> when its answers could not be read,
-    /// <c>required</c> when it has no value and is required, otherwise what the type's check reports, followed by the
-    /// field's own checks that fail; none when it is fine.
+    /// The errors of a field the rules leave visible (ADR-0062): <c>invalid</c> when its answers could not be read;
+    /// <c>required</c> when it has no value and is required, or has a row marked required (ADR-0069); <c>digits</c>, or
+    /// <c>invalid</c> for a type without that kind, alone when it stores numbers and a value has more digits than a stored
+    /// number keeps exactly (ADR-0003); otherwise what the type's check reports, followed by the field's own checks that
+    /// fail; none when it is fine.
     /// </summary>
     /// <param name="type">The field's type.</param>
     /// <param name="field">The field.</param>
@@ -109,7 +111,7 @@ internal static class FieldValues
 
         if (read.Values.IsEmpty)
         {
-            return input.IsRequired ? new([FieldMessageKinds.Required], []) : FieldErrors.None;
+            return input.IsRequired || field.Rows.Any(row => row.Required) ? new([FieldMessageKinds.Required], []) : FieldErrors.None;
         }
 
         var storesFiles = type.Declaration.Storage == FieldStorageKind.File;
@@ -117,6 +119,11 @@ internal static class FieldValues
         {
             throw new ArgumentException(
                 storesFiles ? "A field that stores files has one file for each upload token." : "Only a field that stores files has files.", nameof(input));
+        }
+
+        if (type.Declaration.Storage == FieldStorageKind.Number && read.Values.Any(value => ExactDecimal.Parse(value.Text) is { } number && !ExactDecimal.Fits(number)))
+        {
+            return new([type.Declaration.Messages.HasFlag(FieldMessageKinds.Digits) ? FieldMessageKinds.Digits : FieldMessageKinds.Invalid], []);
         }
 
         var validation = new FieldValidation(field, read.Answers, read.Values, type.Declaration.Messages, input);

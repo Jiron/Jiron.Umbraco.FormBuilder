@@ -4,7 +4,9 @@
   [ADR-0038](0038-entry-repositories.md) (the key of a value with parts); what a type's check sees (whether the
   field is required, and today) amended by [ADR-0062](0062-the-built-in-types-checks.md) in 5.2b, and the files a
   check sees, a file field's most texts and a country's reading in 5.2c; how merge tags show the values a type read,
-  written by the type, added by [ADR-0066](0066-answers-as-merge-tags.md) in 5.3d
+  written by the type, added by [ADR-0066](0066-answers-as-merge-tags.md) in 5.3d; a number read up to 60 digits and a
+  ranking's repeated option or position read, for the checks to refuse, amended by
+  [ADR-0069](0069-the-checks-from-text-to-country.md) in 5.4a
 - Date: 2026-10-25
 - Roadmap step: 5.1d (decided and built); 5.2 gives the built-in types their checks, 6.1 runs the pipeline on them,
   6.2 posts the answers without JavaScript
@@ -117,7 +119,8 @@ what their wire forms need. The texts a field takes follow its settings; the bui
 grid the row it answers, and the text the entry stores where it is not the value) or calls `Invalid()`. The default
 reads by the type's rule kind: text, choices and file tokens as they are; a checkbox's `true` (anything else leaves it
 unticked); a number in the wire form or in the form a browser's number input posts (leading zeros, a point with no digit
-before it, an exponent), converted exactly to the wire form, unreadable past 15 digits (ADR-0005); dates, times and
+before it, an exponent), converted exactly to the wire form, unreadable past the 60 digits a calculation reads and refused
+past 15 with `digits` (ADR-0005, ADR-0069); dates, times and
 dates with times in their wire forms only. A type that takes one value (all but choices that take several, files, and a
 choice type whose `multiple` setting is on) finds two unreadable. Types with parts read them: a name and an address
 become one value, a JSON object of their parts in the type's order with empty parts left out and parts the field does

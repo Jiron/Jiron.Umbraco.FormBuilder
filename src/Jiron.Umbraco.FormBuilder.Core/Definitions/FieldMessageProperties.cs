@@ -34,5 +34,6 @@ internal static class FieldMessageProperties
         new("fileCount", FieldMessageKinds.FileCount, messages => messages.FileCount),
         new("full", FieldMessageKinds.Full, messages => messages.Full),
         new("confirmation", FieldMessageKinds.Confirmation, messages => messages.Confirmation),
+        new("digits", FieldMessageKinds.Digits, messages => messages.Digits),
     ];
 }

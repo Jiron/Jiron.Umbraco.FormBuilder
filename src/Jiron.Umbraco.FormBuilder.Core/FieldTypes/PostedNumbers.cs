@@ -6,13 +6,14 @@ namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 /// <summary>
 /// Numbers as visitors post them (ADR-0058), converted exactly to the wire form of ADR-0005: the wire form itself, or what
 /// a browser's number input posts, an optional minus, digits (leading zeros too), a point with digits, or both, and an
-/// optional exponent (<c>1.5e3</c>, <c>.5</c>, <c>007</c>). The value is kept only when a stored number can hold it: at most
-/// <see cref="ExactDecimal.StoredDigits"/> digits in all and as many after the point. Nothing is built from the digits
-/// before the length of the result is known, so an exponent of any size costs what reading it costs.
+/// optional exponent (<c>1.5e3</c>, <c>.5</c>, <c>007</c>). The value is kept only when a calculation can read it: at most
+/// <see cref="ExactDecimal.MaxDigits"/> digits in all and as many after the point (ADR-0069); whether a stored number
+/// keeps it exactly is the field's check. Nothing is built from the digits before the length of the result is known, so
+/// an exponent of any size costs what reading it costs.
 /// </summary>
 internal static class PostedNumbers
 {
-    /// <summary>The value in the wire form, without trailing zeros or "-0"; null when it is no number or too long to store.</summary>
+    /// <summary>The value in the wire form, without trailing zeros or "-0"; null when it is no number or too long to read.</summary>
     public static string? ToWire(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -92,7 +93,7 @@ internal static class PostedNumbers
         var power = exponent - fraction.Length + (digits.Length - trimmed.Length);
         var places = power < 0 ? -power : 0;
         var length = trimmed.Length + (power > 0 ? power : 0);
-        if (places > ExactDecimal.StoredDigits || (places > 0 ? trimmed.Length : length) > ExactDecimal.StoredDigits)
+        if (places > ExactDecimal.MaxDigits || (places > 0 ? trimmed.Length : length) > ExactDecimal.MaxDigits)
         {
             return null;
         }

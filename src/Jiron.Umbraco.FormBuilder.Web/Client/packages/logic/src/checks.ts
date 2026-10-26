@@ -2,8 +2,9 @@
 // Core (FieldTypes/BuiltIn), and the field's own checks that need no other entry, the same as Core's FieldValues; the
 // vectors of tests/vectors/validation.json hold both runtimes to one behaviour.
 import { applyRelative, parseDate, parseRelative, parseTime, today as todayIn } from './dates.ts';
-import { compareText, isMultiple, parseDecimal, subtract, type Decimal } from './decimal.ts';
+import { compareText, fits, isMultiple, parseDecimal, subtract, type Decimal } from './decimal.ts';
 import { LogicError, own } from './errors.ts';
+import { isEmailAddress, isPhoneNumber, isWebAddress } from './forms.ts';
 import { compilePattern, type Pattern } from './pattern.ts';
 import { sameValues, type Context, type Kind } from './rules.ts';
 import { countWords, fold } from './text.ts';
@@ -15,6 +16,12 @@ export interface FieldCheck {
   readonly pattern?: string;
   /** A `matchesField` check's other field, by id. */
   readonly field?: string;
+}
+
+/** A grid's row as its checks read it: its id, and whether it needs an answer when the grid is not required. */
+export interface CheckedRow {
+  readonly id: string;
+  readonly required?: boolean;
 }
 
 /** A field as its checks read it: its type, its rule kind, whether it is required, its settings, options and checks. */
@@ -30,8 +37,8 @@ export interface CheckedField {
    * source, whose answers the server holds to the options the source resolves (ROADMAP 5.5).
    */
   readonly options?: readonly string[];
-  /** A grid's rows, by id. */
-  readonly rows?: readonly string[];
+  /** A grid's rows. */
+  readonly rows?: readonly CheckedRow[];
   /** The field's own checks, in their order. */
   readonly checks?: readonly FieldCheck[];
 }
@@ -68,6 +75,8 @@ interface Validation {
   readonly settings: Settings;
   /** The field's own options; null when they come from a list or another source. */
   readonly options: ReadonlySet<string> | null;
+  /** A grid's rows; none for any other field. */
+  readonly rows: readonly CheckedRow[];
   readonly required: boolean;
   readonly today: () => number;
   fail(kind: string): void;
@@ -212,10 +221,14 @@ const CHECKS: Readonly<Record<string, (v: Validation) => void>> = {
     words(v);
   },
   email(v) {
+    if (!isEmailAddress(v.value)) v.fail('invalid');
     // The domains stay on the server, which alone refuses them (ADR-0062).
     if (v.settings['confirm'] !== true) return;
     const again = part(v.answers, 'confirm');
     if (again.length !== 1 || fold(again[0] ?? '') !== fold(v.value)) v.fail('confirmation');
+  },
+  phone(v) {
+    if (!isPhoneNumber(v.value)) v.fail('invalid');
   },
   url(v) {
     const colon = v.value.indexOf(':');
@@ -223,6 +236,7 @@ const CHECKS: Readonly<Record<string, (v: Validation) => void>> = {
     if (Array.isArray(v.settings['schemes']) && !texts(v.settings, 'schemes').some((allowed) => allowed === scheme)) {
       v.fail('invalid');
     }
+    if (!isWebAddress(v.value)) v.fail('invalid');
   },
   number(v) {
     const decimals = number(v.settings, 'decimals');
@@ -284,8 +298,14 @@ const CHECKS: Readonly<Record<string, (v: Validation) => void>> = {
       column = (value) => options.has(value);
     }
     if (column !== null && !v.values.every(column)) v.fail('invalid');
+    // The rows it needs answered: every row of a required grid, otherwise the rows marked required (ADR-0069).
+    const needed = v.rows.filter((row) => v.required || row.required === true);
+    if (needed.some((row) => part(v.answers, row.id).length === 0)) v.fail('required');
   },
   ranking(v) {
+    // Each option once, and without script each position once (ADR-0069).
+    const positions = Object.values(v.answers.parts ?? {}).map((texts) => Number(texts[0]));
+    if (new Set(v.values).size !== v.values.length || new Set(positions).size !== positions.length) v.fail('invalid');
     const options = v.options;
     if (options === null) return;
     const top = number(v.settings, 'top');
@@ -329,8 +349,10 @@ const partsOf = (answers: FieldAnswers, asked: readonly string[]): string[] =>
 
 /**
  * The values of the types whose answers have parts, as Core reads answers it can read (ADR-0058): the "Other" text in
- * place of an option on radio buttons and after the options on checkboxes, each grid row's values, and the texts of
- * the parts of a name or an address that the field asks for. Every other type's values are its answers' own.
+ * place of an option on radio buttons and after the options on checkboxes, each grid row's values, a ranking's options
+ * that were given positions without script (ADR-0069; their order is the server's to store, and no check reads it),
+ * and the texts of the parts of a name or an address that the field asks for. Every other type's values are its
+ * answers' own.
  */
 const READ: Readonly<
   Record<string, (field: CheckedField, answers: FieldAnswers, settings: Settings) => readonly string[]>
@@ -343,10 +365,18 @@ const READ: Readonly<
     const other = otherText(answers, settings);
     return other === undefined || answers.values.includes(other) ? answers.values : [...answers.values, other];
   },
-  grid: (field, answers) => (field.rows ?? []).flatMap((row) => part(answers, row)),
+  grid: (field, answers) => (field.rows ?? []).flatMap((row) => part(answers, row.id)),
+  ranking: (_, answers) =>
+    Object.keys(answers.parts ?? {}).length === 0 ? answers.values : Object.keys(answers.parts ?? {}),
   name: (_, answers, settings) => partsOf(answers, texts(settings, 'parts')),
   address: (_, answers, settings) => partsOf(answers, [...ADDRESS, ...texts(settings, 'parts')]),
 };
+
+/** Whether a number in the wire form keeps the digits a stored number holds exactly; any other text is the type's to check. */
+function fitsStored(value: string): boolean {
+  const d = parseDecimal(value);
+  return d === null || fits(d);
+}
 
 /** A pattern compiled, or null for one outside the safe subset, which publishing refuses and which checks nothing. */
 function compiled(pattern: string): Pattern | null {
@@ -384,9 +414,11 @@ function ownChecks(
 
 /**
  * The errors of a field the rules leave visible (ADR-0058, ADR-0062): `required` when it has no answer and is
- * required, otherwise what its type's check reports, each kind once, and the field's own checks that fail. A type
- * without a check here has none in the browser, and the server decides. Today comes from the context's instant and
- * time zone, read only by a date check; `values` are the form's other fields' values by id, as the rules see them.
+ * required, or has a row marked required (ADR-0069); `digits`, or `invalid` for a type without that kind, alone when
+ * it compares as a number and a value has more digits than a stored number keeps exactly (ADR-0003); otherwise what
+ * its type's check reports, each kind once, and the field's own checks that fail. A type without a check here has
+ * none in the browser, and the server decides. Today comes from the context's instant and time zone, read only by a
+ * date check; `values` are the form's other fields' values by id, as the rules see them.
  */
 export function checkField(
   field: CheckedField,
@@ -395,8 +427,17 @@ export function checkField(
   values: Readonly<Record<string, readonly string[]>> = {},
 ): FieldErrors {
   const settings = field.settings ?? {};
+  const rows = field.rows ?? [];
   const read = own(READ, field.type)?.(field, answers, settings) ?? answers.values;
-  if (read.length === 0) return { errors: field.required === true ? ['required'] : [], checks: [] };
+  if (read.length === 0) {
+    return {
+      errors: field.required === true || rows.some((row) => row.required === true) ? ['required'] : [],
+      checks: [],
+    };
+  }
+  if (field.kind === 'number' && read.some((value) => !fitsStored(value))) {
+    return { errors: [field.type === 'number' ? 'digits' : 'invalid'], checks: [] };
+  }
   const errors: string[] = [];
   let day: number | undefined;
   own(
@@ -408,6 +449,7 @@ export function checkField(
     answers,
     settings,
     options: field.options === undefined ? null : new Set(field.options),
+    rows,
     required: field.required === true,
     today: () => (day ??= todayIn(context.now, context.timeZone)),
     fail(kind) {

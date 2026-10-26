@@ -5,7 +5,7 @@
   publish), [ADR-0056](0056-field-settings-checks.md) (the formula's length) and
   [ADR-0061](0061-the-form-rules-engine.md) (calculations in the form engine)
 - Date: 2026-10-26
-- Roadmap step: 5.3a (decided and built); 5.4 stores the result, 6.1 recomputes it in the pipeline, 6.4 shows it in
+- Roadmap step: 5.3a (decided and built); 5.4c stores the result, 6.1 recomputes it in the pipeline, 6.4 shows it in
   the visitor's browser as they type, 9.x edits the formula and points at its problems
 
 ## Context
@@ -178,7 +178,7 @@ TypeScript, and C# mutants cover where .NET's own character classes, comparers a
 
 - §4.3.3 states the grammar's summary, what fields give, no value, and the codes; ADR-0005 gains the `formula` case
   and the position of a formula's error; ADR-0061 gains calculations in the engine.
-- 5.4 stores a result with more than 15 digits as text only (ADR-0005); 6.1 recomputes every calculation and ignores
+- 5.4c stores a result with more than 15 digits as text only (ADR-0005); 6.1 recomputes every calculation and ignores
   what is posted for it; 6.4 shows the result as the visitor types; 9.x checks the formula as the editor types, with
   the positions, and offers the fields a formula may name.
 - A rename of a field's alias breaks the formulas that name it, as a deleted field does; publishing names them, and the

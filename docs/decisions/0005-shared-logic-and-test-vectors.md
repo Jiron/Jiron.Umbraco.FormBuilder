@@ -9,7 +9,7 @@
   ([ADR-0064](0064-the-merge-tag-engine.md))
 - Date: 2026-10-23
 - Roadmap step: 1.5 (decided); built in 3.4 (the vector runners), 4.4 (the time zone and start-up checks), 5.2 (rules
-  and validation), 5.3 (merge tags and calculations), 5.4 (number fields), 6.1 and 6.4 (the wire); reviewed in 5.5
+  and validation), 5.3 (merge tags and calculations), 5.4a (number fields), 6.1 and 6.4 (the wire); reviewed in 5.5
 
 ## Context
 
@@ -138,7 +138,7 @@ Option 3 for text, option 2 for patterns, exact decimals for numbers, and one JS
   screen filters as rules compare. 4.4 adds the start-up and time zone checks.
 - 5.2 starts from the spike's 163 vectors, and its mutation check covers every operator and every module in
   TypeScript, plus C# mutants for the parts where .NET differs. 5.3 builds calculations and the date functions on
-  these rules. 5.4 converts the value of `<input type="number">`, which may use an exponent, exactly to the wire form
+  these rules. 5.4a converts the value of `<input type="number">`, which may use an exponent, exactly to the wire form
   before the limits apply. 6.1 answers `400` for a JSON body with a lone surrogate. 6.4 cleans values before sending,
   and counts the matcher toward the §4.12 budget.
 - Letters outside the folded blocks (Georgian, Cherokee, Deseret, Adlam and others) compare case-sensitively. If

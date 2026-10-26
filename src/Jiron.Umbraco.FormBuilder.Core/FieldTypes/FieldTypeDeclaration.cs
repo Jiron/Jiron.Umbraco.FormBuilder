@@ -207,6 +207,12 @@ public enum FieldMessageKinds
 
     /// <summary><c>confirmation</c>: the answer typed again is missing or another one, such as an email address (ADR-0062).</summary>
     Confirmation = 1 << 15,
+
+    /// <summary>
+    /// <c>digits</c>: a number with more digits than a stored number keeps exactly, more than 15 in all or after the
+    /// point (ADR-0003, ADR-0069).
+    /// </summary>
+    Digits = 1 << 16,
 }
 
 /// <summary>

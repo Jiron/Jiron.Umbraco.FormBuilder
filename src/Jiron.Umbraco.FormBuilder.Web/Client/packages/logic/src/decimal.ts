@@ -73,9 +73,12 @@ export function formatDecimal(d: Decimal): string {
   return d.n < 0n ? '-' + text : text;
 }
 
-/** Applies the storage limits: at most 15 digits in all (leading zeros don't count), at most 15 after the point. */
+/** Whether a value keeps the storage limits: at most 15 digits in all (leading zeros don't count), at most 15 after the point. */
+export const fits = (d: Decimal): boolean => digits(d.n) <= STORED_DIGITS && d.s <= STORED_DIGITS;
+
+/** Applies the storage limits of `fits`. */
 export function stored(d: Decimal): Decimal {
-  if (digits(d.n) > STORED_DIGITS || d.s > STORED_DIGITS) throw new LogicError('too_many_digits');
+  if (!fits(d)) throw new LogicError('too_many_digits');
   return d;
 }
 

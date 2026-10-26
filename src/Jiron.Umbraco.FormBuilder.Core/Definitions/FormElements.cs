@@ -178,6 +178,9 @@ public sealed record FieldMessages
 
     /// <summary>The answer typed again is missing or another one.</summary>
     public LocalizedText? Confirmation { get; init; }
+
+    /// <summary>A number has more digits than a stored number keeps exactly.</summary>
+    public LocalizedText? Digits { get; init; }
 }
 
 /// <summary>Where a field's value may be prefilled from.</summary>

@@ -30,7 +30,7 @@ public sealed class FieldTypeChangesTests
         yield return Change("text", "textarea", "minLength,maxLength,counter | - | prefix,suffix | - | none | no | none | - | no | yes");
         yield return Change("textarea", "text", "counter | minLength,maxLength | minWords,maxWords,rows,autoGrow | - | none | no | MinWords, MaxWords | - | no | yes");
         yield return Change("text", "number", $"prefix,suffix | - | minLength,maxLength,counter | - | PatternCheck | no | MinLength, MaxLength | {TextOperators} | yes | no");
-        yield return Change("number", "text", "prefix,suffix | - | min,max,step,decimals | - | none | no | Invalid, Min, Max, Step | between,greaterThan,lessThan | yes | no");
+        yield return Change("number", "text", "prefix,suffix | - | min,max,step,decimals | - | none | no | Invalid, Min, Max, Step, Digits | between,greaterThan,lessThan | yes | no");
         yield return Change("text", "dropdown", $"- | - | minLength,maxLength,prefix,suffix,counter | - | Placeholder, PatternCheck, MatchesFieldCheck, UniquePerFormCheck | yes | MinLength, MaxLength | {TextOperators} | yes | yes");
         yield return Change("dropdown", "radio", "- | - | multiple,minSelections,maxSelections,prompt | - | Autocomplete | no | Selections | - | no | yes");
         yield return Change("radio", "text", "- | - | other,otherLabel,layout | - | Options, Places | no | Invalid, Full | isChecked,isNotChecked | yes | yes");
@@ -38,7 +38,7 @@ public sealed class FieldTypeChangesTests
         yield return Change("checkboxes", "ranking", "- | - | other,otherLabel,minSelections,maxSelections,layout | - | DefaultValue, Prefill, Places | no | Selections, Full | - | no | yes");
         yield return Change("date", "datetime", "defaultToday,weekdaysOnly,excluded | min,max | - | - | Autocomplete | no | none | - | yes | yes");
         yield return Change("time", "datetime", "stepMinutes | - | min,max | - | none | no | Min, Max | - | yes | no");
-        yield return Change("number", "slider", "min,max,step | - | decimals,prefix,suffix | - | Placeholder, Autocomplete, MatchesFieldCheck, UniquePerFormCheck | no | none | - | no | yes");
+        yield return Change("number", "slider", "min,max,step | - | decimals,prefix,suffix | - | Placeholder, Autocomplete, MatchesFieldCheck, UniquePerFormCheck | no | Digits | - | no | yes");
         yield return Change("calculation", "number", "- | - | formula,visible,format | - | none | no | none | - | no | yes");
         yield return Change("text", "calculation", $"- | - | minLength,maxLength,prefix,suffix,counter | formula | Placeholder, Required, DefaultValue, Prefill, Autocomplete, PatternCheck, MatchesFieldCheck, UniquePerFormCheck | no | Required, MinLength, MaxLength | {TextOperators} | yes | no");
         yield return Change("scale", "rating", "lowLabel,highLabel | - | from,to | - | none | no | none | - | no | yes");
