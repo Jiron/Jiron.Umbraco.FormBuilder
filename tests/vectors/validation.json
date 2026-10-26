@@ -2339,6 +2339,3171 @@
       }
     },
     {
+      "id": "dropdown-an-option",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "green"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "dropdown-not-an-option",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "purple"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "dropdown-an-option-compares-exactly",
+      "description": "an option value is what entries store, so it is compared exactly, not folded",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "Green"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "dropdown-without-options-takes-nothing",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "red"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "dropdown-options-from-a-list-are-the-lists",
+      "description": "a field without options of its own takes them from a list, whose answers 5.5 checks",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "purple"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "dropdown-several-at-their-fewest",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": true,
+          "minSelections": 2,
+          "maxSelections": 3
+        }
+      },
+      "answers": {
+        "values": [
+          "red",
+          "green"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "dropdown-several-at-their-most",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": true,
+          "minSelections": 2,
+          "maxSelections": 3
+        }
+      },
+      "answers": {
+        "values": [
+          "red",
+          "green",
+          "blue"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "dropdown-several-below-their-fewest",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": true,
+          "minSelections": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "red"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "selections"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "dropdown-several-above-their-most",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": true,
+          "maxSelections": 3
+        }
+      },
+      "answers": {
+        "values": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "selections"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "dropdown-several-without-limits",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": true
+        }
+      },
+      "answers": {
+        "values": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "dropdown-several-not-an-option-and-too-many",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": true,
+          "maxSelections": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "red",
+          "green",
+          "pink"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid",
+          "selections"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "dropdown-several-from-a-list-still-count",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "settings": {
+          "multiple": true,
+          "maxSelections": 1
+        }
+      },
+      "answers": {
+        "values": [
+          "red",
+          "green"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "selections"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "dropdown-one-choice-has-no-selections",
+      "description": "publishing refuses selections without multiple (ADR-0056); a draft does not count them",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": false,
+          "minSelections": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "red"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "radio-an-option",
+      "field": {
+        "type": "radio",
+        "kind": "choice",
+        "options": [
+          "yes",
+          "no"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [
+          "no"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "radio-not-an-option",
+      "field": {
+        "type": "radio",
+        "kind": "choice",
+        "options": [
+          "yes",
+          "no"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [
+          "maybe"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "radio-the-other-text",
+      "field": {
+        "type": "radio",
+        "kind": "choice",
+        "options": [
+          "yes",
+          "no"
+        ],
+        "settings": {
+          "other": true,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "other": [
+            "Now and then"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "radio-the-other-text-of-a-required-field",
+      "field": {
+        "type": "radio",
+        "kind": "choice",
+        "options": [
+          "yes",
+          "no"
+        ],
+        "required": true,
+        "settings": {
+          "other": true,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "other": [
+            "Now and then"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "radio-the-other-text-equal-to-an-option",
+      "field": {
+        "type": "radio",
+        "kind": "choice",
+        "options": [
+          "yes",
+          "no"
+        ],
+        "settings": {
+          "other": true,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "other": [
+            "no"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "radio-an-other-text-it-does-not-offer",
+      "description": "without \"Other\" the text is no answer",
+      "field": {
+        "type": "radio",
+        "kind": "choice",
+        "options": [
+          "yes",
+          "no"
+        ],
+        "required": true,
+        "settings": {
+          "other": false,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "other": [
+            "Now and then"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "radio-an-option-beside-an-other-text",
+      "description": "one choice: the option is the answer, and the text is left",
+      "field": {
+        "type": "radio",
+        "kind": "choice",
+        "options": [
+          "yes",
+          "no"
+        ],
+        "settings": {
+          "other": true,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [
+          "yes"
+        ],
+        "parts": {
+          "other": [
+            "Now and then"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "radio-not-an-option-beside-an-other-text",
+      "field": {
+        "type": "radio",
+        "kind": "choice",
+        "options": [
+          "yes",
+          "no"
+        ],
+        "settings": {
+          "other": true,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [
+          "maybe"
+        ],
+        "parts": {
+          "other": [
+            "maybe"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "radio-options-from-a-list-are-the-lists",
+      "field": {
+        "type": "radio",
+        "kind": "choice",
+        "settings": {
+          "other": false,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [
+          "maybe"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-options",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [
+          "email",
+          "post"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-not-an-option",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [
+          "email",
+          "fax"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-at-their-fewest",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit",
+          "minSelections": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "email",
+          "post"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-below-their-fewest",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit",
+          "minSelections": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "email"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "selections"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-at-their-most",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit",
+          "maxSelections": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "email",
+          "phone"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-above-their-most",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit",
+          "maxSelections": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "email",
+          "phone",
+          "post"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "selections"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-not-an-option-and-too-few",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit",
+          "minSelections": 3
+        }
+      },
+      "answers": {
+        "values": [
+          "email",
+          "fax"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid",
+          "selections"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-the-other-text-is-the-visitors-own",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": true,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [
+          "email"
+        ],
+        "parts": {
+          "other": [
+            "fax"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-the-other-text-counts-as-one",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": true,
+          "layout": "inherit",
+          "maxSelections": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "email",
+          "phone"
+        ],
+        "parts": {
+          "other": [
+            "pigeon"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "selections"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-the-other-text-alone-at-their-fewest",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": true,
+          "layout": "inherit",
+          "minSelections": 1
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "other": [
+            "pigeon"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-an-other-text-repeating-an-option-counts-once",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": true,
+          "layout": "inherit",
+          "maxSelections": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "email",
+          "phone"
+        ],
+        "parts": {
+          "other": [
+            "email"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-an-other-text-it-does-not-offer-is-left",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit",
+          "maxSelections": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "email",
+          "phone"
+        ],
+        "parts": {
+          "other": [
+            "pigeon"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkboxes-options-from-a-list-are-the-lists",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "settings": {
+          "other": false,
+          "layout": "inherit",
+          "maxSelections": 3
+        }
+      },
+      "answers": {
+        "values": [
+          "fax",
+          "telex"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-each-row-a-column",
+      "field": {
+        "type": "grid",
+        "options": [
+          "agree",
+          "neutral",
+          "disagree"
+        ],
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "agree"
+          ],
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51": [
+            "disagree"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-a-row-not-a-column",
+      "field": {
+        "type": "grid",
+        "options": [
+          "agree",
+          "neutral",
+          "disagree"
+        ],
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "agree"
+          ],
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51": [
+            "strongly"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-one-row-answered",
+      "field": {
+        "type": "grid",
+        "options": [
+          "agree",
+          "neutral",
+          "disagree"
+        ],
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51": [
+            "neutral"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-several-in-a-row",
+      "field": {
+        "type": "grid",
+        "options": [
+          "agree",
+          "neutral",
+          "disagree"
+        ],
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": true
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "agree",
+            "neutral"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-several-in-a-row-one-not-a-column",
+      "field": {
+        "type": "grid",
+        "options": [
+          "agree",
+          "neutral",
+          "disagree"
+        ],
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": true
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "agree",
+            "maybe"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-a-row-it-does-not-have-is-left",
+      "field": {
+        "type": "grid",
+        "options": [
+          "agree",
+          "neutral",
+          "disagree"
+        ],
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "agree"
+          ],
+          "2d8c6f3a-9e4f-4a0c-9b5d-7f3e4c9a8d62": [
+            "maybe"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-only-a-row-it-does-not-have",
+      "field": {
+        "type": "grid",
+        "options": [
+          "agree",
+          "neutral",
+          "disagree"
+        ],
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "required": true,
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "2d8c6f3a-9e4f-4a0c-9b5d-7f3e4c9a8d62": [
+            "agree"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-required-without-answers",
+      "field": {
+        "type": "grid",
+        "options": [
+          "agree",
+          "neutral",
+          "disagree"
+        ],
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "required": true,
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": []
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-the-ends-of-its-scale",
+      "field": {
+        "type": "grid",
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false,
+          "scale": {
+            "from": 1,
+            "to": 5
+          }
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "1"
+          ],
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51": [
+            "5"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-above-its-scale",
+      "field": {
+        "type": "grid",
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false,
+          "scale": {
+            "from": 1,
+            "to": 5
+          }
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "6"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-below-its-scale",
+      "field": {
+        "type": "grid",
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false,
+          "scale": {
+            "from": 1,
+            "to": 5
+          }
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "0"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-a-scale-from-zero-to-ten",
+      "field": {
+        "type": "grid",
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false,
+          "scale": {
+            "from": 0,
+            "to": 10
+          }
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "0"
+          ],
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51": [
+            "10"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-a-half-on-its-scale",
+      "field": {
+        "type": "grid",
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false,
+          "scale": {
+            "from": 1,
+            "to": 5
+          }
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "2.5"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-a-fraction-of-digits-in-its-scale",
+      "field": {
+        "type": "grid",
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false,
+          "scale": {
+            "from": 1,
+            "to": 5
+          }
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "0.3"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-a-word-on-its-scale",
+      "field": {
+        "type": "grid",
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false,
+          "scale": {
+            "from": 1,
+            "to": 5
+          }
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "good"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-a-scale-and-options",
+      "description": "publishing refuses columns from both (ADR-0056); in a draft the scale decides",
+      "field": {
+        "type": "grid",
+        "options": [
+          "agree",
+          "neutral",
+          "disagree"
+        ],
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false,
+          "scale": {
+            "from": 1,
+            "to": 3
+          }
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "agree"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "grid-options-from-a-list-are-the-lists",
+      "field": {
+        "type": "grid",
+        "rows": [
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40",
+          "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "whatever"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "ranking-all-the-options",
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "options": [
+          "price",
+          "quality",
+          "service",
+          "speed"
+        ]
+      },
+      "answers": {
+        "values": [
+          "quality",
+          "price",
+          "speed",
+          "service"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "ranking-one-option-left-out",
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "options": [
+          "price",
+          "quality",
+          "service",
+          "speed"
+        ]
+      },
+      "answers": {
+        "values": [
+          "quality",
+          "price",
+          "speed"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "ranking-not-an-option",
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "options": [
+          "price",
+          "quality",
+          "service",
+          "speed"
+        ]
+      },
+      "answers": {
+        "values": [
+          "quality",
+          "price",
+          "speed",
+          "looks"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "ranking-its-top-two",
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "options": [
+          "price",
+          "quality",
+          "service",
+          "speed"
+        ],
+        "settings": {
+          "top": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "speed",
+          "price"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "ranking-three-for-its-top-two",
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "options": [
+          "price",
+          "quality",
+          "service",
+          "speed"
+        ],
+        "settings": {
+          "top": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "speed",
+          "price",
+          "quality"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "ranking-one-for-its-top-two",
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "options": [
+          "price",
+          "quality",
+          "service",
+          "speed"
+        ],
+        "settings": {
+          "top": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "speed"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "ranking-a-top-above-its-options",
+      "description": "publishing refuses a top above the options (ADR-0056); a draft ranks them all",
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "options": [
+          "price",
+          "quality",
+          "service",
+          "speed"
+        ],
+        "settings": {
+          "top": 9
+        }
+      },
+      "answers": {
+        "values": [
+          "quality",
+          "price",
+          "speed",
+          "service"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "ranking-options-from-a-list-are-the-lists",
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "settings": {
+          "top": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "looks"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "country-any-without-a-list",
+      "field": {
+        "type": "country",
+        "kind": "choice"
+      },
+      "answers": {
+        "values": [
+          "CH"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "country-allowed",
+      "field": {
+        "type": "country",
+        "kind": "choice",
+        "settings": {
+          "allowed": [
+            "AT",
+            "CH",
+            "DE"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "AT"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "country-not-allowed",
+      "field": {
+        "type": "country",
+        "kind": "choice",
+        "settings": {
+          "allowed": [
+            "AT",
+            "CH",
+            "DE"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "FR"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "name-required-with-every-part",
+      "field": {
+        "type": "name",
+        "required": true,
+        "settings": {
+          "parts": [
+            "first",
+            "last"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "first": [
+            "Ada"
+          ],
+          "last": [
+            "Lovelace"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "name-required-without-its-last-name",
+      "field": {
+        "type": "name",
+        "required": true,
+        "settings": {
+          "parts": [
+            "first",
+            "last"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "first": [
+            "Ada"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "name-optional-with-one-part",
+      "field": {
+        "type": "name",
+        "settings": {
+          "parts": [
+            "first",
+            "last"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "first": [
+            "Ada"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "name-required-without-answers",
+      "field": {
+        "type": "name",
+        "required": true,
+        "settings": {
+          "parts": [
+            "first",
+            "last"
+          ]
+        }
+      },
+      "answers": {
+        "values": []
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "name-required-asking-for-a-title",
+      "field": {
+        "type": "name",
+        "required": true,
+        "settings": {
+          "parts": [
+            "title",
+            "first",
+            "last"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "first": [
+            "Ada"
+          ],
+          "last": [
+            "Lovelace"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "name-its-required-parts",
+      "field": {
+        "type": "name",
+        "settings": {
+          "parts": [
+            "first",
+            "last"
+          ],
+          "requiredParts": [
+            "last"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "last": [
+            "Lovelace"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "name-without-a-required-part-once-given",
+      "description": "the required parts hold once the visitor gives any part",
+      "field": {
+        "type": "name",
+        "settings": {
+          "parts": [
+            "first",
+            "last"
+          ],
+          "requiredParts": [
+            "last"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "first": [
+            "Ada"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "name-required-needs-only-its-required-parts",
+      "field": {
+        "type": "name",
+        "required": true,
+        "settings": {
+          "parts": [
+            "first",
+            "last"
+          ],
+          "requiredParts": [
+            "last"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "last": [
+            "Lovelace"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "name-a-required-part-it-does-not-ask-for",
+      "description": "publishing refuses it (ADR-0056); a draft needs only the parts it asks for",
+      "field": {
+        "type": "name",
+        "settings": {
+          "parts": [
+            "first",
+            "last"
+          ],
+          "requiredParts": [
+            "middle",
+            "last"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "first": [
+            "Ada"
+          ],
+          "last": [
+            "Lovelace"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "name-a-part-it-does-not-ask-for-is-left",
+      "field": {
+        "type": "name",
+        "required": true,
+        "settings": {
+          "parts": [
+            "first",
+            "last"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "first": [
+            "Ada"
+          ],
+          "last": [
+            "Lovelace"
+          ],
+          "middle": [
+            "King"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "name-only-a-part-it-does-not-ask-for",
+      "field": {
+        "type": "name",
+        "required": true,
+        "settings": {
+          "parts": [
+            "first",
+            "last"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "middle": [
+            "King"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "name-only-a-part-it-does-not-ask-for-is-no-answer",
+      "description": "a part the field does not ask for gives it no value, so its required parts do not hold",
+      "field": {
+        "type": "name",
+        "settings": {
+          "parts": [
+            "first",
+            "last"
+          ],
+          "requiredParts": [
+            "last"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "middle": [
+            "King"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "address-required-with-the-three",
+      "field": {
+        "type": "address",
+        "required": true
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "street": [
+            "Bahnhofstrasse 1"
+          ],
+          "postcode": [
+            "8001"
+          ],
+          "city": [
+            "Zurich"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "address-required-without-its-city",
+      "field": {
+        "type": "address",
+        "required": true
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "street": [
+            "Bahnhofstrasse 1"
+          ],
+          "postcode": [
+            "8001"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "address-required-without-a-region-it-asks-for",
+      "description": "a required address needs the street, the postcode and the city unless it lists others",
+      "field": {
+        "type": "address",
+        "required": true,
+        "settings": {
+          "parts": [
+            "region"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "street": [
+            "Bahnhofstrasse 1"
+          ],
+          "postcode": [
+            "8001"
+          ],
+          "city": [
+            "Zurich"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "address-required-without-its-street",
+      "field": {
+        "type": "address",
+        "required": true
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "postcode": [
+            "8001"
+          ],
+          "city": [
+            "Zurich"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "address-optional-with-one-part",
+      "field": {
+        "type": "address"
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "city": [
+            "Bern"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "address-only-a-part-it-does-not-ask-for-is-no-answer",
+      "field": {
+        "type": "address",
+        "settings": {
+          "requiredParts": [
+            "city"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "region": [
+            "ZH"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "address-its-required-parts",
+      "field": {
+        "type": "address",
+        "settings": {
+          "parts": [
+            "country"
+          ],
+          "requiredParts": [
+            "country"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "country": [
+            "CH"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "address-without-a-required-part-once-given",
+      "field": {
+        "type": "address",
+        "settings": {
+          "requiredParts": [
+            "postcode",
+            "city"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "street": [
+            "Bahnhofstrasse 1"
+          ],
+          "city": [
+            "Zurich"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "address-a-required-part-it-does-not-ask-for",
+      "description": "publishing refuses it (ADR-0056); a draft needs only the parts it asks for",
+      "field": {
+        "type": "address",
+        "settings": {
+          "requiredParts": [
+            "region"
+          ]
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "street": [
+            "Bahnhofstrasse 1"
+          ],
+          "postcode": [
+            "8001"
+          ],
+          "city": [
+            "Zurich"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-an-image",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "photo.jpg",
+            "size": 204800
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-a-pdf-by-default",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "report.pdf",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-a-document-by-default",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "report.docx",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [
+          "fileType"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-an-extension-in-capitals",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "IMG_0001.HEIC",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-the-last-point-decides",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "photo.jpg.exe",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [
+          "fileType"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-a-name-without-a-point",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "jpg",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [
+          "fileType"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-a-name-ending-with-a-point",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "photo.",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [
+          "fileType"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-svg-is-no-image",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "logo.svg",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [
+          "fileType"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-svg-as-its-own-extension",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "extensions": [
+            "svg"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "logo.svg",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-its-own-extension",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "extensions": [
+            "dwg"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "plan.dwg",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-its-own-extensions-only",
+      "description": "images and PDFs are taken only when the field lists neither types nor extensions",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "extensions": [
+            "dwg"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "photo.jpg",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [
+          "fileType"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-office-documents",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 2,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "types": [
+            "office"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1",
+          "token-2"
+        ],
+        "files": [
+          {
+            "name": "budget.xlsx",
+            "size": 1024
+          },
+          {
+            "name": "notes.odt",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-office-documents-are-no-pdf",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "types": [
+            "office"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "report.pdf",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [
+          "fileType"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-a-type-and-an-extension",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "types": [
+            "pdf"
+          ],
+          "extensions": [
+            "dwg"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "plan.dwg",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-plain-text",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "types": [
+            "text"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "data.csv",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-an-archive",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "types": [
+            "archives"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "backup.7z",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-a-double-extension",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "types": [
+            "archives"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "backup.tar.gz",
+            "size": 1024
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-at-its-most-files",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 2,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1",
+          "token-2"
+        ],
+        "files": [
+          {
+            "name": "a.png",
+            "size": 1
+          },
+          {
+            "name": "b.png",
+            "size": 1
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-above-its-most-files",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 2,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1",
+          "token-2",
+          "token-3"
+        ],
+        "files": [
+          {
+            "name": "a.png",
+            "size": 1
+          },
+          {
+            "name": "b.png",
+            "size": 1
+          },
+          {
+            "name": "c.png",
+            "size": 1
+          }
+        ]
+      },
+      "expect": {
+        "errors": [
+          "fileCount"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-at-its-most-bytes",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "maxBytes": 1000
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "a.png",
+            "size": 1000
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-above-its-most-bytes",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "maxBytes": 1000
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "a.png",
+            "size": 1001
+          }
+        ]
+      },
+      "expect": {
+        "errors": [
+          "fileSize"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-one-of-two-too-big",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 2,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "maxBytes": 1000
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1",
+          "token-2"
+        ],
+        "files": [
+          {
+            "name": "a.png",
+            "size": 10
+          },
+          {
+            "name": "b.png",
+            "size": 1001
+          }
+        ]
+      },
+      "expect": {
+        "errors": [
+          "fileSize"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-any-size-without-a-limit",
+      "description": "the host's own limit comes with the uploads (6.1)",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "film.png",
+            "size": 5368709120
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-an-empty-file",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ],
+        "files": [
+          {
+            "name": "empty.png",
+            "size": 0
+          }
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-every-check-fails",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false,
+          "maxBytes": 1000
+        }
+      },
+      "answers": {
+        "values": [
+          "token-1",
+          "token-2"
+        ],
+        "files": [
+          {
+            "name": "a.png",
+            "size": 10
+          },
+          {
+            "name": "b.exe",
+            "size": 1001
+          }
+        ]
+      },
+      "expect": {
+        "errors": [
+          "fileCount",
+          "fileType",
+          "fileSize"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "file-required-without-files",
+      "field": {
+        "type": "file",
+        "kind": "files",
+        "required": true,
+        "settings": {
+          "maxFiles": 1,
+          "dropZone": true,
+          "thumbnails": true,
+          "camera": false
+        }
+      },
+      "answers": {
+        "values": []
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
       "id": "date-at-its-fixed-minimum",
       "field": {
         "type": "date",
@@ -3856,6 +7021,871 @@
           "step"
         ],
         "checks": []
+      }
+    },
+    {
+      "id": "pattern-matches-the-whole-answer",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "[0-9]{4}"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "8001"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "pattern-a-longer-answer",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "[0-9]{4}"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "80012"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "pattern-a-part-of-the-answer",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "[0-9]{4}"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "CH-8001"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "pattern-compares-exactly",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "[a-z]+"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "Abc"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "pattern-normalised-as-answers-are",
+      "description": "the pattern is composed as cleaning composes the answer (ADR-0005)",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "cafe\u0301"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "caf\u00e9"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "pattern-after-the-types-checks",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "[0-9]{4}"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 3,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "8001"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "maxLength"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "pattern-and-the-types-checks-both-fail",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "[a-z]+"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 3,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "8001"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "maxLength"
+        ],
+        "checks": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "pattern-not-without-an-answer",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "[0-9]{4}"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": []
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "pattern-not-for-a-required-field-without-an-answer",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "[0-9]{4}"
+          }
+        ],
+        "required": true,
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": []
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "pattern-outside-the-safe-subset-checks-nothing",
+      "description": "publishing refuses it (ADR-0005); a draft does not fail on it",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "b"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "pattern-its-place-among-the-checks",
+      "description": "uniquePerForm is the server's, in the submission's transaction (6.1)",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "uniquePerForm"
+          },
+          {
+            "kind": "pattern",
+            "pattern": "[a-z]+"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "ABC"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          1
+        ]
+      }
+    },
+    {
+      "id": "pattern-two-checks-one-fails",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "[a-z]+"
+          },
+          {
+            "kind": "pattern",
+            "pattern": ".{5,}"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "abc"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          1
+        ]
+      }
+    },
+    {
+      "id": "pattern-two-checks-both-fail",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "[a-z]+"
+          },
+          {
+            "kind": "pattern",
+            "pattern": ".{5,}"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "ABC"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          0,
+          1
+        ]
+      }
+    },
+    {
+      "id": "matches-the-same-text",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "Ada"
+        ]
+      },
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "Ada"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "matches-text-folded",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "ADA LOVELACE"
+        ]
+      },
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "ada lovelace"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "matches-text-folded-to-the-sharp-s",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "STRA\u1e9eE"
+        ]
+      },
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "Stra\u00dfe"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "matches-text-never-folds-the-sharp-s-to-ss",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "STRASSE"
+        ]
+      },
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "Stra\u00dfe"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "matches-another-text",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "Bob"
+        ]
+      },
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "Ada"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "matches-a-field-without-values",
+      "description": "a hidden field, or one left empty, has no values",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "Ada"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "matches-a-field-with-more-values",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "Ada",
+          "Bob"
+        ]
+      },
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "Ada"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "matches-not-without-an-answer",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "Ada"
+        ]
+      },
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": []
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "matches-numbers-as-numbers",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "15.0"
+        ]
+      },
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "decimals": 0
+        }
+      },
+      "answers": {
+        "values": [
+          "15"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "matches-another-number",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "16"
+        ]
+      },
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "decimals": 0
+        }
+      },
+      "answers": {
+        "values": [
+          "15"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "matches-a-number-not-in-the-wire-form",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "015"
+        ]
+      },
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "decimals": 0
+        }
+      },
+      "answers": {
+        "values": [
+          "15"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "matches-the-same-date",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "2026-06-15"
+        ]
+      },
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "matches-another-date",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "2026-06-16"
+        ]
+      },
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "matches-times-to-the-second",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "10:30:00"
+        ]
+      },
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "checks": [
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ]
+      },
+      "answers": {
+        "values": [
+          "10:30"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "matches-and-a-pattern-in-order",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "8002"
+        ]
+      },
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "checks": [
+          {
+            "kind": "pattern",
+            "pattern": "[0-9]{4}"
+          },
+          {
+            "kind": "matchesField",
+            "field": "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73"
+          }
+        ],
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "8001"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": [
+          1
+        ]
       }
     }
   ]

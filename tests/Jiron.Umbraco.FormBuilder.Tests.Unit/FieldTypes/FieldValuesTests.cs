@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Logic;
@@ -9,7 +10,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.FieldTypes;
 /// <summary>
 /// The contract of reading and checking answers (ADR-0058) as the pipeline runs it (<see cref="FieldValues"/>): through
 /// a site's own type written against the interface alone, one with settings written on the base class, a built-in
-/// type, and types that break the contract, which the pipeline refuses.
+/// type, and types that break the contract, which the pipeline refuses; and what a check sees besides the answers, and
+/// the field's own checks after its type's (ADR-0062).
 /// </summary>
 public sealed class FieldValuesTests
 {
@@ -243,6 +245,173 @@ public sealed class FieldValuesTests
     }
 
     [Test]
+    public void ATypesCheck_SeesTheFilesItsUploadTokensStandFor()
+    {
+        FieldFile[]? seen = null;
+        var type = new BrokenFieldType("uploads", FieldStorageKind.File)
+        {
+            OnRead = reading =>
+            {
+                foreach (var token in reading.Answers.Values)
+                {
+                    reading.Add(token);
+                }
+            },
+            OnValidate = validation => seen = [.. validation.Files],
+        };
+        var field = Field("uploads");
+        FieldFile[] files = [new("plan.pdf", 2048), new("photo.jpg", 1024)];
+
+        FieldValues.Check(type, field, FieldValues.Read(type, field, new FieldAnswers(["token-1", "token-2"])), new FieldCheckInput(false, Today) { Files = [.. files] });
+
+        Assert.That(seen, Is.EqualTo(files));
+    }
+
+    [Test]
+    public void AFieldThatStoresFiles_HasOneFileForEachValue_AndNoOtherFieldHasFiles()
+    {
+        var uploads = new BrokenFieldType("uploads", FieldStorageKind.File) { OnRead = reading => reading.Add("token-1") };
+        var plain = new BrokenFieldType("plain", FieldStorageKind.Text) { OnRead = reading => reading.Add("a") };
+        var uploadsField = Field("uploads");
+        var plainField = Field("plain");
+        var token = FieldValues.Read(uploads, uploadsField, new FieldAnswers(["token-1"]));
+        var text = FieldValues.Read(plain, plainField, new FieldAnswers(["a"]));
+        var file = new FieldFile("plan.pdf", 2048);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(() => FieldValues.Check(uploads, uploadsField, token, new FieldCheckInput(false, Today)), Throws.ArgumentException, "no file");
+            Assert.That(() => FieldValues.Check(uploads, uploadsField, token, new FieldCheckInput(false, Today) { Files = [file, file] }), Throws.ArgumentException, "two files");
+            Assert.That(() => FieldValues.Check(plain, plainField, text, new FieldCheckInput(false, Today) { Files = [file] }), Throws.ArgumentException, "a text's file");
+            Assert.That(FieldValues.Check(uploads, uploadsField, token, new FieldCheckInput(false, Today) { Files = [file] }).Errors, Is.Empty);
+            Assert.That(new FieldCheckInput(false, Today) { Files = default }.Files, Is.Empty, "no files, rather than a default array");
+        });
+    }
+
+    [Test]
+    public void AFile_HasAName_AndASizeThatIsNotNegative()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(() => new FieldFile(null!, 1), Throws.ArgumentNullException);
+            Assert.That(() => new FieldFile("", 1), Throws.ArgumentException);
+            Assert.That(() => new FieldFile("plan.pdf", -1), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(new FieldFile("empty.txt", 0).Size, Is.Zero);
+        });
+    }
+
+    [TestCase("8001", true)]
+    [TestCase("80012", false)]
+    [TestCase("CH-8001", false)]
+    public void APatternCheck_HoldsTheWholeAnswer(string answer, bool holds) =>
+        Assert.That(Text(answer, [new PatternCheck { Pattern = "[0-9]{4}" }]).Checks, Is.EqualTo(holds ? Array.Empty<int>() : [0]));
+
+    [Test]
+    public void APatternCheck_HoldsEveryValue()
+    {
+        var type = new BrokenFieldType("several", FieldStorageKind.Text)
+        {
+            OnRead = reading =>
+            {
+                foreach (var text in reading.Answers.Values)
+                {
+                    reading.Add(text);
+                }
+            },
+        };
+        var field = Field("several") with { Validation = [new PatternCheck { Pattern = "[a-z]+" }] };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Checked(type, field, ["abc", "def"]).Checks, Is.Empty);
+            Assert.That(Checked(type, field, ["abc", "DEF"]).Checks, Is.EqualTo(new[] { 0 }));
+        });
+    }
+
+    [Test]
+    public void APatternOutsideTheSafeSubset_ChecksNothing() =>
+        Assert.That(Text("b", [new PatternCheck { Pattern = new string('a', SafePattern.MaxPatternLength + 1) }]).Checks, Is.Empty);
+
+    [Test]
+    public void TheFieldsOwnChecks_RunAfterItsTypesChecks_AndReportTheirIndexes()
+    {
+        var errors = new ValidationCase("text", new FieldAnswers(["8001"]))
+        {
+            Settings = """{"maxLength":3}""",
+            Checks = [new UniquePerFormCheck(), new PatternCheck { Pattern = "[a-z]+" }, new MatchesFieldCheck { Field = OtherField }],
+            Others = new Dictionary<Guid, ImmutableArray<string>> { [OtherField] = ["8001"] },
+        }.Run();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(errors.Errors, Is.EqualTo(new[] { FieldMessageKinds.MaxLength }));
+            Assert.That(errors.Checks, Is.EqualTo(new[] { 1 }), "uniquePerForm is the submission's, and the values match");
+        });
+    }
+
+    [Test]
+    public void TheFieldsOwnChecks_DoNotRun_WithoutAValue_OrForAnUnreadableAnswer()
+    {
+        var number = TestFieldTypes.Registry.FindType("number")!;
+        var field = Field("number") with { Validation = [new MatchesFieldCheck { Field = OtherField }] };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Checked(number, field, []).Checks, Is.Empty, "no value");
+            Assert.That(Checked(number, field, ["1,5"]).Errors, Is.EqualTo(new[] { FieldMessageKinds.Invalid }));
+            Assert.That(Checked(number, field, ["1,5"]).Checks, Is.Empty, "an unreadable answer");
+            Assert.That(Checked(number, field, ["15"]).Checks, Is.EqualTo(new[] { 0 }), "a value, and the other field has none");
+        });
+    }
+
+    [TestCase("text", "Ada", "ADA", true)]
+    [TestCase("text", "Ada", "Bob", false)]
+    [TestCase("number", "15", "15.0", true)]
+    [TestCase("number", "15", "16", false)]
+    [TestCase("number", "15", "015", false)]
+    [TestCase("date", "2026-06-15", "2026-06-15", true)]
+    [TestCase("date", "2026-06-15", "2026-06-16", false)]
+    [TestCase("time", "10:30", "10:30:00", true)]
+    [TestCase("time", "10:30", "10:31", false)]
+    public void AMatchesFieldCheck_ComparesAsTheFieldsKindCompares(string type, string answer, string other, bool holds)
+    {
+        var errors = new ValidationCase(type, new FieldAnswers([answer]))
+        {
+            Settings = type == "number" ? """{"decimals":0}""" : null,
+            Checks = [new MatchesFieldCheck { Field = OtherField }],
+            Others = new Dictionary<Guid, ImmutableArray<string>> { [OtherField] = [other] },
+        }.Run();
+
+        Assert.That(errors.Checks, Is.EqualTo(holds ? Array.Empty<int>() : [0]));
+    }
+
+    [Test]
+    public void AMatchesFieldCheck_NeedsAsManyValues_AndFailsOnAFieldWithoutValues()
+    {
+        FieldErrors Against(params string[] others) => Text("Ada", [new MatchesFieldCheck { Field = OtherField }], others);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Against("Ada").Checks, Is.Empty);
+            Assert.That(Against("Ada", "Ada").Checks, Is.EqualTo(new[] { 0 }), "two values for one");
+            Assert.That(Text("Ada", [new MatchesFieldCheck { Field = OtherField }]).Checks, Is.EqualTo(new[] { 0 }), "a hidden field has none");
+        });
+    }
+
+    [Test]
+    public void AMatchesFieldCheck_OfATypeWithoutAKind_ComparesExactly()
+    {
+        var type = new BrokenFieldType("kindless", FieldStorageKind.Text, kind: null) { OnRead = reading => reading.Add(reading.Answers.Values[0]) };
+        var field = Field("kindless") with { Validation = [new MatchesFieldCheck { Field = OtherField }] };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Checked(type, field, ["Ada"], "Ada").Checks, Is.Empty);
+            Assert.That(Checked(type, field, ["Ada"], "ADA").Checks, Is.EqualTo(new[] { 0 }));
+        });
+    }
+
+    [Test]
     public void TheSteps_RefuseNull()
     {
         var type = new CodeFieldType();
@@ -264,6 +433,23 @@ public sealed class FieldValuesTests
             Assert.That(() => type.Validate(null!), Throws.ArgumentNullException);
         });
     }
+
+    private static readonly Guid OtherField = new("3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73");
+
+    // A text field's answer checked with its own checks, and the other field's values when it has some.
+    private static FieldErrors Text(string answer, FieldCheck[] checks, params string[] others) =>
+        new ValidationCase("text", new FieldAnswers([answer]))
+        {
+            Checks = checks,
+            Others = others.Length == 0 ? ImmutableDictionary<Guid, ImmutableArray<string>>.Empty : new Dictionary<Guid, ImmutableArray<string>> { [OtherField] = [.. others] },
+        }.Run();
+
+    // A field's answers read and checked, with the other field's values when it has some.
+    private static FieldErrors Checked(IFormBuilderFieldType type, FormField field, string[] answers, params string[] others) =>
+        FieldValues.Check(type, field, FieldValues.Read(type, field, new FieldAnswers(answers)), new FieldCheckInput(false, Today)
+        {
+            Values = others.Length == 0 ? ImmutableDictionary<Guid, ImmutableArray<string>>.Empty : new Dictionary<Guid, ImmutableArray<string>> { [OtherField] = [.. others] },
+        });
 
     private static string[] Values(FieldRead read) => [.. read.Values.Select(value => value.Text)];
 
@@ -367,9 +553,9 @@ public sealed class FieldValuesTests
     }
 
     // A type whose steps a test sets, to break the contract one way at a time.
-    private sealed class BrokenFieldType(string alias, FieldStorageKind storage) : IFormBuilderFieldType
+    private sealed class BrokenFieldType(string alias, FieldStorageKind storage, FieldKind? kind = FieldKind.Text) : IFormBuilderFieldType
     {
-        public FieldTypeDeclaration Declaration { get; } = Declare(alias, storage, FieldKind.Text);
+        public FieldTypeDeclaration Declaration { get; } = Declare(alias, storage, kind);
 
         public FieldSettingsSchema SettingsSchema { get; } = FieldSettingsReader.Read(typeof(NoFieldSettings));
 

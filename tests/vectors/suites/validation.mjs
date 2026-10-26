@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
-// The validation vectors of ROADMAP 5.2b (section 4.3.3, ADR-0058, ADR-0062): each built-in type's checks of its
-// settings at their edges, run by both runners over the same answers. A field starts from the public settings its
+// The validation vectors of ROADMAP 5.2b and 5.2c (section 4.3.3, ADR-0058, ADR-0062): each built-in type's checks of
+// its settings at their edges, and a field's own pattern and matchesField checks, run by both runners over the same
+// answers. A field starts from the public settings its
 // type has defaults for, read from the reviewed snapshot of the field types endpoint (docs/api/field-types.json), as
 // the public projection writes them; a case adds its own. Every expectation is written out here, never computed by
 // the code under test. Special characters are built from code points, so this file stays ASCII.
@@ -200,7 +201,7 @@ const slider = [
 ];
 
 // ---- rating and scale: whole numbers in their range ----
-const choices = [
+const ratings = [
   c('rating-lowest', field('rating'), ['1'], []),
   c('rating-highest-by-default', field('rating'), ['5'], []),
   c('rating-zero', field('rating'), ['0'], ['invalid']),
@@ -221,6 +222,265 @@ const choices = [
   c('scale-from-one-refuses-zero', field('scale', { from: 1, to: 5 }), ['0'], ['invalid']),
   c('scale-from-one-to-five', field('scale', { from: 1, to: 5 }), ['5'], []),
   c('scale-above-five', field('scale', { from: 1, to: 5 }), ['6'], ['invalid']),
+];
+
+// ---- 5.2c: ids in the D format, as Core's model has them ----
+const PRICE_ROW = '0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40';
+const STAFF_ROW = '1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51';
+const UNKNOWN_ROW = '2d8c6f3a-9e4f-4a0c-9b5d-7f3e4c9a8d62';
+const OTHER_FIELD = '3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73';
+
+/** A file field's case: one upload token for each file, given as its name and its size in bytes. */
+function uploads(id, f, files, errors, more = {}) {
+  return c(id, f, files.map((_, i) => `token-${i + 1}`), errors, { ...more, files: files.map(([name, size]) => ({ name, size })) });
+}
+
+// ---- dropdown: each value an option, exactly; with multiple, the count within the selections ----
+const COLOURS = ['red', 'green', 'blue', 'white'];
+const dropdown = [
+  c('dropdown-an-option', field('dropdown', {}, { options: COLOURS }), ['green'], []),
+  c('dropdown-not-an-option', field('dropdown', {}, { options: COLOURS }), ['purple'], ['invalid']),
+  c('dropdown-an-option-compares-exactly', field('dropdown', {}, { options: COLOURS }), ['Green'], ['invalid'], {
+    description: 'an option value is what entries store, so it is compared exactly, not folded',
+  }),
+  c('dropdown-without-options-takes-nothing', field('dropdown', {}, { options: [] }), ['red'], ['invalid']),
+  c('dropdown-options-from-a-list-are-the-lists', field('dropdown'), ['purple'], [], {
+    description: 'a field without options of its own takes them from a list, whose answers 5.5 checks',
+  }),
+  c('dropdown-several-at-their-fewest', field('dropdown', { multiple: true, minSelections: 2, maxSelections: 3 }, { options: COLOURS }), ['red', 'green'], []),
+  c('dropdown-several-at-their-most', field('dropdown', { multiple: true, minSelections: 2, maxSelections: 3 }, { options: COLOURS }), ['red', 'green', 'blue'], []),
+  c('dropdown-several-below-their-fewest', field('dropdown', { multiple: true, minSelections: 2 }, { options: COLOURS }), ['red'], ['selections']),
+  c('dropdown-several-above-their-most', field('dropdown', { multiple: true, maxSelections: 3 }, { options: COLOURS }), ['red', 'green', 'blue', 'white'], ['selections']),
+  c('dropdown-several-without-limits', field('dropdown', { multiple: true }, { options: COLOURS }), ['red', 'green', 'blue', 'white'], []),
+  c('dropdown-several-not-an-option-and-too-many', field('dropdown', { multiple: true, maxSelections: 2 }, { options: COLOURS }), ['red', 'green', 'pink'], ['invalid', 'selections']),
+  c('dropdown-several-from-a-list-still-count', field('dropdown', { multiple: true, maxSelections: 1 }), ['red', 'green'], ['selections']),
+  c('dropdown-one-choice-has-no-selections', field('dropdown', { minSelections: 2 }, { options: COLOURS }), ['red'], [], {
+    description: 'publishing refuses selections without multiple (ADR-0056); a draft does not count them',
+  }),
+];
+
+// ---- radio: an option, or the visitor's own "Other" text ----
+const ANSWERS = ['yes', 'no'];
+const radio = [
+  c('radio-an-option', field('radio', {}, { options: ANSWERS }), ['no'], []),
+  c('radio-not-an-option', field('radio', {}, { options: ANSWERS }), ['maybe'], ['invalid']),
+  c('radio-the-other-text', field('radio', { other: true }, { options: ANSWERS }), [], [], { parts: { other: ['Now and then'] } }),
+  c('radio-the-other-text-of-a-required-field', field('radio', { other: true }, { options: ANSWERS, required: true }), [], [], { parts: { other: ['Now and then'] } }),
+  c('radio-the-other-text-equal-to-an-option', field('radio', { other: true }, { options: ANSWERS }), [], [], { parts: { other: ['no'] } }),
+  c('radio-an-other-text-it-does-not-offer', field('radio', {}, { options: ANSWERS, required: true }), [], ['required'], {
+    parts: { other: ['Now and then'] },
+    description: 'without "Other" the text is no answer',
+  }),
+  c('radio-an-option-beside-an-other-text', field('radio', { other: true }, { options: ANSWERS }), ['yes'], [], {
+    parts: { other: ['Now and then'] },
+    description: 'one choice: the option is the answer, and the text is left',
+  }),
+  c('radio-not-an-option-beside-an-other-text', field('radio', { other: true }, { options: ANSWERS }), ['maybe'], ['invalid'], { parts: { other: ['maybe'] } }),
+  c('radio-options-from-a-list-are-the-lists', field('radio'), ['maybe'], []),
+];
+
+// ---- checkboxes: each an option, the count within the selections, the "Other" text as one ----
+const CHANNELS = ['email', 'phone', 'post', 'visit'];
+const checkboxes = [
+  c('checkboxes-options', field('checkboxes', {}, { options: CHANNELS }), ['email', 'post'], []),
+  c('checkboxes-not-an-option', field('checkboxes', {}, { options: CHANNELS }), ['email', 'fax'], ['invalid']),
+  c('checkboxes-at-their-fewest', field('checkboxes', { minSelections: 2 }, { options: CHANNELS }), ['email', 'post'], []),
+  c('checkboxes-below-their-fewest', field('checkboxes', { minSelections: 2 }, { options: CHANNELS }), ['email'], ['selections']),
+  c('checkboxes-at-their-most', field('checkboxes', { maxSelections: 2 }, { options: CHANNELS }), ['email', 'phone'], []),
+  c('checkboxes-above-their-most', field('checkboxes', { maxSelections: 2 }, { options: CHANNELS }), ['email', 'phone', 'post'], ['selections']),
+  c('checkboxes-not-an-option-and-too-few', field('checkboxes', { minSelections: 3 }, { options: CHANNELS }), ['email', 'fax'], ['invalid', 'selections']),
+  c('checkboxes-the-other-text-is-the-visitors-own', field('checkboxes', { other: true }, { options: CHANNELS }), ['email'], [], { parts: { other: ['fax'] } }),
+  c('checkboxes-the-other-text-counts-as-one', field('checkboxes', { other: true, maxSelections: 2 }, { options: CHANNELS }), ['email', 'phone'], ['selections'], {
+    parts: { other: ['pigeon'] },
+  }),
+  c('checkboxes-the-other-text-alone-at-their-fewest', field('checkboxes', { other: true, minSelections: 1 }, { options: CHANNELS }), [], [], { parts: { other: ['pigeon'] } }),
+  c('checkboxes-an-other-text-repeating-an-option-counts-once', field('checkboxes', { other: true, maxSelections: 2 }, { options: CHANNELS }), ['email', 'phone'], [], {
+    parts: { other: ['email'] },
+  }),
+  c('checkboxes-an-other-text-it-does-not-offer-is-left', field('checkboxes', { maxSelections: 2 }, { options: CHANNELS }), ['email', 'phone'], [], {
+    parts: { other: ['pigeon'] },
+  }),
+  c('checkboxes-options-from-a-list-are-the-lists', field('checkboxes', { maxSelections: 3 }), ['fax', 'telex'], []),
+];
+
+// ---- grid: each row's values among its columns, the scale's whole numbers or its options ----
+const ROWS = [PRICE_ROW, STAFF_ROW];
+const AGREEMENT = ['agree', 'neutral', 'disagree'];
+const grid = [
+  c('grid-each-row-a-column', field('grid', {}, { options: AGREEMENT, rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['agree'], [STAFF_ROW]: ['disagree'] } }),
+  c('grid-a-row-not-a-column', field('grid', {}, { options: AGREEMENT, rows: ROWS }), [], ['invalid'], { parts: { [PRICE_ROW]: ['agree'], [STAFF_ROW]: ['strongly'] } }),
+  c('grid-one-row-answered', field('grid', {}, { options: AGREEMENT, rows: ROWS }), [], [], { parts: { [STAFF_ROW]: ['neutral'] } }),
+  c('grid-several-in-a-row', field('grid', { multiple: true }, { options: AGREEMENT, rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['agree', 'neutral'] } }),
+  c('grid-several-in-a-row-one-not-a-column', field('grid', { multiple: true }, { options: AGREEMENT, rows: ROWS }), [], ['invalid'], { parts: { [PRICE_ROW]: ['agree', 'maybe'] } }),
+  c('grid-a-row-it-does-not-have-is-left', field('grid', {}, { options: AGREEMENT, rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['agree'], [UNKNOWN_ROW]: ['maybe'] } }),
+  c('grid-only-a-row-it-does-not-have', field('grid', {}, { options: AGREEMENT, rows: ROWS, required: true }), [], ['required'], { parts: { [UNKNOWN_ROW]: ['agree'] } }),
+  c('grid-required-without-answers', field('grid', {}, { options: AGREEMENT, rows: ROWS, required: true }), [], ['required']),
+  c('grid-the-ends-of-its-scale', field('grid', { scale: { from: 1, to: 5 } }, { rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['1'], [STAFF_ROW]: ['5'] } }),
+  c('grid-above-its-scale', field('grid', { scale: { from: 1, to: 5 } }, { rows: ROWS }), [], ['invalid'], { parts: { [PRICE_ROW]: ['6'] } }),
+  c('grid-below-its-scale', field('grid', { scale: { from: 1, to: 5 } }, { rows: ROWS }), [], ['invalid'], { parts: { [PRICE_ROW]: ['0'] } }),
+  c('grid-a-scale-from-zero-to-ten', field('grid', { scale: { from: 0, to: 10 } }, { rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['0'], [STAFF_ROW]: ['10'] } }),
+  c('grid-a-half-on-its-scale', field('grid', { scale: { from: 1, to: 5 } }, { rows: ROWS }), [], ['invalid'], { parts: { [PRICE_ROW]: ['2.5'] } }),
+  c('grid-a-fraction-of-digits-in-its-scale', field('grid', { scale: { from: 1, to: 5 } }, { rows: ROWS }), [], ['invalid'], { parts: { [PRICE_ROW]: ['0.3'] } }),
+  c('grid-a-word-on-its-scale', field('grid', { scale: { from: 1, to: 5 } }, { rows: ROWS }), [], ['invalid'], { parts: { [PRICE_ROW]: ['good'] } }),
+  c('grid-a-scale-and-options', field('grid', { scale: { from: 1, to: 3 } }, { options: AGREEMENT, rows: ROWS }), [], ['invalid'], {
+    parts: { [PRICE_ROW]: ['agree'] },
+    description: 'publishing refuses columns from both (ADR-0056); in a draft the scale decides',
+  }),
+  c('grid-options-from-a-list-are-the-lists', field('grid', {}, { rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['whatever'] } }),
+];
+
+// ---- ranking: each value an option, as many as top or as all the options ----
+const ASPECTS = ['price', 'quality', 'service', 'speed'];
+const ranking = [
+  c('ranking-all-the-options', field('ranking', {}, { options: ASPECTS }), ['quality', 'price', 'speed', 'service'], []),
+  c('ranking-one-option-left-out', field('ranking', {}, { options: ASPECTS }), ['quality', 'price', 'speed'], ['invalid']),
+  c('ranking-not-an-option', field('ranking', {}, { options: ASPECTS }), ['quality', 'price', 'speed', 'looks'], ['invalid']),
+  c('ranking-its-top-two', field('ranking', { top: 2 }, { options: ASPECTS }), ['speed', 'price'], []),
+  c('ranking-three-for-its-top-two', field('ranking', { top: 2 }, { options: ASPECTS }), ['speed', 'price', 'quality'], ['invalid']),
+  c('ranking-one-for-its-top-two', field('ranking', { top: 2 }, { options: ASPECTS }), ['speed'], ['invalid']),
+  c('ranking-a-top-above-its-options', field('ranking', { top: 9 }, { options: ASPECTS }), ['quality', 'price', 'speed', 'service'], [], {
+    description: 'publishing refuses a top above the options (ADR-0056); a draft ranks them all',
+  }),
+  c('ranking-options-from-a-list-are-the-lists', field('ranking', { top: 2 }), ['looks'], []),
+];
+
+// ---- country: among the allowed ones, when the field lists some ----
+const country = [
+  c('country-any-without-a-list', field('country'), ['CH'], []),
+  c('country-allowed', field('country', { allowed: ['AT', 'CH', 'DE'] }), ['AT'], []),
+  c('country-not-allowed', field('country', { allowed: ['AT', 'CH', 'DE'] }), ['FR'], ['invalid']),
+];
+
+// ---- name: the required parts, or every part asked for when the field is required ----
+const ADA = { first: ['Ada'], last: ['Lovelace'] };
+const name = [
+  c('name-required-with-every-part', field('name', {}, { required: true }), [], [], { parts: ADA }),
+  c('name-required-without-its-last-name', field('name', {}, { required: true }), [], ['required'], { parts: { first: ['Ada'] } }),
+  c('name-optional-with-one-part', field('name'), [], [], { parts: { first: ['Ada'] } }),
+  c('name-required-without-answers', field('name', {}, { required: true }), [], ['required']),
+  c('name-required-asking-for-a-title', field('name', { parts: ['title', 'first', 'last'] }, { required: true }), [], ['required'], { parts: ADA }),
+  c('name-its-required-parts', field('name', { requiredParts: ['last'] }), [], [], { parts: { last: ['Lovelace'] } }),
+  c('name-without-a-required-part-once-given', field('name', { requiredParts: ['last'] }), [], ['required'], {
+    parts: { first: ['Ada'] },
+    description: 'the required parts hold once the visitor gives any part',
+  }),
+  c('name-required-needs-only-its-required-parts', field('name', { requiredParts: ['last'] }, { required: true }), [], [], { parts: { last: ['Lovelace'] } }),
+  c('name-a-required-part-it-does-not-ask-for', field('name', { requiredParts: ['middle', 'last'] }), [], [], {
+    parts: ADA,
+    description: 'publishing refuses it (ADR-0056); a draft needs only the parts it asks for',
+  }),
+  c('name-a-part-it-does-not-ask-for-is-left', field('name', {}, { required: true }), [], [], { parts: { ...ADA, middle: ['King'] } }),
+  c('name-only-a-part-it-does-not-ask-for', field('name', {}, { required: true }), [], ['required'], { parts: { middle: ['King'] } }),
+  c('name-only-a-part-it-does-not-ask-for-is-no-answer', field('name', { requiredParts: ['last'] }), [], [], {
+    parts: { middle: ['King'] },
+    description: 'a part the field does not ask for gives it no value, so its required parts do not hold',
+  }),
+];
+
+// ---- address: the required parts, or the street, the postcode and the city when the field is required ----
+const ZURICH = { street: ['Bahnhofstrasse 1'], postcode: ['8001'], city: ['Zurich'] };
+const address = [
+  c('address-required-with-the-three', field('address', {}, { required: true }), [], [], { parts: ZURICH }),
+  c('address-required-without-its-city', field('address', {}, { required: true }), [], ['required'], {
+    parts: { street: ['Bahnhofstrasse 1'], postcode: ['8001'] },
+  }),
+  c('address-required-without-a-region-it-asks-for', field('address', { parts: ['region'] }, { required: true }), [], [], {
+    parts: ZURICH,
+    description: 'a required address needs the street, the postcode and the city unless it lists others',
+  }),
+  c('address-required-without-its-street', field('address', {}, { required: true }), [], ['required'], { parts: { postcode: ['8001'], city: ['Zurich'] } }),
+  c('address-optional-with-one-part', field('address'), [], [], { parts: { city: ['Bern'] } }),
+  c('address-only-a-part-it-does-not-ask-for-is-no-answer', field('address', { requiredParts: ['city'] }), [], [], { parts: { region: ['ZH'] } }),
+  c('address-its-required-parts', field('address', { parts: ['country'], requiredParts: ['country'] }), [], [], { parts: { country: ['CH'] } }),
+  c('address-without-a-required-part-once-given', field('address', { requiredParts: ['postcode', 'city'] }), [], ['required'], {
+    parts: { street: ['Bahnhofstrasse 1'], city: ['Zurich'] },
+  }),
+  c('address-a-required-part-it-does-not-ask-for', field('address', { requiredParts: ['region'] }), [], [], {
+    parts: ZURICH,
+    description: 'publishing refuses it (ADR-0056); a draft needs only the parts it asks for',
+  }),
+];
+
+// ---- file: the count, each file's extension, each file's size ----
+const file = [
+  uploads('file-an-image', field('file'), [['photo.jpg', 204800]], []),
+  uploads('file-a-pdf-by-default', field('file'), [['report.pdf', 1024]], []),
+  uploads('file-a-document-by-default', field('file'), [['report.docx', 1024]], ['fileType']),
+  uploads('file-an-extension-in-capitals', field('file'), [['IMG_0001.HEIC', 1024]], []),
+  uploads('file-the-last-point-decides', field('file'), [['photo.jpg.exe', 1024]], ['fileType']),
+  uploads('file-a-name-without-a-point', field('file'), [['jpg', 1024]], ['fileType']),
+  uploads('file-a-name-ending-with-a-point', field('file'), [['photo.', 1024]], ['fileType']),
+  uploads('file-svg-is-no-image', field('file'), [['logo.svg', 1024]], ['fileType']),
+  uploads('file-svg-as-its-own-extension', field('file', { extensions: ['svg'] }), [['logo.svg', 1024]], []),
+  uploads('file-its-own-extension', field('file', { extensions: ['dwg'] }), [['plan.dwg', 1024]], []),
+  uploads('file-its-own-extensions-only', field('file', { extensions: ['dwg'] }), [['photo.jpg', 1024]], ['fileType'], {
+    description: 'images and PDFs are taken only when the field lists neither types nor extensions',
+  }),
+  uploads('file-office-documents', field('file', { types: ['office'], maxFiles: 2 }), [['budget.xlsx', 1024], ['notes.odt', 1024]], []),
+  uploads('file-office-documents-are-no-pdf', field('file', { types: ['office'] }), [['report.pdf', 1024]], ['fileType']),
+  uploads('file-a-type-and-an-extension', field('file', { types: ['pdf'], extensions: ['dwg'] }), [['plan.dwg', 1024]], []),
+  uploads('file-plain-text', field('file', { types: ['text'] }), [['data.csv', 1024]], []),
+  uploads('file-an-archive', field('file', { types: ['archives'] }), [['backup.7z', 1024]], []),
+  uploads('file-a-double-extension', field('file', { types: ['archives'] }), [['backup.tar.gz', 1024]], []),
+  uploads('file-at-its-most-files', field('file', { maxFiles: 2 }), [['a.png', 1], ['b.png', 1]], []),
+  uploads('file-above-its-most-files', field('file', { maxFiles: 2 }), [['a.png', 1], ['b.png', 1], ['c.png', 1]], ['fileCount']),
+  uploads('file-at-its-most-bytes', field('file', { maxBytes: 1000 }), [['a.png', 1000]], []),
+  uploads('file-above-its-most-bytes', field('file', { maxBytes: 1000 }), [['a.png', 1001]], ['fileSize']),
+  uploads('file-one-of-two-too-big', field('file', { maxFiles: 2, maxBytes: 1000 }), [['a.png', 10], ['b.png', 1001]], ['fileSize']),
+  uploads('file-any-size-without-a-limit', field('file'), [['film.png', 5368709120]], [], {
+    description: "the host's own limit comes with the uploads (6.1)",
+  }),
+  uploads('file-an-empty-file', field('file'), [['empty.png', 0]], []),
+  uploads('file-every-check-fails', field('file', { maxBytes: 1000 }), [['a.png', 10], ['b.exe', 1001]], ['fileCount', 'fileType', 'fileSize']),
+  c('file-required-without-files', field('file', {}, { required: true }), [], ['required']),
+];
+
+// ---- the field's own checks: pattern, the whole of every value, after the type's checks ----
+const POSTCODE = { kind: 'pattern', pattern: '[0-9]{4}' };
+const pattern = [
+  c('pattern-matches-the-whole-answer', field('text', {}, { checks: [POSTCODE] }), ['8001'], []),
+  c('pattern-a-longer-answer', field('text', {}, { checks: [POSTCODE] }), ['80012'], [], { checks: [0] }),
+  c('pattern-a-part-of-the-answer', field('text', {}, { checks: [POSTCODE] }), ['CH-8001'], [], { checks: [0] }),
+  c('pattern-compares-exactly', field('text', {}, { checks: [{ kind: 'pattern', pattern: '[a-z]+' }] }), ['Abc'], [], { checks: [0] }),
+  c('pattern-normalised-as-answers-are', field('text', {}, { checks: [{ kind: 'pattern', pattern: `caf${u(0x65, 0x301)}` }] }), [`caf${u(0xe9)}`], [], {
+    description: 'the pattern is composed as cleaning composes the answer (ADR-0005)',
+  }),
+  c('pattern-after-the-types-checks', field('text', { maxLength: 3 }, { checks: [POSTCODE] }), ['8001'], ['maxLength']),
+  c('pattern-and-the-types-checks-both-fail', field('text', { maxLength: 3 }, { checks: [{ kind: 'pattern', pattern: '[a-z]+' }] }), ['8001'], ['maxLength'], { checks: [0] }),
+  c('pattern-not-without-an-answer', field('text', {}, { checks: [POSTCODE] }), [], []),
+  c('pattern-not-for-a-required-field-without-an-answer', field('text', {}, { checks: [POSTCODE], required: true }), [], ['required']),
+  c('pattern-outside-the-safe-subset-checks-nothing', field('text', {}, { checks: [{ kind: 'pattern', pattern: 'a'.repeat(501) }] }), ['b'], [], {
+    description: 'publishing refuses it (ADR-0005); a draft does not fail on it',
+  }),
+  c('pattern-its-place-among-the-checks', field('text', {}, { checks: [{ kind: 'uniquePerForm' }, { kind: 'pattern', pattern: '[a-z]+' }] }), ['ABC'], [], {
+    checks: [1],
+    description: "uniquePerForm is the server's, in the submission's transaction (6.1)",
+  }),
+  c('pattern-two-checks-one-fails', field('text', {}, { checks: [{ kind: 'pattern', pattern: '[a-z]+' }, { kind: 'pattern', pattern: '.{5,}' }] }), ['abc'], [], { checks: [1] }),
+  c('pattern-two-checks-both-fail', field('text', {}, { checks: [{ kind: 'pattern', pattern: '[a-z]+' }, { kind: 'pattern', pattern: '.{5,}' }] }), ['ABC'], [], { checks: [0, 1] }),
+];
+
+// ---- the field's own checks: matchesField, as many values, each equal as the field's kind compares ----
+const SAME = { kind: 'matchesField', field: OTHER_FIELD };
+const matches = [
+  c('matches-the-same-text', field('text', {}, { checks: [SAME] }), ['Ada'], [], { others: { [OTHER_FIELD]: ['Ada'] } }),
+  c('matches-text-folded', field('text', {}, { checks: [SAME] }), ['ada lovelace'], [], { others: { [OTHER_FIELD]: ['ADA LOVELACE'] } }),
+  c('matches-text-folded-to-the-sharp-s', field('text', {}, { checks: [SAME] }), [`Stra${SHARP_S}e`], [], { others: { [OTHER_FIELD]: [`STRA${u(0x1e9e)}E`] } }),
+  c('matches-text-never-folds-the-sharp-s-to-ss', field('text', {}, { checks: [SAME] }), [`Stra${SHARP_S}e`], [], { others: { [OTHER_FIELD]: ['STRASSE'] }, checks: [0] }),
+  c('matches-another-text', field('text', {}, { checks: [SAME] }), ['Ada'], [], { others: { [OTHER_FIELD]: ['Bob'] }, checks: [0] }),
+  c('matches-a-field-without-values', field('text', {}, { checks: [SAME] }), ['Ada'], [], {
+    checks: [0],
+    description: 'a hidden field, or one left empty, has no values',
+  }),
+  c('matches-a-field-with-more-values', field('text', {}, { checks: [SAME] }), ['Ada'], [], { others: { [OTHER_FIELD]: ['Ada', 'Bob'] }, checks: [0] }),
+  c('matches-not-without-an-answer', field('text', {}, { checks: [SAME] }), [], [], { others: { [OTHER_FIELD]: ['Ada'] } }),
+  c('matches-numbers-as-numbers', field('number', {}, { checks: [SAME] }), ['15'], [], { others: { [OTHER_FIELD]: ['15.0'] } }),
+  c('matches-another-number', field('number', {}, { checks: [SAME] }), ['15'], [], { others: { [OTHER_FIELD]: ['16'] }, checks: [0] }),
+  c('matches-a-number-not-in-the-wire-form', field('number', {}, { checks: [SAME] }), ['15'], [], { others: { [OTHER_FIELD]: ['015'] }, checks: [0] }),
+  c('matches-the-same-date', field('date', {}, { checks: [SAME] }), ['2026-06-15'], [], { others: { [OTHER_FIELD]: ['2026-06-15'] } }),
+  c('matches-another-date', field('date', {}, { checks: [SAME] }), ['2026-06-15'], [], { others: { [OTHER_FIELD]: ['2026-06-16'] }, checks: [0] }),
+  c('matches-times-to-the-second', field('time', {}, { checks: [SAME] }), ['10:30'], [], { others: { [OTHER_FIELD]: ['10:30:00'] } }),
+  c('matches-and-a-pattern-in-order', field('text', {}, { checks: [POSTCODE, SAME] }), ['8001'], [], { others: { [OTHER_FIELD]: ['8002'] }, checks: [1] }),
 ];
 
 // ---- date: the window, weekdays and excluded dates; today is 2026-06-15, a Monday ----
@@ -319,5 +579,28 @@ export default {
   suite: 'validation',
   defaults,
   fields: {},
-  cases: [...required, ...text, ...textarea, ...email, ...url, ...number, ...slider, ...choices, ...date, ...time, ...datetime],
+  cases: [
+    ...required,
+    ...text,
+    ...textarea,
+    ...email,
+    ...url,
+    ...number,
+    ...slider,
+    ...ratings,
+    ...dropdown,
+    ...radio,
+    ...checkboxes,
+    ...grid,
+    ...ranking,
+    ...country,
+    ...name,
+    ...address,
+    ...file,
+    ...date,
+    ...time,
+    ...datetime,
+    ...pattern,
+    ...matches,
+  ],
 };
