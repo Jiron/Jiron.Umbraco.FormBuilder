@@ -534,6 +534,13 @@ cleaned and folded as rules compare it, cut to 256 code units; ADR-0005, ADR-003
 deleted. On SQL Server the column's case-insensitive collation can treat keys as equal that rules keep apart (`ß` and
 `ss`), so the entries query builder compares a key again in a binary collation after the seek (ADR-0038, ADR-0039).
 
+Which row each value is stored as is decided in one place
+([ADR-0070](decisions/0070-storing-answers-and-reading-them-back.md)): `valueIndex` is the value's position among
+its field's values (the order of the choices, an "Other" text where reading put it, a ranking in its rank order),
+`rowIndex` the row of a repeatable group's child; a grid's values are stored at its rows' fields, each row from 0, and
+a grid or a repeatable group stores nothing of its own. A file value names an upload of its form and field that no
+entry took. Reading back types each value from `text`, so a number past 15 digits or a date before 1753, which no
+typed column holds, reads back exactly.
 - `IX_jfbEntryValue_entryId_fieldId`: the answers of an entry.
 - `IX_jfbEntryValue_fieldId_textKey_entryId`, `IX_jfbEntryValue_fieldId_number_entryId`,
   `IX_jfbEntryValue_fieldId_date_entryId`: filters and sorts by a field's value, the query shapes of ADR-0003.
@@ -542,8 +549,9 @@ deleted. On SQL Server the column's case-insensitive collation can treat keys as
 ### `jfbConsentText`
 
 The exact wording of every consent a visitor gave, stored once and named by the SHA-256 of its culture and text (the
-culture's UTF-8 bytes, one zero byte, the text's UTF-8 bytes; ADR-0038); a consent value stores that hash. No
-indexes besides the primary key on `textHash`.
+culture's UTF-8 bytes, one zero byte, the text's UTF-8 bytes; ADR-0038); a consent value stores that hash. The
+wording is the consent's text as shown, in the entry's culture with its merge tags rendered, and is stored in the
+entry's unit of work, insert-once (ADR-0070). No indexes besides the primary key on `textHash`.
 
 ### `jfbEntryEvent`
 

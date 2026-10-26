@@ -214,6 +214,9 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   every answer before the rules run, `Read` turns the texts and parts into values in the wire form, and `Validate`
   holds a shown field's values to its settings, with whether it is required, today and its files; `FieldValues` runs
   the three in the pipeline's order, then the field's own checks, and refuses a type that breaks the contract, and `EntryValueColumns` stores each value in the typed column of its storage kind.
+  `EntryAnswerStore` stores an entry's answers as its rows, with the uploads they name and the consent wordings
+  (`ConsentWordings`) they agreed to, in one unit of work, and reads them back typed, each value also as its type
+  read it ([ADR-0070](decisions/0070-storing-answers-and-reading-them-back.md)).
   `Display` writes the texts merge tags show the values as, in the template's culture, with the wire number or date
   behind a text ([ADR-0066](decisions/0066-answers-as-merge-tags.md)); by default by the type's rule kind.
   `FieldTypeChanges` works out which types a field may become and what each change keeps and loses (its settings, by
