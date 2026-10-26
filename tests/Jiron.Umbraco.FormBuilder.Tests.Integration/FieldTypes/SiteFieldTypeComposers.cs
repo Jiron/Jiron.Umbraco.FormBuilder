@@ -50,7 +50,8 @@ public sealed class RemoveSignatureFieldTypeComposer : IComposer
 
 /// <summary>
 /// A choice of colours, a site's own field type, which needs the site's brand colours in its configuration
-/// (<see cref="SwatchesKey"/>) and is not configured without them (ADR-0057).
+/// (<see cref="SwatchesKey"/>) and is not configured without them (ADR-0057), and shows a colour in merge tags by its
+/// name with a capital (ADR-0066).
 /// </summary>
 /// <param name="configuration">The site's configuration, a singleton service the type takes.</param>
 public sealed class ColourFieldType(IConfiguration configuration) : FormBuilderFieldTypeBase<ColourSettings>(new FieldTypeDeclaration
@@ -75,6 +76,15 @@ public sealed class ColourFieldType(IConfiguration configuration) : FormBuilderF
     /// <inheritdoc />
     public override ValueTask<FieldTypeAvailability> CheckAvailabilityAsync(CancellationToken cancellationToken) =>
         ValueTask.FromResult(string.IsNullOrWhiteSpace(configuration[SwatchesKey]) ? FieldTypeAvailability.NotConfigured(MissingSwatches) : FieldTypeAvailability.Available);
+
+    /// <inheritdoc />
+    protected override void Display(ColourSettings settings, FieldDisplay display)
+    {
+        foreach (var value in display.Values)
+        {
+            display.Add(char.ToUpperInvariant(value.Text[0]) + value.Text[1..]);
+        }
+    }
 }
 
 /// <summary>The settings of a colour field: one visitors see, and one that stays on the server.</summary>

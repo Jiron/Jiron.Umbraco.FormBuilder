@@ -180,6 +180,7 @@ coverage, schema and fixture tests fail.
 | `BuiltInValidationTests` | The checks of the text, number and date types at their edges through each type's `Validate` (ADR-0062), an email's confirmation and its domains, which only the server checks, and the types without checks of their own. |
 | `BuiltInChoiceValidationTests` | The checks of the choice types at their edges: options compared exactly, from a list or none at all, the selections, the "Other" text, a grid's columns from its scale or its options, a ranking's length and a country's allowed list. |
 | `BuiltInPeopleAndFileValidationTests` | The required parts of a name and an address as ADR-0056 reads them, and a file's count, extension (every extension of every group of file types) and size at their edges. |
+| `FieldDisplayTests` | What a type shows its values as in merge tags (ADR-0066): country names in the culture's language or by their code, the words of yes and no by culture, numbers rounded and padded to clamped places, dates and times in the culture's formats, option labels or the value, empty texts showing nothing, files one for each value, prefixes and suffixes, a hidden value and an unseen calculation left out of the list of the answers only, a type on the interface alone showing as the defaults do, and the answers merge tags read refusing what contradicts itself. |
 
 `TestFieldTypes` (in the Testing project) gives the unit tests the registry of the built-in types, or of a builder a
 test changes, as a site's container builds it.
@@ -194,20 +195,23 @@ configured with its reason while the site lacks its swatches, its plain labels, 
 ## The merge-tag tests
 
 `Tests.Unit/MergeTags/` covers the merge-tag service, its places and its sources without a host ([ADR-0065](../docs/decisions/0065-the-merge-tag-service-and-its-sources.md)), over
-`MergeTagTestSite`: the service of a site with its own sources and filters, a time zone and a clock, and a logger that
-keeps what it is given.
+`MergeTagTestSite`: the service of a site with its own sources and filters, a time zone, a clock and field types, and a
+logger that keeps what it is given. `MergeTagAnswerForms` makes forms of any fields and their answers
+([ADR-0066](../docs/decisions/0066-answers-as-merge-tags.md)).
 
 | Tests | What they show |
 | --- | --- |
 | `BuiltInMergeTagSourcesTests` | `form`, `entry`, `query`, `context` and `date`: each value escaped by its context, the entry empty before it is submitted, its date and the reference's year in the site's time zone (UTC when the zone is unknown) and the culture's format, query values only for the names the form allows and as spelt, context values passed or listed, the clock's time, each path asked for once; and `entry.reference` with and without a format, prefix and year, padded to digits clamped to 1–10. |
 | `MergeTagPlacesTests` | For each place that limits sources, a built-in one it refuses and, for a site's, one per visitor, any in consent texts and entry titles, and one outside its own places, each written as is with `source_not_for_place` (rendered and checked); the sources each place takes; a site's filter refused where the browser renders too and taken elsewhere; every context a place lacks refused; and the picker's paths per place. |
 | `SiteMergeTagExtensionsTests` | A site's source and filter through their interfaces: the request each gets, values escaped, lists, unknown paths; a source or filter that throws rendering empty and logged with its type and stack but not its message, a cancelled rendering cancelling; arguments refused at the filter; the check's warnings before any value; a taken name left out so the built-in one stays; and the start-up check naming each name that is taken or outside the grammar, and a source the container cannot create. |
+| `FieldMergeTagSourceTests` | For every built-in type that holds a value (a test fails when one has no case), the answer as its type shows it, its values and its label; answers in the culture (option labels, numbers, dates, countries, the words of yes and no); the wire number or date behind a text for the filters; lists whatever the count; a value's parts; a repeatable group's child as a list across its rows and the group as its rows; former aliases after current ones; what the rules hid empty; unknown paths when checked and rendered; the picker's paths; and a type whose display throws, logged without its message and shown as the default would. |
+| `EntryAnswersTests` | `entry.answers` as lines and as an escaped table, through a filter as text, in JSON; what the rules hid, unanswered fields, hidden values and unseen calculations left out; fields not for mail left out of mail only; and a sensitive field's tag and line in every place, named by the action to include it or not. |
 | `DotNetCultureFormatsTests` | For every culture .NET knows, dates, times, numbers and the culture's own amounts printed with the written formats as .NET prints them, the cultures whose patterns leave the subset listed from the data with the invariant culture's pattern taken; the medium date derived from the long one; the separators escaped; the Gregorian calendar for a culture with another; the region's currency; and a name .NET does not know. |
 
 `Tests.Integration/MergeTags/` boots a real site whose composers add two sources and a filter through
 `builder.JironFormBuilder()`, one before the core composer and one after it, switched on by
 `JironFormBuilderTests:SiteMergeTags`: the site starts, and the service renders and offers them beside the built-in
-ones.
+ones; with the site's colour type switched on too, answers show as their types write them, the site's own type's too.
 
 ## The Testing project
 
