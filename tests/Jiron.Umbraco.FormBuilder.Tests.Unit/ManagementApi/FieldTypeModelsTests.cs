@@ -89,5 +89,34 @@ public sealed class FieldTypeModelsTests
         });
     }
 
+    [Test]
+    public void ALockedSetting_CarriesItsLock_ReadOnlyWithItsValue_OrHiddenWithout()
+    {
+        var options = new FormBuilderOptions();
+        options.Designer.SettingLocks.Add(new DesignerSettingLock { Kind = "field", Type = "text", Setting = "maxLength", Value = "100" });
+        options.Designer.SettingLocks.Add(new DesignerSettingLock { Kind = "field", Type = "text", Setting = "prefix", Value = "EUR", Hidden = true });
+        options.Designer.SettingLocks.Add(new DesignerSettingLock { Kind = "field", Type = "text", Setting = "counter" });
+        options.Designer.SettingLocks.Add(new DesignerSettingLock { Kind = "field", Type = "email", Setting = "domains", Value = """{"mode":"block","list":["example.com"]}""" });
+        var locks = new FieldSettingLocks(Options.Create(options), Registry);
+
+        var model = FieldTypesResponseModel.Of(Registry.Types, [.. Registry.Types.Select(_ => FieldTypeAvailability.Available)], locks);
+        var text = model.Types.Single(type => type.Alias == "text").Settings.ToDictionary(setting => setting.Name, setting => setting.Lock);
+        var domains = model.Types.Single(type => type.Alias == "email").Settings.Single(setting => setting.Name == "domains");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(text["maxLength"]! with { Value = null }, Is.EqualTo(new FieldSettingLockResponseModel(false, "JironFormBuilder:Designer:SettingLocks:0", null)));
+            Assert.That(text["maxLength"]!.Value?.GetRawText(), Is.EqualTo("100"), "the value every field has");
+            Assert.That(text["prefix"], Is.EqualTo(new FieldSettingLockResponseModel(true, "JironFormBuilder:Designer:SettingLocks:1", null)), "a hidden lock keeps its value on the server");
+            Assert.That(text["counter"], Is.EqualTo(new FieldSettingLockResponseModel(false, "JironFormBuilder:Designer:SettingLocks:2", null)), "a lock that keeps the default");
+            Assert.That((text["minLength"], text["suffix"]), Is.EqualTo(((FieldSettingLockResponseModel?)null, (FieldSettingLockResponseModel?)null)));
+            Assert.That(domains.Lock?.Value?.GetRawText(), Is.EqualTo("""{"list":["example.com"],"mode":"block"}"""), "an object, as settings store it");
+            Assert.That(domains.Settings.Select(setting => setting.Lock), Is.All.Null, "a lock fixes the whole object");
+            Assert.That(model.Types.Where(type => type.Alias is not ("text" or "email")).SelectMany(type => type.Settings).Select(setting => setting.Lock), Is.All.Null);
+            Assert.That(() => FieldTypesResponseModel.Of(Registry.Types, [], null!), Throws.ArgumentNullException);
+            Assert.That(() => FieldTypeResponseModel.Of(Registry.FindType("text")!, FieldTypeAvailability.Available, null!), Throws.ArgumentNullException);
+        });
+    }
+
     private static string Camel(string name) => char.ToLowerInvariant(name[0]) + name[1..];
 }

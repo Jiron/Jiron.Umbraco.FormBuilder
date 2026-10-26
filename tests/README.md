@@ -115,7 +115,8 @@ coverage, schema and fixture tests fail.
 
 `Tests.Unit/FieldTypes/` covers the field type framework without a host
 ([ADR-0055](../docs/decisions/0055-field-type-framework.md), [ADR-0056](../docs/decisions/0056-field-settings-checks.md),
-[ADR-0058](../docs/decisions/0058-field-answers-and-values.md), [ADR-0059](../docs/decisions/0059-changing-field-types.md)):
+[ADR-0058](../docs/decisions/0058-field-answers-and-values.md), [ADR-0059](../docs/decisions/0059-changing-field-types.md),
+[ADR-0060](../docs/decisions/0060-designer-locks-of-field-settings.md)):
 
 | Tests | What they show |
 | --- | --- |
@@ -129,6 +130,7 @@ coverage, schema and fixture tests fail.
 | `FieldValuesTests` | The contract as the pipeline runs it, through a type on the interface alone (one text, choices, a `multiple` setting, no value), one with settings on the base class, and the built-in number: the limits with `maxLength` or `invalid`, the reading, and the order of `invalid`, `required` and the type's own errors; a type without limits, with an undeclared error kind, or reading a value its storage kind cannot hold refused by name, without the answer. |
 | `PostedNumbersTests` | Numbers as posted (leading zeros, a point first, an exponent) converted exactly to the canonical wire form, and everything else refused: no number, other digits, or past 15 digits. |
 | `FieldTypeChangesTests` | Which types a field may become: every built-in type that holds a value of its own into every other, none of content, grids or repeatable groups; 25 built-in changes restated apart from the code with everything each keeps and loses; every rule by which a setting is kept, narrowed or lost (kinds, item kinds, required, bounds and their exclusivity, lengths, counts, allowed values, choices, nested objects, any JSON); the settings a change needs; the operators of each rule kind; and a site's own type changing like the built-in ones. |
+| `FieldSettingLocksTests` | The host's designer locks of field settings: a value of every setting kind read as configuration gives it and written as settings store it, and every value its setting refuses, a site's own type's among them, each stopping the site with its key and what the setting takes, never the value; a type or a setting the site lacks, with the spelling suggested for another letter case; a required setting locked without a value; locks of an action type and of a shape the options refuse, and field types that cannot be a registry, left to their own checks; the site starting through the host; every field of the type given the locked value or its default, a repeatable group's child fields too, and a definition no lock changes kept as the same instance; and a draft save refused at the first locked setting in document order that holds another value, unless the value is the lock's, the default, left out or the one the stored draft held for the same field and type, compared as its kind compares. |
 | `BuiltInAnswersTests` | The longest answer of every built-in type, restated from ADR-0058 apart from the code, and how they read: wire forms, choices with "Other", grids by row, rankings in order or by position, a consent's tick with its wording's hash, names and addresses as one object of their parts in order. |
 
 `TestFieldTypes` (in the Testing project) gives the unit tests the registry of the built-in types, or of a builder a
@@ -336,6 +338,10 @@ notification and whether a unit was open, and cancels, fails or changes the form
 `TestPublishCheck` is a second publish check whose problems a test sets. `FormServiceLimitTests` lowers the pages a
 definition may have, so a form saved before still opens and its save returns `limit_exceeded`, as do a restore of a
 version above the limit, a duplicate of it, copied actions into it, a saved template and an import above it.
+`FieldSettingLockServiceTests` gives the site two designer locks of the text type: a form saved before them runs and
+is checked at publish with the locked values while its store keeps its own, a draft save refuses another value of a
+locked setting (a hidden one too) and takes the lock's value or the one the draft held, the published form is none for
+a missing, an unpublished and a trashed form, and the site resolves the locks and checks them when it starts.
 
 `Tests.Integration/FormBuilderChangesTests` runs the change pipeline every service of Core shares (ADR-0053) on a real
 site: a change refused inside a unit of work or a scope with its service's reason, and by the pipeline itself when it
@@ -424,12 +430,14 @@ tests that use it call a new endpoint by themselves:
 | `RestoreLandingApiTests` | A form's and a folder's restore whose folder comes back from the trash after the endpoint checked where it lands and before the write (`RestoreActionHook`, an action filter after every other, arms `HookedFolderRepository` to bring it back right after the action read it): `409 landing_changed`, and the form or folder stays in the trash where it was. |
 | `OpenApiSnapshotTests` | The document `jfb` against `docs/api/jfb.json` (rewritten with `JFB_UPDATE_SNAPSHOTS=1`, then fails), its paths and operation names, and schemas that are only its own models, never a framework type described by its properties. |
 | `FieldTypeApiTests` | The field types for the designer ([ADR-0057](../docs/decisions/0057-field-types-endpoint-and-availability.md)) against `docs/api/field-types.json` (rewritten with `JFB_UPDATE_SNAPSHOTS=1`, then fails), served to a user of the section without grants; every type in the registry's order with the palette's and the inspector's groups, its declaration in camel case, its common properties and messages, its settings in the inspector's order with their kinds, choices and labels, nested settings, defaults and rules, and its availability. |
+| `FieldSettingLockApiTests` | The host's designer locks through the API ([ADR-0060](../docs/decisions/0060-designer-locks-of-field-settings.md)): the field types mark a locked setting with its value and key and a hidden one without its value, which never leaves the server; a draft save with another value answers `409 setting_locked` with the setting's path and the lock's key, and the lock's own value saves. |
 
 `Tests.Unit/ManagementApi/` covers the same without a host: the access filter's order, refusals and fail-closed
 cases, how it reads a key (`FormBuilderAccessFilterTests`); every answer to a refusal, the exception filter, the
 declarations, the operation and schema names and the feature provider (`FormBuilderProblemsTests`); the models of the library
 (`LibraryModelsTests`), of the versions, with the stable names of their kinds (`VersionModelsTests`), and of the field
-types, with their names in camel case and an availability for every type (`FieldTypeModelsTests`); and the
+types, with their names in camel case, an availability for every type and the lock of every locked setting, a hidden
+one without its value (`FieldTypeModelsTests`); and the
 policies and handlers (`FormBuilderAuthorizationTests`). In the client,
 `packages/backoffice/scripts/generate-client.test.mjs` generates the client from the snapshot next to the committed
 one and fails on any difference: after a change to the API, run the snapshot test with `JFB_UPDATE_SNAPSHOTS=1`, then

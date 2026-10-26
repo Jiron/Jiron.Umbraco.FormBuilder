@@ -10,7 +10,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Configuration;
 
 /// <summary>
 /// A real Umbraco site with host configuration (ADR-0042): the composers bind <c>JironFormBuilder</c> once, check it, the
-/// runtime and the field types when the site starts, and the definition reader takes the limits the site configured.
+/// runtime, the field types and the locks of their settings when the site starts, and the definition reader takes the
+/// limits the site configured.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
@@ -47,7 +48,7 @@ public sealed class HostOptionsBootTests : UmbracoIntegrationTest
         {
             Assert.That(options.LockedSections, Is.EqualTo(new[] { "privacy" }));
             Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderOptions>>>().Single(), Is.InstanceOf<FormBuilderOptionsValidator>());
-            Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderStartupChecks>>>().Select(check => check.GetType()), Is.EquivalentTo(new[] { typeof(GlobalizationStartupCheck), typeof(FieldTypeStartupCheck) }));
+            Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderStartupChecks>>>().Select(check => check.GetType()), Is.EquivalentTo(new[] { typeof(GlobalizationStartupCheck), typeof(FieldTypeStartupCheck), typeof(FieldSettingLockStartupCheck) }));
             Assert.That(() => GetRequiredService<IStartupValidator>().Validate(), Throws.Nothing);
         });
     }
