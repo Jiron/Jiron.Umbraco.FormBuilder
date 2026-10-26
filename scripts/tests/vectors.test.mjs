@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 // Unit tests for tests/vectors/build.mjs. Run: node --test "scripts/tests/*.test.mjs"
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -48,6 +49,21 @@ describe('the vector files in the repository', () => {
   test('keep the spike file of 1.5 at its 163 cases', async () => {
     const spike = (await build(VECTORS)).find((file) => file.name === 'spike.json');
     assert.equal(spike?.cases, 163);
+  });
+
+  test('hold at least 300 cases of conditions, rules and forms (ROADMAP 5.2a)', () => {
+    let count = 0;
+    for (const name of readdirSync(VECTORS).filter((file) => file.endsWith('.json'))) {
+      const { cases } = JSON.parse(readFileSync(join(VECTORS, name), 'utf8'));
+      count += cases.filter((vector) => vector.condition !== undefined || vector.rule !== undefined || vector.form !== undefined).length;
+    }
+    assert.ok(count >= 300, `${count} cases`);
+  });
+
+  test('have a mutation check whose every mutant finds its code once', () => {
+    const result = spawnSync(process.execPath, [join(VECTORS, 'mutants.mjs'), '--check'], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /each one's code there exactly once/);
   });
 });
 

@@ -4,7 +4,8 @@ using Jiron.Umbraco.FormBuilder.Logic;
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 
 /// <summary>
-/// Reads fields, answers, rules, conditions, operands, contexts and calculations from a vector file's JSON (ADR-0005).
+/// Reads fields, answers, rules, conditions, operands, contexts, calculations and forms from a vector file's JSON
+/// (ADR-0005, ADR-0061).
 /// An operand of a shape nothing accepts is read as <see cref="InvalidOperand"/>, so checking refuses it as TypeScript
 /// does; a null name reads as no name, as in TypeScript.
 /// </summary>
@@ -83,6 +84,25 @@ internal static class VectorReader
             element.TryGetProperty("hidden", out var hidden) ? Strings(hidden) : defaults!.Hidden);
     }
 
+    /// <summary>A form in the engine's model; a list or flag it lacks reads as empty or false, as in TypeScript.</summary>
+    public static LogicForm Form(JsonElement element) => new(
+        List(element, "pages", page => new LogicPage(Id(page), RulesOf(page), List(page, "groups", group => new LogicFormGroup(Id(group), RulesOf(group), List(group, "fields", Field))))),
+        List(element, "validationRules", rule => new LogicValidationRule(
+            Id(rule),
+            rule.GetProperty("field").GetString()!,
+            rule.GetProperty("enabled").GetBoolean(),
+            rule.GetProperty("match").GetString()!,
+            Items(rule.GetProperty("conditions")))),
+        List(element, "actions", action => new LogicAction(Id(action), RulesOf(action))),
+        List(element, "outcomes", outcome => new LogicOutcome(Id(outcome), RulesOf(outcome))));
+
+    /// <summary>Each repeatable group's rows, each holding its child fields' answers.</summary>
+    public static Dictionary<string, IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>>> Rows(JsonElement element) =>
+        element.EnumerateObject().ToDictionary(
+            p => p.Name,
+            p => (IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>>)[.. p.Value.EnumerateArray().Select(row => Values(row))],
+            StringComparer.Ordinal);
+
     /// <summary>A calculation; a <c>scale</c> that is not a whole number reads as none, which round refuses.</summary>
     public static Calculation Calculation(JsonElement element)
     {
@@ -100,6 +120,21 @@ internal static class VectorReader
             [.. element.GetProperty("args").EnumerateArray().Select(Calculation)],
             scale);
     }
+
+    private static LogicField Field(JsonElement element) => new(
+        Id(element),
+        element.TryGetProperty("kind", out var kind) && kind.ValueKind != JsonValueKind.Null ? Kind(kind) : null,
+        element.TryGetProperty("required", out var required) && required.GetBoolean(),
+        RulesOf(element),
+        List(element, "fields", Field),
+        List(element, "rows", row => new LogicGridRow(Id(row), Kind(row.GetProperty("kind")))));
+
+    private static string Id(JsonElement element) => element.GetProperty("id").GetString()!;
+
+    private static List<LogicRule> RulesOf(JsonElement element) => List(element, "rules", Rule);
+
+    private static List<T> List<T>(JsonElement element, string name, Func<JsonElement, T> read) =>
+        element.TryGetProperty(name, out var list) ? [.. list.EnumerateArray().Select(read)] : [];
 
     private static FieldKind Kind(JsonElement element) =>
         Kinds.TryGetValue(element.GetString() ?? string.Empty, out var kind)

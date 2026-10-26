@@ -67,7 +67,26 @@ node tests/vectors/build.mjs --check
 
 Both runners read every `vectors/*.json` in place, one test case per vector: `Logic/VectorTests.cs` in the unit tests
 (a case is named `Vector(<suite>/<id>)`) and `packages/logic/test/vectors.test.ts` in the client's `npm test`. A case
-that passes in one runtime and fails in the other is a bug in one of them.
+that passes in one runtime and fails in the other is a bug in one of them. `spike` holds the 163 cases of 1.5, `port`
+those of the port (3.4b, 4.8f), and `rules` (5.2a) every operator against every kind of answer and whole forms run by
+the form engine ([ADR-0061](../docs/decisions/0061-the-form-rules-engine.md)): a case's `form` with its `values` and the
+`rows` of its repeatable groups, expecting the `FormState`.
+
+**The mutation check** proves the vectors. Each mutant in `vectors/mutants.mjs` changes one piece of the logic in one
+runtime, that runtime's vector runner runs, and the file is put back; the check fails on a mutant that nothing catches,
+unless it is written down there as an equivalent change with its reason:
+
+```
+node tests/vectors/mutants.mjs                 # every mutant: seconds each in TypeScript, a build each in C#
+node tests/vectors/mutants.mjs --runtime ts    # one runtime: ts or cs
+node tests/vectors/mutants.mjs --name form     # the mutants whose name contains the text
+node tests/vectors/mutants.mjs --check         # only that each mutant's code is there once (the scripts' tests run it)
+```
+
+Run it again after changing the logic. A survivor needs a vector in `vectors/suites/`, or a reason why no input can
+tell the change apart. Lone surrogates are the one thing no vector can hold, since .NET's JSON reader refuses them, so
+`packages/logic/test/text.test.ts` and `Logic/TextSemanticsTests.cs` cover them. `Definitions/DefinitionLogicTests.cs`
+shows what the engine's model holds for a definition, and what the engine decides from it.
 
 **What long answers cost** is checked in both runtimes too, by `Logic/LogicCostTests.cs` and
 `packages/logic/test/cost.test.ts`: rules over a number answer of 10,000 digits take under 50 ms (and in Core

@@ -12,7 +12,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 [TestFixture]
 public sealed class VectorTests
 {
-    private static readonly string[] Runnable = ["condition", "rule", "number", "calc"];
+    private static readonly string[] Runnable = ["condition", "rule", "number", "calc", "form"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, JsonDocument>> Files = new(Load);
 
@@ -71,6 +71,28 @@ public sealed class VectorTests
 
     private static string Show(JsonNode? node) => node?.ToJsonString() ?? "null";
 
+    private static JsonObject Json(FormState state) => new()
+    {
+        ["hidden"] = Json(state.Hidden),
+        ["required"] = Json(state.Required),
+        ["messages"] = Json(state.Messages),
+        ["rows"] = new JsonObject(state.Rows.Select(pair => KeyValuePair.Create(
+            pair.Key,
+            (JsonNode?)new JsonArray([.. pair.Value.Select(row => (JsonNode)new JsonObject
+            {
+                ["hidden"] = Json(row.Hidden),
+                ["required"] = Json(row.Required),
+                ["messages"] = Json(row.Messages),
+            })])))),
+        ["actions"] = Json(state.Actions),
+        ["outcome"] = state.Outcome,
+    };
+
+    private static JsonArray Json(IReadOnlyList<string> texts) => new([.. texts.Select(text => (JsonNode)text)]);
+
+    private static JsonObject Json(IReadOnlyDictionary<string, IReadOnlyList<string>> messages) =>
+        new(messages.Select(pair => KeyValuePair.Create(pair.Key, (JsonNode?)Json(pair.Value))));
+
     private static JsonNode? Run(JsonElement root, JsonElement vector)
     {
         var fields = VectorReader.Fields(root.GetProperty("fields"));
@@ -102,6 +124,12 @@ public sealed class VectorTests
             if (vector.TryGetProperty("number", out var number))
             {
                 return Calculations.StoredNumber(number.GetString()!);
+            }
+
+            if (vector.TryGetProperty("form", out var form))
+            {
+                var answers = new FormAnswers(subject.Values, vector.TryGetProperty("rows", out var rows) ? VectorReader.Rows(rows) : []);
+                return Json(FormRules.Evaluate(VectorReader.Form(form), answers, subject.Context));
             }
 
             return Calculations.Calculate(VectorReader.Calculation(vector.GetProperty("calc"))).ToString();

@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   calculate,
   evaluateCondition,
+  evaluateForm,
   evaluateRule,
   formatDecimal,
   LogicError,
@@ -13,7 +14,9 @@ import {
   type Calculation,
   type Condition,
   type Context,
+  type FormAnswers,
   type Kind,
+  type LogicForm,
   type Rule,
   type Subject,
 } from '../src/index.ts';
@@ -25,10 +28,12 @@ interface VectorCase {
   readonly context?: Partial<Context>;
   readonly fields?: Readonly<Record<string, Kind>>;
   readonly values?: Readonly<Record<string, readonly string[]>>;
+  readonly rows?: FormAnswers['rows'];
   readonly condition?: Condition;
   readonly rule?: Rule;
   readonly number?: string;
   readonly calc?: Calculation;
+  readonly form?: LogicForm;
   readonly expect: unknown;
 }
 
@@ -41,7 +46,7 @@ interface VectorFile {
 }
 
 /** The things a case can run; each case has exactly one. */
-const RUNNABLE = ['condition', 'rule', 'number', 'calc'] as const;
+const RUNNABLE = ['condition', 'rule', 'number', 'calc', 'form'] as const;
 
 const folder = vectorsFolder();
 const names = readdirSync(folder)
@@ -59,6 +64,10 @@ function run(file: VectorFile, vector: VectorCase): unknown {
     if (vector.rule !== undefined) return evaluateRule(vector.rule, subject);
     if (vector.number !== undefined) return storedNumber(vector.number);
     if (vector.calc !== undefined) return formatDecimal(calculate(vector.calc));
+    if (vector.form !== undefined) {
+      const answers: FormAnswers = { values: vector.values ?? {}, rows: vector.rows ?? {} };
+      return evaluateForm(vector.form, answers, subject.context);
+    }
   } catch (error) {
     if (error instanceof LogicError) return { error: error.code };
     throw error;
