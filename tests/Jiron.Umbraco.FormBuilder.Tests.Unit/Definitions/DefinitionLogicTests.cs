@@ -104,6 +104,70 @@ public sealed class DefinitionLogicTests
     }
 
     [Test]
+    public void From_EveryFieldKeepsItsAlias_AndACalculationItsFormulaAndPlaces()
+    {
+        var form = From(Changed(d =>
+        {
+            AddCalculation(d, 0x22, "total", new JsonObject { ["formula"] = "guests * 12", ["format"] = new JsonObject { ["decimals"] = 0 } });
+            AddCalculation(d, 0x23, "share", new JsonObject { ["formula"] = "total / 3" });
+        }));
+        var fields = form.Pages[0].Groups[0].Fields;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(fields.Select(field => field.Alias), Is.EqualTo(new[] { "name", "email", "confirmEmail", "country", "city", "guests", "fullName", null, "total", "share" }), "a heading has no alias");
+            Assert.That(fields.Take(8).Select(field => field.Calculation), Is.All.Null);
+            Assert.That(fields.Skip(8).Select(field => field.Calculation), Is.EqualTo(new[] { new LogicCalculation("guests * 12", 0), new LogicCalculation("total / 3", null) }), "two places when unset are the engine's");
+        });
+    }
+
+    [Test]
+    public void From_ACalculationWhoseSettingsDoNotFit_HasAnEmptyFormula_WhichTheEngineRefuses()
+    {
+        var form = From(Changed(d => AddCalculation(d, 0x22, "total", new JsonObject { ["formula"] = 12 })));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(form.Pages[0].Groups[0].Fields[8].Calculation, Is.EqualTo(new LogicCalculation(string.Empty, null)));
+            Assert.That(
+                () => FormRules.Evaluate(form, new FormAnswers(NoValues, NoRows), Context("de-CH", NoValues)),
+                Throws.TypeOf<LogicException>().With.Property(nameof(LogicException.Code)).EqualTo(LogicErrors.InvalidFormula));
+            Assert.That(() => DefinitionLogic.Calculation(null!, null), Throws.ArgumentNullException);
+        });
+    }
+
+    [Test]
+    public void TheEngine_WorksOutACalculation_AndRulesReadItsResult()
+    {
+        var form = From(Changed(d =>
+        {
+            AddCalculation(d, 0x22, "total", new JsonObject { ["formula"] = "guests * 12.5" });
+
+            // The name shows while the total stays under 100.
+            d["pages"]![0]!["groups"]![0]!["fields"]![0]!["rules"] = new JsonArray(new JsonObject
+            {
+                ["key"] = "40000000-0000-4000-8000-000000000010",
+                ["effect"] = "show",
+                ["conditions"] = new JsonArray(new JsonObject { ["field"] = K(0x22), ["op"] = "lessThan", ["value"] = "100" }),
+            });
+        }));
+        FormState Evaluate(string guests) => FormRules.Evaluate(
+            form,
+            new FormAnswers(new Dictionary<string, IReadOnlyList<string>> { [K(4)] = ["ch"], [K(6)] = [guests], [K(0x22)] = ["1"] }, NoRows),
+            Context("de-CH", NoValues));
+        var seven = Evaluate("7");
+        var nine = Evaluate("9");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(seven.Calculations, Is.EqualTo(new Dictionary<string, string?> { [K(0x22)] = "87.5" }), "seven guests at 12.50, whatever was posted");
+            Assert.That(seven.Hidden, Does.Not.Contain(K(1)));
+            Assert.That(nine.Calculations, Is.EqualTo(new Dictionary<string, string?> { [K(0x22)] = "112.5" }));
+            Assert.That(nine.Hidden, Does.Contain(K(1)), "the name hides at 100 or more");
+        });
+    }
+
+    [Test]
     public void TheEngine_WithNothingAnswered_HidesWhatTheRulesHide()
     {
         var state = FormRules.Evaluate(From(StructureTests.Publishable), new FormAnswers(NoValues, NoRows), Context("de-CH", NoValues));
@@ -170,6 +234,10 @@ public sealed class DefinitionLogicTests
     }
 
     private static LogicForm From(string json) => DefinitionLogic.From(DefinitionFixtures.Read(json), TestFieldTypes.Registry);
+
+    // A calculation at the end of the first group, field 8 when it is the first field added there.
+    private static void AddCalculation(JsonObject d, int key, string alias, JsonObject settings) =>
+        d["pages"]![0]!["groups"]![0]!["fields"]!.AsArray().Add(new JsonObject { ["key"] = K(key), ["type"] = "calculation", ["alias"] = alias, ["settings"] = settings });
 
     private static string Changed(Action<JsonObject> change)
     {

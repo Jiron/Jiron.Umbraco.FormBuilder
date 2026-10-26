@@ -1,0 +1,5331 @@
+{
+  "format": "jfb-vectors/1",
+  "suite": "calculations",
+  "defaults": {
+    "context": {
+      "now": "2026-06-15T10:00:00Z",
+      "timeZone": "Europe/Zurich",
+      "culture": "de-CH",
+      "member": {
+        "signedIn": false,
+        "groups": []
+      },
+      "query": {},
+      "hidden": []
+    }
+  },
+  "fields": {
+    "qty": "number",
+    "price": "number",
+    "round": "number",
+    "plan": "choice",
+    "extras": "choices",
+    "insured": "checkbox",
+    "name": "text",
+    "photos": "files",
+    "start": "time",
+    "birth": "date",
+    "arrival": "date",
+    "departure": "date",
+    "meeting": "dateTime",
+    "until": "dateTime"
+  },
+  "cases": [
+    {
+      "id": "add-is-exact",
+      "description": "a binary double makes 0.30000000000000004",
+      "values": {
+        "qty": [
+          "0.1"
+        ]
+      },
+      "formula": "qty + 0.2",
+      "expect": "0.3"
+    },
+    {
+      "id": "subtract-is-exact",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "qty - 0.9",
+      "expect": "0.1"
+    },
+    {
+      "id": "multiply-is-exact",
+      "values": {
+        "qty": [
+          "1.1"
+        ]
+      },
+      "formula": "qty * 1.1",
+      "expect": "1.21"
+    },
+    {
+      "id": "multiply-before-add",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "qty + 2 * 3",
+      "expect": "7"
+    },
+    {
+      "id": "divide-before-subtract",
+      "values": {
+        "qty": [
+          "10"
+        ]
+      },
+      "formula": "qty - 6 / 3",
+      "expect": "8"
+    },
+    {
+      "id": "parentheses-first",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "(qty + 2) * 3",
+      "expect": "9"
+    },
+    {
+      "id": "subtract-left-to-right",
+      "values": {
+        "qty": [
+          "10"
+        ]
+      },
+      "formula": "qty - 2 - 3",
+      "expect": "5"
+    },
+    {
+      "id": "divide-left-to-right",
+      "values": {
+        "qty": [
+          "100"
+        ]
+      },
+      "formula": "qty / 2 / 5",
+      "expect": "10"
+    },
+    {
+      "id": "negation",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "-qty",
+      "expect": "-5"
+    },
+    {
+      "id": "negation-twice",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "--qty",
+      "expect": "5"
+    },
+    {
+      "id": "negation-three-times",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "- - -qty",
+      "expect": "-5"
+    },
+    {
+      "id": "negation-after-an-operator",
+      "values": {
+        "qty": [
+          "3"
+        ]
+      },
+      "formula": "2 - -qty",
+      "expect": "5"
+    },
+    {
+      "id": "negation-of-a-group",
+      "values": {
+        "qty": [
+          "3"
+        ]
+      },
+      "formula": "-(qty - 8)",
+      "expect": "5"
+    },
+    {
+      "id": "negation-of-zero-is-zero",
+      "description": "never \"-0\"",
+      "values": {
+        "qty": [
+          "0"
+        ]
+      },
+      "formula": "-qty",
+      "expect": "0"
+    },
+    {
+      "id": "many-negations-are-not-nested",
+      "description": "they are counted, so they never reach the depth limit",
+      "values": {
+        "qty": [
+          "2"
+        ]
+      },
+      "formula": "-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------qty",
+      "expect": "-2"
+    },
+    {
+      "id": "spaces-tabs-and-line-breaks-between-tokens",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": " qty\t*\n2\r ",
+      "expect": "10"
+    },
+    {
+      "id": "no-spaces-needed",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "qty*2+1",
+      "expect": "11"
+    },
+    {
+      "id": "a-literal-with-a-fraction",
+      "values": {
+        "qty": [
+          "3"
+        ]
+      },
+      "formula": "qty * 0.5",
+      "expect": "1.5"
+    },
+    {
+      "id": "a-literal-keeps-its-trailing-zeros-out",
+      "values": {
+        "qty": [
+          "2"
+        ]
+      },
+      "formula": "qty * 1.50",
+      "expect": "3"
+    },
+    {
+      "id": "a-literal-of-sixty-digits",
+      "values": {
+        "qty": [
+          "0"
+        ]
+      },
+      "formula": "qty + 999999999999999999999999999999999999999999999999999999999999",
+      "expect": "999999999999999999999999999999999999999999999999999999999999"
+    },
+    {
+      "id": "a-literal-of-sixty-one-digits",
+      "values": {
+        "qty": [
+          "0"
+        ]
+      },
+      "formula": "qty + 1000000000000000000000000000000000000000000000000000000000000",
+      "expect": {
+        "error": "out_of_range",
+        "at": 6
+      }
+    },
+    {
+      "id": "a-literal-whose-fraction-ends-in-zeros-is-in-range",
+      "description": "trailing zeros of a fraction are no digits",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "qty + 1.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "expect": "2"
+    },
+    {
+      "id": "a-name-before-a-parenthesis-may-have-spaces",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "min (qty, 1)",
+      "expect": "1"
+    },
+    {
+      "id": "a-field-may-be-named-like-a-function",
+      "description": "a name followed by ( calls a function; any other name is a field",
+      "values": {
+        "round": [
+          "2"
+        ]
+      },
+      "formula": "round + 1",
+      "expect": "3"
+    },
+    {
+      "id": "a-field-named-like-a-function-inside-it",
+      "values": {
+        "round": [
+          "2"
+        ]
+      },
+      "formula": "round(round / 4)",
+      "expect": "1"
+    },
+    {
+      "id": "a-comparison-in-parentheses-is-a-number",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "(qty < 5) + (qty < 6)",
+      "expect": "1"
+    },
+    {
+      "id": "empty-formula",
+      "values": {},
+      "formula": "",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 0
+      }
+    },
+    {
+      "id": "only-spaces",
+      "values": {},
+      "formula": "   ",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 3
+      }
+    },
+    {
+      "id": "an-operator-at-the-end",
+      "values": {},
+      "formula": "qty +",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 5
+      }
+    },
+    {
+      "id": "two-operators-in-a-row",
+      "values": {},
+      "formula": "qty * * 2",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 6
+      }
+    },
+    {
+      "id": "a-parenthesis-left-open",
+      "values": {},
+      "formula": "(qty + 1",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 8
+      }
+    },
+    {
+      "id": "a-parenthesis-closed-twice",
+      "values": {},
+      "formula": "qty + 1)",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 7
+      }
+    },
+    {
+      "id": "empty-parentheses",
+      "values": {},
+      "formula": "()",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 1
+      }
+    },
+    {
+      "id": "a-number-with-a-leading-zero",
+      "values": {},
+      "formula": "qty * 07",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 6
+      }
+    },
+    {
+      "id": "two-zeros",
+      "values": {},
+      "formula": "qty * 00",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 6
+      }
+    },
+    {
+      "id": "zero-point-is-a-number",
+      "values": {
+        "qty": [
+          "4"
+        ]
+      },
+      "formula": "qty * 0.5",
+      "expect": "2"
+    },
+    {
+      "id": "a-point-without-digits-after-it",
+      "values": {},
+      "formula": "qty * 5.",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 8
+      }
+    },
+    {
+      "id": "a-point-without-digits-before-it",
+      "values": {},
+      "formula": "qty * .5",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 6
+      }
+    },
+    {
+      "id": "two-points",
+      "values": {},
+      "formula": "qty * 1.2.3",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 9
+      }
+    },
+    {
+      "id": "an-exponent",
+      "values": {},
+      "formula": "qty * 1e3",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 7
+      }
+    },
+    {
+      "id": "a-decimal-comma",
+      "values": {},
+      "formula": "qty * 1,5",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 7
+      }
+    },
+    {
+      "id": "an-unknown-operator-character",
+      "values": {},
+      "formula": "qty % 2",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 4
+      }
+    },
+    {
+      "id": "a-multiplication-sign",
+      "values": {},
+      "formula": "qty \u00d7 2",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 4
+      }
+    },
+    {
+      "id": "digits-of-another-script",
+      "values": {},
+      "formula": "qty * \u0663",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 6
+      }
+    },
+    {
+      "id": "a-letter-outside-ascii-ends-the-name",
+      "description": "aliases are ASCII letters and digits",
+      "values": {},
+      "formula": "qt\u00e4",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 2
+      }
+    },
+    {
+      "id": "an-underscore-ends-the-name",
+      "values": {},
+      "formula": "qty_total",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 3
+      }
+    },
+    {
+      "id": "a-letter-outside-ascii-starts-no-name",
+      "values": {},
+      "formula": "\u00e4qty",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 0
+      }
+    },
+    {
+      "id": "digits-of-another-script-after-a-digit",
+      "description": "a number is ASCII digits; the next digit ends it",
+      "values": {},
+      "formula": "qty * 1\u0663",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 7
+      }
+    },
+    {
+      "id": "a-no-break-space-is-no-space",
+      "description": "spaces, tabs and line breaks only",
+      "values": {},
+      "formula": "qty\u00a0* 2",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 3
+      }
+    },
+    {
+      "id": "a-plus-sign-before-a-value",
+      "description": "only \"-\" stands before a value",
+      "values": {},
+      "formula": "+qty",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 0
+      }
+    },
+    {
+      "id": "equals-twice",
+      "values": {},
+      "formula": "qty == 5",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 5
+      }
+    },
+    {
+      "id": "not-equal-written-otherwise",
+      "values": {},
+      "formula": "qty <> 5",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 5
+      }
+    },
+    {
+      "id": "an-exclamation-mark-alone",
+      "values": {},
+      "formula": "!qty",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 0
+      }
+    },
+    {
+      "id": "an-exclamation-mark-before-a-value",
+      "values": {},
+      "formula": "qty ! 5",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 4
+      }
+    },
+    {
+      "id": "two-comparisons-in-a-row",
+      "values": {},
+      "formula": "qty < 5 < 6",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 8
+      }
+    },
+    {
+      "id": "two-comparisons-in-parentheses",
+      "values": {},
+      "formula": "(qty < 5 < 6)",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 9
+      }
+    },
+    {
+      "id": "a-comma-before-the-end-of-a-call",
+      "values": {},
+      "formula": "min(qty, 1,)",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 11
+      }
+    },
+    {
+      "id": "a-comma-missing-in-a-call",
+      "values": {},
+      "formula": "min(qty 1)",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 8
+      }
+    },
+    {
+      "id": "a-call-left-open",
+      "values": {},
+      "formula": "min(qty, 1",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 10
+      }
+    },
+    {
+      "id": "an-empty-argument",
+      "values": {},
+      "formula": "min(, qty)",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 4
+      }
+    },
+    {
+      "id": "an-unknown-function",
+      "values": {},
+      "formula": "pow(qty, 2)",
+      "expect": {
+        "error": "unknown_operator",
+        "at": 0
+      }
+    },
+    {
+      "id": "functions-are-written-as-they-are",
+      "values": {},
+      "formula": "Min(qty, 1)",
+      "expect": {
+        "error": "unknown_operator",
+        "at": 0
+      }
+    },
+    {
+      "id": "a-function-named-constructor",
+      "description": "functions are looked up among the language's own, never an object's inherited names",
+      "values": {},
+      "formula": "constructor(qty)",
+      "expect": {
+        "error": "unknown_operator",
+        "at": 0
+      }
+    },
+    {
+      "id": "a-function-named-to-string",
+      "values": {},
+      "formula": "toString(qty)",
+      "expect": {
+        "error": "unknown_operator",
+        "at": 0
+      }
+    },
+    {
+      "id": "the-name-of-an-operation-is-no-function",
+      "description": "the tree's own names (add, neg, store) are not functions of the language",
+      "values": {},
+      "formula": "add(qty, 1)",
+      "expect": {
+        "error": "unknown_operator",
+        "at": 0
+      }
+    },
+    {
+      "id": "negation-is-no-function",
+      "values": {},
+      "formula": "neg(qty)",
+      "expect": {
+        "error": "unknown_operator",
+        "at": 0
+      }
+    },
+    {
+      "id": "store-is-no-function",
+      "values": {},
+      "formula": "store(qty)",
+      "expect": {
+        "error": "unknown_operator",
+        "at": 0
+      }
+    },
+    {
+      "id": "a-field-is-no-function",
+      "values": {},
+      "formula": "qty(2)",
+      "expect": {
+        "error": "unknown_operator",
+        "at": 0
+      }
+    },
+    {
+      "id": "a-formula-of-a-thousand-characters",
+      "description": "exactly 1,000 characters",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "qty + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 ",
+      "expect": "1"
+    },
+    {
+      "id": "a-formula-of-a-thousand-and-one-characters",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "qty + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0  ",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 1000
+      }
+    },
+    {
+      "id": "twenty-levels-of-parentheses",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "((((((((((((((((((((qty))))))))))))))))))))",
+      "expect": "1"
+    },
+    {
+      "id": "twenty-one-levels-of-parentheses",
+      "description": "the twenty-first parenthesis",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "(((((((((((((((((((((qty)))))))))))))))))))))",
+      "expect": {
+        "error": "too_deep",
+        "at": 20
+      }
+    },
+    {
+      "id": "twenty-levels-of-calls",
+      "description": "not(3) is 0, and an even number of nots gives 1",
+      "values": {
+        "qty": [
+          "3"
+        ]
+      },
+      "formula": "not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(qty))))))))))))))))))))",
+      "expect": "1"
+    },
+    {
+      "id": "twenty-one-levels-of-calls",
+      "values": {},
+      "formula": "not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(not(qty)))))))))))))))))))))",
+      "expect": {
+        "error": "too_deep",
+        "at": 80
+      }
+    },
+    {
+      "id": "calls-and-parentheses-count-together",
+      "values": {},
+      "formula": "not((not((not((not((not((not((not((not((not((not(((qty)))))))))))))))))))))",
+      "expect": {
+        "error": "too_deep",
+        "at": 50
+      }
+    },
+    {
+      "id": "levels-close-as-they-end",
+      "description": "eleven, then twenty, never thirty-one",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "(((((((((((qty))))))))))) + ((((((((((((((((((((qty))))))))))))))))))))",
+      "expect": "2"
+    },
+    {
+      "id": "a-formula-that-names-no-field",
+      "values": {},
+      "formula": "1 + 2",
+      "expect": {
+        "error": "constant_formula",
+        "at": 0
+      }
+    },
+    {
+      "id": "only-today-names-no-field",
+      "values": {},
+      "formula": "daysBetween(today(), today())",
+      "expect": {
+        "error": "constant_formula",
+        "at": 0
+      }
+    },
+    {
+      "id": "the-grammar-before-the-fields",
+      "description": "the whole formula is read before any field is looked up",
+      "values": {},
+      "formula": "nope + )",
+      "expect": {
+        "error": "invalid_formula",
+        "at": 7
+      }
+    },
+    {
+      "id": "the-first-unknown-field",
+      "values": {},
+      "formula": "nope + nada",
+      "expect": {
+        "error": "unknown_field",
+        "at": 0
+      }
+    },
+    {
+      "id": "an-unknown-field-later",
+      "values": {},
+      "formula": "qty + nope",
+      "expect": {
+        "error": "unknown_field",
+        "at": 6
+      }
+    },
+    {
+      "id": "aliases-are-written-as-they-are",
+      "values": {},
+      "formula": "Qty + 1",
+      "expect": {
+        "error": "unknown_field",
+        "at": 0
+      }
+    },
+    {
+      "id": "a-field-named-constructor",
+      "values": {},
+      "formula": "constructor + 1",
+      "expect": {
+        "error": "unknown_field",
+        "at": 0
+      }
+    },
+    {
+      "id": "a-field-named-has-own-property",
+      "values": {},
+      "formula": "hasOwnProperty + 1",
+      "expect": {
+        "error": "unknown_field",
+        "at": 0
+      }
+    },
+    {
+      "id": "min-of-three",
+      "values": {
+        "qty": [
+          "5"
+        ],
+        "price": [
+          "-2"
+        ]
+      },
+      "formula": "min(qty, price, 3)",
+      "expect": "-2"
+    },
+    {
+      "id": "max-of-three",
+      "values": {
+        "qty": [
+          "5"
+        ],
+        "price": [
+          "-2"
+        ]
+      },
+      "formula": "max(qty, price, 3)",
+      "expect": "5"
+    },
+    {
+      "id": "min-of-equal-values",
+      "values": {
+        "qty": [
+          "2"
+        ]
+      },
+      "formula": "min(qty, 2.0)",
+      "expect": "2"
+    },
+    {
+      "id": "max-compares-by-value",
+      "description": "never as text, where \"9\" comes after \"10\"",
+      "values": {
+        "qty": [
+          "10"
+        ]
+      },
+      "formula": "max(qty, 9)",
+      "expect": "10"
+    },
+    {
+      "id": "max-of-fractions",
+      "values": {
+        "qty": [
+          "0.3"
+        ]
+      },
+      "formula": "max(qty, 0.25)",
+      "expect": "0.3"
+    },
+    {
+      "id": "min-takes-two-or-more",
+      "values": {},
+      "formula": "min(qty)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 0
+      }
+    },
+    {
+      "id": "max-without-arguments",
+      "values": {},
+      "formula": "max()",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 0
+      }
+    },
+    {
+      "id": "round-to-whole",
+      "values": {
+        "qty": [
+          "2.4"
+        ]
+      },
+      "formula": "round(qty)",
+      "expect": "2"
+    },
+    {
+      "id": "round-half-away-from-zero",
+      "values": {
+        "qty": [
+          "2.5"
+        ]
+      },
+      "formula": "round(qty)",
+      "expect": "3"
+    },
+    {
+      "id": "round-negative-half-away-from-zero",
+      "values": {
+        "qty": [
+          "-2.5"
+        ]
+      },
+      "formula": "round(qty)",
+      "expect": "-3"
+    },
+    {
+      "id": "round-to-places",
+      "description": "a binary double would round 2.675 down",
+      "values": {
+        "qty": [
+          "2.675"
+        ]
+      },
+      "formula": "round(qty, 2)",
+      "expect": "2.68"
+    },
+    {
+      "id": "round-not-to-even",
+      "values": {
+        "qty": [
+          "0.125"
+        ]
+      },
+      "formula": "round(qty, 2)",
+      "expect": "0.13"
+    },
+    {
+      "id": "round-negative-half-to-places",
+      "values": {
+        "qty": [
+          "-0.25"
+        ]
+      },
+      "formula": "round(qty, 1)",
+      "expect": "-0.3"
+    },
+    {
+      "id": "round-to-zero-places",
+      "values": {
+        "qty": [
+          "2.5"
+        ]
+      },
+      "formula": "round(qty, 0)",
+      "expect": "3"
+    },
+    {
+      "id": "round-to-twenty-places",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "round(qty / 3, 20)",
+      "expect": "0.33333333333333333333"
+    },
+    {
+      "id": "round-keeps-fewer-places",
+      "values": {
+        "qty": [
+          "1.5"
+        ]
+      },
+      "formula": "round(qty, 5)",
+      "expect": "1.5"
+    },
+    {
+      "id": "round-thirds",
+      "values": {
+        "qty": [
+          "2"
+        ]
+      },
+      "formula": "round(qty / 3, 2)",
+      "expect": "0.67"
+    },
+    {
+      "id": "round-places-past-twenty",
+      "values": {},
+      "formula": "round(qty, 21)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 11
+      }
+    },
+    {
+      "id": "round-places-with-a-fraction",
+      "values": {},
+      "formula": "round(qty, 1.5)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 11
+      }
+    },
+    {
+      "id": "round-places-written-with-a-point",
+      "description": "a whole number as it is written, not one a fraction of zero makes",
+      "values": {},
+      "formula": "round(qty, 2.0)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 11
+      }
+    },
+    {
+      "id": "round-places-negative",
+      "values": {},
+      "formula": "round(qty, -1)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 11
+      }
+    },
+    {
+      "id": "round-places-from-a-field",
+      "values": {},
+      "formula": "round(qty, price)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 11
+      }
+    },
+    {
+      "id": "round-places-worked-out",
+      "values": {},
+      "formula": "round(qty, 1 + 1)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 11
+      }
+    },
+    {
+      "id": "round-places-a-long-number",
+      "values": {},
+      "formula": "round(qty, 99999999999)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 11
+      }
+    },
+    {
+      "id": "round-places-in-parentheses",
+      "description": "the parentheses hold the number as it is written",
+      "values": {
+        "qty": [
+          "1.234"
+        ]
+      },
+      "formula": "round(qty, (2))",
+      "expect": "1.23"
+    },
+    {
+      "id": "round-takes-one-or-two",
+      "values": {},
+      "formula": "round(qty, 1, 2)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 0
+      }
+    },
+    {
+      "id": "if-takes-then",
+      "values": {
+        "qty": [
+          "20"
+        ]
+      },
+      "formula": "if(qty > 10, qty * 0.9, qty)",
+      "expect": "18"
+    },
+    {
+      "id": "if-takes-else",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "if(qty > 10, qty * 0.9, qty)",
+      "expect": "5"
+    },
+    {
+      "id": "if-any-number-but-zero-is-true",
+      "values": {
+        "qty": [
+          "0.5"
+        ]
+      },
+      "formula": "if(-qty, 1, 2)",
+      "expect": "1"
+    },
+    {
+      "id": "if-zero-is-false",
+      "values": {
+        "qty": [
+          "0"
+        ]
+      },
+      "formula": "if(qty, 1, 2)",
+      "expect": "2"
+    },
+    {
+      "id": "if-works-out-only-the-branch-taken",
+      "description": "the division by zero in the other branch never happens",
+      "values": {
+        "qty": [
+          "0"
+        ],
+        "price": [
+          "5"
+        ]
+      },
+      "formula": "if(qty = 0, 0, price / qty)",
+      "expect": "0"
+    },
+    {
+      "id": "if-skips-the-else-branch",
+      "values": {
+        "qty": [
+          "1"
+        ],
+        "price": [
+          "5"
+        ]
+      },
+      "formula": "if(qty, price, price / 0)",
+      "expect": "5"
+    },
+    {
+      "id": "if-takes-three",
+      "values": {},
+      "formula": "if(qty, 1)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 0
+      }
+    },
+    {
+      "id": "and-of-true-values",
+      "values": {
+        "qty": [
+          "2"
+        ],
+        "price": [
+          "3"
+        ]
+      },
+      "formula": "and(qty > 1, price > 1)",
+      "expect": "1"
+    },
+    {
+      "id": "and-with-a-false-value",
+      "values": {
+        "qty": [
+          "2"
+        ],
+        "price": [
+          "1"
+        ]
+      },
+      "formula": "and(qty > 1, price > 1)",
+      "expect": "0"
+    },
+    {
+      "id": "and-stops-at-the-first-zero",
+      "values": {
+        "qty": [
+          "0"
+        ],
+        "price": [
+          "5"
+        ]
+      },
+      "formula": "and(qty, price / 0)",
+      "expect": "0"
+    },
+    {
+      "id": "and-of-three",
+      "values": {
+        "qty": [
+          "1"
+        ],
+        "price": [
+          "2"
+        ]
+      },
+      "formula": "and(qty, price, 1)",
+      "expect": "1"
+    },
+    {
+      "id": "or-stops-at-the-first-true",
+      "values": {
+        "qty": [
+          "1"
+        ],
+        "price": [
+          "5"
+        ]
+      },
+      "formula": "or(qty, price / 0)",
+      "expect": "1"
+    },
+    {
+      "id": "or-of-zeros",
+      "values": {
+        "qty": [
+          "0"
+        ],
+        "price": [
+          "0"
+        ]
+      },
+      "formula": "or(qty, price)",
+      "expect": "0"
+    },
+    {
+      "id": "or-of-three",
+      "values": {
+        "qty": [
+          "0"
+        ],
+        "price": [
+          "0.1"
+        ]
+      },
+      "formula": "or(qty, price, 0)",
+      "expect": "1"
+    },
+    {
+      "id": "and-takes-two-or-more",
+      "values": {},
+      "formula": "and(qty)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 0
+      }
+    },
+    {
+      "id": "not-of-zero",
+      "values": {
+        "qty": [
+          "0"
+        ]
+      },
+      "formula": "not(qty)",
+      "expect": "1"
+    },
+    {
+      "id": "not-of-a-number",
+      "values": {
+        "qty": [
+          "-3"
+        ]
+      },
+      "formula": "not(qty)",
+      "expect": "0"
+    },
+    {
+      "id": "not-takes-one",
+      "values": {},
+      "formula": "not(qty, 1)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 0
+      }
+    },
+    {
+      "id": "equals-by-value",
+      "values": {
+        "qty": [
+          "5.0"
+        ]
+      },
+      "formula": "qty = 5",
+      "expect": "1"
+    },
+    {
+      "id": "equals-false",
+      "values": {
+        "qty": [
+          "4"
+        ]
+      },
+      "formula": "qty = 5",
+      "expect": "0"
+    },
+    {
+      "id": "not-equals",
+      "values": {
+        "qty": [
+          "4"
+        ]
+      },
+      "formula": "qty != 5",
+      "expect": "1"
+    },
+    {
+      "id": "not-equals-of-equal-values",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "qty != 5",
+      "expect": "0"
+    },
+    {
+      "id": "less-than-at-the-edge",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "qty < 5",
+      "expect": "0"
+    },
+    {
+      "id": "less-than-or-equal-at-the-edge",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "qty <= 5",
+      "expect": "1"
+    },
+    {
+      "id": "greater-than-at-the-edge",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "qty > 5",
+      "expect": "0"
+    },
+    {
+      "id": "greater-than-or-equal-at-the-edge",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "qty >= 5",
+      "expect": "1"
+    },
+    {
+      "id": "less-than-below",
+      "values": {
+        "qty": [
+          "4.99"
+        ]
+      },
+      "formula": "qty < 5",
+      "expect": "1"
+    },
+    {
+      "id": "greater-than-above",
+      "values": {
+        "qty": [
+          "5.01"
+        ]
+      },
+      "formula": "qty > 5",
+      "expect": "1"
+    },
+    {
+      "id": "greater-than-negative",
+      "values": {
+        "qty": [
+          "-1.5"
+        ]
+      },
+      "formula": "qty > -2",
+      "expect": "1"
+    },
+    {
+      "id": "comparisons-after-arithmetic",
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "qty + 1 > 5",
+      "expect": "1"
+    },
+    {
+      "id": "comparisons-compare-by-value",
+      "values": {
+        "qty": [
+          "10"
+        ]
+      },
+      "formula": "qty > 9",
+      "expect": "1"
+    },
+    {
+      "id": "a-comparison-times-a-number",
+      "values": {
+        "qty": [
+          "20"
+        ]
+      },
+      "formula": "(qty > 10) * 5 + qty",
+      "expect": "25"
+    },
+    {
+      "id": "a-choice-gives-its-value",
+      "values": {
+        "plan": [
+          "10"
+        ]
+      },
+      "formula": "plan * 2",
+      "expect": "20"
+    },
+    {
+      "id": "choices-add-up",
+      "values": {
+        "extras": [
+          "5",
+          "7.5"
+        ]
+      },
+      "formula": "extras",
+      "expect": "12.5"
+    },
+    {
+      "id": "no-choice-is-zero",
+      "values": {
+        "extras": []
+      },
+      "formula": "extras + 1",
+      "expect": "1"
+    },
+    {
+      "id": "a-choice-that-is-no-number-gives-no-value",
+      "values": {
+        "plan": [
+          "gold"
+        ]
+      },
+      "formula": "plan * 2",
+      "expect": null
+    },
+    {
+      "id": "one-choice-that-is-no-number-gives-no-value",
+      "values": {
+        "extras": [
+          "5",
+          "gold"
+        ]
+      },
+      "formula": "extras",
+      "expect": null
+    },
+    {
+      "id": "a-checked-checkbox-is-one",
+      "values": {
+        "insured": [
+          "true"
+        ]
+      },
+      "formula": "insured * 50",
+      "expect": "50"
+    },
+    {
+      "id": "an-unchecked-checkbox-is-zero",
+      "values": {},
+      "formula": "insured * 50 + 1",
+      "expect": "1"
+    },
+    {
+      "id": "a-checkbox-with-another-value-gives-no-value",
+      "values": {
+        "insured": [
+          "yes"
+        ]
+      },
+      "formula": "insured * 50",
+      "expect": null
+    },
+    {
+      "id": "a-checkbox-value-is-cleaned",
+      "values": {
+        "insured": [
+          " true "
+        ]
+      },
+      "formula": "insured * 50",
+      "expect": "50"
+    },
+    {
+      "id": "an-empty-number-is-zero",
+      "values": {
+        "qty": []
+      },
+      "formula": "qty + 1",
+      "expect": "1"
+    },
+    {
+      "id": "a-number-not-given-is-zero",
+      "values": {},
+      "formula": "qty + 1",
+      "expect": "1"
+    },
+    {
+      "id": "an-empty-text-is-zero",
+      "values": {
+        "qty": [
+          ""
+        ]
+      },
+      "formula": "qty + 1",
+      "expect": "1"
+    },
+    {
+      "id": "only-spaces-are-zero",
+      "values": {
+        "qty": [
+          "   "
+        ]
+      },
+      "formula": "qty + 1",
+      "expect": "1"
+    },
+    {
+      "id": "a-number-is-cleaned",
+      "values": {
+        "qty": [
+          " 5 "
+        ]
+      },
+      "formula": "qty + 1",
+      "expect": "6"
+    },
+    {
+      "id": "several-numbers-add-up",
+      "description": "as a child field gives them from outside its rows",
+      "values": {
+        "qty": [
+          "1",
+          "2.5"
+        ]
+      },
+      "formula": "qty",
+      "expect": "3.5"
+    },
+    {
+      "id": "a-decimal-comma-gives-no-value",
+      "values": {
+        "qty": [
+          "1,5"
+        ]
+      },
+      "formula": "qty + 1",
+      "expect": null
+    },
+    {
+      "id": "an-exponent-gives-no-value",
+      "values": {
+        "qty": [
+          "1e3"
+        ]
+      },
+      "formula": "qty + 1",
+      "expect": null
+    },
+    {
+      "id": "a-leading-zero-gives-no-value",
+      "values": {
+        "qty": [
+          "007"
+        ]
+      },
+      "formula": "qty + 1",
+      "expect": null
+    },
+    {
+      "id": "a-trailing-point-gives-no-value",
+      "values": {
+        "qty": [
+          "5."
+        ]
+      },
+      "formula": "qty + 1",
+      "expect": null
+    },
+    {
+      "id": "a-plus-sign-gives-no-value",
+      "values": {
+        "qty": [
+          "+5"
+        ]
+      },
+      "formula": "qty + 1",
+      "expect": null
+    },
+    {
+      "id": "minus-zero-is-zero",
+      "values": {
+        "qty": [
+          "-0"
+        ]
+      },
+      "formula": "qty + 1",
+      "expect": "1"
+    },
+    {
+      "id": "a-long-answer-out-of-range",
+      "description": "found before the digits become a number",
+      "values": {
+        "qty": [
+          "1000000000000000000000000000000000000000000000000000000000000"
+        ]
+      },
+      "formula": "qty + 1",
+      "expect": {
+        "error": "out_of_range"
+      }
+    },
+    {
+      "id": "a-long-answer-whose-zeros-are-a-fraction",
+      "description": "leading zeros of a fraction are no digits",
+      "values": {
+        "qty": [
+          "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"
+        ]
+      },
+      "formula": "qty",
+      "expect": "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+      "id": "a-hidden-field-is-zero",
+      "context": {
+        "hidden": [
+          "qty"
+        ]
+      },
+      "values": {
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "qty + 1",
+      "expect": "1"
+    },
+    {
+      "id": "a-text-field-is-refused",
+      "values": {},
+      "formula": "name * 2",
+      "expect": {
+        "error": "operator_not_for_kind",
+        "at": 0
+      }
+    },
+    {
+      "id": "a-files-field-is-refused",
+      "values": {},
+      "formula": "photos + 1",
+      "expect": {
+        "error": "operator_not_for_kind",
+        "at": 0
+      }
+    },
+    {
+      "id": "a-time-field-is-refused",
+      "values": {},
+      "formula": "start + 1",
+      "expect": {
+        "error": "operator_not_for_kind",
+        "at": 0
+      }
+    },
+    {
+      "id": "a-date-outside-a-date-function",
+      "values": {},
+      "formula": "birth + 1",
+      "expect": {
+        "error": "operator_not_for_kind",
+        "at": 0
+      }
+    },
+    {
+      "id": "a-number-inside-a-date-function",
+      "values": {},
+      "formula": "daysBetween(qty, arrival)",
+      "expect": {
+        "error": "operator_not_for_kind",
+        "at": 12
+      }
+    },
+    {
+      "id": "a-date-function-of-a-text",
+      "values": {},
+      "formula": "daysBetween(arrival, name)",
+      "expect": {
+        "error": "operator_not_for_kind",
+        "at": 21
+      }
+    },
+    {
+      "id": "a-date-function-of-a-time",
+      "description": "a time of day has no date",
+      "values": {},
+      "formula": "daysBetween(start, arrival)",
+      "expect": {
+        "error": "operator_not_for_kind",
+        "at": 12
+      }
+    },
+    {
+      "id": "days-between",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ],
+        "departure": [
+          "2026-06-23"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": "3"
+    },
+    {
+      "id": "days-between-a-later-start",
+      "values": {
+        "arrival": [
+          "2026-06-23"
+        ],
+        "departure": [
+          "2026-06-20"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": "-3"
+    },
+    {
+      "id": "days-between-one-day",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ],
+        "departure": [
+          "2026-06-20"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": "0"
+    },
+    {
+      "id": "days-across-a-leap-day",
+      "values": {
+        "arrival": [
+          "2024-02-28"
+        ],
+        "departure": [
+          "2024-03-01"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": "2"
+    },
+    {
+      "id": "days-across-the-end-of-february-in-a-common-year",
+      "values": {
+        "arrival": [
+          "2026-02-28"
+        ],
+        "departure": [
+          "2026-03-01"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": "1"
+    },
+    {
+      "id": "days-across-a-century-without-a-leap-day",
+      "values": {
+        "arrival": [
+          "2100-02-28"
+        ],
+        "departure": [
+          "2100-03-01"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": "1"
+    },
+    {
+      "id": "days-across-four-centuries-with-a-leap-day",
+      "values": {
+        "arrival": [
+          "2000-02-28"
+        ],
+        "departure": [
+          "2000-03-01"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": "2"
+    },
+    {
+      "id": "days-across-a-new-year",
+      "values": {
+        "arrival": [
+          "2025-12-31"
+        ],
+        "departure": [
+          "2026-01-01"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": "1"
+    },
+    {
+      "id": "days-from-the-first-to-the-last-date",
+      "values": {
+        "arrival": [
+          "0001-01-01"
+        ],
+        "departure": [
+          "9999-12-31"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": "3652058"
+    },
+    {
+      "id": "days-between-date-times-count-dates",
+      "description": "calendar days, not 24-hour spans",
+      "values": {
+        "meeting": [
+          "2026-06-20T23:30"
+        ],
+        "until": [
+          "2026-06-22T00:15"
+        ]
+      },
+      "formula": "daysBetween(meeting, until)",
+      "expect": "2"
+    },
+    {
+      "id": "days-across-the-spring-change",
+      "description": "date-times are wall-clock values: the hour Europe skips that night costs no day",
+      "values": {
+        "meeting": [
+          "2026-03-28T12:00"
+        ],
+        "until": [
+          "2026-03-29T12:00"
+        ]
+      },
+      "formula": "daysBetween(meeting, until)",
+      "expect": "1"
+    },
+    {
+      "id": "days-across-the-autumn-change",
+      "values": {
+        "meeting": [
+          "2026-10-25T00:30:00"
+        ],
+        "until": [
+          "2026-10-26T00:30:00"
+        ]
+      },
+      "formula": "daysBetween(meeting, until)",
+      "expect": "1"
+    },
+    {
+      "id": "days-between-a-date-and-a-date-time",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ],
+        "until": [
+          "2026-06-21T08:00"
+        ]
+      },
+      "formula": "daysBetween(arrival, until)",
+      "expect": "1"
+    },
+    {
+      "id": "days-to-today",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ]
+      },
+      "formula": "daysBetween(today(), arrival)",
+      "expect": "5"
+    },
+    {
+      "id": "days-from-today",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ]
+      },
+      "formula": "daysBetween(arrival, today())",
+      "expect": "-5"
+    },
+    {
+      "id": "today-just-after-the-spring-change-in-the-site-zone",
+      "description": "23:30 UTC is 00:30 on 29 March in Zurich",
+      "context": {
+        "now": "2026-03-28T23:30:00Z"
+      },
+      "values": {
+        "arrival": [
+          "2026-03-30"
+        ]
+      },
+      "formula": "daysBetween(today(), arrival)",
+      "expect": "1"
+    },
+    {
+      "id": "today-in-another-zone",
+      "description": "19:30 on 28 March in New York",
+      "context": {
+        "now": "2026-03-28T23:30:00Z",
+        "timeZone": "America/New_York"
+      },
+      "values": {
+        "arrival": [
+          "2026-03-30"
+        ]
+      },
+      "formula": "daysBetween(today(), arrival)",
+      "expect": "2"
+    },
+    {
+      "id": "today-just-after-the-autumn-change-in-the-site-zone",
+      "description": "00:30 on 25 October in Zurich, still summer time",
+      "context": {
+        "now": "2026-10-24T22:30:00Z"
+      },
+      "values": {
+        "arrival": [
+          "2026-10-26"
+        ]
+      },
+      "formula": "daysBetween(today(), arrival)",
+      "expect": "1"
+    },
+    {
+      "id": "today-in-parentheses",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ]
+      },
+      "formula": "daysBetween((today()), arrival)",
+      "expect": "5"
+    },
+    {
+      "id": "a-date-in-parentheses",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ],
+        "departure": [
+          "2026-06-23"
+        ]
+      },
+      "formula": "daysBetween((arrival), departure)",
+      "expect": "3"
+    },
+    {
+      "id": "years-on-the-birthday",
+      "values": {
+        "birth": [
+          "2000-06-15"
+        ]
+      },
+      "formula": "yearsBetween(birth, today())",
+      "expect": "26"
+    },
+    {
+      "id": "years-the-day-before-the-birthday",
+      "values": {
+        "birth": [
+          "2000-06-16"
+        ]
+      },
+      "formula": "yearsBetween(birth, today())",
+      "expect": "25"
+    },
+    {
+      "id": "years-from-a-leap-day-on-the-day-before-march",
+      "values": {
+        "birth": [
+          "2000-02-29"
+        ],
+        "arrival": [
+          "2001-02-28"
+        ]
+      },
+      "formula": "yearsBetween(birth, arrival)",
+      "expect": "0"
+    },
+    {
+      "id": "years-from-a-leap-day-complete-on-the-first-of-march",
+      "values": {
+        "birth": [
+          "2000-02-29"
+        ],
+        "arrival": [
+          "2001-03-01"
+        ]
+      },
+      "formula": "yearsBetween(birth, arrival)",
+      "expect": "1"
+    },
+    {
+      "id": "years-from-a-leap-day-to-a-leap-day",
+      "values": {
+        "birth": [
+          "2000-02-29"
+        ],
+        "arrival": [
+          "2004-02-29"
+        ]
+      },
+      "formula": "yearsBetween(birth, arrival)",
+      "expect": "4"
+    },
+    {
+      "id": "years-from-a-leap-day-to-the-end-of-february",
+      "values": {
+        "birth": [
+          "2000-02-29"
+        ],
+        "arrival": [
+          "2003-02-28"
+        ]
+      },
+      "formula": "yearsBetween(birth, arrival)",
+      "expect": "2"
+    },
+    {
+      "id": "years-to-a-leap-day",
+      "values": {
+        "birth": [
+          "2023-02-28"
+        ],
+        "arrival": [
+          "2024-02-29"
+        ]
+      },
+      "formula": "yearsBetween(birth, arrival)",
+      "expect": "1"
+    },
+    {
+      "id": "years-backwards",
+      "values": {
+        "birth": [
+          "2001-03-01"
+        ],
+        "arrival": [
+          "2000-02-29"
+        ]
+      },
+      "formula": "yearsBetween(birth, arrival)",
+      "expect": "-1"
+    },
+    {
+      "id": "years-backwards-within-a-year",
+      "values": {
+        "birth": [
+          "2026-03-02"
+        ],
+        "arrival": [
+          "2026-03-01"
+        ]
+      },
+      "formula": "yearsBetween(birth, arrival)",
+      "expect": "0"
+    },
+    {
+      "id": "years-between-date-times",
+      "description": "the dates count, not the times",
+      "values": {
+        "meeting": [
+          "2020-06-15T23:00"
+        ],
+        "until": [
+          "2026-06-15T01:00"
+        ]
+      },
+      "formula": "yearsBetween(meeting, until)",
+      "expect": "6"
+    },
+    {
+      "id": "years-of-the-whole-calendar",
+      "values": {
+        "birth": [
+          "0001-01-01"
+        ],
+        "arrival": [
+          "9999-12-31"
+        ]
+      },
+      "formula": "yearsBetween(birth, arrival)",
+      "expect": "9998"
+    },
+    {
+      "id": "an-empty-date-gives-no-value",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ],
+        "departure": []
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": null
+    },
+    {
+      "id": "a-date-not-given-gives-no-value",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": null
+    },
+    {
+      "id": "a-date-that-does-not-exist-gives-no-value",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ],
+        "departure": [
+          "2026-02-30"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": null
+    },
+    {
+      "id": "two-dates-give-no-value",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ],
+        "departure": [
+          "2026-06-21",
+          "2026-06-22"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": null
+    },
+    {
+      "id": "a-date-time-without-its-time-gives-no-value",
+      "values": {
+        "meeting": [
+          "2026-06-20"
+        ],
+        "until": [
+          "2026-06-21T08:00"
+        ]
+      },
+      "formula": "daysBetween(meeting, until)",
+      "expect": null
+    },
+    {
+      "id": "a-date-with-a-time-gives-no-value",
+      "description": "a date field's answer is a date",
+      "values": {
+        "arrival": [
+          "2026-06-20T08:00"
+        ],
+        "departure": [
+          "2026-06-21"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": null
+    },
+    {
+      "id": "a-date-is-cleaned",
+      "values": {
+        "arrival": [
+          " 2026-06-20 "
+        ],
+        "departure": [
+          "2026-06-21"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": "1"
+    },
+    {
+      "id": "a-hidden-date-gives-no-value",
+      "context": {
+        "hidden": [
+          "departure"
+        ]
+      },
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ],
+        "departure": [
+          "2026-06-21"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": null
+    },
+    {
+      "id": "no-value-spreads-through-arithmetic",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ],
+        "qty": [
+          "5"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure) * 100 + qty",
+      "expect": null
+    },
+    {
+      "id": "no-value-in-a-branch-not-taken",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "if(qty, 7, daysBetween(arrival, departure))",
+      "expect": "7"
+    },
+    {
+      "id": "no-value-as-a-condition",
+      "values": {},
+      "formula": "if(daysBetween(arrival, departure), 1, 2)",
+      "expect": null
+    },
+    {
+      "id": "no-value-before-a-zero-in-and",
+      "description": "left to right: the first argument already has no value",
+      "values": {
+        "qty": [
+          "0"
+        ]
+      },
+      "formula": "and(daysBetween(arrival, departure), qty)",
+      "expect": null
+    },
+    {
+      "id": "a-zero-before-no-value-in-and",
+      "values": {
+        "qty": [
+          "0"
+        ]
+      },
+      "formula": "and(qty, daysBetween(arrival, departure))",
+      "expect": "0"
+    },
+    {
+      "id": "no-value-in-min",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "min(qty, daysBetween(arrival, departure))",
+      "expect": null
+    },
+    {
+      "id": "no-value-in-a-comparison",
+      "values": {},
+      "formula": "daysBetween(arrival, departure) > 1",
+      "expect": null
+    },
+    {
+      "id": "a-failure-on-the-left-comes-first",
+      "description": "left to right: the division fails before the unreadable answer is read",
+      "values": {
+        "qty": [
+          "1"
+        ],
+        "price": [
+          "abc"
+        ]
+      },
+      "formula": "qty / 0 + price",
+      "expect": {
+        "error": "division_by_zero"
+      }
+    },
+    {
+      "id": "no-value-on-the-left-comes-first",
+      "description": "left to right: the unreadable answer ends it before the division",
+      "values": {
+        "qty": [
+          "1"
+        ],
+        "price": [
+          "abc"
+        ]
+      },
+      "formula": "price + qty / 0",
+      "expect": null
+    },
+    {
+      "id": "today-outside-a-date-function",
+      "values": {},
+      "formula": "qty + today()",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 6
+      }
+    },
+    {
+      "id": "today-alone",
+      "values": {},
+      "formula": "today()",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 0
+      }
+    },
+    {
+      "id": "today-in-arithmetic-inside-a-date-function",
+      "values": {},
+      "formula": "daysBetween(today() + 1, arrival)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 12
+      }
+    },
+    {
+      "id": "today-deeper-inside-a-date-function",
+      "values": {},
+      "formula": "daysBetween(arrival, if(qty, today(), arrival))",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 21
+      }
+    },
+    {
+      "id": "arithmetic-on-a-date-argument",
+      "values": {},
+      "formula": "daysBetween(arrival, departure + 1)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 21
+      }
+    },
+    {
+      "id": "a-number-as-a-date-argument",
+      "values": {},
+      "formula": "daysBetween(arrival, 5)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 21
+      }
+    },
+    {
+      "id": "today-takes-nothing",
+      "values": {},
+      "formula": "daysBetween(today(1), arrival)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 12
+      }
+    },
+    {
+      "id": "days-between-takes-two",
+      "values": {},
+      "formula": "daysBetween(arrival)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 0
+      }
+    },
+    {
+      "id": "years-between-takes-two",
+      "values": {},
+      "formula": "yearsBetween(birth, arrival, departure)",
+      "expect": {
+        "error": "invalid_operand",
+        "at": 0
+      }
+    },
+    {
+      "id": "today-needs-a-valid-instant",
+      "context": {
+        "now": "2026-06-15 10:00"
+      },
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ]
+      },
+      "formula": "daysBetween(today(), arrival)",
+      "expect": {
+        "error": "invalid_context"
+      }
+    },
+    {
+      "id": "today-needs-a-known-zone",
+      "context": {
+        "timeZone": "Europe/Nowhere"
+      },
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ]
+      },
+      "formula": "daysBetween(today(), arrival)",
+      "expect": {
+        "error": "unknown_time_zone"
+      }
+    },
+    {
+      "id": "the-instant-is-read-only-when-asked",
+      "context": {
+        "now": "never"
+      },
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ],
+        "departure": [
+          "2026-06-21"
+        ]
+      },
+      "formula": "daysBetween(arrival, departure)",
+      "expect": "1"
+    },
+    {
+      "id": "divide-into-thirds",
+      "description": "division keeps 20 places",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "qty / 3",
+      "expect": "0.33333333333333333333"
+    },
+    {
+      "id": "divide-two-thirds-rounds-the-last-place",
+      "values": {
+        "qty": [
+          "2"
+        ]
+      },
+      "formula": "qty / 3",
+      "expect": "0.66666666666666666667"
+    },
+    {
+      "id": "divide-negative-two-thirds",
+      "values": {
+        "qty": [
+          "2"
+        ]
+      },
+      "formula": "-qty / 3",
+      "expect": "-0.66666666666666666667"
+    },
+    {
+      "id": "divide-a-half-place",
+      "description": "half of the twentieth place rounds away from zero",
+      "values": {
+        "qty": [
+          "0.00000000000000000001"
+        ]
+      },
+      "formula": "qty / 2",
+      "expect": "0.00000000000000000001"
+    },
+    {
+      "id": "divide-a-negative-half-place",
+      "values": {
+        "qty": [
+          "0.00000000000000000001"
+        ]
+      },
+      "formula": "-qty / 2",
+      "expect": "-0.00000000000000000001"
+    },
+    {
+      "id": "divide-then-multiply-keeps-the-twenty-places",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "qty / 3 * 3",
+      "expect": "0.99999999999999999999"
+    },
+    {
+      "id": "divide-exactly",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "qty / 8",
+      "expect": "0.125"
+    },
+    {
+      "id": "divide-by-zero",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "qty / 0",
+      "expect": {
+        "error": "division_by_zero"
+      }
+    },
+    {
+      "id": "divide-by-zero-written-with-a-fraction",
+      "values": {
+        "qty": [
+          "1"
+        ]
+      },
+      "formula": "qty / 0.0",
+      "expect": {
+        "error": "division_by_zero"
+      }
+    },
+    {
+      "id": "divide-by-an-empty-field",
+      "description": "an empty number is 0",
+      "values": {
+        "price": [
+          "5"
+        ]
+      },
+      "formula": "price / qty",
+      "expect": {
+        "error": "division_by_zero"
+      }
+    },
+    {
+      "id": "divide-zero",
+      "values": {
+        "qty": [
+          "0"
+        ]
+      },
+      "formula": "qty / 4",
+      "expect": "0"
+    },
+    {
+      "id": "sixty-digits-are-in-range",
+      "values": {
+        "qty": [
+          "999999999999999"
+        ]
+      },
+      "formula": "qty * qty * qty * qty",
+      "expect": "999999999999996000000000000005999999999999996000000000000001"
+    },
+    {
+      "id": "past-sixty-digits-is-out-of-range",
+      "values": {
+        "qty": [
+          "999999999999999"
+        ]
+      },
+      "formula": "qty * qty * qty * qty * qty",
+      "expect": {
+        "error": "out_of_range"
+      }
+    },
+    {
+      "id": "a-sum-past-sixty-digits",
+      "values": {
+        "qty": [
+          "999999999999999999999999999999999999999999999999999999999999"
+        ]
+      },
+      "formula": "qty + qty",
+      "expect": {
+        "error": "out_of_range"
+      }
+    },
+    {
+      "id": "a-sum-of-answers-past-sixty-digits",
+      "values": {
+        "qty": [
+          "999999999999999999999999999999999999999999999999999999999999",
+          "1"
+        ]
+      },
+      "formula": "qty",
+      "expect": {
+        "error": "out_of_range"
+      }
+    },
+    {
+      "id": "form-a-calculation-rounded-to-its-places",
+      "values": {
+        "fq": [
+          "3"
+        ],
+        "fp": [
+          "0.3333"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "fp",
+                    "kind": "number",
+                    "alias": "price"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * price",
+                      "decimals": 2
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "1"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      },
+      "description": "0.9999 to two places"
+    },
+    {
+      "id": "form-two-places-when-unset",
+      "values": {
+        "fq": [
+          "1"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "third",
+                    "calculation": {
+                      "formula": "qty / 3"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "0.33"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-no-places",
+      "values": {
+        "fq": [
+          "2.5"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "whole",
+                    "calculation": {
+                      "formula": "qty",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "3"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-fifteen-places",
+      "values": {
+        "fq": [
+          "1"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "third",
+                    "calculation": {
+                      "formula": "qty / 3",
+                      "decimals": 15
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "0.333333333333333"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-the-result-in-canonical-form",
+      "values": {
+        "fq": [
+          "1.5"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * 2",
+                      "decimals": 2
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "3"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      },
+      "description": "the places are how far it rounds, not how it is written"
+    },
+    {
+      "id": "form-a-rule-reads-the-rounded-result",
+      "values": {
+        "fq": [
+          "0.995"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * 1",
+                      "decimals": 2
+                    }
+                  },
+                  {
+                    "id": "notice",
+                    "kind": "text",
+                    "rules": [
+                      {
+                        "effect": "show",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "ft",
+                            "op": "equals",
+                            "value": "1"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "1"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      },
+      "description": "0.995 rounds half away from zero to 1, and the rule compares 1"
+    },
+    {
+      "id": "form-a-rule-never-reads-the-unrounded-result",
+      "values": {
+        "fq": [
+          "0.995"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * 1",
+                      "decimals": 2
+                    }
+                  },
+                  {
+                    "id": "notice",
+                    "kind": "text",
+                    "rules": [
+                      {
+                        "effect": "show",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "ft",
+                            "op": "equals",
+                            "value": "0.995"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [
+          "notice"
+        ],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "1"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-what-is-posted-for-a-calculation-is-ignored",
+      "values": {
+        "fq": [
+          "2"
+        ],
+        "ft": [
+          "99"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * 2",
+                      "decimals": 0
+                    }
+                  },
+                  {
+                    "id": "notice",
+                    "kind": "text",
+                    "rules": [
+                      {
+                        "effect": "show",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "ft",
+                            "op": "equals",
+                            "value": "99"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [
+          "notice"
+        ],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "4"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-a-hidden-field-reads-as-zero",
+      "values": {
+        "fq": [
+          "5"
+        ],
+        "flag": [
+          "true"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "flag",
+                    "kind": "checkbox"
+                  },
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty",
+                    "rules": [
+                      {
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "flag",
+                            "op": "isChecked"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty + 1",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [
+          "fq"
+        ],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "1"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-a-hidden-calculation-is-gone",
+      "values": {
+        "fq": [
+          "5"
+        ],
+        "flag": [
+          "true"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "flag",
+                    "kind": "checkbox"
+                  },
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty + 1",
+                      "decimals": 0
+                    },
+                    "rules": [
+                      {
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "flag",
+                            "op": "isChecked"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "notice",
+                    "kind": "text",
+                    "rules": [
+                      {
+                        "effect": "show",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "ft",
+                            "op": "isEmpty"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [
+          "ft"
+        ],
+        "required": [],
+        "messages": {},
+        "calculations": {},
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      },
+      "description": "it has no result, and rules read it as empty"
+    },
+    {
+      "id": "form-a-calculation-on-a-hidden-page-is-gone",
+      "values": {
+        "flag": [
+          "true"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "flag",
+                    "kind": "checkbox"
+                  },
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "rules": [
+              {
+                "effect": "hide",
+                "enabled": true,
+                "match": "all",
+                "conditions": [
+                  {
+                    "field": "flag",
+                    "op": "isChecked"
+                  }
+                ]
+              }
+            ],
+            "groups": [
+              {
+                "id": "g2",
+                "fields": [
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty + 1",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [
+          "p2",
+          "g2",
+          "ft"
+        ],
+        "required": [],
+        "messages": {},
+        "calculations": {},
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-a-calculation-of-a-calculation-comes-after-it",
+      "values": {
+        "fq": [
+          "3"
+        ],
+        "fp": [
+          "10"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fg",
+                    "kind": "number",
+                    "alias": "gross",
+                    "calculation": {
+                      "formula": "net * 1.081",
+                      "decimals": 2
+                    }
+                  },
+                  {
+                    "id": "fn",
+                    "kind": "number",
+                    "alias": "net",
+                    "calculation": {
+                      "formula": "qty * price",
+                      "decimals": 2
+                    }
+                  },
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "fp",
+                    "kind": "number",
+                    "alias": "price"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "fg": "32.43",
+          "fn": "30"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      },
+      "description": "in document order the gross comes first; it is worked out after the net it reads"
+    },
+    {
+      "id": "form-a-calculation-reads-the-rounded-result-of-another",
+      "values": {
+        "fq": [
+          "1"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "fa",
+                    "kind": "number",
+                    "alias": "third",
+                    "calculation": {
+                      "formula": "qty / 3",
+                      "decimals": 2
+                    }
+                  },
+                  {
+                    "id": "fb",
+                    "kind": "number",
+                    "alias": "whole",
+                    "calculation": {
+                      "formula": "third * 3",
+                      "decimals": 2
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "fa": "0.33",
+          "fb": "0.99"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-a-division-by-zero-has-no-value",
+      "values": {
+        "fq": [
+          "0"
+        ],
+        "fp": [
+          "5"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "fp",
+                    "kind": "number",
+                    "alias": "price"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "each",
+                    "calculation": {
+                      "formula": "price / qty",
+                      "decimals": 2
+                    }
+                  },
+                  {
+                    "id": "notice",
+                    "kind": "text",
+                    "rules": [
+                      {
+                        "effect": "show",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "ft",
+                            "op": "isEmpty"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": null
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-out-of-range-has-no-value",
+      "values": {
+        "fq": [
+          "999999999999999"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "huge",
+                    "calculation": {
+                      "formula": "qty * qty * qty * qty * qty",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": null
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-an-empty-date-has-no-value",
+      "values": {
+        "fa": [
+          "2026-06-20"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fa",
+                    "kind": "date",
+                    "alias": "arrival"
+                  },
+                  {
+                    "id": "fd",
+                    "kind": "date",
+                    "alias": "departure"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "nights",
+                    "calculation": {
+                      "formula": "daysBetween(arrival, departure)",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": null
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-an-age-from-today",
+      "values": {
+        "fb": [
+          "2000-06-16"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fb",
+                    "kind": "date",
+                    "alias": "birth"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "age",
+                    "calculation": {
+                      "formula": "yearsBetween(birth, today())",
+                      "decimals": 0
+                    }
+                  },
+                  {
+                    "id": "adult",
+                    "kind": "text",
+                    "rules": [
+                      {
+                        "effect": "show",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "ft",
+                            "op": "greaterThan",
+                            "value": "17"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "25"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-a-calculation-required-by-a-rule",
+      "values": {
+        "fq": [
+          "20"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * 2",
+                      "decimals": 0
+                    },
+                    "rules": [
+                      {
+                        "effect": "require",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "ft",
+                            "op": "greaterThan",
+                            "value": "10"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [
+          "ft"
+        ],
+        "messages": {},
+        "calculations": {
+          "ft": "40"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-a-validation-rule-reads-a-calculation",
+      "values": {
+        "fq": [
+          "20"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * 2",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "validationRules": [
+          {
+            "id": "v1",
+            "field": "fq",
+            "enabled": true,
+            "match": "all",
+            "conditions": [
+              {
+                "field": "ft",
+                "op": "greaterThan",
+                "value": "30"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {
+          "fq": [
+            "v1"
+          ]
+        },
+        "calculations": {
+          "ft": "40"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-an-outcome-reads-a-calculation",
+      "values": {
+        "fq": [
+          "20"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * 2",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "outcomes": [
+          {
+            "id": "o1",
+            "rules": [
+              {
+                "effect": "use",
+                "enabled": true,
+                "match": "all",
+                "conditions": [
+                  {
+                    "field": "ft",
+                    "op": "lessThan",
+                    "value": "10"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "o2"
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "40"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": "o2"
+      }
+    },
+    {
+      "id": "form-a-row-works-out-its-own-calculation",
+      "values": {
+        "fr": [
+          "100"
+        ]
+      },
+      "rows": {
+        "trips": [
+          {
+            "fn": [
+              "2"
+            ]
+          },
+          {
+            "fn": [
+              "3"
+            ]
+          }
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fr",
+                    "kind": "number",
+                    "alias": "rate"
+                  },
+                  {
+                    "id": "trips",
+                    "fields": [
+                      {
+                        "id": "fn",
+                        "kind": "number",
+                        "alias": "nights"
+                      },
+                      {
+                        "id": "fc",
+                        "kind": "number",
+                        "alias": "cost",
+                        "calculation": {
+                          "formula": "nights * rate",
+                          "decimals": 0
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {},
+        "rows": {
+          "trips": [
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": "200"
+              }
+            },
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": "300"
+              }
+            }
+          ]
+        },
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-a-child-field-from-outside-its-rows-adds-up",
+      "values": {
+        "fr": [
+          "100"
+        ]
+      },
+      "rows": {
+        "trips": [
+          {
+            "fn": [
+              "2"
+            ]
+          },
+          {
+            "fn": [
+              "3"
+            ]
+          }
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fr",
+                    "kind": "number",
+                    "alias": "rate"
+                  },
+                  {
+                    "id": "trips",
+                    "fields": [
+                      {
+                        "id": "fn",
+                        "kind": "number",
+                        "alias": "nights"
+                      },
+                      {
+                        "id": "fc",
+                        "kind": "number",
+                        "alias": "cost",
+                        "calculation": {
+                          "formula": "nights * rate",
+                          "decimals": 0
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "nights * 10",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "50"
+        },
+        "rows": {
+          "trips": [
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": "200"
+              }
+            },
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": "300"
+              }
+            }
+          ]
+        },
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-the-rows-calculations-add-up",
+      "values": {
+        "fr": [
+          "100"
+        ]
+      },
+      "rows": {
+        "trips": [
+          {
+            "fn": [
+              "2"
+            ]
+          },
+          {
+            "fn": [
+              "3"
+            ]
+          }
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "cost",
+                      "decimals": 0
+                    }
+                  },
+                  {
+                    "id": "fr",
+                    "kind": "number",
+                    "alias": "rate"
+                  },
+                  {
+                    "id": "trips",
+                    "fields": [
+                      {
+                        "id": "fn",
+                        "kind": "number",
+                        "alias": "nights"
+                      },
+                      {
+                        "id": "fc",
+                        "kind": "number",
+                        "alias": "cost",
+                        "calculation": {
+                          "formula": "nights * rate",
+                          "decimals": 0
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "500"
+        },
+        "rows": {
+          "trips": [
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": "200"
+              }
+            },
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": "300"
+              }
+            }
+          ]
+        },
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-a-hidden-row-field-is-left-out",
+      "values": {
+        "fr": [
+          "100"
+        ]
+      },
+      "rows": {
+        "trips": [
+          {
+            "fn": [
+              "2"
+            ]
+          },
+          {
+            "fn": [
+              "3"
+            ],
+            "skip": [
+              "true"
+            ]
+          }
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fr",
+                    "kind": "number",
+                    "alias": "rate"
+                  },
+                  {
+                    "id": "trips",
+                    "fields": [
+                      {
+                        "id": "skip",
+                        "kind": "checkbox"
+                      },
+                      {
+                        "id": "fn",
+                        "kind": "number",
+                        "alias": "nights",
+                        "rules": [
+                          {
+                            "effect": "hide",
+                            "enabled": true,
+                            "match": "all",
+                            "conditions": [
+                              {
+                                "field": "skip",
+                                "op": "isChecked"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "id": "fc",
+                        "kind": "number",
+                        "alias": "cost",
+                        "calculation": {
+                          "formula": "nights * rate",
+                          "decimals": 0
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "nights",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "2"
+        },
+        "rows": {
+          "trips": [
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": "200"
+              }
+            },
+            {
+              "hidden": [
+                "fn"
+              ],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": "0"
+              }
+            }
+          ]
+        },
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-a-hidden-row-calculation-is-gone",
+      "values": {
+        "fr": [
+          "100"
+        ],
+        "off": [
+          "true"
+        ]
+      },
+      "rows": {
+        "trips": [
+          {
+            "fn": [
+              "2"
+            ]
+          }
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "off",
+                    "kind": "checkbox"
+                  },
+                  {
+                    "id": "fr",
+                    "kind": "number",
+                    "alias": "rate"
+                  },
+                  {
+                    "id": "trips",
+                    "fields": [
+                      {
+                        "id": "fn",
+                        "kind": "number",
+                        "alias": "nights"
+                      },
+                      {
+                        "id": "fc",
+                        "kind": "number",
+                        "alias": "cost",
+                        "calculation": {
+                          "formula": "nights * rate",
+                          "decimals": 0
+                        },
+                        "rules": [
+                          {
+                            "effect": "hide",
+                            "enabled": true,
+                            "match": "all",
+                            "conditions": [
+                              {
+                                "field": "off",
+                                "op": "isChecked"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {},
+        "rows": {
+          "trips": [
+            {
+              "hidden": [
+                "fc"
+              ],
+              "required": [],
+              "messages": {},
+              "calculations": {}
+            }
+          ]
+        },
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-a-calculation-that-reads-itself",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "total + 1",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "cycle"
+      }
+    },
+    {
+      "id": "form-calculations-that-read-each-other",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fa",
+                    "kind": "number",
+                    "alias": "first",
+                    "calculation": {
+                      "formula": "second + 1",
+                      "decimals": 0
+                    }
+                  },
+                  {
+                    "id": "fb",
+                    "kind": "number",
+                    "alias": "second",
+                    "calculation": {
+                      "formula": "first + 1",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "cycle"
+      }
+    },
+    {
+      "id": "form-a-calculation-that-decides-whether-its-own-field-is-shown",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty",
+                    "rules": [
+                      {
+                        "effect": "show",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "ft",
+                            "op": "greaterThan",
+                            "value": "1"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * 2",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "cycle"
+      }
+    },
+    {
+      "id": "form-a-calculation-hidden-by-its-own-result",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * 2",
+                      "decimals": 0
+                    },
+                    "rules": [
+                      {
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "ft",
+                            "op": "greaterThan",
+                            "value": "1"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "cycle"
+      }
+    },
+    {
+      "id": "form-a-formula-that-names-an-unknown-field",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "nope * 2",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "unknown_field",
+        "at": 0
+      }
+    },
+    {
+      "id": "form-a-formula-that-names-a-field-by-its-id",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "fq * 2",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "unknown_field",
+        "at": 0
+      },
+      "description": "formulas name fields by alias"
+    },
+    {
+      "id": "form-a-formula-that-names-a-field-without-a-value",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "intro",
+                    "alias": "intro"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "intro * 2",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "unknown_field",
+        "at": 0
+      }
+    },
+    {
+      "id": "form-a-formula-that-does-not-parse",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty +",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "invalid_formula",
+        "at": 5
+      }
+    },
+    {
+      "id": "form-a-formula-that-names-no-field",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "2 + 2",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "constant_formula",
+        "at": 0
+      }
+    },
+    {
+      "id": "form-a-formula-of-the-wrong-kind",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fn",
+                    "kind": "text",
+                    "alias": "name"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "name * 2",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "operator_not_for_kind",
+        "at": 0
+      }
+    },
+    {
+      "id": "form-two-fields-with-one-alias",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fa",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "fb",
+                    "kind": "number",
+                    "alias": "qty"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "invalid_form"
+      }
+    },
+    {
+      "id": "form-a-field-without-a-value-claims-no-alias",
+      "values": {
+        "fq": [
+          "4"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "intro",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * 2",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "8"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      },
+      "description": "a heading holds no value, so formulas cannot name it and its alias is free"
+    },
+    {
+      "id": "form-aliases-differ-by-letter-case",
+      "values": {
+        "fa": [
+          "2"
+        ],
+        "fb": [
+          "3"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fa",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "fb",
+                    "kind": "number",
+                    "alias": "Qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * Qty",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "6"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      },
+      "description": "the engine compares aliases exactly; publishing refuses two that differ only in letter case"
+    },
+    {
+      "id": "form-a-calculation-on-a-text-field",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "ft",
+                    "kind": "text",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty"
+                    }
+                  },
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "invalid_form"
+      }
+    },
+    {
+      "id": "form-sixteen-places",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty",
+                      "decimals": 16
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "invalid_form"
+      }
+    },
+    {
+      "id": "form-negative-places",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty",
+                      "decimals": -1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "invalid_form"
+      }
+    },
+    {
+      "id": "form-places-with-a-fraction",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty",
+                      "decimals": 1.5
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "invalid_form"
+      }
+    },
+    {
+      "id": "form-rules-are-checked-before-formulas",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty",
+                    "rules": [
+                      {
+                        "effect": "show",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "fq",
+                            "op": "nope"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty +",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "unknown_operator"
+      }
+    },
+    {
+      "id": "form-a-formula-is-checked-even-when-its-field-is-hidden",
+      "values": {
+        "flag": [
+          "true"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "flag",
+                    "kind": "checkbox"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "nope",
+                      "decimals": 0
+                    },
+                    "rules": [
+                      {
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "flag",
+                            "op": "isChecked"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "unknown_field",
+        "at": 0
+      }
+    },
+    {
+      "id": "form-a-hidden-calculation-is-not-worked-out",
+      "values": {
+        "flag": [
+          "true"
+        ],
+        "fa": [
+          "2026-06-20"
+        ]
+      },
+      "context": {
+        "now": "never"
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "flag",
+                    "kind": "checkbox"
+                  },
+                  {
+                    "id": "fa",
+                    "kind": "date",
+                    "alias": "arrival"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "wait",
+                    "calculation": {
+                      "formula": "daysBetween(today(), arrival)",
+                      "decimals": 0
+                    },
+                    "rules": [
+                      {
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "flag",
+                            "op": "isChecked"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [
+          "ft"
+        ],
+        "required": [],
+        "messages": {},
+        "calculations": {},
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      },
+      "description": "it never asks for today, so an instant that does not read changes nothing"
+    },
+    {
+      "id": "form-a-hidden-row-calculation-is-not-worked-out",
+      "values": {
+        "off": [
+          "true"
+        ]
+      },
+      "rows": {
+        "trips": [
+          {
+            "fa": [
+              "2026-06-20"
+            ]
+          }
+        ]
+      },
+      "context": {
+        "now": "never"
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "off",
+                    "kind": "checkbox"
+                  },
+                  {
+                    "id": "trips",
+                    "fields": [
+                      {
+                        "id": "fa",
+                        "kind": "date",
+                        "alias": "arrival"
+                      },
+                      {
+                        "id": "fc",
+                        "kind": "number",
+                        "alias": "wait",
+                        "calculation": {
+                          "formula": "daysBetween(today(), arrival)",
+                          "decimals": 0
+                        },
+                        "rules": [
+                          {
+                            "effect": "hide",
+                            "enabled": true,
+                            "match": "all",
+                            "conditions": [
+                              {
+                                "field": "off",
+                                "op": "isChecked"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {},
+        "rows": {
+          "trips": [
+            {
+              "hidden": [
+                "fc"
+              ],
+              "required": [],
+              "messages": {},
+              "calculations": {}
+            }
+          ]
+        },
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-the-instant-is-read-once-and-only-when-asked",
+      "values": {
+        "fq": [
+          "2"
+        ]
+      },
+      "context": {
+        "now": "never"
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty * 2",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "4"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    }
+  ]
+}
