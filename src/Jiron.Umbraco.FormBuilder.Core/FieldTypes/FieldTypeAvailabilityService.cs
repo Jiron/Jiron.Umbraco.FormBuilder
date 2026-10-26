@@ -29,7 +29,11 @@ internal sealed partial class FieldTypeAvailabilityService(FieldTypeRegistry reg
     {
         var alias = type.Declaration.Alias;
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var check = Task.Run(() => type.CheckAvailabilityAsync(stop.Token).AsTask(), CancellationToken.None);
+
+        // Read now: a check the thread pool starts only after the limit gets the token cancelled, while the source that
+        // gives it is disposed by then and would throw.
+        var token = stop.Token;
+        var check = Task.Run(() => type.CheckAvailabilityAsync(token).AsTask(), CancellationToken.None);
         try
         {
             if (await check.WaitAsync(Limit, time, cancellationToken) is { } availability)
