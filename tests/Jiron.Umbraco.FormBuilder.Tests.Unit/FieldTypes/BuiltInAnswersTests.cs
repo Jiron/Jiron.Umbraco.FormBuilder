@@ -53,8 +53,8 @@ public sealed class BuiltInAnswersTests
         yield return Case("country", null, 2, 1);
         yield return Case("name", null, 200, 4);
         yield return Case("address", null, 200, 6);
-        yield return Case("file", null, 1024, 1);
-        yield return Case("file", """{"maxFiles":5}""", 1024, 5);
+        yield return Case("file", null, 1024, 20);
+        yield return Case("file", """{"maxFiles":5}""", 1024, 20);
         yield return Case("signature", null, 1024, 1);
         yield return Case("hidden", null, 2000, 1);
         foreach (var none in new[] { "calculation", "repeater", "heading", "paragraph", "divider", "image", "captcha" })
@@ -124,6 +124,9 @@ public sealed class BuiltInAnswersTests
     [TestCase("yesno", "yes", "no")]
     [TestCase("text", "a", "b")]
     [TestCase("dropdown", "a", "b")]
+    [TestCase("country", "ch")]
+    [TestCase("country", "ZZ")]
+    [TestCase("country", "EU")]
     public void ABuiltInType_CannotRead(string type, params string[] posted) =>
         Assert.That(Read(type, null, new FieldAnswers(posted)).IsUnreadable, Is.True);
 

@@ -41,16 +41,20 @@ const ZERO_WIDTH_SPACE = u(0x200b);
 const EMOJI = u(0x1f600);
 const SHARP_S = u(0xdf);
 
-/** A case: the field, its answers, and the errors expected. */
+/**
+ * A case: the field, its answers (values, parts and files), and the errors expected: the error kinds of its type's
+ * checks and the indexes of its own failing checks. `others` are the form's other fields' values by id.
+ */
 function c(id, f, values, errors, more = {}) {
-  const { parts, context, description } = more;
+  const { parts, files, others, checks = [], context, description } = more;
   return {
     id,
     ...(description === undefined ? {} : { description }),
     ...(context === undefined ? {} : { context }),
+    ...(others === undefined ? {} : { values: others }),
     field: f,
-    answers: parts === undefined ? { values } : { values, parts },
-    expect: { errors, checks: [] },
+    answers: { values, ...(parts === undefined ? {} : { parts }), ...(files === undefined ? {} : { files }) },
+    expect: { errors, checks },
   };
 }
 
@@ -66,7 +70,7 @@ const required = [
   c('phone-has-no-check-of-its-own', field('phone'), ['+41 44 668 18 00'], []),
   c('checkbox-has-no-check-of-its-own', field('checkbox'), ['true'], []),
   c('yesno-has-no-check-of-its-own', field('yesno'), ['no'], []),
-  c('signature-has-no-check-of-its-own', field('signature'), ['token-1'], []),
+  c('signature-has-no-check-of-its-own', field('signature'), ['token-1'], [], { files: [{ name: 'signature.png', size: 4096 }] }),
   c('consent-has-no-check-of-its-own', field('consent'), ['true'], [], { parts: { wording: ['0123456789abcdef'.repeat(4)] } }),
   c('hidden-has-no-check-of-its-own', field('hidden'), ['newsletter'], []),
 ];

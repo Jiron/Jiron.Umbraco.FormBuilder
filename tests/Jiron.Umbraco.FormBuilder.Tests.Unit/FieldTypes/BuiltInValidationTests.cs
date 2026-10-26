@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
@@ -224,6 +225,8 @@ public sealed class BuiltInValidationTests
         };
         var read = FieldValues.Read(builtIn, field, answers);
         Assert.That(read.IsUnreadable, Is.False, "the type reads the answer");
-        return [.. FieldValues.Check(builtIn, field, read, required, Today).Select(kind => FieldMessageProperties.All.Single(message => message.Kind == kind).Name)];
+        // A signature's upload token stands for its PNG, which the pipeline hands over with it.
+        var files = builtIn.Declaration.Storage == FieldStorageKind.File ? read.Values.Select(_ => new FieldFile("signature.png", 4096)).ToImmutableArray() : [];
+        return [.. FieldValues.Check(builtIn, field, read, new FieldCheckInput(required, Today) { Files = files }).Errors.Select(kind => FieldMessageProperties.All.Single(message => message.Kind == kind).Name)];
     }
 }

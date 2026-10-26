@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
@@ -87,6 +88,55 @@ internal static class BuiltInValidation
     /// <summary>Whether a time, in seconds since midnight, keeps a step of minutes that counts from a start; any time without a step.</summary>
     public static bool OnMinuteStep(int seconds, int from, int? stepMinutes) =>
         stepMinutes is not { } minutes || (seconds - from) % (minutes * 60) == 0;
+
+    /// <summary>
+    /// The values of the field's own options, compared exactly; null when the options come from a list or another
+    /// source, whose answers are held to the options the source resolves (5.5). A field without options has none.
+    /// </summary>
+    public static IReadOnlySet<string>? OwnOptions(FormField field) => field.Options switch
+    {
+        null => new HashSet<string>(StringComparer.Ordinal),
+        { Source: OptionSource.Items } options => options.Items.Select(item => item.Value).ToHashSet(StringComparer.Ordinal),
+        _ => null,
+    };
+
+    /// <summary>
+    /// Fails <c>invalid</c> unless each of the answers' own values is one of the field's own options; the "Other" text,
+    /// which is a part, is the visitor's own.
+    /// </summary>
+    public static void AmongOptions(FieldValidation validation)
+    {
+        if (OwnOptions(validation.Field) is { } options && !validation.Answers.Values.All(options.Contains))
+        {
+            validation.Fail(FieldMessageKinds.Invalid);
+        }
+    }
+
+    /// <summary>Fails <c>selections</c> for a number of values below the fewest or above the most.</summary>
+    public static void Selections(FieldValidation validation, int? min, int? max)
+    {
+        if (validation.Values.Length < min || validation.Values.Length > max)
+        {
+            validation.Fail(FieldMessageKinds.Selections);
+        }
+    }
+
+    /// <summary>
+    /// Fails <c>required</c> when a part the value needs has no text (ADR-0056): the listed parts the field asks for, or,
+    /// when it lists none, the given parts once the field is required.
+    /// </summary>
+    /// <param name="validation">The field, its answers and where errors go.</param>
+    /// <param name="asked">The names of the parts the field asks for.</param>
+    /// <param name="listed">The names of the parts its settings require.</param>
+    /// <param name="unlisted">The names of the parts a required field needs when its settings list none.</param>
+    public static void RequiredParts(FieldValidation validation, IEnumerable<string> asked, IReadOnlyCollection<string> listed, IEnumerable<string> unlisted)
+    {
+        var needed = listed.Count > 0 ? listed.Intersect(asked, StringComparer.Ordinal) : validation.IsRequired ? unlisted : [];
+        if (needed.Any(part => validation.Answers.Part(part).IsEmpty))
+        {
+            validation.Fail(FieldMessageKinds.Required);
+        }
+    }
 
     /// <summary>A text with its ASCII capitals made small and every other character left as it is.</summary>
     public static string AsciiLower(string text) => string.Create(text.Length, text, static (span, source) =>

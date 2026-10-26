@@ -262,6 +262,21 @@ function key(kind: Kind, value: string): string | null {
   }
 }
 
+/**
+ * Whether a field's values match another field's, as a field's matchesField check needs (ADR-0062): as many values,
+ * each equal to one of the other's as `equals` compares a value of the field's kind with an operand; a field without a
+ * kind compares exactly.
+ */
+export function sameValues(kind: Kind | undefined, values: readonly string[], others: readonly string[]): boolean {
+  const equal = (a: string, b: string): boolean => {
+    if (kind === 'number') return compareText(a, b) === 0;
+    if (kind === undefined) return a === b;
+    const x = key(kind, a);
+    return x !== null && x === key(kind, b);
+  };
+  return values.length === others.length && values.every((value) => others.some((other) => equal(value, other)));
+}
+
 /** Orders two values of an ordered kind; null when either is not a valid value of that kind. */
 function order(kind: Kind, a: string, b: string): number | null {
   if (kind === 'number') return compareText(a, b);

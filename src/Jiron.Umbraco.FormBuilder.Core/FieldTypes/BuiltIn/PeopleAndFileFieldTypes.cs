@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
@@ -30,6 +31,16 @@ public sealed class NameFieldType() : FormBuilderFieldTypeBase<NameFieldSettings
         BuiltInAnswers.ReadParts(reading, settings.Parts.Distinct().Order().Select(BuiltInChecks.Name));
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The required parts the field asks for have a text; with none listed, a required name needs every part it asks for.
+    /// </remarks>
+    protected override void Validate(NameFieldSettings settings, FieldValidation validation)
+    {
+        var asked = settings.Parts.Select(BuiltInChecks.Name).ToList();
+        BuiltInValidation.RequiredParts(validation, asked, [.. settings.RequiredParts.Select(BuiltInChecks.Name)], asked);
+    }
+
+    /// <inheritdoc />
     protected override void CheckSettings(NameFieldSettings settings, FieldSettingsCheck check)
     {
         for (var i = 0; i < settings.RequiredParts.Count; i++)
@@ -49,7 +60,7 @@ public sealed class NameFieldSettings
     [FormBuilderSetting("#jfbFieldSettings_nameParts", Public = true)]
     public IReadOnlyList<NamePart> Parts { get; init; } = [NamePart.First, NamePart.Last];
 
-    /// <summary>The parts a required name has; with none listed, every part the field asks for.</summary>
+    /// <summary>The parts a name needs once any part is given; with none listed, a required name needs every part the field asks for.</summary>
     [FormBuilderSetting("#jfbFieldSettings_nameRequiredParts", Group = FieldSettingGroup.Validation, Public = true)]
     public IReadOnlyList<NamePart> RequiredParts { get; init; } = [];
 }
@@ -104,6 +115,18 @@ public sealed class AddressFieldType() : FormBuilderFieldTypeBase<AddressFieldSe
         BuiltInAnswers.ReadParts(reading, Always.Concat(settings.Parts).Distinct().Order().Select(BuiltInChecks.Name));
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The required parts the field asks for have a text; with none listed, a required address needs the street, the
+    /// postcode and the city.
+    /// </remarks>
+    protected override void Validate(AddressFieldSettings settings, FieldValidation validation) =>
+        BuiltInValidation.RequiredParts(
+            validation,
+            Always.Concat(settings.Parts).Select(BuiltInChecks.Name),
+            [.. settings.RequiredParts.Select(BuiltInChecks.Name)],
+            Always.Select(BuiltInChecks.Name));
+
+    /// <inheritdoc />
     protected override void CheckSettings(AddressFieldSettings settings, FieldSettingsCheck check)
     {
         for (var i = 0; i < settings.Parts.Count; i++)
@@ -135,7 +158,7 @@ public sealed class AddressFieldSettings
     [FormBuilderSetting("#jfbFieldSettings_addressParts", Public = true)]
     public IReadOnlyList<AddressPart> Parts { get; init; } = [];
 
-    /// <summary>The parts a required address has; with none listed, the street, the postcode and the city.</summary>
+    /// <summary>The parts an address needs once any part is given; with none listed, a required address needs the street, the postcode and the city.</summary>
     [FormBuilderSetting("#jfbFieldSettings_addressRequiredParts", Group = FieldSettingGroup.Validation, Public = true)]
     public IReadOnlyList<AddressPart> RequiredParts { get; init; } = [];
 }
@@ -185,8 +208,60 @@ public sealed class FileFieldType() : FormBuilderFieldTypeBase<FileFieldSettings
     /// <summary>The longest upload token a file field takes (ADR-0006), with room to spare.</summary>
     public const int LongestToken = FieldAnswerDefaults.TokenLength;
 
+    /// <summary>The most files a file field takes.</summary>
+    public const int MostFiles = 20;
+
+    // The extensions of each group of file types (ADR-0062). SVG is no image here, because it can carry script.
+    private static readonly FrozenDictionary<FileTypeGroup, ImmutableArray<string>> GroupExtensions = new Dictionary<FileTypeGroup, ImmutableArray<string>>
+    {
+        [FileTypeGroup.Images] = ["jpg", "jpeg", "png", "gif", "webp", "avif", "heic", "heif"],
+        [FileTypeGroup.Pdf] = ["pdf"],
+        [FileTypeGroup.Office] = ["doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods", "odp", "rtf"],
+        [FileTypeGroup.Text] = ["txt", "csv"],
+        [FileTypeGroup.Archives] = ["zip", "7z", "rar", "tar", "gz"],
+    }.ToFrozenDictionary();
+
+    /// <summary>The extensions of a group of file types, in lowercase and without the point.</summary>
+    /// <param name="group">The group.</param>
+    public static ImmutableArray<string> ExtensionsOf(FileTypeGroup group) => GroupExtensions[group];
+
+    /// <summary>A file name's extension: the text after its last point, in ASCII lowercase; empty without a point.</summary>
+    /// <param name="name">The file's name.</param>
+    public static string ExtensionOf(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        var point = name.LastIndexOf('.');
+        return point < 0 ? "" : BuiltInValidation.AsciiLower(name[(point + 1)..]);
+    }
+
     /// <inheritdoc />
-    protected override FieldAnswerLimits AnswerLimits(FileFieldSettings settings, FormField field) => new(LongestToken, settings.MaxFiles);
+    /// <remarks>Up to the most files any file field takes, so that a field's check reports too many as <c>fileCount</c>.</remarks>
+    protected override FieldAnswerLimits AnswerLimits(FileFieldSettings settings, FormField field) => new(LongestToken, MostFiles);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// At most <c>maxFiles</c> files; each file's extension one of its type groups' or its own extensions, or of images
+    /// and PDFs when it lists neither; each file at most <c>maxBytes</c>. The host's own limits come with the uploads.
+    /// </remarks>
+    protected override void Validate(FileFieldSettings settings, FieldValidation validation)
+    {
+        if (validation.Values.Length > settings.MaxFiles)
+        {
+            validation.Fail(FieldMessageKinds.FileCount);
+        }
+
+        IEnumerable<FileTypeGroup> groups = settings.Types.Count == 0 && settings.Extensions.Count == 0 ? [FileTypeGroup.Images, FileTypeGroup.Pdf] : settings.Types;
+        var taken = groups.SelectMany(group => ExtensionsOf(group)).Concat(settings.Extensions).ToHashSet(StringComparer.Ordinal);
+        if (validation.Files.Any(file => !taken.Contains(ExtensionOf(file.Name))))
+        {
+            validation.Fail(FieldMessageKinds.FileType);
+        }
+
+        if (settings.MaxBytes is { } most && validation.Files.Any(file => file.Size > most))
+        {
+            validation.Fail(FieldMessageKinds.FileSize);
+        }
+    }
 
     /// <inheritdoc />
     protected override void CheckSettings(FileFieldSettings settings, FieldSettingsCheck check)
@@ -220,7 +295,7 @@ public sealed class FileFieldSettings
     public long? MaxBytes { get; init; }
 
     /// <summary>The most files a visitor uploads.</summary>
-    [Range(1, 20)]
+    [Range(1, FileFieldType.MostFiles)]
     [FormBuilderSetting("#jfbFieldSettings_fileMaxFiles", Group = FieldSettingGroup.Validation, Order = 3, Public = true)]
     public int MaxFiles { get; init; } = 1;
 

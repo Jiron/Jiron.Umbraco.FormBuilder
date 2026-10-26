@@ -47,28 +47,61 @@ interface VectorCase {
 interface ServedType {
   readonly alias: string;
   readonly ruleKind: Kind | null;
-  readonly settings: readonly { readonly name: string; readonly default: unknown; readonly isPublic: boolean }[];
+  readonly storage: string;
+  readonly features: readonly string[];
+  readonly settings: readonly ServedSetting[];
+}
+
+interface ServedSetting {
+  readonly name: string;
+  readonly default: unknown;
+  readonly isPublic?: boolean;
+  readonly settings: readonly ServedSetting[];
 }
 
 const served: readonly ServedType[] = (
   JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'field-types.json'), 'utf8')) as { types: ServedType[] }
 ).types;
 
+/** The settings with a default that a field does not give, and those of an object it gives, by their paths. */
+function leaned(
+  settings: readonly ServedSetting[],
+  given: Readonly<Record<string, unknown>>,
+  prefix: string,
+): string[] {
+  return settings.flatMap((setting) => {
+    if (!Object.hasOwn(given, setting.name)) return setting.default === null ? [] : [prefix + setting.name];
+    const value = given[setting.name];
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? leaned(setting.settings, value as Readonly<Record<string, unknown>>, `${prefix}${setting.name}.`)
+      : [];
+  });
+}
+
 /**
  * Holds a field to check to what both runtimes see alike (ADR-0062): its kind is its type's, it gives every public
- * setting its type has a default for, as the public projection writes them, so no vector leans on a default, and its
- * answers are cleaned as the pipeline cleans them.
+ * setting its type has a default for, an object's settings each in turn, as the public projection writes them, so no
+ * vector leans on a default, it has options and rows only when its type has them, a field that stores files has one
+ * file for each value, and its answers are cleaned as the pipeline cleans them.
  */
 function heldToItsType(id: string, field: CheckedField, answers: FieldAnswers): void {
   const type = served.find((each) => each.alias === field.type);
   if (type === undefined) throw new Error(`${id}: the site has no type '${field.type}'`);
   if ((field.kind ?? null) !== type.ruleKind)
     throw new Error(`${id}: a ${field.type} field's kind is ${type.ruleKind}`);
-  const leaned = type.settings.filter(
-    (setting) => setting.isPublic && setting.default !== null && !(setting.name in (field.settings ?? {})),
+  const missing = leaned(
+    type.settings.filter((setting) => setting.isPublic === true),
+    field.settings ?? {},
+    '',
   );
-  if (leaned.length > 0)
-    throw new Error(`${id}: the field leans on the defaults of ${leaned.map((s) => s.name).join(', ')}`);
+  if (missing.length > 0) throw new Error(`${id}: the field leans on the defaults of ${missing.join(', ')}`);
+  if (
+    (field.options !== undefined && !type.features.includes('options')) ||
+    (field.rows !== undefined && !type.features.includes('rows'))
+  )
+    throw new Error(`${id}: a ${field.type} field has no options or rows of its own`);
+  if ((answers.files ?? []).length !== (type.storage === 'file' ? answers.values.length : 0))
+    throw new Error(`${id}: a field that stores files has one file for each value, and no other field has files`);
   const texts = [...answers.values, ...Object.values(answers.parts ?? {}).flat()];
   if (texts.some((text) => clean(text) !== text))
     throw new Error(`${id}: an answer is not cleaned as the pipeline cleans it`);
@@ -104,7 +137,7 @@ function run(file: VectorFile, vector: VectorCase): unknown {
     if (vector.field !== undefined) {
       const answers = vector.answers ?? { values: [] };
       heldToItsType(vector.id, vector.field, answers);
-      return checkField(vector.field, answers, subject.context);
+      return checkField(vector.field, answers, subject.context, vector.values ?? {});
     }
     if (vector.form !== undefined) {
       const answers: FormAnswers = { values: vector.values ?? {}, rows: vector.rows ?? {} };

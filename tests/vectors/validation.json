@@ -178,6 +178,12 @@
       "answers": {
         "values": [
           "token-1"
+        ],
+        "files": [
+          {
+            "name": "signature.png",
+            "size": 4096
+          }
         ]
       },
       "expect": {

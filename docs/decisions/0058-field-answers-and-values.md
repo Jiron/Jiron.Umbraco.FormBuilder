@@ -2,7 +2,8 @@
 
 - Status: accepted; amends [ADR-0055](0055-field-type-framework.md) (what a type declares) and the entry values of
   [ADR-0038](0038-entry-repositories.md) (the key of a value with parts); what a type's check sees (whether the
-  field is required, and today) amended by [ADR-0062](0062-the-built-in-types-checks.md) in 5.2b
+  field is required, and today) amended by [ADR-0062](0062-the-built-in-types-checks.md) in 5.2b, and the files a
+  check sees, a file field's most texts and a country's reading in 5.2c
 - Date: 2026-10-25
 - Roadmap step: 5.1d (decided and built); 5.2 gives the built-in types their checks, 6.1 runs the pipeline on them,
   6.2 posts the answers without JavaScript
@@ -104,7 +105,7 @@ what their wire forms need. The texts a field takes follow its settings; the bui
 | `country` | 2 | 1 |
 | `name` | 200 | 4 |
 | `address` | 200 | 6 |
-| `file` | 1,024 (an upload token) | `maxFiles` |
+| `file` | 1,024 (an upload token) | 20, the most any file field takes: its check reports more than `maxFiles` (ADR-0062) |
 | `signature` | 1,024 | 1 |
 | `hidden` | 2,000 | 1 |
 | `calculation`, `repeater`, `heading`, `paragraph`, `divider`, `image`, `captcha` | none | none |
@@ -122,7 +123,8 @@ become one value, a JSON object of their parts in the type's order with empty pa
 not ask for ignored; a grid gives each row's columns as that row's values; the "Other" text counts when the field offers
 it, after the chosen options on checkboxes and in place of a chosen option on radio buttons; a ticked consent's value is
 `true`, which rules compare as a ticked box, and the entry stores the wording's hash in its place
-(`FieldValue.StoredText`), while a tick without a wording's hash is unreadable.
+(`FieldValue.StoredText`), while a tick without a wording's hash is unreadable. A country reads only as an ISO 3166
+alpha-2 code of ADR-0056's list; any other text is unreadable (ADR-0062).
 
 ### Checking
 
@@ -133,7 +135,8 @@ the checks of their settings (lengths, words, ranges, steps, date windows, selec
 an email, the options a choice offers), built in both runtimes. `required` is the pipeline's: a field without values is
 required when its own setting or a rule says so, and its type's `Validate` runs only on values. Besides the field,
 its answers and its values, `FieldValidation` tells the check whether the field is required (`IsRequired`, by its own
-setting or a rule) and the site's date (`Today`), which the pipeline takes once per submission (ADR-0062).
+setting or a rule) and the site's date (`Today`), which the pipeline takes once per submission, and, for a field that
+stores files, the name and size of the file each upload token stands for (`Files`, ADR-0062).
 `FormBuilderFieldTypeBase<TSettings>` gives all three methods the field's settings as its class, as it does for the
 check of settings (ADR-0056). `FieldValues` (internal) runs them for the pipeline and refuses a type that breaks the
 contract: an error kind it does not declare, a grid row the field does not have, or a value its storage kind cannot hold

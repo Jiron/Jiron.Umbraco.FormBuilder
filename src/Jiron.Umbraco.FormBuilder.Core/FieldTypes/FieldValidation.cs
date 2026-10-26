@@ -9,7 +9,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 /// What a field type's check of a shown field's values reports to (ADR-0058): each error by its kind, whose message the
 /// visitor sees at the field. It runs only on a field that has values once the rules leave it visible; a field without
 /// values fails with <c>required</c> before it, when it is required. Besides the field and its answers, it says whether
-/// the field is required and what day it is where the site is (ADR-0062).
+/// the field is required, what day it is where the site is, and which files a file field's upload tokens stand for
+/// (ADR-0062).
 /// </summary>
 public sealed class FieldValidation
 {
@@ -20,14 +21,15 @@ public sealed class FieldValidation
     private readonly FieldMessageKinds _declared;
     private readonly List<FieldMessageKinds> _errors = [];
 
-    internal FieldValidation(FormField field, FieldAnswers answers, ImmutableArray<FieldValue> values, FieldMessageKinds declared, bool isRequired, DateOnly today)
+    internal FieldValidation(FormField field, FieldAnswers answers, ImmutableArray<FieldValue> values, FieldMessageKinds declared, FieldCheckInput input)
     {
         Field = field;
         Answers = answers;
         Values = values;
         _declared = declared;
-        IsRequired = isRequired;
-        Today = today;
+        IsRequired = input.IsRequired;
+        Today = input.Today;
+        Files = input.Files;
     }
 
     /// <summary>The field, with its settings, options and rows.</summary>
@@ -47,6 +49,12 @@ public sealed class FieldValidation
 
     /// <summary>The date in the site's time zone, from which a date window relative to today counts (ADR-0005).</summary>
     public DateOnly Today { get; }
+
+    /// <summary>
+    /// For a field that stores files, the file each value's upload token stands for, in the values' order; none for any
+    /// other field.
+    /// </summary>
+    public ImmutableArray<FieldFile> Files { get; }
 
     /// <summary>The errors reported, in order, each once.</summary>
     public ImmutableArray<FieldMessageKinds> Errors => [.. _errors];

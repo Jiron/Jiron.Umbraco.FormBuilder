@@ -75,11 +75,16 @@ questions:
 - `IsRequired`: whether the field is required, by its own setting or by a rule;
 - `Today`: the date in the site's time zone, which the pipeline takes once per submission;
 - from 5.2c, `Files`: for a field that stores files, the name and size of the file each upload token stands for, in
-  order, which the pipeline takes from the upload store (6.1).
+  order, which the pipeline takes from the upload store (6.1). A field that stores files without one file for each
+  value, or another field with files, is the pipeline's mistake, and `FieldValues.Check` refuses it.
 
 `checkField` takes the same: the field (its type, its rule kind, whether it is required, its effective settings, its
-own options' values and its rows), its answers (values, parts, files), the context of ADR-0005 (whose instant and time
-zone give today) and, from 5.2c, the values of the form's other fields by id.
+own options' values, its rows and its own checks), its answers (values, parts, files), the context of ADR-0005 (whose
+instant and time zone give today) and, from 5.2c, the values of the form's other fields by id, as the rules see them.
+The browser has no reading of its own until 6.4, so `checkField` reads what its checks need as Core reads answers it
+can read (5.2c): the "Other" text in place of an option on radio buttons, and after the options on checkboxes unless
+it repeats one; each grid row's values; the parts a name or an address asks for. A field whose options come from a
+list or another source has no `options` there.
 
 ### The settings
 
@@ -102,7 +107,17 @@ projected by an older version is checked leniently and the server still decides.
   is that of its date.
 - **The confirmation** of an email address compares as rules compare text: cleaned and folded (ADR-0005).
 - **Choices** (5.2c) compare option values exactly, from the field's own options; the answers' own values must be
-  options, and the "Other" text is the visitor's own when the field offers it, counting as one selection.
+  options, and the "Other" text is the visitor's own when the field offers it, counting as one selection. A choice
+  whose options come from a list or another source has them checked by 5.5, its selections still counted; a field
+  without options, which only a draft holds, takes none. A dropdown counts selections only with `multiple`. A grid's
+  columns are its scale's whole numbers when it has a scale, otherwise its options, so a draft with both checks
+  against the scale. A ranking ranks as many as `top`, or all its options when `top` is missing or exceeds them;
+  reading already refuses an option given twice.
+- **Required parts** (5.2c) hold once any part is given: the parts `requiredParts` lists that the field asks for, or,
+  with none listed, every part a required name asks for and the street, the postcode and the city of a required
+  address. A part the field does not ask for is no answer.
+- **A country** (5.2c) is read only as an ISO 3166 alpha-2 code of ADR-0056's list, so Core's reading finds any other
+  text unreadable (amending ADR-0058); the browser's list of countries offers no other.
 - **File extensions** (5.2c) are the text after a name's last point, in ASCII lowercase. A file field takes the
   extensions of its type groups and its own extensions, or images and PDF when it lists neither:
 
@@ -115,10 +130,14 @@ projected by an older version is checked leniently and the server still decides.
 | `archives` | `zip`, `7z`, `rar`, `tar`, `gz` |
 
   SVG is no image here, because it can carry script; a site that needs it lists it as its own extension. The host's
-  blocked extensions and size limit, and the content check, come with the uploads (6.1, 7.x).
+  blocked extensions and size limit, and the content check, come with the uploads (6.1, 7.x). A file field takes up
+  to 20 upload tokens before its type reads them, the most any file field takes, so that more than `maxFiles` is
+  reported as `fileCount` and not as `invalid` (amending ADR-0058's limits).
 - **`matchesField`** (5.2c) holds when both fields have the same number of values and each value of the field equals
   one of the other's, compared as the field's rule kind compares an operand (ADR-0005); a hidden other field has no
-  values. **`pattern`** (5.2c) holds when every value matches the whole pattern (ADR-0005).
+  values. **`pattern`** (5.2c) holds when every value matches the whole pattern (ADR-0005); a pattern outside the safe
+  subset, which publishing refuses, checks nothing, so a draft's preview does not fail on it. `uniquePerForm` is the
+  submission's (6.1): it never fails here, and keeps its place in the indexes of the checks.
 
 ### The checks of each type
 
@@ -157,12 +176,15 @@ through the same vectors.
 
 `tests/vectors/validation.json`, from `tests/vectors/suites/validation.mjs`, adds the runnable `field` to the
 `jfb-vectors/1` format (ADR-0005): the field (`type`, `kind`, `required`, `settings`, `options`, `rows`, `checks`) with
-its `answers` (`values`, `parts`, `files`), the other fields' `values` by id, and the expected errors. Ids are keys in
-the `D` format, as Core's model has them. Both runners check that a case's field gives every public setting its type
-has a default for, as the projection writes them, so no vector leans on a default; that its kind is its type's; and
-that its answers are cleaned as the pipeline cleans them. The Core runner also checks that they are readable and in the
-wire form, because reading is Core's alone until the browser's runtime (6.4). 5.2a's mutation check covers `checks.ts`
-as it covers the other modules.
+its `answers` (`values`, `parts`, `files`), the other fields' `values` by id, and the expected errors and failing
+checks. `options` are the values of the field's own options; a field of a type with options that gives none takes them
+from a list. Ids are keys in the `D` format, as Core's model has them. Both runners check that a case's field gives
+every public setting its type has a default for, an object's settings each in turn, as the projection writes them, so
+no vector leans on a default; that its kind is its type's; that it has options and rows only when its type has them;
+that a field that stores files has one file for each value; and that its answers are cleaned as the pipeline cleans
+them. The Core runner also checks that they are readable and that the values posted read as they are, because reading
+is Core's alone until the browser's runtime (6.4): a choice's "Other" text, a grid's rows and the parts of a name or
+an address come as parts. 5.2a's mutation check covers `checks.ts` as it covers the other modules.
 
 ## Consequences
 

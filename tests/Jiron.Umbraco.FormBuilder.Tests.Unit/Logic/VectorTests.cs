@@ -128,7 +128,7 @@ public sealed class VectorTests
 
             if (vector.TryGetProperty("field", out var field))
             {
-                return FieldVector.Run(vector.GetProperty("id").GetString()!, field, vector.GetProperty("answers"), subject.Context);
+                return FieldVector.Run(vector.GetProperty("id").GetString()!, field, vector.GetProperty("answers"), values, subject.Context);
             }
 
             if (vector.TryGetProperty("form", out var form))

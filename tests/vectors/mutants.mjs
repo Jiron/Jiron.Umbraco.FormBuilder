@@ -249,7 +249,7 @@ const mutants = [
   ts('check-places-whole', 'checks.ts', "(decimals === 0 ? '1' :", "(decimals === 0 ? '0.1' :"),
   ts('check-places-one-more', 'checks.ts', "`0.${'0'.repeat(decimals - 1)}1`", "`0.${'0'.repeat(decimals)}1`"),
   ts('check-places-ignored', 'checks.ts', "range(v, text(v.settings, 'step') ?? (decimals === undefined ? undefined : stepOfPlaces(decimals)));", "range(v, text(v.settings, 'step'));"),
-  ts('check-whole-fractions', 'checks.ts', 'd !== null && d.s === 0 &&', 'd !== null && d.s >= 0 &&'),
+  ts('check-whole-fractions', 'checks.ts', 'if (d === null || d.s !== 0) return false;', 'if (d === null || d.s < 0) return false;'),
   ts('check-whole-low-exclusive', 'checks.ts', 'd.n >= BigInt(low)', 'd.n > BigInt(low)'),
   ts('check-whole-high-exclusive', 'checks.ts', 'd.n <= BigInt(high)', 'd.n < BigInt(high)'),
   ts('check-rating-from-zero', 'checks.ts', 'isWholeNumber(v.value, 1, count)', 'isWholeNumber(v.value, 0, count)'),

@@ -333,6 +333,21 @@ internal static class Rules
         _ => value,
     };
 
+    /// <summary>
+    /// Whether a field's values match another field's, as a field's <c>matchesField</c> check needs (ADR-0062): as many
+    /// values, each equal to one of the other's as <c>equals</c> compares a value of the field's kind with an operand; a
+    /// field without a kind compares exactly.
+    /// </summary>
+    public static bool SameValues(FieldKind? kind, IReadOnlyList<string> values, IReadOnlyList<string> others) =>
+        values.Count == others.Count && values.All(value => others.Any(other => AreEqual(kind, value, other)));
+
+    private static bool AreEqual(FieldKind? kind, string a, string b) => kind switch
+    {
+        FieldKind.Number => ExactDecimal.CompareText(a, b) == 0,
+        { } known => Key(known, a) is { } key && key == Key(known, b),
+        null => a == b,
+    };
+
     /// <summary>Orders two values of an ordered kind; null when either is not a valid value of that kind.</summary>
     private static int? Order(FieldKind kind, string a, string b)
     {

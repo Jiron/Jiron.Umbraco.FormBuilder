@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 
@@ -9,6 +10,30 @@ namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 /// <param name="Values">The values in the wire form; none when the answers cannot be read or the field takes none.</param>
 /// <param name="IsUnreadable">Whether the type could not read the answers.</param>
 internal sealed record FieldRead(FieldAnswers Answers, ImmutableArray<FieldValue> Values, bool IsUnreadable);
+
+/// <summary>What the pipeline hands a visible field's checks besides its answers (ADR-0062).</summary>
+/// <param name="IsRequired">Whether the field is required, by its own setting or by a rule.</param>
+/// <param name="Today">The date in the site's time zone, which the pipeline takes once per submission.</param>
+internal sealed record FieldCheckInput(bool IsRequired, DateOnly Today)
+{
+    /// <summary>For a field that stores files, the file each upload token stands for, in order; none for any other field.</summary>
+    public ImmutableArray<FieldFile> Files { get; init => field = value.IsDefault ? [] : value; } = [];
+
+    /// <summary>
+    /// The values of the form's other fields by key, as the rules see them (a hidden field has none), which a
+    /// <c>matchesField</c> check compares the field's values with.
+    /// </summary>
+    public IReadOnlyDictionary<Guid, ImmutableArray<string>> Values { get; init; } = ImmutableDictionary<Guid, ImmutableArray<string>>.Empty;
+}
+
+/// <summary>A visible field's errors (ADR-0062).</summary>
+/// <param name="Errors">The error kinds of its type's checks, in the order they are reported, each once.</param>
+/// <param name="Checks">The indexes of the field's own checks that fail, in their order.</param>
+internal sealed record FieldErrors(ImmutableArray<FieldMessageKinds> Errors, ImmutableArray<int> Checks)
+{
+    /// <summary>No error.</summary>
+    public static FieldErrors None { get; } = new([], []);
+}
 
 /// <summary>
 /// The three steps a visitor's answers to one field take through its type (ADR-0058), in the order the pipeline runs them
@@ -60,32 +85,79 @@ internal static class FieldValues
     }
 
     /// <summary>
-    /// The errors of a field the rules leave visible, in order: <c>invalid</c> when its answers could not be read,
-    /// <c>required</c> when it has no value and is required, otherwise what the type's check reports; none when it is fine.
+    /// The errors of a field the rules leave visible (ADR-0062): <c>invalid</c> when its answers could not be read,
+    /// <c>required</c> when it has no value and is required, otherwise what the type's check reports, followed by the
+    /// field's own checks that fail; none when it is fine.
     /// </summary>
     /// <param name="type">The field's type.</param>
     /// <param name="field">The field.</param>
     /// <param name="read">The answers as <see cref="Read"/> read them.</param>
-    /// <param name="required">Whether the field is required, by its own setting or by a rule.</param>
-    /// <param name="today">The date in the site's time zone, which the pipeline takes once per submission.</param>
-    public static ImmutableArray<FieldMessageKinds> Check(IFormBuilderFieldType type, FormField field, FieldRead read, bool required, DateOnly today)
+    /// <param name="input">What the pipeline knows besides the answers: requiredness, today, files and the other fields' values.</param>
+    /// <exception cref="ArgumentException">
+    /// A field that stores files has not one file for each value, or a field that stores none has files.
+    /// </exception>
+    public static FieldErrors Check(IFormBuilderFieldType type, FormField field, FieldRead read, FieldCheckInput input)
     {
         ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(field);
         ArgumentNullException.ThrowIfNull(read);
+        ArgumentNullException.ThrowIfNull(input);
         if (read.IsUnreadable)
         {
-            return [FieldMessageKinds.Invalid];
+            return new([FieldMessageKinds.Invalid], []);
         }
 
         if (read.Values.IsEmpty)
         {
-            return required ? [FieldMessageKinds.Required] : [];
+            return input.IsRequired ? new([FieldMessageKinds.Required], []) : FieldErrors.None;
         }
 
-        var validation = new FieldValidation(field, read.Answers, read.Values, type.Declaration.Messages, required, today);
+        var storesFiles = type.Declaration.Storage == FieldStorageKind.File;
+        if (input.Files.Length != (storesFiles ? read.Values.Length : 0))
+        {
+            throw new ArgumentException(
+                storesFiles ? "A field that stores files has one file for each upload token." : "Only a field that stores files has files.", nameof(input));
+        }
+
+        var validation = new FieldValidation(field, read.Answers, read.Values, type.Declaration.Messages, input);
         type.Validate(validation);
-        return validation.Errors;
+        return new(validation.Errors, OwnChecks(type, field, [.. read.Values.Select(value => value.Text)], input.Values));
+    }
+
+    // The indexes of the field's own checks that fail, of those that need no other entry (ADR-0062): every value matches
+    // the whole pattern, and the values match the other field's. A pattern outside the safe subset, which publishing
+    // refuses, checks nothing, so a draft's preview does not fail on it; uniquePerForm runs in the submission's
+    // transaction (6.1).
+    private static ImmutableArray<int> OwnChecks(IFormBuilderFieldType type, FormField field, ImmutableArray<string> values, IReadOnlyDictionary<Guid, ImmutableArray<string>> others)
+    {
+        var failing = ImmutableArray.CreateBuilder<int>();
+        for (var i = 0; i < field.Validation.Count; i++)
+        {
+            var holds = field.Validation[i] switch
+            {
+                PatternCheck pattern => Compiled(pattern.Pattern) is not { } compiled || values.All(compiled.IsMatch),
+                MatchesFieldCheck matches => Rules.SameValues(type.Declaration.RuleKind, values, others.TryGetValue(matches.Field, out var other) ? other : []),
+                _ => true,
+            };
+            if (!holds)
+            {
+                failing.Add(i);
+            }
+        }
+
+        return failing.ToImmutable();
+    }
+
+    private static SafePattern? Compiled(string pattern)
+    {
+        try
+        {
+            return SafePattern.Compile(pattern);
+        }
+        catch (LogicException)
+        {
+            return null;
+        }
     }
 
     private static FieldAnswerLimits LimitsOf(IFormBuilderFieldType type, FormField field)

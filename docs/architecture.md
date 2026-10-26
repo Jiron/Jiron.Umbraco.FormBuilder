@@ -128,7 +128,8 @@ flowchart LR
   decide a whole form at once: what is hidden and required, the validation rules' messages, the actions that run and
   the outcome, from one model of the form that Core builds from a definition with `DefinitionLogic.From`
   ([ADR-0061](decisions/0061-the-form-rules-engine.md)); its `checkField` (`checks.ts`) runs the built-in types'
-  checks of a field's answers as each type's `Validate` in Core does
+  checks of a field's answers as each type's `Validate` in Core does, and then the field's own `pattern` and
+  `matchesField` checks as Core's `FieldValues` does, with the other fields' values
   ([ADR-0062](decisions/0062-the-built-in-types-checks.md));
 - `runtime`: enhances Razor-rendered forms through the markup contract;
 - `element`: `<jfb-form>`, the headless renderer, with the same markup and runtime;
@@ -202,8 +203,8 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   its names, labels and choices are `#` keys of the backoffice's English and German dictionaries. A type also takes,
   reads and checks visitors' answers ([ADR-0058](decisions/0058-field-answers-and-values.md)): `AnswerLimits` caps
   every answer before the rules run, `Read` turns the texts and parts into values in the wire form, and `Validate`
-  holds a shown field's values to its settings; `FieldValues` runs the three in the pipeline's order and refuses a type
-  that breaks the contract, and `EntryValueColumns` stores each value in the typed column of its storage kind.
+  holds a shown field's values to its settings, with whether it is required, today and its files; `FieldValues` runs
+  the three in the pipeline's order, then the field's own checks, and refuses a type that breaks the contract, and `EntryValueColumns` stores each value in the typed column of its storage kind.
   `FieldTypeChanges` works out which types a field may become and what each change keeps and loses (its settings, by
   name, kind and rules; common properties; messages; the operators of rules; the columns of older answers), from the
   declarations and schemas alone ([ADR-0059](decisions/0059-changing-field-types.md)), for the inspector's "Change

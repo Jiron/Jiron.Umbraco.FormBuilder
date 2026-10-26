@@ -29,7 +29,7 @@ public sealed class FieldValuesTests
             Assert.That(Values(FieldValues.Read(type, field, new FieldAnswers([" Same as posted "]))), Is.EqualTo(new[] { " Same as posted " }));
             Assert.That(FieldValues.Read(type, field, new FieldAnswers(["a", "b"])).IsUnreadable, Is.True, "two values of a type that takes one");
             Assert.That(FieldValues.Read(type, field, new FieldAnswers(["a"], [new("part", ["b"])])).Values, Has.Length.EqualTo(1), "parts are left to the types that have them");
-            Assert.That(FieldValues.Check(type, field, FieldValues.Read(type, field, new FieldAnswers(["a"])), required: true, Today), Is.Empty, "nothing to check by default");
+            Assert.That(FieldValues.Check(type, field, FieldValues.Read(type, field, new FieldAnswers(["a"])), new FieldCheckInput(true, Today)).Errors, Is.Empty, "nothing to check by default");
         });
     }
 
@@ -90,8 +90,8 @@ public sealed class FieldValuesTests
             Assert.That(type.AnswerLimits(field), Is.EqualTo(new FieldAnswerLimits(4, 1)));
             Assert.That(read.Values.Single().Text, Is.EqualTo("ABCD"), "what rules compare, in capitals as the settings say");
             Assert.That(read.Values.Single().StoredText, Is.EqualTo("abcd"), "what the entry stores");
-            Assert.That(FieldValues.Check(type, field, read, required: true, Today), Is.Empty);
-            Assert.That(FieldValues.Check(type, field, FieldValues.Read(type, field, new FieldAnswers(["abc"])), required: false, Today), Is.EqualTo(new[] { FieldMessageKinds.MinLength }));
+            Assert.That(FieldValues.Check(type, field, read, new FieldCheckInput(true, Today)).Errors, Is.Empty);
+            Assert.That(FieldValues.Check(type, field, FieldValues.Read(type, field, new FieldAnswers(["abc"])), new FieldCheckInput(false, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.MinLength }));
             Assert.That(FieldValues.Read(type, field, new FieldAnswers(["ab1d"])).IsUnreadable, Is.True);
         });
     }
@@ -125,11 +125,11 @@ public sealed class FieldValuesTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(FieldValues.Check(type, field, unreadable, required: true, Today), Is.EqualTo(new[] { FieldMessageKinds.Invalid }));
-            Assert.That(FieldValues.Check(type, field, empty, required: true, Today), Is.EqualTo(new[] { FieldMessageKinds.Required }));
-            Assert.That(FieldValues.Check(type, field, empty, required: false, Today), Is.Empty);
+            Assert.That(FieldValues.Check(type, field, unreadable, new FieldCheckInput(true, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Invalid }));
+            Assert.That(FieldValues.Check(type, field, empty, new FieldCheckInput(true, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Required }));
+            Assert.That(FieldValues.Check(type, field, empty, new FieldCheckInput(false, Today)).Errors, Is.Empty);
             Assert.That(type.Validated, Is.Zero, "the type checks values only");
-            Assert.That(FieldValues.Check(type, field, value, required: true, Today), Is.EqualTo(new[] { FieldMessageKinds.Invalid, FieldMessageKinds.Required }));
+            Assert.That(FieldValues.Check(type, field, value, new FieldCheckInput(true, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Invalid, FieldMessageKinds.Required }));
             Assert.That(type.Validated, Is.EqualTo(1));
         });
     }
@@ -143,11 +143,11 @@ public sealed class FieldValuesTests
         Assert.Multiple(() =>
         {
             Assert.That(Values(FieldValues.Read(number, field, new FieldAnswers(["1.50e1"]))), Is.EqualTo(new[] { "15" }), "converted exactly to the wire form");
-            Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["-0.25"])), required: true, Today), Is.Empty);
-            Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["1,5"])), required: false, Today), Is.EqualTo(new[] { FieldMessageKinds.Invalid }));
-            Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["1234567890123456"])), required: false, Today), Is.EqualTo(new[] { FieldMessageKinds.Invalid }), "past 15 digits");
-            Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["1", "2"])), required: false, Today), Is.EqualTo(new[] { FieldMessageKinds.Invalid }));
-            Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, FieldAnswers.None), required: true, Today), Is.EqualTo(new[] { FieldMessageKinds.Required }));
+            Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["-0.25"])), new FieldCheckInput(true, Today)).Errors, Is.Empty);
+            Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["1,5"])), new FieldCheckInput(false, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Invalid }));
+            Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["1234567890123456"])), new FieldCheckInput(false, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Invalid }), "past 15 digits");
+            Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, new FieldAnswers(["1", "2"])), new FieldCheckInput(false, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Invalid }));
+            Assert.That(FieldValues.Check(number, field, FieldValues.Read(number, field, FieldAnswers.None), new FieldCheckInput(true, Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Required }));
         });
     }
 
@@ -173,7 +173,7 @@ public sealed class FieldValuesTests
         };
         var field = Field("loose");
 
-        Assert.That(() => FieldValues.Check(type, field, FieldValues.Read(type, field, new FieldAnswers(["a"])), required: false, Today), Throws.ArgumentException);
+        Assert.That(() => FieldValues.Check(type, field, FieldValues.Read(type, field, new FieldAnswers(["a"])), new FieldCheckInput(false, Today)), Throws.ArgumentException);
     }
 
     [TestCase(true)]
@@ -189,7 +189,7 @@ public sealed class FieldValuesTests
         // The field's own setting says optional; a rule may still require it.
         var field = Field("seeing") with { Required = false };
 
-        FieldValues.Check(type, field, FieldValues.Read(type, field, new FieldAnswers(["a"])), required, Today);
+        FieldValues.Check(type, field, FieldValues.Read(type, field, new FieldAnswers(["a"])), new FieldCheckInput(required, Today));
 
         Assert.That(seen, Is.EqualTo((required, Today)));
     }
@@ -255,9 +255,10 @@ public sealed class FieldValuesTests
             Assert.That(() => FieldValues.CheckLimits(type, null!, FieldAnswers.None), Throws.ArgumentNullException);
             Assert.That(() => FieldValues.CheckLimits(type, field, null!), Throws.ArgumentNullException);
             Assert.That(() => FieldValues.Read(type, field, null!), Throws.ArgumentNullException);
-            Assert.That(() => FieldValues.Check(null!, field, read, required: false, Today), Throws.ArgumentNullException);
-            Assert.That(() => FieldValues.Check(type, null!, read, required: false, Today), Throws.ArgumentNullException);
-            Assert.That(() => FieldValues.Check(type, field, null!, required: false, Today), Throws.ArgumentNullException);
+            Assert.That(() => FieldValues.Check(null!, field, read, new FieldCheckInput(false, Today)), Throws.ArgumentNullException);
+            Assert.That(() => FieldValues.Check(type, null!, read, new FieldCheckInput(false, Today)), Throws.ArgumentNullException);
+            Assert.That(() => FieldValues.Check(type, field, null!, new FieldCheckInput(false, Today)), Throws.ArgumentNullException);
+            Assert.That(() => FieldValues.Check(type, field, read, null!), Throws.ArgumentNullException);
             Assert.That(() => type.AnswerLimits(null!), Throws.ArgumentNullException);
             Assert.That(() => type.Read(null!), Throws.ArgumentNullException);
             Assert.That(() => type.Validate(null!), Throws.ArgumentNullException);

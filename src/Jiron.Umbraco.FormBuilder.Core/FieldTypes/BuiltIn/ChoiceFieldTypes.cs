@@ -40,6 +40,17 @@ public sealed class DropdownFieldType() : FormBuilderFieldTypeBase<DropdownField
         BuiltInChecks.NotAbove(check, "minSelections", settings.MinSelections, "maxSelections", settings.MaxSelections);
         BuiltInChecks.NotMoreThanOptions(check, "minSelections", settings.MinSelections);
     }
+
+    /// <inheritdoc />
+    /// <remarks>Each value is one of the options; with <c>multiple</c>, as many as the selections allow.</remarks>
+    protected override void Validate(DropdownFieldSettings settings, FieldValidation validation)
+    {
+        BuiltInValidation.AmongOptions(validation);
+        if (settings.Multiple)
+        {
+            BuiltInValidation.Selections(validation, settings.MinSelections, settings.MaxSelections);
+        }
+    }
 }
 
 /// <summary>The settings of a dropdown (ADR-0002).</summary>
@@ -93,6 +104,10 @@ public sealed class RadioFieldType() : FormBuilderFieldTypeBase<RadioFieldSettin
     /// <inheritdoc />
     protected override void Read(RadioFieldSettings settings, FieldReading reading) =>
         BuiltInAnswers.ReadChoices(reading, several: false, settings.Other);
+
+    /// <inheritdoc />
+    /// <remarks>The value is one of the options, or the visitor's own "Other" text.</remarks>
+    protected override void Validate(RadioFieldSettings settings, FieldValidation validation) => BuiltInValidation.AmongOptions(validation);
 }
 
 /// <summary>The settings of radio buttons (ADR-0002).</summary>
@@ -146,6 +161,14 @@ public sealed class CheckboxesFieldType() : FormBuilderFieldTypeBase<CheckboxesF
     /// <inheritdoc />
     protected override void Read(CheckboxesFieldSettings settings, FieldReading reading) =>
         BuiltInAnswers.ReadChoices(reading, several: true, settings.Other);
+
+    /// <inheritdoc />
+    /// <remarks>Each value is one of the options or the visitor's own "Other" text, which counts as one selection.</remarks>
+    protected override void Validate(CheckboxesFieldSettings settings, FieldValidation validation)
+    {
+        BuiltInValidation.AmongOptions(validation);
+        BuiltInValidation.Selections(validation, settings.MinSelections, settings.MaxSelections);
+    }
 }
 
 /// <summary>The settings of checkboxes (ADR-0002).</summary>
@@ -252,6 +275,21 @@ public sealed class GridFieldType() : FormBuilderFieldTypeBase<GridFieldSettings
             }
         }
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Each row's values are among the columns: the scale's whole numbers when the grid has one, otherwise its options.
+    /// </remarks>
+    protected override void Validate(GridFieldSettings settings, FieldValidation validation)
+    {
+        Func<string, bool>? column = settings.Scale is { } scale
+            ? value => BuiltInValidation.IsWholeNumber(value, scale.From, scale.To)
+            : BuiltInValidation.OwnOptions(validation.Field) is { } options ? options.Contains : null;
+        if (column is not null && !validation.Values.All(value => column(value.Text)))
+        {
+            validation.Fail(FieldMessageKinds.Invalid);
+        }
+    }
 }
 
 /// <summary>
@@ -336,6 +374,25 @@ public sealed class RankingFieldType() : FormBuilderFieldTypeBase<RankingFieldSe
         foreach (var (_, value) in ranked.OrderBy(each => each.Position))
         {
             reading.Add(value);
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Each value is one of the options, which reading takes once each, and there are as many as <c>top</c>, or as all
+    /// the options when it is not given or exceeds them.
+    /// </remarks>
+    protected override void Validate(RankingFieldSettings settings, FieldValidation validation)
+    {
+        if (BuiltInValidation.OwnOptions(validation.Field) is not { } options)
+        {
+            return;
+        }
+
+        var ranked = settings.Top is { } top ? Math.Min(top, options.Count) : options.Count;
+        if (validation.Values.Length != ranked || !validation.Values.All(value => options.Contains(value.Text)))
+        {
+            validation.Fail(FieldMessageKinds.Invalid);
         }
     }
 }
@@ -546,6 +603,29 @@ public sealed class CountryFieldType() : FormBuilderFieldTypeBase<CountryFieldSe
 
     /// <inheritdoc />
     protected override FieldAnswerLimits AnswerLimits(CountryFieldSettings settings, FormField field) => new(2, 1);
+
+    /// <inheritdoc />
+    /// <remarks>A country is its ISO 3166 alpha-2 code in capitals, such as <c>CH</c>; any other text is unreadable.</remarks>
+    protected override void Read(CountryFieldSettings settings, FieldReading reading)
+    {
+        if (!reading.Answers.Values.All(BuiltInChecks.CountryCodes.Contains))
+        {
+            reading.Invalid();
+            return;
+        }
+
+        base.Read(settings, reading);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>The country is one of <c>allowed</c>, when it lists some.</remarks>
+    protected override void Validate(CountryFieldSettings settings, FieldValidation validation)
+    {
+        if (settings.Allowed.Count > 0 && !validation.Values.All(value => settings.Allowed.Contains(value.Text, StringComparer.Ordinal)))
+        {
+            validation.Fail(FieldMessageKinds.Invalid);
+        }
+    }
 }
 
 /// <summary>The settings of a country (ADR-0002), each country as its ISO 3166 alpha-2 code.</summary>
