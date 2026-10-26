@@ -1,7 +1,8 @@
 // Conditions and rules (ADR-0005), the same in C#: checked as a whole first (unknown fields and operators, operands,
-// patterns), then evaluated. Checking first means both runtimes report the same error whatever order they evaluate
-// in. Step 5.2 builds the rules engine on these. Condition, Group and Rule are Core's LogicCondition, LogicGroup and
-// LogicRule; Core's names say they belong to its logic, beside the definition's own conditions (ADR-0030).
+// patterns, groups nested too deeply), then evaluated. Checking first means both runtimes report the same error whatever
+// order they evaluate in. The form engine (form.ts, ADR-0061) evaluates a whole form's rules on these. Condition, Group
+// and Rule are Core's LogicCondition, LogicGroup and LogicRule; Core's names say they belong to its logic, beside the
+// definition's own conditions (ADR-0030).
 import { applyRelative, formatDate, parseDate, parseDateTime, parseRelative, parseTime, today } from './dates.ts';
 import { compareText } from './decimal.ts';
 import { LogicError, own } from './errors.ts';
@@ -23,7 +24,7 @@ export interface Context {
   readonly member: { readonly signedIn: boolean; readonly groups: readonly string[] };
   /** The allowed query values of the page. */
   readonly query: Readonly<Record<string, string | readonly string[]>>;
-  /** Aliases of the fields a rule currently hides: they count as empty. */
+  /** Aliases of the fields a rule currently hides: they count as empty. The form engine decides this itself. */
   readonly hidden: readonly string[];
 }
 
@@ -57,6 +58,20 @@ export interface Subject {
   readonly context: Context;
 }
 
+/**
+ * Where an evaluation finds answers: the kinds of the fields conditions may look at, each field's texts as given (not
+ * yet cleaned, none for a hidden field), and the context. The form engine gives each row of a repeatable group a scope
+ * of its own (ADR-0061).
+ */
+export interface Scope {
+  readonly fields: Readonly<Record<string, Kind>>;
+  readonly answers: (field: string) => readonly string[] | undefined;
+  readonly context: Context;
+}
+
+/** How deeply groups of conditions nest, the rule's own list being the first level (ADR-0061). */
+export const MAX_DEPTH = 10;
+
 type OperandShape = 'none' | 'one' | 'list' | 'pair' | 'count' | 'pattern' | 'checked';
 
 const ALL: readonly Kind[] = ['text', 'choice', 'choices', 'checkbox', 'files', 'number', 'date', 'time', 'dateTime'];
@@ -85,12 +100,12 @@ const OPERATORS: ReadonlyMap<string, { readonly kinds: readonly Kind[]; readonly
   ['isNotChecked', { kinds: CHECKABLE, operand: 'checked' }],
 ]);
 
-const isGroup = (item: Condition | Group): item is Group => 'match' in item;
+export const isGroup = (item: Condition | Group): item is Group => 'match' in item;
 const isList = (operand: unknown): operand is readonly Operand[] => Array.isArray(operand);
 const isObject = (operand: unknown): operand is Readonly<Record<string, unknown>> =>
   typeof operand === 'object' && operand !== null && !Array.isArray(operand);
 // An operand object names another field by a string, or else a relative date by a string; the field comes first.
-const isField = (operand: unknown): operand is { readonly field: string } =>
+export const isField = (operand: unknown): operand is { readonly field: string } =>
   isObject(operand) && typeof operand['field'] === 'string';
 const isToday = (operand: unknown): operand is { readonly today: string } =>
   isObject(operand) && !isField(operand) && typeof operand['today'] === 'string';
@@ -114,22 +129,22 @@ function contextKind(name: string): Kind {
   throw new LogicError('unknown_field');
 }
 
-function subjectKind(condition: Condition, subject: Subject): Kind {
+function subjectKind(condition: Condition, fields: Readonly<Record<string, Kind>>): Kind {
   // A null name reads as no name, as the C# reader reads it.
   const field = condition.field ?? undefined;
   const context = condition.context ?? undefined;
   if ((field === undefined) === (context === undefined)) throw new LogicError('invalid_condition');
   if (context !== undefined) return contextKind(context);
-  const kind = field === undefined ? undefined : own(subject.fields, field);
+  const kind = field === undefined ? undefined : own(fields, field);
   if (kind === undefined) throw new LogicError('unknown_field');
   return kind;
 }
 
 /** A single operand: text, another answer, or a date relative to today. */
-function checkOne(operand: unknown, subject: Subject): void {
+function checkOne(operand: unknown, fields: Readonly<Record<string, Kind>>): void {
   if (typeof operand === 'string') return;
   if (isField(operand)) {
-    if (own(subject.fields, operand.field) === undefined) throw new LogicError('unknown_field');
+    if (own(fields, operand.field) === undefined) throw new LogicError('unknown_field');
     return;
   }
   if (isToday(operand) && parseRelative(operand.today) !== null) return;
@@ -137,8 +152,12 @@ function checkOne(operand: unknown, subject: Subject): void {
 }
 
 // Checks a condition; a pattern it compiles goes into patterns, for the evaluation that follows.
-function checkCondition(condition: Condition, subject: Subject, patterns: Map<string, Pattern>): void {
-  const kind = subjectKind(condition, subject);
+function checkCondition(
+  condition: Condition,
+  fields: Readonly<Record<string, Kind>>,
+  patterns: Map<string, Pattern>,
+): void {
+  const kind = subjectKind(condition, fields);
   const operator = OPERATORS.get(condition.op);
   if (operator === undefined) throw new LogicError('unknown_operator');
   if (!operator.kinds.includes(kind)) throw new LogicError('operator_not_for_kind');
@@ -148,16 +167,16 @@ function checkCondition(condition: Condition, subject: Subject, patterns: Map<st
       if (value !== undefined) throw new LogicError('invalid_operand');
       return;
     case 'one':
-      checkOne(value, subject);
+      checkOne(value, fields);
       return;
     case 'list':
-      if (isList(value)) value.forEach((item) => checkOne(item, subject));
-      else if (isField(value)) checkOne(value, subject);
+      if (isList(value)) value.forEach((item) => checkOne(item, fields));
+      else if (isField(value)) checkOne(value, fields);
       else throw new LogicError('invalid_operand');
       return;
     case 'pair':
       if (!isList(value) || value.length !== 2) throw new LogicError('invalid_operand');
-      value.forEach((item) => checkOne(item, subject));
+      value.forEach((item) => checkOne(item, fields));
       return;
     case 'count':
       if (typeof value !== 'string' || !isCount(value)) throw new LogicError('invalid_operand');
@@ -174,20 +193,29 @@ function checkCondition(condition: Condition, subject: Subject, patterns: Map<st
   }
 }
 
-function checkGroup(group: Group, subject: Subject, patterns: Map<string, Pattern>): void {
+/**
+ * Checks a group of conditions and every group nested in it, at its depth (the rule's own list is the first level);
+ * the patterns it compiles go into patterns, for the evaluations that follow.
+ */
+export function checkGroup(
+  group: Group,
+  fields: Readonly<Record<string, Kind>>,
+  patterns: Map<string, Pattern>,
+  depth = 1,
+): void {
+  if (depth > MAX_DEPTH) throw new LogicError('too_deep');
   if (group.match !== 'all' && group.match !== 'any') throw new LogicError('invalid_condition');
   for (const item of group.conditions) {
-    if (isGroup(item)) checkGroup(item, subject, patterns);
-    else checkCondition(item, subject, patterns);
+    if (isGroup(item)) checkGroup(item, fields, patterns, depth + 1);
+    else checkCondition(item, fields, patterns);
   }
 }
 
 const nonEmpty = (values: readonly string[]): string[] => values.map(clean).filter((value) => value.length > 0);
 
 /** Cleaned answers that are not empty. A hidden field has none. */
-function answers(alias: string, subject: Subject): string[] {
-  if (subject.context.hidden.includes(alias)) return [];
-  return nonEmpty(own(subject.values, alias) ?? []);
+function answers(field: string, scope: Scope): string[] {
+  return nonEmpty(scope.answers(field) ?? []);
 }
 
 function contextValues(name: string, context: Context): string[] {
@@ -199,20 +227,20 @@ function contextValues(name: string, context: Context): string[] {
   return value === undefined ? [] : nonEmpty(typeof value === 'string' ? [value] : value);
 }
 
-function subjectValues(condition: Condition, subject: Subject): string[] {
+function subjectValues(condition: Condition, scope: Scope): string[] {
   const context = condition.context ?? undefined;
-  if (context !== undefined) return contextValues(context, subject.context);
-  return answers(condition.field ?? '', subject);
+  if (context !== undefined) return contextValues(context, scope.context);
+  return answers(condition.field ?? '', scope);
 }
 
 /** An operand's values, cleaned. A relative date outside years 1 to 9999 has none. */
-function resolve(operand: unknown, subject: Subject): string[] {
+function resolve(operand: unknown, scope: Scope): string[] {
   if (typeof operand === 'string') return [clean(operand)];
-  if (isList(operand)) return operand.flatMap((item) => resolve(item, subject));
-  if (isField(operand)) return answers(operand.field, subject);
+  if (isList(operand)) return operand.flatMap((item) => resolve(item, scope));
+  if (isField(operand)) return answers(operand.field, scope);
   const steps = isToday(operand) ? parseRelative(operand.today) : null;
   if (steps === null) throw new LogicError('invalid_operand');
-  const day = applyRelative(today(subject.context.now, subject.context.timeZone), steps);
+  const day = applyRelative(today(scope.context.now, scope.context.timeZone), steps);
   return day === null ? [] : [formatDate(day)];
 }
 
@@ -262,11 +290,11 @@ function isChecked(condition: Condition, kind: Kind, values: readonly string[]):
 }
 
 // Evaluates a checked condition, with the patterns its check compiled.
-function evaluate(condition: Condition, subject: Subject, patterns: ReadonlyMap<string, Pattern>): boolean {
-  const kind = subjectKind(condition, subject);
-  const values = subjectValues(condition, subject);
+function evaluate(condition: Condition, scope: Scope, patterns: ReadonlyMap<string, Pattern>): boolean {
+  const kind = subjectKind(condition, scope.fields);
+  const values = subjectValues(condition, scope);
   const value = condition.value;
-  const operands = (): string[] => resolve(value, subject);
+  const operands = (): string[] => resolve(value, scope);
   // Each value and each operand becomes its key once, however many of the others it meets. Numbers compare as the
   // values they are, digit by digit, without a number or a key being built (ADR-0005).
   const anyEqual = (): boolean => {
@@ -318,8 +346,8 @@ function evaluate(condition: Condition, subject: Subject, patterns: ReadonlyMap<
     case 'between': {
       const [low, high] = isList(value) ? value : [];
       return (
-        compareFirst(kind, values, resolve(low, subject), (n) => n >= 0) &&
-        compareFirst(kind, values, resolve(high, subject), (n) => n <= 0)
+        compareFirst(kind, values, resolve(low, scope), (n) => n >= 0) &&
+        compareFirst(kind, values, resolve(high, scope), (n) => n <= 0)
       );
     }
     case 'isChecked':
@@ -331,23 +359,31 @@ function evaluate(condition: Condition, subject: Subject, patterns: ReadonlyMap<
   }
 }
 
-function evaluateGroup(group: Group, subject: Subject, patterns: ReadonlyMap<string, Pattern>): boolean {
+/** Evaluates a checked group of conditions: all of them, or one, with the patterns its check compiled. */
+export function matchesGroup(group: Group, scope: Scope, patterns: ReadonlyMap<string, Pattern>): boolean {
   const test = (item: Condition | Group): boolean =>
-    isGroup(item) ? evaluateGroup(item, subject, patterns) : evaluate(item, subject, patterns);
+    isGroup(item) ? matchesGroup(item, scope, patterns) : evaluate(item, scope, patterns);
   return group.match === 'all' ? group.conditions.every(test) : group.conditions.some(test);
 }
+
+// A subject's answers as one condition sees them: a field in the context's hidden list has none.
+const scopeOf = (subject: Subject): Scope => ({
+  fields: subject.fields,
+  answers: (field) => (subject.context.hidden.includes(field) ? undefined : own(subject.values, field)),
+  context: subject.context,
+});
 
 /** Checks the condition, then evaluates it. */
 export function evaluateCondition(condition: Condition, subject: Subject): boolean {
   const patterns = new Map<string, Pattern>();
-  checkCondition(condition, subject, patterns);
-  return evaluate(condition, subject, patterns);
+  checkCondition(condition, subject.fields, patterns);
+  return evaluate(condition, scopeOf(subject), patterns);
 }
 
 /** Checks the whole rule, then evaluates it: null when the rule is switched off. */
 export function evaluateRule(rule: Rule, subject: Subject): boolean | null {
   const patterns = new Map<string, Pattern>();
-  checkGroup(rule, subject, patterns);
+  checkGroup(rule, subject.fields, patterns);
   if (!rule.enabled) return null;
-  return evaluateGroup(rule, subject, patterns);
+  return matchesGroup(rule, scopeOf(subject), patterns);
 }

@@ -2,16 +2,31 @@
  * The shared logic (ROADMAP section 4.2, ADR-0005): rules, validation, merge tags and calculations, written once for
  * the website runtime, the headless element and the backoffice, the same as Core's in C#, and tested against the
  * shared vectors in tests/vectors. It has no DOM and no dependencies: its compiler settings leave out the DOM's types,
- * and the lint refuses imports from anywhere else. Step 3.4b ported the modules of the 1.5 spike; 5.2 and 5.3
- * complete the engines.
+ * and the lint refuses imports from anywhere else. Step 3.4b ported the modules of the 1.5 spike; 5.2a added
+ * the form engine (ADR-0061), and 5.2b and 5.3 complete the others.
  */
 export { calculate, storedNumber, type Calculation } from './calc.ts';
 export { formatDecimal, parseDecimal, type Decimal } from './decimal.ts';
 export { LogicError, type LogicErrorCode } from './errors.ts';
+export {
+  evaluateForm,
+  type FormAnswers,
+  type FormState,
+  type LogicAction,
+  type LogicField,
+  type LogicForm,
+  type LogicFormGroup,
+  type LogicGridRow,
+  type LogicOutcome,
+  type LogicPage,
+  type LogicValidationRule,
+  type RowState,
+} from './form.ts';
 export { compilePattern, type Pattern } from './pattern.ts';
 export {
   evaluateCondition,
   evaluateRule,
+  MAX_DEPTH,
   type Condition,
   type Context,
   type Group,

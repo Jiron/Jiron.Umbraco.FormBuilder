@@ -5,7 +5,7 @@
   amended in 4.8f (the publish check holds what publishing refuses; `OnePerForm`); amended in 5.1a by
   [ADR-0055](0055-field-type-framework.md) (the traits come from the registry); amended in 5.1b by
   [ADR-0056](0056-field-settings-checks.md) (each field's settings checked, `setting_unknown`, `setting_missing` and
-  `setting_invalid`)
+  `setting_invalid`); amended in 5.2a by [ADR-0061](0061-the-form-rules-engine.md) (`too_deep`)
 - Date: 2026-10-23
 - Roadmap step: 4.2b (decided and built); 4.5 calls it when a form is published, 5.1a moved the field-type traits
   into the registry, 5.1b checks the settings, 6.6 serves the projection, 7.2 and 8.1 add provider and action types
@@ -125,6 +125,7 @@ and resolves every reported path in the document.
 | `rule_effect_invalid` | An effect the element does not take: pages and groups take `show` or `hide`; fields take what their type supports; actions take `run`; outcomes take `use` | `…effect` |
 | `rule_duplicate` | Two rules with one effect on one element, or a `show` and a `hide` rule together | The later rule |
 | `cycle` | See "Cycles" | The first rule in the cycle |
+| `too_deep` | A group of conditions nested deeper than the form engine reads: more than 10 levels, the rule's own conditions being the first (ADR-0061, amended in 5.2a) | The group one level too deep |
 | `invalid_redirect` | See "Redirects", and a redirect to both a content page and a URL | `…redirect` or `…redirect.url` |
 
 **References.** A reference to a field whose type the site lacks is not reported, and neither is one to a row of such
@@ -243,8 +244,8 @@ None of these needs a new revision.
 - **Unknown captcha providers (7.2).** These give `unknown_type` at `settings.protection.captcha.provider`.
 - **A field type's own settings (5.1, 5.4).** Each type validates them at publish, for example that a minimum is not
   above the maximum.
-- **How deeply condition groups nest (5.2).** This is the shared logic's check, so publishing gets it through
-  `Rules.Check`.
+- **How deeply condition groups nest (done in 5.2a, ADR-0061).** Publishing refuses a group past the engine's limit
+  as `too_deep`, with `Rules.MaxDepth`, the one limit both runtimes use.
 - **The references and cycles of calculations (5.3).**
 - **The rendered redirect's second check (6.1).**
 - **What the form check adds (9.5b),** such as a missing label, merge tags that recall a later field, and warnings.

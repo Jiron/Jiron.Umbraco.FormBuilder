@@ -12,28 +12,7 @@ internal sealed partial class DefinitionStructureChecks
     private static readonly ImmutableArray<RuleEffect> Visibility = [RuleEffect.Show, RuleEffect.Hide];
     private static readonly ImmutableArray<RuleEffect> AnyFieldEffect = [RuleEffect.Show, RuleEffect.Hide, RuleEffect.Require];
 
-    private static string Word(RuleEffect effect) => effect switch
-    {
-        RuleEffect.Show => "show",
-        RuleEffect.Hide => "hide",
-        RuleEffect.Require => "require",
-        RuleEffect.Run => "run",
-        _ => "use",
-    };
-
-    // The definition's conditions in the shared logic's terms, so publishing runs the very check both runtimes run
-    // before they evaluate (ADR-0005).
-    private static LogicCondition ToLogic(RuleCondition condition) =>
-        new(condition.Field is { } field ? KeyText(field) : null, condition.Context, condition.Operator, condition.Value is { } value ? ToLogic(value) : null);
-
-    private static Operand ToLogic(ConditionOperand operand) => operand switch
-    {
-        ConditionOperand.Text text => new TextOperand(text.Value),
-        ConditionOperand.Field field => new FieldOperand(KeyText(field.Key)),
-        ConditionOperand.Today today => new TodayOperand(today.Offset),
-        ConditionOperand.List list => new ListOperand(list.Items.Select(ToLogic).ToList()),
-        _ => new InvalidOperand(),
-    };
+    private static string Word(RuleEffect effect) => DefinitionLogic.Effect(effect);
 
     /// <summary>
     /// An element's rules: effects it takes, one rule per effect and not both show and hide, and every condition. A
@@ -64,7 +43,7 @@ internal sealed partial class DefinitionStructureChecks
             var kinds = node is not null ? _visitorKinds : _kinds;
             var visibility = node is not null && rule.Enabled && rule.Effect is RuleEffect.Show or RuleEffect.Hide;
             var dependencies = visibility ? new List<Guid>() : null;
-            Conditions(rule.Conditions, P(rulePath, "conditions"), kinds, dependencies);
+            Conditions(rule.Conditions, P(rulePath, "conditions"), kinds, dependencies, depth: 1);
             if (dependencies is null)
             {
                 continue;
@@ -82,15 +61,20 @@ internal sealed partial class DefinitionStructureChecks
         }
     }
 
-    private void Conditions(IReadOnlyList<RuleItem> items, string path, IReadOnlyDictionary<string, FieldKind> kinds, List<Guid>? dependencies)
+    // A rule's own list of conditions is the first level; a group nested deeper than the engine reads is refused as the
+    // engine refuses it (ADR-0061), once, at the group.
+    private void Conditions(IReadOnlyList<RuleItem> items, string path, IReadOnlyDictionary<string, FieldKind> kinds, List<Guid>? dependencies, int depth)
     {
         for (var i = 0; i < items.Count; i++)
         {
             var itemPath = I(path, i);
             switch (items[i])
             {
+                case RuleGroup when depth == Logic.Rules.MaxDepth:
+                    Fail(DefinitionErrors.TooDeep, itemPath, $"Groups of conditions nest at most {Logic.Rules.MaxDepth} levels deep, the rule's own conditions being the first.");
+                    break;
                 case RuleGroup group:
-                    Conditions(group.Conditions, P(itemPath, "conditions"), kinds, dependencies);
+                    Conditions(group.Conditions, P(itemPath, "conditions"), kinds, dependencies, depth + 1);
                     break;
                 case RuleCondition condition:
                     Condition(condition, itemPath, kinds, dependencies);
@@ -120,7 +104,7 @@ internal sealed partial class DefinitionStructureChecks
             checkable &= OperandFields(value, P(path, "value"), kinds, dependencies);
         }
 
-        if (!checkable || Logic.Rules.Check(ToLogic(condition), kinds) is not { } code)
+        if (!checkable || Logic.Rules.Check(DefinitionLogic.Condition(condition), kinds) is not { } code)
         {
             return;
         }
@@ -196,7 +180,7 @@ internal sealed partial class DefinitionStructureChecks
                 Fail(DefinitionErrors.UnknownField, P(path, "field"), "The validation rule shows its message on no field of the form that holds a value.");
             }
 
-            Conditions(rule.Conditions, P(path, "conditions"), _visitorKinds, dependencies: null);
+            Conditions(rule.Conditions, P(path, "conditions"), _visitorKinds, dependencies: null, depth: 1);
         }
     }
 

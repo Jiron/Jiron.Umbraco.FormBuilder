@@ -65,7 +65,7 @@ internal sealed partial class DefinitionStructureChecks
 
     private static string I(string path, int index) => JsonPaths.Index(path, index);
 
-    private static string KeyText(Guid key) => key.ToString("D");
+    private static string KeyText(Guid key) => DefinitionLogic.Id(key);
 
     private static string Name(FormField field) => field.Alias is { } alias ? $"field '{alias}'" : $"field {field.Key}";
 

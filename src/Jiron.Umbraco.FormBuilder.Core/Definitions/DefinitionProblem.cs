@@ -155,6 +155,9 @@ internal static class DefinitionErrors
     /// <summary>A pattern uses syntax outside the safe subset or exceeds its limits (ADR-0005).</summary>
     public const string UnsafePattern = LogicErrors.UnsafePattern;
 
+    /// <summary>A group of conditions nests deeper than the form engine reads (ADR-0061).</summary>
+    public const string TooDeep = LogicErrors.TooDeep;
+
     /// <summary>A rule's effect is not one its element takes.</summary>
     public const string RuleEffectInvalid = "rule_effect_invalid";
 
@@ -162,7 +165,7 @@ internal static class DefinitionErrors
     public const string RuleDuplicate = "rule_duplicate";
 
     /// <summary>Whether an element is shown depends, through rules and what contains it, on itself; or option parents go round.</summary>
-    public const string Cycle = "cycle";
+    public const string Cycle = LogicErrors.Cycle;
 
     /// <summary>An outcome's redirect is not a path on the site or an https address the editor chose.</summary>
     public const string InvalidRedirect = "invalid_redirect";

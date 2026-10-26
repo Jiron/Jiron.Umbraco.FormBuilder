@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
@@ -125,6 +126,13 @@ public sealed class StructureTests
 
     private static JsonObject Rule(string key, string effect, params JsonNode[] conditions) =>
         new() { ["key"] = key, ["effect"] = effect, ["conditions"] = new JsonArray(conditions) };
+
+    // The condition inside groups nested that many levels deep, below the rule's own conditions.
+    private static JsonNode Nested(int levels, JsonNode condition) =>
+        levels == 0 ? condition.DeepClone() : new JsonObject { ["match"] = "all", ["conditions"] = new JsonArray(Nested(levels - 1, condition)) };
+
+    // The path from a rule's first condition to the group nested that many levels below it.
+    private static string Deeper(int levels) => string.Concat(Enumerable.Repeat(".conditions[0]", levels));
 
     public static IEnumerable<TestCaseData> Changes()
     {
@@ -408,6 +416,12 @@ public sealed class StructureTests
             });
         }, DefinitionErrors.Cycle, $"{F(4)}.options.parent");
 
+        // Groups of conditions nest as deep as the form engine reads them, the rule's own conditions being the first level
+        // (ADR-0061): the group one level deeper is refused.
+        yield return Case("groups of conditions nested too deep", d => Guests(d).ReplaceWith(Nested(Rules.MaxDepth, Guests(d))), DefinitionErrors.TooDeep, $"{F(5)}.rules[0].conditions[0]{Deeper(Rules.MaxDepth - 1)}");
+        yield return Case("a validation rule's groups nested too deep", d => CheckAcross(d).ReplaceWith(Nested(Rules.MaxDepth, CheckAcross(d))), DefinitionErrors.TooDeep, $"$.validationRules[0].conditions[0]{Deeper(Rules.MaxDepth - 1)}");
+        yield return Case("an outcome's groups nested too deep", d => d["outcomes"]![0]!["rules"]![0]!["conditions"]![0]!.ReplaceWith(Nested(Rules.MaxDepth + 3, d["outcomes"]![0]!["rules"]![0]!["conditions"]![0]!)), DefinitionErrors.TooDeep, $"$.outcomes[0].rules[0].conditions[0]{Deeper(Rules.MaxDepth - 1)}");
+
         // Redirects.
         yield return Case("a redirect to a page and a URL", d => d["outcomes"]![1]!["redirect"]!["url"] = "/thanks", DefinitionErrors.InvalidRedirect, "$.outcomes[1].redirect");
         yield return Case("a redirect over http", d => d["outcomes"]![0]!["redirect"]!["url"] = "http://example.com/thanks", DefinitionErrors.InvalidRedirect, "$.outcomes[0].redirect.url");
@@ -439,6 +453,7 @@ public sealed class StructureTests
             Guests(d).Remove("value");
         });
         yield return Case("a require rule on its own field", d => Field2(d, 2)["rules"]![0]!["conditions"]![0]!["field"] = K(0xc));
+        yield return Case("groups of conditions nested as deep as the engine reads", d => Guests(d).ReplaceWith(Nested(Rules.MaxDepth - 1, Guests(d))));
         yield return Case("a field shown by a field on an earlier page", d => d["pages"]![1]!["groups"]![0]!["fields"]![0]!["rules"] = new JsonArray(Rule("40000000-0000-4000-8000-000000000010", "show", new JsonObject { ["field"] = K(1), ["op"] = "isNotEmpty" })));
         yield return Case("a condition on a grid row", d => Guests(d).ReplaceWith(new JsonObject { ["field"] = "31000000-0000-4000-8000-000000000001", ["op"] = "equals", ["value"] = "1" }));
         yield return Case("a condition on a repeatable group's child", d => Guests(d).ReplaceWith(new JsonObject { ["field"] = K(0xb), ["op"] = "isNotEmpty" }));

@@ -6,11 +6,15 @@ namespace Jiron.Umbraco.FormBuilder.Logic;
 
 /// <summary>
 /// Conditions and rules (ADR-0005), the same in TypeScript: checked as a whole first (unknown fields and operators,
-/// operands, patterns), then evaluated. Checking first means both runtimes report the same error whatever order they
-/// evaluate in. Step 5.2 builds the rules engine on these.
+/// operands, patterns, groups nested too deeply), then evaluated. Checking first means both runtimes report the same
+/// error whatever order they evaluate in. The form engine (<see cref="FormRules"/>, ADR-0061) evaluates a whole form's
+/// rules on these.
 /// </summary>
 internal static class Rules
 {
+    /// <summary>How deeply groups of conditions nest, the rule's own list being the first level (ADR-0061).</summary>
+    public const int MaxDepth = 10;
+
     private static readonly ImmutableArray<FieldKind> All = [.. Enum.GetValues<FieldKind>()];
     private static readonly ImmutableArray<FieldKind> TextKinds = [FieldKind.Text];
     private static readonly ImmutableArray<FieldKind> Ordered = [FieldKind.Number, FieldKind.Date, FieldKind.Time, FieldKind.DateTime];
@@ -67,7 +71,7 @@ internal static class Rules
         var group = new LogicGroup(rule.Match, rule.Conditions);
         var patterns = new Dictionary<string, SafePattern>(StringComparer.Ordinal);
         CheckGroup(group, subject.Fields, patterns);
-        return rule.Enabled ? EvaluateGroup(group, subject, patterns) : null;
+        return rule.Enabled ? MatchesGroup(group, subject, patterns) : null;
     }
 
     /// <summary>
@@ -234,8 +238,17 @@ internal static class Rules
     private static bool IsCount(string text) =>
         text.Length is >= 1 and <= 6 && text.All(char.IsAsciiDigit) && (text.Length == 1 || text[0] != '0');
 
-    private static void CheckGroup(LogicGroup group, IReadOnlyDictionary<string, FieldKind> fields, Dictionary<string, SafePattern> patterns)
+    /// <summary>
+    /// Checks a group of conditions and every group nested in it, at its depth (the rule's own list is the first level);
+    /// the patterns it compiles go into patterns, for the evaluations that follow.
+    /// </summary>
+    public static void CheckGroup(LogicGroup group, IReadOnlyDictionary<string, FieldKind> fields, Dictionary<string, SafePattern> patterns, int depth = 1)
     {
+        if (depth > MaxDepth)
+        {
+            throw new LogicException(LogicErrors.TooDeep);
+        }
+
         if (group.Match is not ("all" or "any"))
         {
             throw new LogicException(LogicErrors.InvalidCondition);
@@ -245,7 +258,7 @@ internal static class Rules
         {
             if (item is LogicGroup nested)
             {
-                CheckGroup(nested, fields, patterns);
+                CheckGroup(nested, fields, patterns, depth + 1);
             }
             else
             {
@@ -257,6 +270,11 @@ internal static class Rules
     /// <summary>Cleaned answers that are not empty. A hidden field has none.</summary>
     private static List<string> Answers(string alias, Subject subject)
     {
+        if (subject.Lookup is { } lookup)
+        {
+            return lookup(alias) is { } given ? NonEmpty(given) : [];
+        }
+
         if (subject.Context.Hidden.Contains(alias, StringComparer.Ordinal))
         {
             return [];
@@ -415,9 +433,10 @@ internal static class Rules
     private static int Count(Operand? value) =>
         int.Parse(((TextOperand)value!).Value, NumberStyles.None, CultureInfo.InvariantCulture);
 
-    private static bool EvaluateGroup(LogicGroup group, Subject subject, Dictionary<string, SafePattern> patterns)
+    /// <summary>Evaluates a checked group of conditions: all of them, or one, with the patterns its check compiled.</summary>
+    public static bool MatchesGroup(LogicGroup group, Subject subject, Dictionary<string, SafePattern> patterns)
     {
-        bool Test(LogicItem item) => item is LogicGroup nested ? EvaluateGroup(nested, subject, patterns) : Evaluate((LogicCondition)item, subject, patterns);
+        bool Test(LogicItem item) => item is LogicGroup nested ? MatchesGroup(nested, subject, patterns) : Evaluate((LogicCondition)item, subject, patterns);
         return group.Match == "all" ? group.Conditions.All(Test) : group.Conditions.Any(Test);
     }
 }

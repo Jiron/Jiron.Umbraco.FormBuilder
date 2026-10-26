@@ -39,6 +39,18 @@ internal static class LogicErrors
     /// <summary>A condition names both a field and a context or neither, or a group matches neither "all" nor "any".</summary>
     public const string InvalidCondition = "invalid_condition";
 
+    /// <summary>Groups of conditions nest deeper than <see cref="Rules.MaxDepth"/> levels.</summary>
+    public const string TooDeep = "too_deep";
+
+    /// <summary>A rule has an effect its element does not take, a second rule of one effect, or both show and hide.</summary>
+    public const string InvalidRule = "invalid_rule";
+
+    /// <summary>A form gives an id twice, or holds a repeatable group in another.</summary>
+    public const string InvalidForm = "invalid_form";
+
+    /// <summary>Whether an element of a form is shown depends on itself.</summary>
+    public const string Cycle = "cycle";
+
     /// <summary>A pattern uses syntax outside the safe subset or exceeds its limits.</summary>
     public const string UnsafePattern = "unsafe_pattern";
 

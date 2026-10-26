@@ -2,7 +2,8 @@
 
 - Status: accepted; the stored time zone's spelling amended in 4.4b ([ADR-0043](0043-backoffice-settings-sections.md));
   what long answers cost and the names of Core's logic model amended in 4.8f; work done once and the comparison's
-  cases amended in 4.8h
+  cases amended in 4.8h; the form engine, its names and the depth of groups amended in 5.2a
+  ([ADR-0061](0061-the-form-rules-engine.md))
 - Date: 2026-10-23
 - Roadmap step: 3.4b (decided and built); 4.4 stores the time zone as the server spells it; 5.2 and 5.3 complete the
   engines on these modules
@@ -122,5 +123,14 @@ The fixes themselves have one obvious form each. What needed deciding:
   it. The comparison's cases live in the shared vectors (`port`), both ways round, with what is not in the wire form
   as an answer and as an operand; the runtimes' own tests keep only what costs. The TypeScript names `Condition`,
   `Group` and `Rule` are Core's `LogicCondition`, `LogicGroup` and `LogicRule`, as its header says.
+- **Amended in 5.2a (ADR-0061):** the form engine is `Logic/FormRules.cs` and `packages/logic/src/form.ts`, internal
+  like the rest. Its model's names start with `Logic` as well: `LogicForm`, `LogicPage`, `LogicFormGroup` (the
+  conditions' groups keep `LogicGroup`), `LogicField`, `LogicGridRow`, `LogicValidationRule`, `LogicAction` and
+  `LogicOutcome`, and its answer is `FormState`. Core's `Subject` gains `Lookup`, and TypeScript's evaluation reads a
+  `Scope`, so the engine can give each row of a repeatable group answers of its own. Groups nest at most 10 levels
+  (`Rules.MaxDepth`, `MAX_DEPTH`), the rule's own list being the first, checked before anything is evaluated. The
+  mutation sweep is `tests/vectors/mutants.mjs`; it covers the instruction count, `own()`, the instant parser and the
+  time zone check, and its survivors added vectors for starred groups at the instruction limit and an offset of 24
+  hours.
 - Revisit the instruction limit if real patterns reach it: it is five times what the weight limit allows for plain
   characters.
