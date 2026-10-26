@@ -1842,7 +1842,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **5.3f Answer recall** (C# and `packages/logic`; 5.3c split in four, and the copied actions moved to 5.3g, WORKLOG 2026-10-26) (2026-10-26, 45ec725)
   - **Answer recall** in both runtimes: only fields above the text or on earlier pages, hidden fields empty, with the answers' display text of 5.3d in TypeScript too.
   - Done when: the vectors pass in both runtimes, including answer recall (a field above, one on an earlier page, a hidden one, and a later one refused).
-- [ ] **5.3g Copied actions** (C#; 5.3f split in two, WORKLOG 2026-10-26)
+- [x] **5.3g Copied actions** (C#; 5.3f split in two, WORKLOG 2026-10-26) (2026-10-26, aac2993)
   - **Copied actions** (added in 4.5c, ADR-0046): the report of copying actions to another form also lists each merge tag in a copied action that names a field the target lacks, with its path.
   - Done when: a test copies an action whose subject names a field the target lacks and finds that tag, with its path, in the copy's report.
 - [ ] **5.4 Field types (server side)** (server side)
