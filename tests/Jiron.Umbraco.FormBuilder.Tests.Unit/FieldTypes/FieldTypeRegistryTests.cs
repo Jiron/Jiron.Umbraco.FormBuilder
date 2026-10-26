@@ -54,6 +54,7 @@ public sealed class FieldTypeRegistryTests
         yield return Case("places without options", Valid with { Features = Input | FieldFeatures.Places }, "supports options");
         yield return Case("required without its error", Valid with { Messages = FieldMessageKinds.Invalid }, "'required' error");
         yield return Case("the required error without being required", Valid with { Features = FieldFeatures.Label | FieldFeatures.VisibilityRules }, "'required' error");
+        yield return Case("the rows' error without child fields", Valid with { Messages = FieldMessageKinds.Required | FieldMessageKinds.RowCount }, "'rowCount' error");
         yield return Case("a comparing check without a rule kind", Valid with { RuleKind = null, Features = Input | FieldFeatures.MatchesFieldCheck }, "has a rule kind");
         yield return Case("a server-only default without a default", Valid with { ServerOnlyDefault = true }, "supports a default value");
         yield return Case("a multiple setting on a text", Valid with { MultipleSetting = true }, "compares as a choice or has rows");
