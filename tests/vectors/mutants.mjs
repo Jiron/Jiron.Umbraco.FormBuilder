@@ -452,10 +452,33 @@ if (checkOnly) {
   process.exit(0);
 }
 
+// Errors of a file another process holds open for a moment, as a virus scanner or an editor's watcher may on Windows.
+const HELD = new Set(['EBUSY', 'EPERM', 'EACCES', 'UNKNOWN']);
+
+/**
+ * Writes a file and reads it back, trying again for up to ten seconds while another process holds it open, so that
+ * neither a mutant nor putting the file back is lost to a moment's lock. It waits synchronously, so Ctrl+C can use it.
+ */
+function write(path, text) {
+  const until = Date.now() + 10_000;
+  for (;;) {
+    try {
+      writeFileSync(path, text);
+      if (readFileSync(path, 'utf8') === text) return;
+    } catch (error) {
+      if (!HELD.has(error.code) || Date.now() > until) {
+        throw new Error(`could not write ${path} (${error.code}); if a mutant is in it, put the file back from git`, { cause: error });
+      }
+    }
+    if (Date.now() > until) throw new Error(`${path} does not read back as written; put the file back from git`);
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+  }
+}
+
 // The file being changed, so that Ctrl+C puts it back.
 let current = null;
 process.on('SIGINT', () => {
-  if (current !== null) writeFileSync(current.path, current.text);
+  if (current !== null) write(current.path, current.text);
   process.exit(130);
 });
 
@@ -509,10 +532,10 @@ for (const mutant of chosen) {
   current = { path, text };
   let outcome;
   try {
-    writeFileSync(path, text.replace(mutant.from, () => mutant.to));
+    write(path, text.replace(mutant.from, () => mutant.to));
     outcome = await verdict(mutant);
   } finally {
-    writeFileSync(path, text);
+    write(path, text);
     current = null;
   }
   let line;
