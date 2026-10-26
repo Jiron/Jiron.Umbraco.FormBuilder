@@ -446,8 +446,9 @@ public sealed class CalculationFieldType() : FormBuilderFieldTypeBase<Calculatio
 /// <summary>The settings of a calculation (ADR-0002).</summary>
 public sealed class CalculationFieldSettings
 {
-    /// <summary>The formula (section 4.3.3), over number, choice, rating and date fields.</summary>
+    /// <summary>The formula (section 4.3.3, ADR-0063), over number, choice, rating and date fields.</summary>
     [Required]
+    [StringLength(Calculations.MaxLength)]
     [FormBuilderSetting("#jfbFieldSettings_calculationFormula", Editor = "formula", Public = true)]
     public string? Formula { get; init; }
 

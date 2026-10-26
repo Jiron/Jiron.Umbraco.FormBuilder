@@ -173,3 +173,36 @@ export function operand(text: string): Decimal {
   if (d === null) throw new LogicError('not_a_number');
   return inRange(d);
 }
+
+/**
+ * An answer a calculation reads: the wire form, or null. Past MAX_DIGITS digits it is out of range, which is found
+ * before the digits become a number, so a long answer costs what reading it costs.
+ */
+export function readNumber(text: string): Decimal | null {
+  const parts = readParts(text);
+  if (parts === null) return null;
+  const all = parts.integer + parts.fraction;
+  let first = 0;
+  while (first < all.length - 1 && all.charCodeAt(first) === ZERO) first++;
+  if (all.length - first > MAX_DIGITS) throw new LogicError('out_of_range');
+  const n = BigInt(all);
+  return { n: parts.negative ? -n : n, s: parts.fraction.length };
+}
+
+/** A whole number. */
+export function integer(value: number): Decimal {
+  return { n: BigInt(value), s: 0 };
+}
+
+/** The value with the other sign; zero stays zero. */
+export function negate(d: Decimal): Decimal {
+  return { n: -d.n, s: d.s };
+}
+
+/** Orders two values: negative when a is the smaller, 0 when they are equal, positive when a is the larger. */
+export function compare(a: Decimal, b: Decimal): number {
+  const s = Math.max(a.s, b.s);
+  const x = a.n * pow10(s - a.s);
+  const y = b.n * pow10(s - b.s);
+  return x < y ? -1 : x > y ? 1 : 0;
+}

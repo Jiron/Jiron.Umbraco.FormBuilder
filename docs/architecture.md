@@ -125,9 +125,11 @@ flowchart LR
 - `logic`: rules, validation, merge tags and calculations in TypeScript; no DOM and no dependencies; run against the
   shared vectors ([ADR-0005](decisions/0005-shared-logic-and-test-vectors.md),
   [ADR-0030](decisions/0030-porting-the-shared-logic.md)). Its form engine (`form.ts`) and Core's (`Logic/FormRules.cs`)
-  decide a whole form at once: what is hidden and required, the validation rules' messages, the actions that run and
-  the outcome, from one model of the form that Core builds from a definition with `DefinitionLogic.From`
-  ([ADR-0061](decisions/0061-the-form-rules-engine.md)); its `checkField` (`checks.ts`) runs the built-in types'
+  decide a whole form at once: what is hidden and required, the validation rules' messages, the calculations'
+  results, the actions that run and the outcome, from one model of the form that Core builds from a definition with
+  `DefinitionLogic.From` ([ADR-0061](decisions/0061-the-form-rules-engine.md)); its calculation language (`calc.ts`,
+  Core's `Logic/Calculations.cs`) reads a formula into a tree, checks it against the form and works it out over exact
+  decimals ([ADR-0063](decisions/0063-the-calculation-language.md)); its `checkField` (`checks.ts`) runs the built-in types'
   checks of a field's answers as each type's `Validate` in Core does, and then the field's own `pattern` and
   `matchesField` checks as Core's `FieldValues` does, with the other fields' values
   ([ADR-0062](decisions/0062-the-built-in-types-checks.md));

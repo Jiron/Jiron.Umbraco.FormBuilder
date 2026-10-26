@@ -3,9 +3,22 @@
  * the website runtime, the headless element and the backoffice, the same as Core's in C#, and tested against the
  * shared vectors in tests/vectors. It has no DOM and no dependencies: its compiler settings leave out the DOM's types,
  * and the lint refuses imports from anywhere else. Step 3.4b ported the modules of the 1.5 spike; 5.2a added
- * the form engine (ADR-0061), 5.2b the built-in types' checks (ADR-0062), and 5.2c and 5.3 complete the others.
+ * the form engine (ADR-0061), 5.2b and 5.2c the built-in types' checks (ADR-0062), 5.3a the calculation language
+ * (ADR-0063), and 5.3b and 5.3c the merge tags.
  */
-export { calculate, storedNumber, type Calculation } from './calc.ts';
+export {
+  calculate,
+  checkFormula,
+  evaluateFormula,
+  MAX_FORMULA_DEPTH,
+  MAX_FORMULA_LENGTH,
+  parseFormula,
+  storedNumber,
+  type Calculation,
+  type FieldReference,
+  type FormulaScope,
+  type Operation,
+} from './calc.ts';
 export {
   checkField,
   type CheckedField,
@@ -21,6 +34,7 @@ export {
   type FormAnswers,
   type FormState,
   type LogicAction,
+  type LogicCalculation,
   type LogicField,
   type LogicForm,
   type LogicFormGroup,

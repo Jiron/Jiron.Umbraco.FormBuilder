@@ -12,7 +12,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 [TestFixture]
 public sealed class VectorTests
 {
-    private static readonly string[] Runnable = ["condition", "rule", "number", "calc", "form", "field"];
+    private static readonly string[] Runnable = ["condition", "rule", "number", "calc", "formula", "form", "field"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, JsonDocument>> Files = new(Load);
 
@@ -76,6 +76,7 @@ public sealed class VectorTests
         ["hidden"] = Json(state.Hidden),
         ["required"] = Json(state.Required),
         ["messages"] = Json(state.Messages),
+        ["calculations"] = Json(state.Calculations),
         ["rows"] = new JsonObject(state.Rows.Select(pair => KeyValuePair.Create(
             pair.Key,
             (JsonNode?)new JsonArray([.. pair.Value.Select(row => (JsonNode)new JsonObject
@@ -83,6 +84,7 @@ public sealed class VectorTests
                 ["hidden"] = Json(row.Hidden),
                 ["required"] = Json(row.Required),
                 ["messages"] = Json(row.Messages),
+                ["calculations"] = Json(row.Calculations),
             })])))),
         ["actions"] = Json(state.Actions),
         ["outcome"] = state.Outcome,
@@ -92,6 +94,15 @@ public sealed class VectorTests
 
     private static JsonObject Json(IReadOnlyDictionary<string, IReadOnlyList<string>> messages) =>
         new(messages.Select(pair => KeyValuePair.Create(pair.Key, (JsonNode?)Json(pair.Value))));
+
+    private static JsonObject Json(IReadOnlyDictionary<string, string?> calculations) =>
+        new(calculations.Select(pair => KeyValuePair.Create(pair.Key, pair.Value is { } value ? (JsonNode?)value : null)));
+
+    // A subject as a formula reads it: the fields' kinds and answers by alias, a hidden field without answers.
+    private static FormulaScope FormulaScope(Subject subject) => new(
+        alias => subject.Fields.TryGetValue(alias, out var kind) ? kind : null,
+        alias => subject.Context.Hidden.Contains(alias, StringComparer.Ordinal) ? null : subject.Values.GetValueOrDefault(alias),
+        () => CalendarValues.Today(subject.Context.Now, subject.Context.TimeZone));
 
     private static JsonNode? Run(JsonElement root, JsonElement vector)
     {
@@ -137,11 +148,16 @@ public sealed class VectorTests
                 return Json(FormRules.Evaluate(VectorReader.Form(form), answers, subject.Context));
             }
 
-            return Calculations.Calculate(VectorReader.Calculation(vector.GetProperty("calc"))).ToString();
+            if (vector.TryGetProperty("formula", out var formula))
+            {
+                return Calculations.Evaluate(formula.GetString()!, FormulaScope(subject));
+            }
+
+            return Calculations.Calculate(VectorReader.Calculation(vector.GetProperty("calc")), FormulaScope(subject))?.ToString();
         }
         catch (LogicException exception)
         {
-            return new JsonObject { ["error"] = exception.Code };
+            return exception.At is { } at ? new JsonObject { ["error"] = exception.Code, ["at"] = at } : new JsonObject { ["error"] = exception.Code };
         }
     }
 }

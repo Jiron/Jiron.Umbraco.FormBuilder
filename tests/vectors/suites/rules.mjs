@@ -227,9 +227,9 @@ const rules = [
 const f = (id, kind, more = {}) => (kind === null ? { id, ...more } : { id, kind, ...more });
 /** One page with one group holding the fields. */
 const form = (fieldList, more = {}) => ({ pages: [{ id: 'p1', groups: [{ id: 'g1', fields: fieldList }] }], ...more });
-const none = { hidden: [], required: [], messages: {}, rows: {}, actions: [], outcome: null };
+const none = { hidden: [], required: [], messages: {}, calculations: {}, rows: {}, actions: [], outcome: null };
 const state = (partial = {}) => ({ ...none, ...partial });
-const row = (partial = {}) => ({ hidden: [], required: [], messages: {}, ...partial });
+const row = (partial = {}) => ({ hidden: [], required: [], messages: {}, calculations: {}, ...partial });
 const hiddenByCulture = rule('hide', [ctx('culture', 'startsWith', 'de')]);
 
 const forms = [

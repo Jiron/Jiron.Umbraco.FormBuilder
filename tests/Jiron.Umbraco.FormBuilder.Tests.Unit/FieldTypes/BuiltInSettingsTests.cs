@@ -30,7 +30,7 @@ public sealed class BuiltInSettingsTests
         ["rating"] = "count 3..10; lowLabel chars<=100; highLabel chars<=100",
         ["scale"] = "from 0..1; to 5..10; lowLabel chars<=100; highLabel chars<=100",
         ["slider"] = "unit chars<=50",
-        ["calculation"] = "formula required; format.decimals 0..15; format.prefix chars<=50; format.suffix chars<=50",
+        ["calculation"] = "formula required chars<=1000; format.decimals 0..15; format.prefix chars<=50; format.suffix chars<=50",
         ["dropdown"] = "prompt chars<=200; minSelections 1..1000; maxSelections 1..1000",
         ["radio"] = "otherLabel chars<=200",
         ["checkboxes"] = "minSelections 1..1000; maxSelections 1..1000; otherLabel chars<=200",
@@ -397,7 +397,7 @@ public sealed class BuiltInSettingsTests
 
         var required = type switch
         {
-            "calculation" => new JsonObject { ["formula"] = "1 + 1" },
+            "calculation" => new JsonObject { ["formula"] = "amount * 2" },
             "consent" => new JsonObject { ["text"] = Text("I agree to the terms.") },
             "heading" => new JsonObject { ["text"] = Text("Your visit") },
             "paragraph" => new JsonObject { ["html"] = Text("<p>Welcome.</p>") },
@@ -420,6 +420,7 @@ public sealed class BuiltInSettingsTests
     private static List<string> Publish(JsonObject field) =>
         [.. StructureTests.Publish(Document(field)).Select(problem => $"{problem.Code} at {problem.Path}")];
 
+    // The field, and a number a calculation's formula reads.
     private static string Document(JsonObject field) => new JsonObject
     {
         ["schemaVersion"] = 1,
@@ -427,7 +428,11 @@ public sealed class BuiltInSettingsTests
         ["pages"] = new JsonArray(new JsonObject
         {
             ["key"] = "10000000-0000-4000-8000-000000000001",
-            ["groups"] = new JsonArray(new JsonObject { ["key"] = "20000000-0000-4000-8000-000000000001", ["fields"] = new JsonArray(field) }),
+            ["groups"] = new JsonArray(new JsonObject
+            {
+                ["key"] = "20000000-0000-4000-8000-000000000001",
+                ["fields"] = new JsonArray(field, new JsonObject { ["key"] = "30000000-0000-4000-8000-000000000004", ["type"] = "number", ["alias"] = "amount" }),
+            }),
         }),
     }.ToJsonString();
 }

@@ -124,6 +124,19 @@ public sealed class StructureTests
         ["defaultValue"] = "{{ member.email }}",
     });
 
+    // A calculation at the end of the first group, field 8 when it is the first field added there.
+    private static void AddCalculation(JsonObject d, string formula, string alias = "total", int key = 0x22) =>
+        d["pages"]![0]!["groups"]![0]!["fields"]!.AsArray().Add(new JsonObject
+        {
+            ["key"] = K(key),
+            ["type"] = "calculation",
+            ["alias"] = alias,
+            ["settings"] = new JsonObject { ["formula"] = formula },
+        });
+
+    private static void AddField(JsonObject d, string type, string alias, int key) =>
+        d["pages"]![0]!["groups"]![0]!["fields"]!.AsArray().Add(new JsonObject { ["key"] = K(key), ["type"] = type, ["alias"] = alias });
+
     private static JsonObject Rule(string key, string effect, params JsonNode[] conditions) =>
         new() { ["key"] = key, ["effect"] = effect, ["conditions"] = new JsonArray(conditions) };
 
@@ -416,6 +429,42 @@ public sealed class StructureTests
             });
         }, DefinitionErrors.Cycle, $"{F(4)}.options.parent");
 
+        // Calculations (ADR-0063): each mistake in a formula at its setting, and a calculation that depends on itself.
+        var formula = $"{F(8)}.settings.formula";
+        yield return Case("a formula that does not follow the grammar", d => AddCalculation(d, "guests *"), DefinitionErrors.InvalidFormula, formula);
+        yield return Case("a formula that calls no function there is", d => AddCalculation(d, "sum(guests)"), DefinitionErrors.UnknownOperator, formula);
+        yield return Case("a formula that rounds to places worked out", d => AddCalculation(d, "round(guests, 1 + 1)"), DefinitionErrors.InvalidOperand, formula);
+        yield return Case("a formula nested too deep", d => AddCalculation(d, new string('(', Calculations.MaxDepth + 1) + "guests" + new string(')', Calculations.MaxDepth + 1)), DefinitionErrors.TooDeep, formula);
+        yield return Case("a number with too many digits", d => AddCalculation(d, "guests * 1" + new string('0', ExactDecimal.MaxDigits)), DefinitionErrors.OutOfRange, formula);
+        yield return Case("a formula over a field the form lacks", d => AddCalculation(d, "seats * 2"), DefinitionErrors.UnknownField, formula);
+        yield return Case("a formula over a field whose answers it cannot read", d => AddCalculation(d, "fullName + 1"), DefinitionErrors.UnknownField, formula);
+        yield return Case("a formula over a text", d => AddCalculation(d, "name + 1"), DefinitionErrors.OperatorNotForKind, formula);
+        yield return Case("a formula over a hidden field's value", d =>
+        {
+            AddHidden(d);
+            AddCalculation(d, "guests + source");
+        }, DefinitionErrors.InvalidReference, $"{F(9)}.settings.formula");
+        yield return Case("a formula that names no field", d => AddCalculation(d, "1 + 1"), DefinitionErrors.ConstantFormula, formula);
+        yield return Case("a formula longer than its setting takes", d => AddCalculation(d, "guests" + new string(' ', Calculations.MaxLength - 5)), DefinitionErrors.SettingInvalid, formula);
+        yield return Case("a formula over a field whose type the site lacks", d =>
+        {
+            AddCalculation(d, "shade * 2");
+            AddField(d, "colourPicker", "shade", 0x23);
+        }, DefinitionErrors.UnknownType, $"{F(9)}.type");
+        yield return Case("a calculation that reads itself", d => AddCalculation(d, "total + guests"), DefinitionErrors.Cycle, formula);
+        yield return Case("two calculations that read each other", d =>
+        {
+            AddCalculation(d, "rest + 1");
+            AddCalculation(d, "total - 1", "rest", 0x23);
+        }, DefinitionErrors.Cycle, formula);
+        yield return Case("a calculation over a field shown by its result", d =>
+        {
+            AddCalculation(d, "guests * 12");
+            Guests(d)["field"] = K(0x22);
+            Guests(d)["op"] = "greaterThan";
+            Guests(d)["value"] = "100";
+        }, DefinitionErrors.Cycle, $"{F(5)}.rules[0]");
+
         // Groups of conditions nest as deep as the form engine reads them, the rule's own conditions being the first level
         // (ADR-0061): the group one level deeper is refused.
         yield return Case("groups of conditions nested too deep", d => Guests(d).ReplaceWith(Nested(Rules.MaxDepth, Guests(d))), DefinitionErrors.TooDeep, $"{F(5)}.rules[0].conditions[0]{Deeper(Rules.MaxDepth - 1)}");
@@ -477,6 +526,21 @@ public sealed class StructureTests
             d["outcomes"]![0]!["rules"]![0]!["conditions"]![0]!.ReplaceWith(new JsonObject { ["field"] = K(0x20), ["op"] = "equals", ["value"] = "newsletter" });
         });
         yield return Case("a redirect outcome that leads to a page", d => d["outcomes"]![0]!["redirect"] = new JsonObject { ["content"] = "73000000-0000-4000-8000-000000000002" });
+        yield return Case("calculations over a number, a choice, a checkbox and each other", d =>
+        {
+            AddCalculation(d, "if(guests > 10, guests * 9, guests * 12) + max(country, 0)");
+            AddCalculation(d, "round(total / 3, 1) + newsletter", "share", 0x23);
+        });
+        yield return Case("a calculation of the days until a date", d =>
+        {
+            AddField(d, "date", "arrival", 0x23);
+            AddCalculation(d, "daysBetween(today(), arrival)");
+        });
+        yield return Case("a show rule on a calculation's result", d =>
+        {
+            AddCalculation(d, "guests * 12");
+            Field(d, 0)["rules"] = new JsonArray(Rule("40000000-0000-4000-8000-000000000010", "show", new JsonObject { ["field"] = K(0x22), ["op"] = "lessThan", ["value"] = "500" }));
+        });
     }
 
     [Test]
@@ -498,6 +562,31 @@ public sealed class StructureTests
     [TestCaseSource(nameof(Accepted))]
     public void Publishing_AcceptsWhatFitsTogether(Action<JsonObject> change) =>
         Assert.That(Publish(Changed(change)), Is.Empty);
+
+    [Test]
+    public void AFormulasMistake_SaysWhereItStarts()
+    {
+        string MessageOf(Action<JsonObject> change) => Publish(Changed(change)).Single().Message;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(MessageOf(d => AddCalculation(d, "guests *")), Is.EqualTo("The formula does not follow the grammar of calculations at character 9."));
+            Assert.That(MessageOf(d => AddCalculation(d, "guests + seats")), Is.EqualTo("The form has no field 'seats' at character 10."));
+            Assert.That(MessageOf(d => AddCalculation(d, "2 * fullName")), Is.EqualTo("A formula cannot read the answers of field 'fullName' (name) at character 5."));
+            Assert.That(MessageOf(d => AddCalculation(d, "guests + name")), Does.StartWith("The field 'name' does not fit where it stands at character 10: "));
+            Assert.That(MessageOf(d => AddCalculation(d, "1 + 1")), Is.EqualTo("The formula names no field, so its result never changes."));
+            Assert.That(MessageOf(d =>
+            {
+                AddHidden(d);
+                AddCalculation(d, "guests + source");
+            }), Does.StartWith("The value of field 'source' (hidden) is set on the server").And.EndWith(" at character 10."));
+            Assert.That(MessageOf(d =>
+            {
+                AddCalculation(d, "rest + 1");
+                AddCalculation(d, "total - 1", "rest", 0x23);
+            }), Is.EqualTo("Whether these are shown, and what they work out, depends on itself, through rules, formulas and what contains them: field 'total', field 'rest'."));
+        });
+    }
 
     [Test]
     public void EveryCodeOfTheStructuralValidation_HasACase()

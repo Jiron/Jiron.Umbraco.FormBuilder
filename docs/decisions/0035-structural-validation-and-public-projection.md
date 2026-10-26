@@ -5,7 +5,8 @@
   amended in 4.8f (the publish check holds what publishing refuses; `OnePerForm`); amended in 5.1a by
   [ADR-0055](0055-field-type-framework.md) (the traits come from the registry); amended in 5.1b by
   [ADR-0056](0056-field-settings-checks.md) (each field's settings checked, `setting_unknown`, `setting_missing` and
-  `setting_invalid`); amended in 5.2a by [ADR-0061](0061-the-form-rules-engine.md) (`too_deep`)
+  `setting_invalid`); amended in 5.2a by [ADR-0061](0061-the-form-rules-engine.md) (`too_deep`); amended in 5.3a by
+  [ADR-0063](0063-the-calculation-language.md) (calculations' formulas and their cycles)
 - Date: 2026-10-23
 - Roadmap step: 4.2b (decided and built); 4.5 calls it when a form is published, 5.1a moved the field-type traits
   into the registry, 5.1b checks the settings, 6.6 serves the projection, 7.2 and 8.1 add provider and action types
@@ -246,7 +247,9 @@ None of these needs a new revision.
   above the maximum.
 - **How deeply condition groups nest (done in 5.2a, ADR-0061).** Publishing refuses a group past the engine's limit
   as `too_deep`, with `Rules.MaxDepth`, the one limit both runtimes use.
-- **The references and cycles of calculations (5.3).**
+- **The references and cycles of calculations (done in 5.3a, ADR-0063).** Publishing checks each formula at
+  `…settings.formula` with the calculation language's codes, and a calculation that depends on itself joins the cycle
+  check of visibility as `cycle`.
 - **The rendered redirect's second check (6.1).**
 - **What the form check adds (9.5b),** such as a missing label, merge tags that recall a later field, and warnings.
 

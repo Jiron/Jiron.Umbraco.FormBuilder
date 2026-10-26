@@ -2,7 +2,8 @@ namespace Jiron.Umbraco.FormBuilder.Logic;
 
 /// <summary>
 /// A problem the shared logic reports instead of a result (ADR-0005). The code is the contract: both runtimes use the
-/// same codes (<see cref="LogicErrors"/>), and the vector files expect them as <c>{ "error": code }</c>.
+/// same codes (<see cref="LogicErrors"/>), and the vector files expect them as <c>{ "error": code }</c>. A mistake in a
+/// formula also has the position where it starts, so the form check can point at it (ADR-0063).
 /// </summary>
 internal sealed class LogicException : Exception
 {
@@ -17,8 +18,18 @@ internal sealed class LogicException : Exception
     public LogicException(string code, Exception innerException)
         : base(code, innerException) => Code = code;
 
+    public LogicException(string code, int at)
+        : base($"{code} at {at}")
+    {
+        Code = code;
+        At = at;
+    }
+
     /// <summary>One of <see cref="LogicErrors"/>.</summary>
     public string Code { get; }
+
+    /// <summary>Where a mistake in a formula starts, as a UTF-16 index; null for any other problem.</summary>
+    public int? At { get; }
 }
 
 /// <summary>The codes the shared logic reports, the same in C# and TypeScript (ADR-0005).</summary>
@@ -39,7 +50,10 @@ internal static class LogicErrors
     /// <summary>A condition names both a field and a context or neither, or a group matches neither "all" nor "any".</summary>
     public const string InvalidCondition = "invalid_condition";
 
-    /// <summary>Groups of conditions nest deeper than <see cref="Rules.MaxDepth"/> levels.</summary>
+    /// <summary>
+    /// Groups of conditions nest deeper than <see cref="Rules.MaxDepth"/> levels, or a formula's parentheses and calls
+    /// deeper than <see cref="Calculations.MaxDepth"/>.
+    /// </summary>
     public const string TooDeep = "too_deep";
 
     /// <summary>A rule has an effect its element does not take, a second rule of one effect, or both show and hide.</summary>
@@ -48,7 +62,7 @@ internal static class LogicErrors
     /// <summary>A form gives an id twice, or holds a repeatable group in another.</summary>
     public const string InvalidForm = "invalid_form";
 
-    /// <summary>Whether an element of a form is shown depends on itself.</summary>
+    /// <summary>Whether an element of a form is shown, or a calculation's result, depends on itself.</summary>
     public const string Cycle = "cycle";
 
     /// <summary>A pattern uses syntax outside the safe subset or exceeds its limits.</summary>
@@ -71,4 +85,10 @@ internal static class LogicErrors
 
     /// <summary>A calculation divides by zero.</summary>
     public const string DivisionByZero = "division_by_zero";
+
+    /// <summary>A formula does not follow the grammar of the calculation language, or is longer than it reads (ADR-0063).</summary>
+    public const string InvalidFormula = "invalid_formula";
+
+    /// <summary>A formula names no field, so its result never changes.</summary>
+    public const string ConstantFormula = "constant_formula";
 }

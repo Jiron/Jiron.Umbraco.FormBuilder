@@ -3,6 +3,10 @@
 // dependency order (an element after what holds it and after every field its show or hide rule looks at), a hidden
 // field's answers are gone for every condition, and a repeatable group's child fields are decided row by row. What is
 // required, the validation rules' messages, the actions that run and the outcome follow from the final visibility.
+// Calculations are worked out in the same order, after the fields they read (ADR-0063).
+import { calculate, checkFormula, parseFormula, type Calculation, type FormulaScope } from './calc.ts';
+import { today } from './dates.ts';
+import { formatDecimal, round } from './decimal.ts';
 import { LogicError, own } from './errors.ts';
 import type { Pattern } from './pattern.ts';
 import {
@@ -23,11 +27,21 @@ export interface LogicGridRow {
   readonly kind: Kind;
 }
 
+/** A calculation's formula and the places its result is rounded to: 0 to 15, 2 when unset (ADR-0063). */
+export interface LogicCalculation {
+  readonly formula: string;
+  readonly decimals?: number | null;
+}
+
 /** A field: one with child fields is a repeatable group. */
 export interface LogicField {
   readonly id: string;
   /** The kind its answers compare as; none for a field that holds no value. */
   readonly kind?: Kind | null;
+  /** The alias formulas name it by. */
+  readonly alias?: string | null;
+  /** A calculation field's formula, worked out instead of what is posted for it. */
+  readonly calculation?: LogicCalculation | null;
   /** Whether the field is required of itself, whatever its rules say. */
   readonly required?: boolean;
   readonly rules?: readonly Rule[];
@@ -85,11 +99,12 @@ export interface FormAnswers {
   readonly rows?: Readonly<Record<string, readonly Readonly<Record<string, readonly string[]>>[]>>;
 }
 
-/** One row of a repeatable group: its child fields that are hidden or required, and its messages. */
+/** One row of a repeatable group: its child fields that are hidden or required, its messages and its calculations. */
 export interface RowState {
   readonly hidden: string[];
   readonly required: string[];
   readonly messages: Record<string, string[]>;
+  readonly calculations: Record<string, string | null>;
 }
 
 /** What a form's rules decide, every list in document order. */
@@ -100,6 +115,8 @@ export interface FormState {
   readonly required: string[];
   /** The ids of the validation rules that match, by the shown field that shows them. */
   readonly messages: Record<string, string[]>;
+  /** The result of every shown calculation (outside repeatable groups) as canonical text, null without a value. */
+  readonly calculations: Record<string, string | null>;
   /** Every repeatable group's rows. */
   readonly rows: Record<string, RowState[]>;
   /** The actions that run. */
@@ -116,6 +133,14 @@ interface RowBuilder {
   readonly hidden: string[];
   readonly required: string[];
   readonly messages: Map<string, string[]>;
+  readonly calculations: Map<string, string | null>;
+}
+
+/** A calculation as the check read it: its tree, the aliases it names and its places. */
+interface Formula {
+  readonly tree: Calculation;
+  readonly named: readonly string[];
+  readonly decimals: number;
 }
 
 /** A page, group or field, with what the evaluation decides about it. */
@@ -130,6 +155,7 @@ interface Node {
   readonly required: boolean;
   readonly rules: readonly Rule[];
   readonly repeats: boolean;
+  readonly calculation: LogicCalculation | null;
   readonly dependents: Node[];
   waiting: number;
   hidden: boolean;
@@ -137,6 +163,11 @@ interface Node {
   hiddenIn: readonly boolean[];
   /** A repeatable group's rows. */
   rows: readonly RowBuilder[];
+  /** A calculation as the check read it. */
+  formula: Formula | null;
+  /** A calculation's result, and a child calculation's row by row. */
+  value: string | null;
+  valueIn: readonly (string | null)[];
 }
 
 interface Subject {
@@ -165,18 +196,26 @@ function node(
     required: field?.required === true,
     rules: [],
     repeats: children.length > 0,
+    calculation: field?.calculation ?? null,
     dependents: [],
     waiting: 0,
     hidden: false,
     hiddenIn: [],
     rows: [],
+    formula: null,
+    value: null,
+    valueIn: [],
   };
 }
 
-/** The form's elements in document order and its subjects by id; an id given twice is `invalid_form`. */
-function index(form: LogicForm): { nodes: Node[]; subjects: Map<string, Subject> } {
+/**
+ * The form's elements in document order, its subjects by id and the ids of its fields by alias; an id or an alias given
+ * twice, or a calculation on a field that does not hold a number, is `invalid_form`.
+ */
+function index(form: LogicForm): { nodes: Node[]; subjects: Map<string, Subject>; aliases: Map<string, string> } {
   const nodes: Node[] = [];
   const subjects = new Map<string, Subject>();
+  const aliases = new Map<string, string>();
   const ids = new Set<string>();
   const claim = (id: unknown): string => {
     if (typeof id !== 'string' || ids.has(id)) throw new LogicError('invalid_form');
@@ -194,6 +233,11 @@ function index(form: LogicForm): { nodes: Node[]; subjects: Map<string, Subject>
       // A repeatable group holds no repeatable group.
       if (repeater !== null && element.repeats) throw new LogicError('invalid_form');
       if (element.kind !== null) subjects.set(element.id, { kind: element.kind, owner: element });
+      if (typeof field.alias === 'string' && element.kind !== null) {
+        if (aliases.has(field.alias)) throw new LogicError('invalid_form');
+        aliases.set(field.alias, element.id);
+      }
+      if (element.calculation !== null && element.kind !== 'number') throw new LogicError('invalid_form');
       for (const row of field.rows ?? []) subjects.set(claim(row.id), { kind: row.kind, owner: element });
       fields(field.fields ?? [], element, element.repeats ? element : repeater);
     }
@@ -205,7 +249,14 @@ function index(form: LogicForm): { nodes: Node[]; subjects: Map<string, Subject>
   }
   for (const item of [...(form.validationRules ?? []), ...(form.actions ?? []), ...(form.outcomes ?? [])])
     claim(item.id);
-  return { nodes, subjects };
+  return { nodes, subjects, aliases };
+}
+
+/** The places a calculation's result is rounded to: 0 to 15, 2 when unset (ADR-0005). */
+function decimalsOf(calculation: LogicCalculation): number {
+  const decimals = calculation.decimals ?? 2;
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 15) throw new LogicError('invalid_form');
+  return decimals;
 }
 
 /**
@@ -249,11 +300,22 @@ function looksAt(group: Group, into: Set<string>): void {
 const ruleOf = (rules: readonly Rule[], ...effects: string[]): Rule | undefined =>
   rules.find((rule) => rule.enabled && effects.includes(rule.effect));
 
-/** The elements in dependency order, the ready ones in document order; a cycle is `cycle`. */
-function order(nodes: readonly Node[], subjects: ReadonlyMap<string, Subject>): Node[] {
+/**
+ * The elements in dependency order, the ready ones in document order; a cycle is `cycle`. An element waits for what
+ * holds it, for the fields its show or hide rule looks at and, for a calculation, for the fields its formula names.
+ */
+function order(
+  nodes: readonly Node[],
+  subjects: ReadonlyMap<string, Subject>,
+  aliases: ReadonlyMap<string, string>,
+): Node[] {
   for (const element of nodes) {
     const on = new Set<Node>();
     if (element.container !== null) on.add(element.container);
+    for (const alias of element.formula?.named ?? []) {
+      const owner = subjects.get(aliases.get(alias) ?? '')?.owner;
+      if (owner !== undefined) on.add(owner);
+    }
     const visibility = ruleOf(element.rules, 'show', 'hide');
     if (visibility !== undefined) {
       const named = new Set<string>();
@@ -285,8 +347,9 @@ const push = (map: Map<string, string[]>, key: string, value: string): void => {
 
 /** Checks the whole form, then decides what its rules decide (ADR-0061). */
 export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Context): FormState {
-  const { nodes, subjects } = index(form);
+  const { nodes, subjects, aliases } = index(form);
   const kinds: Readonly<Record<string, Kind>> = Object.fromEntries([...subjects].map(([id, s]) => [id, s.kind]));
+  const kindOf = (alias: string): Kind | undefined => subjects.get(aliases.get(alias) ?? '')?.kind;
 
   // The check, before anything is evaluated.
   const patterns = new Map<string, Pattern>();
@@ -298,18 +361,32 @@ export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Con
   }
   for (const action of form.actions ?? []) checkRules(action.rules ?? [], ['run'], true, kinds, patterns);
   for (const outcome of form.outcomes ?? []) checkRules(outcome.rules ?? [], ['use'], true, kinds, patterns);
-  const sequence = order(nodes, subjects);
+  for (const element of nodes) {
+    if (element.calculation === null) continue;
+    const tree = parseFormula(element.calculation.formula);
+    element.formula = { tree, named: checkFormula(tree, kindOf), decimals: decimalsOf(element.calculation) };
+  }
+  const sequence = order(nodes, subjects, aliases);
 
   // Visibility, in dependency order.
   const values = answers.values ?? {};
   const rowsOf = (repeater: Node): Rows => own(answers.rows ?? {}, repeater.id) ?? [];
+  // A calculation's answer is its result, never what was posted for it; row -1 is outside the rows.
+  const given = (owner: Node, id: string, row: number): readonly string[] | undefined => {
+    if (owner.formula !== null) {
+      const value = row < 0 ? owner.value : (owner.valueIn[row] ?? null);
+      return value === null ? [] : [value];
+    }
+    if (row < 0 || owner.repeater === null) return own(values, id);
+    return own(rowsOf(owner.repeater)[row] ?? {}, id);
+  };
   const answersOf = (id: string, repeater: Node | null, row: number): readonly string[] | undefined => {
     const owner = subjects.get(id)?.owner;
     if (owner === undefined) return undefined;
-    if (owner.repeater === null) return owner.hidden ? undefined : own(values, id);
+    if (owner.repeater === null) return owner.hidden ? undefined : given(owner, id, -1);
     const rows = rowsOf(owner.repeater);
-    if (owner.repeater === repeater) return owner.hiddenIn[row] === true ? undefined : own(rows[row] ?? {}, id);
-    return rows.flatMap((answer, r) => (owner.hiddenIn[r] === true ? [] : (own(answer, id) ?? [])));
+    if (owner.repeater === repeater) return owner.hiddenIn[row] === true ? undefined : given(owner, id, row);
+    return rows.flatMap((_, r) => (owner.hiddenIn[r] === true ? [] : (given(owner, id, r) ?? [])));
   };
   const global: Scope = { fields: kinds, context, answers: (id) => answersOf(id, null, -1) };
   const scopeOf = (repeater: Node | null, row: number): Scope =>
@@ -319,11 +396,40 @@ export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Con
     if (rule === undefined) return true;
     return matchesGroup(rule, scope, patterns) === (rule.effect === 'show');
   };
+  let day: number | undefined;
+  const siteToday = (): number => (day ??= today(context.now, context.timeZone));
+  // A shown calculation over its scope, rounded to its places; a failure of the arithmetic leaves it without a value.
+  const work = (formula: Formula, scope: Scope): string | null => {
+    const reads: FormulaScope = {
+      kind: kindOf,
+      answers: (alias) => {
+        const id = aliases.get(alias);
+        return id === undefined ? undefined : scope.answers(id);
+      },
+      today: siteToday,
+    };
+    try {
+      const result = calculate(formula.tree, reads);
+      return result === null ? null : formatDecimal(round(result, formula.decimals));
+    } catch (error) {
+      if (error instanceof LogicError && (error.code === 'division_by_zero' || error.code === 'out_of_range'))
+        return null;
+      throw error;
+    }
+  };
   for (const element of sequence) {
     const repeater = element.repeater;
-    if (repeater !== null)
+    const formula = element.formula;
+    if (repeater !== null) {
       element.hiddenIn = rowsOf(repeater).map((_, row) => repeater.hidden || !shown(element, scopeOf(repeater, row)));
-    else element.hidden = element.container?.hidden === true || !shown(element, global);
+      if (formula !== null)
+        element.valueIn = element.hiddenIn.map((hidden, row) =>
+          hidden ? null : work(formula, scopeOf(repeater, row)),
+        );
+    } else {
+      element.hidden = element.container?.hidden === true || !shown(element, global);
+      if (formula !== null && !element.hidden) element.value = work(formula, global);
+    }
   }
 
   // What follows from the final visibility.
@@ -335,18 +441,32 @@ export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Con
   const hidden: string[] = [];
   const required: string[] = [];
   const messages = new Map<string, string[]>();
+  const calculations = new Map<string, string | null>();
   for (const element of nodes) {
-    if (element.repeats) element.rows = rowsOf(element).map(() => ({ hidden: [], required: [], messages: new Map() }));
+    if (element.repeats)
+      element.rows = rowsOf(element).map(() => ({
+        hidden: [],
+        required: [],
+        messages: new Map(),
+        calculations: new Map(),
+      }));
   }
   for (const element of nodes) {
     const repeater = element.repeater;
     if (repeater !== null) {
       repeater.rows.forEach((row, at) => {
-        if (element.hiddenIn[at] === true) row.hidden.push(element.id);
-        else if (element.kind !== null && requires(element, scopeOf(repeater, at))) row.required.push(element.id);
+        if (element.hiddenIn[at] === true) {
+          row.hidden.push(element.id);
+          return;
+        }
+        if (element.formula !== null) row.calculations.set(element.id, element.valueIn[at] ?? null);
+        if (element.kind !== null && requires(element, scopeOf(repeater, at))) row.required.push(element.id);
       });
     } else if (element.hidden) hidden.push(element.id);
-    else if (element.kind !== null && requires(element, global)) required.push(element.id);
+    else {
+      if (element.formula !== null) calculations.set(element.id, element.value);
+      if (element.kind !== null && requires(element, global)) required.push(element.id);
+    }
   }
   for (const rule of form.validationRules ?? []) {
     const owner = subjects.get(rule.field)?.owner;
@@ -368,6 +488,7 @@ export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Con
     hidden,
     required,
     messages: Object.fromEntries(messages),
+    calculations: Object.fromEntries(calculations),
     rows: Object.fromEntries(
       nodes
         .filter((element) => element.repeats)
@@ -377,6 +498,7 @@ export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Con
             hidden: row.hidden,
             required: row.required,
             messages: Object.fromEntries(row.messages),
+            calculations: Object.fromEntries(row.calculations),
           })),
         ]),
     ),

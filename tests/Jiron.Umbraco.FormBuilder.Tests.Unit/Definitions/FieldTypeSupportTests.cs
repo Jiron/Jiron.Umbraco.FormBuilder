@@ -259,7 +259,7 @@ public sealed class FieldTypeSupportTests
 
         JsonObject? settings = type switch
         {
-            "calculation" => new() { ["formula"] = "1 + 1" },
+            "calculation" => new() { ["formula"] = "amount * 2" },
             "consent" => new() { ["text"] = Text("I agree to the terms.") },
             "heading" => new() { ["text"] = Text("Your visit") },
             "paragraph" => new() { ["html"] = Text("<p>Welcome.</p>") },
@@ -297,7 +297,10 @@ public sealed class FieldTypeSupportTests
                 ["groups"] = new JsonArray(new JsonObject
                 {
                     ["key"] = "20000000-0000-4000-8000-000000000001",
-                    ["fields"] = new JsonArray(field, new JsonObject { ["key"] = Other, ["type"] = "text", ["alias"] = "other" }),
+                    ["fields"] = new JsonArray(
+                        field,
+                        new JsonObject { ["key"] = Other, ["type"] = "text", ["alias"] = "other" },
+                        new JsonObject { ["key"] = "30000000-0000-4000-8000-000000000004", ["type"] = "number", ["alias"] = "amount" }),
                 }),
             }),
         };

@@ -77,7 +77,10 @@ values of its own options (a choice without them takes them from a list), its ro
 (values, parts and files), with the other fields' `values` by id, expecting its `errors` and the indexes of its
 failing `checks`. An email's domains are the server's alone, so `FieldTypes/BuiltInValidationTests.cs` covers them;
 it, `BuiltInChoiceValidationTests.cs` and `BuiltInPeopleAndFileValidationTests.cs` restate every check at its edges
-through each type's `Validate`.
+through each type's `Validate`. `calculations` (5.3a) holds the calculation language
+([ADR-0063](../docs/decisions/0063-the-calculation-language.md)): a case's `formula` with its `values`, expecting its
+result, null without a value, or the mistake's code with the position where it starts, and whole forms with
+calculation fields, whose results every `form` case expects in `calculations`.
 
 **The mutation check** proves the vectors. Each mutant in `vectors/mutants.mjs` changes one piece of the logic in one
 runtime, that runtime's vector runner runs, and the file is put back; the check fails on a mutant that nothing catches,
@@ -102,6 +105,10 @@ folds its answer once, an evaluation compiles each pattern once (Core shows both
 counting the calls), and a pattern's run keeps one set of buffers, which Core shows by what it allocates and TypeScript
 by its time over ten times the answer. What numbers compare as lives in the shared vectors, not in these tests. `Logic/TextSemanticsTests.cs` shows
 that cleaning returns a text it leaves alone as it is, and puts each replacement where it belongs.
+
+`Logic/FormulaFuzzTests.cs` and `packages/logic/test/formulas.test.ts` run 10,000 random formulas each, from a seeded
+generator: built from the grammar, broken by chance and worked out over random answers, each gives a result or a
+mistake, nothing else, in at most 50 ms (the fastest of three runs), and together they reach every outcome.
 
 **The tables check** compares the two runtimes' Unicode data. `npm run tables` in `packages/logic` writes what
 TypeScript's clean, fold and NFC recomposition do to every code point into `vectors/tables/typescript.json`; a Vitest

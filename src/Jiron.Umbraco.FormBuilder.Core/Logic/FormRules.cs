@@ -8,7 +8,7 @@ namespace Jiron.Umbraco.FormBuilder.Logic;
 /// is decided in dependency order (an element after what holds it and after every field its show or hide rule looks
 /// at), a hidden field's answers are gone for every condition, and a repeatable group's child fields are decided row by
 /// row. What is required, the validation rules' messages, the actions that run and the outcome follow from the final
-/// visibility.
+/// visibility. Calculations are worked out in the same order, after the fields they read (ADR-0063).
 /// </summary>
 internal static class FormRules
 {
@@ -28,8 +28,9 @@ internal static class FormRules
         ArgumentNullException.ThrowIfNull(form);
         ArgumentNullException.ThrowIfNull(answers);
         ArgumentNullException.ThrowIfNull(context);
-        var (nodes, subjects) = Index(form);
+        var (nodes, subjects, aliases) = Index(form);
         var kinds = subjects.ToDictionary(pair => pair.Key, pair => pair.Value.Kind, StringComparer.Ordinal);
+        FieldKind? KindOf(string alias) => aliases.TryGetValue(alias, out var id) && subjects.TryGetValue(id, out var subject) ? subject.Kind : null;
 
         // The check, before anything is evaluated.
         var patterns = new Dictionary<string, SafePattern>(StringComparer.Ordinal);
@@ -58,30 +59,51 @@ internal static class FormRules
             CheckRules(outcome.Rules, ["use"], holdsValue: true, kinds, patterns);
         }
 
-        var sequence = Order(nodes, subjects);
+        foreach (var node in nodes)
+        {
+            if (node.Calculation is { } calculation)
+            {
+                var tree = Calculations.Parse(calculation.Formula);
+                node.Formula = new Formula(tree, Calculations.Check(tree, KindOf), DecimalsOf(calculation));
+            }
+        }
+
+        var sequence = Order(nodes, subjects, aliases);
 
         // Visibility, in dependency order.
         IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>> RowsOf(Node repeater) =>
             answers.Rows.TryGetValue(repeater.Id, out var rows) ? rows : [];
+
+        // A calculation's answer is its result, never what was posted for it; row -1 is outside the rows.
+        IReadOnlyList<string>? Given(Node owner, string id, int row)
+        {
+            if (owner.Formula is not null)
+            {
+                return (row < 0 ? owner.Value : owner.ValueIn[row]) is { } value ? [value] : [];
+            }
+
+            return row < 0 || owner.Repeater is null ? answers.Values.GetValueOrDefault(id) : RowsOf(owner.Repeater)[row].GetValueOrDefault(id);
+        }
+
         IReadOnlyList<string>? AnswersOf(string id, Node? repeater, int row)
         {
             // Every field a condition names is a subject: the check saw to it.
             var owner = subjects[id].Owner;
             if (owner.Repeater is null)
             {
-                return owner.Hidden ? null : answers.Values.GetValueOrDefault(id);
+                return owner.Hidden ? null : Given(owner, id, -1);
             }
 
             var rows = RowsOf(owner.Repeater);
             if (owner.Repeater == repeater)
             {
-                return owner.HiddenIn[row] ? null : rows[row].GetValueOrDefault(id);
+                return owner.HiddenIn[row] ? null : Given(owner, id, row);
             }
 
             var all = new List<string>();
             for (var r = 0; r < rows.Count; r++)
             {
-                if (!owner.HiddenIn[r] && rows[r].TryGetValue(id, out var given))
+                if (!owner.HiddenIn[r] && Given(owner, id, r) is { } given)
                 {
                     all.AddRange(given);
                 }
@@ -96,6 +118,23 @@ internal static class FormRules
         bool Matches(LogicRule rule, Subject scope) => Rules.MatchesGroup(new LogicGroup(rule.Match, rule.Conditions), scope, patterns);
         bool Shown(Node element, Subject scope) =>
             RuleOf(element.Rules, "show", "hide") is not { } rule || Matches(rule, scope) == (rule.Effect == "show");
+        int? day = null;
+        int SiteToday() => day ??= CalendarValues.Today(context.Now, context.TimeZone);
+
+        // A shown calculation over its scope, rounded to its places; a failure of the arithmetic leaves it without a value.
+        string? Work(Formula formula, Subject scope)
+        {
+            var reads = new FormulaScope(KindOf, alias => aliases.TryGetValue(alias, out var id) ? scope.Lookup!(id) : null, SiteToday);
+            try
+            {
+                return Calculations.Calculate(formula.Tree, reads) is { } result ? ExactDecimal.Round(result, formula.Decimals).ToString() : null;
+            }
+            catch (LogicException exception) when (exception.Code is LogicErrors.DivisionByZero or LogicErrors.OutOfRange)
+            {
+                return null;
+            }
+        }
+
         foreach (var element in sequence)
         {
             if (element.Repeater is { } repeater)
@@ -108,10 +147,24 @@ internal static class FormRules
                 }
 
                 element.HiddenIn = hiddenIn;
+                if (element.Formula is { } formula)
+                {
+                    var valueIn = new string?[count];
+                    for (var row = 0; row < count; row++)
+                    {
+                        valueIn[row] = hiddenIn[row] ? null : Work(formula, ScopeOf(repeater, row));
+                    }
+
+                    element.ValueIn = valueIn;
+                }
             }
             else
             {
                 element.Hidden = element.Container?.Hidden == true || !Shown(element, global);
+                if (element.Formula is { } formula && !element.Hidden)
+                {
+                    element.Value = Work(formula, global);
+                }
             }
         }
 
@@ -121,6 +174,7 @@ internal static class FormRules
         var hidden = new List<string>();
         var required = new List<string>();
         var messages = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var calculations = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var element in nodes.Where(element => element.Repeats))
         {
             element.RowBuilders = [.. RowsOf(element).Select(_ => new RowBuilder())];
@@ -135,8 +189,15 @@ internal static class FormRules
                     if (element.HiddenIn[row])
                     {
                         repeater.RowBuilders[row].Hidden.Add(element.Id);
+                        continue;
                     }
-                    else if (element.Kind is not null && Requires(element, ScopeOf(repeater, row)))
+
+                    if (element.Formula is not null)
+                    {
+                        repeater.RowBuilders[row].Calculations[element.Id] = element.ValueIn[row];
+                    }
+
+                    if (element.Kind is not null && Requires(element, ScopeOf(repeater, row)))
                     {
                         repeater.RowBuilders[row].Required.Add(element.Id);
                     }
@@ -146,9 +207,17 @@ internal static class FormRules
             {
                 hidden.Add(element.Id);
             }
-            else if (element.Kind is not null && Requires(element, global))
+            else
             {
-                required.Add(element.Id);
+                if (element.Formula is not null)
+                {
+                    calculations[element.Id] = element.Value;
+                }
+
+                if (element.Kind is not null && Requires(element, global))
+                {
+                    required.Add(element.Id);
+                }
             }
         }
 
@@ -178,13 +247,18 @@ internal static class FormRules
             hidden,
             required,
             Frozen(messages),
+            calculations,
             nodes.Where(element => element.Repeats).ToDictionary(
                 element => element.Id,
-                element => (IReadOnlyList<RowState>)[.. element.RowBuilders.Select(row => new RowState(row.Hidden, row.Required, Frozen(row.Messages)))],
+                element => (IReadOnlyList<RowState>)[.. element.RowBuilders.Select(row => new RowState(row.Hidden, row.Required, Frozen(row.Messages), row.Calculations))],
                 StringComparer.Ordinal),
             [.. form.Actions.Where(action => Applies(action.Rules, "run")).Select(action => action.Id)],
             form.Outcomes.FirstOrDefault(outcome => Applies(outcome.Rules, "use"))?.Id);
     }
+
+    // The places a calculation's result is rounded to: 0 to 15, 2 when unset (ADR-0005).
+    private static int DecimalsOf(LogicCalculation calculation) =>
+        (calculation.Decimals ?? 2) is var decimals and >= 0 and <= 15 ? decimals : throw new LogicException(LogicErrors.InvalidForm);
 
     private static Dictionary<string, IReadOnlyList<string>> Frozen(Dictionary<string, List<string>> messages) =>
         messages.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<string>)pair.Value, StringComparer.Ordinal);
@@ -214,11 +288,13 @@ internal static class FormRules
         return null;
     }
 
-    // The form's elements in document order and its subjects by id; an id given twice is invalid_form.
-    private static (List<Node> Nodes, Dictionary<string, SubjectOf> Subjects) Index(LogicForm form)
+    // The form's elements in document order, its subjects by id and the ids of its fields by alias; an id or an alias given
+    // twice, or a calculation on a field that does not hold a number, is invalid_form.
+    private static (List<Node> Nodes, Dictionary<string, SubjectOf> Subjects, Dictionary<string, string> Aliases) Index(LogicForm form)
     {
         var nodes = new List<Node>();
         var subjects = new Dictionary<string, SubjectOf>(StringComparer.Ordinal);
+        var aliases = new Dictionary<string, string>(StringComparer.Ordinal);
         var ids = new HashSet<string>(StringComparer.Ordinal);
         string Claim(string? id) => id is not null && ids.Add(id) ? id : throw new LogicException(LogicErrors.InvalidForm);
         Node Add(Node node)
@@ -231,7 +307,7 @@ internal static class FormRules
         {
             foreach (var field in list)
             {
-                var element = Add(new Node(Claim(field.Id), ElementType.Field, container, repeater, field.Kind, field.Required, field.Rules, field.Fields.Count > 0));
+                var element = Add(new Node(Claim(field.Id), ElementType.Field, container, repeater, field.Kind, field.Required, field.Rules, field.Fields.Count > 0) { Calculation = field.Calculation });
 
                 // A repeatable group holds no repeatable group.
                 if (repeater is not null && element.Repeats)
@@ -242,6 +318,15 @@ internal static class FormRules
                 if (element.Kind is { } kind)
                 {
                     subjects[element.Id] = new SubjectOf(kind, element);
+                    if (field.Alias is { } alias && !aliases.TryAdd(alias, element.Id))
+                    {
+                        throw new LogicException(LogicErrors.InvalidForm);
+                    }
+                }
+
+                if (element.Calculation is not null && element.Kind != FieldKind.Number)
+                {
+                    throw new LogicException(LogicErrors.InvalidForm);
                 }
 
                 foreach (var row in field.Rows)
@@ -267,7 +352,7 @@ internal static class FormRules
             Claim(id);
         }
 
-        return (nodes, subjects);
+        return (nodes, subjects, aliases);
     }
 
     // An element's rules: effects it takes, one rule per effect and not both show and hide (invalid_rule), then each
@@ -327,8 +412,9 @@ internal static class FormRules
         }
     }
 
-    // The elements in dependency order, the ready ones in document order; a cycle is cycle.
-    private static List<Node> Order(List<Node> nodes, Dictionary<string, SubjectOf> subjects)
+    // The elements in dependency order, the ready ones in document order; a cycle is cycle. An element waits for what
+    // holds it, for the fields its show or hide rule looks at and, for a calculation, for the fields its formula names.
+    private static List<Node> Order(List<Node> nodes, Dictionary<string, SubjectOf> subjects, Dictionary<string, string> aliases)
     {
         foreach (var element in nodes)
         {
@@ -336,6 +422,14 @@ internal static class FormRules
             if (element.Container is { } container)
             {
                 on.Add(container);
+            }
+
+            foreach (var alias in element.Formula?.Named ?? [])
+            {
+                if (aliases.TryGetValue(alias, out var id) && subjects.TryGetValue(id, out var named))
+                {
+                    on.Add(named.Owner);
+                }
             }
 
             if (RuleOf(element.Rules, "show", "hide") is { } visibility)
@@ -378,6 +472,9 @@ internal static class FormRules
     /// <summary>A subject of conditions and the element whose being shown decides its: the field, or a grid row's grid.</summary>
     private sealed record SubjectOf(FieldKind Kind, Node Owner);
 
+    /// <summary>A calculation as the check read it: its tree, the aliases it names and its places.</summary>
+    private sealed record Formula(Calculation Tree, IReadOnlyList<string> Named, int Decimals);
+
     private sealed class RowBuilder
     {
         public List<string> Hidden { get; } = [];
@@ -385,6 +482,8 @@ internal static class FormRules
         public List<string> Required { get; } = [];
 
         public Dictionary<string, List<string>> Messages { get; } = new(StringComparer.Ordinal);
+
+        public Dictionary<string, string?> Calculations { get; } = new(StringComparer.Ordinal);
     }
 
     /// <summary>A page, group or field, with what the evaluation decides about it.</summary>
@@ -407,6 +506,17 @@ internal static class FormRules
         public IReadOnlyList<LogicRule> Rules { get; } = rules;
 
         public bool Repeats { get; } = repeats;
+
+        public LogicCalculation? Calculation { get; init; }
+
+        /// <summary>A calculation as the check read it.</summary>
+        public Formula? Formula { get; set; }
+
+        /// <summary>A calculation's result.</summary>
+        public string? Value { get; set; }
+
+        /// <summary>A child calculation's result, row by row.</summary>
+        public string?[] ValueIn { get; set; } = [];
 
         public List<Node> Dependents { get; } = [];
 

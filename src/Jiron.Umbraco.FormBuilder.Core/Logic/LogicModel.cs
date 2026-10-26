@@ -106,7 +106,20 @@ internal sealed record LogicGridRow(string Id, FieldKind Kind);
 /// <param name="Rules">Its rules.</param>
 /// <param name="Fields">A repeatable group's child fields.</param>
 /// <param name="Rows">A grid's rows.</param>
-internal sealed record LogicField(string Id, FieldKind? Kind, bool Required, IReadOnlyList<LogicRule> Rules, IReadOnlyList<LogicField> Fields, IReadOnlyList<LogicGridRow> Rows);
+/// <param name="Alias">The alias formulas name it by.</param>
+/// <param name="Calculation">A calculation field's formula, worked out instead of what is posted for it.</param>
+internal sealed record LogicField(
+    string Id,
+    FieldKind? Kind,
+    bool Required,
+    IReadOnlyList<LogicRule> Rules,
+    IReadOnlyList<LogicField> Fields,
+    IReadOnlyList<LogicGridRow> Rows,
+    string? Alias = null,
+    LogicCalculation? Calculation = null);
+
+/// <summary>A calculation's formula and the places its result is rounded to: 0 to 15, 2 when null (ADR-0063).</summary>
+internal sealed record LogicCalculation(string Formula, int? Decimals);
 
 /// <summary>A group of fields on a page (the conditions' own groups are <see cref="LogicGroup"/>).</summary>
 internal sealed record LogicFormGroup(string Id, IReadOnlyList<LogicRule> Rules, IReadOnlyList<LogicField> Fields);
@@ -131,13 +144,18 @@ internal sealed record FormAnswers(
     IReadOnlyDictionary<string, IReadOnlyList<string>> Values,
     IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>>> Rows);
 
-/// <summary>One row of a repeatable group: its child fields that are hidden or required, and its messages.</summary>
-internal sealed record RowState(IReadOnlyList<string> Hidden, IReadOnlyList<string> Required, IReadOnlyDictionary<string, IReadOnlyList<string>> Messages);
+/// <summary>One row of a repeatable group: its child fields that are hidden or required, its messages and its calculations.</summary>
+internal sealed record RowState(
+    IReadOnlyList<string> Hidden,
+    IReadOnlyList<string> Required,
+    IReadOnlyDictionary<string, IReadOnlyList<string>> Messages,
+    IReadOnlyDictionary<string, string?> Calculations);
 
 /// <summary>What a form's rules decide, every list in document order.</summary>
 /// <param name="Hidden">The pages, groups and fields (outside repeatable groups) that are hidden.</param>
 /// <param name="Required">The shown fields that are required.</param>
 /// <param name="Messages">The ids of the validation rules that match, by the shown field that shows them.</param>
+/// <param name="Calculations">The result of every shown calculation (outside repeatable groups) as canonical text, null without a value.</param>
 /// <param name="Rows">Every repeatable group's rows.</param>
 /// <param name="Actions">The actions that run.</param>
 /// <param name="Outcome">The outcome used, or null.</param>
@@ -145,15 +163,28 @@ internal sealed record FormState(
     IReadOnlyList<string> Hidden,
     IReadOnlyList<string> Required,
     IReadOnlyDictionary<string, IReadOnlyList<string>> Messages,
+    IReadOnlyDictionary<string, string?> Calculations,
     IReadOnlyDictionary<string, IReadOnlyList<RowState>> Rows,
     IReadOnlyList<string> Actions,
     string? Outcome);
 
-/// <summary>A calculation: a decimal constant, or an operation over calculations.</summary>
+/// <summary>A calculation: a decimal constant, a field's answers, or an operation over calculations (ADR-0063).</summary>
 internal abstract record Calculation;
 
 /// <summary>A decimal constant in the wire form.</summary>
 internal sealed record Constant(string Text) : Calculation;
 
-/// <summary>An operation; <see cref="Scale"/> is round's number of places, null when absent or not an integer.</summary>
-internal sealed record Operation(string Op, IReadOnlyList<Calculation> Args, int? Scale) : Calculation;
+/// <summary>A field's answers, by alias; <see cref="At"/> is where the formula names it.</summary>
+internal sealed record FieldReference(string Alias, int? At = null) : Calculation;
+
+/// <summary>
+/// An operation; <see cref="Scale"/> is round's number of places, null when absent or not an integer, and
+/// <see cref="At"/> is where the formula writes it.
+/// </summary>
+internal sealed record Operation(string Op, IReadOnlyList<Calculation> Args, int? Scale, int? At = null) : Calculation;
+
+/// <summary>Where a calculation reads the fields it names (ADR-0063).</summary>
+/// <param name="Kind">The kind of the field with the alias; null when the form has no such field or the browser cannot read it.</param>
+/// <param name="Answers">The field's answers as given, not yet cleaned; null for a hidden field.</param>
+/// <param name="Today">The site's date as a day number, read from the context only when a formula asks for it.</param>
+internal sealed record FormulaScope(Func<string, FieldKind?> Kind, Func<string, IReadOnlyList<string>?> Answers, Func<int> Today);

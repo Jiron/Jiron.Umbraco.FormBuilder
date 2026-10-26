@@ -10,7 +10,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
 /// <summary>
 /// The structural validation (ADR-0002, ADR-0035): what publishing refuses on top of the save checks, because the
 /// parts of the definition do not fit together. Field types and their properties, aliases, option values, references,
-/// rules and their conditions, cycles and redirects. A draft keeps every one of these problems and the form check
+/// rules and their conditions, calculations' formulas (ADR-0063), cycles and redirects. A draft keeps every one of these problems and the form check
 /// lists them; only a published version is held to them. It runs on a definition the save checks accept.
 /// </summary>
 internal sealed partial class DefinitionStructureChecks
@@ -38,6 +38,9 @@ internal sealed partial class DefinitionStructureChecks
     private readonly Dictionary<string, FieldKind> _visitorKinds = new(StringComparer.Ordinal);
     private readonly HashSet<string> _queryValues = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _aliases = new(StringComparer.OrdinalIgnoreCase);
+
+    // The fields formulas can name: each alias, compared exactly as formulas name it, with the first field that has it.
+    private readonly Dictionary<string, Guid> _aliasKeys = new(StringComparer.Ordinal);
     private readonly List<Node> _nodes = [];
     private readonly List<(Guid Field, Guid Parent, string Path)> _parents = [];
 
@@ -108,6 +111,11 @@ internal sealed partial class DefinitionStructureChecks
             var fieldPath = I(path, i);
             var traits = _types.Find(field.Type);
             var node = AddNode(fieldPath, Name(field), container);
+            if (field.Alias is { } alias)
+            {
+                _aliasKeys.TryAdd(alias, field.Key);
+            }
+
             if (_fields.TryAdd(field.Key, new Entry(field, traits, node, inRepeater, Row: null)) && traits?.KindOf(field) is { } kind)
             {
                 _kinds[KeyText(field.Key)] = kind;
@@ -288,7 +296,11 @@ internal sealed partial class DefinitionStructureChecks
         }
 
         Support(field, traits, path);
-        CheckTypeSettings(field, traits, path, what);
+        if (CheckTypeSettings(field, traits, path, what) && DefinitionLogic.Calculation(field, traits) is { } calculation)
+        {
+            CheckFormula(calculation.Formula, P(P(path, "settings"), "formula"), node);
+        }
+
         if (traits.HoldsValue)
         {
             if (field.Alias is null)
@@ -327,13 +339,13 @@ internal sealed partial class DefinitionStructureChecks
     }
 
     // The type's settings (ADR-0056): first the schema and the rules of its attributes, then, once they hold, the
-    // type's own check, which reads them as its settings class.
-    private void CheckTypeSettings(FormField field, FieldTypeTraits traits, string path, string what)
+    // type's own check, which reads them as its settings class. Whether the schema holds, so they can be read.
+    private bool CheckTypeSettings(FormField field, FieldTypeTraits traits, string path, string what)
     {
         var settingsPath = P(path, "settings");
         if (!FieldSettingsChecks.Check(traits.Type.SettingsSchema, field.Settings, settingsPath, what, _problems))
         {
-            return;
+            return false;
         }
 
         try
@@ -344,6 +356,8 @@ internal sealed partial class DefinitionStructureChecks
         {
             Fail(DefinitionErrors.SettingInvalid, settingsPath, $"The field type '{traits.Alias}' failed to check these settings: {exception.Message}");
         }
+
+        return true;
     }
 
     // A property the type does not support keeps its default (ADR-0034).
@@ -732,15 +746,21 @@ internal sealed partial class DefinitionStructureChecks
         public string Describe => Row is not null ? $"a row of {Name(Field)}" : $"{Name(Field)} ({Field.Type})";
     }
 
-    /// <summary>A page, group or field in the graph of what decides whether it is shown.</summary>
+    /// <summary>A page, group or field in the graph of what decides whether it is shown and what it works out.</summary>
     /// <param name="Path">The element's path.</param>
     /// <param name="Description">The element, for messages.</param>
     private sealed record Node(string Path, string Description)
     {
-        /// <summary>The nodes whose being shown this one depends on: its container, and what its show or hide rule looks at.</summary>
+        /// <summary>
+        /// The nodes this one depends on: its container, what its show or hide rule looks at, and for a calculation the
+        /// fields its formula names.
+        /// </summary>
         public List<int> Edges { get; } = [];
 
         /// <summary>The path of the element's first switched-on show or hide rule, where a cycle through it is reported.</summary>
         public string? RulePath { get; set; }
+
+        /// <summary>The path of a calculation's formula once it names a field, where a cycle through it is reported.</summary>
+        public string? FormulaPath { get; set; }
     }
 }

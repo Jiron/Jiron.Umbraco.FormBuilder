@@ -246,8 +246,9 @@ internal sealed partial class DefinitionStructureChecks
         }
     }
 
-    // A page, group or field whose being shown depends on itself has no answer: the shared evaluators would go round.
-    // Each strongly connected part of the graph is reported once, at its first element that has a show or hide rule.
+    // A page, group or field whose being shown, or a calculation whose result, depends on itself has no answer: the
+    // shared evaluators would go round. Each strongly connected part of the graph is reported once, at its first element
+    // that has a show or hide rule or a formula.
     private void CheckCycles()
     {
         foreach (var component in StronglyConnected().OrderBy(component => component.Min()))
@@ -258,9 +259,13 @@ internal sealed partial class DefinitionStructureChecks
             }
 
             component.Sort();
-            var at = component.Select(node => _nodes[node]).FirstOrDefault(node => node.RulePath is not null) ?? _nodes[component[0]];
-            var elements = string.Join(", ", component.Select(node => _nodes[node].Description));
-            Fail(DefinitionErrors.Cycle, at.RulePath ?? at.Path, $"Whether these are shown depends on itself, through rules and what contains them: {elements}.");
+            var nodes = component.ConvertAll(node => _nodes[node]);
+            var at = nodes.Find(node => node.RulePath is not null || node.FormulaPath is not null) ?? nodes[0];
+            var elements = string.Join(", ", nodes.Select(node => node.Description));
+            var message = nodes.Exists(node => node.FormulaPath is not null)
+                ? $"Whether these are shown, and what they work out, depends on itself, through rules, formulas and what contains them: {elements}."
+                : $"Whether these are shown depends on itself, through rules and what contains them: {elements}.";
+            Fail(DefinitionErrors.Cycle, at.RulePath ?? at.FormulaPath ?? at.Path, message);
         }
 
         // Option parents: a field whose options its own answer filters, however many fields lie between. Each field has

@@ -3,7 +3,8 @@
 - Status: accepted; unsafe patterns at publish and stored calculation results amended in 1.8; the instruction limit
   for patterns, the instant's form and IANA-only time zones amended in 3.4b (ADR-0030); comparisons over the wire
   form's digits amended in 4.8f (ADR-0030); folding and compiling once amended in 4.8h (ADR-0030); whole forms in the
-  vectors and the mutation script amended in 5.2a ([ADR-0061](0061-the-form-rules-engine.md))
+  vectors and the mutation script amended in 5.2a ([ADR-0061](0061-the-form-rules-engine.md)); the `formula` case and
+  the position of a formula's mistake amended in 5.3a ([ADR-0063](0063-the-calculation-language.md))
 - Date: 2026-10-23
 - Roadmap step: 1.5 (decided); built in 3.4 (the vector runners), 4.4 (the time zone and start-up checks), 5.2 (rules
   and validation), 5.3 (merge tags and calculations), 5.4 (number fields), 6.1 and 6.4 (the wire); reviewed in 5.5
@@ -64,8 +65,10 @@ Option 3 for text, option 2 for patterns, exact decimals for numbers, and one JS
 - **The vector format `jfb-vectors/1`:** `{ format, suite, defaults: { context }, fields: { alias: kind }, cases }`. A
   case has an `id`, an optional `description`, its `values` (alias to a list of wire strings), `context` and `fields`
   overrides, exactly one thing to run (`condition`, `rule`, `number`, `calc`; 5.2a adds `form`, with the `rows` of
-  its repeatable groups; 5.3 adds `template`), and `expect`: `true`, `false`, `null` for a switched-off rule, a
-  canonical string, a form's `FormState`, or `{ "error": code }`. Both runners compare the result as JSON. Vector files are written by scripts from code points, as ASCII with JSON escapes. Each runner makes
+  its repeatable groups; 5.2b `field`, ADR-0062; 5.3a `formula`, ADR-0063; 5.3b `template`), and `expect`: `true`,
+  `false`, `null` for a switched-off rule or a calculation without a value, a canonical string, a form's
+  `FormState`, or `{ "error": code }`, which for a mistake in a formula also holds `at`, the UTF-16 index where it
+  starts (5.3a). Both runners compare the result as JSON. Vector files are written by scripts from code points, as ASCII with JSON escapes. Each runner makes
   one test case per vector and reads the files in place.
 - **Wire forms,** invariant and strict:
   - numbers: an optional minus, an integer part without leading zeros, an optional point with at least one digit,

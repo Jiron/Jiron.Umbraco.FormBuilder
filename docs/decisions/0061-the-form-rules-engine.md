@@ -2,7 +2,8 @@
 
 - Status: accepted; builds on [ADR-0005](0005-shared-logic-and-test-vectors.md) (conditions, their check and the
   vectors), [ADR-0030](0030-porting-the-shared-logic.md) (where the logic lives) and
-  [ADR-0035](0035-structural-validation-and-public-projection.md) (what publishing refuses)
+  [ADR-0035](0035-structural-validation-and-public-projection.md) (what publishing refuses); amended in 5.3a by
+  [ADR-0063](0063-the-calculation-language.md) (calculations)
 - Date: 2026-10-26
 - Roadmap step: 5.2a (decided and built); 5.2b checks the values, 6.1 runs the engine in the pipeline, 6.4 in the
   visitor's browser, 9.x in the preview
@@ -62,7 +63,7 @@ hold it. Step 5.2a evaluates all of a form's rules at once, the same in C# and T
 | `LogicForm` | its pages, its form-level validation rules, its actions and its outcomes |
 | `LogicPage` | its id, its rules and its groups |
 | `LogicFormGroup` | its id, its rules and its fields (the conditions' own groups keep the name `LogicGroup`) |
-| `LogicField` | its id, the kind its answers compare as (none for a field that holds no value), whether it is `required`, its rules, a repeatable group's child fields, and the ids and kinds of a grid's rows |
+| `LogicField` | its id, the kind its answers compare as (none for a field that holds no value), whether it is `required`, its rules, a repeatable group's child fields, the ids and kinds of a grid's rows, and since 5.3a its alias and, for a calculation, its formula and places (ADR-0063) |
 | `LogicValidationRule` | its id, the field that shows its message, whether it is switched on, and its conditions |
 | `LogicAction`, `LogicOutcome` | their id and their rules |
 
@@ -82,7 +83,9 @@ each field and grid row by its id, and for each repeatable group its rows, each 
   or both `show` and `hide`: `invalid_rule`;
 - a validation rule whose message no field that holds a value can show: `unknown_field`;
 - an id given twice: `invalid_form`;
-- an element whose being shown depends on itself: `cycle`.
+- since 5.3a, every calculation's formula as ADR-0063 checks it, against the aliases of the fields that hold a value;
+  an alias given twice, or a calculation on a field that does not hold a number, is `invalid_form`;
+- an element whose being shown, or a calculation whose result, depends on itself: `cycle`.
 
 **Evaluating.** Visibility first, in the dependency order above. An element is hidden when the element that holds it
 is hidden, its switched-on `show` rule does not match, or its switched-on `hide` rule matches; a switched-off rule
@@ -97,9 +100,14 @@ row's child fields. Then, over the final visibility:
 - the **outcome** is the first in order without a switched-on `use` rule or whose rule matches, and none when no outcome
   qualifies (the pipeline then shows its default message).
 
+**Calculations (5.3a, ADR-0063)** are worked out in the same order, after the fields their formulas name, over the
+answers as conditions read them, and rounded to their places. A hidden calculation has no value, and rules, other
+calculations and validation read the rounded result, never what was posted for the field.
+
 **The answer,** `FormState`: the hidden ids in document order (pages, groups, and fields outside repeatable groups), the
 required ids, the messages by field, each repeatable group's rows with their own hidden, required and messages, the
-actions that run, and the outcome. A context's `hidden` list, which the single-condition vectors use, plays no part:
+actions that run, and the outcome; since 5.3a also `calculations`, each shown calculation's result as canonical text
+or null without a value, outside repeatable groups and in each row. A context's `hidden` list, which the single-condition vectors use, plays no part:
 the engine decides what is hidden.
 
 **Publishing** refuses a group of conditions nested deeper than the engine's limit at the group's path (`too_deep`),

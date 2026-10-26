@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Definitions;
@@ -12,7 +14,8 @@ internal static class DefinitionLogic
     /// <summary>
     /// The form as its rules see it: the ids are the keys in the <c>D</c> format, a field's kind is its type's
     /// (ADR-0055), a grid's rows are subjects of conditions, and a switched-off action is left out, as it never runs.
-    /// A field whose type the site lacks holds no value here.
+    /// A field whose type the site lacks holds no value here. Every field keeps its alias, and a calculation carries its
+    /// formula and places (ADR-0063).
     /// </summary>
     public static LogicForm From(FormDefinition definition, FieldTypeRegistry registry)
     {
@@ -25,7 +28,7 @@ internal static class DefinitionLogic
             var rows = traits is not null && traits.Supports(FieldFeatures.Rows)
                 ? field.Rows.Select(row => new LogicGridRow(Id(row.Key), traits.RowKindOf(field))).ToList()
                 : [];
-            return new LogicField(Id(field.Key), traits?.KindOf(field), field.Required, Rules(field.Rules), [.. field.Fields.Select(Field)], rows);
+            return new LogicField(Id(field.Key), traits?.KindOf(field), field.Required, Rules(field.Rules), [.. field.Fields.Select(Field)], rows, field.Alias, Calculation(field, traits));
         }
 
         return new LogicForm(
@@ -36,6 +39,29 @@ internal static class DefinitionLogic
             [.. definition.ValidationRules.Select(rule => new LogicValidationRule(Id(rule.Key), Id(rule.Field), rule.Enabled, Match(rule.Match), Items(rule.Conditions)))],
             [.. definition.Actions.Where(action => action.Enabled).Select(action => new LogicAction(Id(action.Key), Rules(action.Rules)))],
             [.. definition.Outcomes.Select(outcome => new LogicOutcome(Id(outcome.Key), Rules(outcome.Rules)))]);
+    }
+
+    /// <summary>
+    /// A calculation field's formula and the places of its result; null for a field of another type. Settings that do
+    /// not fit their class, which publishing refuses, give an empty formula, which the form engine refuses too.
+    /// </summary>
+    public static LogicCalculation? Calculation(FormField field, FieldTypeTraits? traits)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        if (traits?.Type is not CalculationFieldType type)
+        {
+            return null;
+        }
+
+        try
+        {
+            var settings = type.ReadSettings(field.Settings);
+            return new LogicCalculation(settings.Formula ?? string.Empty, settings.Format?.Decimals);
+        }
+        catch (JsonException)
+        {
+            return new LogicCalculation(string.Empty, null);
+        }
     }
 
     /// <summary>A key as the shared logic names it.</summary>

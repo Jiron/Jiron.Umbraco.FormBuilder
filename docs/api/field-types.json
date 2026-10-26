@@ -1958,7 +1958,7 @@
             "maximum": null,
             "maximumIsExclusive": false,
             "minimumLength": null,
-            "maximumLength": 2000,
+            "maximumLength": 1000,
             "minimumCount": null,
             "maximumCount": null,
             "allowedValues": []

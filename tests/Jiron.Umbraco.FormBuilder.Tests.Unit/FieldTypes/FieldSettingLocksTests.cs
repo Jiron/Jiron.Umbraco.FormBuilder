@@ -72,7 +72,7 @@ public sealed class FieldSettingLocksTests
         yield return Value("text", "prefix", new string('x', 51), "a text of at most 50 characters", "too long");
         yield return Value("text", "prefix", ((char)0xD800).ToString(), "a text of at most 50 characters", "a lone surrogate");
         yield return Value("consent", "text", " ", "a text that is not blank, of at most 20000 characters", "blank");
-        yield return Value("calculation", "formula", "  ", "a text that is not blank, of at most 2000 characters", "blank");
+        yield return Value("calculation", "formula", "  ", "a text that is not blank, of at most 1000 characters", "blank");
         yield return Value("time", "min", "25:00", "a time of day, HH:mm", "not a time");
         yield return Value("number", "min", "2,5", "a number such as 2.5", "a comma");
         yield return Value("url", "schemes", "gopher", Schemes, "not JSON");

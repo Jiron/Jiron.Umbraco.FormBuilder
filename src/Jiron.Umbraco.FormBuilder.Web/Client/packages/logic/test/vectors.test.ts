@@ -9,6 +9,7 @@ import {
   clean,
   evaluateCondition,
   evaluateForm,
+  evaluateFormula,
   evaluateRule,
   formatDecimal,
   LogicError,
@@ -19,11 +20,13 @@ import {
   type Context,
   type FieldAnswers,
   type FormAnswers,
+  type FormulaScope,
   type Kind,
   type LogicForm,
   type Rule,
   type Subject,
 } from '../src/index.ts';
+import { today } from '../src/dates.ts';
 import { repositoryRoot, vectorsFolder } from '../tools/repository.ts';
 
 interface VectorCase {
@@ -37,6 +40,7 @@ interface VectorCase {
   readonly rule?: Rule;
   readonly number?: string;
   readonly calc?: Calculation;
+  readonly formula?: string;
   readonly form?: LogicForm;
   readonly field?: CheckedField;
   readonly answers?: FieldAnswers;
@@ -116,12 +120,23 @@ interface VectorFile {
 }
 
 /** The things a case can run; each case has exactly one. */
-const RUNNABLE = ['condition', 'rule', 'number', 'calc', 'form', 'field'] as const;
+const RUNNABLE = ['condition', 'rule', 'number', 'calc', 'formula', 'form', 'field'] as const;
 
 const folder = vectorsFolder();
 const names = readdirSync(folder)
   .filter((name) => name.endsWith('.json'))
   .sort();
+
+/** A subject as a formula reads it: the fields' kinds and answers by alias, a hidden field without answers. */
+function formulaScope(subject: Subject): FormulaScope {
+  const own = <T>(record: Readonly<Record<string, T>>, key: string): T | undefined =>
+    Object.hasOwn(record, key) ? record[key] : undefined;
+  return {
+    kind: (alias) => own(subject.fields, alias),
+    answers: (alias) => (subject.context.hidden.includes(alias) ? undefined : own(subject.values, alias)),
+    today: () => today(subject.context.now, subject.context.timeZone),
+  };
+}
 
 function run(file: VectorFile, vector: VectorCase): unknown {
   const subject: Subject = {
@@ -133,7 +148,11 @@ function run(file: VectorFile, vector: VectorCase): unknown {
     if (vector.condition !== undefined) return evaluateCondition(vector.condition, subject);
     if (vector.rule !== undefined) return evaluateRule(vector.rule, subject);
     if (vector.number !== undefined) return storedNumber(vector.number);
-    if (vector.calc !== undefined) return formatDecimal(calculate(vector.calc));
+    if (vector.calc !== undefined) {
+      const result = calculate(vector.calc, formulaScope(subject));
+      return result === null ? null : formatDecimal(result);
+    }
+    if (vector.formula !== undefined) return evaluateFormula(vector.formula, formulaScope(subject));
     if (vector.field !== undefined) {
       const answers = vector.answers ?? { values: [] };
       heldToItsType(vector.id, vector.field, answers);
@@ -144,7 +163,8 @@ function run(file: VectorFile, vector: VectorCase): unknown {
       return evaluateForm(vector.form, answers, subject.context);
     }
   } catch (error) {
-    if (error instanceof LogicError) return { error: error.code };
+    if (error instanceof LogicError)
+      return error.at === undefined ? { error: error.code } : { error: error.code, at: error.at };
     throw error;
   }
   throw new Error(`${vector.id}: nothing to run`);

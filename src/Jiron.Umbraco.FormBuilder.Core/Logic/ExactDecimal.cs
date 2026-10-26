@@ -87,6 +87,40 @@ internal readonly record struct ExactDecimal
     public static ExactDecimal Operand(string text) =>
         InRange(Parse(text) ?? throw new LogicException(LogicErrors.NotANumber));
 
+    /// <summary>
+    /// An answer a calculation reads: the wire form, or null. Past <see cref="MaxDigits"/> digits it is out of range, which
+    /// is found before the digits become a number, so a long answer costs what reading it costs.
+    /// </summary>
+    public static ExactDecimal? ReadNumber(string text)
+    {
+        if (!TryReadParts(text, out var negative, out var integer, out var fraction))
+        {
+            return null;
+        }
+
+        var digits = string.Concat(integer, fraction);
+        if (digits.AsSpan().TrimStart('0').Length > MaxDigits)
+        {
+            throw new LogicException(LogicErrors.OutOfRange);
+        }
+
+        var n = BigInteger.Parse(digits, NumberStyles.None, CultureInfo.InvariantCulture);
+        return new ExactDecimal(negative ? -n : n, fraction.Length);
+    }
+
+    /// <summary>A whole number.</summary>
+    public static ExactDecimal Integer(long value) => new(value, 0);
+
+    /// <summary>The value with the other sign; zero stays zero.</summary>
+    public static ExactDecimal Negate(ExactDecimal d) => new(-d.N, d.S);
+
+    /// <summary>Orders two values: negative when <paramref name="a"/> is the smaller, 0 when they are equal, positive otherwise.</summary>
+    public static int Compare(ExactDecimal a, ExactDecimal b)
+    {
+        var s = Math.Max(a.S, b.S);
+        return (a.N * Pow10(s - a.S)).CompareTo(b.N * Pow10(s - b.S));
+    }
+
     /// <summary>The exact sum.</summary>
     public static ExactDecimal Add(ExactDecimal a, ExactDecimal b)
     {

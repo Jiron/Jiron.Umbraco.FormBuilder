@@ -15,19 +15,24 @@ export type LogicErrorCode =
   | 'not_a_number'
   | 'too_many_digits'
   | 'out_of_range'
-  | 'division_by_zero';
+  | 'division_by_zero'
+  | 'invalid_formula'
+  | 'constant_formula';
 
 /**
  * A problem the shared logic reports instead of a result. The code is the contract: both runtimes use the same codes,
- * and the vector files expect them as `{ "error": code }`.
+ * and the vector files expect them as `{ "error": code }`. A mistake in a formula also has the position where it
+ * starts, a UTF-16 index, so the form check can point at it (ADR-0063).
  */
 export class LogicError extends Error {
   readonly code: LogicErrorCode;
+  readonly at: number | undefined;
 
-  constructor(code: LogicErrorCode) {
-    super(code);
+  constructor(code: LogicErrorCode, at?: number) {
+    super(at === undefined ? code : `${code} at ${at}`);
     this.name = 'LogicError';
     this.code = code;
+    this.at = at;
   }
 }
 

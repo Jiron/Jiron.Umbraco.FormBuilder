@@ -2,7 +2,8 @@
 
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the "Other"
   option of radio buttons and checkboxes), [ADR-0035](0035-structural-validation-and-public-projection.md) (three
-  publish codes) and [ADR-0055](0055-field-type-framework.md) (the defaults of three lists)
+  publish codes) and [ADR-0055](0055-field-type-framework.md) (the defaults of three lists); amended in 5.3a by
+  [ADR-0063](0063-the-calculation-language.md) (a formula of at most 1,000 characters)
 - Date: 2026-10-25
 - Roadmap step: 5.1b (decided and built); 5.1c serves the rules to the designer
 
@@ -120,7 +121,7 @@ Their rules and own checks, besides the limits every setting keeps:
 | `rating` | `count` 3 to 10; labels 100 | |
 | `scale` | `from` 0 to 1, `to` 5 to 10; labels 100 | |
 | `slider` | the unit 50 | the minimum below the maximum; a step above 0 and at most the distance between them |
-| `calculation` | `formula` required; `format.decimals` 0 to 15; prefix and suffix 50 | (the formula itself is 5.3's) |
+| `calculation` | `formula` required, 1,000; `format.decimals` 0 to 15; prefix and suffix 50 | the formula itself, against the form (ADR-0063) |
 | `dropdown` | the prompt 200; choices 1 to 1,000 | choices only with `multiple`; the fewest at most the most and at most the field's own options |
 | `radio` | the Other label 200 | the Other label only with Other |
 | `checkboxes` | choices 1 to 1,000; the Other label 200 | the fewest at most the most and at most the own options (one more with Other); the Other label only with Other |

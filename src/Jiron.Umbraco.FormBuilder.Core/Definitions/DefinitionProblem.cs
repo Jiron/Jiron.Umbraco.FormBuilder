@@ -134,7 +134,10 @@ internal static class DefinitionErrors
     /// <summary>A field's options hold what their source does not use: own items with a library list, and so on.</summary>
     public const string OptionsInvalid = "options_invalid";
 
-    /// <summary>A reference names no field that holds a value, or a condition names a context the form does not know.</summary>
+    /// <summary>
+    /// A reference names no field that holds a value, a condition names a context the form does not know, or a formula
+    /// names an alias the form lacks or a field whose answers it cannot read.
+    /// </summary>
     public const string UnknownField = LogicErrors.UnknownField;
 
     /// <summary>A reference names the wrong kind of thing: the field itself, a field of another type, an option the parent lacks.</summary>
@@ -143,20 +146,32 @@ internal static class DefinitionErrors
     /// <summary>A condition names both a field and a context, or neither.</summary>
     public const string InvalidCondition = LogicErrors.InvalidCondition;
 
-    /// <summary>A condition's operator does not exist.</summary>
+    /// <summary>A condition's operator, or a function a formula calls, does not exist.</summary>
     public const string UnknownOperator = LogicErrors.UnknownOperator;
 
-    /// <summary>A condition's operator does not take the kind of the field or context it looks at.</summary>
+    /// <summary>
+    /// A condition's operator does not take the kind of the field or context it looks at, or a formula names a field
+    /// where its kind does not fit.
+    /// </summary>
     public const string OperatorNotForKind = LogicErrors.OperatorNotForKind;
 
-    /// <summary>A condition's operand is missing, superfluous or of the wrong shape.</summary>
+    /// <summary>A condition's operand is missing, superfluous or of the wrong shape, or a function's arguments do not fit it.</summary>
     public const string InvalidOperand = LogicErrors.InvalidOperand;
 
     /// <summary>A pattern uses syntax outside the safe subset or exceeds its limits (ADR-0005).</summary>
     public const string UnsafePattern = LogicErrors.UnsafePattern;
 
-    /// <summary>A group of conditions nests deeper than the form engine reads (ADR-0061).</summary>
+    /// <summary>A group of conditions nests deeper than the form engine reads (ADR-0061), or a formula's parentheses and calls do.</summary>
     public const string TooDeep = LogicErrors.TooDeep;
+
+    /// <summary>A calculation's formula does not follow the grammar of ADR-0063.</summary>
+    public const string InvalidFormula = LogicErrors.InvalidFormula;
+
+    /// <summary>A number in a formula has more digits than the exact decimals hold (ADR-0005).</summary>
+    public const string OutOfRange = LogicErrors.OutOfRange;
+
+    /// <summary>A calculation's formula names no field, so its result never changes.</summary>
+    public const string ConstantFormula = LogicErrors.ConstantFormula;
 
     /// <summary>A rule's effect is not one its element takes.</summary>
     public const string RuleEffectInvalid = "rule_effect_invalid";
@@ -164,7 +179,10 @@ internal static class DefinitionErrors
     /// <summary>An element has two rules with one effect, or both a <c>show</c> and a <c>hide</c> rule.</summary>
     public const string RuleDuplicate = "rule_duplicate";
 
-    /// <summary>Whether an element is shown depends, through rules and what contains it, on itself; or option parents go round.</summary>
+    /// <summary>
+    /// Whether an element is shown, or what a calculation works out, depends on itself through rules, formulas and what
+    /// contains it; or option parents go round.
+    /// </summary>
     public const string Cycle = LogicErrors.Cycle;
 
     /// <summary>An outcome's redirect is not a path on the site or an https address the editor chose.</summary>

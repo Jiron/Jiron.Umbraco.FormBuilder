@@ -111,6 +111,11 @@ internal static class VectorReader
             return new Constant(element.GetString()!);
         }
 
+        if (element.TryGetProperty("field", out var field))
+        {
+            return new FieldReference(field.GetString()!);
+        }
+
         int? scale = element.TryGetProperty("scale", out var s) && s.ValueKind == JsonValueKind.Number
             && s.TryGetDecimal(out var places) && places == decimal.Truncate(places) && places is >= int.MinValue and <= int.MaxValue
                 ? (int)places
@@ -127,7 +132,13 @@ internal static class VectorReader
         element.TryGetProperty("required", out var required) && required.GetBoolean(),
         RulesOf(element),
         List(element, "fields", Field),
-        List(element, "rows", row => new LogicGridRow(Id(row), Kind(row.GetProperty("kind")))));
+        List(element, "rows", row => new LogicGridRow(Id(row), Kind(row.GetProperty("kind")))),
+        OptionalString(element, "alias"),
+        element.TryGetProperty("calculation", out var calculation) && calculation.ValueKind != JsonValueKind.Null
+            ? new LogicCalculation(
+                calculation.GetProperty("formula").GetString()!,
+                calculation.TryGetProperty("decimals", out var decimals) && decimals.ValueKind == JsonValueKind.Number ? (decimals.TryGetInt32(out var places) ? places : -1) : null)
+            : null);
 
     private static string Id(JsonElement element) => element.GetProperty("id").GetString()!;
 
