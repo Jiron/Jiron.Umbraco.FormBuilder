@@ -1830,7 +1830,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - unit tests show the sources and filters each place may use, with a refused one for each place that limits them;
     - start-up refuses a source or a filter whose name is taken or outside the grammar, naming it;
     - a unit test formats dates, times, numbers and amounts with the formats written from .NET's data for every culture .NET knows and prints what .NET prints for the same patterns, listing exactly any culture whose data falls outside the pattern subset.
-- [ ] **5.3d Answers as merge tags** (C#; 5.3c split in four, WORKLOG 2026-10-26)
+- [x] **5.3d Answers as merge tags** (C#; 5.3c split in four, WORKLOG 2026-10-26) (2026-10-26, 68fd8df)
   - **The `field` source** (ADR-0014): `field.<alias>` (the answer as displayed), `.value` and `.label`, a repeatable group's child as a list across its rows, with sensitive fields, hidden fields and former aliases as ADR-0014 decides; each field type gives its answers' display text (option labels in the culture, numbers and dates in the culture's formats, file names, the parts of a name or an address).
   - **`entry.answers`:** every visible answered field, a table in HTML and `Label: answer` lines elsewhere, leaving out what ADR-0014 leaves out in each place.
   - Done when: unit tests show the `field` source for every built-in type (its display text, `.value` and `.label`, a repeatable group's child as a list), a former alias resolving to its field, a hidden field empty, `entry.answers` in HTML and in text, and a sensitive field masked and left out as ADR-0014 decides, in each place.
