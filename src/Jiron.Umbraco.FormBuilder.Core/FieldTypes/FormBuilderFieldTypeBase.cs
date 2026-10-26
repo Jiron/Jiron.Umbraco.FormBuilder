@@ -90,6 +90,13 @@ public abstract class FormBuilderFieldTypeBase<TSettings> : IFormBuilderFieldTyp
         Validate(ReadSettings(validation.Field.Settings), validation);
     }
 
+    /// <inheritdoc />
+    public void Display(FieldDisplay display)
+    {
+        ArgumentNullException.ThrowIfNull(display);
+        Display(ReadSettings(display.Field.Settings), display);
+    }
+
     /// <summary>
     /// The longest answer a field takes (<see cref="IFormBuilderFieldType.AnswerLimits(FormField)"/>, ADR-0058), with its
     /// settings read as <typeparamref name="TSettings"/>; the interface's default unless a type overrides it.
@@ -115,6 +122,15 @@ public abstract class FormBuilderFieldTypeBase<TSettings> : IFormBuilderFieldTyp
     protected virtual void Validate(TSettings settings, FieldValidation validation)
     {
     }
+
+    /// <summary>
+    /// Writes the texts a field's values show as in merge tags (<see cref="IFormBuilderFieldType.Display(FieldDisplay)"/>,
+    /// ADR-0066), with the field's settings read as <typeparamref name="TSettings"/>; the interface's default unless a
+    /// type overrides it.
+    /// </summary>
+    /// <param name="settings">The field's settings.</param>
+    /// <param name="display">The field, its values, the culture, and where the texts go.</param>
+    protected virtual void Display(TSettings settings, FieldDisplay display) => FieldDisplayDefaults.Display(Declaration, display);
 }
 
 /// <summary>The settings class of a field type without settings, such as a divider.</summary>

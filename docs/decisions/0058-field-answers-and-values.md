@@ -3,7 +3,8 @@
 - Status: accepted; amends [ADR-0055](0055-field-type-framework.md) (what a type declares) and the entry values of
   [ADR-0038](0038-entry-repositories.md) (the key of a value with parts); what a type's check sees (whether the
   field is required, and today) amended by [ADR-0062](0062-the-built-in-types-checks.md) in 5.2b, and the files a
-  check sees, a file field's most texts and a country's reading in 5.2c
+  check sees, a file field's most texts and a country's reading in 5.2c; how merge tags show the values a type read,
+  written by the type, added by [ADR-0066](0066-answers-as-merge-tags.md) in 5.3d
 - Date: 2026-10-25
 - Roadmap step: 5.1d (decided and built); 5.2 gives the built-in types their checks, 6.1 runs the pipeline on them,
   6.2 posts the answers without JavaScript

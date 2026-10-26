@@ -5,12 +5,13 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 
 /// <summary>
 /// What a template is rendered for (ADR-0065): the form, the culture its texts and formats are in, the site, the entry
-/// once there is one, and the query and context values. The sources read what their paths need from it.
+/// once there is one, its answers, and the query and context values. The sources read what their paths need from it.
 /// </summary>
 public sealed record MergeTagScope
 {
     private static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> NoQuery = FrozenDictionary<string, IReadOnlyList<string>>.Empty;
     private static readonly IReadOnlyDictionary<string, string> NoContext = FrozenDictionary<string, string>.Empty;
+    private static readonly IReadOnlySet<Guid> NoFields = FrozenSet<Guid>.Empty;
 
     /// <summary>The form's definition: the version the entry was submitted with, or the one the page shows.</summary>
     public required FormDefinition Form { get; init; }
@@ -38,6 +39,15 @@ public sealed record MergeTagScope
 
     /// <summary>The values the developer passed when rendering or submitting (section 4.9), by name.</summary>
     public IReadOnlyDictionary<string, string> Context { get; init => field = value ?? NoContext; } = NoContext;
+
+    /// <summary>The answers <c>field.*</c> and <c>entry.answers</c> show (ADR-0066), and the fields the rules hid; none by default.</summary>
+    public MergeTagAnswers Answers { get; init => field = value ?? MergeTagAnswers.None; } = MergeTagAnswers.None;
+
+    /// <summary>
+    /// The sensitive fields an action names to include (ADR-0014): only mail and the other actions show them, in their
+    /// tags and in <c>entry.answers</c>; anywhere else a sensitive field stays masked or left out. None by default.
+    /// </summary>
+    public IReadOnlySet<Guid> IncludedSensitive { get; init => field = value ?? NoFields; } = NoFields;
 }
 
 /// <summary>An entry as merge tags see it (ADR-0014): its key, number, state and when it was submitted.</summary>

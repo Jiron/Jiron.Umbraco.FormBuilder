@@ -290,6 +290,26 @@ public sealed class GridFieldType() : FormBuilderFieldTypeBase<GridFieldSettings
             validation.Fail(FieldMessageKinds.Invalid);
         }
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Each answered row as its statement and its columns, such as <c>Service: Good</c>: the columns' labels, or the
+    /// scale's numbers; the columns of one row apart by " / ".
+    /// </remarks>
+    protected override void Display(GridFieldSettings settings, FieldDisplay display)
+    {
+        foreach (var row in display.Field.Rows)
+        {
+            var columns = display.Values.Where(value => value.Row == row.Key)
+                .Select(value => settings.Scale is null ? display.OptionLabel(value.Text) : display.Number(value.Text))
+                .ToList();
+            if (columns.Count > 0)
+            {
+                var chosen = string.Join(" / ", columns);
+                display.Add(display.Text(row.Label) is { Length: > 0 } statement ? statement + ": " + chosen : chosen);
+            }
+        }
+    }
 }
 
 /// <summary>
@@ -467,6 +487,17 @@ public sealed class YesNoFieldType() : FormBuilderFieldTypeBase<YesNoFieldSettin
                 break;
         }
     }
+
+    /// <inheritdoc />
+    /// <remarks>The field's label of the answer, or the word for yes or no in the culture.</remarks>
+    protected override void Display(YesNoFieldSettings settings, FieldDisplay display)
+    {
+        foreach (var value in display.Values)
+        {
+            var yes = value.Text == Yes;
+            display.Add(display.Text(yes ? settings.YesLabel : settings.NoLabel) is { Length: > 0 } label ? label : yes ? display.Yes : display.No);
+        }
+    }
 }
 
 /// <summary>The settings of yes or no (ADR-0002).</summary>
@@ -624,6 +655,16 @@ public sealed class CountryFieldType() : FormBuilderFieldTypeBase<CountryFieldSe
         if (settings.Allowed.Count > 0 && !validation.Values.All(value => settings.Allowed.Contains(value.Text, StringComparer.Ordinal)))
         {
             validation.Fail(FieldMessageKinds.Invalid);
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>The country's name in the culture's language, such as <c>Schweiz</c> for <c>CH</c> in German.</remarks>
+    protected override void Display(CountryFieldSettings settings, FieldDisplay display)
+    {
+        foreach (var value in display.Values)
+        {
+            display.Add(display.CountryName(value.Text));
         }
     }
 }

@@ -2,7 +2,8 @@
 
 - Status: accepted; amends [ADR-0014](0014-merge-tag-language.md) (a site's source declares the places it may be used
   in rather than contexts, and a site's filter is server-only) and [ADR-0064](0064-the-merge-tag-engine.md) (the
-  problems a place adds, and the form check's messages move to the form check)
+  problems a place adds, and the form check's messages move to the form check); the scope's answers, the `field`
+  source and `entry.answers` added by [ADR-0066](0066-answers-as-merge-tags.md) in 5.3d
 - Date: 2026-10-26
 - Roadmap step: 5.3c (decided and built); 5.3d adds the answers (`field.*`, `entry.answers`), 5.3e the Umbraco
   sources (`page`, `member`, `site`, `dictionary`, `entry.url`), 5.3f answer recall and the copied-actions report
@@ -90,8 +91,8 @@ service gives codes and positions only.
   place takes per-visitor values, and its `Places` (null for all) includes the place.
 - A site's filter runs only on the server, so the places the browser renders too refuse it with
   `filter_not_for_place` at the filter. Arguments its `Accepts` refuses are `invalid_argument` at the filter.
-- A built-in name this version has no source for yet (`field`, `page`, `member`, `site`, `dictionary` until 5.3d and
-  5.3e) is not refused by a place that lists it; nothing knows its paths, so it renders empty with `unknown_path`.
+- A built-in name this version has no source for yet (`page`, `member`, `site`, `dictionary` until 5.3e; `field`
+  until 5.3d) is not refused by a place that lists it; nothing knows its paths, so it renders empty with `unknown_path`.
 
 `source_not_for_place` and `filter_not_for_place` are problems of the server's service only; the browser's runtime
 receives templates that the server has checked, so its engine needs no place rules.

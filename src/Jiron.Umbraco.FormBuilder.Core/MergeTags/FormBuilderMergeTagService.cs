@@ -123,7 +123,7 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
             return false;
         }
 
-        return source is not IFiniteMergeTagSource || source.Paths(form).Any(known => known.Path == path);
+        return source is not IFiniteMergeTagSource finite || finite.Knows(path, form);
     }
 
     /// <summary>A path's value from its source, null when no source knows it; a failing source gives the empty text.</summary>

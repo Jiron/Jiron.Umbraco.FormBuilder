@@ -1,6 +1,8 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -33,7 +35,9 @@ internal static class MergeTagTestSite
         MergeTagEntry? entry = null,
         string culture = "en-GB",
         IReadOnlyDictionary<string, IReadOnlyList<string>>? query = null,
-        IReadOnlyDictionary<string, string>? context = null) => new()
+        IReadOnlyDictionary<string, string>? context = null,
+        MergeTagAnswers? answers = null,
+        IReadOnlySet<Guid>? includedSensitive = null) => new()
         {
             Form = form ?? Form(),
             FormName = "Contact <us>",
@@ -43,6 +47,8 @@ internal static class MergeTagTestSite
             Entry = entry,
             Query = query!,
             Context = context!,
+            Answers = answers!,
+            IncludedSensitive = includedSensitive!,
         };
 
     /// <summary>An entry submitted at an instant.</summary>
@@ -62,15 +68,17 @@ internal static class MergeTagTestSite
         IEnumerable<IFormBuilderMergeTagSource>? sources = null,
         IEnumerable<IFormBuilderMergeTagFilter>? filters = null,
         string zone = "UTC",
-        TimeProvider? time = null)
+        TimeProvider? time = null,
+        FieldTypeRegistry? types = null)
     {
         var clock = new MergeTagClock(Settings(zone), time ?? new TestTimeProvider());
         var cultures = new MergeTagCultures();
+        var log = new RecordingLogger();
+        var answers = new MergeTagAnswerTexts(types ?? TestFieldTypes.Registry, cultures, log);
         var registry = new MergeTagRegistry(
-            FormBuilderMergeTagServices.BuiltInSources(clock, cultures),
+            FormBuilderMergeTagServices.BuiltInSources(clock, cultures, answers),
             new FormBuilderMergeTagSourceCollection(() => sources ?? []),
             new FormBuilderMergeTagFilterCollection(() => filters ?? []));
-        var log = new RecordingLogger();
         return new Site(new FormBuilderMergeTagService(registry, cultures, log), log);
     }
 
@@ -94,7 +102,7 @@ internal static class MergeTagTestSite
     }
 
     /// <summary>A logger that keeps what is logged, with the exception passed, if any.</summary>
-    public sealed class RecordingLogger : ILogger<FormBuilderMergeTagService>
+    public sealed class RecordingLogger : ILogger<FormBuilderMergeTagService>, ILogger<MergeTagAnswerTexts>
     {
         private readonly Lock _lock = new();
         private readonly List<(LogLevel Level, string Message, Exception? Exception)> _entries = [];

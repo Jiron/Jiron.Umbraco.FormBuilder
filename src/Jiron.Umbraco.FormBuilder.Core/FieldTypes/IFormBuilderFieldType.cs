@@ -8,7 +8,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 /// a site or an add-on adds, replaces or removes types there. A type is a singleton: it holds no state of its own and may
 /// take singleton services in its constructor. <see cref="FormBuilderFieldTypeBase{TSettings}"/> builds the settings
 /// schema from a settings class. A visitor's answers go through <see cref="AnswerLimits"/>, <see cref="Read"/> and
-/// <see cref="Validate"/> (ADR-0058).
+/// <see cref="Validate"/> (ADR-0058), and merge tags show the values as <see cref="Display"/> writes them (ADR-0066).
 /// </summary>
 public interface IFormBuilderFieldType
 {
@@ -67,4 +67,14 @@ public interface IFormBuilderFieldType
     void Validate(FieldValidation validation)
     {
     }
+
+    /// <summary>
+    /// Writes the texts a field's values show as in merge tags (ADR-0066): <c>{{ field.alias }}</c> and the list of the
+    /// answers, in the culture the template renders in. By default as rules compare them: texts as they are, options by
+    /// their labels, a ticked box as yes, files by their names, numbers and dates in the culture's formats, and a value
+    /// with parts as its parts' texts; a type whose default value stays on the server shows nothing in the list of the
+    /// answers. An exception it throws is logged, and the field then shows as the default would show it.
+    /// </summary>
+    /// <param name="display">The field, its values, the culture, and where the texts go.</param>
+    void Display(FieldDisplay display) => FieldDisplayDefaults.Display(Declaration, display);
 }

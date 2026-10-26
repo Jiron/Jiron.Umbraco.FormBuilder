@@ -2,7 +2,8 @@
 
 - Status: accepted; consent texts and sensitive fields amended in 1.8; the values tags give, the `json` context, where
   a tag may stand and the problems amended in 5.3b ([ADR-0064](0064-the-merge-tag-engine.md)); a site's sources and
-  filters amended in 5.3c ([ADR-0065](0065-the-merge-tag-service-and-its-sources.md))
+  filters amended in 5.3c ([ADR-0065](0065-the-merge-tag-service-and-its-sources.md)); the `field` source's values,
+  parts and groups and a sensitive field without an answer amended in 5.3d ([ADR-0066](0066-answers-as-merge-tags.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 5.3 (both runtimes and the vectors), used by 6.x (texts, defaults, outcomes),
   8.x (emails, webhooks, content), 9.4 and 10.2 (the picker) and 11.x (entry titles)
@@ -96,6 +97,12 @@ fixes its contexts), may not take a built-in source's name, and gives the empty 
 - the copy of the answers and the outcome message that a visitor sees show them masked.
 
 **Fields that rules hid** for the entry render empty, and `entry.answers` leaves them out.
+
+**Amended in 5.3d (ADR-0066):** each field type writes its answers' display texts; `field.<alias>` is a list where the
+type takes several values and one item otherwise; `field.<alias>.<part>` gives a part of a name or an address and
+`field.<repeater>` the group's rows; `.value` is the wire form rules compare (a ticked consent is `true`); a
+sensitive field without an answer renders empty rather than `•••`; and ADR-0066 lists what each place shows of a
+sensitive field.
 
 ### Filters
 

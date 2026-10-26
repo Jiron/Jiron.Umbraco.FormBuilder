@@ -241,6 +241,12 @@ internal static partial class MergeTags
     /// <summary>A value through a tag's filters, written as its place writes it.</summary>
     private static string Write(MergeTagValue source, TagPart tag, CultureFormats culture)
     {
+        // A value with markup of its own (the answers' table, ADR-0066) gives it only where nothing changes its text.
+        if (source.Html is { } html && tag.Writer == TemplateWriter.Html && tag.Filters.Count == 0)
+        {
+            return html;
+        }
+
         var value = new Value(source.Items, source.IsList, ValueEncoding.None);
         foreach (var filter in tag.Filters)
         {
@@ -336,7 +342,7 @@ internal static partial class MergeTags
     }
 
     /// <summary>The <c>html</c> filter: escaped, with each line break (CRLF, CR or LF) as <c>&lt;br&gt;</c>.</summary>
-    private static string HtmlText(string text)
+    internal static string HtmlText(string text)
     {
         var builder = new StringBuilder(text.Length);
         for (var i = 0; i < text.Length; i++)

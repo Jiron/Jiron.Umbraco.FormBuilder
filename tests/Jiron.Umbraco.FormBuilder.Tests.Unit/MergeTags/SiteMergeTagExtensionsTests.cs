@@ -1,6 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -260,7 +261,7 @@ public sealed class SiteMergeTagExtensionsTests
     }
 
     // The services of a site whose composers added merge-tag sources and filters, as the core composer registers them,
-    // with the clock, the settings and the logging every site has.
+    // with the clock, the settings, the field types and the logging every site has.
     private static ServiceProvider Site(Action<FormBuilderMergeTagSourceCollectionBuilder> sources, Action<FormBuilderMergeTagFilterCollectionBuilder> filters)
     {
         var services = new ServiceCollection();
@@ -268,6 +269,7 @@ public sealed class SiteMergeTagExtensionsTests
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton(HostOptions.Folders());
         services.AddSingleton(MergeTagTestSite.Settings("UTC"));
+        services.AddSingleton(TestFieldTypes.Registry);
         services.AddFormBuilderOptions(HostOptions.Configuration());
         var sourceBuilder = new FormBuilderMergeTagSourceCollectionBuilder();
         sources(sourceBuilder);

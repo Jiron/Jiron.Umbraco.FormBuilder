@@ -70,7 +70,7 @@ database connection of its own. Its areas:
 | Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good, and the published form as the site runs it), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053, ADR-0060 |
 | Fields and options | the field type registry, the built-in types, option sources and lists, places on options | ADR-0002, §4.3.2 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030, ADR-0064 |
-| Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`form`, `entry`, `query`, `context` and `date` so far), a site's sources and filters with their start-up check, and the culture formats written from .NET's data | ADR-0014, ADR-0064, ADR-0065 |
+| Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`field`, `entry` with `entry.answers`, `form`, `query`, `context` and `date` so far), the answers as each field type shows them with what each place masks or leaves out, a site's sources and filters with their start-up check, and the culture formats written from .NET's data | ADR-0014, ADR-0064, ADR-0065, ADR-0066 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
 | Actions and email | action types, action runs, the email outbox, the worker | ADR-0007 |
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
@@ -211,6 +211,8 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   every answer before the rules run, `Read` turns the texts and parts into values in the wire form, and `Validate`
   holds a shown field's values to its settings, with whether it is required, today and its files; `FieldValues` runs
   the three in the pipeline's order, then the field's own checks, and refuses a type that breaks the contract, and `EntryValueColumns` stores each value in the typed column of its storage kind.
+  `Display` writes the texts merge tags show the values as, in the template's culture, with the wire number or date
+  behind a text ([ADR-0066](decisions/0066-answers-as-merge-tags.md)); by default by the type's rule kind.
   `FieldTypeChanges` works out which types a field may become and what each change keeps and loses (its settings, by
   name, kind and rules; common properties; messages; the operators of rules; the columns of older answers), from the
   declarations and schemas alone ([ADR-0059](decisions/0059-changing-field-types.md)), for the inspector's "Change
@@ -454,7 +456,7 @@ filters, beside which a site adds its own ([ADR-0065](decisions/0065-the-merge-t
 
 | Extension | For | Decided in |
 | --- | --- | --- |
-| `IFormBuilderFieldType` (`FormBuilderFieldTypeBase<TSettings>`) | a field with settings, parsing, validation, storage kind, view and client behaviour | §4.3.2, ADR-0002, ADR-0055 |
+| `IFormBuilderFieldType` (`FormBuilderFieldTypeBase<TSettings>`) | a field with settings, parsing, validation, storage kind, its answers' display in merge tags, view and client behaviour | §4.3.2, ADR-0002, ADR-0055, ADR-0066 |
 | `IFormBuilderActionType` (`FormBuilderActionTypeBase<TSettings>`) | an action with settings, a test run and retries | ADR-0007 |
 | `IFormBuilderOptionSource` | options from code, with parent filtering | ADR-0002 |
 | `IFormBuilderExportFormat` | an export | §4.9 |

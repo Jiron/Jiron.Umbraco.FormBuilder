@@ -182,10 +182,10 @@ public sealed class MergeTagPlacesTests
             Assert.That(Paths(MergeTagPlace.VisitorText), Is.EqualTo(new[] { "form.name", "form.alias", "date.now", "brand.name" }));
             Assert.That(Paths(MergeTagPlace.ConsentText), Is.EqualTo(new[] { "form.name", "form.alias" }));
             Assert.That(Paths(MergeTagPlace.DefaultValue), Is.EqualTo(new[] { "form.name", "form.alias", "query.tag", "date.now", "brand.name" }));
-            Assert.That(Paths(MergeTagPlace.EntryTitle), Is.EqualTo(new[] { "entry.number", "entry.reference", "entry.date", "entry.state", "form.name", "form.alias" }));
+            Assert.That(Paths(MergeTagPlace.EntryTitle), Is.EqualTo(new[] { "entry.number", "entry.reference", "entry.date", "entry.state", "entry.answers", "form.name", "form.alias" }));
             Assert.That(Paths(MergeTagPlace.Outcome), Is.EqualTo(new[]
             {
-                "entry.number", "entry.reference", "entry.date", "entry.state", "form.name", "form.alias", "query.tag", "context.campaign", "date.now", "brand.name", "crm.segment",
+                "entry.number", "entry.reference", "entry.date", "entry.state", "entry.answers", "form.name", "form.alias", "query.tag", "context.campaign", "date.now", "brand.name", "crm.segment",
             }));
             Assert.That(Paths(MergeTagPlace.Mail), Does.Contain("ledger.total"));
         });

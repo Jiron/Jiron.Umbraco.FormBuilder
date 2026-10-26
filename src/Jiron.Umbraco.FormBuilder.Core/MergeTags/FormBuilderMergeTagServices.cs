@@ -32,8 +32,9 @@ internal static class FormBuilderMergeTagServices
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddSingleton<MergeTagCultures>();
         services.TryAddSingleton<MergeTagClock>();
+        services.TryAddSingleton<MergeTagAnswerTexts>();
         services.TryAddSingleton(provider => new MergeTagRegistry(
-            BuiltInSources(provider.GetRequiredService<MergeTagClock>(), provider.GetRequiredService<MergeTagCultures>()),
+            BuiltInSources(provider.GetRequiredService<MergeTagClock>(), provider.GetRequiredService<MergeTagCultures>(), provider.GetRequiredService<MergeTagAnswerTexts>()),
             provider.GetRequiredService<FormBuilderMergeTagSourceCollection>(),
             provider.GetRequiredService<FormBuilderMergeTagFilterCollection>()));
         services.TryAddSingleton<IFormBuilderMergeTagService, FormBuilderMergeTagService>();
@@ -42,9 +43,10 @@ internal static class FormBuilderMergeTagServices
     }
 
     /// <summary>The built-in sources this version has, in the order the picker offers them.</summary>
-    public static IReadOnlyList<IFormBuilderMergeTagSource> BuiltInSources(MergeTagClock clock, MergeTagCultures cultures) =>
+    public static IReadOnlyList<IFormBuilderMergeTagSource> BuiltInSources(MergeTagClock clock, MergeTagCultures cultures, MergeTagAnswerTexts answers) =>
     [
-        new EntryMergeTagSource(clock, cultures),
+        new FieldMergeTagSource(answers),
+        new EntryMergeTagSource(clock, cultures, answers),
         new FormMergeTagSource(),
         new QueryMergeTagSource(),
         new ContextMergeTagSource(),

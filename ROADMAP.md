@@ -695,7 +695,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - **Patterns** run on Jiron Form Builder's own matcher in both runtimes, never on a regular-expression engine (ADR-0005): a small subset of the usual syntax, parsed and compiled to an automaton of at most 10,000 instructions that reads code points in time linear in the value's length, so no pattern can hang a browser or a server (ADR-0030). A pattern matches the whole value and is case-sensitive; publishing refuses anything outside the subset and its limits (`unsafe_pattern`), and a draft keeps it while the form check lists it (ADR-0002).
 - **Merge tags:** `{{ source.path | filter: arg }}`.
   - **Sources:**
-    - `field.<alias>` (the answer as displayed), `field.<alias>.value` (its wire form), `field.<alias>.label`;
+    - `field.<alias>` (the answer as its type displays it), `field.<alias>.value` (its wire form), `field.<alias>.label`, `field.<alias>.<part>` (a part of a name or an address), `field.<repeater>.<child>` (a list across the rows; ADR-0066);
     - `entry.number|reference|date|url|state|answers`, `form.name|alias`;
     - `page.name|url|<propertyAlias>` (with `page.up.<alias>` to search the ancestors);
     - `member.name|email|<propertyAlias>`;
@@ -1837,7 +1837,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [ ] **5.3e The Umbraco sources** (C#; 5.3c split in four, WORKLOG 2026-10-26)
   - **`page`, `member`, `site`, `dictionary` and `entry.url`** (ADR-0014): the content page and its ancestors' properties in the culture, the member and its properties, the site's name and base URL, dictionary items with their fallback, and the entry's link in the backoffice.
   - **The base URL** (§4.8, ADR-0008): a per-site general setting, by default the site's first `https` domain in Umbraco, otherwise Umbraco's application URL, never the request's Host header.
-  - Done when: unit tests show each of these sources (a page's name, URL, property and an ancestor's property; a member's name, email and property, and none without a member; the site's name and base URL with each default; a dictionary item in the culture and its fallback; the entry's link from the base URL).
+  - **Dictionary texts in the answers** (added in 5.3d, ADR-0066): a field's label, an option's label and a grid row's statement that name a dictionary item (`#key`, ADR-0002) show the item's text in the culture in `field.*` and `entry.answers`.
+  - Done when: unit tests show each of these sources (a page's name, URL, property and an ancestor's property; a member's name, email and property, and none without a member; the site's name and base URL with each default; a dictionary item in the culture and its fallback; the entry's link from the base URL), and a field's label and an option's label from the dictionary in `field.*` and `entry.answers`.
 - [ ] **5.3f Answer recall and copied actions** (C# and `packages/logic`; 5.3c split in four, WORKLOG 2026-10-26)
   - **Answer recall** in both runtimes: only fields above the text or on earlier pages, hidden fields empty, with the answers' display text of 5.3d in TypeScript too.
   - **Copied actions** (added in 4.5c, ADR-0046): the report of copying actions to another form also lists each merge tag in a copied action that names a field the target lacks, with its path.
@@ -1869,11 +1870,13 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - **presets** (added in 1.1): months, weekdays, agreement and satisfaction scales, and "yes, no, not sure", in English and German (14.2 adds the other five), with month and day names from culture data.
   - **Behaviour:** per-culture labels, caching with invalidation on content publish, and cascading parents.
   - **Answers against resolved options** (added in 5.2b, ADR-0062): a choice whose options come from a list or another source holds its answers to the options the source resolves, and a cascading option to the parent answers it belongs to, in both runtimes.
+  - **Merge tags show resolved labels** (added in 5.3d, ADR-0066): `field.*` and `entry.answers` show the label the source resolves for a chosen value, in the culture, as they show a field's own options.
   - **Lists from an import** (added in 4.5c, ADR-0046): an import creates the lists its envelope carries and the site lacks, through the kind's own checks (allowed hosts, file contents), and only for a user who may manage the library; for anyone else, and for a list the checks refuse, it keeps the key and reports `option_list_missing`.
   - **Phase review:** write the handover note.
   - Done when:
     - tests per kind pass, including SSRF refusal for URL lists, cache invalidation on publish, and the presets in English and German;
     - a choice with options from a list refuses an answer the list lacks, and a cascading option whose parent answer it does not belong to, in both runtimes (ADR-0062);
+    - a merge tag of a choice with options from a list shows the option's label in the entry's culture (ADR-0066);
     - an import test creates a carried manual list for a library manager, reports it for a user who may not manage the library, and reports a carried URL list whose host is not allowed without creating it;
     - pushed, with the phase-review gate.
 
@@ -2425,7 +2428,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - Playwright runs a form end to end in en and de, including the emails;
     - a lint rule that fails on hard-coded UI strings passes, and the German screenshots are reviewed in `docs/ux/review-14.1.md`.
 - [ ] **14.2 Visitor texts in seven languages**
-  - Add French, Italian, Dutch, Spanish and Danish to the runtime and server messages and the option presets (English and German came with 6.4 and 5.5). All seven are overridable per site and per form.
+  - Add French, Italian, Dutch, Spanish and Danish to the runtime and server messages, the words merge tags show yes and no as (ADR-0066), and the option presets (English and German came with 6.4, 5.3d and 5.5). All seven are overridable per site and per form.
   - Done when:
     - a test fails when any key is missing in any language;
     - a review subagent per language reads the texts in context (screenshots) and its fixes are applied.

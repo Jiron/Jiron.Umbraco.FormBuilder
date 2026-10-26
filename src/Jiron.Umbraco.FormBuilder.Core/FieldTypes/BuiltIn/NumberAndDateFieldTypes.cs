@@ -42,6 +42,16 @@ public sealed class NumberFieldType() : FormBuilderFieldTypeBase<NumberFieldSett
     /// <remarks>Without a step, an answer keeps the step its decimals give, so it has at most that many places.</remarks>
     protected override void Validate(NumberFieldSettings settings, FieldValidation validation) =>
         BuiltInValidation.Range(validation, validation.Values[0].Text, settings.Min, settings.Max, settings.Step ?? BuiltInValidation.StepOfPlaces(settings.Decimals));
+
+    /// <inheritdoc />
+    /// <remarks>The number in the culture's format between the field's prefix and suffix, such as <c>CHF 1'250.5</c>.</remarks>
+    protected override void Display(NumberFieldSettings settings, FieldDisplay display)
+    {
+        foreach (var value in display.Values)
+        {
+            display.AddNumber(FieldDisplayDefaults.Around(display.Text(settings.Prefix), display.Number(value.Text), display.Text(settings.Suffix)), value.Text);
+        }
+    }
 }
 
 /// <summary>The settings of a number (ADR-0002). The limits are decimals in the wire form of ADR-0005, as answers are.</summary>
@@ -398,6 +408,16 @@ public sealed class SliderFieldType() : FormBuilderFieldTypeBase<SliderFieldSett
     /// <inheritdoc />
     protected override void Validate(SliderFieldSettings settings, FieldValidation validation) =>
         BuiltInValidation.Range(validation, validation.Values[0].Text, settings.Min, settings.Max, settings.Step);
+
+    /// <inheritdoc />
+    /// <remarks>The number in the culture's format with the field's unit, such as <c>75 %</c>.</remarks>
+    protected override void Display(SliderFieldSettings settings, FieldDisplay display)
+    {
+        foreach (var value in display.Values)
+        {
+            display.AddNumber(FieldDisplayDefaults.Around(string.Empty, display.Number(value.Text), display.Text(settings.Unit)), value.Text);
+        }
+    }
 }
 
 /// <summary>The settings of a slider (ADR-0002), its limits as decimals in the wire form of ADR-0005.</summary>
@@ -441,6 +461,25 @@ public sealed class CalculationFieldType() : FormBuilderFieldTypeBase<Calculatio
     /// <inheritdoc />
     /// <remarks>None: the server recomputes the result (section 4.3.3), so what is posted for it is ignored.</remarks>
     protected override FieldAnswerLimits AnswerLimits(CalculationFieldSettings settings, FormField field) => FieldAnswerLimits.None;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The result in the culture's format with the format's places, two without a format, between its prefix and suffix;
+    /// nothing in the list of the answers when visitors do not see the result.
+    /// </remarks>
+    protected override void Display(CalculationFieldSettings settings, FieldDisplay display)
+    {
+        if (display.IsListing && !settings.Visible)
+        {
+            return;
+        }
+
+        foreach (var value in display.Values)
+        {
+            var number = display.Number(value.Text, settings.Format?.Decimals ?? CalculationFormat.DefaultDecimals);
+            display.AddNumber(FieldDisplayDefaults.Around(display.Text(settings.Format?.Prefix), number, display.Text(settings.Format?.Suffix)), value.Text);
+        }
+    }
 }
 
 /// <summary>The settings of a calculation (ADR-0002).</summary>
@@ -464,6 +503,9 @@ public sealed class CalculationFieldSettings
 /// <summary>How a calculation's result shows.</summary>
 public sealed class CalculationFormat
 {
+    /// <summary>The places after the point a result shows without a format, or with a format that sets none.</summary>
+    public const int DefaultDecimals = 2;
+
     /// <summary>The places after the point, 0 to 15; 2 when unset.</summary>
     [Range(0, 15)]
     [FormBuilderSetting("#jfbFieldSettings_calculationFormatDecimals")]

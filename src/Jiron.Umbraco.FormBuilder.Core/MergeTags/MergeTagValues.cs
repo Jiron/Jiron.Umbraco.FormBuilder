@@ -57,6 +57,13 @@ public sealed record MergeTagValue(IReadOnlyList<MergeTagItem> Items, bool IsLis
         ? Items
         : throw new ArgumentException("A value's items are never null.", nameof(Items));
 
+    /// <summary>
+    /// The value as markup, written in place of its items only in the HTML context and only by a tag without filters; the
+    /// built-in sources' own (the answers' table of <c>entry.answers</c>, ADR-0066), whose texts they escaped
+    /// themselves. A site's source gives text, never markup, so the property is not public.
+    /// </summary>
+    internal string? Html { get; init; }
+
     /// <summary>The empty text: a known path without an answer.</summary>
     public static MergeTagValue Empty { get; } = Of(string.Empty);
 

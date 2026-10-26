@@ -5,7 +5,8 @@
   address's required parts and of a file's types amended by [ADR-0056](0056-field-settings-checks.md) in 5.1b; a
   choice's label amended by [ADR-0057](0057-field-types-endpoint-and-availability.md) in 5.1c; answers, reading,
   checking and the longest answer added to a type by [ADR-0058](0058-field-answers-and-values.md) in 5.1d; the email
-  type's `confirmation` kind added by [ADR-0062](0062-the-built-in-types-checks.md) in 5.2b
+  type's `confirmation` kind added by [ADR-0062](0062-the-built-in-types-checks.md) in 5.2b; the display of a type's
+  values in merge tags added by [ADR-0066](0066-answers-as-merge-tags.md) in 5.3d
 - Date: 2026-10-25
 - Roadmap step: 5.1a (decided and built); 5.1b to 5.1f build on it
 

@@ -51,6 +51,16 @@ public sealed class NameFieldType() : FormBuilderFieldTypeBase<NameFieldSettings
             }
         }
     }
+
+    /// <inheritdoc />
+    /// <remarks>The parts in their order apart by spaces, such as <c>Dr Anna Muster</c>.</remarks>
+    protected override void Display(NameFieldSettings settings, FieldDisplay display)
+    {
+        foreach (var value in display.Values)
+        {
+            display.Add(FieldPartsJson.Read(value.Text) is { } parts ? FieldPartsJson.Joined(parts) : value.Text);
+        }
+    }
 }
 
 /// <summary>The settings of a name (ADR-0002).</summary>
@@ -144,6 +154,36 @@ public sealed class AddressFieldType() : FormBuilderFieldTypeBase<AddressFieldSe
             {
                 check.Invalid(BuiltInChecks.At("requiredParts", i), $"The part '{BuiltInChecks.Name(part)}' is required, but 'parts' does not ask for it.");
             }
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The parts on one line apart by commas, the postcode and the city together, and a country given by its code by its
+    /// name in the culture: <c>Bahnhofstrasse 1, 8001 Zurich, Schweiz</c>.
+    /// </remarks>
+    protected override void Display(AddressFieldSettings settings, FieldDisplay display)
+    {
+        foreach (var value in display.Values)
+        {
+            if (FieldPartsJson.Read(value.Text) is not { } parts)
+            {
+                display.Add(value.Text);
+                continue;
+            }
+
+            var texts = parts.ToDictionary(part => part.Key, part => part.Value, StringComparer.Ordinal);
+            string Of(AddressPart part) => texts.GetValueOrDefault(BuiltInChecks.Name(part)) ?? string.Empty;
+            var country = Of(AddressPart.Country);
+            var lines = new[]
+            {
+                Of(AddressPart.Street),
+                Of(AddressPart.Street2),
+                string.Join(' ', new[] { Of(AddressPart.Postcode), Of(AddressPart.City) }.Where(text => text.Length > 0)),
+                Of(AddressPart.Region),
+                BuiltInChecks.CountryCodes.Contains(country) ? display.CountryName(country) : country,
+            };
+            display.Add(string.Join(", ", lines.Where(text => text.Length > 0)));
         }
     }
 }

@@ -10,7 +10,13 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 /// A built-in source whose paths are all known without values, so that a check of a template warns of any other path
 /// before it renders (ADR-0065).
 /// </summary>
-internal interface IFiniteMergeTagSource : IFormBuilderMergeTagSource;
+internal interface IFiniteMergeTagSource : IFormBuilderMergeTagSource
+{
+    /// <summary>Whether a whole path is one of the source's for a form; by default, one of those the picker offers.</summary>
+    /// <param name="path">The whole path, the source's name first.</param>
+    /// <param name="form">The form whose template is checked.</param>
+    bool Knows(string path, FormDefinition form) => Paths(form).Any(known => known.Path == path);
+}
 
 /// <summary>The site's time and time zone, in which entry dates and <c>date.now</c> are written (ADR-0005, ADR-0065).</summary>
 /// <param name="settings">The general settings, which hold each site's time zone.</param>
@@ -88,13 +94,15 @@ internal sealed class FormMergeTagSource : IFiniteMergeTagSource
 
 /// <summary>
 /// <c>entry.number</c>, <c>entry.reference</c>, <c>entry.date</c> and <c>entry.state</c>, empty before the visitor
-/// submits; the date and the reference's year in the site's time zone.
+/// submits, the date and the reference's year in the site's time zone; and <c>entry.answers</c>, the list of the answers
+/// the scope holds (ADR-0066).
 /// </summary>
 /// <param name="clock">The site's time zone.</param>
 /// <param name="cultures">The culture formats.</param>
-internal sealed class EntryMergeTagSource(MergeTagClock clock, MergeTagCultures cultures) : IFiniteMergeTagSource
+/// <param name="answers">The answers as merge tags show them.</param>
+internal sealed class EntryMergeTagSource(MergeTagClock clock, MergeTagCultures cultures, MergeTagAnswerTexts answers) : IFiniteMergeTagSource
 {
-    private static readonly ImmutableArray<string> Known = ["number", "reference", "date", "state"];
+    private static readonly ImmutableArray<string> Known = ["number", "reference", "date", "state", "answers"];
 
     /// <inheritdoc />
     public string Name => "entry";
@@ -111,6 +119,11 @@ internal sealed class EntryMergeTagSource(MergeTagClock clock, MergeTagCultures 
         if (!Known.Contains(request.Path, StringComparer.Ordinal))
         {
             return null;
+        }
+
+        if (request.Path == "answers")
+        {
+            return answers.Answers(request.Scope, request.Place);
         }
 
         if (request.Scope.Entry is not { } entry)
