@@ -207,6 +207,16 @@ public sealed class BuiltInAnswersTests
         });
     }
 
+    [Test]
+    public void ARanking_ReadsAnOptionOrAPositionGivenTwice_ForItsCheckToRefuse()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(Texts(Read("ranking", null, new FieldAnswers(["a", "b", "a"]))), Is.EqualTo(new[] { "a", "b", "a" }));
+            Assert.That(Texts(Read("ranking", null, new FieldAnswers([], [Part("c", "1"), Part("a", "2"), Part("b", "1")]))), Is.EqualTo(new[] { "b", "c", "a" }), "options in one position in the order of their values");
+        });
+    }
+
     [TestCase("0", "1")]
     [TestCase("-1", "1")]
     [TestCase("x", "1")]

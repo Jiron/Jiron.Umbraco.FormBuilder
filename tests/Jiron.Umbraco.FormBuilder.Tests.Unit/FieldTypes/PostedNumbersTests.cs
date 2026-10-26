@@ -5,7 +5,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.FieldTypes;
 
 /// <summary>
 /// Numbers as visitors post them (ADR-0058): the wire form and what a browser's number input posts, converted exactly to
-/// the wire form of ADR-0005, and refused when they are no number or too long to store.
+/// the wire form of ADR-0005, and refused when they are no number or longer than the 60 digits a calculation reads;
+/// whether a stored number keeps their digits is the check's (ADR-0069).
 /// </summary>
 public sealed class PostedNumbersTests
 {
@@ -69,6 +70,22 @@ public sealed class PostedNumbersTests
     [Test]
     public void ToWire_DigitsOtherThanAscii_AreNoNumber() =>
         Assert.That(PostedNumbers.ToWire(new string((char)0x0661, 2)), Is.Null);
+
+    [TestCase("1e15", "1000000000000000")]
+    [TestCase("1234567890123456", "1234567890123456")]
+    [TestCase("0.0000000000000001", "0.0000000000000001")]
+    [TestCase("1e59", "100000000000000000000000000000000000000000000000000000000000")]
+    [TestCase("1e-60", "0.000000000000000000000000000000000000000000000000000000000001")]
+    public void ToWire_ANumberPastTheStoredDigits_IsRead_ForTheCheckToRefuse(string posted, string wire)
+    {
+        var converted = PostedNumbers.ToWire(posted);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(converted, Is.EqualTo(wire));
+            Assert.That(ExactDecimal.Fits(ExactDecimal.Parse(converted!)!.Value), Is.False, "which no stored number holds");
+        });
+    }
 
     [TestCase("1e60")]
     [TestCase("1234567890123456789012345678901234567890123456789012345678901")]

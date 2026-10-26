@@ -9,8 +9,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.FieldTypes;
 /// <summary>
 /// The checks of the built-in text, number and date types (ADR-0058, ADR-0062), each run through its type's
 /// <c>Validate</c> as the pipeline runs it, at its edges: a value on a limit and one just past it. The shared vectors
-/// (<c>tests/vectors/validation.json</c>) hold the browser's runtime to the same; these restate the edges in C# and add
-/// what only the server checks, an email's domains, and the types that have no checks of their own.
+/// (<c>tests/vectors/validation.json</c>) hold the browser's runtime to the same; these restate the edges in C#, with the
+/// forms of email addresses, phone numbers and web addresses (ADR-0069), and add what only the server checks, an
+/// email's domains, and the types that have no checks of their own.
 /// </summary>
 public sealed class BuiltInValidationTests
 {
@@ -134,6 +135,74 @@ public sealed class BuiltInValidationTests
     [Test]
     public void TheEdges_CoverEveryTypeOfTheStep() =>
         Assert.That(Edges().Select(data => (string)data.Arguments[0]!).Append("email").Distinct(), Is.EquivalentTo(TypesOfTheStep));
+
+    // The forms of ADR-0069 at their edges: the type, the answer, and whether its form holds.
+    public static IEnumerable<TestCaseData> Forms()
+    {
+        static TestCaseData Case(string name, string type, string value, bool holds) =>
+            new TestCaseData(type, value, holds).SetName($"Form({type}: {name})");
+        static string Host(int last) => string.Join('.', new string('a', 63), new string('b', 63), new string('c', 63), new string('d', last));
+
+        yield return Case("the plain form", "email", "anna@example.com", true);
+        yield return Case("dots, a plus and subdomains", "email", "anna.maria+news@mail.example.co.uk", true);
+        yield return Case("every symbol an atom takes", "email", "!#$%&'*+-/=?^_`{|}~@example.com", true);
+        yield return Case("letters of other scripts", "email", "j" + (char)0xF6 + "rg@m" + (char)0xFC + "nchen.de", true);
+        yield return Case("a local part of 64", "email", new string('a', 64) + "@example.com", true);
+        yield return Case("a local part of 65", "email", new string('a', 65) + "@example.com", false);
+        yield return Case("a label of 63", "email", "anna@" + new string('b', 63) + ".com", true);
+        yield return Case("a label of 64", "email", "anna@" + new string('b', 64) + ".com", false);
+        yield return Case("a top-level label with digits", "email", "anna@example.xn--p1ai", true);
+        yield return Case("a top-level label of other digits", "email", "anna@example." + (char)0x663 + (char)0x664, true);
+        yield return Case("without a local part", "email", "@example.com", false);
+        yield return Case("two dots", "email", "an..na@example.com", false);
+        yield return Case("a domain of one label", "email", "anna@localhost", false);
+        yield return Case("a hyphen first in a label", "email", "anna@-example.com", false);
+        yield return Case("an IP address", "email", "anna@192.168.0.1", false);
+        yield return Case("a no-break space", "email", "an" + (char)0xA0 + "na@example.com", false);
+        yield return Case("a C1 control", "email", "an" + (char)0x80 + "na@example.com", false);
+
+        yield return Case("international", "phone", "+41 44 668 18 00", true);
+        yield return Case("a trunk prefix in brackets", "phone", "+41 (0)44 668 18 00", true);
+        yield return Case("hyphens, dots and a slash", "phone", "030/123-45.67", true);
+        yield return Case("four digits", "phone", "1234", true);
+        yield return Case("three digits", "phone", "123", false);
+        yield return Case("seventeen digits", "phone", "12345678901234567", true);
+        yield return Case("eighteen digits", "phone", "123456789012345678", false);
+        yield return Case("an extension of six", "phone", "044 668 18 00 ext. 123456", true);
+        yield return Case("an extension of seven", "phone", "044 668 18 00 x 1234567", false);
+        yield return Case("an extension in capitals", "phone", "044 668 18 00 EXT 12", true);
+        yield return Case("an extension of other digits", "phone", "044 668 18 00 x " + (char)0x661 + (char)0x662, false);
+        yield return Case("letters", "phone", "0800 FLOWERS", false);
+        yield return Case("a plus inside", "phone", "41+44 668 18 00", false);
+        yield return Case("empty brackets", "phone", "+41 ( ) 44 668 18 00", false);
+        yield return Case("a hyphen in brackets", "phone", "+41 (0-44) 668 18 00", false);
+        yield return Case("a bracket left open", "phone", "(044 668 18 00", false);
+
+        yield return Case("a path, query and fragment", "url", "https://www.example.co.uk/a/b?c=d&e=f#g", true);
+        yield return Case("a letter of another script in the path", "url", "https://example.com/caf" + (char)0xE9, true);
+        yield return Case("the highest port", "url", "https://example.com:65535", true);
+        yield return Case("past the highest port", "url", "https://example.com:65536", false);
+        yield return Case("port zero", "url", "https://example.com:0", false);
+        yield return Case("a port in hexadecimal", "url", "https://example.com:0x50", false);
+        yield return Case("a host of 253", "url", "https://" + Host(61) + "/", true);
+        yield return Case("a host of 254", "url", "https://" + Host(62) + "/", false);
+        yield return Case("without the slashes", "url", "https:example.com", false);
+        yield return Case("a user name", "url", "https://anna@example.com/", false);
+        yield return Case("a space in the path", "url", "https://example.com/a b", false);
+        yield return Case("delete in the path", "url", "https://example.com/a" + (char)0x7F, false);
+    }
+
+    [TestCaseSource(nameof(Forms))]
+    public void AnAddressOrPhoneNumber_HasItsForm(string type, string value, bool holds) =>
+        Assert.That(Errors(type, null, new FieldAnswers([value])), Is.EqualTo(holds ? Array.Empty<string>() : ["invalid"]));
+
+    [Test]
+    public void TheForms_CoverEmailPhoneAndUrl() =>
+        Assert.That(Forms().Select(data => (string)data.Arguments[0]!).Distinct(), Is.EquivalentTo(new[] { "email", "phone", "url" }));
+
+    [Test]
+    public void AnEmail_FailsItsForm_BeforeItsConfirmation() =>
+        Assert.That(Errors("email", """{"confirm":true}""", Confirmed("anna", "ana")), Is.EqualTo(new[] { "invalid", "confirmation" }));
 
     [TestCase("anna@example.com")]
     [TestCase("ANNA@Example.COM")]

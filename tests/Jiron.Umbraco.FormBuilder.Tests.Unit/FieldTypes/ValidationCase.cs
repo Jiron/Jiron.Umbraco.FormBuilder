@@ -30,6 +30,9 @@ public sealed record ValidationCase(string Type, FieldAnswers Answers)
     /// <summary>A grid's rows.</summary>
     public IReadOnlyList<Guid> Rows { get; init; } = [];
 
+    /// <summary>The grid's rows marked required (ADR-0069).</summary>
+    public IReadOnlyList<Guid> RequiredRows { get; init; } = [];
+
     /// <summary>The field's own checks.</summary>
     public IReadOnlyList<FieldCheck> Checks { get; init; } = [];
 
@@ -64,7 +67,7 @@ public sealed record ValidationCase(string Type, FieldAnswers Answers)
         Options = Options is { } own
             ? new FieldOptions { Items = [.. own.Select(value => new FieldOption { Value = value })] }
             : type.Declaration.Features.HasFlag(FieldFeatures.Options) ? new FieldOptions { Source = OptionSource.List, OptionList = List } : null,
-        Rows = [.. Rows.Select(row => new GridRow { Key = row })],
+        Rows = [.. Rows.Select(row => new GridRow { Key = row, Required = RequiredRows.Contains(row) })],
         Validation = Checks,
     };
 

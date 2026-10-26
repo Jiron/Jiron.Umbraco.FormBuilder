@@ -154,6 +154,39 @@ public sealed class FieldValuesTests
     }
 
     [Test]
+    public void ANumberPastTheDigitsAStoredNumberKeeps_IsRefusedAlone()
+    {
+        var number = TestFieldTypes.Registry.FindType("number")!;
+        var places = Field("number", """{"decimals":15}""");
+        var limited = Field("number", """{"max":"10","step":"3"}""") with { Validation = [new MatchesFieldCheck { Field = OtherField }] };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Checked(number, limited, ["1234567890123456"], "5").Errors, Is.EqualTo(new[] { FieldMessageKinds.Digits }), "no limit or step beside it");
+            Assert.That(Checked(number, limited, ["1234567890123456"], "5").Checks, Is.Empty, "and none of the field's own checks");
+            Assert.That(Checked(number, Field("number"), ["999999999999999"]).Errors, Is.Empty, "fifteen digits");
+            Assert.That(Checked(number, places, ["0.000000000000001"]).Errors, Is.Empty, "fifteen places");
+            Assert.That(Checked(number, places, ["0.0000000000000001"]).Errors, Is.EqualTo(new[] { FieldMessageKinds.Digits }), "sixteen places");
+            Assert.That(Checked(TestFieldTypes.Registry.FindType("slider")!, Field("slider"), ["1234567890123456"]).Errors, Is.EqualTo(new[] { FieldMessageKinds.Invalid }), "a type without the kind");
+            Assert.That(Checked(TestFieldTypes.Registry.FindType("text")!, Field("text"), ["1234567890123456"]).Errors, Is.Empty, "text keeps every digit");
+        });
+    }
+
+    [Test]
+    public void ANumberWithAnExponent_IsConvertedExactly_BeforeTheLimitsApply()
+    {
+        var number = TestFieldTypes.Registry.FindType("number")!;
+        var field = Field("number", """{"max":"10","decimals":1}""");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Checked(number, field, ["1.5e1"]).Errors, Is.EqualTo(new[] { FieldMessageKinds.Max }), "15 is past the maximum");
+            Assert.That(Checked(number, field, ["95e-1"]).Errors, Is.Empty, "9.5 is within it, on its one place");
+            Assert.That(Checked(number, field, ["9.55E0"]).Errors, Is.EqualTo(new[] { FieldMessageKinds.Step }), "9.55 has a place too many");
+        });
+    }
+
+    [Test]
     public void ATypeWithoutLimits_IsRefused_ByName()
     {
         var type = new BrokenFieldType("limitless", FieldStorageKind.Text) { HasLimits = false };

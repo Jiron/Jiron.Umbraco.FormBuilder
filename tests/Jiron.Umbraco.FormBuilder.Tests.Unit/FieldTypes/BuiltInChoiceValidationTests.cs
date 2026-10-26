@@ -8,8 +8,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.FieldTypes;
 /// <summary>
 /// The checks of the built-in choice types (ADR-0058, ADR-0062), each run through its type's <c>Validate</c> as the
 /// pipeline runs it, at its edges: the options a choice offers, compared exactly, the selections, the "Other" text, a
-/// grid's columns, a ranking's length and a country's allowed list. The shared vectors hold the browser's runtime to
-/// the same; these restate the edges in C# and add a field without any options at all, which only a draft can hold.
+/// grid's columns and the rows it needs, a ranking's length and each option and position once (ADR-0069), and a
+/// country's allowed list. The shared vectors hold the browser's runtime to the same; these restate the edges in C# and
+/// add a field without any options at all, which only a draft can hold.
 /// </summary>
 public sealed class BuiltInChoiceValidationTests
 {
@@ -138,5 +139,65 @@ public sealed class BuiltInChoiceValidationTests
         var read = FieldValues.Read(builtIn, field, given.Answers);
 
         Assert.That(FieldValues.Check(builtIn, field, read, new FieldCheckInput(false, ValidationCase.Today)).Errors, Is.EqualTo(new[] { FieldMessageKinds.Invalid }));
+    }
+
+    [Test]
+    public void AGrid_NeedsTheRowsMarkedRequired_OrEveryRowWhenItIsRequired()
+    {
+        static string[] Checked(bool required, Guid[] marked, params Guid[] answered) =>
+            new ValidationCase("grid", new FieldAnswers([], answered.Select(row => new KeyValuePair<string, IEnumerable<string>>(GridFieldType.RowPart(row), ["agree"]))))
+            {
+                Options = Agreement,
+                Rows = [Price, Staff],
+                RequiredRows = marked,
+                Required = required,
+            }.Errors();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Checked(false, [], Price), Is.Empty, "an optional grid needs no row");
+            Assert.That(Checked(false, []), Is.Empty, "an optional grid left empty");
+            Assert.That(Checked(false, [Staff], Price), Is.EqualTo(new[] { "required" }), "a marked row left out");
+            Assert.That(Checked(false, [Staff], Staff), Is.Empty, "a marked row answered alone");
+            Assert.That(Checked(false, [Staff]), Is.EqualTo(new[] { "required" }), "a marked row needs an answer though the grid is optional");
+            Assert.That(Checked(true, [], Price), Is.EqualTo(new[] { "required" }), "a required grid needs every row");
+            Assert.That(Checked(true, [], Price, Staff), Is.Empty);
+            Assert.That(Checked(true, []), Is.EqualTo(new[] { "required" }));
+        });
+    }
+
+    [Test]
+    public void AGrid_ChecksItsColumns_BeforeTheRowsItNeeds()
+    {
+        var given = new ValidationCase("grid", new FieldAnswers([], [new(GridFieldType.RowPart(Price), ["strongly"])]))
+        {
+            Options = Agreement,
+            Rows = [Price, Staff],
+            RequiredRows = [Staff],
+        };
+
+        Assert.That(given.Errors(), Is.EqualTo(new[] { "invalid", "required" }));
+    }
+
+    [Test]
+    public void ARanking_RefusesAnOptionOrAPositionGivenTwice()
+    {
+        static string[] Ranked(string? settings, IReadOnlyList<string>? options, params string[] values) =>
+            new ValidationCase("ranking", new FieldAnswers(values)) { Settings = settings, Options = options }.Errors();
+        static string[] Positioned(params (string Option, string Position)[] parts) =>
+            new ValidationCase("ranking", new FieldAnswers([], parts.Select(part => new KeyValuePair<string, IEnumerable<string>>(part.Option, [part.Position]))))
+            {
+                Settings = """{"top":2}""",
+                Options = Aspects,
+            }.Errors();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Ranked(null, Aspects, "quality", "quality", "speed", "service"), Is.EqualTo(new[] { "invalid" }), "an option twice");
+            Assert.That(Ranked("""{"top":2}""", null, "looks", "looks"), Is.EqualTo(new[] { "invalid" }), "an option twice from a list");
+            Assert.That(Positioned(("price", "1"), ("quality", "1")), Is.EqualTo(new[] { "invalid" }), "two options in one position");
+            Assert.That(Positioned(("price", "01"), ("quality", "1")), Is.EqualTo(new[] { "invalid" }), "positions compare as numbers");
+            Assert.That(Positioned(("speed", "1"), ("price", "3")), Is.Empty, "a gap between positions");
+        });
     }
 }
