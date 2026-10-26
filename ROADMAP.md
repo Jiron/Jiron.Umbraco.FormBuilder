@@ -1845,7 +1845,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **5.3g Copied actions** (C#; 5.3f split in two, WORKLOG 2026-10-26) (2026-10-26, aac2993)
   - **Copied actions** (added in 4.5c, ADR-0046): the report of copying actions to another form also lists each merge tag in a copied action that names a field the target lacks, with its path.
   - Done when: a test copies an action whose subject names a field the target lacks and finds that tag, with its path, in the copy's report.
-- [ ] **5.4a The checks from Text to Country** (C# and `packages/logic`; 5.4 split in three, WORKLOG 2026-10-26)
+- [x] **5.4a The checks from Text to Country** (C# and `packages/logic`; 5.4 split in three, WORKLOG 2026-10-26) (2026-10-26, 9e98db7)
   - **Parsing and validation** of the types of §4.3.2 from Text to Country (ADR-0069): an email address, a phone number in a lenient international format and a web address held to their forms in both runtimes, and country names from .NET culture data (built in 5.3d, ADR-0066).
   - **Grid and ranking** (added in 1.1): the required-rows rule and unique positions, in both runtimes through `validation.json` (added in 5.2b, ADR-0062).
   - **Smaller settings:** word limits, excluded dates, the camera option on file fields, and place limits on options (the counting itself comes with the pipeline in 6.1).
