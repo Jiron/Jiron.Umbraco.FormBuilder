@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   calculate,
+  checkField,
+  clean,
   evaluateCondition,
   evaluateForm,
   evaluateRule,
@@ -12,15 +14,17 @@ import {
   LogicError,
   storedNumber,
   type Calculation,
+  type CheckedField,
   type Condition,
   type Context,
+  type FieldAnswers,
   type FormAnswers,
   type Kind,
   type LogicForm,
   type Rule,
   type Subject,
 } from '../src/index.ts';
-import { vectorsFolder } from '../tools/repository.ts';
+import { repositoryRoot, vectorsFolder } from '../tools/repository.ts';
 
 interface VectorCase {
   readonly id: string;
@@ -34,7 +38,40 @@ interface VectorCase {
   readonly number?: string;
   readonly calc?: Calculation;
   readonly form?: LogicForm;
+  readonly field?: CheckedField;
+  readonly answers?: FieldAnswers;
   readonly expect: unknown;
+}
+
+/** A built-in type as the reviewed snapshot of the field types endpoint serves it (docs/api/field-types.json). */
+interface ServedType {
+  readonly alias: string;
+  readonly ruleKind: Kind | null;
+  readonly settings: readonly { readonly name: string; readonly default: unknown; readonly isPublic: boolean }[];
+}
+
+const served: readonly ServedType[] = (
+  JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'field-types.json'), 'utf8')) as { types: ServedType[] }
+).types;
+
+/**
+ * Holds a field to check to what both runtimes see alike (ADR-0062): its kind is its type's, it gives every public
+ * setting its type has a default for, as the public projection writes them, so no vector leans on a default, and its
+ * answers are cleaned as the pipeline cleans them.
+ */
+function heldToItsType(id: string, field: CheckedField, answers: FieldAnswers): void {
+  const type = served.find((each) => each.alias === field.type);
+  if (type === undefined) throw new Error(`${id}: the site has no type '${field.type}'`);
+  if ((field.kind ?? null) !== type.ruleKind)
+    throw new Error(`${id}: a ${field.type} field's kind is ${type.ruleKind}`);
+  const leaned = type.settings.filter(
+    (setting) => setting.isPublic && setting.default !== null && !(setting.name in (field.settings ?? {})),
+  );
+  if (leaned.length > 0)
+    throw new Error(`${id}: the field leans on the defaults of ${leaned.map((s) => s.name).join(', ')}`);
+  const texts = [...answers.values, ...Object.values(answers.parts ?? {}).flat()];
+  if (texts.some((text) => clean(text) !== text))
+    throw new Error(`${id}: an answer is not cleaned as the pipeline cleans it`);
 }
 
 interface VectorFile {
@@ -46,7 +83,7 @@ interface VectorFile {
 }
 
 /** The things a case can run; each case has exactly one. */
-const RUNNABLE = ['condition', 'rule', 'number', 'calc', 'form'] as const;
+const RUNNABLE = ['condition', 'rule', 'number', 'calc', 'form', 'field'] as const;
 
 const folder = vectorsFolder();
 const names = readdirSync(folder)
@@ -64,6 +101,11 @@ function run(file: VectorFile, vector: VectorCase): unknown {
     if (vector.rule !== undefined) return evaluateRule(vector.rule, subject);
     if (vector.number !== undefined) return storedNumber(vector.number);
     if (vector.calc !== undefined) return formatDecimal(calculate(vector.calc));
+    if (vector.field !== undefined) {
+      const answers = vector.answers ?? { values: [] };
+      heldToItsType(vector.id, vector.field, answers);
+      return checkField(vector.field, answers, subject.context);
+    }
     if (vector.form !== undefined) {
       const answers: FormAnswers = { values: vector.values ?? {}, rows: vector.rows ?? {} };
       return evaluateForm(vector.form, answers, subject.context);

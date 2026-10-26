@@ -12,7 +12,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 [TestFixture]
 public sealed class VectorTests
 {
-    private static readonly string[] Runnable = ["condition", "rule", "number", "calc", "form"];
+    private static readonly string[] Runnable = ["condition", "rule", "number", "calc", "form", "field"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, JsonDocument>> Files = new(Load);
 
@@ -124,6 +124,11 @@ public sealed class VectorTests
             if (vector.TryGetProperty("number", out var number))
             {
                 return Calculations.StoredNumber(number.GetString()!);
+            }
+
+            if (vector.TryGetProperty("field", out var field))
+            {
+                return FieldVector.Run(vector.GetProperty("id").GetString()!, field, vector.GetProperty("answers"), subject.Context);
             }
 
             if (vector.TryGetProperty("form", out var form))

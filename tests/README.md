@@ -70,7 +70,10 @@ Both runners read every `vectors/*.json` in place, one test case per vector: `Lo
 that passes in one runtime and fails in the other is a bug in one of them. `spike` holds the 163 cases of 1.5, `port`
 those of the port (3.4b, 4.8f), and `rules` (5.2a) every operator against every kind of answer and whole forms run by
 the form engine ([ADR-0061](../docs/decisions/0061-the-form-rules-engine.md)): a case's `form` with its `values` and the
-`rows` of its repeatable groups, expecting the `FormState`.
+`rows` of its repeatable groups, expecting the `FormState`. `validation` (5.2b) holds the built-in types' checks at
+their edges ([ADR-0062](../docs/decisions/0062-the-built-in-types-checks.md)): a case's `field` with its effective
+settings and its `answers`, expecting its `errors`. An email's domains are the server's alone, so
+`FieldTypes/BuiltInValidationTests.cs` covers them, and every other check at its edges, through each type's `Validate`.
 
 **The mutation check** proves the vectors. Each mutant in `vectors/mutants.mjs` changes one piece of the logic in one
 runtime, that runtime's vector runner runs, and the file is put back; the check fails on a mutant that nothing catches,

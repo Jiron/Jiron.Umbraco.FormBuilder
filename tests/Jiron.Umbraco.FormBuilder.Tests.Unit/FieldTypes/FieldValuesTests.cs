@@ -176,6 +176,24 @@ public sealed class FieldValuesTests
         Assert.That(() => FieldValues.Check(type, field, FieldValues.Read(type, field, new FieldAnswers(["a"])), required: false, Today), Throws.ArgumentException);
     }
 
+    [TestCase(true)]
+    [TestCase(false)]
+    public void ATypesCheck_SeesWhetherTheFieldIsRequired_AsTheRulesLeaveIt_AndToday(bool required)
+    {
+        (bool Required, DateOnly Today)? seen = null;
+        var type = new BrokenFieldType("seeing", FieldStorageKind.Text)
+        {
+            OnRead = reading => reading.Add("a"),
+            OnValidate = validation => seen = (validation.IsRequired, validation.Today),
+        };
+        // The field's own setting says optional; a rule may still require it.
+        var field = Field("seeing") with { Required = false };
+
+        FieldValues.Check(type, field, FieldValues.Read(type, field, new FieldAnswers(["a"])), required, Today);
+
+        Assert.That(seen, Is.EqualTo((required, Today)));
+    }
+
     [TestCase(FieldStorageKind.Number, "1e3")]
     [TestCase(FieldStorageKind.Number, "007")]
     [TestCase(FieldStorageKind.Date, "2026-02-30")]

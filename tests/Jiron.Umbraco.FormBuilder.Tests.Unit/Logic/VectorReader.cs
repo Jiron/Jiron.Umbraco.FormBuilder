@@ -5,7 +5,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 
 /// <summary>
 /// Reads fields, answers, rules, conditions, operands, contexts, calculations and forms from a vector file's JSON
-/// (ADR-0005, ADR-0061).
+/// (ADR-0005, ADR-0061); <see cref="FieldVector"/> reads a field to check (ADR-0062).
 /// An operand of a shape nothing accepts is read as <see cref="InvalidOperand"/>, so checking refuses it as TypeScript
 /// does; a null name reads as no name, as in TypeScript.
 /// </summary>
@@ -136,7 +136,7 @@ internal static class VectorReader
     private static List<T> List<T>(JsonElement element, string name, Func<JsonElement, T> read) =>
         element.TryGetProperty(name, out var list) ? [.. list.EnumerateArray().Select(read)] : [];
 
-    private static FieldKind Kind(JsonElement element) =>
+    public static FieldKind Kind(JsonElement element) =>
         Kinds.TryGetValue(element.GetString() ?? string.Empty, out var kind)
             ? kind
             : throw new FormatException($"Unknown field kind {element}.");
@@ -150,7 +150,7 @@ internal static class VectorReader
     private static string? OptionalString(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null ? value.GetString() : null;
 
-    private static List<string> Strings(JsonElement element) =>
+    public static List<string> Strings(JsonElement element) =>
         element.ValueKind == JsonValueKind.String
             ? [element.GetString()!]
             : [.. element.EnumerateArray().Select(item => item.GetString()!)];

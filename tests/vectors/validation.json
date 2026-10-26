@@ -1,0 +1,3856 @@
+{
+  "format": "jfb-vectors/1",
+  "suite": "validation",
+  "defaults": {
+    "context": {
+      "now": "2026-06-15T10:00:00Z",
+      "timeZone": "Europe/Zurich",
+      "culture": "de-CH",
+      "member": {
+        "signedIn": false,
+        "groups": []
+      },
+      "query": {},
+      "hidden": []
+    }
+  },
+  "fields": {},
+  "cases": [
+    {
+      "id": "required-text-without-answer",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "required": true,
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": []
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "optional-text-without-answer",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": []
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "required-text-with-answer",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "required": true,
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "Anna"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "required-date-without-answer",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "required": true,
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false
+        }
+      },
+      "answers": {
+        "values": []
+      },
+      "expect": {
+        "errors": [
+          "required"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "optional-number-without-answer-ignores-its-limits",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "min": "5"
+        }
+      },
+      "answers": {
+        "values": []
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "phone-has-no-check-of-its-own",
+      "field": {
+        "type": "phone",
+        "kind": "text"
+      },
+      "answers": {
+        "values": [
+          "+41 44 668 18 00"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "checkbox-has-no-check-of-its-own",
+      "field": {
+        "type": "checkbox",
+        "kind": "checkbox"
+      },
+      "answers": {
+        "values": [
+          "true"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "yesno-has-no-check-of-its-own",
+      "field": {
+        "type": "yesno",
+        "kind": "choice",
+        "settings": {
+          "style": "buttons"
+        }
+      },
+      "answers": {
+        "values": [
+          "no"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "signature-has-no-check-of-its-own",
+      "field": {
+        "type": "signature",
+        "kind": "files"
+      },
+      "answers": {
+        "values": [
+          "token-1"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "consent-has-no-check-of-its-own",
+      "field": {
+        "type": "consent",
+        "kind": "checkbox"
+      },
+      "answers": {
+        "values": [
+          "true"
+        ],
+        "parts": {
+          "wording": [
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "hidden-has-no-check-of-its-own",
+      "field": {
+        "type": "hidden",
+        "kind": "text"
+      },
+      "answers": {
+        "values": [
+          "newsletter"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "text-within-its-lengths",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "settings": {
+          "minLength": 2,
+          "maxLength": 5,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "abcde"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "text-at-its-min-length",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "settings": {
+          "minLength": 2,
+          "maxLength": 5,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "ab"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "text-below-its-min-length",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "settings": {
+          "minLength": 2,
+          "maxLength": 5,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "a"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "minLength"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "text-above-its-max-length",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "settings": {
+          "minLength": 2,
+          "maxLength": 5,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "abcdef"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "maxLength"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "text-default-max-length-holds-255",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "text-default-max-length-refuses-256",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 255,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "maxLength"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "text-an-emoji-is-two-code-units",
+      "description": "browsers count maxlength in UTF-16 code units, so a character outside the BMP counts twice",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 1,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "\ud83d\ude00"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "maxLength"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "text-an-emoji-fits-two-code-units",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 2,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "\ud83d\ude00"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "text-limits-the-wrong-way-round",
+      "description": "publishing refuses limits the wrong way round (ADR-0056); the preview of a draft reports the first",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "settings": {
+          "minLength": 5,
+          "maxLength": 3,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "abcd"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "minLength"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "text-a-combining-mark-counts",
+      "description": "no character composes x with an acute, so NFC leaves two code units",
+      "field": {
+        "type": "text",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 1,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "x\u0301"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "maxLength"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-words-within",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "minWords": 2,
+          "maxWords": 3
+        }
+      },
+      "answers": {
+        "values": [
+          "one two"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-words-at-the-most",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "minWords": 2,
+          "maxWords": 3
+        }
+      },
+      "answers": {
+        "values": [
+          "one two three"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-too-few-words",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "minWords": 2,
+          "maxWords": 3
+        }
+      },
+      "answers": {
+        "values": [
+          "one"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "minWords"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-too-many-words",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "minWords": 2,
+          "maxWords": 3
+        }
+      },
+      "answers": {
+        "values": [
+          "one two three four"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "maxWords"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-words-across-lines-and-tabs",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "maxWords": 3
+        }
+      },
+      "answers": {
+        "values": [
+          "one\ntwo\tthree\r\nfour"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "maxWords"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-runs-of-spaces-are-one-gap",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "minWords": 2,
+          "maxWords": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "one   \u00a0  two"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-the-ideographic-space-parts-words",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "maxWords": 1
+        }
+      },
+      "answers": {
+        "values": [
+          "one\u3000two"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "maxWords"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-a-no-break-space-parts-words",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "maxWords": 1
+        }
+      },
+      "answers": {
+        "values": [
+          "one\u00a0two"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "maxWords"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-a-zero-width-space-parts-no-words",
+      "description": "U+200B is not whitespace that cleaning trims, so the two halves are one word",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "maxWords": 1
+        }
+      },
+      "answers": {
+        "values": [
+          "one\u200btwo"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-a-hyphen-joins-a-word",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "maxWords": 1
+        }
+      },
+      "answers": {
+        "values": [
+          "well-known"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-punctuation-alone-is-a-word",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "minWords": 3
+        }
+      },
+      "answers": {
+        "values": [
+          "yes - no"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-word-limits-the-wrong-way-round",
+      "description": "publishing refuses limits the wrong way round (ADR-0056); the preview of a draft reports the first",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "minWords": 3,
+          "maxWords": 1
+        }
+      },
+      "answers": {
+        "values": [
+          "one two"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "minWords"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-lengths-then-words",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 5,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false,
+          "minWords": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "abc"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "minLength",
+          "minWords"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-default-max-length-holds-4000",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "textarea-default-max-length-refuses-4001",
+      "field": {
+        "type": "textarea",
+        "kind": "text",
+        "settings": {
+          "minLength": 0,
+          "maxLength": 4000,
+          "rows": 4,
+          "autoGrow": true,
+          "counter": false
+        }
+      },
+      "answers": {
+        "values": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "maxLength"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "email-without-confirm-ignores-the-part",
+      "field": {
+        "type": "email",
+        "kind": "text",
+        "settings": {
+          "confirm": false
+        }
+      },
+      "answers": {
+        "values": [
+          "anna@example.com"
+        ],
+        "parts": {
+          "confirm": [
+            "other@example.com"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "email-confirmed",
+      "field": {
+        "type": "email",
+        "kind": "text",
+        "settings": {
+          "confirm": true
+        }
+      },
+      "answers": {
+        "values": [
+          "anna@example.com"
+        ],
+        "parts": {
+          "confirm": [
+            "anna@example.com"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "email-confirmed-in-another-case",
+      "field": {
+        "type": "email",
+        "kind": "text",
+        "settings": {
+          "confirm": true
+        }
+      },
+      "answers": {
+        "values": [
+          "Anna@Example.com"
+        ],
+        "parts": {
+          "confirm": [
+            "anna@EXAMPLE.COM"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "email-confirmation-missing",
+      "field": {
+        "type": "email",
+        "kind": "text",
+        "settings": {
+          "confirm": true
+        }
+      },
+      "answers": {
+        "values": [
+          "anna@example.com"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "confirmation"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "email-confirmation-differs",
+      "field": {
+        "type": "email",
+        "kind": "text",
+        "settings": {
+          "confirm": true
+        }
+      },
+      "answers": {
+        "values": [
+          "anna@example.com"
+        ],
+        "parts": {
+          "confirm": [
+            "ana@example.com"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "confirmation"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "email-confirmation-given-twice",
+      "field": {
+        "type": "email",
+        "kind": "text",
+        "settings": {
+          "confirm": true
+        }
+      },
+      "answers": {
+        "values": [
+          "anna@example.com"
+        ],
+        "parts": {
+          "confirm": [
+            "anna@example.com",
+            "anna@example.com"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "confirmation"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "email-sharp-s-never-folds-to-ss",
+      "field": {
+        "type": "email",
+        "kind": "text",
+        "settings": {
+          "confirm": true
+        }
+      },
+      "answers": {
+        "values": [
+          "stra\u00dfe@example.de"
+        ],
+        "parts": {
+          "confirm": [
+            "STRASSE@example.de"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "confirmation"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "email-sharp-s-matches-itself",
+      "description": "the capital sharp s folds to the small one",
+      "field": {
+        "type": "email",
+        "kind": "text",
+        "settings": {
+          "confirm": true
+        }
+      },
+      "answers": {
+        "values": [
+          "stra\u00dfe@example.de"
+        ],
+        "parts": {
+          "confirm": [
+            "STRA\u1e9eE@example.de"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "url-https-by-default",
+      "field": {
+        "type": "url",
+        "kind": "text",
+        "settings": {
+          "schemes": [
+            "https"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "https://example.com/path"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "url-scheme-in-capitals",
+      "field": {
+        "type": "url",
+        "kind": "text",
+        "settings": {
+          "schemes": [
+            "https"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "HTTPS://example.com"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "url-http-not-allowed-by-default",
+      "field": {
+        "type": "url",
+        "kind": "text",
+        "settings": {
+          "schemes": [
+            "https"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "http://example.com"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "url-http-allowed",
+      "field": {
+        "type": "url",
+        "kind": "text",
+        "settings": {
+          "schemes": [
+            "https",
+            "http"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "http://example.com"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "url-without-a-scheme",
+      "field": {
+        "type": "url",
+        "kind": "text",
+        "settings": {
+          "schemes": [
+            "https"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "example.com"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "url-another-scheme",
+      "field": {
+        "type": "url",
+        "kind": "text",
+        "settings": {
+          "schemes": [
+            "https",
+            "http"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "ftp://example.com"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "url-scheme-before-the-first-colon",
+      "field": {
+        "type": "url",
+        "kind": "text",
+        "settings": {
+          "schemes": [
+            "https"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "mailto:https://example.com"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "url-a-port-after-the-scheme",
+      "field": {
+        "type": "url",
+        "kind": "text",
+        "settings": {
+          "schemes": [
+            "https"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "https://example.com:8443/path"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "url-empty-scheme",
+      "field": {
+        "type": "url",
+        "kind": "text",
+        "settings": {
+          "schemes": [
+            "https"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "://example.com"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-within-its-limits",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "min": "1",
+          "max": "10"
+        }
+      },
+      "answers": {
+        "values": [
+          "5"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-at-its-minimum",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "min": "1",
+          "max": "10"
+        }
+      },
+      "answers": {
+        "values": [
+          "1"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-at-its-maximum",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "min": "1",
+          "max": "10"
+        }
+      },
+      "answers": {
+        "values": [
+          "10"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-below-its-minimum",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 2,
+          "min": "1",
+          "max": "10"
+        }
+      },
+      "answers": {
+        "values": [
+          "0.99"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "min"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-above-its-maximum",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 2,
+          "min": "1",
+          "max": "10"
+        }
+      },
+      "answers": {
+        "values": [
+          "10.01"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "max"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-negative-minimum",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 1,
+          "min": "-5"
+        }
+      },
+      "answers": {
+        "values": [
+          "-5.5"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "min"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-negative-at-its-minimum",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "min": "-5"
+        }
+      },
+      "answers": {
+        "values": [
+          "-5"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-whole-numbers-by-default",
+      "description": "decimals 0 is the step 1",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0
+        }
+      },
+      "answers": {
+        "values": [
+          "2.5"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-one-place",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 1
+        }
+      },
+      "answers": {
+        "values": [
+          "2.5"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-more-places-than-its-decimals",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 1
+        }
+      },
+      "answers": {
+        "values": [
+          "2.55"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-places-from-a-minimum-with-places",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 1,
+          "min": "0.5"
+        }
+      },
+      "answers": {
+        "values": [
+          "0.7"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-step-from-its-minimum",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "min": "1",
+          "step": "3"
+        }
+      },
+      "answers": {
+        "values": [
+          "4"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-off-the-step-from-its-minimum",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "min": "1",
+          "step": "3"
+        }
+      },
+      "answers": {
+        "values": [
+          "5"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-step-at-its-minimum",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "min": "1",
+          "step": "3"
+        }
+      },
+      "answers": {
+        "values": [
+          "1"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-below-its-minimum-on-the-step",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "min": "1",
+          "step": "3"
+        }
+      },
+      "answers": {
+        "values": [
+          "-2"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "min"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-step-from-zero",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 2,
+          "step": "0.25"
+        }
+      },
+      "answers": {
+        "values": [
+          "0.75"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-off-a-step-from-zero",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 2,
+          "step": "0.25"
+        }
+      },
+      "answers": {
+        "values": [
+          "0.8"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-negative-on-a-step-from-zero",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 2,
+          "step": "0.25"
+        }
+      },
+      "answers": {
+        "values": [
+          "-0.5"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-below-and-off-the-step",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "min": "10",
+          "step": "5"
+        }
+      },
+      "answers": {
+        "values": [
+          "3"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "min",
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-limits-the-wrong-way-round",
+      "description": "publishing refuses limits the wrong way round (ADR-0056); the preview of a draft reports the first",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "min": "5",
+          "max": "3"
+        }
+      },
+      "answers": {
+        "values": [
+          "4"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "min"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-a-step-of-zero-limits-nothing",
+      "description": "publishing refuses it (ADR-0056); the preview of a draft checks nothing with it",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "step": "0"
+        }
+      },
+      "answers": {
+        "values": [
+          "2.5"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-a-step-that-is-no-number-limits-nothing",
+      "description": "publishing refuses it (ADR-0056); the preview of a draft checks nothing with it",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "step": "x"
+        }
+      },
+      "answers": {
+        "values": [
+          "2.5"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-limits-that-are-no-numbers-limit-nothing",
+      "description": "publishing refuses it (ADR-0056); the preview of a draft checks nothing with it",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "min": "x",
+          "max": "y"
+        }
+      },
+      "answers": {
+        "values": [
+          "-5.5"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-fifteen-digits-at-its-maximum",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 0,
+          "max": "999999999999999"
+        }
+      },
+      "answers": {
+        "values": [
+          "999999999999999"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "number-places-and-a-large-step",
+      "field": {
+        "type": "number",
+        "kind": "number",
+        "settings": {
+          "decimals": 3,
+          "step": "0.001"
+        }
+      },
+      "answers": {
+        "values": [
+          "12345678901.234"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "slider-default-limits",
+      "field": {
+        "type": "slider",
+        "kind": "number",
+        "settings": {
+          "min": "0",
+          "max": "100",
+          "step": "1",
+          "showValue": true
+        }
+      },
+      "answers": {
+        "values": [
+          "50"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "slider-default-maximum",
+      "field": {
+        "type": "slider",
+        "kind": "number",
+        "settings": {
+          "min": "0",
+          "max": "100",
+          "step": "1",
+          "showValue": true
+        }
+      },
+      "answers": {
+        "values": [
+          "100"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "slider-above-its-default-maximum",
+      "field": {
+        "type": "slider",
+        "kind": "number",
+        "settings": {
+          "min": "0",
+          "max": "100",
+          "step": "1",
+          "showValue": true
+        }
+      },
+      "answers": {
+        "values": [
+          "101"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "max"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "slider-below-its-default-minimum",
+      "field": {
+        "type": "slider",
+        "kind": "number",
+        "settings": {
+          "min": "0",
+          "max": "100",
+          "step": "1",
+          "showValue": true
+        }
+      },
+      "answers": {
+        "values": [
+          "-1"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "min"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "slider-off-its-default-step",
+      "field": {
+        "type": "slider",
+        "kind": "number",
+        "settings": {
+          "min": "0",
+          "max": "100",
+          "step": "1",
+          "showValue": true
+        }
+      },
+      "answers": {
+        "values": [
+          "50.5"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "slider-step-from-its-minimum",
+      "field": {
+        "type": "slider",
+        "kind": "number",
+        "settings": {
+          "min": "10",
+          "max": "50",
+          "step": "5",
+          "showValue": true
+        }
+      },
+      "answers": {
+        "values": [
+          "15"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "slider-off-the-step-from-its-minimum",
+      "field": {
+        "type": "slider",
+        "kind": "number",
+        "settings": {
+          "min": "10",
+          "max": "50",
+          "step": "5",
+          "showValue": true
+        }
+      },
+      "answers": {
+        "values": [
+          "17"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "slider-half-steps",
+      "field": {
+        "type": "slider",
+        "kind": "number",
+        "settings": {
+          "min": "0",
+          "max": "1",
+          "step": "0.5",
+          "showValue": true
+        }
+      },
+      "answers": {
+        "values": [
+          "0.5"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "rating-lowest",
+      "field": {
+        "type": "rating",
+        "kind": "number",
+        "settings": {
+          "count": 5,
+          "symbol": "star"
+        }
+      },
+      "answers": {
+        "values": [
+          "1"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "rating-highest-by-default",
+      "field": {
+        "type": "rating",
+        "kind": "number",
+        "settings": {
+          "count": 5,
+          "symbol": "star"
+        }
+      },
+      "answers": {
+        "values": [
+          "5"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "rating-zero",
+      "field": {
+        "type": "rating",
+        "kind": "number",
+        "settings": {
+          "count": 5,
+          "symbol": "star"
+        }
+      },
+      "answers": {
+        "values": [
+          "0"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "rating-above-its-count",
+      "field": {
+        "type": "rating",
+        "kind": "number",
+        "settings": {
+          "count": 5,
+          "symbol": "star"
+        }
+      },
+      "answers": {
+        "values": [
+          "6"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "rating-a-half",
+      "field": {
+        "type": "rating",
+        "kind": "number",
+        "settings": {
+          "count": 5,
+          "symbol": "star"
+        }
+      },
+      "answers": {
+        "values": [
+          "2.5"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "rating-a-fraction-of-digits-in-range",
+      "description": "five tenths: its digits, 5, are in range, its value is not whole",
+      "field": {
+        "type": "rating",
+        "kind": "number",
+        "settings": {
+          "count": 5,
+          "symbol": "star"
+        }
+      },
+      "answers": {
+        "values": [
+          "0.5"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "rating-negative",
+      "field": {
+        "type": "rating",
+        "kind": "number",
+        "settings": {
+          "count": 5,
+          "symbol": "star"
+        }
+      },
+      "answers": {
+        "values": [
+          "-1"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "rating-three-symbols",
+      "field": {
+        "type": "rating",
+        "kind": "number",
+        "settings": {
+          "count": 3,
+          "symbol": "star"
+        }
+      },
+      "answers": {
+        "values": [
+          "4"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "rating-ten-symbols",
+      "field": {
+        "type": "rating",
+        "kind": "number",
+        "settings": {
+          "count": 10,
+          "symbol": "star"
+        }
+      },
+      "answers": {
+        "values": [
+          "10"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "scale-from-zero",
+      "field": {
+        "type": "scale",
+        "kind": "number",
+        "settings": {
+          "from": 0,
+          "to": 10
+        }
+      },
+      "answers": {
+        "values": [
+          "0"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "scale-to-ten",
+      "field": {
+        "type": "scale",
+        "kind": "number",
+        "settings": {
+          "from": 0,
+          "to": 10
+        }
+      },
+      "answers": {
+        "values": [
+          "10"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "scale-above-its-end",
+      "field": {
+        "type": "scale",
+        "kind": "number",
+        "settings": {
+          "from": 0,
+          "to": 10
+        }
+      },
+      "answers": {
+        "values": [
+          "11"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "scale-below-its-start",
+      "field": {
+        "type": "scale",
+        "kind": "number",
+        "settings": {
+          "from": 0,
+          "to": 10
+        }
+      },
+      "answers": {
+        "values": [
+          "-1"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "scale-a-half",
+      "field": {
+        "type": "scale",
+        "kind": "number",
+        "settings": {
+          "from": 0,
+          "to": 10
+        }
+      },
+      "answers": {
+        "values": [
+          "5.5"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "scale-a-fraction-of-digits-in-range",
+      "field": {
+        "type": "scale",
+        "kind": "number",
+        "settings": {
+          "from": 0,
+          "to": 10
+        }
+      },
+      "answers": {
+        "values": [
+          "0.5"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "scale-from-one-refuses-zero",
+      "field": {
+        "type": "scale",
+        "kind": "number",
+        "settings": {
+          "from": 1,
+          "to": 5
+        }
+      },
+      "answers": {
+        "values": [
+          "0"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "scale-from-one-to-five",
+      "field": {
+        "type": "scale",
+        "kind": "number",
+        "settings": {
+          "from": 1,
+          "to": 5
+        }
+      },
+      "answers": {
+        "values": [
+          "5"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "scale-above-five",
+      "field": {
+        "type": "scale",
+        "kind": "number",
+        "settings": {
+          "from": 1,
+          "to": 5
+        }
+      },
+      "answers": {
+        "values": [
+          "6"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-at-its-fixed-minimum",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": "2026-06-01",
+          "max": "2026-06-30"
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-01"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-before-its-fixed-minimum",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": "2026-06-01",
+          "max": "2026-06-30"
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-05-31"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-at-its-fixed-maximum",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": "2026-06-01",
+          "max": "2026-06-30"
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-30"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-after-its-fixed-maximum",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": "2026-06-01",
+          "max": "2026-06-30"
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-07-01"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-at-a-minimum-two-days-ahead",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": "+2d"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-17"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-before-a-minimum-two-days-ahead",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": "+2d"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-16"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-at-a-maximum-a-month-ahead",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "max": {
+            "today": "+1m"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-07-15"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-after-a-maximum-a-month-ahead",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "max": {
+            "today": "+1m"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-07-16"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-today-at-the-minimum",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": ""
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-yesterday-before-today",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": ""
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-14"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-today-in-auckland-is-tomorrow",
+      "description": "23:30 UTC is 11:30 on the 16th in Auckland",
+      "context": {
+        "now": "2026-06-15T23:30:00Z",
+        "timeZone": "Pacific/Auckland"
+      },
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": ""
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-today-in-auckland",
+      "context": {
+        "now": "2026-06-15T23:30:00Z",
+        "timeZone": "Pacific/Auckland"
+      },
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": ""
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-16"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-today-in-new-york-is-yesterday",
+      "description": "02:00 UTC is 22:00 on the 15th in New York",
+      "context": {
+        "now": "2026-06-16T02:00:00Z",
+        "timeZone": "America/New_York"
+      },
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "max": {
+            "today": ""
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-16"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-a-month-ahead-clamps-to-the-end-of-february",
+      "context": {
+        "now": "2026-01-31T12:00:00Z",
+        "timeZone": "Europe/Zurich"
+      },
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": "+1m"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-02-28"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-before-a-clamped-month",
+      "context": {
+        "now": "2026-01-31T12:00:00Z",
+        "timeZone": "Europe/Zurich"
+      },
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": "+1m"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-02-27"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-weekdays-take-a-friday",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-12"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-weekdays-take-a-monday",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-weekdays-refuse-a-saturday",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-13"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-weekdays-refuse-a-sunday",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-14"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-weekdays-take-the-first-day",
+      "description": "a Monday",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true
+        }
+      },
+      "answers": {
+        "values": [
+          "0001-01-01"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-weekdays-take-the-last-day",
+      "description": "a Friday",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true
+        }
+      },
+      "answers": {
+        "values": [
+          "9999-12-31"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-weekdays-refuse-a-sunday-in-1969",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true
+        }
+      },
+      "answers": {
+        "values": [
+          "1969-12-28"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-weekdays-refuse-a-saturday-in-1969",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true
+        }
+      },
+      "answers": {
+        "values": [
+          "1969-12-27"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-weekdays-refuse-a-saturday-in-1970",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true
+        }
+      },
+      "answers": {
+        "values": [
+          "1970-01-03"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-weekdays-take-1970-01-01",
+      "description": "a Thursday",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true
+        }
+      },
+      "answers": {
+        "values": [
+          "1970-01-01"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-weekdays-refuse-a-saturday-in-year-one",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true
+        }
+      },
+      "answers": {
+        "values": [
+          "0001-01-06"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-excluded",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "excluded": [
+            "2026-12-24",
+            "2026-12-25"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-12-25"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-not-excluded",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "excluded": [
+            "2026-12-24",
+            "2026-12-25"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-12-26"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-a-maximum-past-the-calendar-takes-nothing",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "max": {
+            "today": "+9999y"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-a-maximum-past-the-calendar-takes-no-day-before-1970",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "max": {
+            "today": "+9999y"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "1969-12-31"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-a-relative-limit-without-an-offset-takes-nothing",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": "soon"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-a-limit-of-another-shape-takes-nothing",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": 2
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-a-minimum-before-the-calendar-takes-nothing",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": "-9999y"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-a-limit-that-is-no-date-takes-nothing",
+      "description": "publishing refuses such a limit; a draft may hold it",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": "2026-02-30"
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-a-week-back",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "max": {
+            "today": "-1w"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-08"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-after-a-week-back",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "max": {
+            "today": "-1w"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-09"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "date-every-failure-is-one-error",
+      "field": {
+        "type": "date",
+        "kind": "date",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true,
+          "max": "2026-06-01",
+          "excluded": [
+            "2026-06-13"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-13"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-at-its-earliest",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "min": "09:00",
+          "max": "17:00"
+        }
+      },
+      "answers": {
+        "values": [
+          "09:00"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-before-its-earliest",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "min": "09:00",
+          "max": "17:00"
+        }
+      },
+      "answers": {
+        "values": [
+          "08:59"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "min"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-at-its-latest",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "min": "09:00",
+          "max": "17:00"
+        }
+      },
+      "answers": {
+        "values": [
+          "17:00"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-at-its-latest-with-seconds",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "min": "09:00",
+          "max": "17:00"
+        }
+      },
+      "answers": {
+        "values": [
+          "17:00:00"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-a-second-after-its-latest",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "min": "09:00",
+          "max": "17:00"
+        }
+      },
+      "answers": {
+        "values": [
+          "17:00:01"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "max"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-step-from-its-earliest",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "min": "09:15",
+          "stepMinutes": 30
+        }
+      },
+      "answers": {
+        "values": [
+          "09:45"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-off-the-step-from-its-earliest",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "min": "09:15",
+          "stepMinutes": 30
+        }
+      },
+      "answers": {
+        "values": [
+          "10:00"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-before-its-earliest-on-the-step",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "min": "09:15",
+          "stepMinutes": 30
+        }
+      },
+      "answers": {
+        "values": [
+          "08:45"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "min"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-step-from-midnight",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "stepMinutes": 15
+        }
+      },
+      "answers": {
+        "values": [
+          "23:45"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-midnight-on-the-step",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "stepMinutes": 15
+        }
+      },
+      "answers": {
+        "values": [
+          "00:00"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-off-a-step-from-midnight",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "stepMinutes": 15
+        }
+      },
+      "answers": {
+        "values": [
+          "23:50"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-seconds-are-off-a-step",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "stepMinutes": 15
+        }
+      },
+      "answers": {
+        "values": [
+          "10:15:30"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-seconds-without-a-step",
+      "field": {
+        "type": "time",
+        "kind": "time"
+      },
+      "answers": {
+        "values": [
+          "10:15:30"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-limits-the-wrong-way-round",
+      "description": "publishing refuses limits the wrong way round (ADR-0056); the preview of a draft reports the first",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "min": "12:00",
+          "max": "10:00"
+        }
+      },
+      "answers": {
+        "values": [
+          "11:00"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "min"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "time-before-and-off-the-step",
+      "field": {
+        "type": "time",
+        "kind": "time",
+        "settings": {
+          "min": "09:00",
+          "stepMinutes": 60
+        }
+      },
+      "answers": {
+        "values": [
+          "08:30"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "min",
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-the-last-minute-of-its-latest-day",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": "2026-06-01",
+          "max": "2026-06-30"
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-30T23:59"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-the-day-after-its-latest",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": "2026-06-01",
+          "max": "2026-06-30"
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-07-01T00:00"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-the-last-second-before-its-earliest",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": "2026-06-01",
+          "max": "2026-06-30"
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-05-31T23:59:59"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-weekdays-refuse-a-saturday",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": true
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-13T10:00"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-excluded",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "excluded": [
+            "2026-06-20"
+          ]
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-20T12:00"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-a-week-ahead",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": "+1w"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-22T00:00"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-before-a-week-ahead",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "min": {
+            "today": "+1w"
+          }
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-21T23:59"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-on-a-half-hour",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "stepMinutes": 30
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15T10:30"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-off-a-half-hour",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "stepMinutes": 30
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15T10:31"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-seconds-off-a-half-hour",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "stepMinutes": 30
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15T10:30:15"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-a-step-that-misses-midnight",
+      "description": "1435 minutes is 205 steps of 7",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "stepMinutes": 7
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15T23:55"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-each-day-starts-its-steps-again",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "stepMinutes": 7
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-16T00:07"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-off-a-step-of-seven",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "stepMinutes": 7
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-06-15T23:58"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "step"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "datetime-outside-and-off-the-step",
+      "field": {
+        "type": "datetime",
+        "kind": "dateTime",
+        "settings": {
+          "defaultToday": false,
+          "weekdaysOnly": false,
+          "max": "2026-06-30",
+          "stepMinutes": 30
+        }
+      },
+      "answers": {
+        "values": [
+          "2026-07-01T10:31"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "dateWindow",
+          "step"
+        ],
+        "checks": []
+      }
+    }
+  ]
+}

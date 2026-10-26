@@ -107,6 +107,7 @@ public sealed partial class ProjectionTests
         yield return Case("the library list of a field", d => Field(d, 0, 1, 1)["options"]!["list"] = "72000000-0000-4000-8000-000000000002");
         yield return Case("an option source's configuration", d => Field(d, 0, 1, 2)["options"]!["config"]!["top"] = new JsonArray("FR"));
         yield return Case("a switched-off rule's conditions", d => d["pages"]![0]!["groups"]![0]!["rules"]![0]!["match"] = "all");
+        yield return Case("a public setting given its default", d => Field(d, 0, 0, 0)["settings"]!["minLength"] = 0);
         yield return Case("a hidden field's default", d => d["pages"]![1]!["groups"]![0]!["fields"]!.AsArray().Last()!["defaultValue"] = "{{ member.email }}", d => Field(d, 1, 0, 0).Parent!.AsArray().Add(Hidden()));
     }
 
@@ -255,6 +256,28 @@ public sealed partial class ProjectionTests
         var projection = PublicProjection.Create(DefinitionFixtures.Read(DefinitionFixtures.Full), TestFieldTypes.Registry);
 
         Assert.That(projection.Pages[0].Groups[0].Fields[0].Prefill, Is.EqualTo(new PublicPrefill { Query = "name", FromMember = true, MemberMode = PrefillMemberMode.Hide }));
+    }
+
+    // A field's settings as given, and the settings the projection writes: every public setting with its effective
+    // value, the field's own or its type's default, an object's settings each in turn (ADR-0062).
+    [TestCase("text", null, """{"counter":false,"maxLength":255,"minLength":0}""")]
+    [TestCase("text", """{"maxLength":80}""", """{"counter":false,"maxLength":80,"minLength":0}""")]
+    [TestCase("text", """{"counter":false,"maxLength":255,"minLength":0}""", """{"counter":false,"maxLength":255,"minLength":0}""")]
+    [TestCase("email", """{"domains":{"list":["example.com"],"mode":"block"}}""", """{"confirm":false}""")]
+    [TestCase("grid", null, """{"multiple":false}""")]
+    [TestCase("grid", """{"scale":{"to":7}}""", """{"multiple":false,"scale":{"from":1,"to":7}}""")]
+    [TestCase("phone", null, null)]
+    [TestCase("hidden", null, null)]
+    [TestCase("divider", null, null)]
+    public void TheProjection_GivesEveryPublicSettingItsEffectiveValue(string type, string? settings, string? projected)
+    {
+        var definition = DefinitionFixtures.Read(DefinitionFixtures.Full);
+        var field = definition.Pages[0].Groups[0].Fields[0] with { Type = type, Settings = settings is null ? null : SettingsObject.Parse(settings) };
+        var group = definition.Pages[0].Groups[0] with { Fields = [field] };
+
+        var projection = PublicProjection.Create(definition with { Pages = [definition.Pages[0] with { Groups = [group] }] }, TestFieldTypes.Registry);
+
+        Assert.That(projection.Pages[0].Groups[0].Fields[0].Settings?.ToString(), Is.EqualTo(projected));
     }
 
     [Test]
