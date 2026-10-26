@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Testing.People;
@@ -74,6 +75,7 @@ public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
             AssertOnePerSite<IFormBuilderLibraryService, FormBuilderLibraryService>();
             AssertOnePerSite<IFormBuilderAccessService, FormBuilderAccessService>();
             AssertOnePerSite<IFormBuilderSettingsService, FormBuilderSettingsService>();
+            AssertOnePerSite<IFormBuilderMergeTagService, FormBuilderMergeTagService>();
             AssertOnePerSite<FormBuilderChanges<FormBuilderFormService>, FormBuilderChanges<FormBuilderFormService>>();
             AssertOnePerSite<FormBuilderChanges<FormBuilderFolderService>, FormBuilderChanges<FormBuilderFolderService>>();
         });

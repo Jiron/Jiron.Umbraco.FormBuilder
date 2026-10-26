@@ -37,8 +37,8 @@ npx playwright test --project=smoke
 
 | Project | What it holds |
 | --- | --- |
-| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the field types (`FieldTypes/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the management API's policies, access filter and answers (`ManagementApi/`, below), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test (each service of Core resolved, one per site, and each notification handler registered), the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), a site's own field types (`FieldTypes/`, below), the form services and the change pipeline they share (`Forms/`, below), the access service with the authorization policies (`Access/`, below) and the management API (`ManagementApi/`, below). |
+| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the field types (`FieldTypes/`, below), the merge-tag service (`MergeTags/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the management API's policies, access filter and answers (`ManagementApi/`, below), and the Testing project's own tests. |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test (each service of Core resolved, one per site, and each notification handler registered), the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), a site's own field types (`FieldTypes/`, below) and merge-tag sources (`MergeTags/`, below), the form services and the change pipeline they share (`Forms/`, below), the access service with the authorization policies (`Access/`, below) and the management API (`ManagementApi/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -190,6 +190,24 @@ unless the site sets `JironFormBuilderTests:SiteFieldTypes`, so every other test
 `SiteFieldTypeTests` shows the registry, start-up, publishing, the field catalogue and the public revision with the
 site's types; `SiteFieldTypeApiTests` shows the backoffice's field types on that site: the colour type last, not
 configured with its reason while the site lacks its swatches, its plain labels, and no signature.
+
+## The merge-tag tests
+
+`Tests.Unit/MergeTags/` covers the merge-tag service, its places and its sources without a host ([ADR-0065](../docs/decisions/0065-the-merge-tag-service-and-its-sources.md)), over
+`MergeTagTestSite`: the service of a site with its own sources and filters, a time zone and a clock, and a logger that
+keeps what it is given.
+
+| Tests | What they show |
+| --- | --- |
+| `BuiltInMergeTagSourcesTests` | `form`, `entry`, `query`, `context` and `date`: each value escaped by its context, the entry empty before it is submitted, its date and the reference's year in the site's time zone (UTC when the zone is unknown) and the culture's format, query values only for the names the form allows and as spelt, context values passed or listed, the clock's time, each path asked for once; and `entry.reference` with and without a format, prefix and year, padded to digits clamped to 1–10. |
+| `MergeTagPlacesTests` | For each place that limits sources, a built-in one it refuses and, for a site's, one per visitor, any in consent texts and entry titles, and one outside its own places, each written as is with `source_not_for_place` (rendered and checked); the sources each place takes; a site's filter refused where the browser renders too and taken elsewhere; every context a place lacks refused; and the picker's paths per place. |
+| `SiteMergeTagExtensionsTests` | A site's source and filter through their interfaces: the request each gets, values escaped, lists, unknown paths; a source or filter that throws rendering empty and logged with its type and stack but not its message, a cancelled rendering cancelling; arguments refused at the filter; the check's warnings before any value; a taken name left out so the built-in one stays; and the start-up check naming each name that is taken or outside the grammar, and a source the container cannot create. |
+| `DotNetCultureFormatsTests` | For every culture .NET knows, dates, times, numbers and the culture's own amounts printed with the written formats as .NET prints them, the cultures whose patterns leave the subset listed from the data with the invariant culture's pattern taken; the medium date derived from the long one; the separators escaped; the Gregorian calendar for a culture with another; the region's currency; and a name .NET does not know. |
+
+`Tests.Integration/MergeTags/` boots a real site whose composers add two sources and a filter through
+`builder.JironFormBuilder()`, one before the core composer and one after it, switched on by
+`JironFormBuilderTests:SiteMergeTags`: the site starts, and the service renders and offers them beside the built-in
+ones.
 
 ## The Testing project
 
