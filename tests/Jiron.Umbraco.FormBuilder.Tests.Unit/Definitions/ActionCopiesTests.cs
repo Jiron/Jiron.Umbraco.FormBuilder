@@ -1,6 +1,8 @@
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -164,8 +166,14 @@ public sealed class ActionCopiesTests
         Assert.That(Conditions(notify)[1].Field, Is.EqualTo(TargetEmail), "a draft may give two fields one alias until it is published; the first in document order wins");
     }
 
-    private static ActionCopyResult Copy(FormDefinition source, Guid[] keys, FormDefinition target) =>
-        ActionCopies.Copy(source, keys.Select(key => source.Actions.Single(action => action.Key == key)).ToList(), target, DefinitionFixtures.Serializer());
+    private static readonly IFormBuilderMergeTagService MergeTagService = MergeTagTestSite.Create().Service;
+
+    private static ActionCopyResult Copy(FormDefinition source, Guid[] keys, FormDefinition target) => ActionCopies.Copy(
+        source,
+        keys.Select(key => source.Actions.Single(action => action.Key == key)).ToList(),
+        target,
+        DefinitionFixtures.Serializer(),
+        text => MergeTagFieldPaths.Unknown(MergeTagService, text, target));
 
     private static Guid Key(int number) => Guid.Parse($"a0000000-0000-4000-8000-{number:D12}");
 

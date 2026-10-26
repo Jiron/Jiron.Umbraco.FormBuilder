@@ -190,5 +190,8 @@ internal sealed record CopyActionsRequest(Guid SourceKey, Guid TargetKey, int Ex
 
 /// <summary>What copying actions did (ADR-0046).</summary>
 /// <param name="Target">The target after the copy; its version is null when there was nothing to copy.</param>
-/// <param name="Actions">Each copy, with the references it keeps because the target has nothing that matches them.</param>
+/// <param name="Actions">
+/// Each copy, with the references it keeps because the target has nothing that matches them, and the merge tags in its
+/// settings that name a field the target lacks.
+/// </param>
 internal sealed record FormActionsCopy(FormVersionResult Target, IReadOnlyList<CopiedAction> Actions);

@@ -215,7 +215,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
             Assert.That(seen.Select(notification => notification.GetType()), Is.EqualTo(new[] { typeof(FormSavingNotification), typeof(FormSavedNotification) }));
             Assert.That(seen.OfType<FormSavingNotification>().Single() is { IsNew: false, ActionsCopiedFrom: { } from, CreatedFrom: null } && from == source.Key, Is.True);
             Assert.That(seen.OfType<FormSavedNotification>().Single() is { IsNew: false, Version: 3, ActionsCopiedFrom: { } to } && to == source.Key, Is.True);
-            Assert.That((entry.UserKey, entry.Details), Is.EqualTo(((Guid?)Editor, $$"""{"version":3,"source":"{{source.Key}}","actions":2,"unmapped":1}""")));
+            Assert.That((entry.UserKey, entry.Details), Is.EqualTo(((Guid?)Editor, $$"""{"version":3,"source":"{{source.Key}}","actions":2,"unmapped":1,"unmappedTags":0}""")));
         });
 
         AssertCode(async () => await Service.PublishAsync(target.Key, copied.Target.Form.ConcurrencyVersion, null, Editor), "unknown_field", "$.actions[0].rules[0].conditions[0].field");

@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Microsoft.Extensions.Logging;
@@ -32,8 +33,8 @@ internal interface IFormBuilderFormExchangeService
 
     /// <summary>
     /// Appends copies of a form's actions to another form's draft as a draft save: the fields they name map by alias,
-    /// and what has no match is kept and reported (ADR-0046). Nothing to copy writes nothing. Null when either form
-    /// does not exist.
+    /// and what has no match is kept and reported, as is each merge tag in their settings that names a field the target
+    /// lacks (ADR-0046). Nothing to copy writes nothing. Null when either form does not exist.
     /// </summary>
     /// <exception cref="FormBuilderConcurrencyException">Someone changed the target meanwhile.</exception>
     /// <exception cref="FormBuilderValidationException">
@@ -82,6 +83,7 @@ internal sealed partial class FormBuilderFormExchangeService(
     FormInfos infos,
     FormCreation creation,
     FormDefinitionSerializer serializer,
+    IFormBuilderMergeTagService mergeTags,
     TimeProvider time,
     FormBuilderChanges<FormBuilderFormExchangeService> changes,
     ILogger<FormBuilderFormExchangeService> logger)
@@ -157,7 +159,8 @@ internal sealed partial class FormBuilderFormExchangeService(
             return new FormActionsCopy(new FormVersionResult(await infos.InfoAsync(target, cancellationToken), null), []);
         }
 
-        var copy = ActionCopies.Copy(documents.Readable(sourceDraft), actions, documents.Readable(targetDraft), serializer);
+        var targetDefinition = documents.Readable(targetDraft);
+        var copy = ActionCopies.Copy(documents.Readable(sourceDraft), actions, targetDefinition, serializer, text => MergeTagFieldPaths.Unknown(mergeTags, text, targetDefinition));
         var definition = copy.Target ?? throw new FormBuilderValidationException(copy.Problems);
         documents.CheckSaveable(definition);
         var document = documents.Document(definition);
@@ -174,7 +177,8 @@ internal sealed partial class FormBuilderFormExchangeService(
                         .Add("version", stored.Version.Info.Number)
                         .Add("source", source.Key)
                         .Add("actions", copy.Actions.Count)
-                        .Add("unmapped", copy.Actions.Sum(action => action.Unmapped.Count)))],
+                        .Add("unmapped", copy.Actions.Sum(action => action.Unmapped.Count))
+                        .Add("unmappedTags", copy.Actions.Sum(action => action.MergeTags.Count)))],
             cancellationToken);
         if (saved is null)
         {

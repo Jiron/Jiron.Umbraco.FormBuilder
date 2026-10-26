@@ -4,7 +4,8 @@
   found, the envelope's limits and layout, `unsupported_format`, when an import creates option lists) and
   [ADR-0044](0044-form-service.md) (the new-form defaults apply to forms from a template); the operations are
   `IFormBuilderFormExchangeService`'s since [ADR-0053](0053-form-service-in-parts.md) in 4.8d; amended in 4.8e (the
-  reader stops at ADR-0034's one limit of 100 problems)
+  reader stops at ADR-0034's one limit of 100 problems) and in 5.3g (the report of copied actions lists the merge
+  tags that name a field the target lacks)
 - Date: 2026-10-24
 - Roadmap step: 4.5c (decided and built); 4.7 and 9.x map it to the API and the tree, 5.3, 5.5, 8.1 and 8.3 extend it,
   12.3 adds the other templates and "Save as template", 12.5 the import that replaces a form and the mirror files
@@ -111,8 +112,19 @@ target's draft, as a draft save of the target with its concurrency version:
 - nothing to copy writes nothing; an unknown action key is refused with `invalid_value` at `actionKeys[n]`; a source
   or target in the trash with `trashed`; a stale target with `concurrency_conflict`.
 
-Merge tags name fields by alias already and are copied as they are; 5.3 adds the tags that name a field the target
-lacks to the report.
+**Merge tags** name fields by alias already and are copied as they are. Since 5.3g each copied action's report also
+lists every merge tag in its settings that names a field the target lacks, with the path of the text in the target's
+draft, the tag's path (such as `field.topic`) and where that path starts in the text:
+
+- every text in the settings counts, a culture's text of a translated setting and a list's items included, since the
+  action's type decides which settings take tags and copying does not need to know;
+- a tag names a missing field when the target's form check would find its `field.*` path unknown in the action place:
+  no field has the alias or a former alias (in that exact letter case, as tags name fields), or the field lacks what
+  the path names of it, such as a part;
+- tags of other sources, tags the target knows and tags that are not well formed are not listed; the form check
+  reports those as it does any template's;
+- the audit entry counts them (`unmappedTags`). They do not stop publishing: a tag of a missing field renders empty
+  with a warning (ADR-0064), and the form check (10.x) shows it to the editor.
 
 ### Templates
 
@@ -192,7 +204,7 @@ importing as a new draft of an existing form):
 - Exports are readable files, and an exported form imports into the same version and every later one.
 - An import cannot put unchecked option list configuration into the library; until 5.5 it reports missing lists
   instead of creating them.
-- Roadmap: 5.3 reports merge tags in copied actions that name a field the target lacks; 5.5 creates the missing
+- Roadmap: 5.3g reports merge tags in copied actions that name a field the target lacks; 5.5 creates the missing
   option lists of an import; 8.1 switches off an imported action whose site configuration is missing; 8.3 applies the
   notify-the-creator default to forms from a template; 9.x's Duplicate dialog says when the source is restricted
   (WORKLOG).
