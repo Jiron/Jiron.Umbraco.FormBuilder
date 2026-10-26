@@ -7543,6 +7543,138 @@
       }
     },
     {
+      "id": "form-dependency-through-a-nested-group",
+      "description": "b, named inside a group of conditions, is decided before a, so its hidden answer is gone",
+      "values": {
+        "b": [
+          "y"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "a",
+                    "kind": "text",
+                    "rules": [
+                      {
+                        "effect": "show",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "match": "any",
+                            "conditions": [
+                              {
+                                "field": "b",
+                                "op": "isNotEmpty"
+                              },
+                              {
+                                "field": "c",
+                                "op": "isNotEmpty"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "b",
+                    "kind": "text",
+                    "rules": [
+                      {
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "context": "culture",
+                            "op": "startsWith",
+                            "value": "de"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "c",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [
+          "a",
+          "b"
+        ],
+        "required": [],
+        "messages": {},
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-cycle-through-a-nested-group",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "a",
+                    "kind": "text",
+                    "rules": [
+                      {
+                        "effect": "show",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "match": "any",
+                            "conditions": [
+                              {
+                                "field": "a",
+                                "op": "isNotEmpty"
+                              },
+                              {
+                                "field": "c",
+                                "op": "isNotEmpty"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "c",
+                    "kind": "text"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "error": "cycle"
+      }
+    },
+    {
       "id": "form-cycle-through-the-group",
       "form": {
         "pages": [
