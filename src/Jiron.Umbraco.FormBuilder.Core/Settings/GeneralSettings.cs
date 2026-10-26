@@ -24,6 +24,13 @@ internal sealed record GeneralSettings : ISettingsSection
     /// </summary>
     public string TimeZone { get; init; } = DefaultTimeZone;
 
+    /// <summary>
+    /// The address every link the server builds starts with (ADR-0008, ADR-0067): an <c>https</c> or <c>http</c> origin
+    /// such as <c>https://www.example.com</c>, with a port when it is not the scheme's and nothing after it. Null for the
+    /// default: the site's first <c>https</c> domain in Umbraco, otherwise Umbraco's application URL.
+    /// </summary>
+    public string? BaseUrl { get; init; }
+
     /// <summary>What a form created from blank starts with; every site shares it, since a new form belongs to no site (ADR-0044).</summary>
     [GlobalOnly]
     public NewFormDefaults NewForms { get; init; } = new();
@@ -83,17 +90,36 @@ internal sealed record NewFormConsent
 }
 
 /// <summary>
-/// Checks the general settings: the time zone is one the server resolves, spelled as the server spells it, the consent
-/// default's texts are texts a definition takes, and the History keeps draft saves within its ranges.
+/// Checks the general settings: the time zone is one the server resolves, spelled as the server spells it, the base URL
+/// is an origin, the consent default's texts are texts a definition takes, and the History keeps draft saves within its
+/// ranges.
 /// </summary>
 internal sealed class GeneralSettingsValidator : ISettingsValidator<GeneralSettings>
 {
+    /// <inheritdoc />
+    /// <remarks>A base URL of white space is the default; one that is an origin is written as its origin (<c>HTTPS://Example.com/</c> as <c>https://example.com</c>).</remarks>
+    public GeneralSettings Normalize(GeneralSettings section)
+    {
+        ArgumentNullException.ThrowIfNull(section);
+        if (string.IsNullOrWhiteSpace(section.BaseUrl))
+        {
+            return section.BaseUrl is null ? section : section with { BaseUrl = null };
+        }
+
+        return section with { BaseUrl = BaseUrls.Normalize(section.BaseUrl) ?? section.BaseUrl };
+    }
+
     /// <inheritdoc />
     public void Validate(GeneralSettings section, SettingsErrors errors)
     {
         ArgumentNullException.ThrowIfNull(section);
         ArgumentNullException.ThrowIfNull(errors);
         errors.TimeZone("timeZone", section.TimeZone);
+        if (section.BaseUrl is { } baseUrl && BaseUrls.Normalize(baseUrl) != baseUrl)
+        {
+            errors.Add("baseUrl", SettingsErrors.BaseUrlCode, "Must be the address the site is reached at, such as https://www.example.com: https or http, the host and a port, and nothing after them.");
+        }
+
         if (section.NewForms?.Consent is { } consent)
         {
             errors.Text("newForms.consent.label", consent.Label, html: false);

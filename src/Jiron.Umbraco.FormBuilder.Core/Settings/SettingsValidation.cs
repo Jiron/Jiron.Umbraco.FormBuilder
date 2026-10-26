@@ -32,6 +32,9 @@ internal sealed class SettingsErrors(string section)
     /// <summary>The code of a time zone the server cannot resolve as an IANA zone (ADR-0005).</summary>
     public const string TimeZoneCode = "timeZone";
 
+    /// <summary>The code of a base URL that is not an <c>https</c> or <c>http</c> origin (ADR-0067).</summary>
+    public const string BaseUrlCode = "baseUrl";
+
     /// <summary>The code of a field a site cannot override.</summary>
     public const string Scope = "scope";
 

@@ -3,7 +3,8 @@
 - Status: accepted, the site of a request without content amended in 1.7b; host defaults and the validation status
   amended in 1.8; site rows, host rules, the save and the time zone's spelling amended in 4.4b
   ([ADR-0043](0043-backoffice-settings-sections.md)); designer locks of field settings amended in 5.1f
-  ([ADR-0060](0060-designer-locks-of-field-settings.md))
+  ([ADR-0060](0060-designer-locks-of-field-settings.md)); the base URL's form and its default from the domains amended
+  in 5.3e ([ADR-0067](0067-the-umbraco-sources-and-the-base-url.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.4 (the framework), each section in the step that builds its service, the
   screens in Phase 9 and later
@@ -111,7 +112,8 @@ setting that says `inherit` (ADR-0002), the effective site value is its default.
   `section.list[2]` for items), returned as ProblemDetails `validation_failed` with `errors`.
 - Stable codes for the client: `required`, `range`, `maxLength`, `maxCount`, `enum`, `singleLine`, `pattern`,
   `email`, `url`, `path`, `alias`, `culture`, `timeZone` (an IANA id the server can resolve, in the server's
-  spelling, ADR-0005 and ADR-0043), `cidr`, `domain` and `secretReference`.
+  spelling, ADR-0005 and ADR-0043), `baseUrl` (an origin and nothing after it, ADR-0067), `cidr`, `domain` and
+  `secretReference`.
 - The client mirrors the simple constraints (required, length, range, enum) from a JSON schema generated from the
   records, so most errors show before saving; cross-field rules run on the server, which decides.
 
@@ -158,7 +160,10 @@ from configuration when it is used; the screen shows only whether it resolves.
 
 - **The base URL** (`general`) is the only source of links in mail and of absolute URLs the server builds (§4.10). By
   default it is the site's first `https` domain in Umbraco, otherwise `Umbraco:CMS:WebRouting:UmbracoApplicationUrl`,
-  and never the request's Host header. A health check warns when a site has neither.
+  and never the request's Host header. A health check warns when a site has neither. **Amended in 5.3e (ADR-0067):**
+  the setting is an origin (scheme, host and port, nothing after them); the default is the origin of the site's first
+  domain reached over `https`, the root's own before those deeper down, each level in its sort order, a domain without
+  a scheme counting as `https`.
 - **The time zone** (`general`) is an IANA id; saving refuses one the server cannot resolve (ADR-0005), or spelled
   otherwise than the server spells it (ADR-0043).
 - **The sender** (`email`) is a name and an address per site, never taken from a visitor (§4.10).

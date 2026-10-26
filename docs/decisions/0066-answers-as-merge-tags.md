@@ -156,7 +156,7 @@ nothing to mask.
   and shows sensibly without one.
 - Mail, outcomes and webhooks get readable answers in the visitor's culture without a template per type.
 - No source can put markup into a page; only the answers' table, which the server writes and escapes, is markup.
-- Labels and option labels that name a dictionary item show it in 5.3e; options from a list show their labels in
+- Labels and option labels that name a dictionary item show it since 5.3e (ADR-0067); options from a list show their labels in
   5.5; the browser's runtime gets the same display texts for answer recall in 5.3f.
 - **Revisit** if editors need the answers' table styled per form (themes, 6.3, and mail templates, 8.x, may add
   classes), or a ranking shown with its positions.

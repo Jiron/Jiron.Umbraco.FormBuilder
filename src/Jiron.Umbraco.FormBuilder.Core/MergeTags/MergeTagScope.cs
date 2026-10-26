@@ -4,8 +4,9 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 
 /// <summary>
-/// What a template is rendered for (ADR-0065): the form, the culture its texts and formats are in, the site, the entry
-/// once there is one, its answers, and the query and context values. The sources read what their paths need from it.
+/// What a template is rendered for (ADR-0065): the form, the culture its texts and formats are in, the site, the page
+/// and the member, the entry once there is one, its answers, and the query and context values. The sources read what
+/// their paths need from it.
 /// </summary>
 public sealed record MergeTagScope
 {
@@ -28,8 +29,20 @@ public sealed record MergeTagScope
     /// </summary>
     public required string Culture { get; init; }
 
-    /// <summary>The key of the site's root content, whose settings (its time zone) apply; null for the global settings.</summary>
+    /// <summary>
+    /// The key of the site's root content, whose settings (its time zone, its base URL) apply and whose name
+    /// <c>site.name</c> shows; null for the global settings.
+    /// </summary>
     public Guid? Site { get; init; }
+
+    /// <summary>
+    /// The key of the content page the form is shown on or was submitted from, which <c>page.*</c> reads (ADR-0067); null
+    /// without one, such as a form rendered headless.
+    /// </summary>
+    public Guid? Page { get; init; }
+
+    /// <summary>The key of the member who is signed in, which <c>member.*</c> reads (ADR-0067); null when no one is.</summary>
+    public Guid? Member { get; init; }
 
     /// <summary>The entry, once the visitor has submitted it; null before.</summary>
     public MergeTagEntry? Entry { get; init; }

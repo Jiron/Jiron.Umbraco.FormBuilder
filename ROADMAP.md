@@ -913,7 +913,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   - default theme, the required-marker style, default labels;
   - new-form defaults (consent field, notify-the-creator action), for every site at once, since a new form belongs to no site (ADR-0044);
   - how long draft saves stay in a form's History, for every site at once (the version cleanup of 10.3; by default the last 50 and those of the last 90 days, §4.5);
-  - per site: the base URL (by default the site's first `https` domain in Umbraco, otherwise Umbraco's application URL, never the request's Host header) and the **time zone** (an IANA id, used for "today", opening dates and relative dates; saving refuses an id the server cannot resolve, ADR-0005).
+  - per site: the base URL (an origin: the scheme, the host and a port, nothing after them; by default the origin of the site's first `https` domain in Umbraco, the root's own before those deeper down, otherwise Umbraco's application URL, never the request's Host header; ADR-0067) and the **time zone** (an IANA id, used for "today", opening dates and relative dates; saving refuses an id the server cannot resolve, ADR-0005).
 - **Email** (each field can be set per site):
   - sender name and address;
   - default layout;
@@ -2128,12 +2128,14 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
     The labels, the permission each item needs and the screens behind them are in `docs/ux/information-architecture.md` (ADR-0021).
 
+    The section's pathname is `jfb-forms`, the one `entry.url` links name (`BackofficeLinks.SectionPathname`, added in 5.3e, ADR-0067).
+
     Menu items appear only for users with the matching permission. Items whose screens come in later phases appear with those phases.
   - **The dashboard:**
     - the setup checklist of §4.13, each item with a detector on the server that knows when it is done;
     - recent entries;
     - health warnings.
-  - **Health checks** (also on Umbraco's Health Check dashboard): email can be sent (Umbraco's gate, and a From address, which the gate does not check, ADR-0007), the uploads folder is not web-accessible and, on a site with more than one server, not the default folder on each server's own disk (the start-up error of 4.8c, ADR-0041), the Data Protection key ring is persisted (needed for challenges across restarts and servers), jobs are running, deliveries are failing, sending is paused (§4.4), the mirror has conflicts, the migrations are pending (ADR-0033: the dashboard then says so too, and why Jiron Form Builder is paused).
+  - **Health checks** (also on Umbraco's Health Check dashboard): email can be sent (Umbraco's gate, and a From address, which the gate does not check, ADR-0007), the uploads folder is not web-accessible and, on a site with more than one server, not the default folder on each server's own disk (the start-up error of 4.8c, ADR-0041), the Data Protection key ring is persisted (needed for challenges across restarts and servers), jobs are running, deliveries are failing, sending is paused (§4.4), the mirror has conflicts, the migrations are pending (ADR-0033: the dashboard then says so too, and why Jiron Form Builder is paused), a site has no base URL, so its mails carry no links (added in 5.3e, ADR-0008, ADR-0067).
   - **Plumbing:**
     - en/de localisation infrastructure, the generated API client, and the global search provider;
     - the safe confirm helper (§4.10), with the source test that bans direct use of Umbraco's confirm modal.
@@ -2142,6 +2144,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - a confirm that names a form called `<img src=x onerror=alert(1)>` shows that text literally (Playwright);
     - each checklist detector has unit tests (the full green run on the demo is checked in 12.6, once every linked screen exists);
     - an integration test shows the pending-migrations health check failing while the plan is behind and passing once it has run (ADR-0033);
+    - a test reads the section's manifest and finds the pathname `BackofficeLinks.SectionPathname`, and unit tests show the base-URL health check warning for a site with no setting, no `https` domain and no application URL, naming the site, and passing for a site with any of them (added in 5.3e);
     - screenshots are reviewed in `docs/ux/review-9.1.md` against §4.13;
     - in each of Umbraco's light, dark and high-contrast themes, axe is clean on the dashboard and a Playwright script measures `--jfb-bo-color-text-muted` (4.5:1) and `--jfb-bo-color-control-border` (3:1) against UUI's surface and background, so the backoffice's own colours follow every theme (`docs/ux/tokens.md`).
 - [ ] **9.2 The form library**
@@ -2276,7 +2279,8 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Edit mode:** validation per type, audited.
   - **Sensitive values:** masked, with an audited "reveal".
   - **Forward** (added in 1.1): send the entry to a backoffice user or to one of the team addresses of the email settings (§4.8), through the outbox. Sensitive values go along only when the user may see them and chooses to. Audited, and shown on the timeline.
-  - Done when: Playwright passes, and the audit entries are asserted, including Approve in the panel followed by Undo from its toast (ADR-0023). A forwarded entry arrives in the pickup folder, and an address outside the allowed recipients is refused by the API.
+  - **The entry's link** (added in 5.3e, ADR-0067): the entry's workspace (`BackofficeLinks.EntryEntityType`) answers `/umbraco/section/jfb-forms/workspace/jfb-entry/edit/<key>`, the link `entry.url` gives team mail, and opens the entry's panel without its list; a user who may not view the entry sees the backoffice's "not found" answer, as for an entry that is gone.
+  - Done when: Playwright passes, and the audit entries are asserted, including Approve in the panel followed by Undo from its toast (ADR-0023). A forwarded entry arrives in the pickup folder, and an address outside the allowed recipients is refused by the API. Playwright opens the `entry.url` link of a mail in the pickup folder and lands on that entry's panel, and the same link as a user without access to its form shows no value of it.
 - [ ] **11.3 The all-entries inbox and spam**
   - **The inbox:** a cross-form list with a form column and a form filter, unseen entries first. It holds the entries of the forms the user may view entries of, through the access filter of 4.6a in its query (ADR-0048).
   - **Spam:** the spam folder with "not spam".

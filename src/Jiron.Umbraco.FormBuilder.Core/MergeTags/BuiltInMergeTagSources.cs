@@ -93,16 +93,18 @@ internal sealed class FormMergeTagSource : IFiniteMergeTagSource
 }
 
 /// <summary>
-/// <c>entry.number</c>, <c>entry.reference</c>, <c>entry.date</c> and <c>entry.state</c>, empty before the visitor
-/// submits, the date and the reference's year in the site's time zone; and <c>entry.answers</c>, the list of the answers
-/// the scope holds (ADR-0066).
+/// <c>entry.number</c>, <c>entry.reference</c>, <c>entry.date</c>, <c>entry.state</c> and <c>entry.url</c>, empty
+/// before the visitor submits, the date and the reference's year in the site's time zone, the link to the entry in the
+/// backoffice from the site's base URL (ADR-0067); and <c>entry.answers</c>, the list of the answers the scope holds
+/// (ADR-0066).
 /// </summary>
 /// <param name="clock">The site's time zone.</param>
 /// <param name="cultures">The culture formats.</param>
 /// <param name="answers">The answers as merge tags show them.</param>
-internal sealed class EntryMergeTagSource(MergeTagClock clock, MergeTagCultures cultures, MergeTagAnswerTexts answers) : IFiniteMergeTagSource
+/// <param name="baseUrls">The sites' base URLs.</param>
+internal sealed class EntryMergeTagSource(MergeTagClock clock, MergeTagCultures cultures, MergeTagAnswerTexts answers, SiteBaseUrl baseUrls) : IFiniteMergeTagSource
 {
-    private static readonly ImmutableArray<string> Known = ["number", "reference", "date", "state", "answers"];
+    private static readonly ImmutableArray<string> Known = ["number", "reference", "date", "state", "url", "answers"];
 
     /// <inheritdoc />
     public string Name => "entry";
@@ -123,7 +125,7 @@ internal sealed class EntryMergeTagSource(MergeTagClock clock, MergeTagCultures 
 
         if (request.Path == "answers")
         {
-            return answers.Answers(request.Scope, request.Place);
+            return answers.Answers(request.Scope, request.Place, await answers.DictionaryAsync(request.Scope));
         }
 
         if (request.Scope.Entry is not { } entry)
@@ -138,6 +140,10 @@ internal sealed class EntryMergeTagSource(MergeTagClock clock, MergeTagCultures 
                 return MergeTagValue.Of(new MergeTagItem(number, Number: number));
             case "state":
                 return MergeTagValue.Of(entry.State);
+            case "url":
+                return await baseUrls.GetAsync(request.Scope.Site, cancellationToken) is { } baseUrl
+                    ? MergeTagValue.Of(baseUrl + BackofficeLinks.Entry(entry.Key))
+                    : MergeTagValue.Empty;
         }
 
         var zone = await clock.ZoneAsync(request.Scope.Site, cancellationToken);

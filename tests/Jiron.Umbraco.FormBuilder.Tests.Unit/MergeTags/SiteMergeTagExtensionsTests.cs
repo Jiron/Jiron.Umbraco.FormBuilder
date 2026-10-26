@@ -270,6 +270,7 @@ public sealed class SiteMergeTagExtensionsTests
         services.AddSingleton(HostOptions.Folders());
         services.AddSingleton(MergeTagTestSite.Settings("UTC"));
         services.AddSingleton(TestFieldTypes.Registry);
+        new TestUmbraco().Register(services);
         services.AddFormBuilderOptions(HostOptions.Configuration());
         var sourceBuilder = new FormBuilderMergeTagSourceCollectionBuilder();
         sources(sourceBuilder);

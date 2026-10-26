@@ -3,7 +3,8 @@
 - Status: accepted; consent texts and sensitive fields amended in 1.8; the values tags give, the `json` context, where
   a tag may stand and the problems amended in 5.3b ([ADR-0064](0064-the-merge-tag-engine.md)); a site's sources and
   filters amended in 5.3c ([ADR-0065](0065-the-merge-tag-service-and-its-sources.md)); the `field` source's values,
-  parts and groups and a sensitive field without an answer amended in 5.3d ([ADR-0066](0066-answers-as-merge-tags.md))
+  parts and groups and a sensitive field without an answer amended in 5.3d ([ADR-0066](0066-answers-as-merge-tags.md));
+  `page.url`, a member's properties and the dictionary's fallback amended in 5.3e ([ADR-0067](0067-the-umbraco-sources-and-the-base-url.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 5.3 (both runtimes and the vectors), used by 6.x (texts, defaults, outcomes),
   8.x (emails, webhooks, content), 9.4 and 10.2 (the picker) and 11.x (entry titles)
@@ -75,13 +76,13 @@ ws        = { " " | tab } ;
 | `entry.number`, `entry.reference`, `entry.date`, `entry.state`, `entry.url` | the entry's number, reference, submission time, state, and its link in the backoffice (for team mail) |
 | `entry.answers` | every visible answered field: a table in HTML, `Label: answer` lines in text |
 | `form.name`, `form.alias` | the form |
-| `page.name`, `page.url`, `page.<propertyAlias>`, `page.up.<propertyAlias>` | the content page the form is on: its name, its absolute URL from the site's base URL, a property's value, or the nearest ancestor's |
-| `member.name`, `member.email`, `member.<propertyAlias>` | the signed-in member |
+| `page.name`, `page.url`, `page.<propertyAlias>`, `page.up.<propertyAlias>` | the content page the form is on: its name, its absolute URL (Umbraco's address of the page, a domain's for a page under one, otherwise after the site's base URL; ADR-0067), a property's value, or the nearest ancestor's |
+| `member.name`, `member.email`, `member.<propertyAlias>` | the signed-in member; a property only when the member type lets the member see it and does not mark it sensitive (ADR-0067) |
 | `query.<name>` | a query value, only for names the form allows (`developer.queryValues`) |
 | `context.<key>` | a value the developer passed when rendering or submitting |
 | `site.name`, `site.url` | the site's root node name and its base URL (ADR-0008) |
 | `date.now` | the current time in the site's time zone |
-| `dictionary.<key>` | an Umbraco dictionary item in the culture |
+| `dictionary.<key>` | an Umbraco dictionary item in the culture, falling back through its parent cultures, Umbraco's fallback languages and the default language (ADR-0067) |
 
 A field's former aliases (ADR-0002) resolve to the field. Sources added through `IFormBuilderMergeTagSource` declare
 their name, their paths for the picker, the contexts they may be used in, and whether their values are per visitor.

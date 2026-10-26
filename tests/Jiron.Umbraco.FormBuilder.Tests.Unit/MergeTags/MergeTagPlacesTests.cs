@@ -89,10 +89,10 @@ public sealed class MergeTagPlacesTests
     }
 
     [Test]
-    public async Task ABuiltInSourceThisVersionLacks_IsNotAProblemOfThePlace_ButAnUnknownPath()
+    public async Task APathItsSourceDoesNotKnow_IsNotAProblemOfThePlace_ButAnUnknownPath()
     {
-        // VisitorText takes page, which a later step adds; until then nothing knows its paths.
-        var rendered = await Create().Service.RenderAsync("[{{ page.title }}]", MergeTagPlace.VisitorText, MergeTagContext.Html, Scope());
+        // VisitorText takes page, whose paths are one property alias, or up and one.
+        var rendered = await Create().Service.RenderAsync("[{{ page.title.text }}]", MergeTagPlace.VisitorText, MergeTagContext.Html, Scope());
 
         Assert.Multiple(() =>
         {
@@ -179,13 +179,14 @@ public sealed class MergeTagPlacesTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(Paths(MergeTagPlace.VisitorText), Is.EqualTo(new[] { "form.name", "form.alias", "date.now", "brand.name" }));
-            Assert.That(Paths(MergeTagPlace.ConsentText), Is.EqualTo(new[] { "form.name", "form.alias" }));
-            Assert.That(Paths(MergeTagPlace.DefaultValue), Is.EqualTo(new[] { "form.name", "form.alias", "query.tag", "date.now", "brand.name" }));
-            Assert.That(Paths(MergeTagPlace.EntryTitle), Is.EqualTo(new[] { "entry.number", "entry.reference", "entry.date", "entry.state", "entry.answers", "form.name", "form.alias" }));
+            Assert.That(Paths(MergeTagPlace.VisitorText), Is.EqualTo(new[] { "form.name", "form.alias", "page.name", "page.url", "site.name", "site.url", "date.now", "brand.name" }));
+            Assert.That(Paths(MergeTagPlace.ConsentText), Is.EqualTo(new[] { "form.name", "form.alias", "page.name", "page.url", "site.name", "site.url" }));
+            Assert.That(Paths(MergeTagPlace.DefaultValue), Is.EqualTo(new[] { "form.name", "form.alias", "page.name", "page.url", "site.name", "site.url", "query.tag", "date.now", "brand.name" }));
+            Assert.That(Paths(MergeTagPlace.EntryTitle), Is.EqualTo(new[] { "entry.number", "entry.reference", "entry.date", "entry.state", "entry.url", "entry.answers", "form.name", "form.alias" }));
             Assert.That(Paths(MergeTagPlace.Outcome), Is.EqualTo(new[]
             {
-                "entry.number", "entry.reference", "entry.date", "entry.state", "entry.answers", "form.name", "form.alias", "query.tag", "context.campaign", "date.now", "brand.name", "crm.segment",
+                "entry.number", "entry.reference", "entry.date", "entry.state", "entry.url", "entry.answers", "form.name", "form.alias", "page.name", "page.url", "site.name", "site.url",
+                "member.name", "member.email", "query.tag", "context.campaign", "date.now", "brand.name", "crm.segment",
             }));
             Assert.That(Paths(MergeTagPlace.Mail), Does.Contain("ledger.total"));
         });

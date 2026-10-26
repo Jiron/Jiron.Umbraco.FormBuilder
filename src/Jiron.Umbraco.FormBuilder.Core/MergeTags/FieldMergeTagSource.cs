@@ -7,7 +7,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 /// values in the wire form; <c>.label</c>, the field's label; <c>.&lt;part&gt;</c>, a part of a value with parts, such as
 /// <c>field.name.first</c>. A repeatable group's child, <c>field.&lt;repeater&gt;.&lt;child&gt;</c> or by its own alias,
 /// is a list with an item for each answered row, and the group itself a list of its rows. A field's former aliases
-/// resolve to it, after the fields whose alias it is.
+/// resolve to it, after the fields whose alias it is. Texts that name a dictionary item show the item's text (ADR-0067).
 /// </summary>
 /// <param name="answers">The answers as merge tags show them.</param>
 internal sealed class FieldMergeTagSource(MergeTagAnswerTexts answers) : IFiniteMergeTagSource
@@ -32,23 +32,22 @@ internal sealed class FieldMergeTagSource(MergeTagAnswerTexts answers) : IFinite
     public bool Knows(string path, FormDefinition form) => path.StartsWith("field.", StringComparison.Ordinal) && Locate(path["field.".Length..], form) is not null;
 
     /// <inheritdoc />
-    public ValueTask<MergeTagValue?> ResolveAsync(MergeTagSourceRequest request, CancellationToken cancellationToken)
+    public async ValueTask<MergeTagValue?> ResolveAsync(MergeTagSourceRequest request, CancellationToken cancellationToken)
     {
         var scope = request.Scope;
         if (Locate(request.Path, scope.Form) is not { } tag)
         {
-            return ValueTask.FromResult<MergeTagValue?>(null);
+            return null;
         }
 
-        var value = tag.Member switch
+        return tag.Member switch
         {
-            "label" => MergeTagValue.Of(MergeTagAnswerTexts.Label(tag.Target.Field, scope.Culture)),
+            "label" => MergeTagValue.Of(MergeTagAnswerTexts.Label(tag.Target.Field, scope.Culture, await answers.DictionaryAsync(scope))),
             "value" => answers.Value(tag.Target, scope, request.Place),
             { } part => answers.Part(tag.Target, part, scope, request.Place),
-            null when tag.Target.Repeater is null && MergeTagAnswerTexts.IsRepeater(tag.Target.Field) => answers.Rows(tag.Target.Field, scope, request.Place),
-            null => answers.Display(tag.Target, scope, request.Place),
+            null when tag.Target.Repeater is null && MergeTagAnswerTexts.IsRepeater(tag.Target.Field) => answers.Rows(tag.Target.Field, scope, request.Place, await answers.DictionaryAsync(scope)),
+            null => answers.Display(tag.Target, scope, request.Place, await answers.DictionaryAsync(scope)),
         };
-        return ValueTask.FromResult<MergeTagValue?>(value);
     }
 
     /// <summary>

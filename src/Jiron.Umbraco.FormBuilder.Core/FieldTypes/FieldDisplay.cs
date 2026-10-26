@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
@@ -13,9 +14,17 @@ namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 public sealed class FieldDisplay
 {
     private readonly CultureFormats _formats;
+    private readonly DictionaryTexts _dictionary;
     private readonly List<DisplayText> _texts = [];
 
-    internal FieldDisplay(FormField field, ImmutableArray<FieldValue> values, ImmutableArray<FieldFile> files, string culture, CultureFormats formats, bool isListing)
+    internal FieldDisplay(
+        FormField field,
+        ImmutableArray<FieldValue> values,
+        ImmutableArray<FieldFile> files,
+        string culture,
+        CultureFormats formats,
+        bool isListing,
+        DictionaryTexts? dictionary = null)
     {
         if (!files.IsEmpty && files.Length != values.Length)
         {
@@ -28,6 +37,7 @@ public sealed class FieldDisplay
         Culture = culture;
         IsListing = isListing;
         _formats = formats;
+        _dictionary = dictionary ?? DictionaryTexts.None;
     }
 
     /// <summary>The field, with its settings, options and rows.</summary>
@@ -95,9 +105,12 @@ public sealed class FieldDisplay
         }
     }
 
-    /// <summary>An editor's text in the culture: its own, its more general culture's, then the default; empty for none.</summary>
+    /// <summary>
+    /// An editor's text in the culture: its own, its more general culture's, then the default; for a text that names a
+    /// dictionary item (<c>#key</c>, ADR-0002), the item's text in the culture; empty for none.
+    /// </summary>
     /// <param name="text">The text, such as a label.</param>
-    public string Text(LocalizedText? text) => text?.Resolve(Culture) ?? string.Empty;
+    public string Text(LocalizedText? text) => _dictionary.Resolve(text, Culture);
 
     /// <summary>
     /// A number in the wire form as the culture writes it: grouped, with its own decimals, or rounded half away from zero

@@ -12,6 +12,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
 /// <summary>
 /// A site for the merge-tag tests (ADR-0065): the service over the built-in sources and the site's own, a form whose
 /// settings the tests choose, the scope a template renders for, and the log of the sources and filters that failed.
+/// The Umbraco sources read a <see cref="TestUmbraco"/>, empty unless the test gives one (ADR-0067).
 /// </summary>
 internal static class MergeTagTestSite
 {
@@ -37,13 +38,17 @@ internal static class MergeTagTestSite
         IReadOnlyDictionary<string, IReadOnlyList<string>>? query = null,
         IReadOnlyDictionary<string, string>? context = null,
         MergeTagAnswers? answers = null,
-        IReadOnlySet<Guid>? includedSensitive = null) => new()
+        IReadOnlySet<Guid>? includedSensitive = null,
+        Guid? page = null,
+        Guid? member = null) => new()
         {
             Form = form ?? Form(),
             FormName = "Contact <us>",
             FormAlias = "contact",
             Culture = culture,
             Site = SiteKey,
+            Page = page,
+            Member = member,
             Entry = entry,
             Query = query!,
             Context = context!,
@@ -61,33 +66,39 @@ internal static class MergeTagTestSite
     };
 
     /// <summary>
-    /// The service of a site with its own sources and filters, whose time zone is <paramref name="zone"/>, on a clock
-    /// that starts at 2026-01-01 00:00 UTC unless the test gives one.
+    /// The service of a site with its own sources and filters, whose time zone is <paramref name="zone"/> and whose
+    /// general settings give <paramref name="baseUrl"/>, on a clock that starts at 2026-01-01 00:00 UTC unless the test
+    /// gives one, over the Umbraco the test gives.
     /// </summary>
     public static Site Create(
         IEnumerable<IFormBuilderMergeTagSource>? sources = null,
         IEnumerable<IFormBuilderMergeTagFilter>? filters = null,
         string zone = "UTC",
         TimeProvider? time = null,
-        FieldTypeRegistry? types = null)
+        FieldTypeRegistry? types = null,
+        TestUmbraco? umbraco = null,
+        string? baseUrl = null)
     {
-        var clock = new MergeTagClock(Settings(zone), time ?? new TestTimeProvider());
+        umbraco ??= new TestUmbraco();
+        var settings = Settings(zone, baseUrl);
+        var clock = new MergeTagClock(settings, time ?? new TestTimeProvider());
         var cultures = new MergeTagCultures();
         var log = new RecordingLogger();
-        var answers = new MergeTagAnswerTexts(types ?? TestFieldTypes.Registry, cultures, log);
+        var dictionary = umbraco.DictionaryTexts();
+        var answers = new MergeTagAnswerTexts(types ?? TestFieldTypes.Registry, cultures, dictionary, log);
         var registry = new MergeTagRegistry(
-            FormBuilderMergeTagServices.BuiltInSources(clock, cultures, answers),
+            FormBuilderMergeTagServices.BuiltInSources(clock, cultures, answers, umbraco.Umbraco(), umbraco.BaseUrls(settings), dictionary),
             new FormBuilderMergeTagSourceCollection(() => sources ?? []),
             new FormBuilderMergeTagFilterCollection(() => filters ?? []));
         return new Site(new FormBuilderMergeTagService(registry, cultures, log), log);
     }
 
-    /// <summary>The settings of a site whose time zone is <paramref name="zone"/>.</summary>
-    public static IFormBuilderSettingsService Settings(string zone)
+    /// <summary>The general settings of a site whose time zone is <paramref name="zone"/> and whose base URL is <paramref name="baseUrl"/>.</summary>
+    public static IFormBuilderSettingsService Settings(string zone, string? baseUrl = null)
     {
         var settings = Substitute.For<IFormBuilderSettingsService>();
         settings.GetAsync<GeneralSettings>(Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult(
-            new SettingsSnapshot<GeneralSettings>(new GeneralSettings { TimeZone = zone }, 1, new HashSet<string>(), new Dictionary<string, SettingsLock>())));
+            new SettingsSnapshot<GeneralSettings>(new GeneralSettings { TimeZone = zone, BaseUrl = baseUrl }, 1, new HashSet<string>(), new Dictionary<string, SettingsLock>())));
         return settings;
     }
 
