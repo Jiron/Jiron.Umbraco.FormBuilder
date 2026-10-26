@@ -1819,7 +1819,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a fuzz test of 10,000 random templates in each runtime never throws an unhandled exception and never takes longer than 50 ms per input;
     - an injection test shows that merge tags cannot produce HTML, URL or JSON breakouts;
     - 5.2a's mutation check covers the template module in TypeScript, with every survivor written down as an equivalent change or killed by a new vector.
-- [ ] **5.3c The merge-tag service and its extension points** (C#; 5.3 split in three, then 5.3c in four, WORKLOG 2026-10-26)
+- [x] **5.3c The merge-tag service and its extension points** (C#; 5.3 split in three, then 5.3c in four, WORKLOG 2026-10-26) (2026-10-26, 66eed38)
   - **The service** `IFormBuilderMergeTagService` (§4.9): renders a template for a place over a scope (the form, the culture, the site, the entry, the query and context values), and checks one without values, with the problems of ADR-0064 and those of the place.
   - **Which sources each place may use** (ADR-0014): the places of ADR-0014's table, each with its contexts and sources; per-visitor sources only where the page is not cached; a site's own filters only where only the server renders.
   - **`IFormBuilderMergeTagSource` and `IFormBuilderMergeTagFilter`** (§4.9), registered through `builder.JironFormBuilder()`: a source declares its name, its paths for the picker, where it may be used and whether its values are per visitor; a filter its name and its arguments. Start-up refuses a name that is taken or outside the grammar; a source or filter that fails renders empty and is logged without values.
