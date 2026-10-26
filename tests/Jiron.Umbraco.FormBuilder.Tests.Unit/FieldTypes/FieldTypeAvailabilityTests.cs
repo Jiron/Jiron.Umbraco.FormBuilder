@@ -13,6 +13,10 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.FieldTypes;
 /// </summary>
 public sealed class FieldTypeAvailabilityTests
 {
+    // How long a test waits for work the thread pool runs: only a guard against a hang, never a measure of time, because
+    // a busy test run may keep the pool's threads for seconds.
+    private static readonly TimeSpan Hang = TimeSpan.FromMinutes(1);
+
     [Test]
     public void Available_HasNoReason_AndNotConfigured_HoldsItsReason()
     {
@@ -109,10 +113,12 @@ public sealed class FieldTypeAvailabilityTests
     public async Task ACheckThatTakesLongerThanFiveSeconds_IsNotConfigured_TellsTheCheckToStop_AndLogsAWarning()
     {
         var timers = new ManualTimers();
-        var stopped = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var listening = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var (service, logger) = Service(timers, new Checked("acme.slow", async token =>
         {
-            using var _ = token.Register(() => stopped.TrySetResult(true));
+            using var _ = token.Register(() => stopped.TrySetResult());
+            listening.TrySetResult();
             await Task.Delay(Timeout.InfiniteTimeSpan, token);
             return FieldTypeAvailability.Available;
         }));
@@ -120,18 +126,45 @@ public sealed class FieldTypeAvailabilityTests
         var answering = service.CheckAsync(CancellationToken.None);
         await WaitForTimerAsync(timers);
         Assert.That(timers.Timers[0].DueTime, Is.EqualTo(TimeSpan.FromSeconds(5)).And.EqualTo(FieldTypeAvailabilityService.Limit));
+        // The thread pool starts the check when it has a thread to spare, which a busy test run may delay for seconds;
+        // the limit passes once the check listens to its token.
+        await listening.Task.WaitAsync(Hang);
         timers.FireAll();
-        var answers = await answering;
+        var answers = await answering.WaitAsync(Hang);
 
-        Assert.Multiple(async () =>
+        Assert.Multiple(() =>
         {
             Assert.That((answers[0].IsAvailable, answers[0].Reason), Is.EqualTo((false, FieldTypeAvailabilityService.CheckFailed)));
-            Assert.That(await stopped.Task.WaitAsync(TimeSpan.FromSeconds(10)), Is.True, "the check's token is cancelled");
+            Assert.That(stopped.Task.IsCompletedSuccessfully, Is.True, "the check's token is cancelled before the answer comes");
             Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Message)), Is.EqualTo(new[]
             {
                 (LogLevel.Warning, "The field type 'acme.slow' took more than 5 seconds to say whether it is configured; the designer shows it as not configured"),
             }));
         });
+    }
+
+    [Test]
+    public async Task ACheckThatLooksAtItsTokenOnlyAfterTheLimit_FindsItCancelled()
+    {
+        var timers = new ManualTimers();
+        var answered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var (service, _) = Service(timers, new Checked("acme.late", async token =>
+        {
+            // By now the service has answered and let go of the source that gives the token.
+            await answered.Task;
+            using var _ = token.Register(() => stopped.TrySetResult());
+            return FieldTypeAvailability.Available;
+        }));
+
+        var answering = service.CheckAsync(CancellationToken.None);
+        await WaitForTimerAsync(timers);
+        timers.FireAll();
+        var answers = await answering.WaitAsync(Hang);
+        answered.SetResult();
+        await stopped.Task.WaitAsync(Hang);
+
+        Assert.That(answers[0].Reason, Is.EqualTo(FieldTypeAvailabilityService.CheckFailed));
     }
 
     [Test]
@@ -149,7 +182,7 @@ public sealed class FieldTypeAvailabilityTests
         var answering = service.CheckAsync(CancellationToken.None);
         await WaitForTimerAsync(timers);
         timers.FireAll();
-        var answers = await answering.WaitAsync(TimeSpan.FromSeconds(10));
+        var answers = await answering.WaitAsync(Hang);
         release.Set();
 
         Assert.That(answers[0].Reason, Is.EqualTo(FieldTypeAvailabilityService.CheckFailed), "a check that blocks runs on the thread pool, so the answer does not wait for it");
@@ -180,7 +213,7 @@ public sealed class FieldTypeAvailabilityTests
             return FieldTypeAvailability.Available;
         }));
         var answering = waiting.CheckAsync(during.Token);
-        await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await started.Task.WaitAsync(Hang);
         await during.CancelAsync();
 
         Assert.Multiple(() =>
