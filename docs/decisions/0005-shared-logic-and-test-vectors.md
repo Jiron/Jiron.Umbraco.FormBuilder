@@ -4,7 +4,9 @@
   for patterns, the instant's form and IANA-only time zones amended in 3.4b (ADR-0030); comparisons over the wire
   form's digits amended in 4.8f (ADR-0030); folding and compiling once amended in 4.8h (ADR-0030); whole forms in the
   vectors and the mutation script amended in 5.2a ([ADR-0061](0061-the-form-rules-engine.md)); the `formula` case and
-  the position of a formula's mistake amended in 5.3a ([ADR-0063](0063-the-calculation-language.md))
+  the position of a formula's mistake amended in 5.3a ([ADR-0063](0063-the-calculation-language.md)); the `template`
+  case, the cultures in a file's defaults and the case mappings in the tables check amended in 5.3b
+  ([ADR-0064](0064-the-merge-tag-engine.md))
 - Date: 2026-10-23
 - Roadmap step: 1.5 (decided); built in 3.4 (the vector runners), 4.4 (the time zone and start-up checks), 5.2 (rules
   and validation), 5.3 (merge tags and calculations), 5.4 (number fields), 6.1 and 6.4 (the wire); reviewed in 5.5
@@ -68,7 +70,8 @@ Option 3 for text, option 2 for patterns, exact decimals for numbers, and one JS
   its repeatable groups; 5.2b `field`, ADR-0062; 5.3a `formula`, ADR-0063; 5.3b `template`), and `expect`: `true`,
   `false`, `null` for a switched-off rule or a calculation without a value, a canonical string, a form's
   `FormState`, or `{ "error": code }`, which for a mistake in a formula also holds `at`, the UTF-16 index where it
-  starts (5.3a). Both runners compare the result as JSON. Vector files are written by scripts from code points, as ASCII with JSON escapes. Each runner makes
+  starts (5.3a). A `template` case expects `{ text, problems }`, and its file's defaults hold `cultures`, the culture
+  formats by name, of which a case uses its context's culture (5.3b). Both runners compare the result as JSON. Vector files are written by scripts from code points, as ASCII with JSON escapes. Each runner makes
   one test case per vector and reads the files in place.
 - **Wire forms,** invariant and strict:
   - numbers: an optional minus, an integer part without leading zeros, an optional point with at least one digit,
@@ -118,7 +121,8 @@ Option 3 for text, option 2 for patterns, exact decimals for numbers, and one JS
   note and the vectors.
 - **Cross-checks:** a TypeScript tool writes fold, clean and recomposition for every code point; the C# suite
   compares them. Known gaps (the 20 Unicode 16 compositions) are listed exactly, so the check fails both when a gap
-  appears and when one closes.
+  appears and when one closes. **Amended in 5.3b (ADR-0064):** the tool also writes what the merge tags' `upper` and
+  `lower` do to every code point, compared the same way.
 - **Mutation:** the vector suites are proven by mutants in both runtimes; a mutant that survives is either an
   equivalent change, written down, or a missing vector, added. **Amended in 5.2a (ADR-0061):** the mutants are a script
   in the repository, `tests/vectors/mutants.mjs`, with the equivalent changes and their reasons in it.

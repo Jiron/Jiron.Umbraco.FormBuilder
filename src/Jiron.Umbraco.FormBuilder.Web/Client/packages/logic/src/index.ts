@@ -27,6 +27,18 @@ export {
   type FieldErrors,
   type FieldFile,
 } from './checks.ts';
+export {
+  DATE_FORMATS,
+  formatCalendar,
+  formatCurrency,
+  formatNumber,
+  minorUnits,
+  type CultureFormats,
+  type CurrencyFormat,
+  type DateFormat,
+  type DatePatterns,
+  type NumberFormat,
+} from './culture.ts';
 export { formatDecimal, parseDecimal, type Decimal } from './decimal.ts';
 export { LogicError, type LogicErrorCode } from './errors.ts';
 export {
@@ -57,4 +69,21 @@ export {
   type Rule,
   type Subject,
 } from './rules.ts';
-export { clean, countWords, fold, normalise } from './text.ts';
+export {
+  MAX_TAG_FILTERS,
+  MAX_TEMPLATE_OUTPUT,
+  MAX_TEMPLATE_TAGS,
+  parseTemplate,
+  renderTemplate,
+  TEMPLATE_CONTEXTS,
+  TEMPLATE_WARNINGS,
+  type MergeItem,
+  type MergeValue,
+  type MergeValues,
+  type ParsedTemplate,
+  type RenderedTemplate,
+  type TemplateContext,
+  type TemplateProblem,
+  type TemplateProblemCode,
+} from './template.ts';
+export { clean, countWords, fold, lower, normalise, upper } from './text.ts';

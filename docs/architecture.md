@@ -69,7 +69,7 @@ database connection of its own. Its areas:
 | Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions and their comparison, and the exchange of forms (`Exchange`: element keys and their remap, copied actions, the export envelope) | ADR-0002, ADR-0045, ADR-0046 |
 | Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good, and the published form as the site runs it), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053, ADR-0060 |
 | Fields and options | the field type registry, the built-in types, option sources and lists, places on options | ADR-0002, §4.3.2 |
-| Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030 |
+| Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030, ADR-0064 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
 | Actions and email | action types, action runs, the email outbox, the worker | ADR-0007 |
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
@@ -129,7 +129,10 @@ flowchart LR
   results, the actions that run and the outcome, from one model of the form that Core builds from a definition with
   `DefinitionLogic.From` ([ADR-0061](decisions/0061-the-form-rules-engine.md)); its calculation language (`calc.ts`,
   Core's `Logic/Calculations.cs`) reads a formula into a tree, checks it against the form and works it out over exact
-  decimals ([ADR-0063](decisions/0063-the-calculation-language.md)); its `checkField` (`checks.ts`) runs the built-in types'
+  decimals ([ADR-0063](decisions/0063-the-calculation-language.md)); its merge-tag engine (`template.ts` with the culture
+  formats of `culture.ts`, Core's `Logic/MergeTags*.cs` and `Logic/CultureFormats.cs`) reads a template once for its
+  context, refusing a tag where a value could become code, and renders it over the values with every value encoded
+  for its place ([ADR-0064](decisions/0064-the-merge-tag-engine.md)); its `checkField` (`checks.ts`) runs the built-in types'
   checks of a field's answers as each type's `Validate` in Core does, and then the field's own `pattern` and
   `matchesField` checks as Core's `FieldValues` does, with the other fields' values
   ([ADR-0062](decisions/0062-the-built-in-types-checks.md));

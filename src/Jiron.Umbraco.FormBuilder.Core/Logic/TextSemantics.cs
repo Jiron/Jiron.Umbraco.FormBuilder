@@ -122,6 +122,47 @@ internal static class TextSemantics
         return false;
     }
 
+    /// <summary>Whether cleaning trims the code unit from the ends of a text: the explicit set both runtimes share.</summary>
+    public static bool IsTrimmed(char unit) => Trimmed.Contains(unit);
+
+    /// <summary>The text in capitals, character by character, as the <c>upper</c> filter writes it (ADR-0064).</summary>
+    public static string Upper(string value) => MapCase(value, upper: true);
+
+    /// <summary>The text in small letters, character by character, as the <c>lower</c> filter writes it (ADR-0064).</summary>
+    public static string Lower(string value) => MapCase(value, upper: false);
+
+    /// <summary>
+    /// The Greek letters with a ypogegrammeni (U+1F80 to U+1FAF, U+1FB3, U+1FC3, U+1FF3): their full uppercase mapping is
+    /// two letters, which JavaScript uses, while .NET uses the simple one, so <c>upper</c> leaves them as they are.
+    /// </summary>
+    private static bool WithYpogegrammeni(int codePoint) =>
+        codePoint is (>= 0x1F80 and <= 0x1FAF) or 0x1FB3 or 0x1FC3 or 0x1FF3;
+
+    /// <summary>
+    /// Each character's case mapping for the <c>upper</c> and <c>lower</c> filters: in the folded blocks only, which all
+    /// lie in the first plane, and only when the mapping stays in them; the Turkish i's keep their case, because the
+    /// runtimes map them differently. A lone surrogate stays as it is.
+    /// </summary>
+    private static string MapCase(string value, bool upper)
+    {
+        var builder = new StringBuilder(value.Length);
+        foreach (var unit in value)
+        {
+            int code = unit;
+            if (!Folds(code) || code is DottedCapitalI or DotlessSmallI || (upper && WithYpogegrammeni(code)))
+            {
+                builder.Append(unit);
+                continue;
+            }
+
+            var rune = new Rune(unit);
+            var mapped = upper ? Rune.ToUpperInvariant(rune) : Rune.ToLowerInvariant(rune);
+            builder.Append(Folds(mapped.Value) ? (char)mapped.Value : unit);
+        }
+
+        return builder.ToString();
+    }
+
     /// <summary>Noncharacters: U+FDD0 to U+FDEF, and the last two code points of every plane.</summary>
     private static bool IsNoncharacter(int codePoint) =>
         codePoint is >= 0xFDD0 and <= 0xFDEF || (codePoint & 0xFFFE) == 0xFFFE;

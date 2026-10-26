@@ -1,6 +1,7 @@
 # 0014. The merge-tag language
 
-- Status: accepted; consent texts and sensitive fields amended in 1.8
+- Status: accepted; consent texts and sensitive fields amended in 1.8; the values tags give, the `json` context, where
+  a tag may stand and the problems amended in 5.3b ([ADR-0064](0064-the-merge-tag-engine.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 5.3 (both runtimes and the vectors), used by 6.x (texts, defaults, outcomes),
   8.x (emails, webhooks, content), 9.4 and 10.2 (the picker) and 11.x (entry titles)
@@ -137,6 +138,10 @@ never on the template's own text.
   complete value, and inside one is refused at publish. Any other combination is encoded twice, which is safe.
 - **No context accepts markup from a value.** Visitor text in mail to a visitor is plain text: links a visitor typed
   never become clickable (§4.10).
+- **Amended in 5.3b (ADR-0064):** a JSON body has one `json` context whose scan knows whether a tag stands inside a
+  string literal; each context refuses a tag where a value could become code, markup or an address's host (in markup
+  outside text content, before a URL's path, after a backslash in a JSON string); and a tag's value is text, or text
+  with the wire number or date behind it.
 
 ### Where each source may be used
 

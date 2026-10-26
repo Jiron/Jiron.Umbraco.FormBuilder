@@ -72,6 +72,16 @@ export function clean(value: string): string {
 export const folds = (codePoint: number): boolean =>
   FOLDED.some(([low, high]) => codePoint >= low && codePoint <= high);
 
+/** Whether cleaning trims the code unit from the ends of a text: the explicit set both runtimes share. */
+export const isTrimmed = (unit: number): boolean => TRIMMED.has(unit);
+
+/**
+ * The Greek letters with a ypogegrammeni (U+1F80 to U+1FAF, U+1FB3, U+1FC3, U+1FF3): their full uppercase mapping is
+ * two letters, which JavaScript uses, while .NET uses the simple one, so `upper` leaves them as they are (ADR-0064).
+ */
+const withYpogegrammeni = (codePoint: number): boolean =>
+  (codePoint >= 0x1f80 && codePoint <= 0x1faf) || codePoint === 0x1fb3 || codePoint === 0x1fc3 || codePoint === 0x1ff3;
+
 /** A one-character mapping, or the character itself when the runtime's mapping would expand it. */
 function single(mapped: string, original: string): string {
   return [...mapped].length === 1 ? mapped : original;
@@ -107,5 +117,33 @@ export function fold(value: string): string {
       out += single(upper.toLowerCase(), upper);
     }
   }
+  return out;
+}
+
+/**
+ * One character's case mapping for the `upper` and `lower` filters (ADR-0064): in the folded blocks only, and only
+ * when it is one character that stays in them; the Turkish i's keep their case, because the runtimes map them
+ * differently.
+ */
+function mapCase(ch: string, mapped: string): string {
+  const codePoint = ch.codePointAt(0) ?? 0;
+  if (!folds(codePoint) || codePoint === DOTTED_CAPITAL_I || codePoint === DOTLESS_SMALL_I) return ch;
+  const one = single(mapped, ch);
+  return folds(one.codePointAt(0) ?? 0) ? one : ch;
+}
+
+/** The text in capitals, character by character, as the `upper` filter writes it (ADR-0064). */
+export function upper(value: string): string {
+  let out = '';
+  for (const ch of value) {
+    out += withYpogegrammeni(ch.codePointAt(0) ?? 0) ? ch : mapCase(ch, ch.toUpperCase());
+  }
+  return out;
+}
+
+/** The text in small letters, character by character, as the `lower` filter writes it (ADR-0064). */
+export function lower(value: string): string {
+  let out = '';
+  for (const ch of value) out += mapCase(ch, ch.toLowerCase());
   return out;
 }
