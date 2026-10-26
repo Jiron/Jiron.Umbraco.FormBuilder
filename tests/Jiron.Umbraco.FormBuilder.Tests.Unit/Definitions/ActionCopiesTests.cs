@@ -8,8 +8,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
 /// <summary>
 /// Copying actions to another form (ADR-0046): the copies and their rules get new keys, fields map by alias in any
-/// letter case, grid rows by their label, other references to the source are kept and reported with their paths, and
-/// references outside the form stay.
+/// letter case, grid rows by their label, other references to the source are kept and reported with their paths,
+/// references outside the form stay, and the merge tags in a copy's settings that name a field the target lacks are
+/// reported with the paths of their texts.
 /// </summary>
 public sealed class ActionCopiesTests
 {
@@ -155,6 +156,58 @@ public sealed class ActionCopiesTests
     }
 
     [Test]
+    public void AMergeTag_ThatNamesAFieldTheTargetLacks_IsReported_WithThePathOfItsText_AndWhereItsPathStarts()
+    {
+        const string Subject = "New {{ field.topic }} from {{ field.email }}";
+        const string German = "Neu: {{ field.venue | upper }}";
+        const string To = "{{ field.address.city }}";
+        const string Body = "<p>{{ field.feedback.label }}: {{ field.missing }}</p>";
+        var source = WithNotifySettings(new JsonObject
+        {
+            ["subject"] = new JsonObject { [""] = Subject, ["de"] = German },
+            ["to"] = new JsonArray(To, "sales@example.com"),
+            ["body"] = new JsonObject { ["html"] = Body },
+        });
+
+        var result = Copy(source, [Hook, Notify], Target());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Actions[1].MergeTags, Is.EqualTo(new[]
+            {
+                new UnmappedMergeTag("$.actions[2].settings.body.html", "field.missing", Body.IndexOf("field.missing", StringComparison.Ordinal)),
+                new UnmappedMergeTag("$.actions[2].settings.subject['']", "field.email", Subject.IndexOf("field.email", StringComparison.Ordinal)),
+                new UnmappedMergeTag("$.actions[2].settings.subject.de", "field.venue", German.IndexOf("field.venue", StringComparison.Ordinal)),
+                new UnmappedMergeTag("$.actions[2].settings.to[0]", "field.address.city", To.IndexOf("field.address", StringComparison.Ordinal)),
+            }), "in the order of the stored settings: the target's email field is eMail, and a grid's row is no field; topic and the grid's label it has");
+            Assert.That(result.Actions[0].MergeTags, Is.Empty, "the webhook's settings hold no tags");
+            Assert.That(result.Target!.Actions[2].Settings!.ToString(), Is.EqualTo(source.Actions.Single(action => action.Key == Notify).Settings!.ToString()), "the tags are copied as they are");
+        });
+    }
+
+    [Test]
+    public void TagsTheTargetKnows_ByAliasOrFormerAlias_TagsOfOtherSources_AndMalformedTags_AreNotReported()
+    {
+        var target = Target();
+        var group = target.Pages[0].Groups[0];
+        target = target with { Pages = [target.Pages[0] with { Groups = [group with { Fields = [.. group.Fields.Select(field => field.Alias == "topic" ? field with { FormerAliases = ["subject"] } : field)] }] }] };
+        var source = WithNotifySettings(new JsonObject
+        {
+            ["subject"] = "{{ field.topic.value }} {{ field.subject }} {{ field.eMail | upper }} {{ field.feedback }} {{ form.name }} {{ entry.number }} {{ field. }} {{ field.topic | shout }}",
+            ["count"] = 3,
+            ["empty"] = null,
+        });
+
+        var result = Copy(source, [Notify], target);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Problems, Is.Empty);
+            Assert.That(result.Actions[0].MergeTags, Is.Empty, "a former alias, a filter the site lacks, other sources and a tag that is not well formed name no missing field");
+        });
+    }
+
+    [Test]
     public void AnAlias_TwoTargetFieldsHave_MapsToTheFirstOfThem()
     {
         var target = Target();
@@ -213,6 +266,12 @@ public sealed class ActionCopiesTests
             new FormAction { Key = Hook, Type = "webhook", Name = "Hook", Rules = [Run(HookRule, SourceVenue)], Settings = Settings(new JsonObject { ["after"] = Notify.ToString("D") }) },
             new FormAction { Key = Archive, Type = "webhook", Name = "Archive" },
         ],
+    };
+
+    // The source with the email action's settings replaced.
+    private static FormDefinition WithNotifySettings(JsonObject settings) => Source() with
+    {
+        Actions = [.. Source().Actions.Select(action => action.Key == Notify ? action with { Settings = Settings(settings) } : action)],
     };
 
     private static FormDefinition Target() => new()

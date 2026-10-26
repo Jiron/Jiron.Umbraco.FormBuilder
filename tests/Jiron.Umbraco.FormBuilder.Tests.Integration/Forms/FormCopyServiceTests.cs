@@ -222,6 +222,31 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task ACopiedActionsSubject_ThatNamesAFieldTheTargetLacks_PutsTheTagWithItsPathInTheReport()
+    {
+        const string Subject = "A quote for {{ field.topic }} ({{ field.email }})";
+        var source = await Service.CreateAsync(new NewFormRequest("Quote", UserKey: Editor));
+        var quote = new FormAction { Key = Guid.NewGuid(), Type = "email", Name = "Quote", Settings = SettingsObject.Parse(new JsonObject { ["subject"] = Subject }.ToJsonString()) };
+        await SaveAsync(source, WithFields(await DraftAsync(source), Email with { Key = Guid.NewGuid() }, Topic with { Key = Guid.NewGuid(), Rules = [] }) with { Actions = [quote] });
+        var target = await Service.CreateAsync(new NewFormRequest("Newsletter", UserKey: Editor));
+        var saved = await SaveAsync(target, WithFields(await DraftAsync(target), Email with { Key = Guid.NewGuid() }));
+
+        var copied = (await Exchange.CopyActionsAsync(new CopyActionsRequest(source.Key, target.Key, saved.Form.ConcurrencyVersion, UserKey: Editor)))!;
+        var copy = (await Service.GetDraftAsync(target.Key))!.Definition!.Actions.Single();
+        var entry = (await Audit.QueryAsync(new AuditQuery { EntityKey = target.Key, Action = FormBuilderFormExchangeService.ActionsCopiedAction }, PageRequest.First(10))).Items.Single();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(copied.Actions.Single().MergeTags, Is.EqualTo(new[] { new UnmappedMergeTag("$.actions[0].settings.subject", "field.topic", Subject.IndexOf("field.topic", StringComparison.Ordinal)) }), "the target has an email field, but no topic");
+            Assert.That(copied.Actions.Single().Unmapped, Is.Empty, "a merge tag names its field by alias, not by key");
+            Assert.That(JsonNode.Parse(copy.Settings!.ToString())!["subject"]!.GetValue<string>(), Is.EqualTo(Subject), "copied as it is, for the editor to fix");
+            Assert.That(entry.Details, Does.EndWith(""","unmapped":0,"unmappedTags":1}"""));
+        });
+
+        Assert.That(await Service.PublishAsync(target.Key, copied.Target.Form.ConcurrencyVersion, null, Editor), Has.Property(nameof(FormVersionResult.Version)).EqualTo(4), "a tag of a missing field renders empty with a warning, so it does not stop publishing");
+    }
+
+    [Test]
     public async Task CopiedActions_ThatMapEveryReference_Publish_AndChosenActionsComeInTheSourcesOrder()
     {
         var (source, _) = await DesignedAsync();
