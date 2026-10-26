@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing;
+using MergeTagEngine = Jiron.Umbraco.FormBuilder.Logic.MergeTags;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 
@@ -118,8 +119,8 @@ public sealed class VectorTests
 
         var sources = template.GetProperty("sources").EnumerateObject()
             .ToDictionary(source => source.Name, source => VectorReader.ValueOf(source.Value), StringComparer.Ordinal);
-        var parsed = MergeTags.Parse(template.GetProperty("text").GetString()!, VectorReader.TemplateContextOf(template.GetProperty("context")));
-        return MergeTags.Render(parsed, path => sources.GetValueOrDefault(path), VectorReader.Formats(formats));
+        var parsed = MergeTagEngine.Parse(template.GetProperty("text").GetString()!, VectorReader.TemplateContextOf(template.GetProperty("context")));
+        return MergeTagEngine.Render(parsed, path => sources.GetValueOrDefault(path), VectorReader.Formats(formats));
     }
 
     // A subject as a formula reads it: the fields' kinds and answers by alias, a hidden field without answers.

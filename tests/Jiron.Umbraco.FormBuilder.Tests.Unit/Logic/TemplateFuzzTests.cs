@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Logic;
+using MergeTagEngine = Jiron.Umbraco.FormBuilder.Logic.MergeTags;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 
@@ -22,10 +24,10 @@ public sealed class TemplateFuzzTests
     /// <summary>What a template can come to: no problem, or each problem.</summary>
     private static readonly string[] Outcomes =
     [
-        "clean", TemplateProblems.MalformedTag, TemplateProblems.UnclosedTag, TemplateProblems.TagInMarkup, TemplateProblems.TagInEscape,
-        TemplateProblems.TagBeforePath, TemplateProblems.InvalidArgument, TemplateProblems.FilterNotForContext,
-        TemplateProblems.FilterAfterEncoding, TemplateProblems.TooManyTags, TemplateProblems.TooManyFilters, TemplateProblems.TooLong,
-        TemplateProblems.UnknownPath, TemplateProblems.UnknownFilter,
+        "clean", MergeTagProblems.MalformedTag, MergeTagProblems.UnclosedTag, MergeTagProblems.TagInMarkup, MergeTagProblems.TagInEscape,
+        MergeTagProblems.TagBeforePath, MergeTagProblems.InvalidArgument, MergeTagProblems.FilterNotForContext,
+        MergeTagProblems.FilterAfterEncoding, MergeTagProblems.TooManyTags, MergeTagProblems.TooManyFilters, MergeTagProblems.TooLong,
+        MergeTagProblems.UnknownPath, MergeTagProblems.UnknownFilter,
     ];
 
     [Test]
@@ -42,8 +44,8 @@ public sealed class TemplateFuzzTests
             var culture = generator.Culture();
             (ParsedTemplate Parsed, RenderedTemplate Rendered) Once()
             {
-                var parsed = MergeTags.Parse(text, context);
-                return (parsed, MergeTags.Render(parsed, path => values.GetValueOrDefault(path), culture));
+                var parsed = MergeTagEngine.Parse(text, context);
+                return (parsed, MergeTagEngine.Render(parsed, path => values.GetValueOrDefault(path), culture));
             }
 
             var fastest = TimeSpan.MaxValue;
@@ -111,22 +113,22 @@ public sealed class TemplateFuzzTests
     [Test]
     public void MergeTags_RefuseNoArguments()
     {
-        var parsed = MergeTags.Parse("{{ field.name }}", TemplateContext.Text);
+        var parsed = MergeTagEngine.Parse("{{ field.name }}", MergeTagContext.Text);
         var culture = Fuzzing.TemplateCultures[0];
 
         Assert.Multiple(() =>
         {
-            Assert.That(() => MergeTags.Parse(null!, TemplateContext.Text), Throws.ArgumentNullException);
-            Assert.That(() => MergeTags.Render(null!, _ => null, culture), Throws.ArgumentNullException);
-            Assert.That(() => MergeTags.Render(parsed, null!, culture), Throws.ArgumentNullException);
-            Assert.That(() => MergeTags.Render(parsed, _ => null, null!), Throws.ArgumentNullException);
+            Assert.That(() => MergeTagEngine.Parse(null!, MergeTagContext.Text), Throws.ArgumentNullException);
+            Assert.That(() => MergeTagEngine.Render(null!, _ => null, culture), Throws.ArgumentNullException);
+            Assert.That(() => MergeTagEngine.Render(parsed, null!, culture), Throws.ArgumentNullException);
+            Assert.That(() => MergeTagEngine.Render(parsed, _ => null, null!), Throws.ArgumentNullException);
         });
     }
 
     /// <summary>What is wrong with a rendering, or null: the output's limit, the problems' order, and the problems parsing found.</summary>
     private static string? Broken(string text, ParsedTemplate parsed, RenderedTemplate rendered)
     {
-        if (rendered.Text.Length > MergeTags.MaxOutput)
+        if (rendered.Text.Length > MergeTagEngine.MaxOutput)
         {
             return $"{rendered.Text.Length} code units of output";
         }
@@ -141,9 +143,9 @@ public sealed class TemplateFuzzTests
         }
 
         // Until a limit stops it, rendering reports what parsing found, and beside it only the paths no source knows.
-        if (rendered.Problems.All(problem => problem.Code != TemplateProblems.TooLong))
+        if (rendered.Problems.All(problem => problem.Code != MergeTagProblems.TooLong))
         {
-            var found = rendered.Problems.Where(problem => problem.Code != TemplateProblems.UnknownPath).ToList();
+            var found = rendered.Problems.Where(problem => problem.Code != MergeTagProblems.UnknownPath).ToList();
             if (!found.SequenceEqual(parsed.Problems))
             {
                 return $"rendering reported {Describe(found)}, parsing {Describe(parsed.Problems)}";
@@ -153,7 +155,7 @@ public sealed class TemplateFuzzTests
         return null;
     }
 
-    private static string Describe(IEnumerable<TemplateProblem> problems) =>
+    private static string Describe(IEnumerable<MergeTagProblem> problems) =>
         "[" + string.Join(", ", problems.Select(problem => $"{problem.Code} at {problem.At}")) + "]";
 
     /// <summary>Random templates from the grammar of ADR-0064 in every context, broken now and then, and random values for them.</summary>
@@ -166,7 +168,7 @@ public sealed class TemplateFuzzTests
         private static readonly string Tab = new((char)9, 1);
         private static readonly string Emoji = char.ConvertFromUtf32(0x1F600);
 
-        private static readonly TemplateContext[] Contexts = Enum.GetValues<TemplateContext>();
+        private static readonly MergeTagContext[] Contexts = Enum.GetValues<MergeTagContext>();
 
         // The paths values come from; an unknown one now and then, and heads the grammar refuses.
         private static readonly string[] Paths =
@@ -218,35 +220,35 @@ public sealed class TemplateFuzzTests
             new((char)0xE9, 1), new((char)0xD800, 1), new((char)0, 1),
         ];
 
-        private static readonly MergeValue[] Texts =
+        private static readonly MergeTagValue[] Texts =
         [
             V("Anna"), V(string.Empty), V("  "), V("<b>" + Q("x") + "</b>"), V("O'Brien & Co"), V("a" + Cr + Lf + "b"), V("https://evil.test/?a=1&b=2"),
             V(new string((char)0xD800, 1)), V(Emoji + " " + (char)0x2028), V("{{ field.name }}"), V(new string('x', 3000)),
             V((char)0x130 + "stanbul " + (char)0x1F80), V("Stra" + (char)0xDF + "e"),
         ];
 
-        private static readonly MergeValue[] Numbers =
+        private static readonly MergeTagValue[] Numbers =
         [
             N("1,234.5", "1234.5"), N("-0.5", "-0.5"), N("x", "1e5"), N("12", new string('9', 40)), V("42"), V("-7.125"), V("abc"),
             V("0.000000000000000000005"), V("-0"),
         ];
 
-        private static readonly MergeValue[] Dates =
+        private static readonly MergeTagValue[] Dates =
         [
             D("15.06.2026", "2026-06-15"), D("x", "2026-02-30"), V("2026-06-15"), V("2026-06-15T08:05:09"), V("23:59:59"), V("2026-06-15T24:00"),
             V("yesterday"), V("0001-01-01"), V("9999-12-31T23:59:59"),
         ];
 
-        private static readonly MergeValue[] Lists =
+        private static readonly MergeTagValue[] Lists =
         [
-            L(), L(I("a"), I("b")), L(I("<i>"), I(Q("q")), I(string.Empty)), L(new MergeItem("1", Number: "1"), I("2")), L(I(string.Empty)),
-            L(new MergeItem("x", Date: "2026-01-01")),
+            L(), L(I("a"), I("b")), L(I("<i>"), I(Q("q")), I(string.Empty)), L(new MergeTagItem("1", Number: "1"), I("2")), L(I(string.Empty)),
+            L(new MergeTagItem("x", Date: "2026-01-01")),
         ];
 
         // Long enough that two or three of them pass the output's limit, one ending in a surrogate pair.
-        private static readonly MergeValue[] Longs = [V(new string('x', 34_000)), V(new string('y', 50_000)), V(new string('z', 69_998) + Emoji)];
+        private static readonly MergeTagValue[] Longs = [V(new string('x', 34_000)), V(new string('y', 50_000)), V(new string('z', 69_998) + Emoji)];
 
-        private static readonly Dictionary<string, MergeValue[]> Families = new(StringComparer.Ordinal)
+        private static readonly Dictionary<string, MergeTagValue[]> Families = new(StringComparer.Ordinal)
         {
             ["field.name"] = Texts,
             ["field.qty"] = Numbers,
@@ -260,24 +262,24 @@ public sealed class TemplateFuzzTests
             ["entry.number"] = Numbers,
         };
 
-        private static readonly MergeValue[][] AnyFamily = [Texts, Numbers, Dates, Lists];
+        private static readonly MergeTagValue[][] AnyFamily = [Texts, Numbers, Dates, Lists];
 
         private readonly Random _random = new(seed);
 
-        public (string Text, TemplateContext Context) Template()
+        public (string Text, MergeTagContext Context) Template()
         {
             var context = Pick(Contexts);
             var text = _random.Next(50) switch
             {
                 // As many tags as a template may have, a little fewer or more.
-                0 => string.Join(" ", Enumerable.Repeat("{{ field.name }}", MergeTags.MaxTags + _random.Next(-1, 3))),
+                0 => string.Join(" ", Enumerable.Repeat("{{ field.name }}", MergeTagEngine.MaxTags + _random.Next(-1, 3))),
 
                 // As many filters as a tag may have, a little fewer or more.
-                1 => "{{ field.name" + string.Concat(Enumerable.Repeat(" | upper", MergeTags.MaxFilters + _random.Next(-1, 3))) + " }}",
+                1 => "{{ field.name" + string.Concat(Enumerable.Repeat(" | upper", MergeTagEngine.MaxFilters + _random.Next(-1, 3))) + " }}",
 
                 // Output about as long as a template may give.
                 2 => _random.Next(2) == 0
-                    ? new string('a', MergeTags.MaxOutput - _random.Next(10)) + "{{ field.name }}"
+                    ? new string('a', MergeTagEngine.MaxOutput - _random.Next(10)) + "{{ field.name }}"
                     : string.Concat(Enumerable.Repeat("{{ field.long }}", _random.Next(2, 4))),
                 _ => Built(),
             };
@@ -293,9 +295,9 @@ public sealed class TemplateFuzzTests
         }
 
         /// <summary>A value for each path, or none now and then: mostly of the path's kind, sometimes of any.</summary>
-        public Dictionary<string, MergeValue> Values()
+        public Dictionary<string, MergeTagValue> Values()
         {
-            var values = new Dictionary<string, MergeValue>(StringComparer.Ordinal);
+            var values = new Dictionary<string, MergeTagValue>(StringComparer.Ordinal);
             foreach (var path in Paths)
             {
                 if (_random.Next(8) == 0)
@@ -314,15 +316,15 @@ public sealed class TemplateFuzzTests
 
         private static string Q(string inner) => Quote + inner + Quote;
 
-        private static MergeValue V(string text) => MergeValue.Of(text);
+        private static MergeTagValue V(string text) => MergeTagValue.Of(text);
 
-        private static MergeValue N(string text, string number) => MergeValue.Of(new MergeItem(text, Number: number));
+        private static MergeTagValue N(string text, string number) => MergeTagValue.Of(new MergeTagItem(text, Number: number));
 
-        private static MergeValue D(string text, string date) => MergeValue.Of(new MergeItem(text, Date: date));
+        private static MergeTagValue D(string text, string date) => MergeTagValue.Of(new MergeTagItem(text, Date: date));
 
-        private static MergeItem I(string text) => new(text);
+        private static MergeTagItem I(string text) => new(text);
 
-        private static MergeValue L(params MergeItem[] items) => MergeValue.ListOf(items);
+        private static MergeTagValue L(params MergeTagItem[] items) => MergeTagValue.ListOf(items);
 
         private string Built()
         {

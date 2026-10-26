@@ -1,6 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -10,8 +11,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Configuration;
 
 /// <summary>
 /// A real Umbraco site with host configuration (ADR-0042): the composers bind <c>JironFormBuilder</c> once, check it, the
-/// runtime, the field types and the locks of their settings when the site starts, and the definition reader takes the
-/// limits the site configured.
+/// runtime, the field types, the locks of their settings and the merge-tag names when the site starts, and the
+/// definition reader takes the limits the site configured.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
@@ -48,7 +49,7 @@ public sealed class HostOptionsBootTests : UmbracoIntegrationTest
         {
             Assert.That(options.LockedSections, Is.EqualTo(new[] { "privacy" }));
             Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderOptions>>>().Single(), Is.InstanceOf<FormBuilderOptionsValidator>());
-            Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderStartupChecks>>>().Select(check => check.GetType()), Is.EquivalentTo(new[] { typeof(GlobalizationStartupCheck), typeof(FieldTypeStartupCheck), typeof(FieldSettingLockStartupCheck) }));
+            Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderStartupChecks>>>().Select(check => check.GetType()), Is.EquivalentTo(new[] { typeof(GlobalizationStartupCheck), typeof(FieldTypeStartupCheck), typeof(FieldSettingLockStartupCheck), typeof(MergeTagStartupCheck) }));
             Assert.That(() => GetRequiredService<IStartupValidator>().Validate(), Throws.Nothing);
         });
     }

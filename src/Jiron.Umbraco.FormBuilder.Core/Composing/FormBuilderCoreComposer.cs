@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions.Upgrades;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
@@ -88,6 +89,10 @@ public sealed class FormBuilderCoreComposer : IComposer
 
         // The field types (ADR-0055): the collection with the built-in ones, its registry and the check of both at start.
         builder.AddFormBuilderFieldTypes();
+
+        // Merge tags (ADR-0065): the site's own sources and filters beside the built-in ones, the culture formats and the
+        // service, with the check of the site's names at start.
+        builder.AddFormBuilderMergeTags();
 
         // The form service (ADR-0044): create, save, publish and the other changes, with their notifications.
         builder.AddFormBuilderForms();

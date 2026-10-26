@@ -3,11 +3,12 @@
 - Status: accepted; amends [ADR-0014](0014-merge-tag-language.md) (the values tags give, the `json` context, where a
   tag may stand in each context, the problems and what each renders) and
   [ADR-0005](0005-shared-logic-and-test-vectors.md) (the `template` case, the cultures in a vector file's defaults, and
-  the case mappings in the tables check)
+  the case mappings in the tables check); the problems of a place and the form check's messages amended by
+  [ADR-0065](0065-the-merge-tag-service-and-its-sources.md) in 5.3c
 - Date: 2026-10-26
-- Roadmap step: 5.3b (decided and built); 5.3c adds the sources, answer recall and the culture formats from .NET, 6.x
-  renders texts, outcomes and redirects with it, 8.x mail and webhooks, 9.4 and 10.2 the picker and the form check's
-  messages
+- Roadmap step: 5.3b (decided and built); 5.3c to 5.3f add the sources, answer recall and the culture formats from
+  .NET (ADR-0065), 6.x renders texts, outcomes and redirects with it, 8.x mail and webhooks, 9.4 and 10.2 the picker
+  and the form check's messages
 
 ## Context
 
@@ -238,9 +239,9 @@ the formatter, not .NET's or a browser's culture data.
   a header or another host, only a doubly encoded text or a form-check error.
 - A tag inside an HTML attribute is refused, so a link to an entry in a mail body is the mail layout's job (8.x), not
   a merge tag's.
-- 5.3c gives each source's values as items (an answer's display text with its wire number or date), writes the
-  culture formats from .NET with the separators resolved, checks the paths each place may use, and turns each problem
-  code into a message for the form check.
+- 5.3c to 5.3f give each source's values as items (an answer's display text with its wire number or date), write the
+  culture formats from .NET with the separators resolved, and check the paths each place may use (ADR-0065). The form
+  check (10.x), not the service, turns each problem code into a message (amended in 5.3c).
 - ADR-0014 gains the `json` context, the value model and the placement rules; ADR-0005 gains the `template` case,
   `defaults.cultures` and the `upper` and `lower` tables (WORKLOG).
 - **Revisit** if editors need a tag inside an attribute (a URL attribute would need a scheme check of the value), or

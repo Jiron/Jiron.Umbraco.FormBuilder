@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Umbraco.Cms.Core.DependencyInjection;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Composing;
@@ -16,12 +17,18 @@ public sealed class FormBuilderComposition
 
     /// <summary>The field types, the built-in ones among them.</summary>
     public FormBuilderFieldTypeCollectionBuilder FieldTypes() => Builder.WithCollectionBuilder<FormBuilderFieldTypeCollectionBuilder>();
+
+    /// <summary>The site's own merge-tag sources, beside the built-in ones (ADR-0065).</summary>
+    public FormBuilderMergeTagSourceCollectionBuilder MergeTagSources() => Builder.WithCollectionBuilder<FormBuilderMergeTagSourceCollectionBuilder>();
+
+    /// <summary>The site's own merge-tag filters, beside the built-in ones (ADR-0065).</summary>
+    public FormBuilderMergeTagFilterCollectionBuilder MergeTagFilters() => Builder.WithCollectionBuilder<FormBuilderMergeTagFilterCollectionBuilder>();
 }
 
 /// <summary>The way into Jiron Form Builder's composition from a composer (section 4.9).</summary>
 public static class FormBuilderUmbracoBuilderExtensions
 {
-    /// <summary>Jiron Form Builder's composition: its field types, and later its other registries.</summary>
+    /// <summary>Jiron Form Builder's composition: its field types and its merge-tag sources and filters.</summary>
     public static FormBuilderComposition JironFormBuilder(this IUmbracoBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);

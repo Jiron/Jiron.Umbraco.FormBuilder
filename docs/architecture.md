@@ -70,6 +70,7 @@ database connection of its own. Its areas:
 | Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good, and the published form as the site runs it), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053, ADR-0060 |
 | Fields and options | the field type registry, the built-in types, option sources and lists, places on options | ADR-0002, §4.3.2 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030, ADR-0064 |
+| Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`form`, `entry`, `query`, `context` and `date` so far), a site's sources and filters with their start-up check, and the culture formats written from .NET's data | ADR-0014, ADR-0064, ADR-0065 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
 | Actions and email | action types, action runs, the email outbox, the worker | ADR-0007 |
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
@@ -448,7 +449,8 @@ hour, behind a loading token that keeps a read racing a save from caching the ol
 ## 8. Extension points
 
 All registered through `builder.JironFormBuilder()`, documented in `docs/extending.md` (15.1), with samples (15.2).
-Registries are collections, so a site can add, replace or remove entries.
+Registries are collections, so a site can add, replace or remove entries; merge tags keep their built-in sources and
+filters, beside which a site adds its own ([ADR-0065](decisions/0065-the-merge-tag-service-and-its-sources.md)).
 
 | Extension | For | Decided in |
 | --- | --- | --- |
@@ -458,7 +460,7 @@ Registries are collections, so a site can add, replace or remove entries.
 | `IFormBuilderExportFormat` | an export | §4.9 |
 | `IFormBuilderCaptchaProvider` | a captcha | ADR-0012 |
 | `IFormBuilderSpamCheck` | a spam signal with a score and a reason | ADR-0012 |
-| `IFormBuilderMergeTagSource`, `IFormBuilderMergeTagFilter` | merge-tag sources and filters | ADR-0014 |
+| `IFormBuilderMergeTagSource`, `IFormBuilderMergeTagFilter` | merge-tag sources and filters of a site's own, in the places their traits allow | ADR-0014, ADR-0065 |
 | `IFormBuilderFileScanner` | scanning and quarantine | ADR-0006 |
 | `IFormBuilderFileStore` | other file storage, asynchronous: all of a file or nothing, never replacing one | ADR-0006, ADR-0041 |
 | `IFormBuilderTheme` | a theme: stylesheet, class map, tokens, view folder | ADR-0015 |

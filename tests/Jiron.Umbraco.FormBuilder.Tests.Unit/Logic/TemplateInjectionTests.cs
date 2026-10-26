@@ -1,5 +1,6 @@
 using System.Text.Json;
-using Jiron.Umbraco.FormBuilder.Logic;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using MergeTagEngine = Jiron.Umbraco.FormBuilder.Logic.MergeTags;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 
@@ -19,7 +20,7 @@ public sealed class TemplateInjectionTests
     private static readonly string Tab = new((char)9, 1);
 
     /// <summary>Values meant to break out of their place: markup, quotes, addresses, line breaks, JSON, odd code units and tags.</summary>
-    private static readonly MergeValue[] Hostile =
+    private static readonly MergeTagValue[] Hostile =
     [
         V("<script>alert(1)</script>"),
         V(Quote + "><img src=x onerror=alert(1)>"),
@@ -51,11 +52,11 @@ public sealed class TemplateInjectionTests
         V("{{ field.secret }}"),
         V("}}{{"),
         V(string.Empty),
-        MergeValue.ListOf([]),
-        MergeValue.ListOf([new MergeItem("a" + Quote + "b"), new MergeItem("<c>"), new MergeItem("d" + Cr + Lf + "e")]),
-        MergeValue.ListOf([new MergeItem("1</p>", Number: "12"), new MergeItem("<x>", Number: "1e5")]),
-        MergeValue.Of(new MergeItem("<b>", Date: "2026-01-01")),
-        MergeValue.Of(new MergeItem(Quote, Number: "-0.5")),
+        MergeTagValue.ListOf([]),
+        MergeTagValue.ListOf([new MergeTagItem("a" + Quote + "b"), new MergeTagItem("<c>"), new MergeTagItem("d" + Cr + Lf + "e")]),
+        MergeTagValue.ListOf([new MergeTagItem("1</p>", Number: "12"), new MergeTagItem("<x>", Number: "1e5")]),
+        MergeTagValue.Of(new MergeTagItem("<b>", Date: "2026-01-01")),
+        MergeTagValue.Of(new MergeTagItem(Quote, Number: "-0.5")),
     ];
 
     /// <summary>Every filter, alone and in the chains an editor might write, with arguments that are hostile too.</summary>
@@ -88,101 +89,101 @@ public sealed class TemplateInjectionTests
     /// <summary>Where a tag may stand, in every context whose output has a structure.</summary>
     private static readonly Place[] Allowed =
     [
-        Between(TemplateContext.Html, "<p>", "</p>", IsHtmlText),
-        Between(TemplateContext.Html, "<div class=" + Q("a") + ">Hi ", "!</div>", IsHtmlText),
-        Between(TemplateContext.Html, "<script>x</script>", string.Empty, IsHtmlText),
-        Between(TemplateContext.Html, "<!-- c -->", "<br>", IsHtmlText),
-        Between(TemplateContext.Html, string.Empty, string.Empty, IsHtmlText),
-        Between(TemplateContext.Html, "<a" + Quote + "b>", string.Empty, IsHtmlText),
-        Between(TemplateContext.Html, "<p a=x" + Quote + "y>", "</p>", IsHtmlText),
-        Between(TemplateContext.Html, "<p a=" + Q("x>y") + ">", "</p>", IsHtmlText),
-        Between(TemplateContext.Html, "<script" + Quote + "x>", string.Empty, IsHtmlText),
-        Between(TemplateContext.Html, "<!-->", string.Empty, IsHtmlText),
-        Between(TemplateContext.Html, "<!-- a --!>", string.Empty, IsHtmlText),
-        Between(TemplateContext.Html, "</ a=" + Quote + "b>", string.Empty, IsHtmlText),
-        Between(TemplateContext.Html, "<svg><title>Logo</title></svg>", string.Empty, IsHtmlText),
-        Between(TemplateContext.Html, "<noscript>x</noscript>", string.Empty, IsHtmlText),
-        Between(TemplateContext.Html, "<script></script<</script>", string.Empty, IsHtmlText),
-        Between(TemplateContext.Xml, "<a>", "</a>", IsXmlText),
-        Between(TemplateContext.Xml, "<![CDATA[x]]>", string.Empty, IsXmlText),
-        Between(TemplateContext.Xml, "<!DOCTYPE a SYSTEM " + Q("b>c") + ">", string.Empty, IsXmlText),
-        Between(TemplateContext.Header, "Re: ", string.Empty, IsHeaderLine),
-        Between(TemplateContext.Header, string.Empty, " (form)", IsHeaderLine),
-        Between(TemplateContext.Url, "https://example.test/a?q=", "&x=1", IsUrlComponent),
-        Between(TemplateContext.Url, "/path/", string.Empty, IsUrlComponent),
-        Between(TemplateContext.Url, "?q=", string.Empty, IsUrlComponent),
-        Between(TemplateContext.Url, "#", string.Empty, IsUrlComponent),
-        Between(TemplateContext.Url, "https://example.test/", "/", IsUrlComponent),
-        Between(TemplateContext.Form, "a=1&b=", string.Empty, IsFormValue),
-        Between(TemplateContext.JsonString, "Hello ", "!", IsJsonStringContent),
-        Around(TemplateContext.Json, "{" + Q("a") + ": " + Quote, Quote + "}", IsJsonObject(["a"], inString: true)),
-        Around(TemplateContext.Json, "{" + Q("b") + ": ", "}", IsJsonObject(["b"], inString: false)),
-        Around(TemplateContext.Json, "{" + Q("a") + ": " + Q("x" + Bs + Quote + "y") + ", " + Q("b") + ": ", "}", IsJsonObject(["a", "b"], inString: false)),
-        Around(TemplateContext.Json, "{" + Q("a") + ": " + Q("x") + ", " + Q("b") + ": " + Quote, Bs + "n" + Quote + "}", IsJsonObject(["a", "b"], inString: true)),
+        Between(MergeTagContext.Html, "<p>", "</p>", IsHtmlText),
+        Between(MergeTagContext.Html, "<div class=" + Q("a") + ">Hi ", "!</div>", IsHtmlText),
+        Between(MergeTagContext.Html, "<script>x</script>", string.Empty, IsHtmlText),
+        Between(MergeTagContext.Html, "<!-- c -->", "<br>", IsHtmlText),
+        Between(MergeTagContext.Html, string.Empty, string.Empty, IsHtmlText),
+        Between(MergeTagContext.Html, "<a" + Quote + "b>", string.Empty, IsHtmlText),
+        Between(MergeTagContext.Html, "<p a=x" + Quote + "y>", "</p>", IsHtmlText),
+        Between(MergeTagContext.Html, "<p a=" + Q("x>y") + ">", "</p>", IsHtmlText),
+        Between(MergeTagContext.Html, "<script" + Quote + "x>", string.Empty, IsHtmlText),
+        Between(MergeTagContext.Html, "<!-->", string.Empty, IsHtmlText),
+        Between(MergeTagContext.Html, "<!-- a --!>", string.Empty, IsHtmlText),
+        Between(MergeTagContext.Html, "</ a=" + Quote + "b>", string.Empty, IsHtmlText),
+        Between(MergeTagContext.Html, "<svg><title>Logo</title></svg>", string.Empty, IsHtmlText),
+        Between(MergeTagContext.Html, "<noscript>x</noscript>", string.Empty, IsHtmlText),
+        Between(MergeTagContext.Html, "<script></script<</script>", string.Empty, IsHtmlText),
+        Between(MergeTagContext.Xml, "<a>", "</a>", IsXmlText),
+        Between(MergeTagContext.Xml, "<![CDATA[x]]>", string.Empty, IsXmlText),
+        Between(MergeTagContext.Xml, "<!DOCTYPE a SYSTEM " + Q("b>c") + ">", string.Empty, IsXmlText),
+        Between(MergeTagContext.Header, "Re: ", string.Empty, IsHeaderLine),
+        Between(MergeTagContext.Header, string.Empty, " (form)", IsHeaderLine),
+        Between(MergeTagContext.Url, "https://example.test/a?q=", "&x=1", IsUrlComponent),
+        Between(MergeTagContext.Url, "/path/", string.Empty, IsUrlComponent),
+        Between(MergeTagContext.Url, "?q=", string.Empty, IsUrlComponent),
+        Between(MergeTagContext.Url, "#", string.Empty, IsUrlComponent),
+        Between(MergeTagContext.Url, "https://example.test/", "/", IsUrlComponent),
+        Between(MergeTagContext.Form, "a=1&b=", string.Empty, IsFormValue),
+        Between(MergeTagContext.JsonString, "Hello ", "!", IsJsonStringContent),
+        Around(MergeTagContext.Json, "{" + Q("a") + ": " + Quote, Quote + "}", IsJsonObject(["a"], inString: true)),
+        Around(MergeTagContext.Json, "{" + Q("b") + ": ", "}", IsJsonObject(["b"], inString: false)),
+        Around(MergeTagContext.Json, "{" + Q("a") + ": " + Q("x" + Bs + Quote + "y") + ", " + Q("b") + ": ", "}", IsJsonObject(["a", "b"], inString: false)),
+        Around(MergeTagContext.Json, "{" + Q("a") + ": " + Q("x") + ", " + Q("b") + ": " + Quote, Bs + "n" + Quote + "}", IsJsonObject(["a", "b"], inString: true)),
     ];
 
     /// <summary>Where a tag may not stand: in markup, before an address's path, and after a backslash in a JSON string.</summary>
-    private static readonly (TemplateContext Context, string Before, string After, string Code)[] Refused =
+    private static readonly (MergeTagContext Context, string Before, string After, string Code)[] Refused =
     [
-        (TemplateContext.Html, "<a href=" + Quote, Quote + ">x</a>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<a href=", ">x</a>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<img ", ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<p", ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "</", ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<", string.Empty, TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<p title='", "'>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<script>", "</script>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<script>if (a</b) ", "</script>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<STYLE>", "</style>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<textarea>", "</textarea>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<title>", "</title>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<!-- ", " -->", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<!DOCTYPE ", ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<?php ", " ?>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<plaintext></plaintext>", string.Empty, TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<a x" + Quote + " onclick=" + Quote + "if(a>b)", Quote + ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<a b" + Quote + "c=" + Quote + "d>", Quote + " f>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<p a='x>", "'>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<a title = " + Quote + "x>", Quote + ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<script/>", "</script>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "{{ field.v | truncate: " + Q("<script>") + " }}", string.Empty, TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<p>{{ field.v | upper | html | x: 1 }}<style>", string.Empty, TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<!--><a onclick=" + Quote + "-->", Quote + ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<!-- --!><a onclick=" + Quote + "-->", Quote + ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "</ a=" + Quote + "x><a onclick=" + Quote + "//>", Quote + ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<script><!--<script></script>", string.Empty, TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<svg><style><a onclick=" + Quote + "</style>", Quote + ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<svg><foreignObject><script></svg>", string.Empty, TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<svg><![CDATA[ <a b=" + Quote + " ]]><a onclick=" + Quote + "//>", Quote + ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<noscript><a href=" + Quote + "</noscript>", Quote + ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Html, "<select><style><option onclick=" + Quote + "</style>", Quote + ">", TemplateProblems.TagInMarkup),
-        (TemplateContext.Xml, "<a b=" + Quote, Quote + "/>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Xml, "<", "/>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Xml, "<![CDATA[", "]]>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Xml, "<?pi ", "?>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Xml, "<!-- ", " -->", TemplateProblems.TagInMarkup),
-        (TemplateContext.Xml, "<_a b=" + Quote, Quote + "/>", TemplateProblems.TagInMarkup),
-        (TemplateContext.Xml, "<!DOCTYPE a [<!ENTITY b " + Q("c") + ">]>", string.Empty, TemplateProblems.TagInMarkup),
-        (TemplateContext.Xml, "<!-->", "-->", TemplateProblems.TagInMarkup),
-        (TemplateContext.Url, string.Empty, string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, " ", string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "https://", string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "https://", "/x", TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "https://user@", "/", TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "http", string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "java", ":alert(1)", TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "javascript:", string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "javascript:/", string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "mailto:", string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "data:", string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "//", string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, Bs + Bs, string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "HTTPS://", string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "https:" + Tab + "//", string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Url, "https:" + Lf + "//", string.Empty, TemplateProblems.TagBeforePath),
-        (TemplateContext.Json, "{" + Q("a") + ": " + Quote + Bs, Quote + "}", TemplateProblems.TagInEscape),
-        (TemplateContext.Json, "[" + Quote + Bs, Quote + "]", TemplateProblems.TagInEscape),
-        (TemplateContext.JsonString, "x" + Bs, string.Empty, TemplateProblems.TagInEscape),
+        (MergeTagContext.Html, "<a href=" + Quote, Quote + ">x</a>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<a href=", ">x</a>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<img ", ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<p", ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "</", ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<", string.Empty, MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<p title='", "'>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<script>", "</script>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<script>if (a</b) ", "</script>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<STYLE>", "</style>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<textarea>", "</textarea>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<title>", "</title>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<!-- ", " -->", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<!DOCTYPE ", ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<?php ", " ?>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<plaintext></plaintext>", string.Empty, MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<a x" + Quote + " onclick=" + Quote + "if(a>b)", Quote + ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<a b" + Quote + "c=" + Quote + "d>", Quote + " f>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<p a='x>", "'>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<a title = " + Quote + "x>", Quote + ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<script/>", "</script>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "{{ field.v | truncate: " + Q("<script>") + " }}", string.Empty, MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<p>{{ field.v | upper | html | x: 1 }}<style>", string.Empty, MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<!--><a onclick=" + Quote + "-->", Quote + ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<!-- --!><a onclick=" + Quote + "-->", Quote + ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "</ a=" + Quote + "x><a onclick=" + Quote + "//>", Quote + ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<script><!--<script></script>", string.Empty, MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<svg><style><a onclick=" + Quote + "</style>", Quote + ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<svg><foreignObject><script></svg>", string.Empty, MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<svg><![CDATA[ <a b=" + Quote + " ]]><a onclick=" + Quote + "//>", Quote + ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<noscript><a href=" + Quote + "</noscript>", Quote + ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Html, "<select><style><option onclick=" + Quote + "</style>", Quote + ">", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Xml, "<a b=" + Quote, Quote + "/>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Xml, "<", "/>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Xml, "<![CDATA[", "]]>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Xml, "<?pi ", "?>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Xml, "<!-- ", " -->", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Xml, "<_a b=" + Quote, Quote + "/>", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Xml, "<!DOCTYPE a [<!ENTITY b " + Q("c") + ">]>", string.Empty, MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Xml, "<!-->", "-->", MergeTagProblems.TagInMarkup),
+        (MergeTagContext.Url, string.Empty, string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, " ", string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "https://", string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "https://", "/x", MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "https://user@", "/", MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "http", string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "java", ":alert(1)", MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "javascript:", string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "javascript:/", string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "mailto:", string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "data:", string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "//", string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, Bs + Bs, string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "HTTPS://", string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "https:" + Tab + "//", string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Url, "https:" + Lf + "//", string.Empty, MergeTagProblems.TagBeforePath),
+        (MergeTagContext.Json, "{" + Q("a") + ": " + Quote + Bs, Quote + "}", MergeTagProblems.TagInEscape),
+        (MergeTagContext.Json, "[" + Quote + Bs, Quote + "]", MergeTagProblems.TagInEscape),
+        (MergeTagContext.JsonString, "x" + Bs, string.Empty, MergeTagProblems.TagInEscape),
     ];
 
     [Test]
@@ -198,14 +199,14 @@ public sealed class TemplateInjectionTests
                 foreach (var chain in Chains)
                 {
                     var text = place.Template("{{ field.v" + chain + " }}");
-                    var parsed = MergeTags.Parse(text, place.Context);
+                    var parsed = MergeTagEngine.Parse(text, place.Context);
                     foreach (var value in Hostile)
                     {
-                        var rendered = MergeTags.Render(parsed, Sources(value), culture);
+                        var rendered = MergeTagEngine.Render(parsed, Sources(value), culture);
                         renders++;
 
                         // A tag with an error renders as it is written, which is the editor's own text.
-                        var asWritten = rendered.Problems.Any(problem => !TemplateProblems.IsWarning(problem.Code));
+                        var asWritten = rendered.Problems.Any(problem => !MergeTagProblems.IsWarning(problem.Code));
                         var safe = asWritten ? rendered.Text == text : place.Safe(rendered.Text);
                         if (!asWritten)
                         {
@@ -239,12 +240,12 @@ public sealed class TemplateInjectionTests
             foreach (var chain in new[] { string.Empty, " | url", " | json", " | html" })
             {
                 var text = before + "{{ field.v" + chain + " }}" + after;
-                var parsed = MergeTags.Parse(text, context);
+                var parsed = MergeTagEngine.Parse(text, context);
                 foreach (var value in Hostile)
                 {
                     foreach (var culture in Fuzzing.TemplateCultures)
                     {
-                        var rendered = MergeTags.Render(parsed, Sources(value), culture);
+                        var rendered = MergeTagEngine.Render(parsed, Sources(value), culture);
                         if (rendered.Text != text || !rendered.Problems.Any(problem => problem.Code == code))
                         {
                             failures.Add($"{context}: {Fuzzing.Show(text)} with {Fuzzing.Show(Describe(value))} gave {Fuzzing.Show(rendered.Text)}");
@@ -267,22 +268,22 @@ public sealed class TemplateInjectionTests
         var lone = "a" + (char)0xD800 + "b" + (char)0xDC00;
         var r = new string((char)0xFFFD, 1);
         const string Bytes = "%EF%BF%BD";
-        (TemplateContext Context, string Template, string Expected)[] cases =
+        (MergeTagContext Context, string Template, string Expected)[] cases =
         [
-            (TemplateContext.Xml, "{{ field.v }}", "a" + r + "b" + r),
-            (TemplateContext.Url, "/a/{{ field.v }}", "/a/a" + Bytes + "b" + Bytes),
-            (TemplateContext.Form, "{{ field.v }}", "a" + Bytes + "b" + Bytes),
-            (TemplateContext.JsonString, "{{ field.v }}", "a" + r + "b" + r),
-            (TemplateContext.Json, "{{ field.v }}", Q("a" + r + "b" + r)),
-            (TemplateContext.Text, "{{ field.v | url }}", "a" + Bytes + "b" + Bytes),
-            (TemplateContext.Text, "{{ field.v | json }}", Q("a" + r + "b" + r)),
+            (MergeTagContext.Xml, "{{ field.v }}", "a" + r + "b" + r),
+            (MergeTagContext.Url, "/a/{{ field.v }}", "/a/a" + Bytes + "b" + Bytes),
+            (MergeTagContext.Form, "{{ field.v }}", "a" + Bytes + "b" + Bytes),
+            (MergeTagContext.JsonString, "{{ field.v }}", "a" + r + "b" + r),
+            (MergeTagContext.Json, "{{ field.v }}", Q("a" + r + "b" + r)),
+            (MergeTagContext.Text, "{{ field.v | url }}", "a" + Bytes + "b" + Bytes),
+            (MergeTagContext.Text, "{{ field.v | json }}", Q("a" + r + "b" + r)),
         ];
         var culture = Fuzzing.TemplateCultures[0];
         Assert.Multiple(() =>
         {
             foreach (var (context, template, expected) in cases)
             {
-                var rendered = MergeTags.Render(MergeTags.Parse(template, context), Sources(V(lone)), culture);
+                var rendered = MergeTagEngine.Render(MergeTagEngine.Parse(template, context), Sources(V(lone)), culture);
                 Assert.That(rendered.Text, Is.EqualTo(expected), $"{context}: {template}");
             }
         });
@@ -290,21 +291,21 @@ public sealed class TemplateInjectionTests
 
     private static string Q(string inner) => Quote + inner + Quote;
 
-    private static MergeValue V(string text) => MergeValue.Of(text);
+    private static MergeTagValue V(string text) => MergeTagValue.Of(text);
 
-    private static Func<string, MergeValue?> Sources(MergeValue value) =>
+    private static Func<string, MergeTagValue?> Sources(MergeTagValue value) =>
         path => path switch
         {
             "field.v" => value,
-            "field.secret" => MergeValue.Of(Secret),
+            "field.secret" => MergeTagValue.Of(Secret),
             _ => null,
         };
 
-    private static string Describe(MergeValue value) =>
+    private static string Describe(MergeTagValue value) =>
         (value.IsList ? "list " : string.Empty) + string.Join(" | ", value.Items.Select(item => $"{item.Text} ({item.Number}, {item.Date})"));
 
     /// <summary>One tag between two texts, whose piece of the output must pass the check.</summary>
-    private static Place Between(TemplateContext context, string before, string after, Func<string, bool> check) => new(
+    private static Place Between(MergeTagContext context, string before, string after, Func<string, bool> check) => new(
         context,
         tag => before + tag + after,
         output => output.Length >= before.Length + after.Length
@@ -313,7 +314,7 @@ public sealed class TemplateInjectionTests
             && check(output[before.Length..^after.Length]));
 
     /// <summary>One tag between two texts, whose whole output must pass the check.</summary>
-    private static Place Around(TemplateContext context, string before, string after, Func<string, bool> check) =>
+    private static Place Around(MergeTagContext context, string before, string after, Func<string, bool> check) =>
         new(context, tag => before + tag + after, check);
 
     private static bool IsControl(char unit) => unit < 0x20 || unit is >= (char)0x7F and <= (char)0x9F;
@@ -443,5 +444,5 @@ public sealed class TemplateInjectionTests
         }
     };
 
-    private sealed record Place(TemplateContext Context, Func<string, string> Template, Func<string, bool> Safe);
+    private sealed record Place(MergeTagContext Context, Func<string, string> Template, Func<string, bool> Safe);
 }

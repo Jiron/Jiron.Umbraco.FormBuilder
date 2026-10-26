@@ -1,0 +1,195 @@
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Logic;
+using Microsoft.Extensions.Logging;
+using MergeTagEngine = Jiron.Umbraco.FormBuilder.Logic.MergeTags;
+
+namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
+
+/// <summary>
+/// The merge-tag service (ADR-0065): parses a template with what its place adds, asks each source once per path, and
+/// renders with the culture's formats. A site's source or filter that fails gives the empty text, and only the type and
+/// the stack of its exception are logged, since the message may hold a visitor's answer (D13).
+/// </summary>
+/// <param name="registry">The sources and filters.</param>
+/// <param name="cultures">The culture formats.</param>
+/// <param name="logger">Where failures of a site's sources and filters go.</param>
+internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry registry, MergeTagCultures cultures, ILogger<FormBuilderMergeTagService> logger)
+    : IFormBuilderMergeTagService
+{
+    /// <inheritdoc />
+    public async Task<MergeTagRendering> RenderAsync(string text, MergeTagPlace place, MergeTagContext context, MergeTagScope scope, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(scope);
+        var parsed = MergeTagEngine.Parse(text, context, Rules(place, context, scope.Culture));
+        var values = new Dictionary<string, MergeTagValue?>(StringComparer.Ordinal);
+        foreach (var part in parsed.Parts)
+        {
+            if (part is TagPart { Path: { } path } && !values.ContainsKey(path))
+            {
+                values[path] = await ResolveAsync(path, scope, place, context, cancellationToken);
+            }
+        }
+
+        var rendered = MergeTagEngine.Render(parsed, path => values.GetValueOrDefault(path), cultures.For(scope.Culture));
+        return new MergeTagRendering(rendered.Text, rendered.Problems);
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<MergeTagProblem> Check(string text, MergeTagPlace place, MergeTagContext context, FormDefinition form)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(form);
+        var parsed = MergeTagEngine.Parse(text, context, Rules(place, context, string.Empty));
+        var problems = new List<MergeTagProblem>(parsed.Problems);
+        foreach (var part in parsed.Parts)
+        {
+            if (part is TagPart { Path: { } path } tag && !IsKnown(path, form))
+            {
+                problems.Add(new MergeTagProblem(MergeTagProblems.UnknownPath, tag.PathAt));
+            }
+        }
+
+        return [.. problems.OrderBy(problem => problem.At)];
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<MergeTagPathInfo> Paths(MergeTagPlace place, FormDefinition form)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+        var rules = MergeTagPlaces.For(place);
+        var paths = new List<MergeTagPathInfo>();
+        foreach (var source in registry.Ordered)
+        {
+            if (!Takes(rules, place, source))
+            {
+                continue;
+            }
+
+            try
+            {
+                paths.AddRange(source.Paths(form));
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                LogSourceFailed(logger, source.Name, exception.GetType().FullName, exception.StackTrace);
+            }
+        }
+
+        return paths;
+    }
+
+    /// <summary>What the place adds to the language: the site's filters, whether it takes them, and the sources it takes.</summary>
+    private TemplateRules Rules(MergeTagPlace place, MergeTagContext context, string culture)
+    {
+        var rules = MergeTagPlaces.For(place);
+        if (!rules.Contexts.Contains(context))
+        {
+            throw new ArgumentException($"A merge-tag template in the place {place} does not render in the {context} context.", nameof(context));
+        }
+
+        return new TemplateRules(
+            name => registry.Filters.TryGetValue(name, out var filter) ? Run(filter, culture) : null,
+            rules.TakesSiteFilters,
+            path => PathProblem(path, rules, place));
+    }
+
+    /// <summary>
+    /// The problem a path has in a place: a built-in source the place's list lacks, or a site's source whose traits the
+    /// place does not take. A source no one has is a warning when the tag renders, not a problem of the place.
+    /// </summary>
+    private string? PathProblem(string path, PlaceRules rules, MergeTagPlace place)
+    {
+        var name = SourceName(path);
+        if (MergeTagPlaces.BuiltInSources.ContainsKey(name))
+        {
+            return rules.Sources is null || rules.Sources.Contains(name) ? null : MergeTagProblems.SourceNotForPlace;
+        }
+
+        return registry.Sources.TryGetValue(name, out var source) && !MergeTagPlaces.TakesSiteSource(rules, place, source) ? MergeTagProblems.SourceNotForPlace : null;
+    }
+
+    /// <summary>Whether a place takes a source: a built-in one by the place's list, a site's by its traits.</summary>
+    private static bool Takes(PlaceRules rules, MergeTagPlace place, IFormBuilderMergeTagSource source) =>
+        MergeTagPlaces.BuiltInSources.ContainsKey(source.Name)
+            ? rules.Sources is null || rules.Sources.Contains(source.Name)
+            : MergeTagPlaces.TakesSiteSource(rules, place, source);
+
+    /// <summary>Whether a path is known before any value: any path of a source whose paths are not all listed, and a listed one of the others.</summary>
+    private bool IsKnown(string path, FormDefinition form)
+    {
+        if (!registry.Sources.TryGetValue(SourceName(path), out var source))
+        {
+            return false;
+        }
+
+        return source is not IFiniteMergeTagSource || source.Paths(form).Any(known => known.Path == path);
+    }
+
+    /// <summary>A path's value from its source, null when no source knows it; a failing source gives the empty text.</summary>
+    private async Task<MergeTagValue?> ResolveAsync(string path, MergeTagScope scope, MergeTagPlace place, MergeTagContext context, CancellationToken cancellationToken)
+    {
+        var name = SourceName(path);
+        if (!registry.Sources.TryGetValue(name, out var source))
+        {
+            return null;
+        }
+
+        try
+        {
+            var rest = path.Length > name.Length ? path[(name.Length + 1)..] : string.Empty;
+            return await source.ResolveAsync(new MergeTagSourceRequest(rest, scope, place, context), cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            LogSourceFailed(logger, name, exception.GetType().FullName, exception.StackTrace);
+            return MergeTagValue.Empty;
+        }
+    }
+
+    /// <summary>A site's filter as the engine runs it: arguments that fail to be checked do not fit, and a failing filter gives the empty text.</summary>
+    private SiteFilter Run(IFormBuilderMergeTagFilter filter, string culture) => new(
+        arguments =>
+        {
+            try
+            {
+                return filter.Accepts([.. arguments.Select(Argument)]);
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                LogFilterFailed(logger, filter.Name, exception.GetType().FullName, exception.StackTrace);
+                return false;
+            }
+        },
+        (value, arguments) =>
+        {
+            try
+            {
+                return filter.Apply(new MergeTagFilterRequest(value, [.. arguments.Select(Argument)], culture)) ?? MergeTagValue.Empty;
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                LogFilterFailed(logger, filter.Name, exception.GetType().FullName, exception.StackTrace);
+                return MergeTagValue.Empty;
+            }
+        });
+
+    private static MergeTagArgument Argument(TemplateArgument argument) => new(argument.Text, argument.IsString);
+
+    /// <summary>The source's name: the path up to its first dot.</summary>
+    private static string SourceName(string path)
+    {
+        var dot = path.IndexOf('.', StringComparison.Ordinal);
+        return dot < 0 ? path : path[..dot];
+    }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "The merge-tag source '{Source}' failed with {ExceptionType}; its tags render empty. {StackTrace}")]
+    private static partial void LogSourceFailed(ILogger logger, string source, string? exceptionType, string? stackTrace);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "The merge-tag filter '{Filter}' failed with {ExceptionType}; its tags render empty or as they are written. {StackTrace}")]
+    private static partial void LogFilterFailed(ILogger logger, string filter, string? exceptionType, string? stackTrace);
+}

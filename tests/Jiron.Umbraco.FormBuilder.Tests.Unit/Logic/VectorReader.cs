@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
@@ -25,16 +26,16 @@ internal static class VectorReader
         ["dateTime"] = FieldKind.DateTime,
     };
 
-    private static readonly Dictionary<string, TemplateContext> TemplateContexts = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, MergeTagContext> TemplateContexts = new(StringComparer.Ordinal)
     {
-        ["html"] = TemplateContext.Html,
-        ["text"] = TemplateContext.Text,
-        ["header"] = TemplateContext.Header,
-        ["url"] = TemplateContext.Url,
-        ["json"] = TemplateContext.Json,
-        ["jsonString"] = TemplateContext.JsonString,
-        ["form"] = TemplateContext.Form,
-        ["xml"] = TemplateContext.Xml,
+        ["html"] = MergeTagContext.Html,
+        ["text"] = MergeTagContext.Text,
+        ["header"] = MergeTagContext.Header,
+        ["url"] = MergeTagContext.Url,
+        ["json"] = MergeTagContext.Json,
+        ["jsonString"] = MergeTagContext.JsonString,
+        ["form"] = MergeTagContext.Form,
+        ["xml"] = MergeTagContext.Xml,
     };
 
     public static Dictionary<string, FieldKind> Fields(JsonElement element) =>
@@ -140,16 +141,16 @@ internal static class VectorReader
     }
 
     /// <summary>A template's context by its name in the vectors.</summary>
-    public static TemplateContext TemplateContextOf(JsonElement element) =>
+    public static MergeTagContext TemplateContextOf(JsonElement element) =>
         TemplateContexts.TryGetValue(element.GetString() ?? string.Empty, out var context)
             ? context
             : throw new FormatException($"Unknown template context {element}.");
 
     /// <summary>A source's value: a string, an object with its text and the wire number or date behind it, or a list of these.</summary>
-    public static MergeValue ValueOf(JsonElement element) =>
+    public static MergeTagValue ValueOf(JsonElement element) =>
         element.ValueKind == JsonValueKind.Array
-            ? MergeValue.ListOf([.. element.EnumerateArray().Select(ItemOf)])
-            : MergeValue.Of(ItemOf(element));
+            ? MergeTagValue.ListOf([.. element.EnumerateArray().Select(ItemOf)])
+            : MergeTagValue.Of(ItemOf(element));
 
     /// <summary>A culture's formats as the server writes them (ADR-0064).</summary>
     public static CultureFormats Formats(JsonElement element)
@@ -181,10 +182,10 @@ internal static class VectorReader
                 Text(currency, "negative")));
     }
 
-    private static MergeItem ItemOf(JsonElement element) =>
+    private static MergeTagItem ItemOf(JsonElement element) =>
         element.ValueKind == JsonValueKind.String
-            ? new MergeItem(element.GetString()!)
-            : new MergeItem(element.GetProperty("text").GetString()!, OptionalString(element, "number"), OptionalString(element, "date"));
+            ? new MergeTagItem(element.GetString()!)
+            : new MergeTagItem(element.GetProperty("text").GetString()!, OptionalString(element, "number"), OptionalString(element, "date"));
 
     private static LogicField Field(JsonElement element) => new(
         Id(element),

@@ -1,34 +1,7 @@
 using System.Text;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 
 namespace Jiron.Umbraco.FormBuilder.Logic;
-
-/// <summary>The places a template renders in, each with its own encoder (ADR-0014, ADR-0064).</summary>
-internal enum TemplateContext
-{
-    /// <summary>HTML: values escaped, tags only in text content.</summary>
-    Html,
-
-    /// <summary>Plain text: values as they are.</summary>
-    Text,
-
-    /// <summary>A header's value: line breaks and controls as spaces, trimmed.</summary>
-    Header,
-
-    /// <summary>An address: values percent-encoded, tags only after the path starts.</summary>
-    Url,
-
-    /// <summary>A JSON document: string content inside a string literal, a complete JSON value outside one.</summary>
-    Json,
-
-    /// <summary>The content of one JSON string.</summary>
-    JsonString,
-
-    /// <summary>A form body: values form-encoded.</summary>
-    Form,
-
-    /// <summary>XML: values escaped, tags only in text content.</summary>
-    Xml,
-}
 
 /// <summary>How a tag's value is written where it stands: with a context's encoder, or as a complete JSON value.</summary>
 internal enum TemplateWriter
@@ -43,79 +16,27 @@ internal enum TemplateWriter
     JsonValue,
 }
 
-/// <summary>A value's item: text, or text with the wire number or the wire date behind it (ADR-0064).</summary>
-internal sealed record MergeItem(string Text, string? Number = null, string? Date = null);
-
-/// <summary>What a source gives for a path: one item or a list of them.</summary>
-internal sealed record MergeValue(IReadOnlyList<MergeItem> Items, bool IsList)
-{
-    /// <summary>One item of text.</summary>
-    public static MergeValue Of(string text) => new([new MergeItem(text)], false);
-
-    /// <summary>One item.</summary>
-    public static MergeValue Of(MergeItem item) => new([item], false);
-
-    /// <summary>A list.</summary>
-    public static MergeValue ListOf(IReadOnlyList<MergeItem> items) => new(items, true);
-}
-
-/// <summary>A problem of a template and the UTF-16 index where it starts (ADR-0064).</summary>
-internal readonly record struct TemplateProblem(string Code, int At);
-
-/// <summary>The problems of a template, the same in TypeScript; the warnings are those after which a tag renders empty.</summary>
-internal static class TemplateProblems
-{
-    /// <summary>The tag does not follow the grammar.</summary>
-    public const string MalformedTag = "malformed_tag";
-
-    /// <summary>No <c>}}</c> follows a <c>{{</c>.</summary>
-    public const string UnclosedTag = "unclosed_tag";
-
-    /// <summary>In HTML or XML, the tag is not in text content.</summary>
-    public const string TagInMarkup = "tag_in_markup";
-
-    /// <summary>In JSON, the tag follows a backslash inside a string literal.</summary>
-    public const string TagInEscape = "tag_in_escape";
-
-    /// <summary>In an address, the tag comes before the path.</summary>
-    public const string TagBeforePath = "tag_before_path";
-
-    /// <summary>A filter's arguments do not fit it.</summary>
-    public const string InvalidArgument = "invalid_argument";
-
-    /// <summary><c>html</c> outside the HTML context, or <c>json</c> inside a JSON string.</summary>
-    public const string FilterNotForContext = "filter_not_for_context";
-
-    /// <summary>A filter follows <c>html</c>, <c>url</c> or <c>json</c>.</summary>
-    public const string FilterAfterEncoding = "filter_after_encoding";
-
-    /// <summary>More than <see cref="MergeTags.MaxTags"/> tags.</summary>
-    public const string TooManyTags = "too_many_tags";
-
-    /// <summary>A tag with more than <see cref="MergeTags.MaxFilters"/> filters.</summary>
-    public const string TooManyFilters = "too_many_filters";
-
-    /// <summary>The output would pass <see cref="MergeTags.MaxOutput"/> code units.</summary>
-    public const string TooLong = "too_long";
-
-    /// <summary>No source knows the path (a warning).</summary>
-    public const string UnknownPath = "unknown_path";
-
-    /// <summary>No filter has the name (a warning).</summary>
-    public const string UnknownFilter = "unknown_filter";
-
-    /// <summary>Whether a tag with this problem renders empty, rather than as it is written.</summary>
-    public static bool IsWarning(string code) => code is UnknownPath or UnknownFilter;
-}
-
 /// <summary>A rendered template: its text, and its problems in the order of the template.</summary>
-internal sealed record RenderedTemplate(string Text, IReadOnlyList<TemplateProblem> Problems);
+internal sealed record RenderedTemplate(string Text, IReadOnlyList<MergeTagProblem> Problems);
 
 /// <summary>A filter's argument: a string's text, or a number as written.</summary>
 internal sealed record TemplateArgument(bool IsString, string Text, int At);
 
-/// <summary>A filter of a tag, with its arguments.</summary>
-internal sealed record TemplateFilter(string Name, int At, IReadOnlyList<TemplateArgument> Arguments);
+/// <summary>A filter of a tag, with its arguments, and the site's own filter of that name when no built-in one has it.</summary>
+internal sealed record TemplateFilter(string Name, int At, IReadOnlyList<TemplateArgument> Arguments, SiteFilter? Site = null);
+
+/// <summary>
+/// A site's own filter as the engine runs it (ADR-0065): whether its arguments fit, and what it does to a value. It never
+/// encodes, so the context's encoder still runs on what it gives.
+/// </summary>
+internal sealed record SiteFilter(Func<IReadOnlyList<TemplateArgument>, bool> Accepts, Func<MergeTagValue, IReadOnlyList<TemplateArgument>, MergeTagValue> Apply);
+
+/// <summary>
+/// What the place a template renders in adds to the language (ADR-0065): the site's own filters by name, whether the
+/// place takes them, and the problem a path's source has there (null for none). A tag with such a problem renders as it
+/// is written, like any tag with an error.
+/// </summary>
+internal sealed record TemplateRules(Func<string, SiteFilter?> SiteFilters, bool TakesSiteFilters, Func<string, string?> PathProblem);
 
 /// <summary>A part of a parsed template.</summary>
 internal abstract record TemplatePart(int At);
@@ -124,7 +45,7 @@ internal abstract record TemplatePart(int At);
 internal sealed record TextPart(int At, string Text) : TemplatePart(At);
 
 /// <summary>A tag with an error of its own, which renders as it is written.</summary>
-internal sealed record WrittenPart(int At, string Text, TemplateProblem Problem) : TemplatePart(At);
+internal sealed record WrittenPart(int At, string Text, MergeTagProblem Problem) : TemplatePart(At);
 
 /// <summary>A well-formed tag in its place: a path or a string, its filters, how it is written, and its filters' problems.</summary>
 internal sealed record TagPart(
@@ -135,13 +56,13 @@ internal sealed record TagPart(
     string? Literal,
     IReadOnlyList<TemplateFilter> Filters,
     TemplateWriter Writer,
-    IReadOnlyList<TemplateProblem> Problems) : TemplatePart(At);
+    IReadOnlyList<MergeTagProblem> Problems) : TemplatePart(At);
 
 /// <summary>A limit: the output ends here.</summary>
-internal sealed record StopPart(int At, TemplateProblem Problem) : TemplatePart(At);
+internal sealed record StopPart(int At, MergeTagProblem Problem) : TemplatePart(At);
 
 /// <summary>A template parsed for its context, with the problems that do not depend on values.</summary>
-internal sealed record ParsedTemplate(TemplateContext Context, IReadOnlyList<TemplatePart> Parts, IReadOnlyList<TemplateProblem> Problems);
+internal sealed record ParsedTemplate(MergeTagContext Context, IReadOnlyList<TemplatePart> Parts, IReadOnlyList<MergeTagProblem> Problems);
 
 /// <summary>
 /// Merge tags (section 4.3.3, ADR-0014, ADR-0064), the same in TypeScript (<c>packages/logic/src/template.ts</c>): a
@@ -163,9 +84,10 @@ internal static partial class MergeTags
     /// <summary>
     /// Parses a template for the context it renders in (ADR-0064): its text, each tag's path or string and filters, how
     /// each tag is written where it stands, and every problem that does not depend on values. Never throws for any
-    /// template.
+    /// template. <paramref name="rules"/> adds what the place adds (ADR-0065): without them, no path is refused and no
+    /// site's filter is known.
     /// </summary>
-    public static ParsedTemplate Parse(string text, TemplateContext context)
+    public static ParsedTemplate Parse(string text, MergeTagContext context, TemplateRules? rules = null)
     {
         ArgumentNullException.ThrowIfNull(text);
         var scan = ScanFor(context);
@@ -189,14 +111,14 @@ internal static partial class MergeTags
 
             if (++tags > MaxTags)
             {
-                parts.Add(new StopPart(start, new TemplateProblem(TemplateProblems.TooManyTags, start)));
+                parts.Add(new StopPart(start, new MergeTagProblem(MergeTagProblems.TooManyTags, start)));
                 break;
             }
 
             var close = ClosingOf(text, start);
             if (close < 0)
             {
-                Written(start, text.Length, TemplateProblems.UnclosedTag, start);
+                Written(start, text.Length, MergeTagProblems.UnclosedTag, start);
                 break;
             }
 
@@ -211,13 +133,13 @@ internal static partial class MergeTags
             var reading = new TagReader(text, start + 2, close).Read();
             if (reading.Limit is { } limit)
             {
-                parts.Add(new StopPart(start, new TemplateProblem(TemplateProblems.TooManyFilters, limit)));
+                parts.Add(new StopPart(start, new MergeTagProblem(MergeTagProblems.TooManyFilters, limit)));
                 break;
             }
 
             if (reading.Fail is { } fail)
             {
-                Written(start, position, TemplateProblems.MalformedTag, fail);
+                Written(start, position, MergeTagProblems.MalformedTag, fail);
                 continue;
             }
 
@@ -227,9 +149,18 @@ internal static partial class MergeTags
                 pathAt++;
             }
 
-            var problems = FilterProblems(reading.Filters, writer);
-            parts.Add(new TagPart(start, text[start..position], reading.Path, pathAt, reading.Literal, reading.Filters, writer, problems));
-            if (problems.Any(problem => !TemplateProblems.IsWarning(problem.Code)))
+            if (reading.Path is { } path && rules?.PathProblem(path) is { } refused)
+            {
+                Written(start, position, refused, pathAt);
+                continue;
+            }
+
+            var filters = rules is null
+                ? reading.Filters
+                : [.. reading.Filters.Select(filter => Filters.ContainsKey(filter.Name) ? filter : filter with { Site = rules.SiteFilters(filter.Name) })];
+            var problems = FilterProblems(filters, writer, rules?.TakesSiteFilters ?? false);
+            parts.Add(new TagPart(start, text[start..position], reading.Path, pathAt, reading.Literal, filters, writer, problems));
+            if (problems.Any(problem => !MergeTagProblems.IsWarning(problem.Code)))
             {
                 scan.Read(text, start, position);
             }
@@ -240,7 +171,7 @@ internal static partial class MergeTags
         // A tag written out as it stands puts its own text in the output, so the scan reads it as the template's own.
         void Written(int at, int end, string code, int where)
         {
-            parts.Add(new WrittenPart(at, text[at..end], new TemplateProblem(code, where)));
+            parts.Add(new WrittenPart(at, text[at..end], new MergeTagProblem(code, where)));
             scan.Read(text, at, end);
         }
     }
@@ -250,12 +181,12 @@ internal static partial class MergeTags
     /// is written, one with warnings only as nothing, and the output at most <see cref="MaxOutput"/> code units long.
     /// A path no source knows has no value (null). Never throws for any template, value or culture.
     /// </summary>
-    public static RenderedTemplate Render(ParsedTemplate template, Func<string, MergeValue?> values, CultureFormats culture)
+    public static RenderedTemplate Render(ParsedTemplate template, Func<string, MergeTagValue?> values, CultureFormats culture)
     {
         ArgumentNullException.ThrowIfNull(template);
         ArgumentNullException.ThrowIfNull(values);
         ArgumentNullException.ThrowIfNull(culture);
-        var problems = new List<TemplateProblem>();
+        var problems = new List<MergeTagProblem>();
         var output = new StringBuilder();
         var stopped = false;
 
@@ -275,7 +206,7 @@ internal static partial class MergeTags
             }
 
             output.Append(piece, 0, room);
-            problems.Add(new TemplateProblem(TemplateProblems.TooLong, at));
+            problems.Add(new MergeTagProblem(MergeTagProblems.TooLong, at));
             stopped = true;
         }
 
@@ -300,14 +231,14 @@ internal static partial class MergeTags
                     stopped = true;
                     break;
                 case TagPart tag:
-                    var value = tag.Literal is { } literal ? MergeValue.Of(literal) : values(tag.Path ?? string.Empty);
+                    var value = tag.Literal is { } literal ? MergeTagValue.Of(literal) : values(tag.Path ?? string.Empty);
                     if (value is null)
                     {
-                        problems.Add(new TemplateProblem(TemplateProblems.UnknownPath, tag.PathAt));
+                        problems.Add(new MergeTagProblem(MergeTagProblems.UnknownPath, tag.PathAt));
                     }
 
                     problems.AddRange(tag.Problems);
-                    if (tag.Problems.Any(problem => !TemplateProblems.IsWarning(problem.Code)))
+                    if (tag.Problems.Any(problem => !MergeTagProblems.IsWarning(problem.Code)))
                     {
                         Add(tag.Text, tag.At);
                     }
@@ -323,7 +254,7 @@ internal static partial class MergeTags
         return new RenderedTemplate(output.ToString(), Ordered(problems));
     }
 
-    private static IEnumerable<TemplateProblem> ProblemsOf(TemplatePart part) => part switch
+    private static IEnumerable<MergeTagProblem> ProblemsOf(TemplatePart part) => part switch
     {
         TagPart tag => tag.Problems,
         WrittenPart written => [written.Problem],
@@ -332,7 +263,7 @@ internal static partial class MergeTags
     };
 
     /// <summary>Problems in the order of the template; those at one place keep their order.</summary>
-    private static List<TemplateProblem> Ordered(IEnumerable<TemplateProblem> problems) => [.. problems.OrderBy(problem => problem.At)];
+    private static List<MergeTagProblem> Ordered(IEnumerable<MergeTagProblem> problems) => [.. problems.OrderBy(problem => problem.At)];
 
     /// <summary>
     /// Where the tag that starts at <paramref name="start"/> ends: the first <c>}}</c> outside a string literal; when a

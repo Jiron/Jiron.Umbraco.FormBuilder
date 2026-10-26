@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 
 namespace Jiron.Umbraco.FormBuilder.Logic;
 
@@ -19,15 +20,15 @@ internal static partial class MergeTags
     private static readonly FrozenSet<string> DoubtAfter =
         new[] { "svg", "math", "select", "frameset" }.ToFrozenSet(StringComparer.Ordinal);
 
-    private static IScan ScanFor(TemplateContext context) => context switch
+    private static IScan ScanFor(MergeTagContext context) => context switch
     {
-        TemplateContext.Html => new MarkupScan(html: true),
-        TemplateContext.Xml => new MarkupScan(html: false),
-        TemplateContext.Json => new JsonScan(inString: false),
-        TemplateContext.JsonString => new JsonScan(inString: true),
-        TemplateContext.Url => new UrlScan(),
-        TemplateContext.Header => new AnywhereScan(TemplateWriter.Header),
-        TemplateContext.Form => new AnywhereScan(TemplateWriter.Form),
+        MergeTagContext.Html => new MarkupScan(html: true),
+        MergeTagContext.Xml => new MarkupScan(html: false),
+        MergeTagContext.Json => new JsonScan(inString: false),
+        MergeTagContext.JsonString => new JsonScan(inString: true),
+        MergeTagContext.Url => new UrlScan(),
+        MergeTagContext.Header => new AnywhereScan(TemplateWriter.Header),
+        MergeTagContext.Form => new AnywhereScan(TemplateWriter.Form),
         _ => new AnywhereScan(TemplateWriter.Text),
     };
 
@@ -155,7 +156,7 @@ internal static partial class MergeTags
 
         public (TemplateWriter Writer, string? Misplaced) Place() =>
             _state != MarkupState.Text
-                ? (TemplateWriter.Text, TemplateProblems.TagInMarkup)
+                ? (TemplateWriter.Text, MergeTagProblems.TagInMarkup)
                 : (html ? TemplateWriter.Html : TemplateWriter.Xml, null);
 
         /// <summary>The spaces of the HTML tokenizer, carriage return included (the parser reads it as a line feed).</summary>
@@ -558,7 +559,7 @@ internal static partial class MergeTags
 
         public (TemplateWriter Writer, string? Misplaced) Place() => _state switch
         {
-            JsonState.Escaped => (TemplateWriter.JsonString, TemplateProblems.TagInEscape),
+            JsonState.Escaped => (TemplateWriter.JsonString, MergeTagProblems.TagInEscape),
             JsonState.InString => (TemplateWriter.JsonString, null),
             _ => (TemplateWriter.JsonValue, null),
         };
@@ -603,7 +604,7 @@ internal static partial class MergeTags
         }
 
         public (TemplateWriter Writer, string? Misplaced) Place() =>
-            _state == UrlState.Path ? (TemplateWriter.Url, null) : (TemplateWriter.Url, TemplateProblems.TagBeforePath);
+            _state == UrlState.Path ? (TemplateWriter.Url, null) : (TemplateWriter.Url, MergeTagProblems.TagBeforePath);
 
         private static bool IsSlash(int c) => c is '/' or Backslash;
 

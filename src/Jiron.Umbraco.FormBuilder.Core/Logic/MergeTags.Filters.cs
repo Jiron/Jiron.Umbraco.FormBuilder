@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using System.Globalization;
 using System.Text;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 
 namespace Jiron.Umbraco.FormBuilder.Logic;
 
@@ -28,16 +29,16 @@ internal static partial class MergeTags
     {
         ["default"] = new(
             ArgumentsFit(1, 1, Anything),
-            (value, filter, _) => IsEmpty(value) ? new Value([new MergeItem(filter.Arguments[0].Text)], false, ValueEncoding.None) : value),
-        ["upper"] = new(None, (value, _, _) => Each(value, item => new MergeItem(TextSemantics.Upper(item.Text)))),
-        ["lower"] = new(None, (value, _, _) => Each(value, item => new MergeItem(TextSemantics.Lower(item.Text)))),
+            (value, filter, _) => IsEmpty(value) ? new Value([new MergeTagItem(filter.Arguments[0].Text)], false, ValueEncoding.None) : value),
+        ["upper"] = new(None, (value, _, _) => Each(value, item => new MergeTagItem(TextSemantics.Upper(item.Text)))),
+        ["lower"] = new(None, (value, _, _) => Each(value, item => new MergeTagItem(TextSemantics.Lower(item.Text)))),
         ["truncate"] = new(
             ArgumentsFit(1, 2, argument => IsWhole(argument, MaxOutput), AString),
             (value, filter, _) =>
             {
                 var count = int.Parse(filter.Arguments[0].Text, NumberStyles.None, CultureInfo.InvariantCulture);
                 var suffix = filter.Arguments.Count > 1 ? filter.Arguments[1].Text : Ellipsis;
-                return Each(value, item => new MergeItem(Truncated(item.Text, count, suffix)));
+                return Each(value, item => new MergeTagItem(Truncated(item.Text, count, suffix)));
             }),
         ["date"] = new(
             ArgumentsFit(0, 1, argument => argument.IsString && CultureFormatting.DateFormats.Contains(argument.Text)),
@@ -73,24 +74,27 @@ internal static partial class MergeTags
                 }
 
                 var separator = filter.Arguments.Count > 0 ? filter.Arguments[0].Text : ", ";
-                return new Value([new MergeItem(string.Join(separator, value.Items.Select(item => item.Text)))], false, ValueEncoding.None);
+                return new Value([new MergeTagItem(string.Join(separator, value.Items.Select(item => item.Text)))], false, ValueEncoding.None);
             }),
-        ["html"] = new(None, (value, _, _) => Each(value, item => new MergeItem(HtmlText(item.Text)), ValueEncoding.Html), Encodes: true),
-        ["url"] = new(None, (value, _, _) => Each(value, item => new MergeItem(Percent(item.Text, form: false)), ValueEncoding.Url), Encodes: true),
+        ["html"] = new(None, (value, _, _) => Each(value, item => new MergeTagItem(HtmlText(item.Text)), ValueEncoding.Html), Encodes: true),
+        ["url"] = new(None, (value, _, _) => Each(value, item => new MergeTagItem(Percent(item.Text, form: false)), ValueEncoding.Url), Encodes: true),
         ["json"] = new(
             None,
-            (value, _, _) => new Value([new MergeItem(JsonOf(value))], false, ValueEncoding.Json),
+            (value, _, _) => new Value([new MergeTagItem(JsonOf(value))], false, ValueEncoding.Json),
             Encodes: true),
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>A value on its way through the filters: its items, whether it is a list, and the encoding a filter gave it.</summary>
-    private sealed record Value(IReadOnlyList<MergeItem> Items, bool IsList, ValueEncoding Encoded);
+    private sealed record Value(IReadOnlyList<MergeTagItem> Items, bool IsList, ValueEncoding Encoded);
 
     /// <summary>
     /// A filter: where its arguments do not fit (the filter for a wrong count, otherwise the argument; null when they
     /// fit), what it does to a value, and whether it encodes, so it comes last.
     /// </summary>
     private sealed record FilterSpec(Func<TemplateFilter, int?> Check, Func<Value, TemplateFilter, CultureFormats, Value> Apply, bool Encodes = false);
+
+    /// <summary>Whether a built-in filter has the name, which a site's own filter may then not take (ADR-0065).</summary>
+    public static bool IsBuiltInFilter(string name) => Filters.ContainsKey(name);
 
     /// <summary>The check of a filter without arguments. A method, not a field, so the table above may use it.</summary>
     private static int? None(TemplateFilter filter) => filter.Arguments.Count == 0 ? null : filter.At;
@@ -151,11 +155,11 @@ internal static partial class MergeTags
             : null;
 
     /// <summary>A formatted item, or the item as it was when it is not what the filter reads.</summary>
-    private static MergeItem Formatted(string? text, MergeItem item) => text is null ? item : new MergeItem(text);
+    private static MergeTagItem Formatted(string? text, MergeTagItem item) => text is null ? item : new MergeTagItem(text);
 
-    private static Value Each(Value value, Func<MergeItem, MergeItem> map) => Each(value, map, value.Encoded);
+    private static Value Each(Value value, Func<MergeTagItem, MergeTagItem> map) => Each(value, map, value.Encoded);
 
-    private static Value Each(Value value, Func<MergeItem, MergeItem> map, ValueEncoding encoded) =>
+    private static Value Each(Value value, Func<MergeTagItem, MergeTagItem> map, ValueEncoding encoded) =>
         new([.. value.Items.Select(map)], value.IsList, encoded);
 
     private static bool IsEmpty(Value value) => value.Items.All(item => item.Text.Length == 0);
@@ -183,34 +187,49 @@ internal static partial class MergeTags
         return string.Concat(text.AsSpan(0, end), suffix);
     }
 
-    /// <summary>The problems of a tag's filters that do not depend on its value, from left to right.</summary>
-    private static List<TemplateProblem> FilterProblems(IReadOnlyList<TemplateFilter> filters, TemplateWriter writer)
+    /// <summary>
+    /// The problems of a tag's filters that do not depend on its value, from left to right; a site's filter is refused
+    /// where the place does not take one (<paramref name="takesSiteFilters"/>).
+    /// </summary>
+    private static List<MergeTagProblem> FilterProblems(IReadOnlyList<TemplateFilter> filters, TemplateWriter writer, bool takesSiteFilters)
     {
-        var problems = new List<TemplateProblem>();
+        var problems = new List<MergeTagProblem>();
         var encoded = false;
         var reported = false;
         foreach (var filter in filters)
         {
             if (encoded && !reported)
             {
-                problems.Add(new TemplateProblem(TemplateProblems.FilterAfterEncoding, filter.At));
+                problems.Add(new MergeTagProblem(MergeTagProblems.FilterAfterEncoding, filter.At));
                 reported = true;
             }
 
             if (!Filters.TryGetValue(filter.Name, out var spec))
             {
-                problems.Add(new TemplateProblem(TemplateProblems.UnknownFilter, filter.At));
+                if (filter.Site is not { } site)
+                {
+                    problems.Add(new MergeTagProblem(MergeTagProblems.UnknownFilter, filter.At));
+                }
+                else if (!takesSiteFilters)
+                {
+                    problems.Add(new MergeTagProblem(MergeTagProblems.FilterNotForPlace, filter.At));
+                }
+                else if (!site.Accepts(filter.Arguments))
+                {
+                    problems.Add(new MergeTagProblem(MergeTagProblems.InvalidArgument, filter.At));
+                }
+
                 continue;
             }
 
             if ((filter.Name == "html" && writer != TemplateWriter.Html) || (filter.Name == "json" && writer == TemplateWriter.JsonString))
             {
-                problems.Add(new TemplateProblem(TemplateProblems.FilterNotForContext, filter.At));
+                problems.Add(new MergeTagProblem(MergeTagProblems.FilterNotForContext, filter.At));
             }
 
             if (spec.Check(filter) is { } wrong)
             {
-                problems.Add(new TemplateProblem(TemplateProblems.InvalidArgument, wrong));
+                problems.Add(new MergeTagProblem(MergeTagProblems.InvalidArgument, wrong));
             }
 
             encoded |= spec.Encodes;
@@ -220,7 +239,7 @@ internal static partial class MergeTags
     }
 
     /// <summary>A value through a tag's filters, written as its place writes it.</summary>
-    private static string Write(MergeValue source, TagPart tag, CultureFormats culture)
+    private static string Write(MergeTagValue source, TagPart tag, CultureFormats culture)
     {
         var value = new Value(source.Items, source.IsList, ValueEncoding.None);
         foreach (var filter in tag.Filters)
@@ -228,6 +247,12 @@ internal static partial class MergeTags
             if (Filters.TryGetValue(filter.Name, out var spec))
             {
                 value = spec.Apply(value, filter, culture);
+            }
+            else if (filter.Site is { } site)
+            {
+                // A tag renders only without errors, so no encoding filter comes before a site's filter.
+                var given = site.Apply(new MergeTagValue(value.Items, value.IsList), filter.Arguments);
+                value = new Value(given.Items, given.IsList, ValueEncoding.None);
             }
         }
 
@@ -262,10 +287,10 @@ internal static partial class MergeTags
     private static string JsonOf(Value value) =>
         value.IsList
             ? "[" + string.Join(",", value.Items.Select(JsonItem)) + "]"
-            : JsonItem(value.Items.Count > 0 ? value.Items[0] : new MergeItem(string.Empty));
+            : JsonItem(value.Items.Count > 0 ? value.Items[0] : new MergeTagItem(string.Empty));
 
     /// <summary>An item as a complete JSON value: a number for a wire number behind it, otherwise its text as a string.</summary>
-    private static string JsonItem(MergeItem item) =>
+    private static string JsonItem(MergeTagItem item) =>
         item.Number is { } number && ExactDecimal.Parse(number) is { } parsed
             ? parsed.ToString()
             : "\"" + JsonContent(item.Text) + "\"";

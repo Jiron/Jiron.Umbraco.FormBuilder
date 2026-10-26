@@ -1,7 +1,8 @@
 # 0014. The merge-tag language
 
 - Status: accepted; consent texts and sensitive fields amended in 1.8; the values tags give, the `json` context, where
-  a tag may stand and the problems amended in 5.3b ([ADR-0064](0064-the-merge-tag-engine.md))
+  a tag may stand and the problems amended in 5.3b ([ADR-0064](0064-the-merge-tag-engine.md)); a site's sources and
+  filters amended in 5.3c ([ADR-0065](0065-the-merge-tag-service-and-its-sources.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 5.3 (both runtimes and the vectors), used by 6.x (texts, defaults, outcomes),
   8.x (emails, webhooks, content), 9.4 and 10.2 (the picker) and 11.x (entry titles)
@@ -83,6 +84,8 @@ ws        = { " " | tab } ;
 
 A field's former aliases (ADR-0002) resolve to the field. Sources added through `IFormBuilderMergeTagSource` declare
 their name, their paths for the picker, the contexts they may be used in, and whether their values are per visitor.
+**Amended in 5.3c (ADR-0065):** a site's source declares the places it may be used in rather than contexts (a place
+fixes its contexts), may not take a built-in source's name, and gives the empty text when it fails.
 
 **Sensitive fields** (ADR-0009), one rule per output:
 
@@ -111,7 +114,8 @@ their name, their paths for the picker, the contexts they may be used in, and wh
 
 - Filters on a list apply to each item, except `join`, `default` and `json`, which take the list.
 - Filters added through `IFormBuilderMergeTagFilter` are server-only unless they ship a TypeScript twin and pass the
-  vectors; the picker offers server-only filters only where the server renders.
+  vectors; the picker offers server-only filters only where the server renders. **Amended in 5.3c (ADR-0065):** a
+  site's filter is server-only, with no TypeScript twin, so the places the browser renders too refuse it.
 
 **Culture formats are resolved by the server.** The named date formats, the number separators and grouping, and the
 currency patterns come from the server's culture data, written into the public projection as explicit patterns
