@@ -1839,7 +1839,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The base URL** (§4.8, ADR-0008): a per-site general setting, by default the site's first `https` domain in Umbraco, otherwise Umbraco's application URL, never the request's Host header.
   - **Dictionary texts in the answers** (added in 5.3d, ADR-0066): a field's label, an option's label and a grid row's statement that name a dictionary item (`#key`, ADR-0002) show the item's text in the culture in `field.*` and `entry.answers`.
   - Done when: unit tests show each of these sources (a page's name, URL, property and an ancestor's property; a member's name, email and property, and none without a member; the site's name and base URL with each default; a dictionary item in the culture and its fallback; the entry's link from the base URL), and a field's label and an option's label from the dictionary in `field.*` and `entry.answers`.
-- [ ] **5.3f Answer recall** (C# and `packages/logic`; 5.3c split in four, and the copied actions moved to 5.3g, WORKLOG 2026-10-26)
+- [x] **5.3f Answer recall** (C# and `packages/logic`; 5.3c split in four, and the copied actions moved to 5.3g, WORKLOG 2026-10-26) (2026-10-26, 45ec725)
   - **Answer recall** in both runtimes: only fields above the text or on earlier pages, hidden fields empty, with the answers' display text of 5.3d in TypeScript too.
   - Done when: the vectors pass in both runtimes, including answer recall (a field above, one on an earlier page, a hidden one, and a later one refused).
 - [ ] **5.3g Copied actions** (C#; 5.3f split in two, WORKLOG 2026-10-26)
