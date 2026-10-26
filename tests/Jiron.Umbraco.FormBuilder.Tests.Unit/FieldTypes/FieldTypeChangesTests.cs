@@ -49,7 +49,7 @@ public sealed class FieldTypeChangesTests
         yield return Change("text", "name", $"- | - | minLength,maxLength,prefix,suffix,counter | - | Placeholder, DefaultValue, Autocomplete, PatternCheck, MatchesFieldCheck, UniquePerFormCheck | no | MinLength, MaxLength | {AllTextOperators} | no | no");
         yield return Change("name", "address", "- | - | parts,requiredParts | - | none | no | none | - | no | yes");
         yield return Change("file", "signature", "- | - | types,extensions,maxBytes,maxFiles,dropZone,thumbnails,camera | - | none | no | FileType, FileSize, FileCount | - | no | yes");
-        yield return Change("email", "text", "- | - | confirm,confirmLabel,domains | - | none | no | Invalid | - | no | yes");
+        yield return Change("email", "text", "- | - | confirm,confirmLabel,domains | - | none | no | Invalid, Confirmation | - | no | yes");
         yield return Change("text", "hidden", "- | - | minLength,maxLength,prefix,suffix,counter | - | HideLabel, Help, Placeholder, Required, Autocomplete, PatternCheck, MatchesFieldCheck, UniquePerFormCheck | no | Required, MinLength, MaxLength | - | no | yes");
         yield return Change("hidden", "dropdown", $"- | - | - | - | none | yes | none | {TextOperators} | yes | yes");
     }

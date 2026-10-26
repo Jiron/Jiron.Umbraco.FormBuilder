@@ -222,7 +222,8 @@
         "fileType": { "$ref": "#/$defs/LocalizedLine" },
         "fileSize": { "$ref": "#/$defs/LocalizedLine" },
         "fileCount": { "$ref": "#/$defs/LocalizedLine" },
-        "full": { "$ref": "#/$defs/LocalizedLine" }
+        "full": { "$ref": "#/$defs/LocalizedLine" },
+        "confirmation": { "$ref": "#/$defs/LocalizedLine" }
       }
     },
     "FieldPrefill": {

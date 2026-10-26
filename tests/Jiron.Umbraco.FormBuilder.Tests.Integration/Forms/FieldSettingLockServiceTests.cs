@@ -57,7 +57,7 @@ public sealed class FieldSettingLockServiceTests : RepositoryTestBase
         {
             Assert.That(field.Settings?.ToString(), Is.EqualTo("""{"counter":true,"maxLength":100}"""), "the locked value, and no prefix: it keeps its default");
             Assert.That(((TextFieldType)types.FindType("text")!).ReadSettings(field.Settings).MaxLength, Is.EqualTo(100), "the type reads the locked value");
-            Assert.That(PublicProjection.Create(running.Definition, types).Pages[0].Groups[0].Fields[0].Settings?.ToString(), Is.EqualTo("""{"counter":true,"maxLength":100}"""), "visitors get it");
+            Assert.That(PublicProjection.Create(running.Definition, types).Pages[0].Groups[0].Fields[0].Settings?.ToString(), Is.EqualTo("""{"counter":true,"maxLength":100,"minLength":0}"""), "visitors get it, with the defaults of the other public settings (ADR-0062)");
             Assert.That((running.Version, running.Form.Key), Is.EqualTo((published.Version!.Value, created)));
             Assert.That(stored!.Definition, Does.Contain("\"maxLength\":500").And.Contain("\"prefix\":{\"\":\"A\"}"), "nothing was rewritten");
             Assert.That(draft.Definition!.Pages[0].Groups[0].Fields[0].Settings?.ToString(), Is.EqualTo("""{"counter":true,"maxLength":500,"prefix":{"":"A"}}"""), "the designer reads what the editor stored");

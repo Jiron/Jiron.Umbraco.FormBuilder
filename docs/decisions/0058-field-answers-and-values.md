@@ -1,7 +1,8 @@
 # 0058. Field answers and values
 
 - Status: accepted; amends [ADR-0055](0055-field-type-framework.md) (what a type declares) and the entry values of
-  [ADR-0038](0038-entry-repositories.md) (the key of a value with parts)
+  [ADR-0038](0038-entry-repositories.md) (the key of a value with parts); what a type's check sees (whether the
+  field is required, and today) amended by [ADR-0062](0062-the-built-in-types-checks.md) in 5.2b
 - Date: 2026-10-25
 - Roadmap step: 5.1d (decided and built); 5.2 gives the built-in types their checks, 6.1 runs the pipeline on them,
   6.2 posts the answers without JavaScript
@@ -130,7 +131,9 @@ with `Fail(kind)`: one of the error kinds the type declares, or `invalid`, which
 the type's default text where it has no message of its own. It finds nothing by default; 5.2 gives the built-in types
 the checks of their settings (lengths, words, ranges, steps, date windows, selections, file rules, the confirmation of
 an email, the options a choice offers), built in both runtimes. `required` is the pipeline's: a field without values is
-required when its own setting or a rule says so, and its type's `Validate` runs only on values.
+required when its own setting or a rule says so, and its type's `Validate` runs only on values. Besides the field,
+its answers and its values, `FieldValidation` tells the check whether the field is required (`IsRequired`, by its own
+setting or a rule) and the site's date (`Today`), which the pipeline takes once per submission (ADR-0062).
 `FormBuilderFieldTypeBase<TSettings>` gives all three methods the field's settings as its class, as it does for the
 check of settings (ADR-0056). `FieldValues` (internal) runs them for the pipeline and refuses a type that breaks the
 contract: an error kind it does not declare, a grid row the field does not have, or a value its storage kind cannot hold

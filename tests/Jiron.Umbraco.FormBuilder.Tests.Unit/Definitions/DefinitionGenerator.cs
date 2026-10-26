@@ -286,6 +286,7 @@ internal sealed class DefinitionGenerator
         FileSize = Text(),
         FileCount = Text(),
         Full = Text(),
+        Confirmation = Text(),
     };
 
     private FieldCheck Check() => _random.Next(3) switch

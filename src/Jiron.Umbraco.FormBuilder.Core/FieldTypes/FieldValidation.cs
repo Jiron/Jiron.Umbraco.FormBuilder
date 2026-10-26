@@ -8,7 +8,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 /// <summary>
 /// What a field type's check of a shown field's values reports to (ADR-0058): each error by its kind, whose message the
 /// visitor sees at the field. It runs only on a field that has values once the rules leave it visible; a field without
-/// values fails with <c>required</c> before it, when it is required.
+/// values fails with <c>required</c> before it, when it is required. Besides the field and its answers, it says whether
+/// the field is required and what day it is where the site is (ADR-0062).
 /// </summary>
 public sealed class FieldValidation
 {
@@ -19,12 +20,14 @@ public sealed class FieldValidation
     private readonly FieldMessageKinds _declared;
     private readonly List<FieldMessageKinds> _errors = [];
 
-    internal FieldValidation(FormField field, FieldAnswers answers, ImmutableArray<FieldValue> values, FieldMessageKinds declared)
+    internal FieldValidation(FormField field, FieldAnswers answers, ImmutableArray<FieldValue> values, FieldMessageKinds declared, bool isRequired, DateOnly today)
     {
         Field = field;
         Answers = answers;
         Values = values;
         _declared = declared;
+        IsRequired = isRequired;
+        Today = today;
     }
 
     /// <summary>The field, with its settings, options and rows.</summary>
@@ -35,6 +38,15 @@ public sealed class FieldValidation
 
     /// <summary>The values the type read.</summary>
     public ImmutableArray<FieldValue> Values { get; }
+
+    /// <summary>
+    /// Whether the field is required, by its own setting or by a rule: a required name with no required parts of its own
+    /// needs every part it asks for (ADR-0056).
+    /// </summary>
+    public bool IsRequired { get; }
+
+    /// <summary>The date in the site's time zone, from which a date window relative to today counts (ADR-0005).</summary>
+    public DateOnly Today { get; }
 
     /// <summary>The errors reported, in order, each once.</summary>
     public ImmutableArray<FieldMessageKinds> Errors => [.. _errors];

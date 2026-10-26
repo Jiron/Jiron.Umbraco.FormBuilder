@@ -175,6 +175,9 @@ public sealed record FieldMessages
 
     /// <summary>A chosen option has no places left.</summary>
     public LocalizedText? Full { get; init; }
+
+    /// <summary>The answer typed again is missing or another one.</summary>
+    public LocalizedText? Confirmation { get; init; }
 }
 
 /// <summary>Where a field's value may be prefilled from.</summary>

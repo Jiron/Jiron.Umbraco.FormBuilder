@@ -28,6 +28,10 @@ public sealed class TextFieldType() : FormBuilderFieldTypeBase<TextFieldSettings
 
     /// <inheritdoc />
     protected override FieldAnswerLimits AnswerLimits(TextFieldSettings settings, FormField field) => new(LongestAnswer, 1);
+
+    /// <inheritdoc />
+    protected override void Validate(TextFieldSettings settings, FieldValidation validation) =>
+        BuiltInValidation.Length(validation, validation.Values[0].Text, settings.MinLength, settings.MaxLength);
 }
 
 /// <summary>The settings of a one-line text (ADR-0002).</summary>
@@ -84,6 +88,14 @@ public sealed class TextareaFieldType() : FormBuilderFieldTypeBase<TextareaField
 
     /// <inheritdoc />
     protected override FieldAnswerLimits AnswerLimits(TextareaFieldSettings settings, FormField field) => new(LongestAnswer, 1);
+
+    /// <inheritdoc />
+    protected override void Validate(TextareaFieldSettings settings, FieldValidation validation)
+    {
+        var text = validation.Values[0].Text;
+        BuiltInValidation.Length(validation, text, settings.MinLength, settings.MaxLength);
+        BuiltInValidation.Words(validation, text, settings.MinWords, settings.MaxWords);
+    }
 }
 
 /// <summary>The settings of a long text (ADR-0002).</summary>
@@ -134,7 +146,7 @@ public sealed class EmailFieldType() : FormBuilderFieldTypeBase<EmailFieldSettin
     Storage = FieldStorageKind.Text,
     RuleKind = FieldKind.Text,
     Features = BuiltInFieldTypes.TextInput,
-    Messages = BuiltInFieldTypes.Readable,
+    Messages = BuiltInFieldTypes.Readable | FieldMessageKinds.Confirmation,
 })
 {
     /// <summary>The longest address an email field takes: the most a mail server's path allows (RFC 5321).</summary>
@@ -169,6 +181,51 @@ public sealed class EmailFieldType() : FormBuilderFieldTypeBase<EmailFieldSettin
         else if (domains.Mode != EmailDomainMode.Any && domains.List.Count == 0)
         {
             check.Invalid("domains.list", "An email field that allows or blocks domains lists at least one.");
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The address typed again is compared as rules compare text (ADR-0005), so another letter case is the same address.
+    /// The domains stay on the server, which alone refuses an address whose domain the field does not take (ADR-0062).
+    /// </remarks>
+    protected override void Validate(EmailFieldSettings settings, FieldValidation validation)
+    {
+        var address = validation.Values[0].Text;
+        if (settings.Confirm && (validation.Answers.Part(ConfirmPart) is not [var again] || TextSemantics.Fold(again) != TextSemantics.Fold(address)))
+        {
+            validation.Fail(FieldMessageKinds.Confirmation);
+        }
+
+        if (settings.Domains is { Mode: not EmailDomainMode.Any } domains && IsListed(address, domains.List) != (domains.Mode == EmailDomainMode.Allow))
+        {
+            validation.Fail(FieldMessageKinds.Invalid);
+        }
+    }
+
+    // Whether the address's domain, after its last @, is a listed domain or below one, compared in IDNA's ASCII form; an
+    // address without a domain, or with one that is no host name, is below none.
+    private static bool IsListed(string address, IReadOnlyList<string> domains)
+    {
+        var at = address.LastIndexOf('@');
+        if (at < 0 || Ascii(address[(at + 1)..]) is not { } host)
+        {
+            return false;
+        }
+
+        return domains.Select(Ascii).Any(domain => domain is not null && (host == domain || host.EndsWith("." + domain, StringComparison.Ordinal)));
+    }
+
+    // A host name in IDNA's ASCII form and in lowercase; null for one that is no host name.
+    private static string? Ascii(string host)
+    {
+        try
+        {
+            return BuiltInValidation.AsciiLower(new IdnMapping { UseStd3AsciiRules = true }.GetAscii(host));
+        }
+        catch (ArgumentException)
+        {
+            return null;
         }
     }
 
@@ -298,6 +355,19 @@ public sealed class UrlFieldType() : FormBuilderFieldTypeBase<UrlFieldSettings>(
 
     /// <inheritdoc />
     protected override FieldAnswerLimits AnswerLimits(UrlFieldSettings settings, FormField field) => new(LongestAnswer, 1);
+
+    /// <inheritdoc />
+    /// <remarks>The scheme is the text before the first colon, its ASCII capitals made small.</remarks>
+    protected override void Validate(UrlFieldSettings settings, FieldValidation validation)
+    {
+        var address = validation.Values[0].Text;
+        var colon = address.IndexOf(':', StringComparison.Ordinal);
+        var scheme = colon < 0 ? null : BuiltInValidation.AsciiLower(address[..colon]);
+        if (!settings.Schemes.Any(allowed => BuiltInChecks.Name(allowed) == scheme))
+        {
+            validation.Fail(FieldMessageKinds.Invalid);
+        }
+    }
 }
 
 /// <summary>The settings of a web address (ADR-0002).</summary>

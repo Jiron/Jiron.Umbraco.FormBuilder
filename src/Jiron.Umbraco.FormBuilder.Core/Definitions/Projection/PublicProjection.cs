@@ -149,10 +149,12 @@ internal static class PublicProjection
     private static List<PublicRule> Rules(IReadOnlyList<FormRule> rules) =>
         [.. rules.Where(rule => rule.Enabled).Select(rule => new PublicRule { Key = rule.Key, Effect = rule.Effect, Match = rule.Match, Conditions = [.. rule.Conditions] })];
 
-    // Only the settings the type makes public; a type the site does not know makes none public.
+    // Only the settings the type makes public, each with its effective value: the field's own, otherwise the type's
+    // default, so the browser checks and renders what the server reads (ADR-0062). A type the site does not know makes
+    // none public.
     private static SettingsObject? PublicSettings(SettingsObject? settings, FieldTypeTraits? traits)
     {
-        if (settings is null || traits is null || traits.PublicSettings.Count == 0)
+        if (traits is null || traits.PublicSettings.Count == 0)
         {
             return null;
         }
@@ -161,16 +163,7 @@ internal static class PublicProjection
         using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
-            var kept = false;
-            foreach (var property in settings.Value.EnumerateObject())
-            {
-                if (traits.PublicSettings.Contains(property.Name))
-                {
-                    property.WriteTo(writer);
-                    kept = true;
-                }
-            }
-
+            var kept = WriteEffective(writer, traits.Type.SettingsSchema.Settings.Where(setting => setting.IsPublic), settings?.Value);
             writer.WriteEndObject();
             if (!kept)
             {
@@ -180,5 +173,36 @@ internal static class PublicProjection
 
         using var document = JsonDocument.Parse(buffer.ToArray());
         return SettingsObject.From(document.RootElement);
+    }
+
+    // Writes each setting the field gives or its type has a default for, an object's own settings in turn; whether it
+    // wrote one. A setting without either stays out, as settings leave it out (ADR-0002).
+    private static bool WriteEffective(Utf8JsonWriter writer, IEnumerable<FieldSettingDescriptor> settings, JsonElement? given)
+    {
+        var kept = false;
+        foreach (var setting in settings)
+        {
+            var effective = given is { ValueKind: JsonValueKind.Object } values && values.TryGetProperty(setting.Name, out var own) ? own : setting.Default;
+            if (effective is not { } value)
+            {
+                continue;
+            }
+
+            writer.WritePropertyName(setting.Name);
+            if (setting.Kind == FieldSettingKind.Nested && value.ValueKind == JsonValueKind.Object)
+            {
+                writer.WriteStartObject();
+                WriteEffective(writer, setting.Settings, value);
+                writer.WriteEndObject();
+            }
+            else
+            {
+                value.WriteTo(writer);
+            }
+
+            kept = true;
+        }
+
+        return kept;
     }
 }

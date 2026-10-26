@@ -8,7 +8,9 @@
   draft cleanup amended by [ADR-0045](0045-versions-comparison-and-draft-cleanup.md) in 4.5b; how copies find
   references, the envelope's limits and layout, `unsupported_format` and when an import creates option lists amended
   by [ADR-0046](0046-copies-templates-and-import.md) in 4.5c; the "Other" option, the empty lists of required parts
-  and file types, and the check of every field's settings amended by [ADR-0056](0056-field-settings-checks.md) in 5.1b
+  and file types, and the check of every field's settings amended by [ADR-0056](0056-field-settings-checks.md) in 5.1b;
+  the message kind `confirmation` and the effective public settings in the projection amended by
+  [ADR-0062](0062-the-built-in-types-checks.md) in 5.2b
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2a (the model, the schema, upgraders), 4.2b (structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
@@ -132,7 +134,7 @@ not support keeps its default (ADR-0034: booleans and numbers are always written
 | `hideLabel` | boolean | false | The label stays for screen readers. |
 | `help`, `placeholder` | LocalizedText | null | |
 | `required` | boolean | false | |
-| `messages` | object | empty | A custom message per error kind of the type (`required`, `invalid`, `minLength`, `maxLength`, `minWords`, `maxWords`, `min`, `max`, `step`, `dateWindow`, `selections`, `fileType`, `fileSize`, `fileCount`, `full`). |
+| `messages` | object | empty | A custom message per error kind of the type (`required`, `invalid`, `minLength`, `maxLength`, `minWords`, `maxWords`, `min`, `max`, `step`, `dateWindow`, `selections`, `fileType`, `fileSize`, `fileCount`, `full`, `confirmation`). |
 | `defaultValue` | string, string[] or null | null | Merge tags allowed (ADR-0014). A list for types with several answers. |
 | `prefill` | object or null | null | `{ "query": name or null, "member": property alias or null, "memberMode": "show" or "hide" }`. |
 | `sensitive` | boolean | false | §4.10. |
@@ -370,7 +372,8 @@ A type's `settings` belong to it: publishing holds them to its settings schema a
   protection needs: the challenge, proof of work, the captcha provider, its site key and the consent mode, and the
   honeypot's name for this revision); per consent field, the `jfbConsentText` hash of its wording for the requested
   culture and content (ADR-0009); the pages, groups and fields with their public properties and the public part of
-  each type's settings (the type declares it); switched-on rules; checks; switched-on form-level validation rules;
+  each type's settings (the type declares it), each with its effective value, the field's own or else the type's
+  default (ADR-0062); switched-on rules; checks; switched-on form-level validation rules;
   and the allowed query values. The projection of a definition holds what the definition decides; the form endpoint
   adds the alias, the revision, whether the form is open, the protection data and the consent hashes outside
   `PublicHash` (ADR-0035).

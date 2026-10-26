@@ -237,7 +237,7 @@ public sealed class FieldAnswersTests
         Assert.That(() => Validation(FieldMessageKinds.MinLength | FieldMessageKinds.MaxLength | (FieldMessageKinds)(1 << 30)).Fail(kind), Throws.ArgumentException);
 
     private static FieldValidation Validation(FieldMessageKinds declared) =>
-        new(Grid, new FieldAnswers(["a"]), [new FieldValue("a")], declared);
+        new(Grid, new FieldAnswers(["a"]), [new FieldValue("a")], declared, isRequired: false, new DateOnly(2026, 10, 26));
 
     private static KeyValuePair<string, IEnumerable<string>> Part(string name, params string[] texts) => new(name, texts.ToImmutableArray());
 }

@@ -112,7 +112,8 @@
               ],
               "settings": {
                 "counter": true,
-                "maxLength": 80
+                "maxLength": 80,
+                "minLength": 0
               }
             },
             {
@@ -159,7 +160,10 @@
                     "": "The addresses differ."
                   }
                 }
-              ]
+              ],
+              "settings": {
+                "confirm": false
+              }
             }
           ]
         },
@@ -218,6 +222,10 @@
                   }
                 ],
                 "fromSource": false
+              },
+              "settings": {
+                "layout": "inherit",
+                "other": false
               }
             },
             {
@@ -239,8 +247,10 @@
                 "parent": "30000000-0000-4000-8000-000000000004"
               },
               "settings": {
+                "layout": "inherit",
                 "maxSelections": 3,
-                "minSelections": 1
+                "minSelections": 1,
+                "other": false
               }
             },
             {
@@ -256,6 +266,9 @@
               "autocomplete": "country",
               "options": {
                 "fromSource": true
+              },
+              "settings": {
+                "multiple": false
               }
             }
           ]
@@ -315,6 +328,7 @@
               "hideLabel": false,
               "required": false,
               "settings": {
+                "defaultToday": false,
                 "min": {
                   "today": "+1d"
                 },
@@ -343,7 +357,11 @@
                     }
                   ]
                 }
-              ]
+              ],
+              "settings": {
+                "defaultToday": false,
+                "weekdaysOnly": false
+              }
             },
             {
               "key": "30000000-0000-4000-8000-000000000009",
@@ -412,7 +430,12 @@
                     "": "Guest name"
                   },
                   "hideLabel": false,
-                  "required": true
+                  "required": true,
+                  "settings": {
+                    "counter": false,
+                    "maxLength": 255,
+                    "minLength": 0
+                  }
                 },
                 {
                   "key": "30000000-0000-4000-8000-00000000000c",
@@ -425,6 +448,7 @@
                   "hideLabel": false,
                   "required": false,
                   "settings": {
+                    "decimals": 0,
                     "max": "120",
                     "min": "0"
                   }
@@ -434,7 +458,8 @@
                 "addLabel": {
                   "": "Add a guest"
                 },
-                "maxRows": 4
+                "maxRows": 4,
+                "minRows": 0
               }
             },
             {
@@ -483,7 +508,14 @@
                     }
                   ]
                 }
-              ]
+              ],
+              "settings": {
+                "autoGrow": true,
+                "counter": false,
+                "maxLength": 4000,
+                "minLength": 0,
+                "rows": 4
+              }
             },
             {
               "key": "30000000-0000-4000-8000-00000000000e",

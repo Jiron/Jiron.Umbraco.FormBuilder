@@ -67,7 +67,8 @@ internal static class FieldValues
     /// <param name="field">The field.</param>
     /// <param name="read">The answers as <see cref="Read"/> read them.</param>
     /// <param name="required">Whether the field is required, by its own setting or by a rule.</param>
-    public static ImmutableArray<FieldMessageKinds> Check(IFormBuilderFieldType type, FormField field, FieldRead read, bool required)
+    /// <param name="today">The date in the site's time zone, which the pipeline takes once per submission.</param>
+    public static ImmutableArray<FieldMessageKinds> Check(IFormBuilderFieldType type, FormField field, FieldRead read, bool required, DateOnly today)
     {
         ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(field);
@@ -82,7 +83,7 @@ internal static class FieldValues
             return required ? [FieldMessageKinds.Required] : [];
         }
 
-        var validation = new FieldValidation(field, read.Answers, read.Values, type.Declaration.Messages);
+        var validation = new FieldValidation(field, read.Answers, read.Values, type.Declaration.Messages, required, today);
         type.Validate(validation);
         return validation.Errors;
     }

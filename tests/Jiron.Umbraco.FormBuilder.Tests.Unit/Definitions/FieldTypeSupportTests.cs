@@ -26,7 +26,7 @@ public sealed class FieldTypeSupportTests
     {
         ["text"] = (TextInput, "required minLength maxLength"),
         ["textarea"] = (TextInput, "required minLength maxLength minWords maxWords"),
-        ["email"] = (TextInput, "required invalid"),
+        ["email"] = (TextInput, "required invalid confirmation"),
         ["phone"] = (TextInput, "required invalid"),
         ["url"] = (TextInput, "required invalid"),
         ["number"] = (Input + " placeholder defaultValue prefill autocomplete matchesField uniquePerForm", "required invalid min max step"),
@@ -101,7 +101,7 @@ public sealed class FieldTypeSupportTests
     private static readonly string[] MessageKinds =
     [
         "required", "invalid", "minLength", "maxLength", "minWords", "maxWords", "min", "max", "step", "dateWindow",
-        "selections", "fileType", "fileSize", "fileCount", "full",
+        "selections", "fileType", "fileSize", "fileCount", "full", "confirmation",
     ];
 
     public static IEnumerable<TestCaseData> Types() =>

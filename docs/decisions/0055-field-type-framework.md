@@ -4,7 +4,8 @@
   the registry) and [ADR-0044](0044-form-service.md) (the service's field types); the defaults of a name's and an
   address's required parts and of a file's types amended by [ADR-0056](0056-field-settings-checks.md) in 5.1b; a
   choice's label amended by [ADR-0057](0057-field-types-endpoint-and-availability.md) in 5.1c; answers, reading,
-  checking and the longest answer added to a type by [ADR-0058](0058-field-answers-and-values.md) in 5.1d
+  checking and the longest answer added to a type by [ADR-0058](0058-field-answers-and-values.md) in 5.1d; the email
+  type's `confirmation` kind added by [ADR-0062](0062-the-built-in-types-checks.md) in 5.2b
 - Date: 2026-10-25
 - Roadmap step: 5.1a (decided and built); 5.1b to 5.1f build on it
 
@@ -148,7 +149,9 @@ default, this ADR chooses one:
 - a file without types or extensions takes images and PDFs (ADR-0056), one file;
 - a grid's scale runs from 1 to 5, an image is medium, a scale starts at 0;
 - an email field's allowed and blocked domains stay on the server (ADR-0035); every other built-in setting is public,
-  because a browser needs it to show or check the field.
+  because a browser needs it to show or check the field;
+- an email field that confirms its address raises `confirmation` for an address typed again that is missing or
+  another (ADR-0062).
 
 `FieldTypeSupportTests` restates §4.3.2 apart from the code, now against the registry: for each type, every common
 property, check, rule and message it refuses or accepts, and its palette group, storage, rule kind, multiple setting,

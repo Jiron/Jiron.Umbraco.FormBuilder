@@ -117,6 +117,13 @@ internal readonly record struct ExactDecimal
     public static ExactDecimal Round(ExactDecimal a, int scale) =>
         a.S <= scale ? a : InRange(Normalise(RoundedQuotient(a.N, Pow10(a.S - scale)), scale));
 
+    /// <summary>Whether <paramref name="a"/> is a whole multiple of <paramref name="b"/>, which is not 0: a value on a step.</summary>
+    public static bool IsMultiple(ExactDecimal a, ExactDecimal b)
+    {
+        var s = Math.Max(a.S, b.S);
+        return (a.N * Pow10(s - a.S)) % (b.N * Pow10(s - b.S)) == 0;
+    }
+
     /// <summary>Applies the storage limits: at most 15 digits in all (leading zeros don't count), at most 15 after the point.</summary>
     public static ExactDecimal Stored(ExactDecimal d) => Fits(d) ? d : throw new LogicException(LogicErrors.TooManyDigits);
 

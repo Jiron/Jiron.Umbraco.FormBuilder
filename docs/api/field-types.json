@@ -479,7 +479,8 @@
       ],
       "messages": [
         "required",
-        "invalid"
+        "invalid",
+        "confirmation"
       ],
       "settings": [
         {

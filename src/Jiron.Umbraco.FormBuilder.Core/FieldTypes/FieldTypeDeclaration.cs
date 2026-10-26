@@ -204,6 +204,9 @@ public enum FieldMessageKinds
 
     /// <summary><c>full</c>.</summary>
     Full = 1 << 14,
+
+    /// <summary><c>confirmation</c>: the answer typed again is missing or another one, such as an email address (ADR-0062).</summary>
+    Confirmation = 1 << 15,
 }
 
 /// <summary>

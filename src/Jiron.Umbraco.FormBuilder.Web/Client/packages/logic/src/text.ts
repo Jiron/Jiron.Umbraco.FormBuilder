@@ -77,6 +77,18 @@ function single(mapped: string, original: string): string {
   return [...mapped].length === 1 ? mapped : original;
 }
 
+/** The words of a text: the runs of characters between the code units that cleaning trims. */
+export function countWords(value: string): number {
+  let words = 0;
+  let inWord = false;
+  for (let i = 0; i < value.length; i++) {
+    const space = TRIMMED.has(value.charCodeAt(i));
+    if (!space && !inWord) words++;
+    inWord = !space;
+  }
+  return words;
+}
+
 /**
  * Folds case one character at a time, in the folded blocks only: the simple uppercase mapping, then the simple
  * lowercase mapping. So final and medial sigma fold alike, sharp s never becomes "ss", and both Turkish i's fold

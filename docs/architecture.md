@@ -127,7 +127,9 @@ flowchart LR
   [ADR-0030](decisions/0030-porting-the-shared-logic.md)). Its form engine (`form.ts`) and Core's (`Logic/FormRules.cs`)
   decide a whole form at once: what is hidden and required, the validation rules' messages, the actions that run and
   the outcome, from one model of the form that Core builds from a definition with `DefinitionLogic.From`
-  ([ADR-0061](decisions/0061-the-form-rules-engine.md));
+  ([ADR-0061](decisions/0061-the-form-rules-engine.md)); its `checkField` (`checks.ts`) runs the built-in types'
+  checks of a field's answers as each type's `Validate` in Core does
+  ([ADR-0062](decisions/0062-the-built-in-types-checks.md));
 - `runtime`: enhances Razor-rendered forms through the markup contract;
 - `element`: `<jfb-form>`, the headless renderer, with the same markup and runtime;
 - `backoffice`: the Forms section in Lit and TypeScript with UUI, through the generated client.

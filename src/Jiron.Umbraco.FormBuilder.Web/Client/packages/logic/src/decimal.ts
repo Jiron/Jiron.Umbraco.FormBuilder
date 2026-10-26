@@ -134,6 +134,12 @@ export function subtract(a: Decimal, b: Decimal): Decimal {
   return add(a, { n: -b.n, s: b.s });
 }
 
+/** Whether a is a whole multiple of b, which is not 0: a value on a step. */
+export function isMultiple(a: Decimal, b: Decimal): boolean {
+  const s = Math.max(a.s, b.s);
+  return (a.n * pow10(s - a.s)) % (b.n * pow10(s - b.s)) === 0n;
+}
+
 /** The exact product. */
 export function multiply(a: Decimal, b: Decimal): Decimal {
   return inRange(normalise(a.n * b.n, a.s + b.s));

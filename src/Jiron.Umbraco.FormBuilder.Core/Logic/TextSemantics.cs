@@ -59,6 +59,25 @@ internal static class TextSemantics
         return text[start..end];
     }
 
+    /// <summary>The words of a text: the runs of characters between the code units that cleaning trims.</summary>
+    public static int CountWords(string value)
+    {
+        var words = 0;
+        var inWord = false;
+        foreach (var unit in value)
+        {
+            var space = Trimmed.Contains(unit);
+            if (!space && !inWord)
+            {
+                words++;
+            }
+
+            inWord = !space;
+        }
+
+        return words;
+    }
+
     /// <summary>
     /// Folds case one character at a time, in the folded blocks only: the simple uppercase mapping, then the simple
     /// lowercase mapping. So final and medial sigma fold alike, sharp s never becomes "ss", and both Turkish i's fold

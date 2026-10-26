@@ -37,6 +37,11 @@ public sealed class NumberFieldType() : FormBuilderFieldTypeBase<NumberFieldSett
             }
         }
     }
+
+    /// <inheritdoc />
+    /// <remarks>Without a step, an answer keeps the step its decimals give, so it has at most that many places.</remarks>
+    protected override void Validate(NumberFieldSettings settings, FieldValidation validation) =>
+        BuiltInValidation.Range(validation, validation.Values[0].Text, settings.Min, settings.Max, settings.Step ?? BuiltInValidation.StepOfPlaces(settings.Decimals));
 }
 
 /// <summary>The settings of a number (ADR-0002). The limits are decimals in the wire form of ADR-0005, as answers are.</summary>
@@ -87,6 +92,10 @@ public sealed class DateFieldType() : FormBuilderFieldTypeBase<DateFieldSettings
     /// <inheritdoc />
     protected override void CheckSettings(DateFieldSettings settings, FieldSettingsCheck check) =>
         BuiltInChecks.DateBounds(check, settings.Min, settings.Max);
+
+    /// <inheritdoc />
+    protected override void Validate(DateFieldSettings settings, FieldValidation validation) =>
+        BuiltInValidation.DateWindow(validation, CalendarValues.ParseDate(validation.Values[0].Text)!.Value, settings.Min, settings.Max, settings.WeekdaysOnly, settings.Excluded);
 }
 
 /// <summary>
@@ -138,6 +147,27 @@ public sealed class TimeFieldType() : FormBuilderFieldTypeBase<TimeFieldSettings
             check.Invalid("min", $"The setting 'min' is {min}, later than 'max', {max}.");
         }
     }
+
+    /// <inheritdoc />
+    /// <remarks>The step counts from the earliest time, or from midnight without one.</remarks>
+    protected override void Validate(TimeFieldSettings settings, FieldValidation validation)
+    {
+        var seconds = CalendarValues.ParseTime(validation.Values[0].Text)!.Value;
+        var earliest = settings.Min is { } min ? CalendarValues.ParseTime(min) : null;
+        if (seconds < earliest)
+        {
+            validation.Fail(FieldMessageKinds.Min);
+        }
+        else if (settings.Max is { } max && seconds > CalendarValues.ParseTime(max))
+        {
+            validation.Fail(FieldMessageKinds.Max);
+        }
+
+        if (!BuiltInValidation.OnMinuteStep(seconds, earliest ?? 0, settings.StepMinutes))
+        {
+            validation.Fail(FieldMessageKinds.Step);
+        }
+    }
 }
 
 /// <summary>The settings of a time of day (ADR-0002).</summary>
@@ -174,6 +204,18 @@ public sealed class DateTimeFieldType() : FormBuilderFieldTypeBase<DateTimeField
     /// <inheritdoc />
     protected override void CheckSettings(DateTimeFieldSettings settings, FieldSettingsCheck check) =>
         BuiltInChecks.DateBounds(check, settings.Min, settings.Max);
+
+    /// <inheritdoc />
+    /// <remarks>The window is that of the answer's date; the step counts from midnight of its own day.</remarks>
+    protected override void Validate(DateTimeFieldSettings settings, FieldValidation validation)
+    {
+        var text = validation.Values[0].Text;
+        BuiltInValidation.DateWindow(validation, CalendarValues.ParseDate(text[..10])!.Value, settings.Min, settings.Max, settings.WeekdaysOnly, settings.Excluded);
+        if (!BuiltInValidation.OnMinuteStep(CalendarValues.ParseTime(text[11..])!.Value, 0, settings.StepMinutes))
+        {
+            validation.Fail(FieldMessageKinds.Step);
+        }
+    }
 }
 
 /// <summary>The settings of a date and a time (ADR-0002): those of a date and of a time, combined.</summary>
@@ -217,7 +259,17 @@ public sealed class RatingFieldType() : FormBuilderFieldTypeBase<RatingFieldSett
     RuleKind = FieldKind.Number,
     Features = BuiltInFieldTypes.Input | FieldFeatures.DefaultValue | FieldFeatures.Prefill,
     Messages = BuiltInFieldTypes.Readable,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void Validate(RatingFieldSettings settings, FieldValidation validation)
+    {
+        if (!BuiltInValidation.IsWholeNumber(validation.Values[0].Text, 1, settings.Count))
+        {
+            validation.Fail(FieldMessageKinds.Invalid);
+        }
+    }
+}
 
 /// <summary>The settings of a rating (ADR-0002).</summary>
 public sealed class RatingFieldSettings
@@ -270,7 +322,17 @@ public sealed class ScaleFieldType() : FormBuilderFieldTypeBase<ScaleFieldSettin
     RuleKind = FieldKind.Number,
     Features = BuiltInFieldTypes.Input | FieldFeatures.DefaultValue | FieldFeatures.Prefill,
     Messages = BuiltInFieldTypes.Readable,
-});
+})
+{
+    /// <inheritdoc />
+    protected override void Validate(ScaleFieldSettings settings, FieldValidation validation)
+    {
+        if (!BuiltInValidation.IsWholeNumber(validation.Values[0].Text, settings.From, settings.To))
+        {
+            validation.Fail(FieldMessageKinds.Invalid);
+        }
+    }
+}
 
 /// <summary>The settings of a scale (ADR-0002).</summary>
 public sealed class ScaleFieldSettings
@@ -332,6 +394,10 @@ public sealed class SliderFieldType() : FormBuilderFieldTypeBase<SliderFieldSett
             }
         }
     }
+
+    /// <inheritdoc />
+    protected override void Validate(SliderFieldSettings settings, FieldValidation validation) =>
+        BuiltInValidation.Range(validation, validation.Values[0].Text, settings.Min, settings.Max, settings.Step);
 }
 
 /// <summary>The settings of a slider (ADR-0002), its limits as decimals in the wire form of ADR-0005.</summary>
