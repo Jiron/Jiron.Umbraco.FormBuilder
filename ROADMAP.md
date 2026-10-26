@@ -1775,7 +1775,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **5.1e Changing types** (5.1d split in two, WORKLOG 2026-10-25) (2026-10-25, c39611f)
   - **Changing types:** a "change type" compatibility map.
   - Done when: unit tests cover the compatibility map with what each change loses.
-- [ ] **5.1f Designer locks** (5.1 split in four, WORKLOG 2026-10-25; 5.1d until 5.1b's split, 5.1e until 5.1d's)
+- [x] **5.1f Designer locks** (5.1 split in four, WORKLOG 2026-10-25; 5.1d until 5.1b's split, 5.1e until 5.1d's) (2026-10-26, fa64243)
   - **Designer locks** (`Designer:SettingLocks`, ADR-0042): start-up refuses a lock that names a field type or setting the site lacks, or a value the setting refuses; the settings schema the backoffice reads marks a locked setting read-only or hidden; the form service refuses a save that gives it another value (`409 setting_locked`); the runtime uses the locked value.
   - Done when: a designer lock of a field setting refuses a save with another value and wins at run time; start-up refuses a lock on a type or a setting the site lacks and one whose value the setting refuses, each naming the key; the schema the backoffice reads marks a locked setting read-only, and a hidden one hidden.
 - [ ] **5.2 Rules and validation engines** (C# and `packages/logic`)
