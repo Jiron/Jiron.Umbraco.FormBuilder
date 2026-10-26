@@ -12,7 +12,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 [TestFixture]
 public sealed class VectorTests
 {
-    private static readonly string[] Runnable = ["condition", "rule", "number", "calc", "formula", "form", "field"];
+    private static readonly string[] Runnable = ["condition", "rule", "number", "calc", "formula", "form", "field", "template"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, JsonDocument>> Files = new(Load);
 
@@ -98,6 +98,30 @@ public sealed class VectorTests
     private static JsonObject Json(IReadOnlyDictionary<string, string?> calculations) =>
         new(calculations.Select(pair => KeyValuePair.Create(pair.Key, pair.Value is { } value ? (JsonNode?)value : null)));
 
+    private static JsonObject Json(RenderedTemplate rendered) => new()
+    {
+        ["text"] = rendered.Text,
+        ["problems"] = new JsonArray([.. rendered.Problems.Select(problem => (JsonNode)new JsonObject
+        {
+            ["code"] = problem.Code,
+            ["at"] = problem.At,
+        })]),
+    };
+
+    // A template rendered in its context over sources given as data, with the file's formats for the culture.
+    private static RenderedTemplate RenderTemplate(JsonElement root, JsonElement template, string culture)
+    {
+        if (!root.GetProperty("defaults").TryGetProperty("cultures", out var cultures) || !cultures.TryGetProperty(culture, out var formats))
+        {
+            throw new InvalidOperationException($"The file has no formats for {culture}.");
+        }
+
+        var sources = template.GetProperty("sources").EnumerateObject()
+            .ToDictionary(source => source.Name, source => VectorReader.ValueOf(source.Value), StringComparer.Ordinal);
+        var parsed = MergeTags.Parse(template.GetProperty("text").GetString()!, VectorReader.TemplateContextOf(template.GetProperty("context")));
+        return MergeTags.Render(parsed, path => sources.GetValueOrDefault(path), VectorReader.Formats(formats));
+    }
+
     // A subject as a formula reads it: the fields' kinds and answers by alias, a hidden field without answers.
     private static FormulaScope FormulaScope(Subject subject) => new(
         alias => subject.Fields.TryGetValue(alias, out var kind) ? kind : null,
@@ -151,6 +175,11 @@ public sealed class VectorTests
             if (vector.TryGetProperty("formula", out var formula))
             {
                 return Calculations.Evaluate(formula.GetString()!, FormulaScope(subject));
+            }
+
+            if (vector.TryGetProperty("template", out var template))
+            {
+                return Json(RenderTemplate(root, template, subject.Context.Culture));
             }
 
             return Calculations.Calculate(VectorReader.Calculation(vector.GetProperty("calc")), FormulaScope(subject))?.ToString();

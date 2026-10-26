@@ -61,7 +61,7 @@ public sealed class FormulaFuzzTests
                 }
                 catch (Exception exception)
                 {
-                    failures.Add($"formula {i}: {exception.GetType().Name} for {Show(formula)}");
+                    failures.Add($"formula {i}: {exception.GetType().Name} for {Fuzzing.Show(formula)}");
                     break;
                 }
 
@@ -72,7 +72,7 @@ public sealed class FormulaFuzzTests
             outcomes[outcome] = outcomes.GetValueOrDefault(outcome) + 1;
             if (fastest != TimeSpan.MaxValue && fastest > Budget)
             {
-                failures.Add($"formula {i}: {fastest.TotalMilliseconds:F1} ms for {Show(formula)}");
+                failures.Add($"formula {i}: {fastest.TotalMilliseconds:F1} ms for {Fuzzing.Show(formula)}");
             }
 
             if (fastest != TimeSpan.MaxValue && fastest > slowest.Time)
@@ -82,7 +82,7 @@ public sealed class FormulaFuzzTests
         }
 
         TestContext.Out.WriteLine(string.Join(", ", outcomes.OrderBy(pair => pair.Key, StringComparer.Ordinal).Select(pair => $"{pair.Key} {pair.Value}")));
-        TestContext.Out.WriteLine($"slowest: {slowest.Time.TotalMilliseconds:F3} ms for {Show(slowest.Formula)}");
+        TestContext.Out.WriteLine($"slowest: {slowest.Time.TotalMilliseconds:F3} ms for {Fuzzing.Show(slowest.Formula)}");
         Assert.Multiple(() =>
         {
             Assert.That(failures, Is.Empty);
@@ -125,18 +125,6 @@ public sealed class FormulaFuzzTests
         alias => Kinds.TryGetValue(alias, out var kind) ? kind : null,
         alias => answers.GetValueOrDefault(alias),
         () => Today);
-
-    // A formula as the report shows it: short, and ASCII, with each other character as its code.
-    private static string Show(string formula)
-    {
-        var text = new StringBuilder();
-        foreach (var c in formula.Length > 200 ? formula[..200] + "..." : formula)
-        {
-            text.Append(c is >= ' ' and <= '~' ? c.ToString() : $"\\u{(int)c:X4}");
-        }
-
-        return text.ToString();
-    }
 
     /// <summary>Random formulas from the grammar of ADR-0063, broken now and then, and random answers to them.</summary>
     private sealed class FormulaGenerator(int seed)

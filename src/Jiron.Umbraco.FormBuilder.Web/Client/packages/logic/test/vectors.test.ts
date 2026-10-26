@@ -13,18 +13,23 @@ import {
   evaluateRule,
   formatDecimal,
   LogicError,
+  parseTemplate,
+  renderTemplate,
   storedNumber,
   type Calculation,
   type CheckedField,
   type Condition,
   type Context,
+  type CultureFormats,
   type FieldAnswers,
   type FormAnswers,
   type FormulaScope,
   type Kind,
   type LogicForm,
+  type MergeValue,
   type Rule,
   type Subject,
+  type TemplateContext,
 } from '../src/index.ts';
 import { today } from '../src/dates.ts';
 import { repositoryRoot, vectorsFolder } from '../tools/repository.ts';
@@ -44,7 +49,15 @@ interface VectorCase {
   readonly form?: LogicForm;
   readonly field?: CheckedField;
   readonly answers?: FieldAnswers;
+  readonly template?: VectorTemplate;
   readonly expect: unknown;
+}
+
+/** A template rendered in its context over sources given as data: each known path and its value (ADR-0064). */
+interface VectorTemplate {
+  readonly text: string;
+  readonly context: TemplateContext;
+  readonly sources: Readonly<Record<string, MergeValue>>;
 }
 
 /** A built-in type as the reviewed snapshot of the field types endpoint serves it (docs/api/field-types.json). */
@@ -114,13 +127,13 @@ function heldToItsType(id: string, field: CheckedField, answers: FieldAnswers): 
 interface VectorFile {
   readonly format: string;
   readonly suite: string;
-  readonly defaults: { readonly context: Context };
+  readonly defaults: { readonly context: Context; readonly cultures?: Readonly<Record<string, CultureFormats>> };
   readonly fields: Readonly<Record<string, Kind>>;
   readonly cases: readonly VectorCase[];
 }
 
 /** The things a case can run; each case has exactly one. */
-const RUNNABLE = ['condition', 'rule', 'number', 'calc', 'formula', 'form', 'field'] as const;
+const RUNNABLE = ['condition', 'rule', 'number', 'calc', 'formula', 'form', 'field', 'template'] as const;
 
 const folder = vectorsFolder();
 const names = readdirSync(folder)
@@ -161,6 +174,14 @@ function run(file: VectorFile, vector: VectorCase): unknown {
     if (vector.form !== undefined) {
       const answers: FormAnswers = { values: vector.values ?? {}, rows: vector.rows ?? {} };
       return evaluateForm(vector.form, answers, subject.context);
+    }
+    if (vector.template !== undefined) {
+      const { text, context, sources } = vector.template;
+      const culture = file.defaults.cultures?.[subject.context.culture];
+      if (culture === undefined)
+        throw new Error(`${vector.id}: the file has no formats for ${subject.context.culture}`);
+      const parsed = parseTemplate(text, context);
+      return renderTemplate(parsed, (path) => (Object.hasOwn(sources, path) ? sources[path] : undefined), culture);
     }
   } catch (error) {
     if (error instanceof LogicError)

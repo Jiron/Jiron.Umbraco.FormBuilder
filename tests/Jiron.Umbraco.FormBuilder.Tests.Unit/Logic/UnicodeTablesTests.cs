@@ -7,7 +7,7 @@ using Jiron.Umbraco.FormBuilder.Testing;
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 
 /// <summary>
-/// The tables check (ADR-0005): compares Core's fold, clean and NFC recomposition for every code point with what the
+/// The tables check (ADR-0005, ADR-0064): compares Core's fold, clean, upper, lower and NFC recomposition for every code point with what the
 /// TypeScript side wrote to tests/vectors/tables/typescript.json (<c>npm run tables</c> in packages/logic, whose own test
 /// keeps the file current), so a difference between the runtimes' Unicode data shows up here.
 /// </summary>
@@ -53,6 +53,26 @@ public sealed class UnicodeTablesTests
         var units = Enumerable.Range(0, 0x110000).Select(cp => (cp, Text([cp])));
 
         var differences = Compare("clean", expected, units, TextSemantics.Clean);
+
+        Assert.That(differences, Is.Empty, Summary(differences));
+    }
+
+    [Test]
+    public void Upper_EveryCodePoint_AgreesWithTypeScript()
+    {
+        var expected = Expected("upper", e => Text(e.EnumerateArray().Select(c => c.GetInt32())));
+
+        var differences = Compare("upper", expected, Scalars(), TextSemantics.Upper);
+
+        Assert.That(differences, Is.Empty, Summary(differences));
+    }
+
+    [Test]
+    public void Lower_EveryCodePoint_AgreesWithTypeScript()
+    {
+        var expected = Expected("lower", e => Text(e.EnumerateArray().Select(c => c.GetInt32())));
+
+        var differences = Compare("lower", expected, Scalars(), TextSemantics.Lower);
 
         Assert.That(differences, Is.Empty, Summary(differences));
     }

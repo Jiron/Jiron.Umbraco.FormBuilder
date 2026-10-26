@@ -18,6 +18,14 @@ describe('the Unicode tables', () => {
     expect(written.clean).toEqual(current.clean);
   });
 
+  it('map to capitals as this runtime does', () => {
+    expect(written.upper).toEqual(current.upper);
+  });
+
+  it('map to small letters as this runtime does', () => {
+    expect(written.lower).toEqual(current.lower);
+  });
+
   it('recompose as this runtime recomposes', () => {
     expect(written.recompose).toEqual(current.recompose);
   });

@@ -4,8 +4,9 @@ using Jiron.Umbraco.FormBuilder.Logic;
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 
 /// <summary>
-/// Reads fields, answers, rules, conditions, operands, contexts, calculations and forms from a vector file's JSON
-/// (ADR-0005, ADR-0061); <see cref="FieldVector"/> reads a field to check (ADR-0062).
+/// Reads fields, answers, rules, conditions, operands, contexts, calculations, forms, template values and culture
+/// formats from a vector file's JSON (ADR-0005, ADR-0061, ADR-0064); <see cref="FieldVector"/> reads a field to check
+/// (ADR-0062).
 /// An operand of a shape nothing accepts is read as <see cref="InvalidOperand"/>, so checking refuses it as TypeScript
 /// does; a null name reads as no name, as in TypeScript.
 /// </summary>
@@ -22,6 +23,18 @@ internal static class VectorReader
         ["date"] = FieldKind.Date,
         ["time"] = FieldKind.Time,
         ["dateTime"] = FieldKind.DateTime,
+    };
+
+    private static readonly Dictionary<string, TemplateContext> TemplateContexts = new(StringComparer.Ordinal)
+    {
+        ["html"] = TemplateContext.Html,
+        ["text"] = TemplateContext.Text,
+        ["header"] = TemplateContext.Header,
+        ["url"] = TemplateContext.Url,
+        ["json"] = TemplateContext.Json,
+        ["jsonString"] = TemplateContext.JsonString,
+        ["form"] = TemplateContext.Form,
+        ["xml"] = TemplateContext.Xml,
     };
 
     public static Dictionary<string, FieldKind> Fields(JsonElement element) =>
@@ -125,6 +138,53 @@ internal static class VectorReader
             [.. element.GetProperty("args").EnumerateArray().Select(Calculation)],
             scale);
     }
+
+    /// <summary>A template's context by its name in the vectors.</summary>
+    public static TemplateContext TemplateContextOf(JsonElement element) =>
+        TemplateContexts.TryGetValue(element.GetString() ?? string.Empty, out var context)
+            ? context
+            : throw new FormatException($"Unknown template context {element}.");
+
+    /// <summary>A source's value: a string, an object with its text and the wire number or date behind it, or a list of these.</summary>
+    public static MergeValue ValueOf(JsonElement element) =>
+        element.ValueKind == JsonValueKind.Array
+            ? MergeValue.ListOf([.. element.EnumerateArray().Select(ItemOf)])
+            : MergeValue.Of(ItemOf(element));
+
+    /// <summary>A culture's formats as the server writes them (ADR-0064).</summary>
+    public static CultureFormats Formats(JsonElement element)
+    {
+        var dates = element.GetProperty("dates");
+        var number = element.GetProperty("number");
+        var currency = element.GetProperty("currency");
+        string Text(JsonElement parent, string name) => parent.GetProperty(name).GetString()!;
+        List<int> Sizes(JsonElement parent) => [.. parent.GetProperty("sizes").EnumerateArray().Select(size => size.GetInt32())];
+        return new CultureFormats(
+            new DatePatterns(Text(dates, "short"), Text(dates, "medium"), Text(dates, "long"), Text(dates, "time"), Text(dates, "dateTime")),
+            Strings(element.GetProperty("months")),
+            Strings(element.GetProperty("monthsShort")),
+            Strings(element.GetProperty("monthsGenitive")),
+            Strings(element.GetProperty("monthsShortGenitive")),
+            Strings(element.GetProperty("days")),
+            Strings(element.GetProperty("daysShort")),
+            Text(element, "am"),
+            Text(element, "pm"),
+            Text(element, "minus"),
+            new NumberFormat(Text(number, "decimal"), Text(number, "group"), Sizes(number), Text(number, "negative")),
+            new CurrencyFormat(
+                Text(currency, "code"),
+                Text(currency, "symbol"),
+                Text(currency, "decimal"),
+                Text(currency, "group"),
+                Sizes(currency),
+                Text(currency, "positive"),
+                Text(currency, "negative")));
+    }
+
+    private static MergeItem ItemOf(JsonElement element) =>
+        element.ValueKind == JsonValueKind.String
+            ? new MergeItem(element.GetString()!)
+            : new MergeItem(element.GetProperty("text").GetString()!, OptionalString(element, "number"), OptionalString(element, "date"));
 
     private static LogicField Field(JsonElement element) => new(
         Id(element),

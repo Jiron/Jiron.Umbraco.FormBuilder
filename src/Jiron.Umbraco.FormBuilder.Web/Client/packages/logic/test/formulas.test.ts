@@ -13,6 +13,7 @@ import {
   type Kind,
 } from '../src/index.ts';
 import { today } from '../src/dates.ts';
+import { Random, show } from './fuzzing.ts';
 
 const FORMULAS = 10_000;
 const SEED = 5301;
@@ -47,34 +48,6 @@ const outcomesToReach = [
   'constant_formula',
   'division_by_zero',
 ];
-
-/** A small seeded generator (xorshift, 32 bits), so every run tries the same formulas. */
-class Random {
-  private state: number;
-
-  constructor(seed: number) {
-    this.state = seed >>> 0 || 1;
-  }
-
-  /** A whole number from 0 up to, not including, the bound. */
-  next(bound: number): number {
-    let x = this.state;
-    x ^= x << 13;
-    x ^= x >>> 17;
-    x ^= x << 5;
-    this.state = x >>> 0;
-    return this.state % bound;
-  }
-
-  /** A whole number from the low bound up to, not including, the high one. */
-  between(low: number, high: number): number {
-    return low + this.next(high - low);
-  }
-
-  pick<T>(items: readonly T[]): T {
-    return items[this.next(items.length)] as T;
-  }
-}
 
 // Mostly the fields arithmetic takes; now and then any field, or none the form has.
 const amounts = ['qty', 'qty', 'price', 'price', 'size', 'extras', 'gift'];
@@ -277,17 +250,6 @@ const scopeOf = (answers: ReadonlyMap<string, readonly string[] | undefined>): F
   answers: (alias) => answers.get(alias),
   today: () => siteToday,
 });
-
-// A formula as the report shows it: short, and ASCII, with each other code unit as its code.
-const show = (formula: string): string => {
-  const text = formula.length > 200 ? formula.slice(0, 200) + '...' : formula;
-  let shown = '';
-  for (let i = 0; i < text.length; i++) {
-    const code = text.charCodeAt(i);
-    shown += code >= 0x20 && code <= 0x7e ? text.charAt(i) : '\\u' + code.toString(16).padStart(4, '0');
-  }
-  return shown;
-};
 
 describe('random formulas', () => {
   it('10,000 give a result or a mistake, each in at most 50 ms', () => {

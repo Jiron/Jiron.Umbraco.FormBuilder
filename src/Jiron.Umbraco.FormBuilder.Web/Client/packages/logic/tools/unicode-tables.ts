@@ -1,20 +1,25 @@
-// The tables check's TypeScript half (ADR-0005): what this runtime's clean, fold and NFC recomposition do to every
-// code point, written to tests/vectors/tables/typescript.json for the C# suite to compare. Only code points that
-// change are listed, one per line, so a change in the runtime's Unicode data shows as a short diff.
+// The tables check's TypeScript half (ADR-0005, ADR-0064): what this runtime's clean, fold, upper, lower and NFC
+// recomposition do to every code point, written to tests/vectors/tables/typescript.json for the C# suite to compare.
+// Only code points that change are listed, one per line, so a change in the runtime's Unicode data shows as a short diff.
 //   node tools/unicode-tables.ts           write the file
 //   node tools/unicode-tables.ts --check   exit 1 when the file differs from what this runtime does
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { clean, fold } from '../src/text.ts';
+import { clean, fold, lower, upper } from '../src/text.ts';
 import { tablesFile } from './repository.ts';
 
 /** The format the file declares. */
 export const TABLES_FORMAT = 'jfb-unicode-tables/1';
 
-/** Code point to its folded code point, its cleaned code points, and the NFC of its canonical decomposition. */
+/**
+ * Code point to its folded code point, its cleaned code points, what the `upper` and `lower` filters write for it,
+ * and the NFC of its canonical decomposition.
+ */
 export interface UnicodeTables {
   readonly fold: readonly (readonly [number, number])[];
   readonly clean: readonly (readonly [number, readonly number[]])[];
+  readonly upper: readonly (readonly [number, readonly number[]])[];
+  readonly lower: readonly (readonly [number, readonly number[]])[];
   readonly recompose: readonly (readonly [number, readonly number[]])[];
 }
 
@@ -25,6 +30,8 @@ const NEWLINE = String.fromCharCode(10);
 export function unicodeTables(): UnicodeTables {
   const foldTable: [number, number][] = [];
   const cleanTable: [number, number[]][] = [];
+  const upperTable: [number, number[]][] = [];
+  const lowerTable: [number, number[]][] = [];
   // The NFC of each character's canonical decomposition: the compositions both runtimes must make alike.
   const recomposeTable: [number, number[]][] = [];
   for (let cp = 0; cp <= 0x10ffff; cp++) {
@@ -35,10 +42,14 @@ export function unicodeTables(): UnicodeTables {
     if (surrogate) continue;
     const folded = fold(ch);
     if (folded !== ch) foldTable.push([cp, folded.codePointAt(0) ?? 0]);
+    const capital = upper(ch);
+    if (capital !== ch) upperTable.push([cp, codePoints(capital)]);
+    const small = lower(ch);
+    if (small !== ch) lowerTable.push([cp, codePoints(small)]);
     const nfd = ch.normalize('NFD');
     if (nfd !== ch) recomposeTable.push([cp, codePoints(nfd.normalize('NFC'))]);
   }
-  return { fold: foldTable, clean: cleanTable, recompose: recomposeTable };
+  return { fold: foldTable, clean: cleanTable, upper: upperTable, lower: lowerTable, recompose: recomposeTable };
 }
 
 /** The file's text: the runtime's versions, then each table with one entry per line. */
@@ -48,7 +59,13 @@ export function tablesText(tables: UnicodeTables): string {
     `  "${name}": [` + NEWLINE + rows.map((row) => '    ' + JSON.stringify(row)).join(',' + NEWLINE) + NEWLINE + '  ]';
   const header = { format: TABLES_FORMAT, node, icu, unicode };
   const head = Object.entries(header).map(([name, value]) => `  "${name}": ${JSON.stringify(value)}`);
-  const body = [table('fold', tables.fold), table('clean', tables.clean), table('recompose', tables.recompose)];
+  const body = [
+    table('fold', tables.fold),
+    table('clean', tables.clean),
+    table('upper', tables.upper),
+    table('lower', tables.lower),
+    table('recompose', tables.recompose),
+  ];
   return '{' + NEWLINE + [...head, ...body].join(',' + NEWLINE) + NEWLINE + '}' + NEWLINE;
 }
 
@@ -56,14 +73,22 @@ export function tablesText(tables: UnicodeTables): string {
 export function readTables(text: string): UnicodeTables {
   const parsed = JSON.parse(text) as UnicodeTables & { readonly format: string };
   if (parsed.format !== TABLES_FORMAT) throw new Error(`Not a ${TABLES_FORMAT} file`);
-  return { fold: parsed.fold, clean: parsed.clean, recompose: parsed.recompose };
+  return {
+    fold: parsed.fold,
+    clean: parsed.clean,
+    upper: parsed.upper,
+    lower: parsed.lower,
+    recompose: parsed.recompose,
+  };
 }
 
 const isMain = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {
   const path = tablesFile();
   const tables = unicodeTables();
-  const summary = `${tables.fold.length} folds, ${tables.clean.length} cleaned, ${tables.recompose.length} recompositions`;
+  const summary =
+    `${tables.fold.length} folds, ${tables.clean.length} cleaned, ${tables.upper.length} upper, ` +
+    `${tables.lower.length} lower, ${tables.recompose.length} recompositions`;
   if (process.argv.includes('--check')) {
     const current = existsSync(path) ? JSON.stringify(readTables(readFileSync(path, 'utf8'))) : '';
     if (current !== JSON.stringify(tables)) {

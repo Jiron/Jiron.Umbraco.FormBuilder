@@ -80,7 +80,11 @@ it, `BuiltInChoiceValidationTests.cs` and `BuiltInPeopleAndFileValidationTests.c
 through each type's `Validate`. `calculations` (5.3a) holds the calculation language
 ([ADR-0063](../docs/decisions/0063-the-calculation-language.md)): a case's `formula` with its `values`, expecting its
 result, null without a value, or the mistake's code with the position where it starts, and whole forms with
-calculation fields, whose results every `form` case expects in `calculations`.
+calculation fields, whose results every `form` case expects in `calculations`. `merge-tags` (5.3b) holds the merge-tag
+engine ([ADR-0064](../docs/decisions/0064-the-merge-tag-engine.md)): a case's `template` with its context and its
+values by source, rendered with the context's culture from the file's `cultures`, expecting the `text` and the
+`problems` with their positions; the `place` cases put one tag after each piece of markup, address or JSON that
+decides whether a tag may stand there.
 
 **The mutation check** proves the vectors. Each mutant in `vectors/mutants.mjs` changes one piece of the logic in one
 runtime, that runtime's vector runner runs, and the file is put back; the check fails on a mutant that nothing catches,
@@ -95,7 +99,9 @@ node tests/vectors/mutants.mjs --check         # only that each mutant's code is
 
 Run it again after changing the logic. A survivor needs a vector in `vectors/suites/`, or a reason why no input can
 tell the change apart. Lone surrogates are the one thing no vector can hold, since .NET's JSON reader refuses them, so
-`packages/logic/test/text.test.ts` and `Logic/TextSemanticsTests.cs` cover them. `Definitions/DefinitionLogicTests.cs`
+`packages/logic/test/text.test.ts` and `Logic/TextSemanticsTests.cs` cover them, and for the merge tags
+`packages/logic/test/templates.test.ts` and `Logic/TemplateInjectionTests.cs`, in every context whose output must be
+well formed. `Definitions/DefinitionLogicTests.cs`
 shows what the engine's model holds for a definition, and what the engine decides from it.
 
 **What long answers cost** is checked in both runtimes too, by `Logic/LogicCostTests.cs` and
@@ -109,9 +115,15 @@ that cleaning returns a text it leaves alone as it is, and puts each replacement
 `Logic/FormulaFuzzTests.cs` and `packages/logic/test/formulas.test.ts` run 10,000 random formulas each, from a seeded
 generator: built from the grammar, broken by chance and worked out over random answers, each gives a result or a
 mistake, nothing else, in at most 50 ms (the fastest of three runs), and together they reach every outcome.
+`Logic/TemplateFuzzTests.cs` and `packages/logic/test/templates.test.ts` do the same for 10,000 random templates in
+every context and culture: none throws, each renders in at most 50 ms within the output limit, the problems come in
+the order of the template, and together they reach every problem, each at least 20 times. `Logic/TemplateInjectionTests.cs`
+and the same TypeScript file put hostile values through every filter: where a tag may stand they add no element,
+attribute, header line, address part or JSON token, and where it may not the template renders as it is written.
 
 **The tables check** compares the two runtimes' Unicode data. `npm run tables` in `packages/logic` writes what
-TypeScript's clean, fold and NFC recomposition do to every code point into `vectors/tables/typescript.json`; a Vitest
+TypeScript's clean, fold, NFC recomposition and the merge tags' `upper` and `lower` do to every code point into
+`vectors/tables/typescript.json`; a Vitest
 test fails when the file no longer matches the running Node, and `Logic/UnicodeTablesTests.cs` compares Core with it,
 listing the known gaps exactly.
 
