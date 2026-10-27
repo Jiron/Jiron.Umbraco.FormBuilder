@@ -119,17 +119,18 @@ describe('the test run', () => {
   });
 });
 
-test('findReports finds every Cobertura report under the folder, and nothing else', () => {
+test('findReports finds every Cobertura report under the folder, as each collector names it, and nothing else', () => {
   const dir = mkdtempSync(join(tmpdir(), 'jfb-coverage-'));
   folders.push(dir);
   mkdirSync(join(dir, 'a'), { recursive: true });
   mkdirSync(join(dir, 'b', 'c'), { recursive: true });
-  writeFileSync(join(dir, 'a', 'coverage.cobertura.xml'), unit);
+  writeFileSync(join(dir, 'a', 'Server_HOST_2026-10-27.22_56_16.cobertura.xml'), unit);
   writeFileSync(join(dir, 'b', 'c', 'coverage.cobertura.xml'), integration);
   writeFileSync(join(dir, 'b', 'coverage.json'), '{}');
+  writeFileSync(join(dir, 'b', 'cobertura.xml.txt'), unit);
 
   assert.deepEqual(
     findReports(dir).map((path) => path.slice(dir.length + 1).replaceAll('\\', '/')).sort(),
-    ['a/coverage.cobertura.xml', 'b/c/coverage.cobertura.xml'],
+    ['a/Server_HOST_2026-10-27.22_56_16.cobertura.xml', 'b/c/coverage.cobertura.xml'],
   );
 });

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
-// Line coverage per assembly from coverlet's Cobertura reports ("XPlat Code Coverage"), merged across the test
-// projects: a line counts as covered when any report hit it. The phase-review gate needs Core at 85% or more from
-// Phase 4 on (ROADMAP "How to use" and section 4.12). Ported from Tandem's script (ROADMAP 3.3).
+// Line coverage per assembly from the Cobertura reports of Microsoft's code coverage collector ("Code Coverage",
+// instrumenting in memory, ADR-0079), merged across the test projects: a line counts as covered when any report hit
+// it. The phase-review gate needs Core at 85% or more from Phase 4 on (ROADMAP "How to use" and section 4.12). Ported
+// from Tandem's script (ROADMAP 3.3).
 //
 //   node scripts/coverage.mjs --run     empties .local/coverage, runs the .NET tests into it, then merges and checks
 //   node scripts/coverage.mjs [--dir .local/coverage] [--min 85] [--package <assembly>]...
@@ -17,14 +18,14 @@ import { fileURLToPath } from 'node:url';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** Every coverage.cobertura.xml under a folder. */
+/** Every Cobertura report under a folder: each file whose name ends in .cobertura.xml, as each collector names it. */
 export function findReports(dir) {
   const found = [];
   const walk = (folder) => {
     for (const name of readdirSync(folder)) {
       const path = join(folder, name);
       if (statSync(path).isDirectory()) walk(path);
-      else if (name === 'coverage.cobertura.xml') found.push(path);
+      else if (name.endsWith('.cobertura.xml')) found.push(path);
     }
   };
   walk(dir);
@@ -141,7 +142,7 @@ function main(argv) {
 
   const reports = existsSync(dir) ? findReports(dir) : [];
   if (reports.length === 0) {
-    console.error(`coverage: no coverage.cobertura.xml under ${options.dir}; run node scripts/coverage.mjs --run`);
+    console.error(`coverage: no Cobertura report under ${options.dir}; run node scripts/coverage.mjs --run`);
     return 1;
   }
 

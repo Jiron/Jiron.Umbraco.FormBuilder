@@ -2,8 +2,8 @@
 
   <!--
     Integration tests on a real Umbraco (ADR-0011): Umbraco.Cms.Tests.Integration 17.x, SQLite here and SQL Server in
-    CI (Tests__Database__DatabaseType=SqlServer plus Tests__Database__SQLServerMasterConnectionString). The test SDK,
-    adapter and coverlet come from tests/Directory.Build.props. The harness follows Tandem's lessons (section 3.3):
+    CI (Tests__Database__DatabaseType=SqlServer plus Tests__Database__SQLServerMasterConnectionString). The test SDK
+    and the adapter come from tests/Directory.Build.props. The harness follows Tandem's lessons (section 3.3):
     - this project has its own appsettings.Tests.json (the package's copy is not copied to the output), with unattended
       package migrations off, so a pending plan cannot hang the test host, and ModelsBuilder off;
     - run it with dotnet test and a blame hang timeout of 10 minutes (CONTRIBUTING), so a hanging test is named

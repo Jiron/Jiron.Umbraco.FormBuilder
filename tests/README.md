@@ -21,8 +21,9 @@ gate):
 node scripts/coverage.mjs --run
 ```
 
-It empties `.local/coverage`, runs the .NET tests in Release with coverlet's collector over Core and Web only
-(`tests/coverage.runsettings`), merges the reports of both test projects (a line counts once, as covered when any
+It empties `.local/coverage`, runs the .NET tests in Release with Microsoft's code coverage collector over Core and
+Web only (`tests/coverage.runsettings`), which instruments in memory and rewrites no file, so Smart App Control lets
+the assemblies load (ADR-0079), merges the reports of both test projects (a line counts once, as covered when any
 report hit it) and prints each assembly's coverage. Without `--run` it reads the reports already there.
 
 The browser tests start a fresh demo host of their own and run in Edge (Playwright's Chromium in CI):

@@ -1,15 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Line coverage of the product assemblies for the phase reviews (scripts/coverage.mjs run): coverlet's collector,
-  Cobertura reports, Core and Web only, so Umbraco's assemblies and the Testing project never count.
+  Line coverage of the product assemblies for the phase reviews (scripts/coverage.mjs run): Microsoft's code coverage
+  collector, which comes with the test SDK, instrumenting in memory as each assembly loads, so no file is rewritten and
+  a code integrity policy such as Smart App Control loads the assemblies as built (ADR-0079). Cobertura reports, Core
+  and Web only, so Umbraco's assemblies and the Testing project never count; the source generators' files under obj
+  are not written by hand and do not count either.
 -->
 <RunSettings>
   <DataCollectionRunSettings>
     <DataCollectors>
-      <DataCollector friendlyName="XPlat Code Coverage">
+      <DataCollector friendlyName="Code Coverage">
         <Configuration>
-          <Format>cobertura</Format>
-          <Include>[Jiron.Umbraco.FormBuilder.Core]*,[Jiron.Umbraco.FormBuilder.Web]*</Include>
+          <Format>Cobertura</Format>
+          <CodeCoverage>
+            <ModulePaths>
+              <Include>
+                <ModulePath>.*Jiron\.Umbraco\.FormBuilder\.Core\.dll$</ModulePath>
+                <ModulePath>.*Jiron\.Umbraco\.FormBuilder\.Web\.dll$</ModulePath>
+              </Include>
+            </ModulePaths>
+            <Sources>
+              <Exclude>
+                <Source>.*[^A-Za-z0-9]obj[^A-Za-z0-9].*</Source>
+              </Exclude>
+            </Sources>
+            <EnableStaticManagedInstrumentation>False</EnableStaticManagedInstrumentation>
+            <EnableDynamicManagedInstrumentation>True</EnableDynamicManagedInstrumentation>
+          </CodeCoverage>
         </Configuration>
       </DataCollector>
     </DataCollectors>

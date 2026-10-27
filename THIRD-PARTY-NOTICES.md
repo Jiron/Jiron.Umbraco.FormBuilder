@@ -33,10 +33,9 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | `yaml` | 2.9.1 | ISC | reading the workflow files and `dependabot.yml` (`scripts/`) |
 | `NUnit` | 3.14.0 | MIT | unit and integration tests (`tests/`) |
 | `NUnit3TestAdapter` | 5.0.0 | MIT | running the NUnit tests (`tests/`) |
-| `Microsoft.NET.Test.Sdk` | 18.9.0 | MIT | running the tests (`tests/`) |
+| `Microsoft.NET.Test.Sdk` | 18.9.0 | MIT | running the tests, and with its MIT dependency Microsoft.CodeCoverage the coverage of the phase reviews, instrumented in memory (ADR-0079) (`tests/`) |
 | `NSubstitute` | 6.2.0 | BSD-3-Clause | test doubles in unit tests (`tests/`) |
 | `JsonSchema.Net` | 8.0.5 | MIT | validating definitions against the schema in `schemas/` in the unit tests, with its MIT dependencies JsonPointer.Net, Json.More.Net and Humanizer.Core; kept below 9.0, whose releases carry a fee agreement (ADR-0034) (`tests/`) |
-| `coverlet.collector` | 10.1.0 | MIT | test coverage (`tests/`) |
 | `Umbraco.Cms.Tests.Integration` | 17.7.1 | MIT | integration tests on a real Umbraco (`tests/`) |
 | `Umbraco.Cms` | 17.7.1 | MIT | the demo site, a whole Umbraco site on SQLite (`demo/`) |
 | `MimeKit` | 4.17.0 | MIT | reading the test hosts' mail in the Testing project; Umbraco already brings it (`tests/`) |

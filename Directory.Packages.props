@@ -41,7 +41,6 @@
     <PackageVersion Include="NUnit3TestAdapter" Version="5.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
-    <PackageVersion Include="coverlet.collector" Version="10.1.0" />
     <!--
       Validates definitions against schemas/jfb-form.v1.schema.json in the unit tests only (ROADMAP 4.2a, ADR-0034).
       8.0.5 is the last release under the MIT licence; from 9.0.0 the binaries come with a maintenance-fee agreement,

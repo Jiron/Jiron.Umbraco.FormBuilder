@@ -2,7 +2,8 @@
 
 - Status: accepted; the permission matrix (`403` and `404`) amended in 1.8; the start-up marker, the stub inside the
   host and the static site with 6.6 amended in 3.4c (ADR-0031); the floor the install test checks raised to 17.6 in
-  5.5a ([ADR-0074](0074-umbraco-17-6-as-the-floor.md))
+  5.5a ([ADR-0074](0074-umbraco-17-6-as-the-floor.md)); the coverage tool and where the coverage runs amended in 5.5f
+  ([ADR-0079](0079-coverage-without-rewritten-assemblies.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 3.4 (the harness) and 3.5 (CI and the gate), extended by every later step
 
@@ -45,7 +46,7 @@ rule 6); Edge but no WebKit; GitHub Actions results are not visible from here, s
 
 | Layer | Tools (licence) | Scope | Runs |
 | --- | --- | --- | --- |
-| **Unit** (`tests/Jiron.Umbraco.FormBuilder.Tests.Unit`) | NUnit 3.14 with its constraint model (MIT), NSubstitute (BSD-3-Clause), coverlet (MIT) | Pure logic with a fake `TimeProvider`: the definition model, upgraders and structural validation; rules, validation, merge tags and calculations; field and action types; the spam score; the settings validators and host rules; the sanitiser's configuration; the SSRF guard; exports and the formula guard. | every build, under a minute |
+| **Unit** (`tests/Jiron.Umbraco.FormBuilder.Tests.Unit`) | NUnit 3.14 with its constraint model (MIT), NSubstitute (BSD-3-Clause), Microsoft's code coverage collector (MIT, ADR-0079) | Pure logic with a fake `TimeProvider`: the definition model, upgraders and structural validation; rules, validation, merge tags and calculations; field and action types; the spam score; the settings validators and host rules; the sanitiser's configuration; the SSRF guard; exports and the formula guard. | every build, under a minute |
 | **Vectors** (`tests/vectors/*.json`) | the NUnit and Vitest runners of ADR-0005 | Rules, validation, merge tags and calculations in the `jfb-vectors/1` format; a case that passes in one runtime and fails in the other fails the build. The tables check compares fold, clean and recomposition for every code point. | every build |
 | **Integration** (`tests/Jiron.Umbraco.FormBuilder.Tests.Integration`) | `Umbraco.Cms.Tests.Integration` 17.x (MIT; it brings Moq, AutoFixture and Bogus), `UmbracoIntegrationTest`, `UmbracoTestServerTestBase` | A real Umbraco with Jiron Form Builder's composers: migrations (fresh, rerun, upgrade from fixtures), repositories and the entries query shapes, the submission pipeline, the outbox with two processors, settings across simulated servers, every public and management endpoint (success, validation, `401`, `403` or `404` for every role as ADR-0013 sets, rate limits, CORS, size limits), file uploads and downloads, logs captured and checked for personal data. | SQLite locally and in CI; **SQL Server in a CI job** |
 | **Client** (`Client/packages/*`) | Vitest (MIT), jsdom (MIT) | The logic package, the website runtime's modules, the web component, and the backoffice's element logic and pure editor-model functions (the designer's reducers, ported from Ligata's tested editor model, §3.1). | every build |
@@ -131,8 +132,8 @@ integration project of its own.
 only: repository checks (secret scan, term guard, text check, workflows, licences, links, the Marketplace schema,
 script tests); client (`npm ci`, lint, tests, build, size budgets); .NET (restore, a Release build with zero warnings,
 `dotnet format --verify-no-changes`, the third-party notices); packages (pack, validation, the file allowlist); tests
-(`dotnet test`, then the coverage merge and the 85% check on Core); the browser projects. It prints the time per
-stage. **CI** (3.5) runs the same plus SQL Server and the load-balancing job, gated by `JFB_CI` until the owner turns
+(`dotnet test`); the browser projects. It prints the time per stage. The coverage merge and the 85% check on Core run
+at each phase review (`node scripts/coverage.mjs --run`, ADR-0079). **CI** (3.5) runs the same plus SQL Server and the load-balancing job, gated by `JFB_CI` until the owner turns
 it on. A slow gate is fixed by making slow tests faster, never by skipping a stage.
 
 ## Consequences
