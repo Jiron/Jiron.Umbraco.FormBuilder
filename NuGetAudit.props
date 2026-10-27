@@ -7,35 +7,27 @@
     (scripts/check-audit-suppressions.mjs guards that, and the host-only group below). Each entry names exactly one
     reviewed advisory URL and its package; any advisory not listed here fails the build.
 
-    Reviewed 2026-10-23 (step 3.1) at the packages' floor, CMS 17.5.0, and at the test hosts' 17.7.1. Review the
-    list at every phase review and in 16.1, and remove an entry as soon as neither version brings the affected
-    package version any more.
+    Reviewed 2026-10-27 (step 5.5a, ADR-0074) at the packages' floor, CMS 17.6.0, and at the hosts' 17.7.1; first
+    reviewed in step 3.1. Review the list at every phase review and in 16.1, and remove an entry as soon as neither
+    version brings the affected package version any more.
   -->
   <ItemGroup>
-    <!-- MessagePack 3.1.7 (17.5.0) and 3.1.8 (17.7.1), via Umbraco.Cms.Web.Common, Api.Common and Api.Delivery. -->
+    <!-- MessagePack 3.1.8 (17.6.0 and 17.7.1), via Umbraco.Cms.Web.Common, Api.Common and Api.Delivery. -->
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-qhrr-8q5h-9q3h" Package="MessagePack" />
 
-    <!-- Microsoft.OpenApi 2.4.1, via Swashbuckle in Umbraco.Cms.Api.Common and Api.Delivery 17.5.0 (17.7.1 brings a fixed one). -->
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-v5pm-xwqc-g5wc" Package="Microsoft.OpenApi" />
-
     <!--
-      System.Security.Cryptography.Pkcs 10.0.0, 10.0.6 and 10.0.10 (.NET servicing), via MailKit and MimeKit in
+      System.Security.Cryptography.Pkcs 10.0.0 and 10.0.10 (.NET servicing), via MailKit and MimeKit in
       Umbraco.Cms.Infrastructure, and via Examine's Data Protection in Umbraco.Cms.Web.Common.
     -->
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-846f-f764-76mx" Package="System.Security.Cryptography.Pkcs" />
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2fmv-rv2c-59x7" Package="System.Security.Cryptography.Pkcs" />
 
     <!--
-      System.Security.Cryptography.Xml 10.0.6 (all eight) and 10.0.10 (GHSA-7hqp-7c5m-4vq6, GHSA-c399-9853-6jmj and
-      GHSA-r955-8q5j-3h83), .NET servicing, via Examine's Data Protection in Umbraco.Cms.Web.Common and Api.Common.
+      System.Security.Cryptography.Xml 10.0.10 (.NET servicing), via Examine's Data Protection in
+      Umbraco.Cms.Web.Common and Api.Common.
     -->
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-23rf-6693-g89p" Package="System.Security.Cryptography.Xml" />
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-7hqp-7c5m-4vq6" Package="System.Security.Cryptography.Xml" />
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-8q5v-6pqq-x66h" Package="System.Security.Cryptography.Xml" />
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-c399-9853-6jmj" Package="System.Security.Cryptography.Xml" />
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-cvvh-rhrc-wg4q" Package="System.Security.Cryptography.Xml" />
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-g8r8-53c2-pm3f" Package="System.Security.Cryptography.Xml" />
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-mmjf-rqrv-855v" Package="System.Security.Cryptography.Xml" />
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-r955-8q5j-3h83" Package="System.Security.Cryptography.Xml" />
   </ItemGroup>
 

@@ -1,7 +1,8 @@
 # 0011. Testing strategy
 
 - Status: accepted; the permission matrix (`403` and `404`) amended in 1.8; the start-up marker, the stub inside the
-  host and the static site with 6.6 amended in 3.4c (ADR-0031)
+  host and the static site with 6.6 amended in 3.4c (ADR-0031); the floor the install test checks raised to 17.6 in
+  5.5a ([ADR-0074](0074-umbraco-17-6-as-the-floor.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 3.4 (the harness) and 3.5 (CI and the gate), extended by every later step
 
@@ -49,7 +50,7 @@ rule 6); Edge but no WebKit; GitHub Actions results are not visible from here, s
 | **Integration** (`tests/Jiron.Umbraco.FormBuilder.Tests.Integration`) | `Umbraco.Cms.Tests.Integration` 17.x (MIT; it brings Moq, AutoFixture and Bogus), `UmbracoIntegrationTest`, `UmbracoTestServerTestBase` | A real Umbraco with Jiron Form Builder's composers: migrations (fresh, rerun, upgrade from fixtures), repositories and the entries query shapes, the submission pipeline, the outbox with two processors, settings across simulated servers, every public and management endpoint (success, validation, `401`, `403` or `404` for every role as ADR-0013 sets, rate limits, CORS, size limits), file uploads and downloads, logs captured and checked for personal data. | SQLite locally and in CI; **SQL Server in a CI job** |
 | **Client** (`Client/packages/*`) | Vitest (MIT), jsdom (MIT) | The logic package, the website runtime's modules, the web component, and the backoffice's element logic and pure editor-model functions (the designer's reducers, ported from Ligata's tested editor model, §3.1). | every build |
 | **Browser** (`tests/e2e`) | Playwright Test (Apache-2.0), `@axe-core/playwright` (MPL-2.0, an unmodified dev tool) | Journeys in a real browser against a fresh host: the website with and without JavaScript, phones, headless and cross-origin pages, the backoffice as every role, email files, privacy, resilience, accessibility. | the gate and CI |
-| **Packages** (`scripts/install-test.ps1`) | the install harness (16.5) | A fresh site that installs the packed packages from the local feed: install, `dotnet publish`, the 17.5 floor and the upgrade from `baseline/schema-v1` (16.5, 18.3). | the steps that own them and each release |
+| **Packages** (`scripts/install-test.ps1`) | the install harness (16.5) | A fresh site that installs the packed packages from the local feed: install, `dotnet publish`, the 17.6 floor and the upgrade from `baseline/schema-v1` (16.5, 18.3). | the steps that own them and each release |
 | **Load** (16.2) | a Node load script against a host of its own | The §4.12 server budgets at stated concurrency, and where SQLite stops keeping up. | 16.2 and the release checks |
 
 **Approval tests** keep reviewed snapshots: the OpenAPI documents `jfb-public` and `jfb` (`docs/api/`), the public C#

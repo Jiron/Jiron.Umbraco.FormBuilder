@@ -1,6 +1,7 @@
 # 0001. Solution structure and packages
 
-- Status: accepted; the delivery of the website assets amended in 3.2 (ADR-0026)
+- Status: accepted; the delivery of the website assets amended in 3.2 (ADR-0026); the Umbraco floor raised to
+  17.6.0 in 5.5a ([ADR-0074](0074-umbraco-17-6-as-the-floor.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 3.1 and 3.2, packed in 18.1, the add-on in 15.3
 
@@ -67,12 +68,12 @@ Nothing references the AI add-on, and Core and Web never reference Umbraco.AI.
 - All packages share one version from `Directory.Build.props` (D16, ADR-0010).
 - A reference between our own packages is the exact `[version]`, rewritten by `src/Directory.Build.targets`, so they
   always install in lockstep and may share internals through `InternalsVisibleTo`.
-- Dependencies on others are ranges, never floating: Umbraco `[17.5.0, 18.0.0)`. Central package management holds
+- Dependencies on others are ranges, never floating: Umbraco `[17.6.0, 18.0.0)`. Central package management holds
   them, and NuGet resolves the lowest version of a range, so the libraries compile against the oldest version they
   claim. The demo and the test hosts run the latest 17.x through version overrides.
 - No direct reference to a package that only comes transitively (ImageSharp above all, CLAUDE.md rule 4); transitive
   advisories follow Tandem ADR-0014 (a suppression of exactly the reviewed advisory, plus the guard script).
-- **The meta package references `Umbraco.Cms.Web.Website` `[17.5.0, 18.0.0)` itself.** That satisfies the
+- **The meta package references `Umbraco.Cms.Web.Website` `[17.6.0, 18.0.0)` itself.** That satisfies the
   Marketplace's rule whether or not it reads dependencies through our other packages, so the listing never depends on
   how it reads them (§3.5).
 

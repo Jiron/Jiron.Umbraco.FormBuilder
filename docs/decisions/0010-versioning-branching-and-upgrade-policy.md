@@ -1,6 +1,7 @@
 # 0010. Versioning, branching and the upgrade policy
 
-- Status: accepted; the deprecation period amended in 1.8 (D21)
+- Status: accepted; the deprecation period amended in 1.8 (D21); the Umbraco floor raised to 17.6.0 in 5.5a
+  ([ADR-0074](0074-umbraco-17-6-as-the-floor.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); used by 3.1 (the version), 4.1 and 4.8 (migrations and the schema baseline), 15.1
   (the public surface), 16.5 (the upgrade test), 18.x (packing and release) and Phase 19 (the 18 line)
@@ -47,7 +48,7 @@ per line, and every hard-coded "17" in a script broke on the 18 branch. Nothing 
 - Scripts and tests read the Umbraco major and the version from `Directory.Build.props` and
   `Directory.Packages.props`, never from a literal ("One source for every value").
 
-**Dependency ranges:** Umbraco `[17.5.0, 18.0.0)` (D3). A range widens only when CI has tested the new versions,
+**Dependency ranges:** Umbraco `[17.6.0, 18.0.0)` (D3). A range widens only when CI has tested the new versions,
 and CI also runs against the latest 17.x.
 
 **The public surface** (§4.14), listed in `docs/extending.md`:

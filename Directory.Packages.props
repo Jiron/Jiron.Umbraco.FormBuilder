@@ -6,7 +6,7 @@
     rule 4), and THIRD-PARTY-NOTICES.md lists the shipped and the development packages, which
     scripts/third-party-notices.mjs keeps current (ADR-0032).
 
-    Umbraco is a range, not a pin: it becomes the packages' dependency range [17.5.0, 18.0.0) (D3). NuGet
+    Umbraco is a range, not a pin: it becomes the packages' dependency range [17.6.0, 18.0.0) (D3). NuGet
     resolves the lowest version of a range, so Jiron Form Builder compiles against its minimum supported
     version; the demo and test hosts reference the latest 17.x exactly. Tools and test packages are pinned
     exactly. Floating versions stay off (the template's CentralPackageFloatingVersionsEnabled is not used).
@@ -17,13 +17,13 @@
 
   <!-- Umbraco CMS 17 (D3): the packages' dependency ranges. -->
   <ItemGroup>
-    <PackageVersion Include="Umbraco.Cms.Core" Version="[17.5.0, 18.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="[17.5.0, 18.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="[17.5.0, 18.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="[17.5.0, 18.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="[17.5.0, 18.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[17.5.0, 18.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Api.Delivery" Version="[17.5.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Core" Version="[17.6.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="[17.6.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="[17.6.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="[17.6.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="[17.6.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[17.6.0, 18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Delivery" Version="[17.6.0, 18.0.0)" />
   </ItemGroup>
 
   <!-- The demo site and the test hosts only: the latest 17.x, pinned exactly (D3). -->

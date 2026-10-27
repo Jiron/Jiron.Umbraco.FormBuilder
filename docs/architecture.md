@@ -57,7 +57,7 @@ flowchart TB
   core --> umbCore
 ```
 
-All Umbraco references are `[17.5.0, 18.0.0)`; references between our packages are exact versions
+All Umbraco references are `[17.6.0, 18.0.0)`; references between our packages are exact versions
 ([ADR-0010](decisions/0010-versioning-branching-and-upgrade-policy.md)).
 
 **Core** holds every rule of the product and knows nothing about HTTP; an architecture test keeps ASP.NET Core's HTTP,

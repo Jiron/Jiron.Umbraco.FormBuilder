@@ -230,7 +230,7 @@ These come from the owner or from planning. Change one only through an ADR that 
 | --- | --- | --- |
 | D1 | **Name:** NuGet id and namespace root `Jiron.Umbraco.FormBuilder`; display name **Jiron Form Builder**; backoffice section label **Forms**; repo `github.com/Jiron/Jiron.Umbraco.FormBuilder` (private for now). Short identifiers use `jfb` (tables, CSS, URLs, events) and `JironFormBuilder` (settings section, folders, JS global). The owner reserves the NuGet prefix `Jiron.` (OWNER-TODO). | Owner's choice after name research (2026-10-20). A descriptive product name under the owner's own name leaves nothing to clash with, and the reserved prefix marks the packages as his. "Umbraco" appears only as the platform qualifier inside the package id, never in the display name. The product is always a "Form Builder"; no package id ends in `.Forms`. Editors look for "Forms", so that is the section label. |
 | D2 | **First commit = license.** `LICENSE.md` is the PolyForm Perimeter License 1.0.1 with Jiron Form Builder's header and `Required Notice:` line. The owner placed it and made the root commit `781401e` on 2026-10-20, replacing GitHub's README-only commit `06f126f`; step 0.1 checks its SHA-256. No force-push remains approved. | The owner wants everyone to be able to use Jiron Form Builder free of charge, including companies on their own sites and agencies on client sites, and to change it for their own projects, but nobody to sell it, to publish their own version of it (free or paid, open source or not), or to offer any other competing product or service built from it. Contributions go to this repository instead. Perimeter says exactly that in a short, lawyer-drafted text (§3.6). It is **not** OSI "open source", so Jiron Form Builder calls itself "free and source-available", never "open source". A lawyer review is an OWNER-TODO item. |
-| D3 | **Target Umbraco 17 LTS first:** CMS `[17.5.0, 18.0.0)`, developed against the latest 17.x (17.7.1 on 2026-10-19), .NET 10. An Umbraco 18 line comes at the end (Phase 19). **17 is the most important version** (the owner, 2026-10-22): the 18 line never costs `main` a feature, a fix, a delay or a compromise, and nothing is designed for 18 at 17's expense. | 17 is the LTS that most sites run, supported until 2028-11-27. 17.5 brought the async distributed background jobs Jiron Form Builder relies on. Confirmed in 1.2b: the whole spike builds against 17.5.0, and only the `tree` workspace-view kind (17.6.0) and `AlignToClock` (17.6.2) are newer; Jiron Form Builder uses neither. |
+| D3 | **Target Umbraco 17 LTS first:** CMS `[17.6.0, 18.0.0)` (raised from 17.5.0 in 5.5a, ADR-0074: 17.6.0 is the first 17.x whose runtime cache clears reliably), developed against the latest 17.x (17.7.1 on 2026-10-19), .NET 10. An Umbraco 18 line comes at the end (Phase 19). **17 is the most important version** (the owner, 2026-10-22): the 18 line never costs `main` a feature, a fix, a delay or a compromise, and nothing is designed for 18 at 17's expense. | 17 is the LTS that most sites run, supported until 2028-11-27. 17.5 brought the async distributed background jobs Jiron Form Builder relies on. Confirmed in 1.2b: the whole spike builds against 17.5.0, and only the `tree` workspace-view kind (17.6.0) and `AlignToClock` (17.6.2) are newer; Jiron Form Builder uses neither. Before 17.6.0 a value Umbraco's runtime cache was told to clear could stay kept (5.5a), which every cache of Jiron Form Builder relies on. |
 | D4 | **Original work.** Every name, screen, syntax, data model and line of code is Jiron Form Builder's own (CLAUDE.md rule 2). Vocabulary: form, page, group, field, option list, rule, action, entry, theme, merge tag, template. | Legal safety and a coherent product. The owner's private reference material stays in `.private/` and never enters the repository. |
 | D5 | **Form definitions are versioned JSON documents; entries are relational.** A form has one draft and many published versions, each a schema-versioned JSON document upgraded by code. Entries are rows: entry, typed values per field, files, a timeline and notes. Each entry points at the version it was submitted with. | Drafts, history, diff, restore, export and deployment as files fall out naturally. Old entries never change meaning when a form changes. Entries stay filterable and sortable in SQL. Proven in Ligata.Forms (draft and published documents), but entries there were JSON blobs that could not be queried, which is fixed here. |
 | D6 | **Submissions are transactional and idempotent.** One transaction stores the entry, its values and one queued **action run** per action that applies (an outbox). A client-generated submission id plus a digest makes retries safe. Actions run in the background with leases, retries and a visible log. | No entry is lost when email or a webhook is down, and no double entries come from double clicks or flaky networks. Proven in Ligata.Forms. |
@@ -353,10 +353,10 @@ Each fact below was confirmed on this machine in the Phase 1 step it names. The 
 - **What the sandbox showed:** [docs/research/umbraco-backoffice.md](docs/research/umbraco-backoffice.md) has the confirmed shapes, signatures and traps from 1.2a and 1.2b. Its last section lists what they mean for Jiron Form Builder; every backoffice step reads it before it starts.
 - **Templates:** `dotnet new install Umbraco.Templates@17.7.1`.
   - **Always in a private template hive:** pass `--debug:custom-hive %TEMP%\jfb-templates-<version>` to every `dotnet new install` and every `dotnet new` call. The user-wide template install is shared with the Tandem session and must never change (CLAUDE.md rule 6).
-  - Pin 17.7.1 for the whole run. Only 18.3 (the 17.5 floor) and Phase 19 use other versions, each in its own hive.
+  - Pin 17.7.1 for the whole run. Only 18.3 (the 17.6 floor) and Phase 19 use other versions, each in its own hive.
   - `dotnet new umbraco-extension -n <Name> -ex -pm Central` creates an RCL with `Client/` (Vite library mode, Lit, TypeScript, `@umbraco-cms/backoffice`, `@hey-api/openapi-ts`), `StaticWebAssetBasePath=/`, and output to `wwwroot/App_Plugins/<Name>`. It does not run npm during `dotnet build`; run it in scripts and CI. Its `@hey-api/openapi-ts ^0.85.2` fails `npm install` against 17.7.1: pin 0.99.x, which also satisfies 17.5 (1.2a, 1.2b).
   - Test sites: `dotnet new umbraco -n Site --development-database-type SQLite`, then the admin through the unattended-install settings (`Umbraco__CMS__Unattended__InstallUnattended` and the `UnattendedUser*` values) in the start-up environment, so the password never appears on a command line (`scripts/sandbox.mjs`, 1.2a).
-- **`umbraco-package.json`:** in `wwwroot/App_Plugins/JironFormBuilder/`, with `id` = NuGet id. Since 17.6, `version` drives cache busting, so stamp it at build time. 17.5 has no cache busting for package files, so 18.3 checks an upgrade on the 17.5 floor. Register the manifests with a `bundle` extension (1.2a, 1.2b).
+- **`umbraco-package.json`:** in `wwwroot/App_Plugins/JironFormBuilder/`, with `id` = NuGet id. Since 17.6, `version` drives cache busting, so stamp it at build time. The floor 17.6.0 has it (ADR-0074), and 18.3 checks an upgrade on the floor. Register the manifests with a `bundle` extension (1.2a, 1.2b).
 - **Management API:**
   - Attributes: `[ApiController]`, `[BackOfficeRoute("jfb/management/api/v{version:apiVersion}")]`, `[MapToApi("jfb")]`, `[JsonOptionsName(Constants.JsonOptionsNames.BackOffice)]`, `[Authorize(Policy = …)]`, `[ApiVersion("1.0")]` on every concrete controller.
   - Register the OpenAPI document in one composer, because CMS 18 replaces Swashbuckle with Microsoft.AspNetCore.OpenApi.
@@ -422,7 +422,7 @@ Each fact below was confirmed on this machine in the Phase 1 step it names. The 
 
 ### 3.5 Umbraco Marketplace and NuGet facts (research 2026-10-19)
 
-- **Listing requirements:** the installable package needs the NuGet tag `umbraco-marketplace` (only on the meta package) and must depend on `Umbraco.Cms.*`. Jiron Form Builder's meta package therefore references `Umbraco.Cms.Web.Website` `[17.5.0, 18.0.0)` directly, not only through Web, so the listing never depends on whether the Marketplace reads dependencies through our other packages (ADR-0001). The AI add-on, which is installed on its own, gets the tag too. Supported versions come from the dependency range (`[17.5.0,18.0.0)` = 17 only). Non-OSI and commercial licences are accepted; the listing is about the package, not its licence type.
+- **Listing requirements:** the installable package needs the NuGet tag `umbraco-marketplace` (only on the meta package) and must depend on `Umbraco.Cms.*`. Jiron Form Builder's meta package therefore references `Umbraco.Cms.Web.Website` `[17.6.0, 18.0.0)` directly, not only through Web, so the listing never depends on whether the Marketplace reads dependencies through our other packages (ADR-0001). The AI add-on, which is installed on its own, gets the tag too. Supported versions come from the dependency range (`[17.6.0,18.0.0)` = 17 only). Non-OSI and commercial licences are accepted; the listing is about the package, not its licence type.
 - **Sync:** new packages are picked up daily at 04:00 UTC, and known ones every 2 h.
 - **`umbraco-marketplace.json`:**
   - It is read from the root that `PackageProjectUrl` points to, so **it cannot be read while the repo is private**.
@@ -541,9 +541,9 @@ Jiron.Umbraco.FormBuilder/
 ### 4.2 Modules and dependencies
 
 ```
-Jiron.Umbraco.FormBuilder (meta) ──► Umbraco.Cms.Web.Website [17.5,18) (directly, for the Marketplace)
-  └─ FormBuilder.Web ──► FormBuilder.Core ──► Umbraco.Cms.Core / Infrastructure [17.5,18)
-         └──────────► Umbraco.Cms.Web.Common, Web.Website, Api.Common, Api.Management, Api.Delivery [17.5,18)
+Jiron.Umbraco.FormBuilder (meta) ──► Umbraco.Cms.Web.Website [17.6,18) (directly, for the Marketplace)
+  └─ FormBuilder.Web ──► FormBuilder.Core ──► Umbraco.Cms.Core / Infrastructure [17.6,18)
+         └──────────► Umbraco.Cms.Web.Common, Web.Website, Api.Common, Api.Management, Api.Delivery [17.6,18)
 Jiron.Umbraco.FormBuilder.AI (optional) ──► FormBuilder.Web, FormBuilder.Core, Umbraco.AI (ADR-0018)
 ```
 
@@ -2602,7 +2602,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **README and NuGet readme:**
     - **`README.md` (GitHub):**
       - **About:** the pitch, the features, screenshots.
-      - **Getting started:** a quick start, the requirements (Umbraco 17.5+), a link to the docs.
+      - **Getting started:** a quick start, the requirements (Umbraco 17.6+), a link to the docs.
       - **Licence:** "free to use and change, including commercially; no selling, no published versions of your own (free or paid, open source or not), no competing products; source-available" with a link to the licence FAQ, never called "open source".
       - **Notices:** the trademark notice and how to contribute.
       - **Credits:** "Made by Manassés Zähnler · Ligata", linking jiron.dev and ligata.ch.
@@ -2640,7 +2640,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - `PackageLicenseFile LICENSE.md` (non-OSI licences cannot use an expression, §3.5), `PackageRequireLicenseAcceptance true`;
     - `PackageReadmeFile`, `PackageIcon` (icon-128.png);
     - `PackageTags`: the meta package and the AI add-on (both installed by sites) get `umbraco umbraco-marketplace forms form-builder contact-form`; Core and Web get `umbraco` only;
-    - the meta package references `Umbraco.Cms.Web.Website` `[17.5.0, 18.0.0)` directly (§3.5);
+    - the meta package references `Umbraco.Cms.Web.Website` `[17.6.0, 18.0.0)` directly (§3.5);
     - SourceLink, `snupkg`, `EnablePackageValidation`, `ContinuousIntegrationBuild` in CI.
   - The appsettings JSON schema ships as ADR-0008 decides: the Core package's `buildTransitive` props file adds `appsettings-schema.Jiron.Umbraco.FormBuilder.json` to `UmbracoJsonSchemaFiles`. Umbraco.Cms.Targets then copies it into the site's project folder and adds a reference to it to the site's `appsettings-schema.json` before every build (its `CopyUmbracoJsonSchemaFiles` and `AddUmbracoJsonSchemaReferences` targets, confirmed in 17.6.2, 17.7.1 and 18.2.1 in 1.8).
   - **`umbraco-marketplace.json`:**
@@ -2670,9 +2670,9 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - With `scripts/install-test.ps1` (16.5), create a fresh Umbraco 17.7.1 site on 5530 that installs `Jiron.Umbraco.FormBuilder` (Jiron Form Builder packages only from the local feed).
   - **Smoke:** the section is visible to the admin; a form is created through the management API and placed on a page; it renders, submits and emails (pickup); the entry shows in the backoffice; after the build, the site's `appsettings-schema.json` references `appsettings-schema.Jiron.Umbraco.FormBuilder.json` and the file is next to it (18.1).
   - Run the same smoke after `dotnet publish` of that site (static assets, §3.2).
-  - **The supported floor:** run the same smoke on a fresh **Umbraco 17.5.x** site (its own template hive), because D3 promises `[17.5.0, 18.0.0)`.
-  - **An upgrade on the floor:** on that 17.5.x site, update the packages to a second build with a higher version, restart, and check in a signed-in browser that keeps its cache that the backoffice runs the new code without a hard refresh. 17.5 adds no cache busting to package files (1.2b), and §3.4 says Umbraco sends package files without caching headers.
-  - Done when: the smoke runs pass on 17.7.1 (run and published) and on 17.5.x against the installed packages, and the 17.5.x upgrade check passes.
+  - **The supported floor:** run the same smoke on a fresh **Umbraco 17.6.0** site (its own template hive), because D3 promises `[17.6.0, 18.0.0)`.
+  - **An upgrade on the floor:** on that 17.6.0 site, update the packages to a second build with a higher version, restart, and check in a signed-in browser that keeps its cache that the backoffice runs the new code without a hard refresh. 17.6 busts package files by the manifest's stamped `version` (§3.4), and Umbraco sends them without caching headers, so this checks both.
+  - Done when: the smoke runs pass on 17.7.1 (run and published) and on 17.6.0 against the installed packages, and the 17.6.0 upgrade check passes.
 - [ ] **18.4 First prerelease and phase review**
   - Set the version to `17.0.0-alpha.1`. Update CHANGELOG and `docs/upgrading.md`.
   - Tag `v17.0.0-alpha.1` and push the tag. The release workflow builds a draft release; nothing is published.
@@ -2688,7 +2688,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Tick Phase 19 steps on `main` only, after pushing `v18/main`, with the `v18/main` commit hash.
   - Work on `v18/main` through `git worktree` in `%TEMP%\jfb-v18`, so `main`'s working folder never switches branches mid-run.
   - **One-way merges** (Tandem ADR-0078): `main` is merged into `v18/main` after every later change to `main`, and never the other way. The two lines share ports, so only one line's gate runs at a time.
-  - On `v18/main`, set CMS `[18.0.0, 19.0.0)`, `@umbraco-cms/backoffice` 18.x, Umbraco.AI 18.x for the add-on, and the version `18.0.0-alpha.0`.
+  - On `v18/main`, set CMS `[18.1.0, 19.0.0)` (18.1.0 is the first 18.x whose runtime cache clears reliably, ADR-0074), `@umbraco-cms/backoffice` 18.x, Umbraco.AI 18.x for the add-on, and the version `18.0.0-alpha.0`.
   - **The OpenAPI port:**
     - move the registration from Swashbuckle to Microsoft.AspNetCore.OpenApi (`/umbraco/openapi`);
     - add the schema transformer that keeps the client's types as on 17 (§3.4);

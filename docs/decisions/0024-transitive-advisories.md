@@ -1,6 +1,8 @@
 # 0024. Transitive security advisories from Umbraco
 
-- Status: accepted
+- Status: accepted; reviewed again in 5.5a at the new floor 17.6.0 ([ADR-0074](0074-umbraco-17-6-as-the-floor.md)):
+  Microsoft.OpenApi and five of the Xml advisories no longer come, and a sixth ImageSharp advisory joined the hosts'
+  group (`NuGetAudit.props` holds the current list)
 - Date: 2026-10-23
 - Roadmap step: 3.1 (decided and listed); the guard script in 3.5; reviewed at every phase review and in 16.1
 
