@@ -47,7 +47,7 @@ public sealed class BuiltInAnswersTests
         yield return Case("grid", """{"multiple":true}""", 200, 30000, rows: 3);
         yield return Case("grid", null, null, null);
         yield return Case("ranking", null, 200, 10000);
-        yield return Case("checkbox", null, 4, 1);
+        yield return Case("checkbox", null, 5, 1);
         yield return Case("yesno", null, 3, 1);
         yield return Case("consent", null, 64, 2);
         yield return Case("country", null, 2, 1);

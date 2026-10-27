@@ -89,7 +89,7 @@ public sealed class FieldValidation
 
         if (field.Options?.Parent is { } parent)
         {
-            var answers = input.Values.TryGetValue(parent, out var values) ? values : [];
+            var answers = (input.Values.TryGetValue(parent, out var values) ? values : []).ToHashSet(StringComparer.Ordinal);
             offered = offered.Where(option => option.ParentValues.Count == 0 || option.ParentValues.Any(answers.Contains));
         }
 

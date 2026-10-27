@@ -96,16 +96,26 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
     }
 
     // A field's answer held to its type's limits and read. A value the server resolves is never taken from the post,
-    // unless the field is prefilled from the query, whose value only the visitor's page has (ADR-0002).
-    private static Slot Read(Slot slot, PostedAnswer? posted)
+    // unless the field is prefilled from the query, whose value only the visitor's page has (ADR-0002); a prefilled value
+    // the field cannot take counts as none, so its default stands in (ADR-0080).
+    private Slot Read(Slot slot, PostedAnswer? posted)
     {
-        var answers = slot.Type.Declaration.ServerOnlyDefault && slot.Field.Prefill?.Query is null ? FieldAnswers.None : Clean(posted);
+        var serverOnly = slot.Type.Declaration.ServerOnlyDefault;
+        var answers = serverOnly && slot.Field.Prefill?.Query is null ? FieldAnswers.None : Clean(posted);
         slot.OverLimit = FieldValues.CheckLimits(slot.Type, slot.Field, answers);
+        if (serverOnly && slot.OverLimit is not null)
+        {
+            LogPrefillTooLong(logger, slot.Field.Alias ?? DefinitionLogic.Id(slot.Field.Key));
+            slot.OverLimit = null;
+            answers = FieldAnswers.None;
+        }
+
         slot.Read = slot.OverLimit is null ? FieldValues.Read(slot.Type, slot.Field, answers) : Slot.Nothing;
         return slot;
     }
 
-    // Every text cleaned as rules clean it (ADR-0005), and the empty ones and the parts without a name left out (ADR-0058).
+    // Every text and part name cleaned as rules clean them (ADR-0005), the empty texts and the parts without a name left
+    // out (ADR-0058), and the texts of names that clean to one name kept under it, in their order (ADR-0080).
     private static FieldAnswers Clean(PostedAnswer? posted)
     {
         if (posted is null)
@@ -115,10 +125,23 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
         static IEnumerable<string> Texts(IEnumerable<string?>? texts) =>
             (texts ?? []).Select(text => text is null ? string.Empty : TextSemantics.Clean(text)).Where(text => text.Length > 0);
-        var parts = (posted.Parts ?? new Dictionary<string, IReadOnlyList<string?>>())
-            .Where(part => !string.IsNullOrWhiteSpace(part.Key))
-            .Select(part => KeyValuePair.Create<string, IEnumerable<string>>(part.Key, [.. Texts(part.Value)]));
-        return new FieldAnswers([.. Texts(posted.Values)], parts);
+        var parts = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        foreach (var (name, texts) in posted.Parts ?? new Dictionary<string, IReadOnlyList<string?>>())
+        {
+            if (TextSemantics.Clean(name ?? string.Empty) is var clean && string.IsNullOrWhiteSpace(clean))
+            {
+                continue;
+            }
+
+            if (!parts.TryGetValue(clean, out var kept))
+            {
+                parts[clean] = kept = [];
+            }
+
+            kept.AddRange(Texts(texts));
+        }
+
+        return new FieldAnswers([.. Texts(posted.Values)], parts.Select(part => KeyValuePair.Create<string, IEnumerable<string>>(part.Key, part.Value)));
     }
 
     // The answers as rules see them: each field's texts by its id, a grid's by its rows' ids, and a repeatable group's
@@ -230,6 +253,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
     private static ImmutableArray<EntryFieldAnswer> Stored(List<Slot> slots, FormState state, PostedSubmission post)
     {
         var hidden = state.Hidden.ToHashSet(StringComparer.Ordinal);
+        var claimed = new HashSet<string>(StringComparer.Ordinal);
         var answers = ImmutableArray.CreateBuilder<EntryFieldAnswer>();
         foreach (var slot in slots)
         {
@@ -241,7 +265,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
             if (!slot.IsGroup)
             {
-                Add(answers, slot, ValuesOf(slot, state.Calculations), 0, post);
+                Add(answers, slot, ValuesOf(slot, state.Calculations), 0, post, claimed);
                 continue;
             }
 
@@ -252,7 +276,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
                 var before = answers.Count;
                 foreach (var child in slot.Rows[row].Where(child => !rows[row].Hidden.Contains(DefinitionLogic.Id(child.Field.Key))))
                 {
-                    Add(answers, child, ValuesOf(child, rows[row].Calculations), stored, post);
+                    Add(answers, child, ValuesOf(child, rows[row].Calculations), stored, post, claimed);
                 }
 
                 if (answers.Count > before)
@@ -265,7 +289,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         return answers.ToImmutable();
     }
 
-    private static void Add(ImmutableArray<EntryFieldAnswer>.Builder answers, Slot slot, ImmutableArray<FieldValue> values, int row, PostedSubmission post)
+    private static void Add(ImmutableArray<EntryFieldAnswer>.Builder answers, Slot slot, ImmutableArray<FieldValue> values, int row, PostedSubmission post, HashSet<string> claimed)
     {
         if (values.IsEmpty)
         {
@@ -276,7 +300,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         {
             answers.Add(new EntryFieldAnswer(slot.Field.Key, values, row));
         }
-        else if (UploadsOf(slot, values, post) is { } uploads)
+        else if (UploadsOf(slot, values, post, claimed) is { } uploads)
         {
             answers.Add(new EntryFieldAnswer(slot.Field.Key, values, row) { Files = uploads });
         }
@@ -288,13 +312,14 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         !slot.Calculates ? slot.Values
             : calculations.GetValueOrDefault(DefinitionLogic.Id(slot.Field.Key)) is { } result ? [new FieldValue(result)] : [];
 
-    // The upload each token stands for, when every one stands for an upload of the field; otherwise null.
-    private static ImmutableArray<StoredEntryFile>? UploadsOf(Slot slot, ImmutableArray<FieldValue> values, PostedSubmission post)
+    // The upload each token stands for, when every one stands for an upload of the field that no earlier value of the
+    // submission named (in the form's order, a repeatable group's rows among them); otherwise null (ADR-0080).
+    private static ImmutableArray<StoredEntryFile>? UploadsOf(Slot slot, ImmutableArray<FieldValue> values, PostedSubmission post, HashSet<string> claimed)
     {
         var uploads = ImmutableArray.CreateBuilder<StoredEntryFile>(values.Length);
         foreach (var value in values)
         {
-            if (!post.Uploads.TryGetValue(value.Text, out var upload) || upload.FieldKey != slot.Field.Key)
+            if (!claimed.Add(value.Text) || !post.Uploads.TryGetValue(value.Text, out var upload) || upload.FieldKey != slot.Field.Key)
             {
                 return null;
             }
@@ -313,6 +338,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         var required = state.Required.ToHashSet(StringComparer.Ordinal);
         var others = Others(slots, state, hidden);
         var resolved = new Dictionary<(Guid Field, string Parents), FormBuilderResolvedOptions>();
+        var claimed = new HashSet<string>(StringComparer.Ordinal);
         var errors = ImmutableArray.CreateBuilder<SubmissionError>();
         foreach (var slot in slots)
         {
@@ -324,7 +350,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
             if (!slot.IsGroup)
             {
-                Check(errors, slot, null, required.Contains(id), others, await OfferedAsync(slot, others, post, resolved, cancellationToken), post, today);
+                Check(errors, slot, null, required.Contains(id), others, await OfferedAsync(slot, others, post, resolved, cancellationToken), post, claimed, today);
                 Messages(errors, state.Messages, slot.Field, null);
                 continue;
             }
@@ -345,7 +371,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
                     var childId = DefinitionLogic.Id(child.Field.Key);
                     if (!rows[row].Hidden.Contains(childId))
                     {
-                        Check(errors, child, row, rows[row].Required.Contains(childId), rowOthers, await OfferedAsync(child, rowOthers, post, resolved, cancellationToken), post, today);
+                        Check(errors, child, row, rows[row].Required.Contains(childId), rowOthers, await OfferedAsync(child, rowOthers, post, resolved, cancellationToken), post, claimed, today);
                         Messages(errors, rows[row].Messages, child.Field, row);
                     }
                 }
@@ -387,9 +413,9 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         return found.IsAvailable ? found.Options : null;
     }
 
-    // One shown field's errors: over its type's limits alone; a file token that stands for no upload of the field as
-    // invalid; otherwise its type's check, against the options its source resolved, and its own checks
-    // (FieldValues.Check). A calculation's value is the server's.
+    // One shown field's errors: over its type's limits alone; a file token that stands for no upload of the field, or
+    // for one an earlier value named, as invalid; otherwise its type's check, against the options its source resolved,
+    // and its own checks (FieldValues.Check). A calculation's value is the server's.
     private static void Check(
         ImmutableArray<SubmissionError>.Builder errors,
         Slot slot,
@@ -398,6 +424,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         IReadOnlyDictionary<Guid, ImmutableArray<string>> others,
         IReadOnlyList<FormBuilderOption>? offered,
         PostedSubmission post,
+        HashSet<string> claimed,
         DateOnly today)
     {
         var key = slot.Field.Key;
@@ -415,7 +442,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         ImmutableArray<FieldFile> files = [];
         if (slot.Type.Declaration.Storage == FieldStorageKind.File && !slot.Values.IsEmpty)
         {
-            if (UploadsOf(slot, slot.Values, post) is not { } uploads)
+            if (UploadsOf(slot, slot.Values, post, claimed) is not { } uploads)
             {
                 errors.Add(new SubmissionError(key, row, FieldMessageKinds.Invalid));
                 return;
@@ -491,6 +518,9 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The options of the field '{Field}' could not be resolved, so its answers are taken without being held to them.")]
     private static partial void LogOptionsUnavailable(ILogger logger, string field);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The query gives the field '{Field}' a value longer than its type takes, so its default stands in.")]
+    private static partial void LogPrefillTooLong(ILogger logger, string field);
 
     // One field's answer in the submission: the field and its type, what its type read, and a repeatable group's rows.
     private sealed class Slot(FormField field, IFormBuilderFieldType type)

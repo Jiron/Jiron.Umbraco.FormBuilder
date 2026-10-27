@@ -228,15 +228,18 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   `EntryAnswerStore` stores an entry's answers as its rows, with the uploads they name and the consent wordings
   (`ConsentWordings`) they agreed to, in one unit of work, and reads them back typed, each value also as its type
   read it ([ADR-0070](decisions/0070-storing-answers-and-reading-them-back.md)).
-  `SubmissionReader` puts these together over a whole form for the pipeline: every answer cleaned, limited and read,
-  a repeatable group's rows counted against its limits before any is read, the rules over what was read with every
+  `SubmissionReader` puts these together over a whole form for the pipeline: every answer and part name cleaned,
+  limited and read (a hidden field's query value that does not fit counts as none, so its default stands in), a
+  repeatable group's rows counted against its limits before any is read, the rules over what was read with every
   calculation worked out by the server, each shown hidden field's default resolved on submit (then the rules once
   more, for the actions and the outcome), and the shown fields checked, a child in its row, a choice from a list or
   another source against the options the option service resolves for the submission's culture, page and parent
-  answers, once per field and parent answers, and taken as given, logged, when the source cannot give them; it hands
-  over what the entry stores, the errors by field and row, the rules' state and the answers for merge tags. What the
-  rules hide is neither checked nor stored ([ADR-0072](decisions/0072-a-submissions-answers.md),
-  [ADR-0077](decisions/0077-answers-and-labels-from-resolved-options.md)).
+  answers, once per field and parent answers, and taken as given, logged, when the source cannot give them, and an
+  upload token standing for one value only, the first that names it; it hands over what the entry stores, the errors
+  by field and row, the rules' state and the answers for merge tags. What the rules hide is neither checked nor stored
+  ([ADR-0072](decisions/0072-a-submissions-answers.md),
+  [ADR-0077](decisions/0077-answers-and-labels-from-resolved-options.md),
+  [ADR-0080](decisions/0080-reading-a-submission-after-the-phase-5-review.md)).
   `Display` writes the texts merge tags show the values as, in the template's culture, with the wire number or date
   behind a text ([ADR-0066](decisions/0066-answers-as-merge-tags.md)); by default by the type's rule kind. An option
   from a list or another source shows the label its source resolves, read once for a rendering (ADR-0077).

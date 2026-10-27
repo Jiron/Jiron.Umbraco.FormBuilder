@@ -22,8 +22,8 @@ internal static class FieldAnswerDefaults
     /// <summary>A date with a time: <c>YYYY-MM-DDTHH:mm:ss</c>.</summary>
     public const int DateTimeLength = 19;
 
-    /// <summary>A ticked checkbox: <c>true</c>.</summary>
-    public const int CheckboxLength = 4;
+    /// <summary>A checkbox's longest answer: <c>false</c>, which reads as unticked, as anything but <c>true</c> does (ADR-0080).</summary>
+    public const int CheckboxLength = 5;
 
     /// <summary>An upload token (ADR-0006), with room to spare.</summary>
     public const int TokenLength = 1024;

@@ -5,7 +5,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 /// <summary>
 /// What a visitor gave one field (ADR-0058): its texts in order, one per chosen option, file token or ranked option, and
 /// its named parts, such as a name's <c>first</c> or an email's <c>confirm</c>, each with its texts. The pipeline cleans
-/// every text as rules clean them (ADR-0005) and leaves out empty ones before a type reads them, so none is empty here.
+/// every text and every part's name as rules clean them (ADR-0005, ADR-0080) and leaves out empty ones before a type
+/// reads them, so none is empty here.
 /// In a repeatable group, the answers are those of one row.
 /// </summary>
 public sealed class FieldAnswers
@@ -53,7 +54,7 @@ public sealed class FieldAnswers
 
         Parts = named.ToImmutable();
         Count = Values.Length + Parts.Values.Sum(texts => texts.Length);
-        LongestText = Values.Concat(Parts.Values.SelectMany(texts => texts)).Select(text => text.Length).DefaultIfEmpty(0).Max();
+        LongestText = Values.Concat(Parts.Keys).Concat(Parts.Values.SelectMany(texts => texts)).Select(text => text.Length).DefaultIfEmpty(0).Max();
     }
 
     /// <summary>The field's own texts, in order.</summary>
@@ -65,7 +66,10 @@ public sealed class FieldAnswers
     /// <summary>How many texts there are in all, the parts' included.</summary>
     public int Count { get; }
 
-    /// <summary>The length of the longest text, in UTF-16 code units; 0 without any.</summary>
+    /// <summary>
+    /// The length of the longest text or name of a part with texts, in UTF-16 code units; 0 without any. A name counts,
+    /// as a ranking posted without JavaScript names its options in its parts (ADR-0080).
+    /// </summary>
     public int LongestText { get; }
 
     /// <summary>Whether there is no text at all.</summary>
