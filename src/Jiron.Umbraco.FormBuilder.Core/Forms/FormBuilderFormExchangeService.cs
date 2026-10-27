@@ -358,13 +358,13 @@ internal sealed partial class FormBuilderFormExchangeService(
         return definition with { Settings = definition.Settings with { Appearance = definition.Settings.Appearance with { Theme = null } } };
     }
 
-    // A stored list as an export carries it, or null when its stored JSON does not read: it is left out, and an import
-    // then says that the list is missing.
+    // A stored list as an export carries it, or null when its stored JSON does not read or its kind is one this version
+    // does not know (ADR-0081): it is left out, and an import then says that the list is missing.
     private ExportedOptionList? Exported(StoredOptionList list)
     {
-        if (FormExportFormat.ListJson(list.Config, JsonValueKind.Object) is { } config && FormExportFormat.ListJson(list.Items, JsonValueKind.Array) is { } items)
+        if (list.Kind is { } kind && FormExportFormat.ListJson(list.Config, JsonValueKind.Object) is { } config && FormExportFormat.ListJson(list.Items, JsonValueKind.Array) is { } items)
         {
-            return new ExportedOptionList(list.Key, list.Alias, list.Name, EnumNames<OptionListKind>.ByValue[list.Kind], config, items, list.CacheSeconds);
+            return new ExportedOptionList(list.Key, list.Alias, list.Name, EnumNames<OptionListKind>.ByValue[kind], config, items, list.CacheSeconds);
         }
 
         LogListLeftOut(logger, list.Key);

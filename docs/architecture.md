@@ -234,7 +234,9 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   calculation worked out by the server, each shown hidden field's default resolved on submit (then the rules once
   more, for the actions and the outcome), and the shown fields checked, a child in its row, a choice from a list or
   another source against the options the option service resolves for the submission's culture, page and parent
-  answers, once per field and parent answers, and taken as given, logged, when the source cannot give them, and an
+  answers (only those the parent offers, so no posted text reaches a source; with the parent's options unknown, the
+  child's are unknown too: [ADR-0081](decisions/0081-what-visitors-and-failures-cost-the-option-lists.md)), once per
+  field and parent answers, and taken as given, logged, when the source cannot give them, and an
   upload token standing for one value only, the first that names it; it hands over what the entry stores, the errors
   by field and row, the rules' state and the answers for merge tags. What the rules hide is neither checked nor stored
   ([ADR-0072](decisions/0072-a-submissions-answers.md),
@@ -258,10 +260,12 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   field settings' checks and codes, then the kind's own check; publishing runs them on every field
   (`OptionSourcePublishCheck`) and a library list's save runs them on the list (`OptionListService`).
   `IFormBuilderOptionService` resolves a field's or a list's options in one culture (labels by the text's fallback,
-  dictionary items in that culture), filters a cascading field's by the parent's answers, cleans what a source gives
-  as entries need it, and marks a source that fails or takes longer than 5 seconds unavailable, logging it without
-  values. A library list is kept until it changes and a code list's options for its `cacheSeconds`; every change drops
-  both on every server through the option list cache refresher. Content and data type lists
+  dictionary items in that culture), filters a cascading field's by the parent's answers (of which a source sees only
+  those an option could have), cleans what a source gives as entries need it, and marks a source that fails or takes
+  longer than 5 seconds unavailable, logging it without values. A library list is kept until it changes and a code
+  list's options for its `cacheSeconds`, per parent answer for none or one; every change drops both on every server
+  through the option list cache refresher. A stored list of a kind this version does not know reads as unreadable
+  ([ADR-0081](decisions/0081-what-visitors-and-failures-cost-the-option-lists.md)). Content and data type lists
   ([ADR-0075](decisions/0075-content-and-data-type-lists.md)) read the published pages below a root, or a dropdown's,
   checkbox list's or radio button list's values, and keep them until Umbraco's own cache refreshers tell each server
   of a change to content, document types, data types, public access or languages (`OptionSiteCacheHandler`); what
@@ -269,7 +273,9 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   ([ADR-0076](decisions/0076-url-and-file-lists.md)) fetches JSON from a host that the host configuration names, maps
   the list and each option's value and label with its paths, and keeps one copy per configuration and server for its
   `cacheSeconds` (60 at least; a field's own source 10 minutes), with the last copy in use for a minute at a time
-  while the address fails. A file list holds what `OptionFileReader` read from an uploaded CSV or TXT file as its
+  while the address fails, and with no copy, none for a minute before the address is called again
+  ([ADR-0081](decisions/0081-what-visitors-and-failures-cost-the-option-lists.md)). A file list holds what
+  `OptionFileReader` read from an uploaded CSV or TXT file as its
   items, as a manual list does.
 - **The public projection** is built from an allowlist of public types (`Core.Definitions.Projection`) and carries no
   actions, outcomes, recipients, option-source configuration, privacy settings or switched-off rules; its SHA-256 is
@@ -470,8 +476,10 @@ per operation), and tests keep the two in step.
 Two layers ([ADR-0008](decisions/0008-settings-model.md)):
 
 - **Host configuration** (`JironFormBuilder` in `appsettings.json`): base paths, origins, server keys, file roots and
-  caps, privacy permissions, captcha keys, the hosts the site calls (`Webhooks:AllowedHosts` and `Webhooks:AllowHttp`,
-  [ADR-0076](decisions/0076-url-and-file-lists.md)), the pause switch, secrets, the mirror, limits, designer locks,
+  caps, privacy permissions, captcha keys, the hosts the site calls (`Webhooks:AllowedHosts`, each on its scheme's
+  standard port unless its entry names one as `host:port`, and `Webhooks:AllowHttp`;
+  [ADR-0076](decisions/0076-url-and-file-lists.md), [ADR-0082](decisions/0082-ports-of-calls-to-other-hosts.md)), the
+  pause switch, secrets, the mirror, limits, designer locks,
   host grants and locked sections, each key arriving with the step that builds what it configures. One options tree
   (`FormBuilderOptions`), bound and read once, so a change takes effect at the next start. Start-up checks every key,
   a misspelt one included, with messages that name the key, and refuses a runtime without ICU

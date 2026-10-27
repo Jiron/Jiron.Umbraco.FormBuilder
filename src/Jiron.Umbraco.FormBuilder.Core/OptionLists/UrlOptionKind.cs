@@ -55,6 +55,10 @@ internal sealed class UrlOptionKind(UrlOptionFetcher fetcher) : OptionKind<UrlOp
                 case OutboundFailure.HostNotAllowed:
                     check.Invalid("url", $"The site does not call the host '{address.IdnHost}': its host configuration names the hosts it calls in JironFormBuilder:Webhooks:AllowedHosts.");
                     break;
+                case OutboundFailure.PortNotAllowed:
+                    var entry = address.HostNameType == UriHostNameType.IPv6 ? $"[{address.IdnHost}]" : address.IdnHost;
+                    check.Invalid("url", string.Create(CultureInfo.InvariantCulture, $"The site does not call the host '{address.IdnHost}' on the port {address.Port}: its host configuration names the ports it calls besides the standard one in JironFormBuilder:Webhooks:AllowedHosts, as '{entry}:{address.Port}'."));
+                    break;
             }
         }
 
@@ -82,7 +86,8 @@ internal sealed class UrlOptionKind(UrlOptionFetcher fetcher) : OptionKind<UrlOp
 /// <summary>
 /// Fetches and keeps a URL list's options (ADR-0076): one copy per configuration and server, fresh for the keep time
 /// the request gives; one fetch per configuration and server at a time, which runs without any caller's cancellation;
-/// and while a fetch fails, the last copy for another minute, logged as such. A keep time is a minute at least.
+/// and while a fetch fails, the last copy for another minute, logged as such, or with no copy before it, no options for
+/// that minute, without asking the address again (ADR-0081). A keep time is a minute at least.
 /// </summary>
 /// <param name="outbound">The calls to other hosts.</param>
 /// <param name="appCaches">The runtime cache that keeps the copies.</param>
@@ -117,15 +122,15 @@ internal sealed partial class UrlOptionFetcher(OutboundHttp outbound, AppCaches 
     {
         ArgumentNullException.ThrowIfNull(settings);
         var key = OptionSiteCacheKeys.Url(settings);
-        if (Fresh(key, keep) is { } copy)
+        var copy = Fresh(key, keep);
+        if (copy is null)
         {
-            return copy.Options;
+            Lazy<Task<UrlOptionCopy>>? started = null;
+            started = new Lazy<Task<UrlOptionCopy>>(() => Detached(() => FetchAsync(key, settings, keep, owner, ownerKey, () => _fetches.TryRemove(KeyValuePair.Create(key, started!)))));
+            copy = await _fetches.GetOrAdd(key, started).Value.WaitAsync(cancellationToken);
         }
 
-        Lazy<Task<UrlOptionCopy>>? started = null;
-        started = new Lazy<Task<UrlOptionCopy>>(() => Detached(() => FetchAsync(key, settings, keep, owner, ownerKey, () => _fetches.TryRemove(KeyValuePair.Create(key, started!)))));
-        var fetch = _fetches.GetOrAdd(key, started);
-        return (await fetch.Value.WaitAsync(cancellationToken)).Options;
+        return copy.Failed ? throw new OptionsUnavailableException() : copy.Options;
     }
 
     // A fetch shared by every caller, so it runs on the thread pool in no caller's context or cancellation.
@@ -169,7 +174,7 @@ internal sealed partial class UrlOptionFetcher(OutboundHttp outbound, AppCaches 
             var reason = exception is FormBuilderOutboundException { Status: { } status } refused
                 ? string.Create(CultureInfo.InvariantCulture, $"{refused.Reason} {status}")
                 : exception is FormBuilderOutboundException outboundFailure ? outboundFailure.Reason.ToString() : exception.GetType().FullName;
-            if (appCaches.RuntimeCache.GetCacheItem<UrlOptionCopy>(key) is { } last)
+            if (appCaches.RuntimeCache.GetCacheItem<UrlOptionCopy>(key) is { Failed: false } last)
             {
                 var retry = last with { RetryUtc = time.GetUtcNow() + RetryAfter };
                 appCaches.RuntimeCache.Insert(key, () => retry, CopyDuration);
@@ -177,6 +182,9 @@ internal sealed partial class UrlOptionFetcher(OutboundHttp outbound, AppCaches 
                 return retry;
             }
 
+            // No copy to stand in: the failure itself stands for a minute, so a failing address costs one call a minute.
+            var failed = new UrlOptionCopy([], DateTimeOffset.MinValue, time.GetUtcNow() + RetryAfter) { Failed = true };
+            appCaches.RuntimeCache.Insert(key, () => failed, CopyDuration);
             LogFailed(logger, owner, ownerKey, reason);
             throw;
         }
@@ -236,12 +244,19 @@ internal sealed partial class UrlOptionFetcher(OutboundHttp outbound, AppCaches 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The JSON address of the {Owner} {OwnerKey} failed ({Reason}), so it offers the options fetched at {FetchedUtc} for now")]
     private static partial void LogLastCopy(ILogger logger, string owner, Guid ownerKey, string? reason, DateTimeOffset fetchedUtc);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "The JSON address of the {Owner} {OwnerKey} failed ({Reason}) and has no options fetched before")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The JSON address of the {Owner} {OwnerKey} failed ({Reason}) and has no options fetched before, so it offers none for a minute")]
     private static partial void LogFailed(ILogger logger, string owner, Guid ownerKey, string? reason);
 }
 
-/// <summary>A URL list's options as a server keeps them, with when they were fetched and, after a failed fetch, until when the last copy stands in.</summary>
-internal sealed record UrlOptionCopy(IReadOnlyList<FormBuilderOption> Options, DateTimeOffset FetchedUtc, DateTimeOffset RetryUtc);
+/// <summary>
+/// A URL list's options as a server keeps them, with when they were fetched and, after a failed fetch, until when the
+/// last copy stands in; or, after a fetch failed with no copy before it, the failure until then (<see cref="Failed"/>).
+/// </summary>
+internal sealed record UrlOptionCopy(IReadOnlyList<FormBuilderOption> Options, DateTimeOffset FetchedUtc, DateTimeOffset RetryUtc)
+{
+    /// <summary>Whether this stands for a failed fetch with no options before it, until <see cref="RetryUtc"/>.</summary>
+    public bool Failed { get; init; }
+}
 
 /// <summary>The configuration of a URL list (ADR-0076).</summary>
 public sealed class UrlOptionListSettings

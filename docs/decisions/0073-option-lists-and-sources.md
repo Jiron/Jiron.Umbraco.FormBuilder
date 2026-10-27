@@ -5,7 +5,9 @@
   [ADR-0055](0055-field-type-framework.md) and [ADR-0056](0056-field-settings-checks.md) (settings classes and their
   checks); amended in 5.5b by [ADR-0075](0075-content-and-data-type-lists.md) (what a configuration names on the site
   is checked when a list is saved and a form is published; `cacheSeconds` for code and URL lists only) and in 5.5c by
-  [ADR-0076](0076-url-and-file-lists.md) (how each kind keeps its options; the option service keeps only code lists')
+  [ADR-0076](0076-url-and-file-lists.md) (how each kind keeps its options; the option service keeps only code lists'),
+  and in 5.5g by [ADR-0081](0081-what-visitors-and-failures-cost-the-option-lists.md) (the parent answers a source sees and a list keeps options for;
+  a stored kind this version does not know)
 - Date: 2026-10-27
 - Roadmap step: 5.5a (decided and built); 5.5b adds content and data type lists, 5.5c URL and file lists, 5.5d holds
   answers to the resolved options, 5.5e imports lists, 6.1 serves `GET forms/{key}/options/{fieldKey}`, 6.2 renders

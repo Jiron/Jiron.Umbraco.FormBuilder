@@ -136,12 +136,12 @@ internal static class UrlOptionListHost
     public static readonly Guid ListKey = Guid.Parse("74000000-0000-4000-8000-000000000020");
 
     /// <summary>
-    /// The host configuration of a site that calls 127.0.0.1 over <c>http</c>, with the Testing assembly's stub on
-    /// <paramref name="stubPort"/>.
+    /// The host configuration of a site that calls 127.0.0.1 over <c>http</c> on <paramref name="stubPort"/>, with the
+    /// Testing assembly's stub there.
     /// </summary>
     public static void Configure(IDictionary<string, string> configuration, int stubPort)
     {
-        configuration["JironFormBuilder:Webhooks:AllowedHosts:0"] = "127.0.0.1";
+        configuration["JironFormBuilder:Webhooks:AllowedHosts:0"] = string.Create(CultureInfo.InvariantCulture, $"127.0.0.1:{stubPort}");
         configuration["JironFormBuilder:Webhooks:AllowHttp"] = "true";
         configuration[FormBuilderTestingOptions.SectionName + ":StubPort"] = stubPort.ToString(CultureInfo.InvariantCulture);
     }

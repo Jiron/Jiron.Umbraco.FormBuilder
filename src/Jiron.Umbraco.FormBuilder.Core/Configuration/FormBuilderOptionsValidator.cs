@@ -180,20 +180,21 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
         }
     }
 
-    // Each allowed host is a host name or an IP address, named once (ADR-0076).
+    // Each allowed host is a host name or an IP address, with a port when the host is called on another than its
+    // scheme's standard one, each host and port named once (ADR-0076, ADR-0082).
     private static void CheckAllowedHosts(IList<string> hosts, List<string> failures)
     {
-        var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+        var seen = new Dictionary<OutboundHost, int>();
         for (var i = 0; i < hosts.Count; i++)
         {
             var key = string.Create(CultureInfo.InvariantCulture, $"{Root}:Webhooks:AllowedHosts:{i}");
-            if (OutboundHosts.Normalize(hosts[i]) is not { } host)
+            if (OutboundHosts.Parse(hosts[i]) is not { } host)
             {
-                failures.Add($"{key} ('{hosts[i]}') must be a host name such as 'events.example.com' or an IP address, with no scheme, port, path or wildcard.");
+                failures.Add($"{key} ('{hosts[i]}') must be a host name such as 'events.example.com' or an IP address, optionally with a port such as 'events.example.com:8443' (an IPv6 address in brackets: '[2001:db8::1]:8443'), and no scheme, path or wildcard.");
             }
             else if (!seen.TryAdd(host, i))
             {
-                failures.Add(string.Create(CultureInfo.InvariantCulture, $"{key} ('{hosts[i]}') names a host again; {Root}:Webhooks:AllowedHosts:{seen[host]} names it already. Keep one."));
+                failures.Add(string.Create(CultureInfo.InvariantCulture, $"{key} ('{hosts[i]}') names a host and port again; {Root}:Webhooks:AllowedHosts:{seen[host]} names them already. Keep one."));
             }
         }
     }

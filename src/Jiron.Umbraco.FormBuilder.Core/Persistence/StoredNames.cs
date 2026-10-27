@@ -3,9 +3,11 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence;
 /// <summary>
 /// The text an enum is stored as: the camel case of its name (<c>pending</c>, <c>longText</c>), as the definitions,
 /// the events and the audit actions write theirs (ADR-0033), from the one table of names (<see cref="EnumNames{T}"/>).
-/// Every repository writes and reads its enums through this one converter. A read takes exactly that text; any other, another letter case included, is a row that something
-/// else wrote, and is refused. A stored name that no enum holds yet (a scan state, an option list kind) is a camelCase
-/// word too (<see cref="IsName"/>), so the rows written before its enum comes read as the enum's names.
+/// Every repository writes and reads its enums through this one converter. A read takes exactly that text; any other,
+/// another letter case included, is a row that something else wrote, and is refused. A stored name that no enum holds
+/// yet (a scan state, an option list kind) is a camelCase word too (<see cref="IsName"/>), so the rows written before
+/// its enum comes read as the enum's names; a reader that meets a later version's name, as the option lists' does,
+/// looks it up in <see cref="EnumNames{T}"/> itself instead of being refused (ADR-0081).
 /// </summary>
 internal static class StoredNames
 {

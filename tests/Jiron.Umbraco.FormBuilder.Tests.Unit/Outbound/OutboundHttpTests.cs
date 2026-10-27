@@ -160,7 +160,7 @@ public sealed class OutboundHttpTests
     public void TheRegisteredTransport_IsTheSitesOwn_UnlessOneIsRegisteredBefore()
     {
         var options = new FormBuilderOptions();
-        options.Webhooks.AllowedHosts.Add("127.0.0.1");
+        options.Webhooks.AllowedHosts.Add($"127.0.0.1:{Port}");
         options.Webhooks.AllowHttp = true;
         var services = new ServiceCollection().AddSingleton(TimeProvider.System).AddSingleton(MsOptions.Create(options));
         using var provider = services.AddFormBuilderOutbound().BuildServiceProvider();
@@ -187,13 +187,14 @@ public sealed class OutboundHttpTests
         using var stub = StubTransport();
         using var otherAddress = new FormBuilderHttpTransport((_, _) => Task.FromResult(new[] { IPAddress.Parse("127.0.0.2") }), new IPEndPoint(IPAddress.Loopback, Port));
         using var ipv6 = new FormBuilderHttpTransport((_, _) => Task.FromResult(new[] { IPAddress.IPv6Loopback }), new IPEndPoint(IPAddress.Loopback, Port));
+        var other = OtherPort();
 
         var reached = await Outbound(stub, allowHttp: true, Host).GetAsync(At("/list"), "application/json", Limits, CancellationToken.None);
 
         Assert.Multiple(async () =>
         {
             Assert.That(Encoding.UTF8.GetString(reached), Is.EqualTo("[]"));
-            Assert.That(await ReasonAsync(() => Outbound(stub, allowHttp: true, Host).GetAsync(new Uri($"http://{Host}:{OtherPort()}/list"), "application/json", Limits, CancellationToken.None)), Is.EqualTo(OutboundFailure.AddressNotPublic));
+            Assert.That(await ReasonAsync(() => Calling(stub, allowHttp: true, $"{Host}:{other}").GetAsync(new Uri($"http://{Host}:{other}/list"), "application/json", Limits, CancellationToken.None)), Is.EqualTo(OutboundFailure.AddressNotPublic));
             Assert.That(await ReasonAsync(() => Outbound(otherAddress, allowHttp: true, Host).GetAsync(At("/list"), "application/json", Limits, CancellationToken.None)), Is.EqualTo(OutboundFailure.AddressNotPublic));
             Assert.That(await ReasonAsync(() => Outbound(ipv6, allowHttp: true, Host).GetAsync(At("/list"), "application/json", Limits, CancellationToken.None)), Is.EqualTo(OutboundFailure.AddressNotPublic));
         });
@@ -347,7 +348,7 @@ public sealed class OutboundHttpTests
         {
             Assert.That(await ReasonAsync(() => Outbound(unresolved, allowHttp: true, Host).GetAsync(At("/list"), "application/json", Limits, CancellationToken.None)), Is.EqualTo(OutboundFailure.NoConnection), "a name with no address");
             Assert.That(await ReasonAsync(() => Outbound(unknown, allowHttp: true, Host).GetAsync(At("/list"), "application/json", Limits, CancellationToken.None)), Is.EqualTo(OutboundFailure.NoConnection), "a name that does not resolve");
-            Assert.That(await ReasonAsync(() => Outbound(refused, allowHttp: true, Host).GetAsync(new Uri($"http://{Host}:{closedPort}/list"), "application/json", Limits, CancellationToken.None)), Is.EqualTo(OutboundFailure.NoConnection), "a port nothing listens on");
+            Assert.That(await ReasonAsync(() => Calling(refused, allowHttp: true, $"{Host}:{closedPort}").GetAsync(new Uri($"http://{Host}:{closedPort}/list"), "application/json", Limits, CancellationToken.None)), Is.EqualTo(OutboundFailure.NoConnection), "a port nothing listens on");
         });
     }
 
@@ -369,12 +370,17 @@ public sealed class OutboundHttpTests
         });
     }
 
-    private static OutboundHttp Outbound(IFormBuilderHttpTransport transport, bool allowHttp, params string[] hosts)
+    // Calls allowed to each of the hosts on its scheme's standard port and on the stub's.
+    private OutboundHttp Outbound(IFormBuilderHttpTransport transport, bool allowHttp, params string[] hosts) =>
+        Calling(transport, allowHttp, [.. hosts.SelectMany(host => new[] { host, $"{host}:{Port}" })]);
+
+    // Calls allowed to exactly the entries given, as the host configuration names them.
+    private static OutboundHttp Calling(IFormBuilderHttpTransport transport, bool allowHttp, params string[] entries)
     {
         var options = new FormBuilderOptions();
-        foreach (var host in hosts)
+        foreach (var entry in entries)
         {
-            options.Webhooks.AllowedHosts.Add(host);
+            options.Webhooks.AllowedHosts.Add(entry);
         }
 
         options.Webhooks.AllowHttp = allowHttp;

@@ -302,7 +302,7 @@ public sealed class OptionServiceTests
     }
 
     [Test]
-    public async Task ASourceList_IsKeptForItsCacheSeconds_PerCultureAndParentAnswers_AndDroppedWhenItChanges()
+    public async Task ASourceList_IsKeptForItsCacheSeconds_PerCultureAndParentAnswer_AndDroppedWhenItChanges()
     {
         var counting = new TestOptionSource("counting", (request, _) =>
             ValueTask.FromResult<IReadOnlyList<FormBuilderOption>>([new FormBuilderOption("one", request.Culture)]));
@@ -314,8 +314,8 @@ public sealed class OptionServiceTests
         await service.GetListAsync(ListKey, new FormBuilderOptionContext("en"));
         var kept = await service.GetListAsync(ListKey, new FormBuilderOptionContext("en"));
         await service.GetListAsync(ListKey, new FormBuilderOptionContext("de"));
-        await service.GetListAsync(ListKey, new FormBuilderOptionContext("de") { ParentValues = ["b", "a"] });
-        await service.GetListAsync(ListKey, new FormBuilderOptionContext("de") { ParentValues = ["a", "b"] });
+        await service.GetListAsync(ListKey, new FormBuilderOptionContext("de") { ParentValues = ["a"] });
+        await service.GetListAsync(ListKey, new FormBuilderOptionContext("de") { ParentValues = ["a"] });
         await service.GetListAsync(ListKey, new FormBuilderOptionContext("de") { Page = Page });
         var before = counting.Requests.Count;
         await site.Lists.UpdateAsync(ListKey, created.List!.ConcurrencyVersion, new OptionListInput("kept", "Kept", OptionListKind.Code, Config: """{"source":"counting"}""", CacheSeconds: 120));
@@ -327,7 +327,7 @@ public sealed class OptionServiceTests
         Assert.Multiple(() =>
         {
             Assert.That(Pairs(kept), Is.EqualTo(new[] { ("one", "en") }));
-            Assert.That(before, Is.EqualTo(4), "one load per culture, page and set of parent answers in any order");
+            Assert.That(before, Is.EqualTo(4), "one load per culture, page and parent answer");
             Assert.That(afterChange, Is.EqualTo(5), "a change drops what was kept");
             Assert.That(counting.Requests.Count, Is.EqualTo(7), "a list with no time keeps nothing");
         });

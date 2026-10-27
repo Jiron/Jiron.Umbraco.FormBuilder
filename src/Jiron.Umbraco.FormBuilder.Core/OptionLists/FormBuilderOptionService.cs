@@ -9,8 +9,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.OptionLists;
 /// <summary>
 /// Resolves the options of fields and library lists (ADR-0073): a field's own options and a manual list's items in the
 /// culture, with their dictionary items; a source's options through its kind, within <see cref="SourceTimeout"/>,
-/// cleaned as entries need them; a cascading field's options for the parent's answers; and a library list's source
-/// options kept for its <c>cacheSeconds</c>.
+/// cleaned as entries need them; a cascading field's options for the parent's answers, of which only those an option
+/// could have reach a source; and a library list's source options kept for its <c>cacheSeconds</c>, per parent answer
+/// for none or one (ADR-0081).
 /// </summary>
 internal sealed partial class FormBuilderOptionService(
     OptionListService lists,
@@ -34,7 +35,7 @@ internal sealed partial class FormBuilderOptionService(
         }
 
         // Only a field that a parent filters cascades; any other ignores parent answers, and so does its source.
-        var parentValues = options.Parent is null ? [] : context.ParentValues;
+        var parentValues = options.Parent is null ? [] : Possible(context.ParentValues);
         var request = new FormBuilderOptionRequest(context.Culture, parentValues, context.Page);
         var resolved = options.Source switch
         {
@@ -51,7 +52,21 @@ internal sealed partial class FormBuilderOptionService(
     public Task<FormBuilderResolvedOptions> GetListAsync(Guid list, FormBuilderOptionContext context, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return ListAsync(list, new FormBuilderOptionRequest(context.Culture, context.ParentValues, context.Page), cancellationToken);
+        return ListAsync(list, new FormBuilderOptionRequest(context.Culture, Possible(context.ParentValues), context.Page), cancellationToken);
+    }
+
+    // The parent answers an option could name, each once and in their order: more than spaces, at most an option value's
+    // length and as cleaning leaves them (ADR-0005), at most as many as a field offers; the rest names no option, so no
+    // source sees it (ADR-0081).
+    private static IReadOnlyList<string> Possible(IReadOnlyList<string> parentValues)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        return
+        [
+            .. parentValues
+                .Where(value => value is { Length: > 0 and <= DefinitionSaveChecks.OptionValueLength } && string.Equals(TextSemantics.Clean(value), value, StringComparison.Ordinal) && seen.Add(value))
+                .Take(OptionListService.MaxOptions),
+        ];
     }
 
     // The options that belong to the parent's answers: those that name one of them, and those that name none.
@@ -84,13 +99,14 @@ internal sealed partial class FormBuilderOptionService(
         }
 
         // A kind that keeps its options itself, for the list's time or until the site changes, or keeps nothing, is
-        // asked each time (ADR-0075, ADR-0076).
-        if (list.Row.CacheSeconds == 0 || kind.Keeping != OptionKeeping.ByRequest)
+        // asked each time (ADR-0075, ADR-0076); so are a list's options for two parent answers or more, as the sets of
+        // answers a visitor can post have no end (ADR-0081).
+        if (list.Row.CacheSeconds == 0 || kind.Keeping != OptionKeeping.ByRequest || request.ParentValues.Count > 1)
         {
             return await SourceAsync(kind, list.Config, request, "list", key, cancellationToken, list.Row.CacheSeconds);
         }
 
-        // Kept for the list's time per culture, page and parent answers, and dropped with the list when it changes. A
+        // Kept for the list's time per culture, page and parent answer, and dropped with the list when it changes. A
         // source that fails is not kept: the load throws, which forgets it, and the next request asks again.
         try
         {
@@ -130,6 +146,11 @@ internal sealed partial class FormBuilderOptionService(
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
+        }
+        catch (OptionsUnavailableException)
+        {
+            // The kind logged why when it found it (ADR-0081).
+            return FormBuilderResolvedOptions.Unavailable;
         }
         catch (Exception exception) when (timeout.IsCancellationRequested && exception is not OutOfMemoryException)
         {

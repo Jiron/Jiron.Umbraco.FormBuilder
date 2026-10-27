@@ -2,7 +2,8 @@
 
 - Status: accepted; amends [ADR-0062](0062-the-built-in-types-checks.md) (a choice's answers are held to the options
   the source resolves, cascading included; the vectors' options) and [ADR-0066](0066-answers-as-merge-tags.md) (an
-  option's label from a list or another source)
+  option's label from a list or another source); amended in 5.5g by
+  [ADR-0081](0081-what-visitors-and-failures-cost-the-option-lists.md) (the parent answers a submission's check resolves for)
 - Date: 2026-10-27
 - Roadmap step: 5.5d (decided and built); 6.1 runs the reader in the pipeline, 6.4 gives the browser's checks and
   display the options the page resolved

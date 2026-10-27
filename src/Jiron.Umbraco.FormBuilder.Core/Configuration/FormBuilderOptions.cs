@@ -46,8 +46,10 @@ public sealed class FormBuilderOptions
 public sealed class FormBuilderWebhooksOptions
 {
     /// <summary>
-    /// The hosts that may be called, each a host name such as <c>events.example.com</c> or an IP address, in any case:
-    /// no scheme, port, path or wildcard. None by default, so nothing is called.
+    /// The hosts that may be called, each a host name such as <c>events.example.com</c> or an IP address, in any case,
+    /// with no scheme, path or wildcard. A host alone is called on its scheme's standard port only (443, or 80 for
+    /// <c>http</c>); to call it on another, name the port too: <c>events.example.com:8443</c>, or
+    /// <c>[2001:db8::1]:8443</c> for an IPv6 address (ADR-0082). None by default, so nothing is called.
     /// </summary>
     public IList<string> AllowedHosts { get; } = [];
 

@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Collections.Frozen;
+using System.Globalization;
 using System.Net.Http.Headers;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Microsoft.Extensions.Options;
@@ -11,12 +12,43 @@ namespace Jiron.Umbraco.FormBuilder.Core.Outbound;
 /// <param name="MaxBytes">The answer's body after decompression.</param>
 internal readonly record struct OutboundLimits(TimeSpan Timeout, int MaxBytes);
 
-/// <summary>The hosts of <c>JironFormBuilder:Webhooks:AllowedHosts</c> as calls compare them (ADR-0076).</summary>
+/// <summary>An entry of <c>JironFormBuilder:Webhooks:AllowedHosts</c>: a host, and the port it names, if any (ADR-0082).</summary>
+/// <param name="Host">The host as <see cref="OutboundHosts.Normalize"/> gives it.</param>
+/// <param name="Port">The port, from 1 to 65535; null for the scheme's standard port.</param>
+internal readonly record struct OutboundHost(string Host, int? Port);
+
+/// <summary>The hosts of <c>JironFormBuilder:Webhooks:AllowedHosts</c> as calls compare them (ADR-0076, ADR-0082).</summary>
 internal static class OutboundHosts
 {
     /// <summary>
+    /// An entry as calls compare it: a host alone, which a call reaches on its scheme's standard port only, or a host
+    /// and a port after a colon (<c>events.example.com:8443</c>, <c>[2001:db8::1]:8443</c>); null for anything else.
+    /// An IPv6 address with a port is written in brackets, as an address writes it.
+    /// </summary>
+    public static OutboundHost? Parse(string? entry)
+    {
+        if (string.IsNullOrEmpty(entry))
+        {
+            return null;
+        }
+
+        var colon = entry.LastIndexOf(':');
+        var hasPort = colon > 0 && (entry[0] == '[' ? entry[colon - 1] == ']' : entry.IndexOf(':') == colon);
+        if (!hasPort)
+        {
+            return Normalize(entry) is { } host ? new OutboundHost(host, null) : null;
+        }
+
+        return int.TryParse(entry.AsSpan(colon + 1), NumberStyles.None, CultureInfo.InvariantCulture, out var port) && port is >= 1 and <= 65535
+            && Normalize(entry[..colon]) is { } named
+            ? new OutboundHost(named, port)
+            : null;
+    }
+
+    /// <summary>
     /// The host as an address gives it to compare (<see cref="Uri.IdnHost"/>: in its ASCII form, in lowercase, an IPv6
-    /// address without its brackets), or null for anything but one host name or IP address.
+    /// address without its brackets), or null for anything but one host name or IP address. Brackets hold an IPv6
+    /// address only, as an address writes them.
     /// </summary>
     public static string? Normalize(string? host)
     {
@@ -25,9 +57,10 @@ internal static class OutboundHosts
             return null;
         }
 
-        var bare = host is ['[', .., ']'] ? host[1..^1] : host;
+        var bracketed = host is ['[', .., ']'];
+        var bare = bracketed ? host[1..^1] : host;
         var type = Uri.CheckHostName(bare);
-        if (type is not (UriHostNameType.Dns or UriHostNameType.IPv4 or UriHostNameType.IPv6))
+        if (type is not (UriHostNameType.Dns or UriHostNameType.IPv4 or UriHostNameType.IPv6) || (bracketed && type != UriHostNameType.IPv6))
         {
             return null;
         }
@@ -39,9 +72,10 @@ internal static class OutboundHosts
 
 /// <summary>
 /// Calls to another host (section 4.10, ADR-0076): only an absolute address without a user name or password, over
-/// <c>https</c> (or <c>http</c> when the host configuration allows it), to one of the allowed hosts; at most three
-/// redirects, each to the same host and checked again; one time limit for the whole exchange and a cap on the answer.
-/// The transport refuses addresses that are not globally reachable.
+/// <c>https</c> (or <c>http</c> when the host configuration allows it), to one of the allowed hosts, on its scheme's
+/// standard port or one its entry names (ADR-0082); at most three redirects, each to the same host and checked again;
+/// one time limit for the whole exchange and a cap on the answer. The transport refuses addresses that are not globally
+/// reachable. A connection that breaks off and a body that does not decompress are failures like any other (ADR-0081).
 /// </summary>
 /// <param name="transport">How a request is sent.</param>
 /// <param name="options">The host configuration, for the allowed hosts and <c>http</c>.</param>
@@ -51,7 +85,13 @@ internal sealed class OutboundHttp(IFormBuilderHttpTransport transport, IOptions
     /// <summary>The most redirects a call follows.</summary>
     public const int MaxRedirects = 3;
 
-    private readonly FrozenSet<string> _hosts = options.Value.Webhooks.AllowedHosts.Select(OutboundHosts.Normalize).OfType<string>().ToFrozenSet(StringComparer.Ordinal);
+    // Each allowed host with the ports its entries name; null among them for the scheme's standard port (ADR-0082).
+    private readonly FrozenDictionary<string, FrozenSet<int?>> _hosts = options.Value.Webhooks.AllowedHosts
+        .Select(OutboundHosts.Parse)
+        .OfType<OutboundHost>()
+        .GroupBy(entry => entry.Host, StringComparer.Ordinal)
+        .ToFrozenDictionary(entries => entries.Key, entries => entries.Select(entry => entry.Port).ToFrozenSet(), StringComparer.Ordinal);
+
     private readonly bool _allowHttp = options.Value.Webhooks.AllowHttp;
 
     /// <summary>Why the host configuration refuses <paramref name="address"/>, or null when it allows it.</summary>
@@ -68,7 +108,12 @@ internal sealed class OutboundHttp(IFormBuilderHttpTransport transport, IOptions
             return OutboundFailure.SchemeNotAllowed;
         }
 
-        return _hosts.Contains(address.IdnHost) ? null : OutboundFailure.HostNotAllowed;
+        if (!_hosts.TryGetValue(address.IdnHost, out var ports))
+        {
+            return OutboundFailure.HostNotAllowed;
+        }
+
+        return (address.IsDefaultPort && ports.Contains(null)) || ports.Contains(address.Port) ? null : OutboundFailure.PortNotAllowed;
     }
 
     /// <summary>The body of a <c>GET</c> of <paramref name="address"/>, or a <see cref="FormBuilderOutboundException"/>.</summary>
@@ -97,6 +142,20 @@ internal sealed class OutboundHttp(IFormBuilderHttpTransport transport, IOptions
         catch (HttpRequestException exception)
         {
             throw new FormBuilderOutboundException(OutboundFailure.NoConnection, innerException: exception);
+        }
+        catch (IOException exception) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            throw new FormBuilderOutboundException(OutboundFailure.TimedOut, innerException: exception);
+        }
+        catch (IOException exception)
+        {
+            // The connection broke off while the body was read (ADR-0081).
+            throw new FormBuilderOutboundException(OutboundFailure.NoConnection, innerException: exception);
+        }
+        catch (InvalidDataException exception)
+        {
+            // The body does not decompress as its encoding says (ADR-0081).
+            throw new FormBuilderOutboundException(OutboundFailure.AnswerUnreadable, innerException: exception);
         }
     }
 

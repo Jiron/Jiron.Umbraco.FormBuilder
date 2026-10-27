@@ -125,7 +125,7 @@ public sealed class UrlOptionKindTests
         Assert.Multiple(() =>
         {
             Assert.That(resolved, Is.SameAs(FormBuilderResolvedOptions.Unavailable));
-            Assert.That(site.UrlLogs.Entries.Select(entry => (entry.Level, entry.Message)), Is.EqualTo(new[] { (LogLevel.Warning, $"The JSON address of the field {FieldKey} failed (AnswerUnreadable) and has no options fetched before") }));
+            Assert.That(site.UrlLogs.Entries.Select(entry => (entry.Level, entry.Message)), Is.EqualTo(new[] { (LogLevel.Warning, $"The JSON address of the field {FieldKey} failed (AnswerUnreadable) and has no options fetched before, so it offers none for a minute") }));
         });
     }
 
@@ -158,7 +158,7 @@ public sealed class UrlOptionKindTests
         Assert.Multiple(() =>
         {
             Assert.That(resolved, Is.SameAs(FormBuilderResolvedOptions.Unavailable));
-            Assert.That(site.UrlLogs.Entries.Select(entry => (entry.Level, entry.Message)), Is.EqualTo(new[] { (LogLevel.Warning, $"The JSON address of the list {ListKey} failed (Refused 503) and has no options fetched before") }));
+            Assert.That(site.UrlLogs.Entries.Select(entry => (entry.Level, entry.Message)), Is.EqualTo(new[] { (LogLevel.Warning, $"The JSON address of the list {ListKey} failed (Refused 503) and has no options fetched before, so it offers none for a minute") }));
             Assert.That(site.Logs.Entries.Single().Message, Does.Contain(typeof(FormBuilderOutboundException).FullName!), "the option service logs the type");
             Assert.That(
                 site.UrlLogs.Entries.Concat(site.Logs.Entries).Select(entry => entry.Message + entry.Exception),

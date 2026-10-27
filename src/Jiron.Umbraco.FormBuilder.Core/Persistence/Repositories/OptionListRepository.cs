@@ -8,7 +8,10 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 /// <param name="Key">The key definitions name it by.</param>
 /// <param name="Alias">The alias, unique without regard to case.</param>
 /// <param name="Name">The name editors see.</param>
-/// <param name="Kind">Where its options come from (ADR-0073), stored as its camelCase name.</param>
+/// <param name="Kind">
+/// Where its options come from (ADR-0073), stored as its camelCase name; null for a stored name this version does not
+/// know, such as a kind a later version wrote, so the list reads as unreadable instead of failing the page (ADR-0081).
+/// </param>
 /// <param name="Config">The source's configuration as JSON, never in the public projection.</param>
 /// <param name="Items">The items of a manual or uploaded list as JSON.</param>
 /// <param name="CacheSeconds">How long the options of a source are cached; 0 for no cache.</param>
@@ -20,7 +23,7 @@ internal sealed record StoredOptionList(
     Guid Key,
     string Alias,
     string Name,
-    OptionListKind Kind,
+    OptionListKind? Kind,
     string Config,
     string Items,
     int CacheSeconds,
@@ -154,7 +157,7 @@ internal sealed class OptionListRepository(FormBuilderDatabase database) : IOpti
         d.Key,
         d.Alias,
         d.Name,
-        StoredNames.Parse<OptionListKind>(d.Kind),
+        EnumNames<OptionListKind>.ByName.TryGetValue(d.Kind, out var kind) ? kind : null,
         d.Config,
         d.Items,
         d.CacheSeconds,

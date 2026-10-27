@@ -51,6 +51,19 @@ internal enum OptionKeeping
 }
 
 /// <summary>
+/// A kind's options are unavailable for a reason the kind logged when it found it, such as a URL list's address that
+/// failed within the last minute (ADR-0081): the options service offers none and logs nothing again.
+/// </summary>
+internal sealed class OptionsUnavailableException : Exception
+{
+    /// <summary>The options are unavailable.</summary>
+    public OptionsUnavailableException()
+        : base("The options are unavailable for a reason the kind logged already.")
+    {
+    }
+}
+
+/// <summary>
 /// A kind of option list (ADR-0073): its configuration's settings class, read into a schema as a field type's settings
 /// are (ADR-0055) and checked with the same codes, its own check and the check of what it names on the site
 /// (ADR-0075), whether a field may configure it as its source, whether its options are a list's items, whether a list

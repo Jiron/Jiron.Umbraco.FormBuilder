@@ -30,6 +30,17 @@ internal sealed record FormOrigin(
     Func<CancellationToken, Task>? Alongside = null);
 
 /// <summary>
+/// The form's alias taken at its insert (ADR-0081): only the form's own insert raises it, so a conflict of what comes
+/// alongside is never read as the alias taken, in any attempt of the unit.
+/// </summary>
+/// <param name="conflict">The repository's conflict.</param>
+internal sealed class FormAliasTakenException(FormBuilderConflictException conflict) : Exception(conflict.Message, conflict)
+{
+    /// <summary>The repository's conflict.</summary>
+    public FormBuilderConflictException Conflict { get; } = conflict;
+}
+
+/// <summary>
 /// Creates forms for the form service and the exchange (ADR-0044, ADR-0046, ADR-0053): a blank design, the new-form
 /// defaults of the general settings, and the create itself with the first free alias, tried again when a create at the
 /// same moment takes it. A create is the form service's change, so it logs as the form service.
@@ -121,14 +132,12 @@ internal sealed partial class FormCreation(
             var chosen = alias ?? FormAliases.FirstFree(wanted, await forms.ListAliasesAsync(FormAliases.Stem(wanted), cancellationToken));
             await changes.CancelableAsync(new FormSavingNotification(definition, chosen, name, isNew: true, userKey, new EventMessages()) { CreatedFrom = origin.Source, SourceKey = origin.SourceKey });
             SavedVersion created;
-            var formWritten = false;
             try
             {
                 created = await changes.WriteAsync(
                     async () =>
                     {
-                        var saved = await forms.CreateAsync(new NewForm(definition.Key, folder?.Id, chosen, name, document, UserKey: userKey), cancellationToken);
-                        formWritten = true;
+                        var saved = await CreateFormAsync(new NewForm(definition.Key, folder?.Id, chosen, name, document, UserKey: userKey), cancellationToken);
                         if (origin.Alongside is { } alongside)
                         {
                             await alongside(cancellationToken);
@@ -143,15 +152,33 @@ internal sealed partial class FormCreation(
                     },
                     cancellationToken);
             }
-            catch (FormBuilderConflictException exception) when (exception.Conflict == FormBuilderConflict.DuplicateAlias && !formWritten && alias is null && attempt < AliasAttempts)
+            catch (FormAliasTakenException) when (alias is null && attempt < AliasAttempts)
             {
                 // A create at the same moment took the alias: the next free one, announced again.
                 continue;
+            }
+            catch (FormAliasTakenException taken)
+            {
+                throw new FormBuilderConflictException(taken.Conflict.Conflict, taken.Conflict.Message, taken);
             }
 
             var info = FormInfos.Info(created.Form, folder?.Key);
             await changes.PublishedAsync(new FormSavedNotification(info.Key, info.Alias, info.Name, created.Version.Info.Number, isNew: true, userKey) { CreatedFrom = origin.Source, SourceKey = origin.SourceKey }, FormAudit.Subject(info.Key));
             return info;
+        }
+    }
+
+    // The form's insert, with its alias taken told apart from any other conflict of the unit: the exception says so
+    // itself, so each attempt of a unit the database runs again tells it anew (ADR-0081).
+    private async Task<SavedVersion> CreateFormAsync(NewForm form, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await forms.CreateAsync(form, cancellationToken);
+        }
+        catch (FormBuilderConflictException exception) when (exception.Conflict == FormBuilderConflict.DuplicateAlias)
+        {
+            throw new FormAliasTakenException(exception);
         }
     }
 

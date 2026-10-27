@@ -14,6 +14,12 @@ internal enum OutboundFailure
     /// <summary>The host is not one of <c>JironFormBuilder:Webhooks:AllowedHosts</c>.</summary>
     HostNotAllowed,
 
+    /// <summary>
+    /// The host is allowed on its scheme's standard port only, or on the ports its entries name, and the address names
+    /// another (ADR-0082).
+    /// </summary>
+    PortNotAllowed,
+
     /// <summary>The name resolves to an address that is not globally reachable.</summary>
     AddressNotPublic,
 
@@ -32,10 +38,13 @@ internal enum OutboundFailure
     /// <summary>The answer's status is not a success.</summary>
     Refused,
 
-    /// <summary>No connection: the name does not resolve, or no address answers.</summary>
+    /// <summary>No connection: the name does not resolve, no address answers, or the connection broke off (ADR-0081).</summary>
     NoConnection,
 
-    /// <summary>The answer is not what the caller reads, such as JSON without a list where the list should be.</summary>
+    /// <summary>
+    /// The answer is not what the caller reads, such as JSON without a list where the list should be, or a body that
+    /// does not decompress (ADR-0081).
+    /// </summary>
     AnswerUnreadable,
 }
 

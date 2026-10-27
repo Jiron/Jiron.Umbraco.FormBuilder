@@ -156,9 +156,11 @@ internal sealed partial class FormImportLists(
 
     // Whether the site's list holds what the file's list holds: the same kind, configuration and items, in any order of
     // their properties. Both are read as an export reads them, so a list that an export carries is the same as the
-    // site's list it came from, nulls and empty values included.
+    // site's list it came from, nulls and empty values included; a site's list of a kind this version does not know is
+    // the same as none.
     private static bool Same(StoredOptionList site, ExportedOptionList list) =>
-        string.Equals(EnumNames<OptionListKind>.ByValue[site.Kind], list.Kind, StringComparison.Ordinal) &&
+        site.Kind is { } kind &&
+        string.Equals(EnumNames<OptionListKind>.ByValue[kind], list.Kind, StringComparison.Ordinal) &&
         FormExportFormat.SameListJson(site.Config, list.Config, JsonValueKind.Object) &&
         FormExportFormat.SameListJson(site.Items, list.Items, JsonValueKind.Array);
 

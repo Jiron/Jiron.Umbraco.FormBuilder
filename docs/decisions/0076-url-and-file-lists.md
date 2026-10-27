@@ -1,7 +1,9 @@
 # 0076. URL and file lists, and reaching other hosts
 
 - Status: accepted; amends [ADR-0073](0073-option-lists-and-sources.md) (how each kind keeps its options) and
-  [ADR-0075](0075-content-and-data-type-lists.md) (a URL list keeps what it fetches for 60 seconds at least)
+  [ADR-0075](0075-content-and-data-type-lists.md) (a URL list keeps what it fetches for 60 seconds at least);
+  amended in 5.5g by [ADR-0081](0081-what-visitors-and-failures-cost-the-option-lists.md) (a URL list that fails with no copy; a body that breaks off or
+  does not decompress) and [ADR-0082](0082-ports-of-calls-to-other-hosts.md) (an allowed host's port)
 - Date: 2026-10-27
 - Roadmap step: 5.5c (decided and built); 7.2 sends captcha verification and 8.4 webhooks the same way, 12.1 builds
   the editors, the upload and "Fetch now", 16.x reviews the guard

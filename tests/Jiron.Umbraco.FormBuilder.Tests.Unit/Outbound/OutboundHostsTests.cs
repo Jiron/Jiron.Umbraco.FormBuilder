@@ -95,10 +95,10 @@ public sealed class OutboundHostsTests
 
         Assert.That(failures, Is.EqualTo(new[]
         {
-            $"{Hosts}0 ('https://events.example.com') must be a host name such as 'events.example.com' or an IP address, with no scheme, port, path or wildcard.",
-            $"{Hosts}2 ('*.example.com') must be a host name such as 'events.example.com' or an IP address, with no scheme, port, path or wildcard.",
-            $"{Hosts}3 ('EVENTS.example.com') names a host again; {Hosts}1 names it already. Keep one.",
-            $"{Hosts}5 ('[::1]') names a host again; {Hosts}4 names it already. Keep one.",
+            $"{Hosts}0 ('https://events.example.com') must be a host name such as 'events.example.com' or an IP address, optionally with a port such as 'events.example.com:8443' (an IPv6 address in brackets: '[2001:db8::1]:8443'), and no scheme, path or wildcard.",
+            $"{Hosts}2 ('*.example.com') must be a host name such as 'events.example.com' or an IP address, optionally with a port such as 'events.example.com:8443' (an IPv6 address in brackets: '[2001:db8::1]:8443'), and no scheme, path or wildcard.",
+            $"{Hosts}3 ('EVENTS.example.com') names a host and port again; {Hosts}1 names them already. Keep one.",
+            $"{Hosts}5 ('[::1]') names a host and port again; {Hosts}4 names them already. Keep one.",
         }));
     }
 
@@ -108,6 +108,6 @@ public sealed class OutboundHostsTests
         var options = new FormBuilderOptions();
         options.Webhooks.AllowedHosts.Add(null!);
 
-        Assert.That(HostOptions.Failures(options), Is.EqualTo(new[] { $"{Hosts}0 ('') must be a host name such as 'events.example.com' or an IP address, with no scheme, port, path or wildcard." }));
+        Assert.That(HostOptions.Failures(options), Is.EqualTo(new[] { $"{Hosts}0 ('') must be a host name such as 'events.example.com' or an IP address, optionally with a port such as 'events.example.com:8443' (an IPv6 address in brackets: '[2001:db8::1]:8443'), and no scheme, path or wildcard." }));
     }
 }

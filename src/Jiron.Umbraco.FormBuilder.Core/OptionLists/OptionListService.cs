@@ -195,12 +195,19 @@ internal sealed partial class OptionListService(
     }
 
     // The configuration and items of a kind, each problem at its path; on the site, also what the configuration names
-    // there, which a stored list is not held to when it is read, as the site changes on its own (ADR-0075).
-    private async ValueTask<OptionKind?> ContentsAsync(OptionListKind kind, string? config, string? items, bool onSite, DefinitionProblems problems, CancellationToken cancellationToken)
+    // there, which a stored list is not held to when it is read, as the site changes on its own (ADR-0075). A stored
+    // kind this version does not know has none (ADR-0081).
+    private async ValueTask<OptionKind?> ContentsAsync(OptionListKind? kind, string? config, string? items, bool onSite, DefinitionProblems problems, CancellationToken cancellationToken)
     {
-        if (kinds.Find(kind) is not { } found)
+        if (kind is null)
         {
-            problems.Add(DefinitionErrors.OptionsInvalid, "$.kind", $"The site has no option lists of the kind '{StoredNames.Describe(kind)}'.");
+            problems.Add(DefinitionErrors.OptionsInvalid, "$.kind", "The list is of a kind this version does not know.");
+            return null;
+        }
+
+        if (kinds.Find(kind.Value) is not { } found)
+        {
+            problems.Add(DefinitionErrors.OptionsInvalid, "$.kind", $"The site has no option lists of the kind '{StoredNames.Describe(kind.Value)}'.");
             return null;
         }
 

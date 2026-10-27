@@ -21,6 +21,10 @@ namespace Jiron.Umbraco.FormBuilder.Core.Entries;
 /// </summary>
 internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBuilderMergeTagService mergeTags, IFormBuilderOptionService options, ILogger<SubmissionReader> logger)
 {
+    // In the key of what was resolved, the parent answers of a field whose parent's options are unknown: every list of
+    // values is written with each value's length first, so no list writes this.
+    private const string UnknownParents = "?";
+
     /// <summary>Reads a submission's answers over its form.</summary>
     /// <param name="post">The submission.</param>
     /// <param name="cancellationToken">Cancelled when the request is.</param>
@@ -337,7 +341,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         var hidden = state.Hidden.ToHashSet(StringComparer.Ordinal);
         var required = state.Required.ToHashSet(StringComparer.Ordinal);
         var others = Others(slots, state, hidden);
-        var resolved = new Dictionary<(Guid Field, string Parents), FormBuilderResolvedOptions>();
+        var resolving = new Resolving(post, [], slots.SelectMany(slot => slot.Field.Fields.Prepend(slot.Field)).ToDictionary(field => field.Key));
         var claimed = new HashSet<string>(StringComparer.Ordinal);
         var errors = ImmutableArray.CreateBuilder<SubmissionError>();
         foreach (var slot in slots)
@@ -350,7 +354,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
             if (!slot.IsGroup)
             {
-                Check(errors, slot, null, required.Contains(id), others, await OfferedAsync(slot, others, post, resolved, cancellationToken), post, claimed, today);
+                Check(errors, slot, null, required.Contains(id), others, await OfferedAsync(slot, others, resolving, cancellationToken), post, claimed, today);
                 Messages(errors, state.Messages, slot.Field, null);
                 continue;
             }
@@ -371,7 +375,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
                     var childId = DefinitionLogic.Id(child.Field.Key);
                     if (!rows[row].Hidden.Contains(childId))
                     {
-                        Check(errors, child, row, rows[row].Required.Contains(childId), rowOthers, await OfferedAsync(child, rowOthers, post, resolved, cancellationToken), post, claimed, today);
+                        Check(errors, child, row, rows[row].Required.Contains(childId), rowOthers, await OfferedAsync(child, rowOthers, resolving, cancellationToken), post, claimed, today);
                         Messages(errors, rows[row].Messages, child.Field, row);
                     }
                 }
@@ -381,36 +385,81 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         return errors.ToImmutable();
     }
 
-    // The options a list or another source resolves for a field with an answer to check (ADR-0077), in the submission's
-    // culture and page and for its parent's answers as the rules see them, asked for once per field and parent answers;
-    // null for a field whose options are its own, and for one whose source cannot give them, which is logged.
-    private async Task<IReadOnlyList<FormBuilderOption>?> OfferedAsync(
-        Slot slot,
+    // The options a list or another source resolves for a field with an answer to check (ADR-0077); null for a field
+    // whose options are its own, and for one whose source cannot give them.
+    private async Task<IReadOnlyList<FormBuilderOption>?> OfferedAsync(Slot slot, Dictionary<Guid, ImmutableArray<string>> others, Resolving resolving, CancellationToken cancellationToken) =>
+        slot.Field.Options is { Source: not OptionSource.Items } && slot.OverLimit is null && !slot.Values.IsEmpty
+            ? await ResolvedAsync(slot.Field, others, resolving, [], cancellationToken)
+            : null;
+
+    // A field's options from its list or source, in the submission's culture and page and for its parent's answers held
+    // to the options the parent offers (ADR-0081), asked for once per field and parent answers; null when the source
+    // cannot give them or the parent's options are unknown, either logged once per field.
+    private async Task<IReadOnlyList<FormBuilderOption>?> ResolvedAsync(
+        FormField field,
         Dictionary<Guid, ImmutableArray<string>> others,
-        PostedSubmission post,
-        Dictionary<(Guid Field, string Parents), FormBuilderResolvedOptions> resolved,
+        Resolving resolving,
+        ImmutableHashSet<Guid> asking,
         CancellationToken cancellationToken)
     {
-        if (slot.Field.Options is not { Source: not OptionSource.Items } source || slot.OverLimit is not null || slot.Values.IsEmpty)
+        ImmutableArray<string> parentValues = [];
+        if (field.Options?.Parent is { } parent)
         {
-            return null;
+            if (await HeldParentAnswersAsync(parent, others, resolving, asking.Add(field.Key), cancellationToken) is not { } held)
+            {
+                if (resolving.Resolved.TryAdd((field.Key, UnknownParents), FormBuilderResolvedOptions.Unavailable))
+                {
+                    LogOptionsUnavailable(logger, field.Alias ?? DefinitionLogic.Id(field.Key));
+                }
+
+                return null;
+            }
+
+            parentValues = held;
         }
 
-        var parentValues = source.Parent is { } parent && others.TryGetValue(parent, out var values) ? values : [];
-
         // Each value after its length, so no two lists of values make one key.
-        var key = (slot.Field.Key, string.Concat(parentValues.Select(value => $"{value.Length}:{value}")));
-        if (!resolved.TryGetValue(key, out var found))
+        var key = (field.Key, string.Concat(parentValues.Select(value => $"{value.Length}:{value}")));
+        if (!resolving.Resolved.TryGetValue(key, out var found))
         {
-            found = await options.GetAsync(slot.Field, new FormBuilderOptionContext(post.Scope.Culture) { ParentValues = parentValues, Page = post.Scope.Page }, cancellationToken);
-            resolved[key] = found;
+            found = await options.GetAsync(field, new FormBuilderOptionContext(resolving.Post.Scope.Culture) { ParentValues = parentValues, Page = resolving.Post.Scope.Page }, cancellationToken);
+            resolving.Resolved[key] = found;
             if (!found.IsAvailable)
             {
-                LogOptionsUnavailable(logger, slot.Field.Alias ?? DefinitionLogic.Id(slot.Field.Key));
+                LogOptionsUnavailable(logger, field.Alias ?? DefinitionLogic.Id(field.Key));
             }
         }
 
         return found.IsAvailable ? found.Options : null;
+    }
+
+    // The parent's answers as the rules see them that are options the parent offers, its own or those its list or source
+    // resolves, each once and in their order, so that no posted text reaches a source or becomes a cache key (ADR-0081);
+    // null when the parent's options are unknown. A parent outside the form's fields, or one that a chain of parents leads
+    // back to, offers none. A parent in a repeatable group answers in the same row, as the row's answers say.
+    private async Task<ImmutableArray<string>?> HeldParentAnswersAsync(
+        Guid parent,
+        Dictionary<Guid, ImmutableArray<string>> others,
+        Resolving resolving,
+        ImmutableHashSet<Guid> asking,
+        CancellationToken cancellationToken)
+    {
+        if (!others.TryGetValue(parent, out var answers) || answers.IsEmpty
+            || !resolving.Fields.TryGetValue(parent, out var parentField) || parentField.Options is not { } parentOptions || asking.Contains(parent))
+        {
+            return [];
+        }
+
+        var offered = parentOptions.Source == OptionSource.Items
+            ? parentOptions.Items.Select(item => item.Value)
+            : (await ResolvedAsync(parentField, others, resolving, asking, cancellationToken))?.Select(option => option.Value);
+        if (offered is null)
+        {
+            return null;
+        }
+
+        var values = offered.ToHashSet(StringComparer.Ordinal);
+        return [.. answers.Where(values.Contains).Distinct(StringComparer.Ordinal)];
     }
 
     // One shown field's errors: over its type's limits alone; a file token that stands for no upload of the field, or
@@ -512,6 +561,10 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
             answer.Files.IsEmpty ? null : [.. answer.Files.Select(file => new FieldFile(file.OriginalName, file.SizeBytes))],
             answer.Row)),
         state.Hidden.Select(id => Guid.TryParse(id, out var key) ? key : (Guid?)null).OfType<Guid>());
+
+    // What resolving a submission's options shares: the submission, what was resolved so far by field and parent answers,
+    // and every field of the form by key, a repeatable group's children among them, as a parent may be one.
+    private sealed record Resolving(PostedSubmission Post, Dictionary<(Guid Field, string Parents), FormBuilderResolvedOptions> Resolved, Dictionary<Guid, FormField> Fields);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The value the server resolves for the field '{Field}' is longer than its type takes, so the entry stores none.")]
     private static partial void LogValueTooLong(ILogger logger, string field);
