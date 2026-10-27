@@ -89,7 +89,7 @@ public sealed class OptionServiceTests
     {
         var site = new OptionListTestSite();
         site.Repository.Write(ListKey, OptionListKind.Manual, items: """[{"value":1}]""");
-        site.Repository.Write(OtherListKey, OptionListKind.Url, config: """{"url":"https://example.com"}""");
+        site.Repository.Write(OtherListKey, (OptionListKind)99, config: """{"url":"https://example.com"}""");
         var service = site.Options();
 
         var missing = await service.GetListAsync(Guid.NewGuid(), new FormBuilderOptionContext("en"));
@@ -290,15 +290,15 @@ public sealed class OptionServiceTests
     }
 
     [Test]
-    public async Task ASourceOnAField_IsUnavailable_ForAKindTheSiteLacks_AndAnUploadIsNoFieldsSource()
+    public async Task ASourceOnAField_IsUnavailable_ForASourceOfALaterVersion_AndAnUploadIsNoFieldsSource()
     {
         var site = new OptionListTestSite();
         var service = site.Options();
 
-        var url = await service.GetAsync(Field(OptionSource.Url, """{"url":"https://example.com"}"""), new FormBuilderOptionContext("en"));
+        var later = await service.GetAsync(Field((OptionSource)99, """{"url":"https://example.com"}"""), new FormBuilderOptionContext("en"));
         var file = await service.GetAsync(Field(OptionSource.File), new FormBuilderOptionContext("en"));
 
-        Assert.That(new[] { url, file }, Has.All.SameAs(FormBuilderResolvedOptions.Unavailable));
+        Assert.That(new[] { later, file }, Has.All.SameAs(FormBuilderResolvedOptions.Unavailable));
     }
 
     [Test]

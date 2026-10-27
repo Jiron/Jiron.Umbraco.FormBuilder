@@ -1,6 +1,9 @@
+using System.Net;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+using Jiron.Umbraco.FormBuilder.Core.Outbound;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
@@ -11,24 +14,44 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
+using MsOptions = Microsoft.Extensions.Options.Options;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 
 /// <summary>
 /// One server of a site with option lists (ADR-0073): its sources, the library's lists in memory, a real runtime cache,
 /// the distributed cache over a messenger that records what it is told, Umbraco's dictionary, content, document types
-/// and data types, and loggers that keep what is logged.
+/// and data types, the calls to other hosts (ADR-0076), and loggers that keep what is logged.
 /// </summary>
 internal sealed class OptionListTestSite
 {
-    /// <summary>A site with these sources, or with the standard lists when none are given.</summary>
+    /// <summary>A site with these sources, or with the standard lists when none are given, that reaches no other host.</summary>
     public OptionListTestSite(params IFormBuilderOptionSource[] sources)
+        : this(new OptionListTestHosts(), sources)
     {
+    }
+
+    /// <summary>A site that calls other hosts as <paramref name="hosts"/> says, with these sources or the standard lists.</summary>
+    public OptionListTestSite(OptionListTestHosts hosts, params IFormBuilderOptionSource[] sources)
+    {
+        ArgumentNullException.ThrowIfNull(hosts);
         IFormBuilderOptionSource[] registered = sources.Length > 0 ? sources : Standard();
         Collection = new FormBuilderOptionSourceCollection(() => registered);
         Sources = new OptionSourceRegistry(Collection);
         UmbracoReads = new OptionListUmbraco(Umbraco.Contents, Umbraco.Navigation, PublicAccess, ContentTypes, DataTypes, Umbraco.Languages, new MergeTagCultures(), Caches);
-        Kinds = new OptionKindRegistry(Sources, UmbracoReads);
+        var host = new FormBuilderOptions();
+        foreach (var allowed in hosts.AllowedHosts ?? [])
+        {
+            host.Webhooks.AllowedHosts.Add(allowed);
+        }
+
+        host.Webhooks.AllowHttp = hosts.AllowHttp;
+        var time = hosts.Time ?? TimeProvider.System;
+
+        // Without a transport of the test's own, no name resolves, so nothing leaves the machine.
+        Outbound = new OutboundHttp(hosts.Transport ?? new FormBuilderHttpTransport((_, _) => Task.FromResult(Array.Empty<IPAddress>()), null), MsOptions.Create(host), time);
+        Fetcher = hosts.Limits is { } limits ? new UrlOptionFetcher(Outbound, Caches, time, UrlLogs) { Limits = limits } : new UrlOptionFetcher(Outbound, Caches, time, UrlLogs);
+        Kinds = new OptionKindRegistry(Sources, UmbracoReads, Fetcher);
         Refresher = new FormBuilderOptionListCacheRefresher(Caches, Substitute.For<IJsonSerializer>(), Substitute.For<IEventAggregator>(), Substitute.For<ICacheRefresherNotificationFactory>());
         Lists = new OptionListService(Repository, Kinds, Caches, new DistributedCache(Messenger, new CacheRefresherCollection(() => [Refresher])), ListLogs);
     }
@@ -50,6 +73,15 @@ internal sealed class OptionListTestSite
 
     /// <summary>What content and data type lists read from Umbraco.</summary>
     public OptionListUmbraco UmbracoReads { get; }
+
+    /// <summary>The calls to other hosts.</summary>
+    public OutboundHttp Outbound { get; }
+
+    /// <summary>What fetches and keeps URL lists' options.</summary>
+    public UrlOptionFetcher Fetcher { get; }
+
+    /// <summary>What the URL lists' fetches logged.</summary>
+    public RecordingLogger<UrlOptionFetcher> UrlLogs { get; } = new();
 
     /// <summary>The server's caches, with a real runtime cache.</summary>
     public AppCaches Caches { get; } = new(new ObjectCacheAppCache(), NoAppCache.Instance, new IsolatedCaches(_ => NoAppCache.Instance));
@@ -93,6 +125,14 @@ internal sealed class OptionListTestSite
     public FormBuilderOptionService Options(TimeProvider? time = null) =>
         new(Lists, Kinds, Umbraco.DictionaryTexts(), Caches, time ?? TimeProvider.System, Logs);
 }
+
+/// <summary>How a test site calls other hosts (ADR-0076).</summary>
+/// <param name="AllowedHosts">The host configuration's allowed hosts; none by default.</param>
+/// <param name="AllowHttp">Whether <c>http</c> is allowed.</param>
+/// <param name="Transport">The transport; by default one that resolves no name.</param>
+/// <param name="Time">The clock of the time limits and keep times; the real time by default.</param>
+/// <param name="Limits">A fetch's time limit and cap, if not a URL list's own.</param>
+internal sealed record OptionListTestHosts(string[]? AllowedHosts = null, bool AllowHttp = false, IFormBuilderHttpTransport? Transport = null, TimeProvider? Time = null, OutboundLimits? Limits = null);
 
 /// <summary>The library's option lists in memory, with the refusals the database gives and a count of reads by key.</summary>
 internal sealed class MemoryOptionLists : IOptionListRepository

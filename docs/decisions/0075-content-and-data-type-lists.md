@@ -2,7 +2,8 @@
 
 - Status: accepted; amends [ADR-0073](0073-option-lists-and-sources.md) (what a configuration names on the site is
   checked when a list is saved and a form is published, never when a stored list is read; `cacheSeconds` belongs to
-  the kinds whose options change without the site saying so)
+  the kinds whose options change without the site saying so); amended in 5.5c by
+  [ADR-0076](0076-url-and-file-lists.md) (a URL list keeps what it fetches for 60 seconds at least)
 - Date: 2026-10-27
 - Roadmap step: 5.5b (decided and built); 5.5c's URL kind keeps its options for `cacheSeconds`, 5.5d holds answers to
   them, 9.x and 12.1 build the editors (a content picker, a document type picker, a data type picker)

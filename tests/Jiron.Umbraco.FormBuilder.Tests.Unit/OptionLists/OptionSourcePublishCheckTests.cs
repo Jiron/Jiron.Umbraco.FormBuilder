@@ -31,16 +31,16 @@ public sealed class OptionSourcePublishCheckTests
     }
 
     [Test]
-    public async Task AKindTheSiteLacks_AndAnUpload_AreRefusedAtTheSource()
+    public async Task AnUpload_IsRefusedAtTheSource_AndAnAddressAtTheHostTheSiteDoesNotCall()
     {
         var problems = await CheckAsync(
             Field(OptionSource.File),
-            Field(OptionSource.Url) with { Key = Guid.NewGuid() });
+            Field(OptionSource.Url, """{"url":"https://example.com/list.json"}""") with { Key = Guid.NewGuid() });
 
         Assert.That(problems, Is.EqualTo(new[]
         {
             new DefinitionProblem(DefinitionErrors.OptionsInvalid, "$.pages[0].groups[0].fields[0].options.source", "A field takes no upload as its source: an upload becomes the field's own options, or a library list's."),
-            new DefinitionProblem(DefinitionErrors.OptionsInvalid, "$.pages[0].groups[0].fields[1].options.source", "The site has no option source of the kind 'url'."),
+            new DefinitionProblem(DefinitionErrors.SettingInvalid, "$.pages[0].groups[0].fields[1].options.config.url", "The site does not call the host 'example.com': its host configuration names the hosts it calls in JironFormBuilder:Webhooks:AllowedHosts."),
         }));
     }
 

@@ -11,7 +11,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.OptionLists;
 /// order, each value its own label in every culture. The options are kept until a data type changes.
 /// </summary>
 /// <param name="umbraco">The data types.</param>
-internal sealed class DataTypeOptionKind(OptionListUmbraco umbraco) : OptionKind<DataTypeOptionListSettings>(OptionListKind.DataType, onField: true)
+internal sealed class DataTypeOptionKind(OptionListUmbraco umbraco) : OptionKind<DataTypeOptionListSettings>(OptionListKind.DataType, onField: true, keeping: OptionKeeping.UntilSiteChanges)
 {
     /// <inheritdoc />
     protected override async ValueTask CheckReferencesAsync(DataTypeOptionListSettings settings, OptionKindCheck check, CancellationToken cancellationToken)

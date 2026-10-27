@@ -83,10 +83,11 @@ internal sealed partial class FormBuilderOptionService(
             return new FormBuilderResolvedOptions(Clean(await ItemsAsync(list.Items, request.Culture), "list", key), IsAvailable: true);
         }
 
-        // A kind that keeps its options until the site changes, or keeps nothing, is asked each time (ADR-0075).
-        if (list.Row.CacheSeconds == 0 || !kind.UsesCacheSeconds)
+        // A kind that keeps its options itself, for the list's time or until the site changes, or keeps nothing, is
+        // asked each time (ADR-0075, ADR-0076).
+        if (list.Row.CacheSeconds == 0 || kind.Keeping != OptionKeeping.ByRequest)
         {
-            return await SourceAsync(kind, list.Config, request, "list", key, cancellationToken);
+            return await SourceAsync(kind, list.Config, request, "list", key, cancellationToken, list.Row.CacheSeconds);
         }
 
         // Kept for the list's time per culture, page and parent answers, and dropped with the list when it changes. A
@@ -116,13 +117,13 @@ internal sealed partial class FormBuilderOptionService(
 
     // A source's options, within the timeout, cleaned; unavailable when it fails or takes too long. The wait ends at the
     // timeout even for a source that does not heed its token.
-    private async Task<FormBuilderResolvedOptions> SourceAsync(OptionKind kind, SettingsObject? config, FormBuilderOptionRequest request, string owner, Guid key, CancellationToken cancellationToken)
+    private async Task<FormBuilderResolvedOptions> SourceAsync(OptionKind kind, SettingsObject? config, FormBuilderOptionRequest request, string owner, Guid key, CancellationToken cancellationToken, int? cacheSeconds = null)
     {
         using var timeout = new CancellationTokenSource(SourceTimeout, time);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
-            var pending = kind.ResolveAsync(new OptionKindRequest(config, [], DictionaryTexts.None, request), linked.Token);
+            var pending = kind.ResolveAsync(new OptionKindRequest(config, [], DictionaryTexts.None, request) { Owner = owner, OwnerKey = key, CacheSeconds = cacheSeconds }, linked.Token);
             var options = pending.IsCompletedSuccessfully ? pending.Result : await pending.AsTask().WaitAsync(linked.Token);
             return new FormBuilderResolvedOptions(Clean(options ?? [], owner, key), IsAvailable: true);
         }

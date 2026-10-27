@@ -14,7 +14,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.OptionLists;
 /// until the site's content changes.
 /// </summary>
 /// <param name="umbraco">The content, document types and public access.</param>
-internal sealed partial class ContentOptionKind(OptionListUmbraco umbraco) : OptionKind<ContentOptionListSettings>(OptionListKind.Content, onField: true)
+internal sealed partial class ContentOptionKind(OptionListUmbraco umbraco) : OptionKind<ContentOptionListSettings>(OptionListKind.Content, onField: true, keeping: OptionKeeping.UntilSiteChanges)
 {
     /// <summary>The word for the page's key as an option's value.</summary>
     public const string PageKey = "key";

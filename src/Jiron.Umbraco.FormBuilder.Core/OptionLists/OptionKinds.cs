@@ -22,7 +22,33 @@ internal sealed class OptionKindCheck(string path, DefinitionProblems problems)
 /// <param name="Items">A library list's items, for a kind whose options they are; empty for any other.</param>
 /// <param name="Texts">The dictionary items the items' labels and descriptions name, in the request's culture.</param>
 /// <param name="Source">The culture, the parent's answers and the current page.</param>
-internal sealed record OptionKindRequest(SettingsObject? Config, IReadOnlyList<FieldOption> Items, DictionaryTexts Texts, FormBuilderOptionRequest Source);
+internal sealed record OptionKindRequest(SettingsObject? Config, IReadOnlyList<FieldOption> Items, DictionaryTexts Texts, FormBuilderOptionRequest Source)
+{
+    /// <summary>What asks, for a kind's own log lines: <c>field</c> or <c>list</c>.</summary>
+    public string Owner { get; init; } = "field";
+
+    /// <summary>The key of the field or the list that asks, for a kind's own log lines.</summary>
+    public Guid OwnerKey { get; init; }
+
+    /// <summary>A library list's <c>cacheSeconds</c>, for a kind that keeps its options itself; null for a field's source.</summary>
+    public int? CacheSeconds { get; init; }
+}
+
+/// <summary>How a kind's options are kept between requests (ADR-0076).</summary>
+internal enum OptionKeeping
+{
+    /// <summary>Not at all: they cost nothing to read (manual, file, countries).</summary>
+    Never,
+
+    /// <summary>By the kind, until the site tells every server of a change (content, data type; ADR-0075).</summary>
+    UntilSiteChanges,
+
+    /// <summary>By the option service, per culture, page and parent answers, for a list's <c>cacheSeconds</c> (code; ADR-0073).</summary>
+    ByRequest,
+
+    /// <summary>By the kind, one copy per configuration, for a list's <c>cacheSeconds</c> or a field's fixed time (URL).</summary>
+    ByConfiguration,
+}
 
 /// <summary>
 /// A kind of option list (ADR-0073): its configuration's settings class, read into a schema as a field type's settings
@@ -33,13 +59,13 @@ internal sealed record OptionKindRequest(SettingsObject? Config, IReadOnlyList<F
 internal abstract class OptionKind
 {
     /// <summary>A kind whose configuration is <paramref name="settingsType"/>.</summary>
-    protected OptionKind(OptionListKind kind, Type settingsType, bool onField, bool hasItems, bool usesCacheSeconds)
+    protected OptionKind(OptionListKind kind, Type settingsType, bool onField, bool hasItems, OptionKeeping keeping)
     {
         Kind = kind;
         Schema = FieldSettingsReader.Read(settingsType);
         OnField = onField;
         HasItems = hasItems;
-        UsesCacheSeconds = usesCacheSeconds;
+        Keeping = keeping;
     }
 
     /// <summary>The kind.</summary>
@@ -57,11 +83,18 @@ internal abstract class OptionKind
     /// <summary>Whether the options are a library list's items, which the list holds.</summary>
     public bool HasItems { get; }
 
+    /// <summary>How the kind's options are kept between requests.</summary>
+    public OptionKeeping Keeping { get; }
+
     /// <summary>
-    /// Whether a list of the kind keeps its options for its <c>cacheSeconds</c> (ADR-0075): a kind whose options change
-    /// without the site saying so. Any other list keeps nothing for a time, and its <c>cacheSeconds</c> is 0.
+    /// Whether a list of the kind keeps its options for its <c>cacheSeconds</c> (ADR-0075, ADR-0076): a kind whose
+    /// options change without the site saying so. Any other list keeps nothing for a time, and its <c>cacheSeconds</c>
+    /// is 0.
     /// </summary>
-    public bool UsesCacheSeconds { get; }
+    public bool UsesCacheSeconds => Keeping is OptionKeeping.ByRequest or OptionKeeping.ByConfiguration;
+
+    /// <summary>The shortest <c>cacheSeconds</c> a list of a kind that uses them may have: 0 unless the kind says otherwise.</summary>
+    public virtual int MinCacheSeconds => 0;
 
     /// <summary>
     /// Holds a configuration, or none, to the kind's schema and then to its own check; whether nothing was found, so the
@@ -122,8 +155,8 @@ internal abstract class OptionKind<TSettings> : OptionKind
     private readonly JsonTypeInfo<TSettings> _info;
 
     /// <summary>A kind of the settings class.</summary>
-    protected OptionKind(OptionListKind kind, bool onField, bool hasItems = false, bool usesCacheSeconds = false)
-        : base(kind, typeof(TSettings), onField, hasItems, usesCacheSeconds) =>
+    protected OptionKind(OptionListKind kind, bool onField, bool hasItems = false, OptionKeeping keeping = OptionKeeping.Never)
+        : base(kind, typeof(TSettings), onField, hasItems, keeping) =>
         _info = (JsonTypeInfo<TSettings>)FieldSettingsJson.Options.GetTypeInfo(typeof(TSettings));
 
     /// <summary>A configuration as the settings class; a new instance, with its defaults, for none.</summary>
@@ -155,24 +188,34 @@ internal abstract class OptionKind<TSettings> : OptionKind
     protected virtual ValueTask CheckReferencesAsync(TSettings settings, OptionKindCheck check, CancellationToken cancellationToken) => ValueTask.CompletedTask;
 }
 
-/// <summary>The kinds this version has, by kind (ADR-0073, ADR-0075); 5.5c adds the URL and file kinds.</summary>
+/// <summary>The kinds this version has, by kind (ADR-0073, ADR-0075, ADR-0076): every kind of <see cref="OptionListKind"/>.</summary>
 internal sealed class OptionKindRegistry
 {
     private readonly FrozenDictionary<OptionListKind, OptionKind> _kinds;
 
-    /// <summary>The kinds over the site's option sources, content and data types.</summary>
-    public OptionKindRegistry(OptionSourceRegistry sources, OptionListUmbraco umbraco)
+    /// <summary>The kinds over the site's option sources, content, data types and calls to other hosts.</summary>
+    public OptionKindRegistry(OptionSourceRegistry sources, OptionListUmbraco umbraco, UrlOptionFetcher urls)
     {
         ArgumentNullException.ThrowIfNull(sources);
         ArgumentNullException.ThrowIfNull(umbraco);
-        OptionKind[] kinds = [new ManualOptionKind(), new ContentOptionKind(umbraco), new DataTypeOptionKind(umbraco), new CountriesOptionKind(), new CodeOptionKind(sources)];
+        ArgumentNullException.ThrowIfNull(urls);
+        OptionKind[] kinds =
+        [
+            new ManualOptionKind(),
+            new ContentOptionKind(umbraco),
+            new DataTypeOptionKind(umbraco),
+            new UrlOptionKind(urls),
+            new FileOptionKind(),
+            new CountriesOptionKind(),
+            new CodeOptionKind(sources),
+        ];
         _kinds = kinds.ToFrozenDictionary(kind => kind.Kind);
     }
 
     /// <summary>Every kind, in the order of the enum.</summary>
     public IEnumerable<OptionKind> All => _kinds.Values.OrderBy(kind => kind.Kind);
 
-    /// <summary>The kind, or null when this version does not have it yet.</summary>
+    /// <summary>The kind, or null for a kind this version does not know, such as one a later version stored.</summary>
     public OptionKind? Find(OptionListKind kind) => _kinds.GetValueOrDefault(kind);
 }
 
@@ -223,7 +266,7 @@ internal sealed class CountriesOptionKind() : OptionKind<CountriesOptionListSett
 
 /// <summary>Options from a source registered in code (ADR-0073), the standard lists among them, named by its name.</summary>
 /// <param name="sources">The site's option sources.</param>
-internal sealed class CodeOptionKind(OptionSourceRegistry sources) : OptionKind<CodeOptionListSettings>(OptionListKind.Code, onField: true, usesCacheSeconds: true)
+internal sealed class CodeOptionKind(OptionSourceRegistry sources) : OptionKind<CodeOptionListSettings>(OptionListKind.Code, onField: true, keeping: OptionKeeping.ByRequest)
 {
     /// <inheritdoc />
     protected override void CheckSettings(CodeOptionListSettings settings, OptionKindCheck check)

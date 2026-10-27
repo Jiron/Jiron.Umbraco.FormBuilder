@@ -42,9 +42,9 @@ public sealed class OptionListServiceTests
 
         Assert.Multiple(async () =>
         {
-            Assert.That(await CheckAsync(lists, Manual() with { Kind = OptionListKind.File }), Is.EqualTo(new[] { (DefinitionErrors.OptionsInvalid, "$.kind") }), "a kind of a later step");
-            Assert.That((await lists.CheckAsync(Manual() with { Kind = OptionListKind.Url }))[0].Message, Is.EqualTo("The site has no option lists of the kind 'url'."));
-            Assert.That(await CheckAsync(lists, Manual() with { Kind = (OptionListKind)99 }), Is.EqualTo(new[] { (DefinitionErrors.OptionsInvalid, "$.kind") }));
+            Assert.That(await CheckAsync(lists, Manual() with { Kind = OptionListKind.File }), Is.Empty, "a file list holds its items as a manual list does");
+            Assert.That(await CheckAsync(lists, Manual() with { Kind = (OptionListKind)99 }), Is.EqualTo(new[] { (DefinitionErrors.OptionsInvalid, "$.kind") }), "a kind of a later version");
+            Assert.That((await lists.CheckAsync(Manual() with { Kind = (OptionListKind)99 }))[0].Message, Is.EqualTo("The site has no option lists of the kind '99'."));
             Assert.That(await CheckAsync(lists, Manual() with { Config = "{" }), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$.config") }));
             Assert.That(await CheckAsync(lists, Manual() with { Config = null! }), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$.config") }));
             Assert.That((await CheckAsync(lists, Manual() with { Config = "[]" })).Select(problem => problem.Path), Is.EqualTo(new[] { "$.config" }));

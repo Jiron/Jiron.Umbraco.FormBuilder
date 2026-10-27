@@ -15,21 +15,28 @@ public sealed class OptionKindsTests
     private static readonly string OUmlaut = ((char)0xD6).ToString();
 
     [Test]
-    public void TheKinds_OfThisVersion_AreManualContentDataTypeCountriesAndCode_WithWhereEachMayBeConfigured()
+    public void TheKinds_OfThisVersion_AreEveryKind_WithWhereEachMayBeConfiguredAndHowItKeepsItsOptions()
     {
         var kinds = new OptionListTestSite().Kinds;
 
         Assert.Multiple(() =>
         {
-            Assert.That(kinds.All.Select(kind => (kind.Kind, kind.Name, kind.OnField, kind.HasItems, kind.UsesCacheSeconds)), Is.EqualTo(new[]
+            Assert.That(kinds.All.Select(kind => (kind.Kind, kind.Name, kind.OnField, kind.HasItems, kind.Keeping, kind.UsesCacheSeconds, kind.MinCacheSeconds)), Is.EqualTo(new[]
             {
-                (OptionListKind.Manual, "manual", false, true, false),
-                (OptionListKind.Content, "content", true, false, false),
-                (OptionListKind.DataType, "dataType", true, false, false),
-                (OptionListKind.Countries, "countries", true, false, false),
-                (OptionListKind.Code, "code", true, false, true),
+                (OptionListKind.Manual, "manual", false, true, OptionKeeping.Never, false, 0),
+                (OptionListKind.Content, "content", true, false, OptionKeeping.UntilSiteChanges, false, 0),
+                (OptionListKind.DataType, "dataType", true, false, OptionKeeping.UntilSiteChanges, false, 0),
+                (OptionListKind.Url, "url", true, false, OptionKeeping.ByConfiguration, true, 60),
+                (OptionListKind.File, "file", false, true, OptionKeeping.Never, false, 0),
+                (OptionListKind.Countries, "countries", true, false, OptionKeeping.Never, false, 0),
+                (OptionListKind.Code, "code", true, false, OptionKeeping.ByRequest, true, 0),
             }));
-            Assert.That(new[] { OptionListKind.Url, OptionListKind.File }.Select(kinds.Find), Has.All.Null, "5.5c adds them");
+            Assert.That(Enum.GetValues<OptionListKind>().Select(kinds.Find), Has.None.Null, "every kind there is");
+            Assert.That(kinds.Find((OptionListKind)99), Is.Null, "a kind of a later version");
+            Assert.That(
+                kinds.Find(OptionListKind.Url)!.Schema.Settings.Select(setting => (setting.Name, setting.Editor, setting.Rules.Required, setting.Default?.GetRawText())),
+                Is.EqualTo(new (string, string, bool, string?)[] { ("url", "text", true, null), ("listPath", "text", false, "\"$\""), ("valueFrom", "text", false, "\"$.value\""), ("labelFrom", "text", false, "\"$.label\"") }));
+            Assert.That(kinds.Find(OptionListKind.File)!.Schema.Settings, Is.Empty);
             Assert.That(kinds.Find(OptionListKind.Countries)!.Schema.Settings.Select(setting => setting.Name), Is.EqualTo(new[] { "countries" }));
             Assert.That(kinds.Find(OptionListKind.Code)!.Schema.Settings.Select(setting => (setting.Name, setting.Rules.Required)), Is.EqualTo(new[] { ("source", true) }));
             Assert.That(kinds.Find(OptionListKind.Manual)!.Schema.Settings, Is.Empty);

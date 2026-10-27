@@ -15,9 +15,9 @@ internal static class FormBuilderOptionListServices
 {
     /// <summary>
     /// Registers the collection of option sources with the standard lists, its registry and its start-up check, the
-    /// kinds with what content and data type lists read from Umbraco and the handler that drops what they keep when the
-    /// site changes, the library's lists with their cache refresher, the option service, and the publish check of a
-    /// field's source configuration.
+    /// kinds with what content and data type lists read from Umbraco, the handler that drops what they keep when the
+    /// site changes and what fetches and keeps URL lists' options, the library's lists with their cache refresher, the
+    /// option service, and the publish check of a field's source configuration.
     /// </summary>
     public static IUmbracoBuilder AddFormBuilderOptionLists(this IUmbracoBuilder builder)
     {
@@ -30,6 +30,7 @@ internal static class FormBuilderOptionListServices
         builder.Services.TryAddSingleton<OptionSourceRegistry>();
         builder.Services.TryAddSingleton<MergeTagCultures>();
         builder.Services.TryAddSingleton<OptionListUmbraco>();
+        builder.Services.TryAddSingleton<UrlOptionFetcher>();
         builder.Services.TryAddSingleton<OptionKindRegistry>();
         builder.AddNotificationHandler<ContentCacheRefresherNotification, OptionSiteCacheHandler>();
         builder.AddNotificationHandler<ContentTypeCacheRefresherNotification, OptionSiteCacheHandler>();

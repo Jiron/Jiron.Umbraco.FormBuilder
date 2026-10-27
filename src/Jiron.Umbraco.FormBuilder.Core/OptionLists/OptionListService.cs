@@ -109,6 +109,10 @@ internal sealed partial class OptionListService(
         {
             problems.Add(DefinitionErrors.InvalidValue, "$.cacheSeconds", $"A {kind.Name} list keeps nothing for a time, so its cacheSeconds is 0.");
         }
+        else if (ranged && kind is { UsesCacheSeconds: true } && input.CacheSeconds < kind.MinCacheSeconds)
+        {
+            problems.Add(DefinitionErrors.InvalidValue, "$.cacheSeconds", $"A {kind.Name} list keeps what it fetches for {kind.MinCacheSeconds} seconds at least.");
+        }
 
         return problems.ToReadOnlyList();
     }

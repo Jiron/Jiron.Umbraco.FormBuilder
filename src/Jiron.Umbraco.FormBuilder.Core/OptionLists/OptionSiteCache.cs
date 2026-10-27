@@ -9,7 +9,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.OptionLists;
 
 /// <summary>
 /// The keys of the options that content and data type lists keep until the site changes (ADR-0075), and how long a
-/// server keeps them at most when nothing changes; a key's load has the key with <c>.loading</c> after it.
+/// server keeps them at most when nothing changes; a key's load has the key with <c>.loading</c> after it. URL lists
+/// keep their copies under keys of their own (ADR-0076).
 /// </summary>
 internal static class OptionSiteCacheKeys
 {
@@ -18,6 +19,9 @@ internal static class OptionSiteCacheKeys
 
     /// <summary>The start of the keys of data type options.</summary>
     public const string DataTypePrefix = "Jiron.FormBuilder.OptionSource.dataType.";
+
+    /// <summary>The start of the keys of the copies URL lists fetched.</summary>
+    public const string UrlPrefix = "Jiron.FormBuilder.OptionSource.url.";
 
     /// <summary>The longest a server keeps options nobody changed: the time only bounds what it keeps of lists nobody reads.</summary>
     public static readonly TimeSpan Duration = TimeSpan.FromHours(12);
@@ -35,6 +39,17 @@ internal static class OptionSiteCacheKeys
 
     /// <summary>The key of a data type's options.</summary>
     public static string DataType(Guid key) => DataTypePrefix + key.ToString("D");
+
+    /// <summary>The key of the copy of a URL list's configuration: the address and the three paths, each with its length.</summary>
+    public static string Url(UrlOptionListSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        var url = settings.Url ?? string.Empty;
+        var text = string.Create(
+            CultureInfo.InvariantCulture,
+            $"{url.Length}:{url}|{settings.ListPath.Length}:{settings.ListPath}|{settings.ValueFrom.Length}:{settings.ValueFrom}|{settings.LabelFrom.Length}:{settings.LabelFrom}");
+        return UrlPrefix + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)))[..32];
+    }
 
     /// <summary>The key of the load of what <paramref name="key"/> keeps.</summary>
     public static string Loading(string key) => key + ".loading";
