@@ -52,6 +52,8 @@
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-jjfr-hcj7-qf5w" Package="SixLabors.ImageSharp" />
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-gwg2-r3hj-4w44" Package="SixLabors.ImageSharp" />
     <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-wmxv-xphr-5c9g" Package="SixLabors.ImageSharp" />
+    <!-- Added 2026-10-27 (step 5.5a), published 2026-10-07 for the same 3.1.12; ImageSharp 3.2.0 fixes it. -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-v76p-62qx-wwq2" Package="SixLabors.ImageSharp" />
   </ItemGroup>
 
 </Project>
