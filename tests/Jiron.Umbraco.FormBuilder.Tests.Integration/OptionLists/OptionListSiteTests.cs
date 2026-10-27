@@ -1,10 +1,13 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Tests.Common.Testing;
 using static Jiron.Umbraco.FormBuilder.Tests.Integration.Forms.FormServiceTesting;
@@ -13,8 +16,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.OptionLists;
 
 /// <summary>
 /// Option lists in a real site (ADR-0073): publishing holds a field's source configuration to its kind at its path, a
-/// library list read through the database shows its changes at once and tells every server, and the site resolves the
-/// standard lists through its registrations.
+/// library list read through the database shows its changes at once and tells every server, another server's cache
+/// instruction read from its JSON drops this server's copy, a stored kind this version does not know reads as an
+/// unreadable list (ADR-0081), and the site resolves the standard lists through its registrations.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
@@ -76,6 +80,48 @@ public sealed class OptionListSiteTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task AnotherServersInstruction_ReadFromItsJson_DropsThisServersCopyOfTheList()
+    {
+        var created = await Lists.CreateAsync(ListKey, new OptionListInput("sizes", "Sizes", OptionListKind.Manual, Items: """[{"value":"s"}]"""));
+        var field = SizeField();
+        _ = await Options.GetAsync(field, new FormBuilderOptionContext("en"));
+
+        // Another server changes the row; only its cache instruction reaches this one, as JSON.
+        await OptionLists.UpdateAsync(new OptionListUpdate(created.List!.Id, created.List.ConcurrencyVersion, "sizes", "Sizes", OptionListKind.Manual, "{}", """[{"value":"m"}]""", 0));
+        var kept = await Options.GetAsync(field, new FormBuilderOptionContext("en"));
+        var refresher = (IJsonCacheRefresher)GetRequiredService<CacheRefresherCollection>()[FormBuilderOptionListCacheRefresher.UniqueId]!;
+        refresher.Refresh(GetRequiredService<IJsonSerializer>().Serialize(new[] { new OptionListCacheChange(ListKey) }));
+        var refreshed = await Options.GetAsync(field, new FormBuilderOptionContext("en"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(kept.Options.Select(option => option.Value), Is.EqualTo(new[] { "s" }), "kept until told");
+            Assert.That(refreshed.Options.Select(option => option.Value), Is.EqualTo(new[] { "m" }));
+        });
+    }
+
+    [Test]
+    public async Task AStoredKindThisVersionDoesNotKnow_ReadsAsAnUnreadableList_WithNoOptions()
+    {
+        var created = await Lists.CreateAsync(ListKey, new OptionListInput("sheet", "Sheet", OptionListKind.Manual, Items: """[{"value":"s"}]"""));
+        Write(db => db.Execute($"UPDATE {T(FormBuilderTables.OptionList)} SET {Q("kind")} = @0 WHERE {Q("id")} = @1", "spreadsheet", created.List!.Id));
+        Lists.Changed(ListKey);
+
+        var row = await OptionLists.GetAsync(ListKey);
+        var listed = await OptionLists.ListAsync(null, PageRequest.First(10));
+        var entry = await Lists.GetAsync(ListKey);
+        var resolved = await Options.GetAsync(SizeField(), new FormBuilderOptionContext("en"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((row?.Key, row?.Kind), Is.EqualTo((ListKey, (OptionListKind?)null)), "the row reads, with no kind");
+            Assert.That(listed.Items.Select(list => list.Kind), Is.EqualTo(new OptionListKind?[] { null }), "and so does the library's page");
+            Assert.That((entry?.IsReadable, entry?.Kind), Is.EqualTo(((bool?)false, (OptionKind?)null)));
+            Assert.That(resolved.IsAvailable, Is.False);
+        });
+    }
+
+    [Test]
     public async Task TheSite_RegistersTheRefresherTheServicesAndTheStandardLists()
     {
         var months = new FormField { Key = Guid.NewGuid(), Type = "dropdown", Alias = "month", Options = new FieldOptions { Source = OptionSource.Code, Config = SettingsObject.Parse("""{"source":"months"}""") } };
@@ -100,6 +146,8 @@ public sealed class OptionListSiteTests : RepositoryTestBase
         builder.Services.AddSingleton<RecordingServerMessenger>();
         builder.Services.AddUnique<IServerMessenger>(provider => provider.GetRequiredService<RecordingServerMessenger>());
     }
+
+    private static FormField SizeField() => new() { Key = Guid.NewGuid(), Type = "dropdown", Alias = "size", Options = new FieldOptions { Source = OptionSource.List, OptionList = ListKey } };
 
     private static FormField Choice(string config) => new()
     {

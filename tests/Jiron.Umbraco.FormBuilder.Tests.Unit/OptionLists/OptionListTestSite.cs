@@ -149,7 +149,7 @@ internal sealed class MemoryOptionLists : IOptionListRepository
     public FormBuilderConflict? Conflict { get; set; }
 
     /// <summary>Stores a row as it is, past the service's checks: a list another version wrote, say.</summary>
-    public StoredOptionList Write(Guid key, OptionListKind kind, string config = "{}", string items = "[]", int cacheSeconds = 0)
+    public StoredOptionList Write(Guid key, OptionListKind? kind, string config = "{}", string items = "[]", int cacheSeconds = 0)
     {
         lock (_lock)
         {

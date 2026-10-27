@@ -167,6 +167,33 @@ public sealed class UrlOptionKindTests
     }
 
     [Test]
+    public async Task AnAddressThatFails_WithNoCopyBefore_IsCalledAgainOnlyAfterAMinute_EachFailureLoggedOnce()
+    {
+        var time = new TestTimeProvider(new DateTimeOffset(2026, 10, 27, 9, 0, 0, TimeSpan.Zero));
+        var transport = new ScriptedTransport(_ => ScriptedTransport.Json("{}", HttpStatusCode.ServiceUnavailable));
+        var site = Site(transport, time: time);
+        site.Repository.Write(ListKey, OptionListKind.Url, Config(), cacheSeconds: 300);
+        var service = site.Options(time);
+
+        var failed = await service.GetListAsync(ListKey, English);
+        time.Advance(TimeSpan.FromSeconds(59));
+        var waiting = await service.GetListAsync(ListKey, English);
+        var field = await service.GetAsync(Field(OptionSource.Url, Config()), English);
+        var callsWhileWaiting = transport.Requests.Count;
+        time.Advance(TimeSpan.FromSeconds(2));
+        var again = await service.GetListAsync(ListKey, English);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(new[] { failed, waiting, field, again }, Has.All.SameAs(FormBuilderResolvedOptions.Unavailable));
+            Assert.That(callsWhileWaiting, Is.EqualTo(1), "a visitor in the minute after a failure calls nothing, nor does a field of the same address");
+            Assert.That(transport.Requests, Has.Count.EqualTo(2), "and the minute after, the address is called again");
+            Assert.That(site.UrlLogs.Entries, Has.Count.EqualTo(2), "each failure once");
+            Assert.That(site.Logs.Entries, Has.Count.EqualTo(2), "the option service logs the failures, not the minute's waits");
+        });
+    }
+
+    [Test]
     public async Task AnAddressTheSiteDoesNotCall_IsNotFetched()
     {
         var transport = new ScriptedTransport(_ => ScriptedTransport.Json("[]"));
@@ -361,6 +388,22 @@ public sealed class UrlOptionKindTests
             Assert.That(await CheckAsync(https, """{"url":"https://Other.Example.com/list"}"""), Is.EqualTo(new[] { (DefinitionErrors.SettingInvalid, "$.config.url", "The site does not call the host 'other.example.com': its host configuration names the hosts it calls in JironFormBuilder:Webhooks:AllowedHosts.") }));
             Assert.That(await CheckAsync(https, """{"url":"https://OPTIONS.example.com/list"}"""), Is.Empty);
             Assert.That(await CheckAsync(http, """{"url":"http://options.example.com/list"}"""), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task TheSite_CallsAnotherPortThanTheStandardOne_OnlyWhereAnEntryNamesIt()
+    {
+        var standard = Site(new ScriptedTransport(_ => ScriptedTransport.Json("[]"))).Lists;
+        var ported = new OptionListTestSite(new OptionListTestHosts(AllowedHosts: ["options.example.com:8443", "[2001:db8::1]:8443"])).Lists;
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await CheckAsync(standard, """{"url":"https://options.example.com:8443/list"}"""), Is.EqualTo(new[] { (DefinitionErrors.SettingInvalid, "$.config.url", "The site does not call the host 'options.example.com' on the port 8443: its host configuration names the ports it calls besides the standard one in JironFormBuilder:Webhooks:AllowedHosts, as 'options.example.com:8443'.") }));
+            Assert.That(await CheckAsync(standard, """{"url":"https://options.example.com:443/list"}"""), Is.Empty, "the standard port written out");
+            Assert.That(await CheckAsync(ported, """{"url":"https://options.example.com:8443/list"}"""), Is.Empty);
+            Assert.That(await CheckAsync(ported, """{"url":"https://options.example.com/list"}"""), Is.EqualTo(new[] { (DefinitionErrors.SettingInvalid, "$.config.url", "The site does not call the host 'options.example.com' on the port 443: its host configuration names the ports it calls besides the standard one in JironFormBuilder:Webhooks:AllowedHosts, as 'options.example.com:443'.") }), "an entry with a port allows that port only");
+            Assert.That(await CheckAsync(ported, """{"url":"https://[2001:db8::1]:9443/list"}"""), Is.EqualTo(new[] { (DefinitionErrors.SettingInvalid, "$.config.url", "The site does not call the host '2001:db8::1' on the port 9443: its host configuration names the ports it calls besides the standard one in JironFormBuilder:Webhooks:AllowedHosts, as '[2001:db8::1]:9443'.") }));
         });
     }
 

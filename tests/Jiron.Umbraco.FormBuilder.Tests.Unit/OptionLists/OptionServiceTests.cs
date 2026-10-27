@@ -334,6 +334,72 @@ public sealed class OptionServiceTests
     }
 
     [Test]
+    public async Task ASourceList_ForTwoParentAnswersOrMore_IsAskedEachTime_WhileOneAnswerOrNoneIsKept()
+    {
+        var counting = new TestOptionSource("counting", new FormBuilderOption("one"));
+        var site = new OptionListTestSite(counting);
+        await site.Lists.CreateAsync(ListKey, new OptionListInput("kept", "Kept", OptionListKind.Code, Config: """{"source":"counting"}""", CacheSeconds: 60));
+        var service = site.Options();
+
+        await service.GetListAsync(ListKey, new FormBuilderOptionContext("en") { ParentValues = ["a", "b"] });
+        await service.GetListAsync(ListKey, new FormBuilderOptionContext("en") { ParentValues = ["a", "b"] });
+        var several = counting.Requests.Count;
+        await service.GetListAsync(ListKey, new FormBuilderOptionContext("en") { ParentValues = ["a"] });
+        await service.GetListAsync(ListKey, new FormBuilderOptionContext("en") { ParentValues = ["a"] });
+        await service.GetListAsync(ListKey, new FormBuilderOptionContext("en"));
+        await service.GetListAsync(ListKey, new FormBuilderOptionContext("en"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(several, Is.EqualTo(2), "the sets of answers a visitor can post have no end");
+            Assert.That(counting.Requests.Count, Is.EqualTo(4), "one answer and none are kept");
+            Assert.That(site.Caches.RuntimeCache.Get(OptionListCacheKeys.Options(ListKey, "en", null, ["a", "b"])), Is.Null);
+            Assert.That(site.Caches.RuntimeCache.Get(OptionListCacheKeys.Options(ListKey, "en", null, ["a"])), Is.Not.Null);
+        });
+    }
+
+    [Test]
+    public async Task ParentAnswersNoOptionCouldHave_NeverReachTheSource_AndEachOtherOnlyOnce()
+    {
+        var source = new TestOptionSource("echo", new FormBuilderOption("one"));
+        var site = new OptionListTestSite(source);
+        await site.Lists.CreateAsync(ListKey, new OptionListInput("echo", "Echo", OptionListKind.Code, Config: """{"source":"echo"}"""));
+        var cascading = Field(OptionSource.Code, """{"source":"echo"}""", parent: Guid.NewGuid());
+        string[] posted = ["", " ", "  ch", "de ", new string('x', 201), "ch", "ch", new string('y', 200), "de"];
+        var many = Enumerable.Range(0, OptionListService.MaxOptions + 5).Select(number => $"v{number}").ToArray();
+
+        await site.Options().GetListAsync(ListKey, new FormBuilderOptionContext("en") { ParentValues = posted });
+        await site.Options().GetAsync(cascading, new FormBuilderOptionContext("en") { ParentValues = posted });
+        await site.Options().GetListAsync(ListKey, new FormBuilderOptionContext("en") { ParentValues = many });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(source.Requests[0].ParentValues, Is.EqualTo(new[] { "ch", new string('y', 200), "de" }), "a list's");
+            Assert.That(source.Requests[1].ParentValues, Is.EqualTo(new[] { "ch", new string('y', 200), "de" }), "a cascading field's");
+            Assert.That(source.Requests[2].ParentValues, Is.EqualTo(many.Take(OptionListService.MaxOptions)), "at most as many as a field offers");
+        });
+    }
+
+    [Test]
+    public async Task AListOfAKindThisVersionDoesNotKnow_IsUnavailable_LoggedOnce()
+    {
+        var site = new OptionListTestSite();
+        site.Repository.Write(ListKey, null, items: """[{"value":"s"}]""");
+        var service = site.Options();
+
+        var first = await service.GetListAsync(ListKey, new FormBuilderOptionContext("en"));
+        var again = await service.GetAsync(Field(new FieldOptions { Source = OptionSource.List, OptionList = ListKey }), new FormBuilderOptionContext("de"));
+        var entry = await site.Lists.GetAsync(ListKey);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(new[] { first, again }, Has.All.SameAs(FormBuilderResolvedOptions.Unavailable));
+            Assert.That((entry?.IsReadable, entry?.Kind), Is.EqualTo(((bool?)false, (OptionKind?)null)));
+            Assert.That(site.ListLogs.Entries.Select(logged => logged.Message), Is.EqualTo(new[] { $"The option list {ListKey} does not read as its kind, so it offers no options until it is saved again. Problems: 1" }));
+        });
+    }
+
+    [Test]
     public async Task AKeptSourceList_KeepsNoFailure_SoTheNextRequestAsksAgain()
     {
         var calls = 0;

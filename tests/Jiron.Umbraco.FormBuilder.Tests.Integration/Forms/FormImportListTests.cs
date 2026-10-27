@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
@@ -9,6 +11,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Access;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Tests.Common.Testing;
 using static Jiron.Umbraco.FormBuilder.Tests.Integration.Forms.FormServiceTesting;
@@ -44,6 +47,10 @@ public sealed class FormImportListTests : RepositoryTestBase
     private IFormBuilderOptionService Options => GetRequiredService<IFormBuilderOptionService>();
 
     private FormNotificationLog Notifications => GetRequiredService<FormNotificationLog>();
+
+    private RacedForms Raced => GetRequiredService<RacedForms>();
+
+    private LockedLists Lists => GetRequiredService<LockedLists>();
 
     // The designers' group may manage the library; the entry handlers' may not (ADR-0013).
     private Guid LibraryManager => _personas["designer"].Key;
@@ -187,6 +194,29 @@ public sealed class FormImportListTests : RepositoryTestBase
         });
     }
 
+    [Test]
+    public async Task AnImportWhoseUnitTheDatabaseRunsAgain_TellsItsAliasTakenAnew_InEachAttempt()
+    {
+        var file = await FileAsync([RoomsKey], ListJson(RoomsKey, "rooms", "Guest rooms", Rooms));
+        var (forms, lists) = (Count(FormBuilderTables.Form), Count(FormBuilderTables.OptionList));
+        var (inserts, announced) = (Raced.Inserts, Notifications.Seen.Count);
+
+        // The first attempt's list insert meets a lock conflict, so the database runs the unit again; in that second
+        // attempt another server has just taken the form's alias. The create then takes the next free one.
+        Lists.FailNextCreates = 1;
+        Raced.TakeTheAliasAtInsert = inserts + 2;
+        var imported = await Exchange.ImportAsync(new ImportFormRequest(file, UserKey: LibraryManager));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(Raced.Inserts - inserts, Is.EqualTo(3), "the form, its unit again with the alias taken, then the next alias");
+            Assert.That(Notifications.Seen.Count - announced, Is.EqualTo(2), "announced again for the next alias");
+            Assert.That((Count(FormBuilderTables.Form) - forms, Count(FormBuilderTables.OptionList) - lists), Is.EqualTo((1, 1)), "one form, one list");
+            Assert.That(await OptionLists.GetAsync(RoomsKey), Is.Not.Null);
+            Assert.That(imported.Notes.Select(note => note.Code), Does.Contain(FormImportNotes.OptionListCreated));
+        });
+    }
+
     /// <inheritdoc />
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -194,6 +224,10 @@ public sealed class FormImportListTests : RepositoryTestBase
         builder.Services.PostConfigure<FormBuilderOptions>(options => options.Webhooks.AllowedHosts.Add(CalledHost));
         builder.Services.AddSingleton<FormNotificationLog>();
         builder.AddNotificationAsyncHandler<FormSavingNotification, FormNotificationRecorder<FormSavingNotification>>();
+        builder.Services.AddSingleton(provider => RacedForms.Over(ActivatorUtilities.CreateInstance<FormRepository>(provider)));
+        builder.Services.AddUnique<IFormRepository>(provider => (IFormRepository)provider.GetRequiredService<RacedForms>());
+        builder.Services.AddSingleton(provider => new LockedLists(new OptionListRepository(provider.GetRequiredService<FormBuilderDatabase>())));
+        builder.Services.AddUnique<IOptionListRepository>(provider => provider.GetRequiredService<LockedLists>());
     }
 
     private static string Path(int field) => $"$.definition.pages[0].groups[0].fields[{field}].options.list";
@@ -210,6 +244,90 @@ public sealed class FormImportListTests : RepositoryTestBase
         ["items"] = JsonNode.Parse(items),
         ["cacheSeconds"] = cacheSeconds,
     };
+
+    // The site's form repository, every call passed on, except the insert a test names: another server took its alias
+    // a moment before, as the repository then says. DispatchProxy derives the proxy from it, so it stays unsealed.
+#pragma warning disable CA1852
+    internal class RacedForms : DispatchProxy
+    {
+        private IFormRepository _inner = null!;
+
+        /// <summary>How many inserts the repository was asked for.</summary>
+        public int Inserts { get; private set; }
+
+        /// <summary>The insert, counted from 1, that finds its alias taken; none by default.</summary>
+        public int TakeTheAliasAtInsert { get; set; }
+
+        /// <summary>A repository over <paramref name="inner"/>.</summary>
+        public static RacedForms Over(IFormRepository inner)
+        {
+            var proxy = (RacedForms)(object)Create<IFormRepository, RacedForms>();
+            proxy._inner = inner;
+            return proxy;
+        }
+
+        /// <inheritdoc />
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            ArgumentNullException.ThrowIfNull(targetMethod);
+            if (targetMethod.Name == nameof(IFormRepository.CreateAsync) && ++Inserts == TakeTheAliasAtInsert)
+            {
+                return Task.FromException<SavedVersion>(new FormBuilderConflictException(FormBuilderConflict.DuplicateAlias, "JFB_TEST: another server took the alias."));
+            }
+
+            try
+            {
+                return targetMethod.Invoke(_inner, args);
+            }
+            catch (TargetInvocationException exception) when (exception.InnerException is { } thrown)
+            {
+                ExceptionDispatchInfo.Throw(thrown);
+                throw;
+            }
+        }
+    }
+#pragma warning restore CA1852
+
+    // The site's option list repository, every call passed on, except the next inserts a test names: they meet SQLite's
+    // lock conflict, so the database rolls the unit back and runs it again.
+    internal sealed class LockedLists(IOptionListRepository inner) : IOptionListRepository
+    {
+        /// <summary>How many of the next inserts fail.</summary>
+        public int FailNextCreates { get; set; }
+
+        /// <inheritdoc />
+        public Task<StoredOptionList> CreateAsync(NewOptionList list, CancellationToken cancellationToken = default)
+        {
+            if (FailNextCreates > 0)
+            {
+                FailNextCreates--;
+                throw new SqliteException("JFB_TEST: database is locked", 5);
+            }
+
+            return inner.CreateAsync(list, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Task<StoredOptionList?> GetAsync(Guid key, CancellationToken cancellationToken = default) => inner.GetAsync(key, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<StoredOptionList?> GetByIdAsync(int id, CancellationToken cancellationToken = default) => inner.GetByIdAsync(id, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<StoredOptionList?> GetByAliasAsync(string alias, CancellationToken cancellationToken = default) => inner.GetByAliasAsync(alias, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<Page<StoredOptionList>> ListAsync(string? search, PageRequest page, CancellationToken cancellationToken = default) => inner.ListAsync(search, page, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<IReadOnlyList<string>> ListAliasesAsync(string prefix, CancellationToken cancellationToken = default) => inner.ListAliasesAsync(prefix, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<StoredOptionList?> UpdateAsync(OptionListUpdate update, CancellationToken cancellationToken = default) => inner.UpdateAsync(update, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<bool> DeleteAsync(int id, int expectedConcurrencyVersion, CancellationToken cancellationToken = default) => inner.DeleteAsync(id, expectedConcurrencyVersion, cancellationToken);
+    }
 
     // The export file of a form whose dropdowns name these lists, which the site lacks, carrying the lists given.
     private async Task<string> FileAsync(Guid[] lists, params JsonObject[] carried)

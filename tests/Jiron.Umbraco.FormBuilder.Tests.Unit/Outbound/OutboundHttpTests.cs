@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -14,8 +15,10 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Outbound;
 /// <summary>
 /// Calls to another host (section 4.10, ADR-0076) over a stub on a port the system chooses: only allowed hosts, over
 /// <c>https</c> unless the host allows <c>http</c>; a name that resolves to an address that is not globally reachable
-/// is refused before anything connects, and the site's own transport refuses loopback; redirects only to the same host,
-/// at most three; one time limit and a cap on the answer; and failures that name their reason, never the address.
+/// is refused before anything connects, and the site's own transport refuses loopback; only the scheme's standard port
+/// or one an entry names (ADR-0082); redirects only to the same host, at most three; one time limit and a cap on the
+/// answer; and failures that name their reason, a body that breaks off or does not decompress among them (ADR-0081),
+/// never the address.
 /// </summary>
 [TestFixture]
 [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
@@ -87,6 +90,34 @@ public sealed class OutboundHttpTests
             Assert.That(outbound.Refusal(new Uri("https://xn--bcher-kva.example/list")), Is.Null, "an international name in its ASCII form");
             Assert.That(outbound.Refusal(new Uri($"https://b{(char)0xFC}cher.example/list")), Is.Null, "and as it is written");
             Assert.That(await ReasonAsync(() => outbound.GetAsync(new Uri("https://other.example.com/list"), "application/json", Limits, CancellationToken.None)), Is.EqualTo(OutboundFailure.HostNotAllowed));
+        });
+        Assert.That(transport.Requests, Is.Empty);
+    }
+
+    [Test]
+    public void AHost_IsCalledOnItsSchemesStandardPort_OrOnAPortAnEntryNames()
+    {
+        var transport = new ScriptedTransport(_ => ScriptedTransport.Json("[]"));
+        var standard = Calling(transport, allowHttp: true, Host);
+        var named = Calling(transport, allowHttp: true, "events.example.com:8443", "[2001:db8::1]:8443");
+        var both = Calling(transport, allowHttp: true, Host, $"{Host}:8443");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(standard.Refusal(new Uri($"https://{Host}/list")), Is.Null);
+            Assert.That(standard.Refusal(new Uri($"https://{Host}:443/list")), Is.Null, "the standard port written out");
+            Assert.That(standard.Refusal(new Uri($"http://{Host}/list")), Is.Null);
+            Assert.That(standard.Refusal(new Uri($"http://{Host}:443/list")), Is.EqualTo(OutboundFailure.PortNotAllowed), "https's port is not http's");
+            Assert.That(standard.Refusal(new Uri($"https://{Host}:8443/list")), Is.EqualTo(OutboundFailure.PortNotAllowed));
+            Assert.That(named.Refusal(new Uri("https://events.example.com:8443/list")), Is.Null);
+            Assert.That(named.Refusal(new Uri("http://EVENTS.example.com:8443/list")), Is.Null, "on either scheme");
+            Assert.That(named.Refusal(new Uri("https://events.example.com/list")), Is.EqualTo(OutboundFailure.PortNotAllowed), "an entry with a port allows that port only");
+            Assert.That(named.Refusal(new Uri("https://[2001:db8::1]:8443/list")), Is.Null);
+            Assert.That(named.Refusal(new Uri("https://[2001:db8::1]/list")), Is.EqualTo(OutboundFailure.PortNotAllowed));
+            Assert.That(both.Refusal(new Uri($"https://{Host}/list")), Is.Null);
+            Assert.That(both.Refusal(new Uri($"https://{Host}:8443/list")), Is.Null);
+            Assert.That(both.Refusal(new Uri($"https://{Host}:9443/list")), Is.EqualTo(OutboundFailure.PortNotAllowed));
+            Assert.That(await ReasonAsync(() => standard.GetAsync(new Uri($"https://{Host}:8443/list"), "application/json", Limits, CancellationToken.None)), Is.EqualTo(OutboundFailure.PortNotAllowed));
         });
         Assert.That(transport.Requests, Is.Empty);
     }
@@ -248,6 +279,22 @@ public sealed class OutboundHttpTests
     }
 
     [Test]
+    public async Task ARedirectToAnotherPort_IsRefused_UnlessAnEntryNamesIt()
+    {
+        var transport = new ScriptedTransport(request => request.RequestUri!.AbsolutePath == "/start" ? ScriptedTransport.Redirect($"https://{Host}:8443/list") : ScriptedTransport.Json("[]"));
+
+        var refused = await ReasonAsync(() => Calling(transport, allowHttp: false, Host).GetAsync(new Uri($"https://{Host}/start"), "application/json", Limits, CancellationToken.None));
+        var followed = await Calling(transport, allowHttp: false, Host, $"{Host}:8443").GetAsync(new Uri($"https://{Host}/start"), "application/json", Limits, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(refused, Is.EqualTo(OutboundFailure.PortNotAllowed));
+            Assert.That(Encoding.UTF8.GetString(followed), Is.EqualTo("[]"));
+            Assert.That(transport.Requests.Select(request => request.Address.AbsoluteUri), Is.EqualTo(new[] { $"https://{Host}/start", $"https://{Host}/start", $"https://{Host}:8443/list" }), "the refused port is never called");
+        });
+    }
+
+    [Test]
     public async Task ARedirectFromHttpsToHttp_IsRefused_WhereHttpIsNotAllowed()
     {
         var transport = new ScriptedTransport(request => request.RequestUri!.Scheme == "https" ? ScriptedTransport.Redirect($"http://{Host}/list") : ScriptedTransport.Json("[]"));
@@ -352,6 +399,20 @@ public sealed class OutboundHttpTests
         });
     }
 
+    [TestCase(false, Description = "the connection breaks off while the body is read")]
+    [TestCase(true, Description = "the body does not decompress as its encoding says")]
+    public async Task ABodyThatCannotBeRead_IsAFailure_NamingWhy(bool compressed)
+    {
+        var transport = new ScriptedTransport(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StreamContent(compressed ? new GZipStream(new MemoryStream(Encoding.ASCII.GetBytes("JFB_TEST: no gzip at all")), CompressionMode.Decompress) : new BreakingStream()),
+        });
+
+        var reason = await ReasonAsync(() => Calling(transport, allowHttp: false, Host).GetAsync(new Uri($"https://{Host}/list"), "application/json", Limits, CancellationToken.None));
+
+        Assert.That(reason, Is.EqualTo(compressed ? OutboundFailure.AnswerUnreadable : OutboundFailure.NoConnection));
+    }
+
     [Test]
     public void AFailure_NamesItsReasonAndStatus_NeverTheAddress()
     {
@@ -413,4 +474,47 @@ public sealed class OutboundHttpTests
     // The transport the Testing assembly registers: the test's name resolves to loopback, and only the stub is reached.
     private FormBuilderHttpTransport StubTransport() =>
         new((name, _) => Task.FromResult(name == Host ? new[] { IPAddress.Loopback } : []), new IPEndPoint(IPAddress.Loopback, Port));
+
+    // A body whose connection breaks off after its first byte.
+    private sealed class BreakingStream : Stream
+    {
+        private bool _sent;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ArgumentNullException.ThrowIfNull(buffer);
+            if (_sent)
+            {
+                throw new IOException("JFB_TEST: the connection broke off.");
+            }
+
+            _sent = true;
+            buffer[offset] = (byte)'[';
+            return 1;
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
 }
