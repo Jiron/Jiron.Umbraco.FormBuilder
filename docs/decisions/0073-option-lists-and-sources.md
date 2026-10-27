@@ -110,8 +110,9 @@ value (ADR-0066). Before the content, URL and file kinds, the step needs the mod
 - ADR-0002's sources hold one shape per kind, checked when a form is published and a list is saved; ADR-0033's free
   kind word is an enum, and rows with any other word are refused as rows something else wrote.
 - 5.5b and 5.5c add their kinds as settings classes with their checks and caches; 5.5d holds answers to the resolved
-  options in both runtimes; 5.5e creates imported lists through `OptionListService`; 6.1 and 6.2 resolve options for
-  the endpoint and the markup; 9.x and 12.1 build the inspector's and the library's editors from the kinds' schemas,
+  options in both runtimes; 5.5e creates imported lists through `OptionListService`'s checks (ADR-0078); 6.1 and
+  6.2 resolve options for the endpoint and the markup; 9.x and 12.1 build the inspector's and the library's editors
+  from the kinds' schemas,
   and 12.1's endpoints serve the schemas and the sources' labels, whose `#` keys join the backoffice's English and
   German dictionaries with them.
 - A site's own source is an extension point with a sample in 15.x.

@@ -18,7 +18,16 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// <param name="SourceKey">The template, form or exported form it came from.</param>
 /// <param name="Action">The audit action of the create.</param>
 /// <param name="Details">Adds to the audit entry's details.</param>
-internal sealed record FormOrigin(FormSource Source, Guid? SourceKey, string Action, Func<AuditDetails, AuditDetails>? Details = null);
+/// <param name="Alongside">
+/// Writes what comes with the form in the form's unit of work, after the form: an import's option lists (ADR-0078). What
+/// it throws rolls the form back and reaches the caller, never read as the form's alias taken.
+/// </param>
+internal sealed record FormOrigin(
+    FormSource Source,
+    Guid? SourceKey,
+    string Action,
+    Func<AuditDetails, AuditDetails>? Details = null,
+    Func<CancellationToken, Task>? Alongside = null);
 
 /// <summary>
 /// Creates forms for the form service and the exchange (ADR-0044, ADR-0046, ADR-0053): a blank design, the new-form
@@ -112,10 +121,21 @@ internal sealed partial class FormCreation(
             var chosen = alias ?? FormAliases.FirstFree(wanted, await forms.ListAliasesAsync(FormAliases.Stem(wanted), cancellationToken));
             await changes.CancelableAsync(new FormSavingNotification(definition, chosen, name, isNew: true, userKey, new EventMessages()) { CreatedFrom = origin.Source, SourceKey = origin.SourceKey });
             SavedVersion created;
+            var formWritten = false;
             try
             {
                 created = await changes.WriteAsync(
-                    () => forms.CreateAsync(new NewForm(definition.Key, folder?.Id, chosen, name, document, UserKey: userKey), cancellationToken),
+                    async () =>
+                    {
+                        var saved = await forms.CreateAsync(new NewForm(definition.Key, folder?.Id, chosen, name, document, UserKey: userKey), cancellationToken);
+                        formWritten = true;
+                        if (origin.Alongside is { } alongside)
+                        {
+                            await alongside(cancellationToken);
+                        }
+
+                        return saved;
+                    },
                     saved =>
                     {
                         var details = new AuditDetails().AddIdentifier("alias", chosen).Add("version", saved.Version.Info.Number).Add("folder", folder?.Key);
@@ -123,7 +143,7 @@ internal sealed partial class FormCreation(
                     },
                     cancellationToken);
             }
-            catch (FormBuilderConflictException exception) when (exception.Conflict == FormBuilderConflict.DuplicateAlias && alias is null && attempt < AliasAttempts)
+            catch (FormBuilderConflictException exception) when (exception.Conflict == FormBuilderConflict.DuplicateAlias && !formWritten && alias is null && attempt < AliasAttempts)
             {
                 // A create at the same moment took the alias: the next free one, announced again.
                 continue;

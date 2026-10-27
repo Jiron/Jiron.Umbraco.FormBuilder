@@ -148,7 +148,10 @@ internal sealed record TemplateFormRequest(Guid TemplateKey, string? Name = null
 /// number when another form has it.
 /// </param>
 /// <param name="FolderKey">A folder outside the trash, or null for the root.</param>
-/// <param name="UserKey">Who imports it, or null when Jiron Form Builder does.</param>
+/// <param name="UserKey">
+/// Who imports it, or null when Jiron Form Builder does; the import creates the option lists the file carries only for
+/// a user who may manage the library (ADR-0078).
+/// </param>
 internal sealed record ImportFormRequest(string Json, string? Name = null, string? Alias = null, Guid? FolderKey = null, Guid? UserKey = null);
 
 /// <summary>What an import made, and what it changed or could not resolve (ADR-0046).</summary>
@@ -171,7 +174,16 @@ internal static class FormImportNotes
     /// <summary>The site's option list with the same alias and options takes the place of the file's list.</summary>
     public const string OptionListReused = "option_list_reused";
 
-    /// <summary>The site has no such option list: the fields keep its key until 5.5 creates it.</summary>
+    /// <summary>
+    /// The file's option list was created with the form, under the alias the note names (ADR-0078): the user may manage
+    /// the library, and the list's kind's checks on this site took it.
+    /// </summary>
+    public const string OptionListCreated = "option_list_created";
+
+    /// <summary>
+    /// The site has no such option list, and the import did not create it: the file does not carry it, the user may not
+    /// manage the library, or the list's kind's checks on this site refused it (ADR-0078). The fields keep its key.
+    /// </summary>
     public const string OptionListMissing = "option_list_missing";
 }
 

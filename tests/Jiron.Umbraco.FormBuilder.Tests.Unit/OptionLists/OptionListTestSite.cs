@@ -205,6 +205,15 @@ internal sealed class MemoryOptionLists : IOptionListRepository
         throw new NotSupportedException("The option list tests list no lists.");
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<string>> ListAliasesAsync(string prefix, CancellationToken cancellationToken = default)
+    {
+        lock (_lock)
+        {
+            return Task.FromResult<IReadOnlyList<string>>([.. _rows.Select(row => row.Alias).Where(alias => alias.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)).Order(StringComparer.OrdinalIgnoreCase)]);
+        }
+    }
+
+    /// <inheritdoc />
     public Task<StoredOptionList?> UpdateAsync(OptionListUpdate update, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(update);

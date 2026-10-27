@@ -56,12 +56,16 @@ internal interface IFormBuilderFormExchangeService
 
     /// <summary>
     /// Creates a form from an export file, always with new keys, and says what it changed or could not resolve
-    /// (ADR-0046).
+    /// (ADR-0046); for a user who may manage the library, with the option lists the file carries and the site lacks,
+    /// when their kinds' checks on this site take them (ADR-0078).
     /// </summary>
     /// <exception cref="FormBuilderValidationException">
     /// The name or the alias is not allowed, or the file is refused, with every problem and its path in the file.
     /// </exception>
-    /// <exception cref="FormBuilderConflictException">The alias is taken, or the folder is missing or in the trash.</exception>
+    /// <exception cref="FormBuilderConflictException">
+    /// The alias is taken, the folder is missing or in the trash, or other changes took the key or alias of a list to
+    /// create at the same moment, three times in a row.
+    /// </exception>
     /// <exception cref="FormBuilderCancelledException">A handler cancelled the create.</exception>
     Task<FormImport> ImportAsync(ImportFormRequest request, CancellationToken cancellationToken = default);
 
@@ -83,6 +87,7 @@ internal sealed partial class FormBuilderFormExchangeService(
     FormDocuments documents,
     FormInfos infos,
     FormCreation creation,
+    FormImportLists importLists,
     FormDefinitionSerializer serializer,
     IFormBuilderMergeTagService mergeTags,
     TimeProvider time,
@@ -228,25 +233,43 @@ internal sealed partial class FormBuilderFormExchangeService(
         var wanted = FormAliases.IsValid(envelope.Alias) ? envelope.Alias : FormAliases.FromName(name);
         var folder = await LibraryFolders.OutsideTrashAsync(folders, request.FolderKey, cancellationToken);
 
-        // Always new keys (12.5 adds the import into an existing form); the theme and the option lists as this site has them.
-        var notes = new List<FormImportNote>();
-        var definition = DefinitionKeys.Renew(envelope.Definition, serializer);
-        definition = await WithThemeAsync(definition, notes, cancellationToken);
-        definition = await WithOptionListsAsync(definition, envelope, notes, cancellationToken);
-        documents.CheckSaveable(definition);
-        var codes = NoteCodes(notes);
-        var origin = new FormOrigin(
-            FormSource.Import,
-            envelope.FormKey,
-            ImportedAction,
-            details => details
-                .Add("source", envelope.FormKey)
-                .AddIdentifier("sourceAlias", AuditDetails.IsIdentifier(envelope.Alias) ? envelope.Alias : null)
-                .AddIdentifier("packageVersion", AuditDetails.IsIdentifier(envelope.PackageVersion) ? envelope.PackageVersion : null)
-                .AddIdentifiers("notes", codes.Select(code => code.Code))
-                .AddNumbers("noteCounts", codes.Select(code => (long)code.Count)));
-        var form = await creation.CreateAsync(definition, name, request.Alias, wanted, folder, request.UserKey, origin, cancellationToken);
-        return new FormImport(form, notes);
+        // Always new keys (12.5 adds the import into an existing form); the theme and the option lists as this site has
+        // them, the lists the import creates written with the form (ADR-0078).
+        var themeNotes = new List<FormImportNote>();
+        var renewed = await WithThemeAsync(DefinitionKeys.Renew(envelope.Definition, serializer), themeNotes, cancellationToken);
+        for (var attempt = 1; ; attempt++)
+        {
+            var notes = new List<FormImportNote>(themeNotes);
+            var lists = await importLists.PlanAsync(renewed, envelope.OptionLists, request.UserKey, notes, cancellationToken);
+            documents.CheckSaveable(lists.Definition);
+            var codes = NoteCodes(notes);
+            var origin = new FormOrigin(
+                FormSource.Import,
+                envelope.FormKey,
+                ImportedAction,
+                details => details
+                    .Add("source", envelope.FormKey)
+                    .AddIdentifier("sourceAlias", AuditDetails.IsIdentifier(envelope.Alias) ? envelope.Alias : null)
+                    .AddIdentifier("packageVersion", AuditDetails.IsIdentifier(envelope.PackageVersion) ? envelope.PackageVersion : null)
+                    .AddIdentifiers("notes", codes.Select(code => code.Code))
+                    .AddNumbers("noteCounts", codes.Select(code => (long)code.Count)),
+                lists.Created.Count == 0 ? null : token => importLists.CreateAsync(lists.Created, token));
+            try
+            {
+                var form = await creation.CreateAsync(lists.Definition, name, request.Alias, wanted, folder, request.UserKey, origin, cancellationToken);
+                importLists.Committed(lists.Created);
+                return new FormImport(form, notes);
+            }
+            catch (FormImportListTakenException) when (attempt < FormCreation.AliasAttempts)
+            {
+                // Another change took a list's key or alias at the same moment, and the form rolled back: the lists again,
+                // as the site now has them, announced again.
+            }
+            catch (FormImportListTakenException taken)
+            {
+                throw new FormBuilderConflictException(taken.Conflict.Conflict, taken.Conflict.Message, taken);
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -334,73 +357,6 @@ internal sealed partial class FormBuilderFormExchangeService(
         notes.Add(new FormImportNote(FormImportNotes.ThemeMissing, path, theme));
         return definition with { Settings = definition.Settings with { Appearance = definition.Settings.Appearance with { Theme = null } } };
     }
-
-    // The option lists the definition names: a list the site has by key stays; the site's list with the file's alias
-    // and the same options takes the place of one it lacks; any other the fields keep, and the import says so.
-    private async Task<FormDefinition> WithOptionListsAsync(FormDefinition definition, FormExportEnvelope envelope, List<FormImportNote> notes, CancellationToken cancellationToken)
-    {
-        var carried = envelope.OptionLists.ToDictionary(list => list.Key);
-        var moved = new Dictionary<Guid, Guid>();
-        foreach (var (listKey, path) in ListReferences(definition))
-        {
-            if (await optionLists.GetAsync(listKey, cancellationToken) is not null)
-            {
-                continue;
-            }
-
-            var list = carried.GetValueOrDefault(listKey);
-            if (list is not null && await optionLists.GetByAliasAsync(list.Alias, cancellationToken) is { } same && Same(same, list))
-            {
-                moved[listKey] = same.Key;
-                notes.Add(new FormImportNote(FormImportNotes.OptionListReused, path, same.Alias));
-            }
-            else
-            {
-                notes.Add(new FormImportNote(FormImportNotes.OptionListMissing, path, list?.Alias));
-            }
-        }
-
-        return moved.Count == 0 ? definition : DefinitionKeys.Remap(definition, moved, serializer);
-    }
-
-    // Each option list the definition names, once, with the path in the file of the first field that names it.
-    private static List<(Guid List, string Path)> ListReferences(FormDefinition definition)
-    {
-        var found = new List<(Guid List, string Path)>();
-        var seen = new HashSet<Guid>();
-        void Visit(IReadOnlyList<FormField> fields, string path)
-        {
-            for (var i = 0; i < fields.Count; i++)
-            {
-                var at = JsonPaths.Index(JsonPaths.Property(path, "fields"), i);
-                if (fields[i].Options?.OptionList is { } list && seen.Add(list))
-                {
-                    found.Add((list, JsonPaths.Property(JsonPaths.Property(at, "options"), "list")));
-                }
-
-                Visit(fields[i].Fields, at);
-            }
-        }
-
-        for (var p = 0; p < definition.Pages.Count; p++)
-        {
-            var page = JsonPaths.Index(JsonPaths.Property(FilePath, "pages"), p);
-            for (var g = 0; g < definition.Pages[p].Groups.Count; g++)
-            {
-                Visit(definition.Pages[p].Groups[g].Fields, JsonPaths.Index(JsonPaths.Property(page, "groups"), g));
-            }
-        }
-
-        return found;
-    }
-
-    // Whether the site's list holds what the file's list holds: the same kind, configuration and items, in any order of
-    // their properties. Both are read as an export reads them, so a list that an export carries is the same as the
-    // site's list it came from, nulls and empty values included.
-    private static bool Same(StoredOptionList site, ExportedOptionList list) =>
-        string.Equals(EnumNames<OptionListKind>.ByValue[site.Kind], list.Kind, StringComparison.Ordinal) &&
-        FormExportFormat.SameListJson(site.Config, list.Config, JsonValueKind.Object) &&
-        FormExportFormat.SameListJson(site.Items, list.Items, JsonValueKind.Array);
 
     // A stored list as an export carries it, or null when its stored JSON does not read: it is left out, and an import
     // then says that the list is missing.

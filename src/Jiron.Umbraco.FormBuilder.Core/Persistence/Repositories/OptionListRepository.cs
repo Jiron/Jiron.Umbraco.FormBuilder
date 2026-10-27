@@ -70,6 +70,9 @@ internal interface IOptionListRepository
     /// <summary>A page of the lists in name order, optionally those whose name or alias contains the search text.</summary>
     Task<Page<StoredOptionList>> ListAsync(string? search, PageRequest page, CancellationToken cancellationToken = default);
 
+    /// <summary>The aliases of the lists that start with the prefix in any letter case, in alias order.</summary>
+    Task<IReadOnlyList<string>> ListAliasesAsync(string prefix, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Changes a list; null when it does not exist. Refused with <see cref="FormBuilderConcurrencyException"/> when it
     /// changed meanwhile, and with <see cref="FormBuilderConflict.DuplicateAlias"/>.
@@ -117,6 +120,10 @@ internal sealed class OptionListRepository(FormBuilderDatabase database) : IOpti
         var rows = await _table.ListAsync(search, page, cancellationToken);
         return new Page<StoredOptionList>(rows.Items.Select(FromDto).ToList(), rows.Total);
     }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<string>> ListAliasesAsync(string prefix, CancellationToken cancellationToken = default) =>
+        _table.ListAliasesAsync(prefix, cancellationToken);
 
     /// <inheritdoc />
     public async Task<StoredOptionList?> UpdateAsync(OptionListUpdate update, CancellationToken cancellationToken = default)

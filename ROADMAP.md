@@ -1891,12 +1891,15 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Answers against resolved options** (added in 5.2b, ADR-0062): a choice whose options come from a list or another source holds its answers to the options the source resolves, and a cascading option to the parent answers it belongs to, in both runtimes; 5.4d's reader resolves the options of a submission.
   - **Merge tags show resolved labels** (added in 5.3d, ADR-0066): `field.*` and `entry.answers` show the label the source resolves for a chosen value, in the culture, as they show a field's own options.
   - Done when: a choice with options from a list refuses an answer the list lacks, and a cascading option whose parent answer it does not belong to, in both runtimes (ADR-0062), through the validation vectors, and 5.2a's mutation check covers the new checks in TypeScript, with every survivor written down as an equivalent change or killed by a new vector; a merge tag of a choice with options from a list shows the option's label in the entry's culture (ADR-0066).
-- [ ] **5.5e Lists from an import and phase review** (C#; 5.5 split in five, WORKLOG 2026-10-27)
+- [ ] **5.5e Lists from an import** (C#; 5.5 split in five, WORKLOG 2026-10-27; then 5.5e in two, WORKLOG 2026-10-27)
   - **Lists from an import** (added in 4.5c, ADR-0046): an import creates the lists its envelope carries and the site lacks, through the kind's own checks (allowed hosts, file contents), and only for a user who may manage the library; for anyone else, and for a list the checks refuse, it keeps the key and reports `option_list_missing`.
-  - **Phase review:** write the handover note.
   - Done when:
     - an import test creates a carried manual list for a library manager, reports it for a user who may not manage the library, and reports a carried URL list whose host is not allowed without creating it;
-    - pushed, with the phase-review gate.
+    - pushed.
+- [ ] **5.5f Phase review** (5.5e split in two, WORKLOG 2026-10-27)
+  - **Phase review:** review the phase's code (the field types and their checks, the rules, calculations and merge tags in both runtimes, a submission's answers and the option lists), fix what it finds, and write the handover note.
+  - **Core coverage** measured with instrumentation that rewrites no file: Smart App Control on this machine refuses the assemblies coverlet rewrites, so the tool changes, in an ADR, and the 85% floor stays.
+  - Done when: pushed, with the phase-review gate.
 
 ### Phase 6: Rendering, the website runtime and headless
 

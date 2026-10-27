@@ -19,6 +19,7 @@ internal static class FormBuilderFormServices
         builder.Services.TryAddSingleton<FormDocuments>();
         builder.Services.TryAddSingleton<FormInfos>();
         builder.Services.TryAddSingleton<FormCreation>();
+        builder.Services.TryAddSingleton<FormImportLists>();
         builder.Services.TryAddSingleton<IFormBuilderFormService, FormBuilderFormService>();
         builder.Services.TryAddSingleton<IFormBuilderFormVersionService, FormBuilderFormVersionService>();
         builder.Services.TryAddSingleton<IFormBuilderFormExchangeService, FormBuilderFormExchangeService>();

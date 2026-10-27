@@ -4,8 +4,9 @@
   found, the envelope's limits and layout, `unsupported_format`, when an import creates option lists) and
   [ADR-0044](0044-form-service.md) (the new-form defaults apply to forms from a template); the operations are
   `IFormBuilderFormExchangeService`'s since [ADR-0053](0053-form-service-in-parts.md) in 4.8d; amended in 4.8e (the
-  reader stops at ADR-0034's one limit of 100 problems) and in 5.3g (the report of copied actions lists the merge
-  tags that name a field the target lacks)
+  reader stops at ADR-0034's one limit of 100 problems), in 5.3g (the report of copied actions lists the merge
+  tags that name a field the target lacks) and in 5.5e by [ADR-0078](0078-lists-from-an-import.md) (an import
+  creates the option lists its file carries for a user who may manage the library)
 - Date: 2026-10-24
 - Roadmap step: 4.5c (decided and built); 4.7 and 9.x map it to the API and the tree, 5.3, 5.5, 8.1 and 8.3 extend it,
   12.3 adds the other templates and "Save as template", 12.5 the import that replaces a form and the mirror files
@@ -172,8 +173,8 @@ importing as a new draft of an existing form):
 - **Option lists:** a list the site has by key is used as it is. Otherwise, when the envelope carries it and the site
   has a list with the same alias in any letter case and the same kind, configuration and items, the fields are moved
   to that list (`option_list_reused`). Otherwise the fields keep the key and the import says so
-  (`option_list_missing`); 5.5 creates such lists through the kinds' checks, only for a user who may manage the
-  library.
+  (`option_list_missing`); since 5.5e an import creates such lists through the kinds' checks, only for a user who
+  may manage the library (`option_list_created`, [ADR-0078](0078-lists-from-an-import.md)).
 - **Content, media and member groups** are kept by key, and the form check (9.5b) shows the ones the site lacks.
   **Actions** arrive as they are; 8.1 switches off an action whose site configuration (such as a Slack address) this
   site lacks.
@@ -202,8 +203,8 @@ importing as a new draft of an existing form):
 - Copying actions never makes an action do something other than the original without saying so, and a half-mapped
   action cannot reach visitors.
 - Exports are readable files, and an exported form imports into the same version and every later one.
-- An import cannot put unchecked option list configuration into the library; until 5.5 it reports missing lists
-  instead of creating them.
+- An import cannot put unchecked option list configuration into the library; until 5.5e it reported missing lists
+  instead of creating them, and since then it creates them only through the kinds' checks (ADR-0078).
 - Roadmap: 5.3g reports merge tags in copied actions that name a field the target lacks; 5.5 creates the missing
   option lists of an import; 8.1 switches off an imported action whose site configuration is missing; 8.3 applies the
   notify-the-creator default to forms from a template; 9.x's Duplicate dialog says when the source is restricted

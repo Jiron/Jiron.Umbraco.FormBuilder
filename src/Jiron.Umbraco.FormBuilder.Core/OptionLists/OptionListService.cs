@@ -42,7 +42,8 @@ internal sealed record OptionListEntry(StoredOptionList Row, OptionKind? Kind, S
 /// <summary>
 /// The library's option lists (ADR-0073): each change holds a list to its kind's checks and drops what every server
 /// kept of it; a read keeps the list, read once per server while it is missing, until it changes. The library's
-/// endpoints (12.1) and an import (5.5e) change lists through it.
+/// endpoints (12.1) change lists through it; an import holds the lists it creates to its checks and writes them in the
+/// form's unit of work, then tells it they changed (ADR-0078).
 /// </summary>
 internal sealed partial class OptionListService(
     IOptionListRepository repository,
@@ -335,9 +336,12 @@ internal sealed partial class OptionListService(
         return new OptionListEntry(row, kind, config, items, IsReadable: true);
     }
 
-    // This server forgets the list at once, whatever the server messenger delivers locally, and the others when the
-    // cache instruction reaches them.
-    private void Changed(Guid key)
+    /// <summary>
+    /// Forgets what every server kept of the list with this key: this server at once, whatever the server messenger
+    /// delivers locally, and the others when the cache instruction reaches them. Each change of this service calls it,
+    /// and so does an import once the lists it created with its form have committed (ADR-0078).
+    /// </summary>
+    public void Changed(Guid key)
     {
         var change = new OptionListCacheChange(key);
         FormBuilderOptionListCacheRefresher.Forget(appCaches.RuntimeCache, change);

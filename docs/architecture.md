@@ -67,7 +67,7 @@ database connection of its own. Its areas:
 | Area | Holds | Decided in |
 | --- | --- | --- |
 | Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions and their comparison, and the exchange of forms (`Exchange`: element keys and their remap, copied actions, the export envelope) | ADR-0002, ADR-0045, ADR-0046 |
-| Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good, and the published form as the site runs it), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053, ADR-0060 |
+| Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good, and the published form as the site runs it), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053, ADR-0060, ADR-0078 |
 | Fields and options | the field type registry, the built-in types, places on options | ADR-0002, §4.3.2 |
 | Option lists | the kinds with their configuration and its checks, content and data type lists with what they read from Umbraco and the handler that drops what they keep when the site changes, URL lists with what they fetch and keep, the reader of uploaded CSV and TXT files, the standard lists and a site's own sources with their start-up check, the library's lists with their cache refresher, the option service, and the publish check of a field's source | ADR-0002, ADR-0073, ADR-0075, ADR-0076 |
 | Outbound | calls to other hosts (`OutboundHttp`): the host configuration's hosts and schemes, redirects to the same host only, one time limit and a cap; the transport that resolves names itself and connects only to globally reachable addresses, which only the Testing assembly replaces | ADR-0076, §4.10 |
@@ -191,8 +191,9 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   import give every element a new key and replace every reference to it, found by a walk over the canonical JSON,
   so type settings that name an element by key follow too. Copied actions map the fields they name by alias and
   report the rest, which publishing refuses. An export is the `jfb-form-export/1` envelope of the draft or a
-  version with the library option lists it names; an import reuses the site's lists and theme where it can and
-  says what it could not.
+  version with the library option lists it names; an import reuses the site's lists and theme where it can, creates
+  the lists its file carries for a user who may manage the library, through their kinds' checks and in the form's
+  unit of work ([ADR-0078](decisions/0078-lists-from-an-import.md)), and says what it could not.
 - **The trash** ([ADR-0047](decisions/0047-trash-delete-and-folders.md)): every trash gives the rows it marks one
   new key, so a folder's restore brings back exactly the folders and forms that went with it, and nothing lives
   below a folder in the trash. A permanent delete works only from the trash: the entries go in batches of 100, each

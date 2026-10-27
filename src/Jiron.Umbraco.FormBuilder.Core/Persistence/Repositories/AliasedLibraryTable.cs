@@ -89,6 +89,25 @@ internal sealed class AliasedLibraryTable<TDto>(FormBuilderDatabase database, st
         database.ReadAsync(db => FindAsync(db, new SqlNames(db), column, value), cancellationToken);
 
     /// <summary>
+    /// The aliases that start with <paramref name="prefix"/> in any letter case, in alias order: those to keep clear of
+    /// when a row takes the next free number (ADR-0078). The column compares without regard to case on both databases,
+    /// so <c>LIKE</c> does too (ADR-0033).
+    /// </summary>
+    public Task<IReadOnlyList<string>> ListAliasesAsync(string prefix, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(prefix);
+        return database.ReadAsync<IReadOnlyList<string>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                return await db.FetchListAsync<string>(
+                    $"SELECT {n.C("alias")} FROM {n.T(table)} WHERE {n.C("alias")} LIKE @0 {SqlNames.EscapeClause} ORDER BY {n.C("alias")}",
+                    SqlNames.Escape(prefix) + "%");
+            },
+            cancellationToken);
+    }
+
+    /// <summary>
     /// A page of the rows in name order, optionally only those whose name or alias contains <paramref name="search"/>,
     /// with the number of rows that match.
     /// </summary>
