@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Microsoft.Extensions.Logging;
@@ -397,7 +398,7 @@ internal sealed partial class FormBuilderFormExchangeService(
     // their properties. Both are read as an export reads them, so a list that an export carries is the same as the
     // site's list it came from, nulls and empty values included.
     private static bool Same(StoredOptionList site, ExportedOptionList list) =>
-        string.Equals(site.Kind, list.Kind, StringComparison.Ordinal) &&
+        string.Equals(EnumNames<OptionListKind>.ByValue[site.Kind], list.Kind, StringComparison.Ordinal) &&
         FormExportFormat.SameListJson(site.Config, list.Config, JsonValueKind.Object) &&
         FormExportFormat.SameListJson(site.Items, list.Items, JsonValueKind.Array);
 
@@ -407,7 +408,7 @@ internal sealed partial class FormBuilderFormExchangeService(
     {
         if (FormExportFormat.ListJson(list.Config, JsonValueKind.Object) is { } config && FormExportFormat.ListJson(list.Items, JsonValueKind.Array) is { } items)
         {
-            return new ExportedOptionList(list.Key, list.Alias, list.Name, list.Kind, config, items, list.CacheSeconds);
+            return new ExportedOptionList(list.Key, list.Alias, list.Name, EnumNames<OptionListKind>.ByValue[list.Kind], config, items, list.CacheSeconds);
         }
 
         LogListLeftOut(logger, list.Key);

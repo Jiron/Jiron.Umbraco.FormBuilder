@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -16,21 +17,21 @@ public sealed class OptionListRepositoryTests : RenamableLibraryRepositoryTests
     [Test]
     public async Task AList_KeepsItsKindSourceItemsAndCache()
     {
-        var created = await OptionLists.CreateAsync(new NewOptionList(Guid.NewGuid(), "colours", "Colours", "manual", Items: Items, CacheSeconds: 0));
+        var created = await OptionLists.CreateAsync(new NewOptionList(Guid.NewGuid(), "colours", "Colours", OptionListKind.Manual, Items: Items, CacheSeconds: 0));
         Clock.Advance(TimeSpan.FromMinutes(1));
 
-        var changed = await OptionLists.UpdateAsync(new OptionListUpdate(created.Id, 1, "colours", "Colours", "url", """{"url":"https://options.jfb.test/colours.json"}""", "[]", 300));
+        var changed = await OptionLists.UpdateAsync(new OptionListUpdate(created.Id, 1, "colours", "Colours", OptionListKind.Url, """{"url":"https://options.jfb.test/colours.json"}""", "[]", 300));
 
         Assert.Multiple(async () =>
         {
-            Assert.That(created with { Id = 0, Key = Guid.Empty }, Is.EqualTo(new StoredOptionList(0, Guid.Empty, "colours", "Colours", "manual", "{}", Items, 0, 1, Now, Now)));
-            Assert.That(changed, Is.EqualTo(created with { Kind = "url", Config = """{"url":"https://options.jfb.test/colours.json"}""", Items = "[]", CacheSeconds = 300, ConcurrencyVersion = 2, UpdatedUtc = Now.AddMinutes(1) }));
+            Assert.That(created with { Id = 0, Key = Guid.Empty }, Is.EqualTo(new StoredOptionList(0, Guid.Empty, "colours", "Colours", OptionListKind.Manual, "{}", Items, 0, 1, Now, Now)));
+            Assert.That(changed, Is.EqualTo(created with { Kind = OptionListKind.Url, Config = """{"url":"https://options.jfb.test/colours.json"}""", Items = "[]", CacheSeconds = 300, ConcurrencyVersion = 2, UpdatedUtc = Now.AddMinutes(1) }));
             Assert.That(await OptionLists.GetAsync(created.Key), Is.EqualTo(changed));
         });
     }
 
     private protected override async Task<LibraryRow> CreateAsync(string alias, string name = "Name", Guid? key = null) =>
-        Row(await OptionLists.CreateAsync(new NewOptionList(key ?? Guid.NewGuid(), alias, name, "manual", Items: Items)))!;
+        Row(await OptionLists.CreateAsync(new NewOptionList(key ?? Guid.NewGuid(), alias, name, OptionListKind.Manual, Items: Items)))!;
 
     private protected override async Task<LibraryRow?> GetAsync(Guid key) => Row(await OptionLists.GetAsync(key));
 
@@ -45,10 +46,10 @@ public sealed class OptionListRepositoryTests : RenamableLibraryRepositoryTests
     }
 
     private protected override async Task<LibraryRow?> UpdateAsync(LibraryRow row, int expectedConcurrencyVersion, string name) =>
-        Row(await OptionLists.UpdateAsync(new OptionListUpdate(row.Id, expectedConcurrencyVersion, row.Alias, name, "file", "{}", "[]", 60)));
+        Row(await OptionLists.UpdateAsync(new OptionListUpdate(row.Id, expectedConcurrencyVersion, row.Alias, name, OptionListKind.File, "{}", "[]", 60)));
 
     private protected override async Task<LibraryRow?> ChangeAliasAsync(LibraryRow row, int expectedConcurrencyVersion, string alias) =>
-        Row(await OptionLists.UpdateAsync(new OptionListUpdate(row.Id, expectedConcurrencyVersion, alias, row.Name, "manual", "{}", Items, 0)));
+        Row(await OptionLists.UpdateAsync(new OptionListUpdate(row.Id, expectedConcurrencyVersion, alias, row.Name, OptionListKind.Manual, "{}", Items, 0)));
 
     private protected override Task<bool> DeleteAsync(LibraryRow row, int expectedConcurrencyVersion) =>
         OptionLists.DeleteAsync(row.Id, expectedConcurrencyVersion);

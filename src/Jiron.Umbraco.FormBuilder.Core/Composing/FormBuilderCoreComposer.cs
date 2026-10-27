@@ -7,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
@@ -26,8 +27,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Composing;
 /// Registers Jiron Form Builder's core services with Umbraco, which discovers this composer automatically: the host
 /// configuration and the start-up checks (ADR-0042), the database migration plan (ADR-0033), the pending-migration
 /// state, the definition services, the persistence (ADR-0036), the file store (ADR-0041), the backoffice settings
-/// (ADR-0043), the permission model (ADR-0048), the field types (ADR-0055), the form service (ADR-0044), entries'
-/// answers (ADR-0070) and the retention job (ADR-0045).
+/// (ADR-0043), the permission model (ADR-0048), the field types (ADR-0055), option lists (ADR-0073), the form service
+/// (ADR-0044), entries' answers (ADR-0070) and the retention job (ADR-0045).
 /// </summary>
 public sealed class FormBuilderCoreComposer : IComposer
 {
@@ -97,6 +98,11 @@ public sealed class FormBuilderCoreComposer : IComposer
 
         // The form service (ADR-0044): create, save, publish and the other changes, with their notifications.
         builder.AddFormBuilderForms();
+
+        // Option lists (ADR-0073): the option sources with the standard lists, the kinds, the library's lists kept until
+        // they change, the option service and the check of a field's source when a form is published, which runs after
+        // the structural validation, as the checks run in the order they are registered.
+        builder.AddFormBuilderOptionLists();
 
         // Entries' answers (ADR-0070, ADR-0072): the reader of a submission's answers over its form, the consent
         // wordings, and the store that writes the rows and reads them back typed.

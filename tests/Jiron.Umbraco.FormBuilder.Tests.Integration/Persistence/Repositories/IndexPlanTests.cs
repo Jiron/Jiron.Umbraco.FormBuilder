@@ -1,4 +1,5 @@
 using System.Data;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Umbraco.Cms.Infrastructure.Persistence;
@@ -107,7 +108,7 @@ public sealed class IndexPlanTests : RepositoryTestBase
         Assume.That(IsSqlite, Is.True, "plans are SQLite's");
 
         var form = await PlansAsync(() => CreateFormAsync("contact"));
-        var list = await PlansAsync(() => OptionLists.CreateAsync(new NewOptionList(Guid.NewGuid(), "colours", "Colours", "manual")));
+        var list = await PlansAsync(() => OptionLists.CreateAsync(new NewOptionList(Guid.NewGuid(), "colours", "Colours", OptionListKind.Manual)));
 
         Assert.Multiple(() =>
         {

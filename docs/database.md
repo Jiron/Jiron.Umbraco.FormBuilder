@@ -29,9 +29,9 @@ from the migration's snapshot classes, and a test (`DatabaseDocsTests`) fails wh
 - **JSON columns** hold camelCase JSON; a missing property means the default.
 - **Stored names.** An enum stored as text is the camel case of its name (`pending`, `published`, `longText`), as in
   the definitions, the events and the audit actions. Every repository writes and reads it through one converter, which
-  refuses any other spelling, another letter case included, as a row something else wrote (ADR-0033). A scan state
-  and an option list kind, free words until their enums come, are camelCase words of ASCII letters too, and a
-  message names a value as it is stored.
+  refuses any other spelling, another letter case included, as a row something else wrote (ADR-0033). An option list's
+  kind is such an enum from 5.5a (ADR-0073); a scan state, a free word until its enum comes, is a camelCase word of
+  ASCII letters too, and a message names a value as it is stored.
 - **Hashes** are SHA-256 in lowercase hex, in columns named for what they hash: `definitionHash`, `publicHash`,
   `submissionHash`, `fileHash`, `textHash`, `valueHash`, `resumeTokenHash`.
 - **Deletes.** Deleting an entry deletes its values, files, events, notes and action runs; its emails stay until their

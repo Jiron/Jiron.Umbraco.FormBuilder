@@ -1,0 +1,5 @@
+{
+  "agreement": ["Strongly disagree", "Disagree", "Neither agree nor disagree", "Agree", "Strongly agree"],
+  "satisfaction": ["Very dissatisfied", "Dissatisfied", "Neither satisfied nor dissatisfied", "Satisfied", "Very satisfied"],
+  "yesNoNotSure": ["Yes", "No", "Not sure"]
+}

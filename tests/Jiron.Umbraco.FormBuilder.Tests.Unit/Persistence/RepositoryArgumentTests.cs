@@ -1,5 +1,6 @@
 using System.Data;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -201,19 +202,15 @@ public sealed class RepositoryArgumentTests
         });
     }
 
-    [TestCase("manual", true)]
-    [TestCase("dataType", true)]
-    [TestCase("countries", true)]
-    [TestCase("abcdefghijklmnop", true)]
-    [TestCase("abcdefghijklmnopq", false)]
-    [TestCase("", false)]
-    [TestCase("data-type", false)]
-    [TestCase("code2", false)]
-    [TestCase("Manual", false)]
-    [TestCase("DataType", false)]
-    [TestCase("MANUAL", false)]
-    public void OptionLists_KindsAreCamelCaseWordsOfAsciiLetters(string kind, bool valid) =>
-        Assert.That(OptionListRepository.IsValidKind(kind), Is.EqualTo(valid));
+    [TestCase(OptionListKind.Manual, "manual")]
+    [TestCase(OptionListKind.Content, "content")]
+    [TestCase(OptionListKind.DataType, "dataType")]
+    [TestCase(OptionListKind.Url, "url")]
+    [TestCase(OptionListKind.File, "file")]
+    [TestCase(OptionListKind.Countries, "countries")]
+    [TestCase(OptionListKind.Code, "code")]
+    public void OptionLists_StoreTheirKindAsItsCamelCaseName(OptionListKind kind, string stored) =>
+        Assert.That((StoredNames.Of(kind), StoredNames.Parse<OptionListKind>(stored)), Is.EqualTo((stored, kind)));
 
     [Test]
     public void TheLibrary_RefusesWhatItsColumnsCannotHold()
@@ -223,7 +220,7 @@ public sealed class RepositoryArgumentTests
         var layouts = new EmailLayoutRepository(_database);
         var alias = new string('a', AliasedLibraryTable<OptionListDto>.MaxAliasLength + 1);
         var name = new string('n', AliasedLibraryTable<OptionListDto>.MaxNameLength + 1);
-        var list = new NewOptionList(Guid.NewGuid(), "colours", "Colours", "manual");
+        var list = new NewOptionList(Guid.NewGuid(), "colours", "Colours", OptionListKind.Manual);
         var theme = new NewTheme(Guid.NewGuid(), "brand", "Brand", "default");
 
         Assert.Multiple(() =>
@@ -232,12 +229,12 @@ public sealed class RepositoryArgumentTests
             Assert.That(() => lists.CreateAsync(list with { Alias = alias }), Throws.ArgumentException);
             Assert.That(() => lists.CreateAsync(list with { Name = string.Empty }), Throws.ArgumentException);
             Assert.That(() => lists.CreateAsync(list with { Name = name }), Throws.ArgumentException);
-            Assert.That(() => lists.CreateAsync(list with { Kind = "Kind1" }), Throws.ArgumentException);
+            Assert.That(() => lists.CreateAsync(list with { Kind = (OptionListKind)99 }), Throws.InstanceOf<ArgumentOutOfRangeException>());
             Assert.That(() => lists.CreateAsync(list with { CacheSeconds = -1 }), Throws.InstanceOf<ArgumentOutOfRangeException>());
             Assert.That(() => lists.CreateAsync(list with { Items = null! }), Throws.InstanceOf<ArgumentNullException>());
-            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, alias, "Colours", "manual", "{}", "[]", 0)), Throws.ArgumentException);
-            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, "colours", "Colours", string.Empty, "{}", "[]", 0)), Throws.ArgumentException);
-            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, null!, "Colours", "manual", "{}", "[]", 0)), Throws.InstanceOf<ArgumentNullException>(), "an alias is never kept by leaving it out");
+            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, alias, "Colours", OptionListKind.Manual, "{}", "[]", 0)), Throws.ArgumentException);
+            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, "colours", "Colours", (OptionListKind)99, "{}", "[]", 0)), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(() => lists.UpdateAsync(new OptionListUpdate(1, 1, null!, "Colours", OptionListKind.Manual, "{}", "[]", 0)), Throws.InstanceOf<ArgumentNullException>(), "an alias is never kept by leaving it out");
             Assert.That(() => themes.CreateAsync(theme with { Alias = alias }), Throws.ArgumentException);
             Assert.That(() => themes.CreateAsync(theme with { BaseTheme = string.Empty }), Throws.ArgumentException);
             Assert.That(() => themes.CreateAsync(theme with { BaseTheme = new string('b', ThemeRepository.MaxBaseThemeLength + 1) }), Throws.ArgumentException);

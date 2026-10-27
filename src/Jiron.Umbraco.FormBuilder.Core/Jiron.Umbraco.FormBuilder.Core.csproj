@@ -39,4 +39,10 @@
     <EmbeddedResource Include="Forms/Templates/*.json" LogicalName="Jiron.Umbraco.FormBuilder.Core.Forms.Templates.%(Filename)%(Extension)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The words of the standard option lists, one language table per language (ADR-0073). -->
+    <None Remove="OptionLists/lang/*.json" />
+    <EmbeddedResource Include="OptionLists/lang/*.json" LogicalName="Jiron.Umbraco.FormBuilder.Core.OptionLists.lang.%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>

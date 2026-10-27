@@ -1869,25 +1869,32 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The whole form at once** (ADR-0061, ADR-0071): the step between a post's answers and the entry's answers 5.4b stores, which 6.1's pipeline runs: every field read by its type, the rules over what was read, then each visible field's checks; a repeatable group's rows counted as the runtime shows them and held to its limits, its child fields read and checked row by row, each error in its row; the errors by field and row.
   - **Computed and hidden:** calculation (server recompute: the value the form engine works out is the one stored, whatever was posted), hidden (server-only sources resolved on submit, never rendered).
   - Done when: unit tests show a repeatable group's rows counted, with too few and too many rows, and a child field's error in its row; a calculation's posted value replaced by the server's; and a hidden field whose member value is resolved on submit and never appears in the public projection; the rendered markup's check of that hidden field is 6.2's.
-- [ ] **5.5 Option lists and phase review**
+- [ ] **5.5a Option lists, sources and the fixed kinds** (C#; 5.5 split in five, WORKLOG 2026-10-27)
+  - **The model:** a list's kind as a closed set, stored as its camelCase word (ADR-0033); each kind's configuration and items read and checked, each problem at its path, for a library list and for a source configured on a field (publishing checks a field's source configuration through its kind, ADR-0002).
+  - **Resolving options** (§4.9): a field's options, or a library list's, in a culture: per-culture labels with their fallback, the current page, and cascading parents (the parent's answers filter the options, by an option's `parentValues` or by the source itself); a list is kept until it changes, on every server.
   - **Kinds:**
     - manual;
-    - content: root from a picker or "the current page", document type filter, value and label fields, descendants, order, published only, member-protected pages excluded;
-    - data type;
-    - URL JSON (allowed hosts, a JSON path mapping);
-    - file (CSV or TXT, `value|label`);
     - countries;
-    - code (`IFormBuilderOptionSource`);
+    - code (`IFormBuilderOptionSource`, registered through `builder.JironFormBuilder()`), with optional parent filtering;
     - **presets** (added in 1.1): months, weekdays, agreement and satisfaction scales, and "yes, no, not sure", in English and German (14.2 adds the other five), with month and day names from culture data.
-  - **Behaviour:** per-culture labels, caching with invalidation on content publish, and cascading parents.
-  - **Answers against resolved options** (added in 5.2b, ADR-0062): a choice whose options come from a list or another source holds its answers to the options the source resolves, and a cascading option to the parent answers it belongs to, in both runtimes.
+  - Done when: unit tests per kind of this step pass: a manual list's labels per culture with their fallback, the countries in English and German, each preset in English and German, a code source with parent filtering, and one that throws, which gives no options and is logged without values; publishing refuses a field's source configuration that its kind refuses, at its path; start-up refuses a code source whose alias is taken or outside the grammar, naming it; a changed list's options show at once.
+- [ ] **5.5b Content and data type lists** (C#; 5.5 split in five, WORKLOG 2026-10-27)
+  - **Content:** the root from a picker or "the current page", a document type filter, the value and label fields, children or all descendants, the order, published pages only, and pages that need a member to sign in left out.
+  - **Data type:** the values of a dropdown, checkbox list or radio button list data type, in its order.
+  - **Caching with invalidation on content publish** (and when a data type is saved), on every server.
+  - Done when: integration tests over a site's content pass for each content setting (a picked root and the current page, the document type filter, the value and label fields, descendants, the order), leave out an unpublished page and a member-protected one, read a data type's values, and show a published change and a saved data type's change at once (cache invalidation on publish).
+- [ ] **5.5c URL and file lists** (C#; 5.5 split in five, WORKLOG 2026-10-27)
+  - **URL JSON** (§4.10): `https` only (`http` only when the host allows it), hosts only from `JironFormBuilder:Webhooks:AllowedHosts`, private, loopback and link-local addresses refused after DNS resolution (SSRF), no redirects to other hosts, timeouts and response caps; a JSON path mapping to the list and to each option's label and value; kept for the list's `CacheSeconds`, with the last copy in use while the address does not answer. `IFormBuilderHttpTransport` lets only the `Testing` assembly reach the stub on `127.0.0.1:5560`.
+  - **File:** a CSV or TXT upload, `value|label`, read into the list's items.
+  - Done when: tests per kind of this step pass: the URL kind (the mapping at its edges, the keep time, the last copy while the address fails) and the file kind (both formats, quotes, a byte order mark, empty and repeated lines, too many lines, a value too long), including SSRF refusal for URL lists: a host not allowed, `http`, a name that resolves to a loopback, private or link-local address, a redirect to another host, an answer over the cap and one too slow; a test proves that production refuses loopback.
+- [ ] **5.5d Answers and labels from resolved options** (C# and `packages/logic`; 5.5 split in five, WORKLOG 2026-10-27)
+  - **Answers against resolved options** (added in 5.2b, ADR-0062): a choice whose options come from a list or another source holds its answers to the options the source resolves, and a cascading option to the parent answers it belongs to, in both runtimes; 5.4d's reader resolves the options of a submission.
   - **Merge tags show resolved labels** (added in 5.3d, ADR-0066): `field.*` and `entry.answers` show the label the source resolves for a chosen value, in the culture, as they show a field's own options.
+  - Done when: a choice with options from a list refuses an answer the list lacks, and a cascading option whose parent answer it does not belong to, in both runtimes (ADR-0062), through the validation vectors, and 5.2a's mutation check covers the new checks in TypeScript, with every survivor written down as an equivalent change or killed by a new vector; a merge tag of a choice with options from a list shows the option's label in the entry's culture (ADR-0066).
+- [ ] **5.5e Lists from an import and phase review** (C#; 5.5 split in five, WORKLOG 2026-10-27)
   - **Lists from an import** (added in 4.5c, ADR-0046): an import creates the lists its envelope carries and the site lacks, through the kind's own checks (allowed hosts, file contents), and only for a user who may manage the library; for anyone else, and for a list the checks refuse, it keeps the key and reports `option_list_missing`.
   - **Phase review:** write the handover note.
   - Done when:
-    - tests per kind pass, including SSRF refusal for URL lists, cache invalidation on publish, and the presets in English and German;
-    - a choice with options from a list refuses an answer the list lacks, and a cascading option whose parent answer it does not belong to, in both runtimes (ADR-0062);
-    - a merge tag of a choice with options from a list shows the option's label in the entry's culture (ADR-0066);
     - an import test creates a carried manual list for a library manager, reports it for a user who may not manage the library, and reports a carried URL list whose host is not allowed without creating it;
     - pushed, with the phase-review gate.
 

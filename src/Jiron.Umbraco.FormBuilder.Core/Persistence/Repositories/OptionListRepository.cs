@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -7,7 +8,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 /// <param name="Key">The key definitions name it by.</param>
 /// <param name="Alias">The alias, unique without regard to case.</param>
 /// <param name="Name">The name editors see.</param>
-/// <param name="Kind">Where its options come from, such as <c>manual</c> or <c>content</c>, in camel case as every stored name (5.5).</param>
+/// <param name="Kind">Where its options come from (ADR-0073), stored as its camelCase name.</param>
 /// <param name="Config">The source's configuration as JSON, never in the public projection.</param>
 /// <param name="Items">The items of a manual or uploaded list as JSON.</param>
 /// <param name="CacheSeconds">How long the options of a source are cached; 0 for no cache.</param>
@@ -19,7 +20,7 @@ internal sealed record StoredOptionList(
     Guid Key,
     string Alias,
     string Name,
-    string Kind,
+    OptionListKind Kind,
     string Config,
     string Items,
     int CacheSeconds,
@@ -35,7 +36,7 @@ internal sealed record StoredOptionList(
 /// <param name="Config">The source's configuration as JSON.</param>
 /// <param name="Items">The items as JSON.</param>
 /// <param name="CacheSeconds">How long the options are cached.</param>
-internal sealed record NewOptionList(Guid Key, string Alias, string Name, string Kind, string Config = "{}", string Items = "[]", int CacheSeconds = 0);
+internal sealed record NewOptionList(Guid Key, string Alias, string Name, OptionListKind Kind, string Config = "{}", string Items = "[]", int CacheSeconds = 0);
 
 /// <summary>A change to an option list, based on the version the editor read.</summary>
 /// <param name="Id">The list.</param>
@@ -46,7 +47,7 @@ internal sealed record NewOptionList(Guid Key, string Alias, string Name, string
 /// <param name="Config">The source's configuration as JSON.</param>
 /// <param name="Items">The items as JSON.</param>
 /// <param name="CacheSeconds">How long the options are cached.</param>
-internal sealed record OptionListUpdate(int Id, int ExpectedConcurrencyVersion, string Alias, string Name, string Kind, string Config, string Items, int CacheSeconds);
+internal sealed record OptionListUpdate(int Id, int ExpectedConcurrencyVersion, string Alias, string Name, OptionListKind Kind, string Config, string Items, int CacheSeconds);
 
 /// <summary>The option lists of the library in <c>jfbOptionList</c> (ADR-0037).</summary>
 internal interface IOptionListRepository
@@ -85,9 +86,6 @@ internal interface IOptionListRepository
 /// <inheritdoc />
 internal sealed class OptionListRepository(FormBuilderDatabase database) : IOptionListRepository
 {
-    /// <summary>The longest kind the column holds.</summary>
-    public const int MaxKindLength = 16;
-
     private readonly AliasedLibraryTable<OptionListDto> _table = new(database, FormBuilderTables.OptionList, "option list");
 
     /// <inheritdoc />
@@ -133,20 +131,13 @@ internal sealed class OptionListRepository(FormBuilderDatabase database) : IOpti
     public Task<bool> DeleteAsync(int id, int expectedConcurrencyVersion, CancellationToken cancellationToken = default) =>
         _table.DeleteAsync(id, expectedConcurrencyVersion, null, cancellationToken);
 
-    /// <summary>True for a kind that is a camelCase word of 1 to <see cref="MaxKindLength"/> ASCII letters, as every stored name is.</summary>
-    internal static bool IsValidKind(string? kind) => StoredNames.IsName(kind, MaxKindLength);
-
-    private static LibraryColumn[] Content(string kind, string config, string items, int cacheSeconds)
+    private static LibraryColumn[] Content(OptionListKind kind, string config, string items, int cacheSeconds)
     {
-        if (!IsValidKind(kind))
-        {
-            throw new ArgumentException($"An option list's kind is a camelCase word of 1 to {MaxKindLength} ASCII letters, such as manual.", nameof(kind));
-        }
-
+        var stored = StoredNames.Of(kind);
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(items);
         ArgumentOutOfRangeException.ThrowIfNegative(cacheSeconds);
-        return [new("kind", kind), new("config", config), new("items", items), new("cacheSeconds", cacheSeconds)];
+        return [new("kind", stored), new("config", config), new("items", items), new("cacheSeconds", cacheSeconds)];
     }
 
     private static StoredOptionList? Maybe(OptionListDto? d) => d is null ? null : FromDto(d);
@@ -156,7 +147,7 @@ internal sealed class OptionListRepository(FormBuilderDatabase database) : IOpti
         d.Key,
         d.Alias,
         d.Name,
-        d.Kind,
+        StoredNames.Parse<OptionListKind>(d.Kind),
         d.Config,
         d.Items,
         d.CacheSeconds,

@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.Audit;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Exchange;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
@@ -510,7 +511,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         // The site's list, and the key of another site's list with its alias that the file names instead.
         var site = Guid.Parse("72000000-0000-4000-8000-000000000021");
         var other = Guid.Parse("72000000-0000-4000-8000-000000000022");
-        await OptionLists.CreateAsync(new NewOptionList(site, "sessions", "Sessions", "manual", """{"sort":"label","note":null,"tags":[],"more":{}}""", """[{"value":"a","label":{"":"A"},"hint":null,"tags":[]}]"""));
+        await OptionLists.CreateAsync(new NewOptionList(site, "sessions", "Sessions", OptionListKind.Manual, """{"sort":"label","note":null,"tags":[],"more":{}}""", """[{"value":"a","label":{"":"A"},"hint":null,"tags":[]}]"""));
         var created = await Service.CreateAsync(new NewFormRequest("Event", UserKey: Editor));
         await SaveAsync(created, WithFields(await DraftAsync(created), [Session with { Options = new FieldOptions { Source = OptionSource.List, OptionList = site } }]));
         var file = (await Exchange.ExportAsync(created.Key))!.Json.Replace(site.ToString("D"), other.ToString("D"), StringComparison.Ordinal);
@@ -533,7 +534,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         var broken = "[{\"value\":\"a" + (char)92 + "ud800\"}]";
         var site = Guid.Parse("72000000-0000-4000-8000-000000000023");
         var other = Guid.Parse("72000000-0000-4000-8000-000000000024");
-        await OptionLists.CreateAsync(new NewOptionList(site, "rooms", "Rooms", "manual", Items: broken));
+        await OptionLists.CreateAsync(new NewOptionList(site, "rooms", "Rooms", OptionListKind.Manual, Items: broken));
         var created = await Service.CreateAsync(new NewFormRequest("Event", UserKey: Editor));
         await SaveAsync(created, WithFields(await DraftAsync(created), [Session with { Options = new FieldOptions { Source = OptionSource.List, OptionList = site } }]));
         var envelope = JsonNode.Parse((await Exchange.ExportAsync(created.Key))!.Json)!.AsObject();
@@ -739,7 +740,7 @@ public sealed class FormCopyServiceTests : RepositoryTestBase
         DefinitionKeys.Fields((await Service.GetDraftAsync(form.Key))!.Definition!).Select(field => field.Alias).ToList();
 
     private Task<StoredOptionList> CreateListAsync(Guid key, string alias, string items = "[]") =>
-        OptionLists.CreateAsync(new NewOptionList(key, alias, alias, "manual", Items: items));
+        OptionLists.CreateAsync(new NewOptionList(key, alias, alias, OptionListKind.Manual, Items: items));
 
     // A saved template of one group with an email field, and one more field when given.
     private async Task<StoredFormTemplate> SavedTemplateAsync(FormTemplateKind kind, FormField? field = null)

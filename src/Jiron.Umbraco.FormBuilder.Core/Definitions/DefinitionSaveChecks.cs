@@ -70,6 +70,19 @@ internal sealed class DefinitionSaveChecks
         return checks._problems.ToReadOnlyList();
     }
 
+    /// <summary>
+    /// The problems of options outside a definition, such as a library list's items (ADR-0073): the rules of a field's
+    /// own options, at most <paramref name="max"/> of them, each problem at its path under <paramref name="path"/>.
+    /// </summary>
+    public static IReadOnlyList<DefinitionProblem> CheckOptionItems(IReadOnlyList<FieldOption> items, int max, string path)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(path);
+        var checks = new DefinitionSaveChecks(new DefinitionLimits());
+        checks.OptionItems(items, path, max, $"A list has at most {max} options.");
+        return checks._problems.ToReadOnlyList();
+    }
+
     /// <summary>The problem of a definition that nests deeper than a document may: no reader reads it.</summary>
     public static DefinitionProblem NestsTooDeep() =>
         new(DefinitionErrors.LimitExceeded, JsonPaths.Root, $"The definition nests deeper than {FormDefinitionSerializer.MaxDepth} levels, which no reader reads.");
@@ -439,15 +452,28 @@ internal sealed class DefinitionSaveChecks
     private void CheckOptions(FieldOptions options, string path)
     {
         Word(options.Source, P(path, "source"));
-        var itemsPath = P(path, "items");
-        if (options.Items.Count > _limits.MaxOptionsPerField)
+        OptionItems(options.Items, P(path, "items"), _limits.MaxOptionsPerField, $"A field has at most {_limits.MaxOptionsPerField} options of its own.");
+        if (options.OptionList is { } list)
         {
-            Fail(DefinitionErrors.LimitExceeded, itemsPath, $"A field has at most {_limits.MaxOptionsPerField} options of its own.");
+            Reference(list, P(path, "list"));
         }
 
-        for (var i = 0; i < options.Items.Count; i++)
+        if (options.Parent is { } parent)
         {
-            var option = options.Items[i];
+            Reference(parent, P(path, "parent"));
+        }
+    }
+
+    private void OptionItems(IReadOnlyList<FieldOption> items, string itemsPath, int max, string tooMany)
+    {
+        if (items.Count > max)
+        {
+            Fail(DefinitionErrors.LimitExceeded, itemsPath, tooMany);
+        }
+
+        for (var i = 0; i < items.Count; i++)
+        {
+            var option = items[i];
             var optionPath = I(itemsPath, i);
             OptionValue(option.Value, P(optionPath, "value"));
             Text(option.Label, P(optionPath, "label"), TextKind.Line);
@@ -467,16 +493,6 @@ internal sealed class DefinitionSaveChecks
             {
                 OptionValue(option.ParentValues[j], I(parentValuesPath, j));
             }
-        }
-
-        if (options.OptionList is { } list)
-        {
-            Reference(list, P(path, "list"));
-        }
-
-        if (options.Parent is { } parent)
-        {
-            Reference(parent, P(path, "parent"));
         }
     }
 

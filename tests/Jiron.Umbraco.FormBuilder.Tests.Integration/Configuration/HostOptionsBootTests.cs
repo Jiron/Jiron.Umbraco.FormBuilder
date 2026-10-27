@@ -2,6 +2,7 @@ using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -49,7 +50,7 @@ public sealed class HostOptionsBootTests : UmbracoIntegrationTest
         {
             Assert.That(options.LockedSections, Is.EqualTo(new[] { "privacy" }));
             Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderOptions>>>().Single(), Is.InstanceOf<FormBuilderOptionsValidator>());
-            Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderStartupChecks>>>().Select(check => check.GetType()), Is.EquivalentTo(new[] { typeof(GlobalizationStartupCheck), typeof(FieldTypeStartupCheck), typeof(FieldSettingLockStartupCheck), typeof(MergeTagStartupCheck) }));
+            Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderStartupChecks>>>().Select(check => check.GetType()), Is.EquivalentTo(new[] { typeof(GlobalizationStartupCheck), typeof(FieldTypeStartupCheck), typeof(FieldSettingLockStartupCheck), typeof(MergeTagStartupCheck), typeof(OptionSourceStartupCheck) }));
             Assert.That(() => GetRequiredService<IStartupValidator>().Validate(), Throws.Nothing);
         });
     }

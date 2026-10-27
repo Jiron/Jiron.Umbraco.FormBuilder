@@ -64,6 +64,20 @@ internal sealed partial class DefinitionStructureChecks
         return checks._problems.ToReadOnlyList();
     }
 
+    /// <summary>
+    /// The problems of options outside a definition, such as a library list's items (ADR-0073), as a field's own
+    /// options have them: values cleaned as answers are and unique once folded. A list's options may have places and
+    /// parent values, which the fields that use it read.
+    /// </summary>
+    public static IReadOnlyList<DefinitionProblem> CheckOptionValues(IReadOnlyList<FieldOption> items, string path)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(path);
+        var problems = new DefinitionProblems();
+        OptionValues(items, path, placesRefusedBy: null, parentValues: null, hasParent: true, problems);
+        return problems.ToReadOnlyList();
+    }
+
     private static string P(string path, string name) => JsonPaths.Property(path, name);
 
     private static string I(string path, int index) => JsonPaths.Index(path, index);
@@ -619,8 +633,14 @@ internal sealed partial class DefinitionStructureChecks
 
     // Option values are what entries store and filters compare: cleaned as answers are, and unique in the field once
     // folded as rules compare text (ADR-0005), because the entries screen filters by folded text (ADR-0033).
-    private void Items(IReadOnlyList<FieldOption> items, string path, FieldTypeTraits traits, HashSet<string>? parentValues, bool hasParent)
+    private void Items(IReadOnlyList<FieldOption> items, string path, FieldTypeTraits traits, HashSet<string>? parentValues, bool hasParent) =>
+        OptionValues(items, path, traits.Supports(FieldFeatures.Places) ? null : traits.Alias, parentValues, hasParent, _problems);
+
+    // The values of options; places refused for a type without them (named by placesRefusedBy), and parent values for
+    // options without a parent, or that the parent's own options lack.
+    private static void OptionValues(IReadOnlyList<FieldOption> items, string path, string? placesRefusedBy, HashSet<string>? parentValues, bool hasParent, DefinitionProblems problems)
     {
+        void Fail(string code, string at, string message) => problems.Add(code, at, message);
         var folded = new Dictionary<string, int>(StringComparer.Ordinal);
         for (var i = 0; i < items.Count; i++)
         {
@@ -641,9 +661,9 @@ internal sealed partial class DefinitionStructureChecks
                 Fail(DefinitionErrors.OptionValueDuplicate, valuePath, $"The value equals that of option {folded[TextSemantics.Fold(clean)] + 1} once letter case is ignored.");
             }
 
-            if (item.Places is not null && !traits.Supports(FieldFeatures.Places))
+            if (item.Places is not null && placesRefusedBy is not null)
             {
-                Fail(DefinitionErrors.PropertyNotSupported, P(itemPath, "places"), $"A {traits.Alias} field's options have no places.");
+                Fail(DefinitionErrors.PropertyNotSupported, P(itemPath, "places"), $"A {placesRefusedBy} field's options have no places.");
             }
 
             var parentValuesPath = P(itemPath, "parentValues");

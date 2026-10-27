@@ -68,7 +68,8 @@ database connection of its own. Its areas:
 | --- | --- | --- |
 | Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions and their comparison, and the exchange of forms (`Exchange`: element keys and their remap, copied actions, the export envelope) | ADR-0002, ADR-0045, ADR-0046 |
 | Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good, and the published form as the site runs it), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053, ADR-0060 |
-| Fields and options | the field type registry, the built-in types, option sources and lists, places on options | ADR-0002, §4.3.2 |
+| Fields and options | the field type registry, the built-in types, places on options | ADR-0002, §4.3.2 |
+| Option lists | the kinds with their configuration and its checks, the standard lists and a site's own sources with their start-up check, the library's lists with their cache refresher, the option service, and the publish check of a field's source | ADR-0002, ADR-0073 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030, ADR-0064, ADR-0068 |
 | Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`field`, `entry` with `entry.answers` and `entry.url`, `form`, `query`, `context`, `date`, and `page`, `site`, `member` and `dictionary` over Umbraco's content, members, domains, languages and dictionary), the answers as each field type shows them with what each place masks or leaves out and the dictionary's texts for labels that name an item, answer recall in visitor texts (only the fields before the text's page, group or field, by their current aliases, a site's type by its rule kind), a site's sources and filters with their start-up check, and the culture formats written from .NET's data | ADR-0014, ADR-0064, ADR-0065, ADR-0066, ADR-0067, ADR-0068 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
@@ -240,6 +241,16 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   hidden without it; a draft save refuses another value (`409 setting_locked`) unless the stored draft held it; and
   the published form the site runs (`GetPublishedAsync`) and every publish check use the locked values, while stored
   definitions keep the editors' own.
+- **Options** ([ADR-0073](decisions/0073-option-lists-and-sources.md)): a choice field's options are its own, a
+  library list's, or a kind's configured on the field (`content`, `dataType`, `url`, `countries`, `code`; `manual`
+  and `file` are a library list's only). Each kind's configuration is a settings class read into a schema with the
+  field settings' checks and codes, then the kind's own check; publishing runs them on every field
+  (`OptionSourcePublishCheck`) and a library list's save runs them on the list (`OptionListService`).
+  `IFormBuilderOptionService` resolves a field's or a list's options in one culture (labels by the text's fallback,
+  dictionary items in that culture), filters a cascading field's by the parent's answers, cleans what a source gives
+  as entries need it, and marks a source that fails or takes longer than 5 seconds unavailable, logging it without
+  values. A library list is kept until it changes and a source list for its `cacheSeconds`; every change drops both on
+  every server through the option list cache refresher.
 - **The public projection** is built from an allowlist of public types (`Core.Definitions.Projection`) and carries no
   actions, outcomes, recipients, option-source configuration, privacy settings or switched-off rules; its SHA-256 is
   `PublicHash`. Its TypeScript types and schema ship in `schemas/` (6.6).
@@ -476,7 +487,7 @@ filters, beside which a site adds its own ([ADR-0065](decisions/0065-the-merge-t
 | --- | --- | --- |
 | `IFormBuilderFieldType` (`FormBuilderFieldTypeBase<TSettings>`) | a field with settings, parsing, validation, storage kind, its answers' display in merge tags, view and client behaviour | §4.3.2, ADR-0002, ADR-0055, ADR-0066 |
 | `IFormBuilderActionType` (`FormBuilderActionTypeBase<TSettings>`) | an action with settings, a test run and retries | ADR-0007 |
-| `IFormBuilderOptionSource` | options from code, with parent filtering | ADR-0002 |
+| `IFormBuilderOptionSource` | options from code, with parent filtering, by a name start-up checks; the standard lists are sources a site may replace or remove | ADR-0002, ADR-0073 |
 | `IFormBuilderExportFormat` | an export | §4.9 |
 | `IFormBuilderCaptchaProvider` | a captcha | ADR-0012 |
 | `IFormBuilderSpamCheck` | a spam signal with a score and a reason | ADR-0012 |
@@ -504,7 +515,7 @@ receives entry events too.
 
 **Services:** `IFormBuilderFormService` with `IFormBuilderFormVersionService` and `IFormBuilderFormExchangeService`
 (ADR-0053), `IFormBuilderFolderService`, `IFormBuilderEntryService`, `IFormBuilderEntryReader`, `IFormBuilderRenderer`,
-`IFormBuilderMergeTagService`.
+`IFormBuilderMergeTagService`, `IFormBuilderOptionService`.
 
 **The website:** the tag helpers and view component, the theme views and the markup contract (ADR-0015),
 `window.JironFormBuilder` (`init`, `get`, `consent`), the DOM events `jfb:ready`, `jfb:page`, `jfb:invalid`,
