@@ -1896,7 +1896,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - an import test creates a carried manual list for a library manager, reports it for a user who may not manage the library, and reports a carried URL list whose host is not allowed without creating it;
     - pushed.
-- [ ] **5.5f The review's fixes to a submission's answers** (C#; 5.5e split in two, WORKLOG 2026-10-27; then 5.5f in four, WORKLOG 2026-10-27)
+- [x] **5.5f The review's fixes to a submission's answers** (C#; 5.5e split in two, WORKLOG 2026-10-27; then 5.5f in four, WORKLOG 2026-10-27) (2026-10-27, a2fef5a)
   - **Core coverage** measured with instrumentation that rewrites no file: Smart App Control on this machine refuses the assemblies coverlet rewrites, so the tool changes, in an ADR, and the 85% floor stays.
   - **What the phase review found in reading a submission** (ADR-0080):
     - an upload token that two rows of a repeatable group post stands for one upload only, so the later row's answer is invalid (the entry's writer refused it with an exception);
