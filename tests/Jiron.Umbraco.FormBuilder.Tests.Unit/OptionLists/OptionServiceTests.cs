@@ -358,6 +358,21 @@ public sealed class OptionServiceTests
     }
 
     [Test]
+    public async Task AStoredListOfAKindThatKeepsNothingForATime_IsNotKept_ThoughItsRowHasACacheTime()
+    {
+        var site = new OptionListTestSite();
+        site.Repository.Write(ListKey, OptionListKind.Countries, config: """{"countries":["CH"]}""", cacheSeconds: 60);
+
+        var resolved = await site.Options().GetListAsync(ListKey, new FormBuilderOptionContext("en"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Values(resolved), Is.EqualTo(new[] { "CH" }));
+            Assert.That(site.Caches.RuntimeCache.SearchByKey(OptionListCacheKeys.Row(ListKey) + ".options"), Is.Empty, "as a row an earlier version may have stored (ADR-0075)");
+        });
+    }
+
+    [Test]
     public async Task TheRefresher_DropsAChangedList_OnTheServerItRunsOn_AndEveryListForAChangeItCannotRead()
     {
         var site = new OptionListTestSite();

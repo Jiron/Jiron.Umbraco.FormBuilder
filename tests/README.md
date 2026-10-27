@@ -247,25 +247,41 @@ server messenger, as on a site with one server.
 ## The option list tests
 
 `Tests.Unit/OptionLists/` covers option lists and sources without a host
-([ADR-0073](../docs/decisions/0073-option-lists-and-sources.md)), over `OptionListTestSite`: one server with the
+([ADR-0073](../docs/decisions/0073-option-lists-and-sources.md),
+[ADR-0075](../docs/decisions/0075-content-and-data-type-lists.md)), over `OptionListTestSite`: one server with the
 site's sources, the library's lists in memory (`MemoryOptionLists`, which counts reads and gives the database's
 refusals), a real runtime cache, the distributed cache over a messenger that records whom it told, `TestUmbraco`'s
-languages and dictionary, and loggers that keep what is logged. `TestOptionSource` is a source whose options a test
-gives, which may throw or wait, and keeps the requests it got.
+languages, dictionary, pages and tree, substitutes for public access, document types and data types, and loggers that
+keep what is logged. `TestOptionSource` is a source whose options a test gives, which may throw or wait, and keeps the
+requests it got.
 
 | Tests | What they show |
 | --- | --- |
 | `StandardOptionSourcesTests` | The months 1 to 12 named in English, German and French with a capital first letter; the weekdays in ISO numbering from the culture's first day (Sunday in the United States, Monday in Britain and Germany); the two scales and "yes, no, not sure" in English and German, a regional culture taking its language's words and any other language English's; and the five lists' names, labels and order. |
-| `OptionKindsTests` | The kinds of this version with where each may be configured; a manual list taking no configuration; the countries' codes known and each once; the countries named and ordered in English and German, all of them without any; a code list naming a source the site has, by its exact name; and its source's options for the request, a source that is gone a failure. |
+| `OptionKindsTests` | The kinds of this version with where each may be configured, which keep their options for `cacheSeconds`, and the settings and editors of content and data type lists; a manual list taking no configuration; the countries' codes known and each once; the countries named and ordered in English and German, all of them without any; a code list naming a source the site has, by its exact name; and its source's options for the request, a source that is gone a failure. |
 | `OptionSourceRegistryTests` | The collection builder holding the standard lists from its start; the registry finding a source by its exact name and leaving out what start-up refuses; the problems naming each source whose name is taken or outside the grammar (64 characters at most); and the start-up check passing a site's own source and refusing a taken name. |
-| `OptionServiceTests` | A field's own options in the culture with the text's fallback and dictionary items; a manual list kept until it changes, its new options showing at once and every server told; a list the site lacks or that no longer reads unavailable and logged once; a code source filtering a cascading field by the parent's answers and hearing them only then; a source that throws, synchronously or not, unavailable and logged without its message; one that takes longer than 5 seconds unavailable, whether it heeds its token or not, and a cancelled request cancelled; what a source gives cleaned (blank, too long, unclean and repeated values, a blank label, more than 10,000 options) and logged as a count; the countries on a field; a kind the site lacks and an upload unavailable; a source list kept for its time per culture, page and parent answers in any order, dropped by a change, a failure never kept; and the cache refresher dropping one list, or every list for a change it cannot read. |
-| `OptionListServiceTests` | A list's alias, name and time within their bounds; its configuration held to its kind at its path; its items read and checked as a field's own options, for a manual list only, at most 10,000; a create, an update and a delete each telling every server, the database's refusals as problems, a change made meanwhile dropping the kept copy; and a missing list kept as missing until it is created. |
+| `OptionServiceTests` | A field's own options in the culture with the text's fallback and dictionary items; a manual list kept until it changes, its new options showing at once and every server told; a list the site lacks or that no longer reads unavailable and logged once; a code source filtering a cascading field by the parent's answers and hearing them only then; a source that throws, synchronously or not, unavailable and logged without its message; one that takes longer than 5 seconds unavailable, whether it heeds its token or not, and a cancelled request cancelled; what a source gives cleaned (blank, too long, unclean and repeated values, a blank label, more than 10,000 options) and logged as a count; the countries on a field; a kind the site lacks and an upload unavailable; a source list kept for its time per culture, page and parent answers in any order, dropped by a change, a failure never kept; a stored list of another kind with a time kept for none; and the cache refresher dropping one list, or every list for a change it cannot read. |
+| `ContentOptionKindTests` | The key of kept content options naming every setting, the root and the culture but not the document types' order; the value and the label as a property's alias at its edges (255 characters, a leading digit, a space, a dot) or their words, a key being no label; at most 10,001 pages read; a property that holds several items, or a list of one, a label but no value, a yes or no in the culture's words, and no culture read in the default language; and a root that is gone failing, logged without values. |
+| `OptionListServiceTests` | A list's alias, name and time within their bounds, `cacheSeconds` for code lists only; its configuration held to its kind at its path; its items read and checked as a field's own options, for a manual list only, at most 10,000; a create, an update and a delete each telling every server, the database's refusals as problems, a change made meanwhile dropping the kept copy; and a missing list kept as missing until it is created. |
 | `OptionSourcePublishCheckTests` | A field's source configuration held to its kind at `options.config`, a kind the site lacks and an upload refused at `options.source`, in every page, group and repeater, while own options and a library list are left to the structural validation. |
 
 `Tests.Integration/OptionLists/OptionListSiteTests` publishes a form through the form service whose fields name a
 source the site lacks and an unknown country, refused at their paths, then publishes it once fixed; changes a manual
 list through SQLite, its new options showing at once and each change told to the other servers; and checks the
 site's registrations: the refresher, the service, the standard lists and the publish checks in their order.
+
+`Tests.Integration/OptionLists/ContentOptionListTests` reads a real site's content in English and German: an events
+page with a concert in both languages, a workshop in English only, a draft, a members' night behind public access and
+an archive folder with an old fair, and a dropdown of sizes. It shows each content setting (a picked root and the page
+the form is on, the document type filter, descendants through a folder, values and labels from properties, numbers
+in their wire form, the order by label in German) with the draft and the members' page left out; a dropdown's, a
+checkbox list's and a radio button list's values, and a deleted data type failing; a published page, an unpublished
+one, a newly protected one and a saved data type showing at once for a field's source and a library list; each of
+Umbraco's refresher notifications, as every server publishes them, dropping what this server kept; and saving a list
+and publishing a form refused at the paths of a page, a document type, properties for the value and the label and a
+data type the site lacks, a page in the recycle bin, a textstring that is no list of values, and a content list's
+`cacheSeconds`, while an alias in another case passes. Umbraco's own handlers tell its cache
+refreshers of the changes, and a messenger runs them on this server at once.
 
 ## The Testing project
 
