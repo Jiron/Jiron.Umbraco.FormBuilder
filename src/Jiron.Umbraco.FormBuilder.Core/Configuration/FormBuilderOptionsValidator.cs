@@ -2,6 +2,7 @@ using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Files;
+using Jiron.Umbraco.FormBuilder.Core.Outbound;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -44,6 +45,7 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
         CheckSettingLocks(options.Designer.SettingLocks, failures);
         CheckLockedSections(options.LockedSections, failures);
         CheckHostGrants(options.Access.Grants, failures);
+        CheckAllowedHosts(options.Webhooks.AllowedHosts, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
 
@@ -174,6 +176,24 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
             foreach (var missing in PermissionRules.MissingDependencies(permissions))
             {
                 failures.Add($"{key}:Permissions grants '{PermissionRules.NameOf(missing.Permission)}' without '{PermissionRules.NameOf(missing.Needs)}', which it needs.");
+            }
+        }
+    }
+
+    // Each allowed host is a host name or an IP address, named once (ADR-0076).
+    private static void CheckAllowedHosts(IList<string> hosts, List<string> failures)
+    {
+        var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (var i = 0; i < hosts.Count; i++)
+        {
+            var key = string.Create(CultureInfo.InvariantCulture, $"{Root}:Webhooks:AllowedHosts:{i}");
+            if (OutboundHosts.Normalize(hosts[i]) is not { } host)
+            {
+                failures.Add($"{key} ('{hosts[i]}') must be a host name such as 'events.example.com' or an IP address, with no scheme, port, path or wildcard.");
+            }
+            else if (!seen.TryAdd(host, i))
+            {
+                failures.Add(string.Create(CultureInfo.InvariantCulture, $"{key} ('{hosts[i]}') names a host again; {Root}:Webhooks:AllowedHosts:{seen[host]} names it already. Keep one."));
             }
         }
     }

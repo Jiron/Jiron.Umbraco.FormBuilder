@@ -8,6 +8,7 @@ using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+using Jiron.Umbraco.FormBuilder.Core.Outbound;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
@@ -98,6 +99,10 @@ public sealed class FormBuilderCoreComposer : IComposer
 
         // The form service (ADR-0044): create, save, publish and the other changes, with their notifications.
         builder.AddFormBuilderForms();
+
+        // Calls to other hosts (ADR-0076): the transport, which connects only to globally reachable addresses, and the
+        // calls over it, held to the host configuration's hosts and schemes.
+        builder.Services.AddFormBuilderOutbound();
 
         // Option lists (ADR-0073): the option sources with the standard lists, the kinds, the library's lists kept until
         // they change, the option service and the check of a field's source when a form is published, which runs after

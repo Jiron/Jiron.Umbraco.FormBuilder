@@ -1,3 +1,5 @@
+using System.Net;
+using Jiron.Umbraco.FormBuilder.Core.Outbound;
 using Jiron.Umbraco.FormBuilder.Testing.Endpoints;
 using Jiron.Umbraco.FormBuilder.Testing.People;
 using Jiron.Umbraco.FormBuilder.Testing.Stub;
@@ -5,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Notifications;
@@ -17,7 +20,7 @@ namespace Jiron.Umbraco.FormBuilder.Testing;
 /// Everything is off unless the <c>JironFormBuilderTesting</c> section turns it on (<see cref="FormBuilderTestingOptions"/>):
 /// the people seeder does nothing without people, the clock and the stub are registered only when asked for (the
 /// start-up marker too, in <see cref="Startup.StartupMarkerComposer"/>), and the test-only endpoints answer only behind
-/// their gate (<see cref="TestEndpointsGate"/>).
+/// their gate (<see cref="TestEndpointsGate"/>). With the stub, calls to other hosts may reach it (ADR-0076).
 /// </summary>
 public sealed class FormBuilderTestingComposer : IComposer
 {
@@ -38,10 +41,18 @@ public sealed class FormBuilderTestingComposer : IComposer
             builder.Services.AddUnique<TimeProvider>(clock);
         }
 
-        if (section.GetValue<int>(nameof(FormBuilderTestingOptions.StubPort)) > 0)
+        if (section.GetValue<int>(nameof(FormBuilderTestingOptions.StubPort)) is var port and > 0)
         {
             builder.Services.AddSingleton<StubHostedService>();
             builder.Services.AddHostedService(services => services.GetRequiredService<StubHostedService>());
+
+            // Calls to other hosts reach the stub, on loopback at its port only, in Development only, as the stub runs
+            // there only; every other address is held to the site's rules (ADR-0076).
+            builder.Services.AddUnique<IFormBuilderHttpTransport>(
+                services => services.GetRequiredService<IHostEnvironment>().IsDevelopment()
+                    ? new FormBuilderHttpTransport(null, new IPEndPoint(IPAddress.Loopback, port))
+                    : new FormBuilderHttpTransport(),
+                ServiceLifetime.Singleton);
         }
     }
 }

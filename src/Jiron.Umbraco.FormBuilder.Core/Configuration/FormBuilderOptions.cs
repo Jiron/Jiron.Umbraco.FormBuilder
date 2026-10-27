@@ -28,11 +28,31 @@ public sealed class FormBuilderOptions
     /// <summary>Who holds which permission: the global grants, set from the host (ADR-0048).</summary>
     public FormBuilderAccessOptions Access { get; } = new();
 
+    /// <summary>The other hosts Jiron Form Builder may call: JSON option lists now, webhooks later (ADR-0076).</summary>
+    public FormBuilderWebhooksOptions Webhooks { get; } = new();
+
     /// <summary>
     /// Backoffice settings sections that are read-only: <c>general</c>, <c>email</c>, <c>protection</c>, <c>files</c>,
     /// <c>privacy</c>, <c>access</c> (every grant and restriction) or <c>integrations</c>, in any case.
     /// </summary>
     public IList<string> LockedSections { get; } = [];
+}
+
+/// <summary>
+/// The other hosts Jiron Form Builder may call (section 4.10, ADR-0076): JSON option lists now, webhooks later. Only
+/// the host configuration names them, so editors cannot add one, and an address that resolves to a private, loopback or
+/// link-local address is refused whatever this allows.
+/// </summary>
+public sealed class FormBuilderWebhooksOptions
+{
+    /// <summary>
+    /// The hosts that may be called, each a host name such as <c>events.example.com</c> or an IP address, in any case:
+    /// no scheme, port, path or wildcard. None by default, so nothing is called.
+    /// </summary>
+    public IList<string> AllowedHosts { get; } = [];
+
+    /// <summary>Whether <c>http</c> addresses may be called too; only <c>https</c> by default.</summary>
+    public bool AllowHttp { get; set; }
 }
 
 /// <summary>Hard limits that editors cannot exceed (section 4.8).</summary>
