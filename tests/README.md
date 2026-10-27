@@ -244,6 +244,29 @@ its domains while a page under a domain keeps the domain's address; and during a
 not the request's host. Content changes reach Umbraco's navigation and URLs through the cache refreshers on a local
 server messenger, as on a site with one server.
 
+## The option list tests
+
+`Tests.Unit/OptionLists/` covers option lists and sources without a host
+([ADR-0073](../docs/decisions/0073-option-lists-and-sources.md)), over `OptionListTestSite`: one server with the
+site's sources, the library's lists in memory (`MemoryOptionLists`, which counts reads and gives the database's
+refusals), a real runtime cache, the distributed cache over a messenger that records whom it told, `TestUmbraco`'s
+languages and dictionary, and loggers that keep what is logged. `TestOptionSource` is a source whose options a test
+gives, which may throw or wait, and keeps the requests it got.
+
+| Tests | What they show |
+| --- | --- |
+| `StandardOptionSourcesTests` | The months 1 to 12 named in English, German and French with a capital first letter; the weekdays in ISO numbering from the culture's first day (Sunday in the United States, Monday in Britain and Germany); the two scales and "yes, no, not sure" in English and German, a regional culture taking its language's words and any other language English's; and the five lists' names, labels and order. |
+| `OptionKindsTests` | The kinds of this version with where each may be configured; a manual list taking no configuration; the countries' codes known and each once; the countries named and ordered in English and German, all of them without any; a code list naming a source the site has, by its exact name; and its source's options for the request, a source that is gone a failure. |
+| `OptionSourceRegistryTests` | The collection builder holding the standard lists from its start; the registry finding a source by its exact name and leaving out what start-up refuses; the problems naming each source whose name is taken or outside the grammar (64 characters at most); and the start-up check passing a site's own source and refusing a taken name. |
+| `OptionServiceTests` | A field's own options in the culture with the text's fallback and dictionary items; a manual list kept until it changes, its new options showing at once and every server told; a list the site lacks or that no longer reads unavailable and logged once; a code source filtering a cascading field by the parent's answers and hearing them only then; a source that throws, synchronously or not, unavailable and logged without its message; one that takes longer than 5 seconds unavailable, whether it heeds its token or not, and a cancelled request cancelled; what a source gives cleaned (blank, too long, unclean and repeated values, a blank label, more than 10,000 options) and logged as a count; the countries on a field; a kind the site lacks and an upload unavailable; a source list kept for its time per culture, page and parent answers in any order, dropped by a change, a failure never kept; and the cache refresher dropping one list, or every list for a change it cannot read. |
+| `OptionListServiceTests` | A list's alias, name and time within their bounds; its configuration held to its kind at its path; its items read and checked as a field's own options, for a manual list only, at most 10,000; a create, an update and a delete each telling every server, the database's refusals as problems, a change made meanwhile dropping the kept copy; and a missing list kept as missing until it is created. |
+| `OptionSourcePublishCheckTests` | A field's source configuration held to its kind at `options.config`, a kind the site lacks and an upload refused at `options.source`, in every page, group and repeater, while own options and a library list are left to the structural validation. |
+
+`Tests.Integration/OptionLists/OptionListSiteTests` publishes a form through the form service whose fields name a
+source the site lacks and an unknown country, refused at their paths, then publishes it once fixed; changes a manual
+list through SQLite, its new options showing at once and each change told to the other servers; and checks the
+site's registrations: the refresher, the service, the standard lists and the publish checks in their order.
+
 ## The Testing project
 
 | Folder | What it gives |
@@ -392,6 +415,9 @@ budgeted read, or on SQL that changes rows (ADR-0039).
 `Architecture/SqlGuardTests` reads the repositories' source and fails on a guard without a locking read (ADR-0038):
 the hints are empty on SQLite, so no database test here can tell. The few checks that read without a lock on purpose
 are listed there, each with its reason.
+`Architecture/UmbracoFloorTests` fails when the unit tests run on an Umbraco before 17.6.0, whose runtime cache can
+keep a value it was told to clear (ADR-0074): NuGet resolves the packages' range to its lowest version, so a range
+lowered below the floor shows here.
 
 ## The settings tests
 
