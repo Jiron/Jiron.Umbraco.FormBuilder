@@ -283,6 +283,19 @@ data type the site lacks, a page in the recycle bin, a textstring that is no lis
 `cacheSeconds`, while an alias in another case passes. Umbraco's own handlers tell its cache
 refreshers of the changes, and a messenger runs them on this server at once.
 
+## The outbound tests
+
+`Tests.Unit/Outbound/` covers calls to other hosts ([ADR-0076](../docs/decisions/0076-url-and-file-lists.md), §4.10).
+`OutboundHttpTests` runs against a stub on a port the system chooses, through the transport the Testing assembly
+registers (a test's name resolves to loopback, and only the stub's endpoint is reached), and `ScriptedTransport`
+answers what no socket shows: an `https` address, a body whose length is not declared.
+
+| Tests | What they show |
+| --- | --- |
+| `PublicAddressesTests` | Globally reachable IPv4 and IPv6 addresses, each refused range at its edges, and an IPv6 address that carries an IPv4 one (mapped, NAT64, 6to4) judged by it. |
+| `OutboundHostsTests` | A host compared in lowercase and its ASCII form, an IPv6 address without its brackets; anything but one host refused; none allowed and `http` off by default; and start-up refusing a value that is no host and a host named twice, naming the keys. |
+| `OutboundHttpTests` | An allowed host called with a `GET` for the media type as Jiron Form Builder; `https` only unless the host allows `http`; a host not allowed, an address with a user name and a site that names no hosts refused before anything is sent; a name that resolves to a loopback, private, link-local or unique local address, or to one beside a public one, refused before anything connects; the site's transport refusing loopback by name and as an address, and being the one registered; the test transport reaching the stub and no other loopback address or port; redirects to the same host followed three times and no more, to another host refused even when it is allowed, from `https` to `http` refused; an answer over the cap refused whether it declares its length or not, and one that declares it before its body is read; one too slow timed out and a caller that stops waiting cancelled; a status that is no success refused with it; a host that cannot be reached; and failures that name their reason, never the address. |
+
 ## The Testing project
 
 | Folder | What it gives |
@@ -290,7 +303,7 @@ refreshers of the changes, and a messenger runs them on this server at once.
 | `Time/` | `TestTimeProvider` (a clock moved by hand), `ManualTimers` (timers that fire when told) and `TestClock` (the real time plus an offset, for test hosts). |
 | `People/` | `TestPeople` creates user groups, users, member groups and members, and `NewPassword()` makes passwords per run; `TestAccess` gives a group its global grants and creates a restricted folder for it; `TestPeopleSeeder` creates a host's configured people, grants and restricted folders at start-up. |
 | `Mail/` | `TestMailbox` reads and waits for the `.eml` files in a host's mail pickup folder. |
-| `Stub/` | `StubServer`, the local HTTP stub: webhooks, captcha verification (`StubCaptcha` tokens) and scripted answers, with every call recorded. |
+| `Stub/` | `StubServer`, the local HTTP stub: webhooks, captcha verification (`StubCaptcha` tokens) and scripted answers (a redirect with its `Location`), with every call recorded. |
 | `Endpoints/` | The test-only endpoints under `/jfb-testing/`. |
 | `Startup/` | `StartupMarkerPopulator`, which logs a line once Umbraco has rebuilt its indexes, for the browser tests' start-up wait. |
 | `Settings/` | `SampleSettings`, the settings tests' section (below), and `SettingsJson.Global`, a section's global row as the settings service writes it. |
@@ -301,7 +314,7 @@ A host turns these on in the `JironFormBuilderTesting` section; everything is of
 | --- | --- |
 | `Endpoints` | Answers `/jfb-testing/status`, `/jfb-testing/clock` and `/jfb-testing/access` (each backoffice user's effective permissions, globally, at the root and in each root folder), only in Development and only for requests from this machine. |
 | `Clock` | Runs the host on `TestClock`. |
-| `StubPort` | Starts the stub on that port (5560 for the browser tests' host), only in Development. |
+| `StubPort` | Starts the stub on that port (5560 for the browser tests' host), only in Development, where calls to other hosts may then reach it on loopback at that port only (ADR-0076). |
 | `StartupMarker` | Logs `Jiron Form Builder test host: indexes rebuilt` after each rebuild of Umbraco's indexes. |
 | `UserGroups`, `Users`, `Members` | The people the host creates at start-up, each group with its global `Permissions`; their passwords come from the environment only. |
 | `RestrictedFolders` | Root folders the host restricts at start-up, each to one group (`Name`, `Group`, `Permissions`); a folder of that name in the trash is left there and a new one made. |
