@@ -499,6 +499,15 @@ a consent without its stored wording), a text its kind cannot read and a type th
 answers merge tags show. `ConsentWordingsTests` covers the wording: the culture's text with its fallback, a dictionary
 item, merge tags rendered as consent texts render them, and none for a field that shows no text.
 
+`SubmissionReaderTests` reads a whole submission (ADR-0072) of a form with a field of each kind the step treats on its
+own: a repeatable group's rows counted with too few and too many (a thousand rows over the limit neither read nor
+checked) and an empty row that counts but is not stored, a child's errors and its `matchesField` check in its own
+row, a calculation's posted value replaced by the server's (a row's too), a hidden field's member value resolved on
+submit whatever was posted (and absent from the public projection) with the action whose rule looks at it, one too
+long for its type left out and logged by alias, a query prefill and its default, what the rules hide (a field, a
+group's rows) neither checked nor stored, required and own checks, a form-level validation rule's message, files by
+their upload tokens, parts cleaned, and keys, types and time zones the server does not know.
+
 `Tests.Integration/Entries/EntryAnswerStoreTests` publishes a form with every type through the form service, stores
 an entry with uploads and a consent wording in SQLite, and reads every type back typed, each value as its type read it;
 a wording is stored once for many entries, and an entry refused for an upload another entry took stores nothing.
