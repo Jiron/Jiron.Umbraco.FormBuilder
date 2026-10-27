@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
@@ -75,6 +76,30 @@ public sealed class HeldOptionsTests
             Assert.That(Held(new FieldOptions { Source = OptionSource.Url, Parent = Parent }, parentAnswers: ["CH"]), Is.Null);
             Assert.That(Held(null), Is.Empty, "only a draft holds a choice without options");
             Assert.That(Held(new FieldOptions()), Is.Empty);
+        });
+    }
+
+    [Test]
+    public void ManyCascadingOptions_AgainstManyParentAnswers_AreHeldWithoutComparingEveryPair()
+    {
+        // 10,000 options that name five parent values each and one that names the last answer, against 10,000 answers of
+        // one length that differ only at their end (ADR-0080): held in a list, the answers would cost 500 million long
+        // comparisons, seconds; held in a set, milliseconds.
+        var stem = new string('x', 50);
+        var resolved = Enumerable.Range(0, 10_000)
+            .Select(i => new FormBuilderOption($"o{i}") { ParentValues = [.. Enumerable.Range(0, 5).Select(j => $"{stem}{j}{i:D4}")] })
+            .Append(new FormBuilderOption("last") { ParentValues = [$"{stem}a9999"] })
+            .ToList();
+        var answers = Enumerable.Range(0, 10_000).Select(i => $"{stem}a{i:D4}").ToArray();
+
+        var watch = Stopwatch.StartNew();
+        var held = Held(new FieldOptions { Source = OptionSource.Code, Parent = Parent }, resolved: resolved, parentAnswers: answers);
+        watch.Stop();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(held, Is.EquivalentTo(new[] { "last" }));
+            Assert.That(watch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(1)), "a lookup per parent value, not a scan of the answers");
         });
     }
 
