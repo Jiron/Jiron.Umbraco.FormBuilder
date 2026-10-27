@@ -114,10 +114,12 @@ public sealed class FieldTypeAvailabilityTests
     {
         var timers = new ManualTimers();
         var listening = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var stopped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var given = CancellationToken.None;
         var (service, logger) = Service(timers, new Checked("acme.slow", async token =>
         {
-            using var _ = token.Register(() => stopped.TrySetResult());
+            // The token itself, not a callback on it: the check may end, and drop what it registered, before the
+            // callbacks of its cancellation have all run.
+            given = token;
             listening.TrySetResult();
             await Task.Delay(Timeout.InfiniteTimeSpan, token);
             return FieldTypeAvailability.Available;
@@ -135,7 +137,7 @@ public sealed class FieldTypeAvailabilityTests
         Assert.Multiple(() =>
         {
             Assert.That((answers[0].IsAvailable, answers[0].Reason), Is.EqualTo((false, FieldTypeAvailabilityService.CheckFailed)));
-            Assert.That(stopped.Task.IsCompletedSuccessfully, Is.True, "the check's token is cancelled before the answer comes");
+            Assert.That(given.IsCancellationRequested, Is.True, "the check's token is cancelled before the answer comes");
             Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Message)), Is.EqualTo(new[]
             {
                 (LogLevel.Warning, "The field type 'acme.slow' took more than 5 seconds to say whether it is configured; the designer shows it as not configured"),
