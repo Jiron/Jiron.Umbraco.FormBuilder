@@ -1878,7 +1878,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - code (`IFormBuilderOptionSource`, registered through `builder.JironFormBuilder()`), with optional parent filtering;
     - **presets** (added in 1.1): months, weekdays, agreement and satisfaction scales, and "yes, no, not sure", in English and German (14.2 adds the other five), with month and day names from culture data.
   - Done when: unit tests per kind of this step pass: a manual list's labels per culture with their fallback, the countries in English and German, each preset in English and German, a code source with parent filtering, and one that throws, which gives no options and is logged without values; publishing refuses a field's source configuration that its kind refuses, at its path; start-up refuses a code source whose alias is taken or outside the grammar, naming it; a changed list's options show at once.
-- [ ] **5.5b Content and data type lists** (C#; 5.5 split in five, WORKLOG 2026-10-27)
+- [x] **5.5b Content and data type lists** (C#; 5.5 split in five, WORKLOG 2026-10-27) (2026-10-27, 6037f87)
   - **Content:** the root from a picker or "the current page", a document type filter, the value and label fields, children or all descendants, the order, published pages only, and pages that need a member to sign in left out.
   - **Data type:** the values of a dropdown, checkbox list or radio button list data type, in its order.
   - **Caching with invalidation on content publish** (and when a data type is saved), on every server.
