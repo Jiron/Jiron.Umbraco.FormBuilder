@@ -368,8 +368,8 @@ const dropdown = [
     description: 'an option value is what entries store, so it is compared exactly, not folded',
   }),
   c('dropdown-without-options-takes-nothing', field('dropdown', {}, { options: [] }), ['red'], ['invalid']),
-  c('dropdown-options-from-a-list-are-the-lists', field('dropdown'), ['purple'], [], {
-    description: 'a field without options of its own takes them from a list, whose answers 5.5 checks',
+  c('dropdown-a-source-without-its-options-takes-any', field('dropdown', {}, { fromSource: true }), ['purple'], [], {
+    description: 'a list or another source that could not give its options holds the answers to none: the server takes them as given and logs the field (ADR-0077)',
   }),
   c('dropdown-several-at-their-fewest', field('dropdown', { multiple: true, minSelections: 2, maxSelections: 3 }, { options: COLOURS }), ['red', 'green'], []),
   c('dropdown-several-at-their-most', field('dropdown', { multiple: true, minSelections: 2, maxSelections: 3 }, { options: COLOURS }), ['red', 'green', 'blue'], []),
@@ -377,7 +377,7 @@ const dropdown = [
   c('dropdown-several-above-their-most', field('dropdown', { multiple: true, maxSelections: 3 }, { options: COLOURS }), ['red', 'green', 'blue', 'white'], ['selections']),
   c('dropdown-several-without-limits', field('dropdown', { multiple: true }, { options: COLOURS }), ['red', 'green', 'blue', 'white'], []),
   c('dropdown-several-not-an-option-and-too-many', field('dropdown', { multiple: true, maxSelections: 2 }, { options: COLOURS }), ['red', 'green', 'pink'], ['invalid', 'selections']),
-  c('dropdown-several-from-a-list-still-count', field('dropdown', { multiple: true, maxSelections: 1 }), ['red', 'green'], ['selections']),
+  c('dropdown-several-from-a-source-without-its-options-still-count', field('dropdown', { multiple: true, maxSelections: 1 }, { fromSource: true }), ['red', 'green'], ['selections']),
   c('dropdown-one-choice-has-no-selections', field('dropdown', { minSelections: 2 }, { options: COLOURS }), ['red'], [], {
     description: 'publishing refuses selections without multiple (ADR-0056); a draft does not count them',
   }),
@@ -400,7 +400,7 @@ const radio = [
     description: 'one choice: the option is the answer, and the text is left',
   }),
   c('radio-not-an-option-beside-an-other-text', field('radio', { other: true }, { options: ANSWERS }), ['maybe'], ['invalid'], { parts: { other: ['maybe'] } }),
-  c('radio-options-from-a-list-are-the-lists', field('radio'), ['maybe'], []),
+  c('radio-a-source-without-its-options-takes-any', field('radio', {}, { fromSource: true }), ['maybe'], []),
 ];
 
 // ---- checkboxes: each an option, the count within the selections, the "Other" text as one ----
@@ -424,7 +424,7 @@ const checkboxes = [
   c('checkboxes-an-other-text-it-does-not-offer-is-left', field('checkboxes', { maxSelections: 2 }, { options: CHANNELS }), ['email', 'phone'], [], {
     parts: { other: ['pigeon'] },
   }),
-  c('checkboxes-options-from-a-list-are-the-lists', field('checkboxes', { maxSelections: 3 }), ['fax', 'telex'], []),
+  c('checkboxes-a-source-without-its-options-takes-any', field('checkboxes', { maxSelections: 3 }, { fromSource: true }), ['fax', 'telex'], []),
 ];
 
 // ---- grid: each row's values among its columns, the scale's whole numbers or its options ----
@@ -452,7 +452,7 @@ const grid = [
     parts: { [PRICE_ROW]: ['agree'] },
     description: 'publishing refuses columns from both (ADR-0056); in a draft the scale decides',
   }),
-  c('grid-options-from-a-list-are-the-lists', field('grid', {}, { rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['whatever'] } }),
+  c('grid-a-source-without-its-options-takes-any', field('grid', {}, { fromSource: true, rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['whatever'] } }),
   c('grid-required-with-every-row-answered', field('grid', {}, { options: AGREEMENT, rows: ROWS, required: true }), [], [], {
     parts: { [PRICE_ROW]: ['agree'], [STAFF_ROW]: ['neutral'] },
   }),
@@ -492,9 +492,9 @@ const ranking = [
   c('ranking-a-top-above-its-options', field('ranking', { top: 9 }, { options: ASPECTS }), ['quality', 'price', 'speed', 'service'], [], {
     description: 'publishing refuses a top above the options (ADR-0056); a draft ranks them all',
   }),
-  c('ranking-options-from-a-list-are-the-lists', field('ranking', { top: 2 }), ['looks'], []),
+  c('ranking-a-source-without-its-options-takes-any', field('ranking', { top: 2 }, { fromSource: true }), ['looks'], []),
   c('ranking-an-option-twice', field('ranking', {}, { options: ASPECTS }), ['quality', 'quality', 'speed', 'service'], ['invalid']),
-  c('ranking-an-option-twice-from-a-list', field('ranking', { top: 2 }), ['looks', 'looks'], ['invalid']),
+  c('ranking-an-option-twice-from-a-source-without-its-options', field('ranking', { top: 2 }, { fromSource: true }), ['looks', 'looks'], ['invalid']),
   c('ranking-positions-without-script', field('ranking', {}, { options: ASPECTS }), [], [], {
     parts: { price: ['2'], quality: ['1'], service: ['4'], speed: ['3'] },
   }),
@@ -510,7 +510,77 @@ const ranking = [
     parts: { speed: ['1'], price: ['2'], quality: ['3'] },
   }),
   c('ranking-a-position-for-no-option', field('ranking', { top: 2 }, { options: ASPECTS }), [], ['invalid'], { parts: { speed: ['1'], looks: ['2'] } }),
-  c('ranking-positions-in-one-from-a-list', field('ranking', { top: 2 }), [], ['invalid'], { parts: { a: ['2'], b: ['2'] } }),
+  c('ranking-positions-in-one-from-a-source-without-its-options', field('ranking', { top: 2 }, { fromSource: true }), [], ['invalid'], { parts: { a: ['2'], b: ['2'] } }),
+];
+
+// ---- options from a list or another source: held to those it resolved, as a field's own (ADR-0077) ----
+const fromSource = (type, settings = {}, more = {}) => field(type, settings, { fromSource: true, ...more });
+const sources = [
+  c('source-an-option-it-resolved', fromSource('dropdown', {}, { options: COLOURS }), ['green'], []),
+  c('source-an-answer-it-lacks', fromSource('dropdown', {}, { options: COLOURS }), ['purple'], ['invalid'], {
+    description: 'a choice from a list holds its answers to the options the list resolved, as a field holds them to its own',
+  }),
+  c('source-an-option-compares-exactly', fromSource('dropdown', {}, { options: COLOURS }), ['Green'], ['invalid']),
+  c('source-that-resolved-no-options-takes-nothing', fromSource('dropdown', {}, { options: [] }), ['red'], ['invalid']),
+  c('source-several-one-it-lacks', fromSource('dropdown', { multiple: true }, { options: COLOURS }), ['red', 'pink'], ['invalid']),
+  c('source-radio-an-answer-it-lacks', fromSource('radio', {}, { options: ANSWERS }), ['maybe'], ['invalid']),
+  c('source-radio-the-other-text-is-the-visitors-own', fromSource('radio', { other: true }, { options: ANSWERS }), [], [], { parts: { other: ['maybe'] } }),
+  c('source-checkboxes-options-it-resolved', fromSource('checkboxes', { maxSelections: 3 }, { options: CHANNELS }), ['email', 'post'], []),
+  c('source-checkboxes-one-it-lacks', fromSource('checkboxes', {}, { options: CHANNELS }), ['email', 'fax'], ['invalid']),
+  c('source-grid-a-column-it-resolved', fromSource('grid', {}, { options: AGREEMENT, rows: ROWS }), [], [], { parts: { [PRICE_ROW]: ['agree'] } }),
+  c('source-grid-a-column-it-lacks', fromSource('grid', {}, { options: AGREEMENT, rows: ROWS }), [], ['invalid'], { parts: { [PRICE_ROW]: ['whatever'] } }),
+  c('source-ranking-all-it-resolved', fromSource('ranking', {}, { options: ASPECTS }), ['quality', 'price', 'speed', 'service'], []),
+  c('source-ranking-fewer-than-it-resolved', fromSource('ranking', {}, { options: ASPECTS }), ['quality', 'price', 'speed'], ['invalid'], {
+    description: 'without a top, a ranking ranks every option its list resolved',
+  }),
+  c('source-ranking-its-top-two', fromSource('ranking', { top: 2 }, { options: ASPECTS }), ['speed', 'price'], []),
+  c('source-ranking-one-it-lacks', fromSource('ranking', { top: 2 }, { options: ASPECTS }), ['speed', 'looks'], ['invalid']),
+];
+
+// ---- cascading: the options that belong to the parent's answers; one that names none belongs to every answer ----
+const COUNTRY_FIELD = '4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84';
+const CITIES = [
+  { value: 'zurich', parentValues: ['CH'] },
+  { value: 'geneva', parentValues: ['CH'] },
+  { value: 'berlin', parentValues: ['DE'] },
+  { value: 'border', parentValues: ['CH', 'DE'] },
+  'elsewhere',
+];
+const city = (type = 'dropdown', more = {}) => field(type, {}, { options: CITIES, parent: COUNTRY_FIELD, ...more });
+const parentAnswers = (...answers) => ({ others: { [COUNTRY_FIELD]: answers } });
+const cascading = [
+  c('cascading-an-option-of-the-parents-answer', city(), ['zurich'], [], parentAnswers('CH')),
+  c('cascading-an-option-of-another-answer', city(), ['berlin'], ['invalid'], {
+    ...parentAnswers('CH'),
+    description: 'an option that names parent answers belongs to them alone',
+  }),
+  c('cascading-an-option-of-two-answers', city(), ['border'], [], parentAnswers('DE')),
+  c('cascading-an-option-of-every-answer', city(), ['elsewhere'], [], {
+    ...parentAnswers('CH'),
+    description: 'an option that names no parent answer belongs to every one',
+  }),
+  c('cascading-without-a-parent-answer', city(), ['zurich'], ['invalid'], {
+    description: 'with no parent answer, as when the rules hide the parent, only the options of every answer are offered',
+  }),
+  c('cascading-without-a-parent-answer-an-option-of-every-answer', city(), ['elsewhere'], []),
+  c('cascading-a-parent-answer-compares-exactly', city(), ['zurich'], ['invalid'], parentAnswers('ch')),
+  c('cascading-one-of-the-parents-answers', city(), ['berlin'], [], parentAnswers('CH', 'DE')),
+  c('cascading-an-option-of-another-field', city(), ['zurich'], ['invalid'], {
+    others: { [OTHER_FIELD]: ['CH'] },
+    description: 'only the answers of the parent field count',
+  }),
+  c('cascading-an-option-that-lists-no-parent-answers', field('dropdown', {}, { options: [{ value: 'zurich', parentValues: [] }], parent: COUNTRY_FIELD }), ['zurich'], [], parentAnswers('DE')),
+  c('cascading-an-option-without-its-parent-answers', field('dropdown', {}, { options: [{ value: 'zurich' }], parent: COUNTRY_FIELD }), ['zurich'], [], parentAnswers('DE')),
+  c('cascading-checkboxes-one-of-another-answer', city('checkboxes'), ['zurich', 'berlin'], ['invalid'], parentAnswers('CH')),
+  c('cascading-a-ranking-of-the-options-that-belong', city('ranking'), ['geneva', 'zurich', 'border', 'elsewhere'], [], parentAnswers('CH')),
+  c('cascading-a-ranking-of-every-option', city('ranking'), ['geneva', 'zurich', 'border', 'elsewhere', 'berlin'], ['invalid'], parentAnswers('CH')),
+  c('cascading-options-without-a-parent', field('dropdown', {}, { options: CITIES }), ['berlin'], [], {
+    ...parentAnswers('CH'),
+    description: 'only a field with a parent filters its options, whatever they name',
+  }),
+  c('cascading-from-a-source', fromSource('dropdown', {}, { options: CITIES, parent: COUNTRY_FIELD }), ['zurich'], [], parentAnswers('CH')),
+  c('cascading-from-a-source-of-another-answer', fromSource('dropdown', {}, { options: CITIES, parent: COUNTRY_FIELD }), ['berlin'], ['invalid'], parentAnswers('CH')),
+  c('cascading-from-a-source-without-its-options', fromSource('dropdown', {}, { parent: COUNTRY_FIELD }), ['berlin'], [], parentAnswers('CH')),
 ];
 
 // ---- country: among the allowed ones, when the field lists some ----
@@ -767,6 +837,8 @@ export default {
     ...checkboxes,
     ...grid,
     ...ranking,
+    ...sources,
+    ...cascading,
     ...country,
     ...name,
     ...address,

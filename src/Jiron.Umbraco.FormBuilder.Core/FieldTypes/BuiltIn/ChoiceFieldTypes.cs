@@ -285,7 +285,7 @@ public sealed class GridFieldType() : FormBuilderFieldTypeBase<GridFieldSettings
     {
         Func<string, bool>? column = settings.Scale is { } scale
             ? value => BuiltInValidation.IsWholeNumber(value, scale.From, scale.To)
-            : BuiltInValidation.OwnOptions(validation.Field) is { } options ? options.Contains : null;
+            : validation.Options is { } options ? options.Contains : null;
         if (column is not null && !validation.Values.All(value => column(value.Text)))
         {
             validation.Fail(FieldMessageKinds.Invalid);
@@ -418,7 +418,7 @@ public sealed class RankingFieldType() : FormBuilderFieldTypeBase<RankingFieldSe
             validation.Fail(FieldMessageKinds.Invalid);
         }
 
-        if (BuiltInValidation.OwnOptions(validation.Field) is not { } options)
+        if (validation.Options is not { } options)
         {
             return;
         }

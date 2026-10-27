@@ -9,12 +9,13 @@ namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 /// What a field type shows a field's values as (ADR-0066): the texts of <c>{{ field.alias }}</c> and of the list of
 /// the answers, in the culture the template renders in. A number or a date is shown in the culture's format with its
 /// wire form behind it, so the <c>number</c>, <c>currency</c> and <c>date</c> filters can format it again; an option by
-/// its label; a file by its name.
+/// its label, from a list or another source the label it resolves (ADR-0077); a file by its name.
 /// </summary>
 public sealed class FieldDisplay
 {
     private readonly CultureFormats _formats;
     private readonly DictionaryTexts _dictionary;
+    private readonly IReadOnlyDictionary<string, string>? _optionLabels;
     private readonly List<DisplayText> _texts = [];
 
     internal FieldDisplay(
@@ -24,7 +25,8 @@ public sealed class FieldDisplay
         string culture,
         CultureFormats formats,
         bool isListing,
-        DictionaryTexts? dictionary = null)
+        DictionaryTexts? dictionary = null,
+        IReadOnlyDictionary<string, string>? optionLabels = null)
     {
         if (!files.IsEmpty && files.Length != values.Length)
         {
@@ -38,6 +40,7 @@ public sealed class FieldDisplay
         IsListing = isListing;
         _formats = formats;
         _dictionary = dictionary ?? DictionaryTexts.None;
+        _optionLabels = optionLabels;
     }
 
     /// <summary>The field, with its settings, options and rows.</summary>
@@ -137,13 +140,19 @@ public sealed class FieldDisplay
     }
 
     /// <summary>
-    /// The label of the field's option with this value, in the culture; the value itself when the field has no such
-    /// option, such as a visitor's "Other" text, or no label for it.
+    /// The label of the field's option with this value, in the culture: its own option's, or the one its list or other
+    /// source resolves (ADR-0077); the value itself when the field has no such option, such as a visitor's "Other" text,
+    /// or no label for it, and when its source cannot give its options.
     /// </summary>
     /// <param name="value">The option's value.</param>
     public string OptionLabel(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
+        if (Field.Options is { Source: not OptionSource.Items })
+        {
+            return _optionLabels is not null && _optionLabels.TryGetValue(value, out var resolved) ? resolved : value;
+        }
+
         var option = Field.Options?.Items.FirstOrDefault(item => string.Equals(item.Value, value, StringComparison.Ordinal));
         return option?.Label is { } label && Text(label) is { Length: > 0 } text ? text : value;
     }

@@ -4539,11 +4539,12 @@
       }
     },
     {
-      "id": "dropdown-options-from-a-list-are-the-lists",
-      "description": "a field without options of its own takes them from a list, whose answers 5.5 checks",
+      "id": "dropdown-a-source-without-its-options-takes-any",
+      "description": "a list or another source that could not give its options holds the answers to none: the server takes them as given and logs the field (ADR-0077)",
       "field": {
         "type": "dropdown",
         "kind": "choice",
+        "fromSource": true,
         "settings": {
           "multiple": false
         }
@@ -4734,10 +4735,11 @@
       }
     },
     {
-      "id": "dropdown-several-from-a-list-still-count",
+      "id": "dropdown-several-from-a-source-without-its-options-still-count",
       "field": {
         "type": "dropdown",
         "kind": "choice",
+        "fromSource": true,
         "settings": {
           "multiple": true,
           "maxSelections": 1
@@ -5008,10 +5010,11 @@
       }
     },
     {
-      "id": "radio-options-from-a-list-are-the-lists",
+      "id": "radio-a-source-without-its-options-takes-any",
       "field": {
         "type": "radio",
         "kind": "choice",
+        "fromSource": true,
         "settings": {
           "other": false,
           "layout": "inherit"
@@ -5393,10 +5396,11 @@
       }
     },
     {
-      "id": "checkboxes-options-from-a-list-are-the-lists",
+      "id": "checkboxes-a-source-without-its-options-takes-any",
       "field": {
         "type": "checkboxes",
         "kind": "choices",
+        "fromSource": true,
         "settings": {
           "other": false,
           "layout": "inherit",
@@ -6020,9 +6024,10 @@
       }
     },
     {
-      "id": "grid-options-from-a-list-are-the-lists",
+      "id": "grid-a-source-without-its-options-takes-any",
       "field": {
         "type": "grid",
+        "fromSource": true,
         "rows": [
           {
             "id": "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40"
@@ -6529,10 +6534,11 @@
       }
     },
     {
-      "id": "ranking-options-from-a-list-are-the-lists",
+      "id": "ranking-a-source-without-its-options-takes-any",
       "field": {
         "type": "ranking",
         "kind": "choices",
+        "fromSource": true,
         "settings": {
           "top": 2
         }
@@ -6575,10 +6581,11 @@
       }
     },
     {
-      "id": "ranking-an-option-twice-from-a-list",
+      "id": "ranking-an-option-twice-from-a-source-without-its-options",
       "field": {
         "type": "ranking",
         "kind": "choices",
+        "fromSource": true,
         "settings": {
           "top": 2
         }
@@ -6801,10 +6808,11 @@
       }
     },
     {
-      "id": "ranking-positions-in-one-from-a-list",
+      "id": "ranking-positions-in-one-from-a-source-without-its-options",
       "field": {
         "type": "ranking",
         "kind": "choices",
+        "fromSource": true,
         "settings": {
           "top": 2
         }
@@ -6824,6 +6832,1333 @@
         "errors": [
           "invalid"
         ],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-an-option-it-resolved",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "fromSource": true,
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "green"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-an-answer-it-lacks",
+      "description": "a choice from a list holds its answers to the options the list resolved, as a field holds them to its own",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "fromSource": true,
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "purple"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-an-option-compares-exactly",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "fromSource": true,
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "Green"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-that-resolved-no-options-takes-nothing",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "fromSource": true,
+        "options": [],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "red"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-several-one-it-lacks",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "fromSource": true,
+        "options": [
+          "red",
+          "green",
+          "blue",
+          "white"
+        ],
+        "settings": {
+          "multiple": true
+        }
+      },
+      "answers": {
+        "values": [
+          "red",
+          "pink"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-radio-an-answer-it-lacks",
+      "field": {
+        "type": "radio",
+        "kind": "choice",
+        "fromSource": true,
+        "options": [
+          "yes",
+          "no"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [
+          "maybe"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-radio-the-other-text-is-the-visitors-own",
+      "field": {
+        "type": "radio",
+        "kind": "choice",
+        "fromSource": true,
+        "options": [
+          "yes",
+          "no"
+        ],
+        "settings": {
+          "other": true,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "other": [
+            "maybe"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-checkboxes-options-it-resolved",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "fromSource": true,
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit",
+          "maxSelections": 3
+        }
+      },
+      "answers": {
+        "values": [
+          "email",
+          "post"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-checkboxes-one-it-lacks",
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "fromSource": true,
+        "options": [
+          "email",
+          "phone",
+          "post",
+          "visit"
+        ],
+        "settings": {
+          "other": false,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [
+          "email",
+          "fax"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-grid-a-column-it-resolved",
+      "field": {
+        "type": "grid",
+        "fromSource": true,
+        "options": [
+          "agree",
+          "neutral",
+          "disagree"
+        ],
+        "rows": [
+          {
+            "id": "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40"
+          },
+          {
+            "id": "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+          }
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "agree"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-grid-a-column-it-lacks",
+      "field": {
+        "type": "grid",
+        "fromSource": true,
+        "options": [
+          "agree",
+          "neutral",
+          "disagree"
+        ],
+        "rows": [
+          {
+            "id": "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40"
+          },
+          {
+            "id": "1c7b5e2f-8d3e-4f9b-8a4c-6e2d3b8f7c51"
+          }
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [],
+        "parts": {
+          "0b6a4f1e-7c2d-4e8a-9f3b-5d1c2a7e6b40": [
+            "whatever"
+          ]
+        }
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-ranking-all-it-resolved",
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "fromSource": true,
+        "options": [
+          "price",
+          "quality",
+          "service",
+          "speed"
+        ]
+      },
+      "answers": {
+        "values": [
+          "quality",
+          "price",
+          "speed",
+          "service"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-ranking-fewer-than-it-resolved",
+      "description": "without a top, a ranking ranks every option its list resolved",
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "fromSource": true,
+        "options": [
+          "price",
+          "quality",
+          "service",
+          "speed"
+        ]
+      },
+      "answers": {
+        "values": [
+          "quality",
+          "price",
+          "speed"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-ranking-its-top-two",
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "fromSource": true,
+        "options": [
+          "price",
+          "quality",
+          "service",
+          "speed"
+        ],
+        "settings": {
+          "top": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "speed",
+          "price"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "source-ranking-one-it-lacks",
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "fromSource": true,
+        "options": [
+          "price",
+          "quality",
+          "service",
+          "speed"
+        ],
+        "settings": {
+          "top": 2
+        }
+      },
+      "answers": {
+        "values": [
+          "speed",
+          "looks"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-an-option-of-the-parents-answer",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "CH"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "zurich"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-an-option-of-another-answer",
+      "description": "an option that names parent answers belongs to them alone",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "CH"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "berlin"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-an-option-of-two-answers",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "DE"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "border"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-an-option-of-every-answer",
+      "description": "an option that names no parent answer belongs to every one",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "CH"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "elsewhere"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-without-a-parent-answer",
+      "description": "with no parent answer, as when the rules hide the parent, only the options of every answer are offered",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "zurich"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-without-a-parent-answer-an-option-of-every-answer",
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "elsewhere"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-a-parent-answer-compares-exactly",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "ch"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "zurich"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-one-of-the-parents-answers",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "CH",
+          "DE"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "berlin"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-an-option-of-another-field",
+      "description": "only the answers of the parent field count",
+      "values": {
+        "3e9d7a4b-af5a-4b1d-8c6e-8a4f5dab9e73": [
+          "CH"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "zurich"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-an-option-that-lists-no-parent-answers",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "DE"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": []
+          }
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "zurich"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-an-option-without-its-parent-answers",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "DE"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          {
+            "value": "zurich"
+          }
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "zurich"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-checkboxes-one-of-another-answer",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "CH"
+        ]
+      },
+      "field": {
+        "type": "checkboxes",
+        "kind": "choices",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "other": false,
+          "layout": "inherit"
+        }
+      },
+      "answers": {
+        "values": [
+          "zurich",
+          "berlin"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-a-ranking-of-the-options-that-belong",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "CH"
+        ]
+      },
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84"
+      },
+      "answers": {
+        "values": [
+          "geneva",
+          "zurich",
+          "border",
+          "elsewhere"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-a-ranking-of-every-option",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "CH"
+        ]
+      },
+      "field": {
+        "type": "ranking",
+        "kind": "choices",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84"
+      },
+      "answers": {
+        "values": [
+          "geneva",
+          "zurich",
+          "border",
+          "elsewhere",
+          "berlin"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-options-without-a-parent",
+      "description": "only a field with a parent filters its options, whatever they name",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "CH"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "berlin"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-from-a-source",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "CH"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "fromSource": true,
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "zurich"
+        ]
+      },
+      "expect": {
+        "errors": [],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-from-a-source-of-another-answer",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "CH"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "fromSource": true,
+        "options": [
+          {
+            "value": "zurich",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "geneva",
+            "parentValues": [
+              "CH"
+            ]
+          },
+          {
+            "value": "berlin",
+            "parentValues": [
+              "DE"
+            ]
+          },
+          {
+            "value": "border",
+            "parentValues": [
+              "CH",
+              "DE"
+            ]
+          },
+          "elsewhere"
+        ],
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "berlin"
+        ]
+      },
+      "expect": {
+        "errors": [
+          "invalid"
+        ],
+        "checks": []
+      }
+    },
+    {
+      "id": "cascading-from-a-source-without-its-options",
+      "values": {
+        "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84": [
+          "CH"
+        ]
+      },
+      "field": {
+        "type": "dropdown",
+        "kind": "choice",
+        "fromSource": true,
+        "parent": "4fa08b5c-b06b-4c2e-9d7f-9b5a6ebcaf84",
+        "settings": {
+          "multiple": false
+        }
+      },
+      "answers": {
+        "values": [
+          "berlin"
+        ]
+      },
+      "expect": {
+        "errors": [],
         "checks": []
       }
     },

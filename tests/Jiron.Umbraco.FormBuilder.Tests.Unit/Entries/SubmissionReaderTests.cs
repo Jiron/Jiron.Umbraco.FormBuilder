@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
+using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 using Microsoft.Extensions.Logging;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Entries;
@@ -378,8 +379,9 @@ public sealed class SubmissionReaderTests
 
     private static async Task<SubmissionAnswers> ReadAsync(PostedSubmission post, TestUmbraco? umbraco = null, ILogger<SubmissionReader>? logger = null)
     {
-        var site = MergeTagTestSite.Create(umbraco: umbraco);
-        var reader = new SubmissionReader(TestFieldTypes.Registry, site.Service, logger ?? new Recorder());
+        var options = new OptionListTestSite().Options();
+        var site = MergeTagTestSite.Create(umbraco: umbraco, options: options);
+        var reader = new SubmissionReader(TestFieldTypes.Registry, site.Service, options, logger ?? new Recorder());
         return await reader.ReadAsync(post);
     }
 

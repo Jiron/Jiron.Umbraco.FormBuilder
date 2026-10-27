@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 /**
  * The mutation check of the shared logic (ROADMAP 5.2a, ADR-0061), since 5.3a of the calculations (ADR-0063), since
- * 5.3f of answer recall (ADR-0068), and since 5.4a of the forms of email addresses, phone numbers and web addresses
- * (ADR-0069).
+ * 5.3f of answer recall (ADR-0068), since 5.4a of the forms of email addresses, phone numbers and web addresses
+ * (ADR-0069), and since 5.5d of the options a choice's answers are held to (ADR-0077).
  * Each mutant changes one piece of code in one runtime; that runtime's vector runner runs, and the file is put back. A
  * mutant that no vector catches survives, and the check fails unless the mutant is written down here as an equivalent
  * change, with the reason. A mutant written down as equivalent that a vector catches fails the check too, so the notes
@@ -57,6 +57,8 @@ const TABLES_CS = `${VECTORS_CS}|FullyQualifiedName~UnicodeTablesTests`;
 /** The forms of email addresses, phone numbers and web addresses (ROADMAP 5.4a, ADR-0069), in TypeScript and in C#. */
 const frm = (name, from, to, more) => ts(`frm-${name}`, 'forms.ts', from, to, more);
 const csf = (name, from, to, more = {}) => ({ runtime: 'cs', name: `cs-frm-${name}`, file: 'src/Jiron.Umbraco.FormBuilder.Core/FieldTypes/BuiltIn/BuiltInForms.cs', from, to, ...more });
+/** The options a choice's answers are held to (ROADMAP 5.5d, ADR-0077): in TypeScript checks.ts, in C# the check's input. */
+const csv = (name, from, to, more = {}) => ({ runtime: 'cs', name: `cs-opt-${name}`, file: 'src/Jiron.Umbraco.FormBuilder.Core/FieldTypes/FieldValidation.cs', from, to, ...more });
 /** The symbols an atom of an email address's local part may hold, as forms.ts writes them. */
 const ATOM_SYMBOLS = "!#$%&'*+-/=?^_" + '`{|}~';
 const quoted = (text) => '"' + text + '"';
@@ -315,7 +317,20 @@ const mutants = [
   // ---- The choice, people and file types' checks, and the field's own checks (ROADMAP 5.2c, ADR-0062) ----
   ts('check-options-some', 'checks.ts', '!v.answers.values.every((value) => options.has(value))', '!v.answers.values.some((value) => options.has(value))'),
   ts('check-options-of-read-values', 'checks.ts', '!v.answers.values.every((value) => options.has(value))', '!v.values.every((value) => options.has(value))'),
-  ts('check-options-list-as-none', 'checks.ts', 'options: field.options === undefined ? null : new Set(field.options),', 'options: new Set(field.options ?? []),'),
+  ts('check-options-list-as-none', 'checks.ts', '  if (field.options === undefined) return null;', '  if (field.options === undefined) return new Set<string>();'),
+
+  // ---- Options from a list or another source and cascading options (ROADMAP 5.5d, ADR-0077) ----
+  ts('check-cascading-parent-ignored', 'checks.ts', 'const answers = field.parent === undefined ? null : (own(values, field.parent) ?? []);', 'const answers = null as readonly string[] | null;'),
+  ts('check-cascading-without-a-parent-filters', 'checks.ts', 'const answers = field.parent === undefined ? null : (own(values, field.parent) ?? []);', "const answers = own(values, field.parent ?? '') ?? [];"),
+  ts('check-cascading-every-fields-answers', 'checks.ts', '(own(values, field.parent) ?? [])', '(Object.values(values).flat())'),
+  ts('check-cascading-no-answer-filters-nothing', 'checks.ts', '(own(values, field.parent) ?? [])', '(own(values, field.parent) ?? null)'),
+  ts('check-cascading-filters-without-a-parent', 'checks.ts', 'if (answers === null || belongsTo.length === 0 ||', 'if (belongsTo.length === 0 ||'),
+  ts('check-cascading-every-answers-option-dropped', 'checks.ts', 'answers === null || belongsTo.length === 0 || belongsTo.some', 'answers === null || belongsTo.some'),
+  ts('check-cascading-all-parent-answers', 'checks.ts', 'belongsTo.some((each) => answers.includes(each))', 'belongsTo.every((each) => answers.includes(each))'),
+  ts('check-cascading-answers-folded', 'checks.ts', 'belongsTo.some((each) => answers.includes(each))', 'belongsTo.some((each) => answers.some((answer) => fold(answer) === fold(each)))'),
+  ts('check-cascading-string-options-filtered', 'checks.ts', "typeof option === 'string' ? [option, []]", "typeof option === 'string' ? [option, ['']]"),
+  ts('check-cascading-unlisted-parent-values-filtered', 'checks.ts', 'option.parentValues ?? []]', "option.parentValues ?? ['']]"),
+  ts('check-cascading-option-values-lost', 'checks.ts', '[option.value, option.parentValues ?? []]', "['', option.parentValues ?? []]"),
   ts('check-selections-min-inclusive', 'checks.ts', '(min !== undefined && count < min) ||', '(min !== undefined && count <= min) ||'),
   ts('check-selections-max-inclusive', 'checks.ts', "(max !== undefined && count > max)) v.fail('selections')", "(max !== undefined && count >= max)) v.fail('selections')"),
   ts('check-selections-of-own-values', 'checks.ts', '  const count = v.values.length;', '  const count = v.answers.values.length;'),
@@ -1194,6 +1209,14 @@ const mutants = [
   // ---- C#: where .NET differs in the forms (ROADMAP 5.4a, ADR-0069) ----
   csf('last-label-of-other-digits', '!labels[^1].All(char.IsAsciiDigit)', '!labels[^1].All(char.IsDigit)'),
   csf('extension-of-other-digits', 'while (digitsAt > 0 && char.IsAsciiDigit(value[digitsAt - 1]))', 'while (digitsAt > 0 && char.IsDigit(value[digitsAt - 1]))'),
+
+  // ---- The options a choice's answers are held to, in C# (ROADMAP 5.5d, ADR-0077) ----
+  csv('resolved-ignored', 'input.Options is { } resolved', 'field.Options is null && input.Options is { } resolved'),
+  csv('list-unresolved-as-none', '                _ => null,', '                _ => [],'),
+  csv('parent-ignored', 'if (field.Options?.Parent is { } parent)', 'if (field.Options?.Parent is { } parent && parent == Guid.Empty)'),
+  csv('every-answers-option-dropped', 'option.ParentValues.Count == 0 || option.ParentValues.Any(answers.Contains)', 'option.ParentValues.Any(answers.Contains)'),
+  csv('all-parent-answers', 'option.ParentValues.Any(answers.Contains)', 'option.ParentValues.All(answers.Contains)'),
+  csv('other-fields-answers', 'input.Values.TryGetValue(parent, out var values) ? values : []', 'parent == Guid.Empty ? [] : input.Values.Values.SelectMany(each => each).ToImmutableArray()'),
 ];
 
 // ---- Running ----

@@ -44,7 +44,7 @@ public sealed class BuiltInChoiceValidationTests
         yield return Case("not an option", Chosen("dropdown", null, Colours, "purple"), "invalid");
         yield return Case("an option compares exactly", Chosen("dropdown", null, Colours, "Green"), "invalid");
         yield return Case("no options of its own", Chosen("dropdown", null, [], "red"), "invalid");
-        yield return Case("options from a list are the list's", Chosen("dropdown", null, null, "purple"));
+        yield return Case("a list that could not give its options takes any answer", Chosen("dropdown", null, null, "purple"));
         const string Several = """{"multiple":true,"minSelections":2,"maxSelections":3}""";
         yield return Case("at its fewest", Chosen("dropdown", Several, Colours, "red", "green"));
         yield return Case("below its fewest", Chosen("dropdown", Several, Colours, "red"), "selections");
@@ -52,7 +52,7 @@ public sealed class BuiltInChoiceValidationTests
         yield return Case("past its most", Chosen("dropdown", Several, Colours, "red", "green", "blue", "white"), "selections");
         yield return Case("several without limits", Chosen("dropdown", """{"multiple":true}""", Colours, "red", "green", "blue", "white"));
         yield return Case("not an option, then too many", Chosen("dropdown", Several, Colours, "red", "green", "blue", "pink"), "invalid", "selections");
-        yield return Case("several from a list still count", Chosen("dropdown", """{"multiple":true,"maxSelections":1}""", null, "red", "green"), "selections");
+        yield return Case("several from a list that could not give its options still count", Chosen("dropdown", """{"multiple":true,"maxSelections":1}""", null, "red", "green"), "selections");
         yield return Case("one choice counts no selections", Chosen("dropdown", """{"minSelections":2}""", Colours, "red"));
 
         yield return Case("an option", Chosen("radio", null, ["yes", "no"], "no"));
@@ -61,7 +61,7 @@ public sealed class BuiltInChoiceValidationTests
         yield return Case("the visitor's own other text", Other("radio", """{"other":true}""", "Now and then"));
         yield return Case("an option beside an other text", Other("radio", """{"other":true}""", "Now and then", "yes"));
         yield return Case("not an option beside an other text", Other("radio", """{"other":true}""", "maybe", "maybe"), "invalid");
-        yield return Case("options from a list are the list's", Chosen("radio", null, null, "maybe"));
+        yield return Case("a list that could not give its options takes any answer", Chosen("radio", null, null, "maybe"));
 
         yield return Case("options", Chosen("checkboxes", null, Channels, "email", "post"));
         yield return Case("not an option", Chosen("checkboxes", null, Channels, "email", "fax"), "invalid");
@@ -75,7 +75,7 @@ public sealed class BuiltInChoiceValidationTests
         yield return Case("the other text alone at its fewest", Other("checkboxes", """{"other":true,"minSelections":1}""", "pigeon"));
         yield return Case("an other text that repeats an option counts once", Other("checkboxes", """{"other":true,"maxSelections":2}""", "email", "email", "phone"));
         yield return Case("an other text it does not offer is left", Other("checkboxes", """{"maxSelections":2}""", "pigeon", "email", "phone"));
-        yield return Case("options from a list are the list's", Chosen("checkboxes", """{"maxSelections":3}""", null, "fax", "telex"));
+        yield return Case("a list that could not give its options takes any answer", Chosen("checkboxes", """{"maxSelections":3}""", null, "fax", "telex"));
 
         yield return Case("each row a column", Grid(null, Agreement, (Price, ["agree"]), (Staff, ["disagree"])));
         yield return Case("a row not a column", Grid(null, Agreement, (Price, ["agree"]), (Staff, ["strongly"])), "invalid");
@@ -92,7 +92,7 @@ public sealed class BuiltInChoiceValidationTests
         yield return Case("the scale's default start", Grid("""{"scale":{"to":7}}""", null, (Price, ["1"]), (Staff, ["7"])));
         yield return Case("before the scale's default start", Grid("""{"scale":{"to":7}}""", null, (Price, ["0"])), "invalid");
         yield return Case("a scale and options", Grid("""{"scale":{"from":1,"to":3}}""", Agreement, (Price, ["agree"])), "invalid");
-        yield return Case("options from a list are the list's", Grid(null, null, (Price, ["whatever"])));
+        yield return Case("a list that could not give its options takes any answer", Grid(null, null, (Price, ["whatever"])));
 
         yield return Case("all the options", Chosen("ranking", null, Aspects, "quality", "price", "speed", "service"));
         yield return Case("one option left out", Chosen("ranking", null, Aspects, "quality", "price", "speed"), "invalid");
@@ -101,7 +101,7 @@ public sealed class BuiltInChoiceValidationTests
         yield return Case("three for its top two", Chosen("ranking", """{"top":2}""", Aspects, "speed", "price", "quality"), "invalid");
         yield return Case("one for its top two", Chosen("ranking", """{"top":2}""", Aspects, "speed"), "invalid");
         yield return Case("a top past its options", Chosen("ranking", """{"top":9}""", Aspects, "quality", "price", "speed", "service"));
-        yield return Case("options from a list are the list's", Chosen("ranking", """{"top":2}""", null, "looks"));
+        yield return Case("a list that could not give its options takes any answer", Chosen("ranking", """{"top":2}""", null, "looks"));
 
         yield return Case("any country without a list", Chosen("country", null, null, "CH"));
         yield return Case("an allowed country", Chosen("country", """{"allowed":["AT","CH","DE"]}""", null, "AT"));

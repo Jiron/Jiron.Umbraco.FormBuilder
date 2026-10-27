@@ -4,6 +4,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Microsoft.Extensions.Logging;
@@ -15,9 +16,10 @@ namespace Jiron.Umbraco.FormBuilder.Core.Entries;
 /// answer cleaned, held to its type's limits and read by its type before the rules; a repeatable group's rows counted
 /// and held to its limits; the rules over what was read, with every calculation worked out by the server; a hidden
 /// field's server-only value resolved; and each field the rules leave shown checked, a repeatable group's children row
-/// by row. What the rules hide is neither checked nor stored.
+/// by row, a choice whose options come from a list or another source against the options it resolves (ADR-0077). What
+/// the rules hide is neither checked nor stored.
 /// </summary>
-internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBuilderMergeTagService mergeTags, ILogger<SubmissionReader> logger)
+internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBuilderMergeTagService mergeTags, IFormBuilderOptionService options, ILogger<SubmissionReader> logger)
 {
     /// <summary>Reads a submission's answers over its form.</summary>
     /// <param name="post">The submission.</param>
@@ -50,7 +52,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         }
 
         var stored = Stored(slots, state, post);
-        return new SubmissionAnswers(stored, Errors(slots, state, post, today), state, ForMergeTags(stored, state));
+        return new SubmissionAnswers(stored, await ErrorsAsync(slots, state, post, today, cancellationToken), state, ForMergeTags(stored, state));
     }
 
     // Every field of the version whose type the site has, outside repeatable groups and in the form's order, with its
@@ -305,11 +307,12 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
     // The errors of the shown fields in the form's order: a group's own, then its children's row by row; for each field
     // its type's error kinds, its own checks and the form-level validation rules whose message shows at it.
-    private static ImmutableArray<SubmissionError> Errors(List<Slot> slots, FormState state, PostedSubmission post, DateOnly today)
+    private async Task<ImmutableArray<SubmissionError>> ErrorsAsync(List<Slot> slots, FormState state, PostedSubmission post, DateOnly today, CancellationToken cancellationToken)
     {
         var hidden = state.Hidden.ToHashSet(StringComparer.Ordinal);
         var required = state.Required.ToHashSet(StringComparer.Ordinal);
         var others = Others(slots, state, hidden);
+        var resolved = new Dictionary<(Guid Field, string Parents), FormBuilderResolvedOptions>();
         var errors = ImmutableArray.CreateBuilder<SubmissionError>();
         foreach (var slot in slots)
         {
@@ -321,7 +324,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
             if (!slot.IsGroup)
             {
-                Check(errors, slot, null, required.Contains(id), others, post, today);
+                Check(errors, slot, null, required.Contains(id), others, await OfferedAsync(slot, others, post, resolved, cancellationToken), post, today);
                 Messages(errors, state.Messages, slot.Field, null);
                 continue;
             }
@@ -342,7 +345,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
                     var childId = DefinitionLogic.Id(child.Field.Key);
                     if (!rows[row].Hidden.Contains(childId))
                     {
-                        Check(errors, child, row, rows[row].Required.Contains(childId), rowOthers, post, today);
+                        Check(errors, child, row, rows[row].Required.Contains(childId), rowOthers, await OfferedAsync(child, rowOthers, post, resolved, cancellationToken), post, today);
                         Messages(errors, rows[row].Messages, child.Field, row);
                     }
                 }
@@ -352,14 +355,48 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         return errors.ToImmutable();
     }
 
+    // The options a list or another source resolves for a field with an answer to check (ADR-0077), in the submission's
+    // culture and page and for its parent's answers as the rules see them, asked for once per field and parent answers;
+    // null for a field whose options are its own, and for one whose source cannot give them, which is logged.
+    private async Task<IReadOnlyList<FormBuilderOption>?> OfferedAsync(
+        Slot slot,
+        Dictionary<Guid, ImmutableArray<string>> others,
+        PostedSubmission post,
+        Dictionary<(Guid Field, string Parents), FormBuilderResolvedOptions> resolved,
+        CancellationToken cancellationToken)
+    {
+        if (slot.Field.Options is not { Source: not OptionSource.Items } source || slot.OverLimit is not null || slot.Values.IsEmpty)
+        {
+            return null;
+        }
+
+        var parentValues = source.Parent is { } parent && others.TryGetValue(parent, out var values) ? values : [];
+
+        // Each value after its length, so no two lists of values make one key.
+        var key = (slot.Field.Key, string.Concat(parentValues.Select(value => $"{value.Length}:{value}")));
+        if (!resolved.TryGetValue(key, out var found))
+        {
+            found = await options.GetAsync(slot.Field, new FormBuilderOptionContext(post.Scope.Culture) { ParentValues = parentValues, Page = post.Scope.Page }, cancellationToken);
+            resolved[key] = found;
+            if (!found.IsAvailable)
+            {
+                LogOptionsUnavailable(logger, slot.Field.Alias ?? DefinitionLogic.Id(slot.Field.Key));
+            }
+        }
+
+        return found.IsAvailable ? found.Options : null;
+    }
+
     // One shown field's errors: over its type's limits alone; a file token that stands for no upload of the field as
-    // invalid; otherwise its type's check and its own checks (FieldValues.Check). A calculation's value is the server's.
+    // invalid; otherwise its type's check, against the options its source resolved, and its own checks
+    // (FieldValues.Check). A calculation's value is the server's.
     private static void Check(
         ImmutableArray<SubmissionError>.Builder errors,
         Slot slot,
         int? row,
         bool isRequired,
         IReadOnlyDictionary<Guid, ImmutableArray<string>> others,
+        IReadOnlyList<FormBuilderOption>? offered,
         PostedSubmission post,
         DateOnly today)
     {
@@ -387,7 +424,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
             files = [.. uploads.Select(upload => new FieldFile(upload.OriginalName, upload.SizeBytes))];
         }
 
-        var found = FieldValues.Check(slot.Type, slot.Field, slot.Read, new FieldCheckInput(isRequired, today) { Files = files, Values = others });
+        var found = FieldValues.Check(slot.Type, slot.Field, slot.Read, new FieldCheckInput(isRequired, today) { Files = files, Values = others, Options = offered });
         errors.AddRange(found.Errors.Select(error => new SubmissionError(key, row, error)));
         errors.AddRange(found.Checks.Select(check => new SubmissionError(key, row, FieldMessageKinds.None, Check: check)));
     }
@@ -451,6 +488,9 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The value the server resolves for the field '{Field}' is longer than its type takes, so the entry stores none.")]
     private static partial void LogValueTooLong(ILogger logger, string field);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The options of the field '{Field}' could not be resolved, so its answers are taken without being held to them.")]
+    private static partial void LogOptionsUnavailable(ILogger logger, string field);
 
     // One field's answer in the submission: the field and its type, what its type read, and a repeatable group's rows.
     private sealed class Slot(FormField field, IFormBuilderFieldType type)

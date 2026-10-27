@@ -4,6 +4,7 @@ using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Microsoft.Extensions.Logging;
 using MergeTagEngine = Jiron.Umbraco.FormBuilder.Logic.MergeTags;
@@ -16,23 +17,39 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 internal sealed record AnswerField(FormField Field, FormField? Repeater);
 
 /// <summary>
+/// What a scope's answers show besides their values, read once for every tag of a rendering: the dictionary's texts
+/// that the form names, and the labels of the options that lists and other sources resolve for its answered fields
+/// (ADR-0077), by field and then by value.
+/// </summary>
+/// <param name="Dictionary">The dictionary's texts in the scope's culture.</param>
+/// <param name="OptionLabels">For each answered field whose options come from a list or another source, its options' labels by value.</param>
+internal sealed record ScopeTexts(DictionaryTexts Dictionary, IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, string>> OptionLabels);
+
+/// <summary>
 /// The answers as merge tags show them (ADR-0014, ADR-0066), for <c>field.*</c> and <c>entry.answers</c>: each field's
 /// texts as its type writes them, what the rules hid empty, and a sensitive field masked or left out as the place
 /// decides. A label, an option's label or another text of the field that names a dictionary item (<c>#key</c>, ADR-0002)
-/// shows the item's text in the culture (ADR-0067). A type whose display throws is logged with its alias and the
-/// exception's type and stack, and its field shows as the default display would show it.
+/// shows the item's text in the culture (ADR-0067), and an option from a list or another source the label the source
+/// resolves in the culture (ADR-0077). A type whose display throws is logged with its alias and the exception's type
+/// and stack, and its field shows as the default display would show it.
 /// </summary>
 /// <param name="types">The field types.</param>
 /// <param name="cultures">The culture formats.</param>
 /// <param name="dictionary">Umbraco's dictionary.</param>
+/// <param name="options">The options of lists and other sources.</param>
 /// <param name="logger">Where a type's failing display goes.</param>
-internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, MergeTagCultures cultures, MergeTagDictionary dictionary, ILogger<MergeTagAnswerTexts> logger)
+internal sealed partial class MergeTagAnswerTexts(
+    FieldTypeRegistry types,
+    MergeTagCultures cultures,
+    MergeTagDictionary dictionary,
+    IFormBuilderOptionService options,
+    ILogger<MergeTagAnswerTexts> logger)
 {
     /// <summary>What a sensitive field shows where its answer may not be shown: three bullets.</summary>
     public static readonly string Masked = new((char)0x2022, 3);
 
-    /// <summary>The dictionary texts each scope's form names, read once for every tag of a rendering.</summary>
-    private readonly ConditionalWeakTable<MergeTagScope, DictionaryTexts> _dictionaries = new();
+    /// <summary>The texts each scope's answers show besides their values, read once for every tag of a rendering.</summary>
+    private readonly ConditionalWeakTable<MergeTagScope, ScopeTexts> _texts = new();
 
     /// <summary>How a field shows in a place.</summary>
     private enum Showing
@@ -89,26 +106,32 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
         texts.Resolve(field.Label, culture) is { Length: > 0 } label ? label : field.Alias ?? string.Empty;
 
     /// <summary>
-    /// The texts of the dictionary items that the scope's form names in the texts its answers show (labels, options' labels,
-    /// grid rows and the strings of the fields' settings), in the scope's culture; read once per scope, and not at all for
-    /// a form that names none.
+    /// What the scope's answers show besides their values, in the scope's culture, read once per scope: the texts of the
+    /// dictionary items that its form names in the texts its answers show (labels, options' labels, grid rows and the
+    /// strings of the fields' settings), not read at all for a form that names none; and the labels of the options that a
+    /// list or another source resolves for each answered field the rules did not hide, on the scope's page and for all of
+    /// its parent's answers (ADR-0077), none for a source that cannot give them.
     /// </summary>
-    public async Task<DictionaryTexts> DictionaryAsync(MergeTagScope scope)
+    /// <param name="scope">What the template renders for.</param>
+    /// <param name="cancellationToken">Cancelled when the rendering is.</param>
+    public async Task<ScopeTexts> TextsAsync(MergeTagScope scope, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(scope);
-        if (_dictionaries.TryGetValue(scope, out var known))
+        if (_texts.TryGetValue(scope, out var known))
         {
             return known;
         }
 
         var keys = DictionaryKeys(scope.Form, scope.Culture);
-        var texts = keys.Count == 0 ? DictionaryTexts.None : await dictionary.TextsAsync(keys, scope.Culture);
-        _dictionaries.AddOrUpdate(scope, texts);
+        var texts = new ScopeTexts(
+            keys.Count == 0 ? DictionaryTexts.None : await dictionary.TextsAsync(keys, scope.Culture),
+            await OptionLabelsAsync(scope, cancellationToken));
+        _texts.AddOrUpdate(scope, texts);
         return texts;
     }
 
     /// <summary><c>field.&lt;alias&gt;</c>: the answer as its type shows it, a list where the type takes several values.</summary>
-    public MergeTagValue Display(AnswerField target, MergeTagScope scope, MergeTagPlace place, DictionaryTexts texts) =>
+    public MergeTagValue Display(AnswerField target, MergeTagScope scope, MergeTagPlace place, ScopeTexts texts) =>
         Resolve(target, scope, place, answer => Items(Texts(target.Field, answer, scope.Culture, listing: false, texts, Shared(place))));
 
     /// <summary><c>field.&lt;alias&gt;.value</c>: the values in the wire form, with the wire number or date behind each.</summary>
@@ -135,7 +158,7 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
     /// <c>field.&lt;repeater&gt;</c>: a list of the answered rows, each its children's answers as <c>Label: answer</c>
     /// apart by "; ".
     /// </summary>
-    public MergeTagValue Rows(FormField repeater, MergeTagScope scope, MergeTagPlace place, DictionaryTexts texts)
+    public MergeTagValue Rows(FormField repeater, MergeTagScope scope, MergeTagPlace place, ScopeTexts texts)
     {
         var rows = RowTexts(repeater, scope, place, listing: false, texts);
         return Of(new AnswerField(repeater, null), scope, place) switch
@@ -150,7 +173,7 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
     /// <c>entry.answers</c>: every answered field the rules did not hide, in the order of the form, as <c>Label: answer</c>
     /// lines, and as a table in HTML; what the place leaves out is not listed (ADR-0014).
     /// </summary>
-    public MergeTagValue Answers(MergeTagScope scope, MergeTagPlace place, DictionaryTexts texts)
+    public MergeTagValue Answers(MergeTagScope scope, MergeTagPlace place, ScopeTexts texts)
     {
         var listed = new List<(string Label, string? Answer, IReadOnlyList<string> Rows)>();
         foreach (var field in scope.Form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Where(HoldsValue))
@@ -161,7 +184,7 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
                 continue;
             }
 
-            var label = Label(field, scope.Culture, texts);
+            var label = Label(field, scope.Culture, texts.Dictionary);
             if (IsRepeater(field))
             {
                 var rows = RowTexts(field, scope, place, listing: true, texts);
@@ -222,11 +245,12 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
 
     /// <summary>
     /// The texts a field's answer shows as, in a culture, as its type writes them, with the dictionary's texts for the
-    /// field's texts that name an item; the values as they are for a type the site no longer has, and the default display
-    /// for a type whose own throws. Where the browser renders the same texts (<paramref name="shared"/>, ADR-0068), only
-    /// a built-in type writes its own; a site's type shows the default of its rule kind, which the browser knows too.
+    /// field's texts that name an item and the labels its list or source resolved; the values as they are for a type the
+    /// site no longer has, and the default display for a type whose own throws. Where the browser renders the same texts
+    /// (<paramref name="shared"/>, ADR-0068), only a built-in type writes its own; a site's type shows the default of its
+    /// rule kind, which the browser knows too.
     /// </summary>
-    public IReadOnlyList<FieldDisplay.DisplayText> Texts(FormField field, MergeTagAnswer answer, string culture, bool listing, DictionaryTexts texts, bool shared = false)
+    public IReadOnlyList<FieldDisplay.DisplayText> Texts(FormField field, MergeTagAnswer answer, string culture, bool listing, ScopeTexts texts, bool shared = false)
     {
         if (types.FindType(field.Type) is not { } type)
         {
@@ -234,7 +258,8 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
         }
 
         var formats = cultures.For(culture);
-        var display = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts);
+        var labels = texts.OptionLabels.GetValueOrDefault(field.Key);
+        var display = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts.Dictionary, labels);
         try
         {
             if (shared && !BuiltInFieldTypes.All.Contains(type.GetType()))
@@ -251,7 +276,7 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             LogDisplayFailed(logger, type.Declaration.Alias, exception.GetType().FullName, exception.StackTrace);
-            var fallback = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts);
+            var fallback = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts.Dictionary, labels);
             FieldDisplayDefaults.Display(type.Declaration, fallback);
             return fallback.Texts;
         }
@@ -292,7 +317,7 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
     }
 
     /// <summary>Each answered row of a repeatable group as its children's <c>Label: answer</c> apart by "; ", in the order of its rows.</summary>
-    private List<string> RowTexts(FormField repeater, MergeTagScope scope, MergeTagPlace place, bool listing, DictionaryTexts texts)
+    private List<string> RowTexts(FormField repeater, MergeTagScope scope, MergeTagPlace place, bool listing, ScopeTexts texts)
     {
         var rows = new List<string>();
         foreach (var row in scope.Answers.Rows(repeater.Fields.Select(child => child.Key)))
@@ -310,7 +335,7 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
                 var answerText = showing == Showing.Masked ? Masked : Joined(Texts(child, answer, scope.Culture, listing, texts, !listing && Shared(place)));
                 if (answerText.Length > 0)
                 {
-                    pieces.Add(Label(child, scope.Culture, texts) + ": " + answerText);
+                    pieces.Add(Label(child, scope.Culture, texts.Dictionary) + ": " + answerText);
                 }
             }
 
@@ -382,6 +407,48 @@ internal sealed partial class MergeTagAnswerTexts(FieldTypeRegistry types, Merge
     /// <summary>Whether a field's tag is a list whatever its answer: a type that takes several choices or files, or has rows.</summary>
     private bool IsMany(FormField field) =>
         types.Find(field.Type) is { } traits && (traits.KindOf(field) is FieldKind.Choices or FieldKind.Files || traits.Supports(FieldFeatures.Rows));
+
+    /// <summary>
+    /// The labels of the options a list or another source resolves for each answered field the rules did not hide, by
+    /// value: in the scope's culture and on its page, for all of the parent's answers in every row; a value without a
+    /// label shows itself.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, string>>> OptionLabelsAsync(MergeTagScope scope, CancellationToken cancellationToken)
+    {
+        var labels = new Dictionary<Guid, IReadOnlyDictionary<string, string>>();
+        foreach (var found in Fields(scope.Form))
+        {
+            var field = found.Field;
+            if (field.Options is not { Source: not OptionSource.Items } source || IsHidden(found, scope) || AnswersOf(scope, field.Key).Count == 0)
+            {
+                continue;
+            }
+
+            var parentValues = source.Parent is { } parent ? AnswersOf(scope, parent) : [];
+            var context = new FormBuilderOptionContext(scope.Culture) { ParentValues = parentValues, Page = scope.Page };
+            var resolved = await options.GetAsync(field, context, cancellationToken);
+            var byValue = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var option in resolved.Options)
+            {
+                if (option.Label is { Length: > 0 } label)
+                {
+                    byValue.TryAdd(option.Value, label);
+                }
+            }
+
+            labels[field.Key] = byValue;
+        }
+
+        return labels;
+    }
+
+    /// <summary>A field's values in every row it has an answer in, each once, in their order.</summary>
+    private static List<string> AnswersOf(MergeTagScope scope, Guid field) =>
+        [.. scope.Answers.Rows([field])
+            .Select(row => scope.Answers.Find(field, row))
+            .OfType<MergeTagAnswer>()
+            .SelectMany(answer => answer.Values.Where(value => value.Row is null).Select(value => value.Text))
+            .Distinct(StringComparer.Ordinal)];
 
     /// <summary>The dictionary keys the texts of the form's fields that hold a value name in a culture.</summary>
     private HashSet<string> DictionaryKeys(FormDefinition form, string culture)

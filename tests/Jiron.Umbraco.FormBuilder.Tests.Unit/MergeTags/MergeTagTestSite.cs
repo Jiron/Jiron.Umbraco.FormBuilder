@@ -1,9 +1,11 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
+using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 
@@ -12,7 +14,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
 /// <summary>
 /// A site for the merge-tag tests (ADR-0065): the service over the built-in sources and the site's own, a form whose
 /// settings the tests choose, the scope a template renders for, and the log of the sources and filters that failed.
-/// The Umbraco sources read a <see cref="TestUmbraco"/>, empty unless the test gives one (ADR-0067).
+/// The Umbraco sources read a <see cref="TestUmbraco"/>, empty unless the test gives one (ADR-0067), and options from
+/// lists and other sources come from the option service the test gives, or from a site with no lists (ADR-0077).
 /// </summary>
 internal static class MergeTagTestSite
 {
@@ -68,7 +71,8 @@ internal static class MergeTagTestSite
     /// <summary>
     /// The service of a site with its own sources and filters, whose time zone is <paramref name="zone"/> and whose
     /// general settings give <paramref name="baseUrl"/>, on a clock that starts at 2026-01-01 00:00 UTC unless the test
-    /// gives one, over the Umbraco the test gives, printing with .NET's culture data unless the test gives formats.
+    /// gives one, over the Umbraco the test gives, printing with .NET's culture data unless the test gives formats, with
+    /// the options of lists and other sources from <paramref name="options"/>.
     /// </summary>
     public static Site Create(
         IEnumerable<IFormBuilderMergeTagSource>? sources = null,
@@ -78,7 +82,8 @@ internal static class MergeTagTestSite
         FieldTypeRegistry? types = null,
         TestUmbraco? umbraco = null,
         string? baseUrl = null,
-        MergeTagCultures? cultures = null)
+        MergeTagCultures? cultures = null,
+        IFormBuilderOptionService? options = null)
     {
         umbraco ??= new TestUmbraco();
         var settings = Settings(zone, baseUrl);
@@ -86,7 +91,7 @@ internal static class MergeTagTestSite
         cultures ??= new MergeTagCultures();
         var log = new RecordingLogger();
         var dictionary = umbraco.DictionaryTexts();
-        var answers = new MergeTagAnswerTexts(types ?? TestFieldTypes.Registry, cultures, dictionary, log);
+        var answers = new MergeTagAnswerTexts(types ?? TestFieldTypes.Registry, cultures, dictionary, options ?? new OptionListTestSite().Options(), log);
         var registry = new MergeTagRegistry(
             FormBuilderMergeTagServices.BuiltInSources(clock, cultures, answers, umbraco.Umbraco(), umbraco.BaseUrls(settings), dictionary),
             new FormBuilderMergeTagSourceCollection(() => sources ?? []),

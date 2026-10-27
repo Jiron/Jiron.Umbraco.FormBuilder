@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing;
 
@@ -13,15 +14,18 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Logic;
 /// Runs a vector's <c>field</c> through its built-in type as the pipeline will (ADR-0058, ADR-0062): its answers read,
 /// then checked, with the form's other fields' values. First it holds the vector to what both runtimes see alike: the
 /// field gives every public setting its type has a default for, an object's settings each in turn, as the public
-/// projection writes them; its kind is its type's; it has options and rows only when its type has them; a field that
-/// stores files has one file for each value; and its answers are readable already cleaned as the pipeline cleans them,
-/// with the values posted as they read, because only Core reads answers until the browser's runtime (6.4).
+/// projection writes them; its kind is its type's; it has options, a source and rows only when its type has them,
+/// options or a source when its type cannot be answered without, and a parent only with options or a source; a field
+/// that stores files has one file for each value; and its answers are readable already cleaned as the pipeline cleans
+/// them, with the values posted as they read, because only Core reads answers until the browser's runtime (6.4). A field
+/// whose options come from a source (<c>fromSource</c>) is one of a library list, whose options the vector gives as
+/// those the list resolved, handed to the check as the reader hands them (ADR-0077).
 /// </summary>
 internal static class FieldVector
 {
     private static readonly Guid Key = new("2b1f5c8e-0d3a-4e7b-9c61-5a8f3d2e4b70");
 
-    // The library list a choice without options of its own takes them from, whose answers 5.5 checks.
+    // The library list a field whose options come from a source takes them from.
     private static readonly Guid List = new("6d0e2f4a-8b1c-4c3d-9e5f-7a6b5c4d3e2f");
 
     /// <summary>The field's errors as both runners write them: <c>{ "errors": [...], "checks": [...] }</c>.</summary>
@@ -43,11 +47,26 @@ internal static class FieldVector
         }
 
         var hasOptions = field.TryGetProperty("options", out var options);
+        var hasSource = field.TryGetProperty("fromSource", out var source);
+        var fromSource = hasSource && source.GetBoolean();
         var hasRows = field.TryGetProperty("rows", out var rows);
-        if ((hasOptions && !type.Declaration.Features.HasFlag(FieldFeatures.Options)) || (hasRows && !type.Declaration.Features.HasFlag(FieldFeatures.Rows)))
+        var parent = field.TryGetProperty("parent", out var parentId) ? Guid.Parse(parentId.GetString()!, CultureInfo.InvariantCulture) : (Guid?)null;
+        if (((hasOptions || hasSource) && !type.Declaration.Features.HasFlag(FieldFeatures.Options)) || (hasRows && !type.Declaration.Features.HasFlag(FieldFeatures.Rows)))
         {
             throw new AssertionException($"{id}: a {alias} field has no options or rows of its own.");
         }
+
+        if (type.Declaration.Features.HasFlag(FieldFeatures.NeedsOptions) && !hasOptions && !fromSource)
+        {
+            throw new AssertionException($"{id}: a {alias} field gives its options, or that they come from a source.");
+        }
+
+        if (parent is not null && !hasOptions && !fromSource)
+        {
+            throw new AssertionException($"{id}: only a field with options or a source has a parent.");
+        }
+
+        List<FormBuilderOption> offered = hasOptions ? [.. options.EnumerateArray().Select(Option)] : [];
 
         var required = field.TryGetProperty("required", out var flag) && flag.GetBoolean();
         var definition = new FormField
@@ -57,9 +76,11 @@ internal static class FieldVector
             Alias = "field",
             Required = required,
             Settings = settings.ValueKind == JsonValueKind.Object ? SettingsObject.Parse(settings.GetRawText()) : null,
-            Options = hasOptions
-                ? new FieldOptions { Items = [.. VectorReader.Strings(options).Select(value => new FieldOption { Value = value })] }
-                : type.Declaration.Features.HasFlag(FieldFeatures.Options) ? new FieldOptions { Source = OptionSource.List, OptionList = List } : null,
+            Options = fromSource
+                ? new FieldOptions { Source = OptionSource.List, OptionList = List, Parent = parent }
+                : hasOptions
+                    ? new FieldOptions { Items = [.. offered.Select(option => new FieldOption { Value = option.Value, ParentValues = option.ParentValues })], Parent = parent }
+                    : null,
             Rows = hasRows ? [.. rows.EnumerateArray().Select(Row)] : [],
             Validation = field.TryGetProperty("checks", out var checks) ? [.. checks.EnumerateArray().Select(Check)] : [],
         };
@@ -94,7 +115,8 @@ internal static class FieldVector
         var others = values.ValueKind == JsonValueKind.Object
             ? VectorReader.Values(values).ToDictionary(pair => Guid.Parse(pair.Key, CultureInfo.InvariantCulture), pair => pair.Value.ToImmutableArray())
             : new Dictionary<Guid, ImmutableArray<string>>();
-        var errors = FieldValues.Check(type, definition, read, new FieldCheckInput(required, today) { Files = files, Values = others });
+        var input = new FieldCheckInput(required, today) { Files = files, Values = others, Options = fromSource && hasOptions ? offered : null };
+        var errors = FieldValues.Check(type, definition, read, input);
         return new JsonObject
         {
             ["errors"] = new JsonArray([.. errors.Errors.Select(error => (JsonNode)FieldMessageProperties.All.Single(property => property.Kind == error).Name)]),
@@ -123,6 +145,14 @@ internal static class FieldVector
             }
         }
     }
+
+    // An option as the vectors write it: its value, or its value with the parent answers it belongs to (ADR-0077).
+    private static FormBuilderOption Option(JsonElement option) => option.ValueKind == JsonValueKind.String
+        ? new FormBuilderOption(option.GetString()!)
+        : new FormBuilderOption(option.GetProperty("value").GetString()!)
+        {
+            ParentValues = option.TryGetProperty("parentValues", out var parentValues) ? VectorReader.Strings(parentValues) : [],
+        };
 
     // A grid's row as the projection writes it: its id, and whether it is marked required (ADR-0069).
     private static GridRow Row(JsonElement row) => new()

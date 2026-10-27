@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Logic;
 
@@ -21,9 +22,17 @@ internal sealed record FieldCheckInput(bool IsRequired, DateOnly Today)
 
     /// <summary>
     /// The values of the form's other fields by key, as the rules see them (a hidden field has none), which a
-    /// <c>matchesField</c> check compares the field's values with.
+    /// <c>matchesField</c> check compares the field's values with, and whose parent's values filter a cascading field's
+    /// options (ADR-0077).
     /// </summary>
     public IReadOnlyDictionary<Guid, ImmutableArray<string>> Values { get; init; } = ImmutableDictionary<Guid, ImmutableArray<string>>.Empty;
+
+    /// <summary>
+    /// The options the field's list or other source resolved for the submission, each with the parent answers it belongs
+    /// to (ADR-0077); null for a field whose options are its own, which the check reads from the field, and for one whose
+    /// source could not give its options, which then takes any answer.
+    /// </summary>
+    public IReadOnlyList<FormBuilderOption>? Options { get; init; }
 }
 
 /// <summary>A visible field's errors (ADR-0062).</summary>

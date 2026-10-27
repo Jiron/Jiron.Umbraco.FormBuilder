@@ -24,6 +24,12 @@ export interface CheckedRow {
   readonly required?: boolean;
 }
 
+/**
+ * An option as a field's checks read it (ADR-0077): its value, or its value with the parent answers it belongs to; one
+ * that names no parent values belongs to every answer.
+ */
+export type CheckedOption = string | { readonly value: string; readonly parentValues?: readonly string[] };
+
 /** A field as its checks read it: its type, its rule kind, whether it is required, its settings, options and checks. */
 export interface CheckedField {
   readonly type: string;
@@ -33,10 +39,12 @@ export interface CheckedField {
   /** The public settings with their effective values, as the public projection writes them; a missing one sets no limit. */
   readonly settings?: Readonly<Record<string, unknown>>;
   /**
-   * The values of the field's own options, none when it has none; absent when its options come from a list or another
-   * source, whose answers the server holds to the options the source resolves (ROADMAP 5.5).
+   * The options the answers are held to (ADR-0077): the field's own, or those its list or another source resolved for
+   * the page; absent when its source could not give them, and then any answer is taken, as on the server.
    */
-  readonly options?: readonly string[];
+  readonly options?: readonly CheckedOption[];
+  /** The id of the field whose answers filter the options (cascading); an option belongs to the answers it names. */
+  readonly parent?: string;
   /** A grid's rows. */
   readonly rows?: readonly CheckedRow[];
   /** The field's own checks, in their order. */
@@ -73,7 +81,7 @@ interface Validation {
   readonly values: readonly string[];
   readonly answers: FieldAnswers;
   readonly settings: Settings;
-  /** The field's own options; null when they come from a list or another source. */
+  /** The values of the options the answers are held to; null when the field's source could not give them. */
   readonly options: ReadonlySet<string> | null;
   /** A grid's rows; none for any other field. */
   readonly rows: readonly CheckedRow[];
@@ -413,12 +421,29 @@ function ownChecks(
 }
 
 /**
+ * The values of the options a field's answers are held to (ADR-0077): with a parent, only those that belong to the
+ * parent's answers, an option that names no parent value belonging to every answer; null when the field has none to
+ * give, as a source that could not give its options.
+ */
+function offered(field: CheckedField, values: Readonly<Record<string, readonly string[]>>): ReadonlySet<string> | null {
+  if (field.options === undefined) return null;
+  const answers = field.parent === undefined ? null : (own(values, field.parent) ?? []);
+  const kept = new Set<string>();
+  for (const option of field.options) {
+    const [value, belongsTo] = typeof option === 'string' ? [option, []] : [option.value, option.parentValues ?? []];
+    if (answers === null || belongsTo.length === 0 || belongsTo.some((each) => answers.includes(each))) kept.add(value);
+  }
+  return kept;
+}
+
+/**
  * The errors of a field the rules leave visible (ADR-0058, ADR-0062): `required` when it has no answer and is
  * required, or has a row marked required (ADR-0069); `digits`, or `invalid` for a type without that kind, alone when
  * it compares as a number and a value has more digits than a stored number keeps exactly (ADR-0003); otherwise what
  * its type's check reports, each kind once, and the field's own checks that fail. A type without a check here has
  * none in the browser, and the server decides. Today comes from the context's instant and time zone, read only by a
- * date check; `values` are the form's other fields' values by id, as the rules see them.
+ * date check; `values` are the form's other fields' values by id, as the rules see them, of which a cascading field's
+ * parent's filter its options.
  */
 export function checkField(
   field: CheckedField,
@@ -448,7 +473,7 @@ export function checkField(
     values: read,
     answers,
     settings,
-    options: field.options === undefined ? null : new Set(field.options),
+    options: offered(field, values),
     rows,
     required: field.required === true,
     today: () => (day ??= todayIn(context.now, context.timeZone)),

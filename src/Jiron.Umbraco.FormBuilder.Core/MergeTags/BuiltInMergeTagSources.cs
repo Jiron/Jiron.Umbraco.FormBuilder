@@ -126,7 +126,7 @@ internal sealed class EntryMergeTagSource(MergeTagClock clock, MergeTagCultures 
 
         if (request.Path == "answers")
         {
-            return answers.Answers(request.Scope, request.Place, await answers.DictionaryAsync(request.Scope));
+            return answers.Answers(request.Scope, request.Place, await answers.TextsAsync(request.Scope, cancellationToken));
         }
 
         if (request.Scope.Entry is not { } entry)

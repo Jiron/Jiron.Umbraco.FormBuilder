@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
@@ -90,23 +89,12 @@ internal static class BuiltInValidation
         stepMinutes is not { } minutes || (seconds - from) % (minutes * 60) == 0;
 
     /// <summary>
-    /// The values of the field's own options, compared exactly; null when the options come from a list or another
-    /// source, whose answers are held to the options the source resolves (5.5). A field without options has none.
-    /// </summary>
-    public static IReadOnlySet<string>? OwnOptions(FormField field) => field.Options switch
-    {
-        null => new HashSet<string>(StringComparer.Ordinal),
-        { Source: OptionSource.Items } options => options.Items.Select(item => item.Value).ToHashSet(StringComparer.Ordinal),
-        _ => null,
-    };
-
-    /// <summary>
-    /// Fails <c>invalid</c> unless each of the answers' own values is one of the field's own options; the "Other" text,
-    /// which is a part, is the visitor's own.
+    /// Fails <c>invalid</c> unless each of the answers' own values is one of the options the field offers
+    /// (<see cref="FieldValidation.Options"/>, ADR-0077); the "Other" text, which is a part, is the visitor's own.
     /// </summary>
     public static void AmongOptions(FieldValidation validation)
     {
-        if (OwnOptions(validation.Field) is { } options && !validation.Answers.Values.All(options.Contains))
+        if (validation.Options is { } options && !validation.Answers.Values.All(options.Contains))
         {
             validation.Fail(FieldMessageKinds.Invalid);
         }

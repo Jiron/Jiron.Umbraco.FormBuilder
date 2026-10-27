@@ -4,7 +4,9 @@
   [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the message kind `confirmation`, and the
   settings in the public projection) and [ADR-0055](0055-field-type-framework.md) (the email type's message kinds);
   the forms of an email address, a phone number and a web address, a grid's required rows, a ranking's positions and
-  a number's stored digits added by [ADR-0069](0069-the-checks-from-text-to-country.md) in 5.4a
+  a number's stored digits added by [ADR-0069](0069-the-checks-from-text-to-country.md) in 5.4a; the options of a list
+  or another source and cascading options held in both runtimes by [ADR-0077](0077-answers-and-labels-from-resolved-options.md)
+  in 5.5d
 - Date: 2026-10-26
 - Roadmap step: 5.2b (decided; builds the contract and the text, number and date types), 5.2c (the choice, people and
   file types, `pattern` and `matchesField`); 5.4a adds the grid's required rows and a ranking's positions, 5.5 the
@@ -86,7 +88,8 @@ instant and time zone give today) and, from 5.2c, the values of the form's other
 The browser has no reading of its own until 6.4, so `checkField` reads what its checks need as Core reads answers it
 can read (5.2c): the "Other" text in place of an option on radio buttons, and after the options on checkboxes unless
 it repeats one; each grid row's values; the parts a name or an address asks for. A field whose options come from a
-list or another source has no `options` there.
+list or another source has those it resolved as its `options` since 5.5d, filtered by its `parent`'s answers, and
+none when the source could not give them (ADR-0077).
 
 ### The settings
 
@@ -180,8 +183,9 @@ through the same vectors.
 `tests/vectors/validation.json`, from `tests/vectors/suites/validation.mjs`, adds the runnable `field` to the
 `jfb-vectors/1` format (ADR-0005): the field (`type`, `kind`, `required`, `settings`, `options`, `rows`, `checks`) with
 its `answers` (`values`, `parts`, `files`), the other fields' `values` by id, and the expected errors and failing
-checks. `options` are the values of the field's own options; a field of a type with options that gives none takes them
-from a list. Ids are keys in the `D` format, as Core's model has them. Both runners check that a case's field gives
+checks. `options` are the values of the field's own options; since 5.5d an option may be `{ "value", "parentValues" }`,
+`parent` names the field whose answers filter them, and `fromSource` marks options a list or another source resolved,
+or, without `options`, a source that could not give any (ADR-0077). Ids are keys in the `D` format, as Core's model has them. Both runners check that a case's field gives
 every public setting its type has a default for, an object's settings each in turn, as the projection writes them, so
 no vector leans on a default; that its kind is its type's; that it has options and rows only when its type has them;
 that a field that stores files has one file for each value; and that its answers are cleaned as the pipeline cleans

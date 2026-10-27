@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.FieldTypes;
@@ -21,11 +22,20 @@ public sealed record ValidationCase(string Type, FieldAnswers Answers)
     /// <summary>The field's settings as JSON; null for its type's defaults.</summary>
     public string? Settings { get; init; }
 
-    /// <summary>
-    /// The values of the field's own options; null for a type with options to take them from a library list, whose
-    /// answers 5.5 checks.
-    /// </summary>
+    /// <summary>The values of the field's own options; null for a type with options to take them from a library list.</summary>
     public IReadOnlyList<string>? Options { get; init; }
+
+    /// <summary>The parent answers each of the field's own options belongs to, by the option's value (ADR-0077).</summary>
+    public IReadOnlyDictionary<string, string[]> ParentValues { get; init; } = new Dictionary<string, string[]>();
+
+    /// <summary>
+    /// For a field that takes its options from a library list, the options the list resolved, as the reader hands them
+    /// to the check; null when the list could not give them, and then any answer is taken (ADR-0077).
+    /// </summary>
+    public IReadOnlyList<FormBuilderOption>? Resolved { get; init; }
+
+    /// <summary>The key of the field whose answers filter the options (cascading); its values come with <see cref="Others"/>.</summary>
+    public Guid? Parent { get; init; }
 
     /// <summary>A grid's rows.</summary>
     public IReadOnlyList<Guid> Rows { get; init; } = [];
@@ -65,8 +75,8 @@ public sealed record ValidationCase(string Type, FieldAnswers Answers)
         Required = Required,
         Settings = Settings is null ? null : SettingsObject.Parse(Settings),
         Options = Options is { } own
-            ? new FieldOptions { Items = [.. own.Select(value => new FieldOption { Value = value })] }
-            : type.Declaration.Features.HasFlag(FieldFeatures.Options) ? new FieldOptions { Source = OptionSource.List, OptionList = List } : null,
+            ? new FieldOptions { Items = [.. own.Select(value => new FieldOption { Value = value, ParentValues = ParentValues.GetValueOrDefault(value) ?? [] })], Parent = Parent }
+            : type.Declaration.Features.HasFlag(FieldFeatures.Options) ? new FieldOptions { Source = OptionSource.List, OptionList = List, Parent = Parent } : null,
         Rows = [.. Rows.Select(row => new GridRow { Key = row, Required = RequiredRows.Contains(row) })],
         Validation = Checks,
     };
@@ -78,7 +88,7 @@ public sealed record ValidationCase(string Type, FieldAnswers Answers)
         var field = Field(type);
         var read = FieldValues.Read(type, field, Answers);
         Assert.That(read.IsUnreadable, Is.False, "the type reads the answers");
-        return FieldValues.Check(type, field, read, new FieldCheckInput(Required, Today) { Files = Files, Values = Others });
+        return FieldValues.Check(type, field, read, new FieldCheckInput(Required, Today) { Files = Files, Values = Others, Options = Resolved });
     }
 
     /// <summary>The names of the type's errors, in order.</summary>

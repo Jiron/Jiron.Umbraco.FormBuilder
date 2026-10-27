@@ -1,8 +1,10 @@
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.Configuration;
+using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -272,6 +274,7 @@ public sealed class SiteMergeTagExtensionsTests
         services.AddSingleton(TestFieldTypes.Registry);
         new TestUmbraco().Register(services);
         services.AddFormBuilderOptions(HostOptions.Configuration());
+        services.AddSingleton<IFormBuilderOptionService>(new OptionListTestSite().Options());
         var sourceBuilder = new FormBuilderMergeTagSourceCollectionBuilder();
         sources(sourceBuilder);
         sourceBuilder.RegisterWith(services);

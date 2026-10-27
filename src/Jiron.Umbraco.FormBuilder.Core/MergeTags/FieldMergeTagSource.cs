@@ -8,7 +8,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 /// <c>field.name.first</c>. A repeatable group's child, <c>field.&lt;repeater&gt;.&lt;child&gt;</c> or by its own alias,
 /// is a list with an item for each answered row, and the group itself a list of its rows. A field's former aliases
 /// resolve to it, after the fields whose alias it is, except in visitor texts, which the browser renders too without
-/// them (ADR-0068). Texts that name a dictionary item show the item's text (ADR-0067).
+/// them (ADR-0068). Texts that name a dictionary item show the item's text (ADR-0067), and an option from a list or
+/// another source the label it resolves (ADR-0077).
 /// </summary>
 /// <param name="answers">The answers as merge tags show them.</param>
 internal sealed class FieldMergeTagSource(MergeTagAnswerTexts answers) : IFiniteMergeTagSource
@@ -50,11 +51,11 @@ internal sealed class FieldMergeTagSource(MergeTagAnswerTexts answers) : IFinite
 
         return tag.Member switch
         {
-            "label" => MergeTagValue.Of(MergeTagAnswerTexts.Label(tag.Target.Field, scope.Culture, await answers.DictionaryAsync(scope))),
+            "label" => MergeTagValue.Of(MergeTagAnswerTexts.Label(tag.Target.Field, scope.Culture, (await answers.TextsAsync(scope, cancellationToken)).Dictionary)),
             "value" => answers.Value(tag.Target, scope, request.Place),
             { } part => answers.Part(tag.Target, part, scope, request.Place),
-            null when tag.Target.Repeater is null && MergeTagAnswerTexts.IsRepeater(tag.Target.Field) => answers.Rows(tag.Target.Field, scope, request.Place, await answers.DictionaryAsync(scope)),
-            null => answers.Display(tag.Target, scope, request.Place, await answers.DictionaryAsync(scope)),
+            null when tag.Target.Repeater is null && MergeTagAnswerTexts.IsRepeater(tag.Target.Field) => answers.Rows(tag.Target.Field, scope, request.Place, await answers.TextsAsync(scope, cancellationToken)),
+            null => answers.Display(tag.Target, scope, request.Place, await answers.TextsAsync(scope, cancellationToken)),
         };
     }
 

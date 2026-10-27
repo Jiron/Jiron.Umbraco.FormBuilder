@@ -52,7 +52,7 @@ interface VectorCase {
   readonly calc?: Calculation;
   readonly formula?: string;
   readonly form?: LogicForm;
-  readonly field?: CheckedField;
+  readonly field?: VectorField;
   readonly answers?: FieldAnswers;
   readonly template?: VectorTemplate;
   readonly recall?: VectorRecall;
@@ -128,12 +128,20 @@ function leaned(
 }
 
 /**
- * Holds a field to check to what both runtimes see alike (ADR-0062): its kind is its type's, it gives every public
- * setting its type has a default for, an object's settings each in turn, as the public projection writes them, so no
- * vector leans on a default, it has options and rows only when its type has them, a field that stores files has one
- * file for each value, and its answers are cleaned as the pipeline cleans them.
+ * A field to check as a vector gives it (ADR-0077): `fromSource` marks one whose options come from a list or another
+ * source, its `options` being those the source resolved, and without them a source that could not give any. The browser
+ * checks either the same way; the Core runner hands a source's options to the check as the reader does.
  */
-function heldToItsType(id: string, field: CheckedField, answers: FieldAnswers): void {
+type VectorField = CheckedField & { readonly fromSource?: boolean };
+
+/**
+ * Holds a field to check to what both runtimes see alike (ADR-0062, ADR-0077): its kind is its type's, it gives every
+ * public setting its type has a default for, an object's settings each in turn, as the public projection writes them,
+ * so no vector leans on a default, it has options, a source and rows only when its type has them, options or a source
+ * when its type cannot be answered without, and a parent only with options or a source, a field that stores files has
+ * one file for each value, and its answers are cleaned as the pipeline cleans them.
+ */
+function heldToItsType(id: string, field: VectorField, answers: FieldAnswers): void {
   const type = served.find((each) => each.alias === field.type);
   if (type === undefined) throw new Error(`${id}: the site has no type '${field.type}'`);
   if ((field.kind ?? null) !== type.ruleKind)
@@ -145,10 +153,14 @@ function heldToItsType(id: string, field: CheckedField, answers: FieldAnswers): 
   );
   if (missing.length > 0) throw new Error(`${id}: the field leans on the defaults of ${missing.join(', ')}`);
   if (
-    (field.options !== undefined && !type.features.includes('options')) ||
+    ((field.options !== undefined || field.fromSource !== undefined) && !type.features.includes('options')) ||
     (field.rows !== undefined && !type.features.includes('rows'))
   )
     throw new Error(`${id}: a ${field.type} field has no options or rows of its own`);
+  if (type.features.includes('needsOptions') && field.options === undefined && field.fromSource !== true)
+    throw new Error(`${id}: a ${field.type} field gives its options, or that they come from a source`);
+  if (field.parent !== undefined && field.options === undefined && field.fromSource !== true)
+    throw new Error(`${id}: only a field with options or a source has a parent`);
   if ((answers.files ?? []).length !== (type.storage === 'file' ? answers.values.length : 0))
     throw new Error(`${id}: a field that stores files has one file for each value, and no other field has files`);
   const texts = [...answers.values, ...Object.values(answers.parts ?? {}).flat()];

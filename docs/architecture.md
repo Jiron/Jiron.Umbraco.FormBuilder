@@ -72,7 +72,7 @@ database connection of its own. Its areas:
 | Option lists | the kinds with their configuration and its checks, content and data type lists with what they read from Umbraco and the handler that drops what they keep when the site changes, URL lists with what they fetch and keep, the reader of uploaded CSV and TXT files, the standard lists and a site's own sources with their start-up check, the library's lists with their cache refresher, the option service, and the publish check of a field's source | ADR-0002, ADR-0073, ADR-0075, ADR-0076 |
 | Outbound | calls to other hosts (`OutboundHttp`): the host configuration's hosts and schemes, redirects to the same host only, one time limit and a cap; the transport that resolves names itself and connects only to globally reachable addresses, which only the Testing assembly replaces | ADR-0076, §4.10 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030, ADR-0064, ADR-0068 |
-| Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`field`, `entry` with `entry.answers` and `entry.url`, `form`, `query`, `context`, `date`, and `page`, `site`, `member` and `dictionary` over Umbraco's content, members, domains, languages and dictionary), the answers as each field type shows them with what each place masks or leaves out and the dictionary's texts for labels that name an item, answer recall in visitor texts (only the fields before the text's page, group or field, by their current aliases, a site's type by its rule kind), a site's sources and filters with their start-up check, and the culture formats written from .NET's data | ADR-0014, ADR-0064, ADR-0065, ADR-0066, ADR-0067, ADR-0068 |
+| Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`field`, `entry` with `entry.answers` and `entry.url`, `form`, `query`, `context`, `date`, and `page`, `site`, `member` and `dictionary` over Umbraco's content, members, domains, languages and dictionary), the answers as each field type shows them with what each place masks or leaves out and the dictionary's texts for labels that name an item and the labels lists and other sources resolve for options, answer recall in visitor texts (only the fields before the text's page, group or field, by their current aliases, a site's type by its rule kind), a site's sources and filters with their start-up check, and the culture formats written from .NET's data | ADR-0014, ADR-0064, ADR-0065, ADR-0066, ADR-0067, ADR-0068, ADR-0077 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
 | Actions and email | action types, action runs, the email outbox, the worker | ADR-0007 |
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
@@ -141,7 +141,9 @@ flowchart LR
   ([ADR-0068](decisions/0068-answer-recall.md)); its `checkField` (`checks.ts`) runs the built-in types'
   checks of a field's answers as each type's `Validate` in Core does, and then the field's own `pattern` and
   `matchesField` checks as Core's `FieldValues` does, with the other fields' values
-  ([ADR-0062](decisions/0062-the-built-in-types-checks.md));
+  ([ADR-0062](decisions/0062-the-built-in-types-checks.md)), a choice's answers held to its own options or those its
+  list or another source resolved, a cascading field's to those of its parent's answers
+  ([ADR-0077](decisions/0077-answers-and-labels-from-resolved-options.md));
 - `runtime`: enhances Razor-rendered forms through the markup contract;
 - `element`: `<jfb-form>`, the headless renderer, with the same markup and runtime;
 - `backoffice`: the Forms section in Lit and TypeScript with UUI, through the generated client.
@@ -228,11 +230,15 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   `SubmissionReader` puts these together over a whole form for the pipeline: every answer cleaned, limited and read,
   a repeatable group's rows counted against its limits before any is read, the rules over what was read with every
   calculation worked out by the server, each shown hidden field's default resolved on submit (then the rules once
-  more, for the actions and the outcome), and the shown fields checked, a child in its row; it hands over what the
-  entry stores, the errors by field and row, the rules' state and the answers for merge tags. What the rules hide is
-  neither checked nor stored ([ADR-0072](decisions/0072-a-submissions-answers.md)).
+  more, for the actions and the outcome), and the shown fields checked, a child in its row, a choice from a list or
+  another source against the options the option service resolves for the submission's culture, page and parent
+  answers, once per field and parent answers, and taken as given, logged, when the source cannot give them; it hands
+  over what the entry stores, the errors by field and row, the rules' state and the answers for merge tags. What the
+  rules hide is neither checked nor stored ([ADR-0072](decisions/0072-a-submissions-answers.md),
+  [ADR-0077](decisions/0077-answers-and-labels-from-resolved-options.md)).
   `Display` writes the texts merge tags show the values as, in the template's culture, with the wire number or date
-  behind a text ([ADR-0066](decisions/0066-answers-as-merge-tags.md)); by default by the type's rule kind.
+  behind a text ([ADR-0066](decisions/0066-answers-as-merge-tags.md)); by default by the type's rule kind. An option
+  from a list or another source shows the label its source resolves, read once for a rendering (ADR-0077).
   `FieldTypeChanges` works out which types a field may become and what each change keeps and loses (its settings, by
   name, kind and rules; common properties; messages; the operators of rules; the columns of older answers), from the
   declarations and schemas alone ([ADR-0059](decisions/0059-changing-field-types.md)), for the inspector's "Change

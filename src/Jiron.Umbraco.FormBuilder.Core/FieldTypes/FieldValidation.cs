@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 
@@ -7,8 +8,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 /// What a field type's check of a shown field's values reports to (ADR-0058): each error by its kind, whose message the
 /// visitor sees at the field. It runs only on a field that has values once the rules leave it visible; a field without
 /// values fails with <c>required</c> before it, when it is required. Besides the field and its answers, it says whether
-/// the field is required, what day it is where the site is, and which files a file field's upload tokens stand for
-/// (ADR-0062).
+/// the field is required, what day it is where the site is, which files a file field's upload tokens stand for
+/// (ADR-0062), and which options a choice's answers are held to (ADR-0077).
 /// </summary>
 public sealed class FieldValidation
 {
@@ -23,6 +24,7 @@ public sealed class FieldValidation
         IsRequired = input.IsRequired;
         Today = input.Today;
         Files = input.Files;
+        Options = Offered(field, input);
     }
 
     /// <summary>The field, with its settings, options and rows.</summary>
@@ -49,6 +51,14 @@ public sealed class FieldValidation
     /// </summary>
     public ImmutableArray<FieldFile> Files { get; }
 
+    /// <summary>
+    /// The values of the options the answers are held to, compared exactly (ADR-0077): the field's own, or those its list
+    /// or other source resolved for the submission; for a field with a parent, only those that belong to the parent's
+    /// answers, an option that names no parent value belonging to every answer. Empty for a field without options, which
+    /// only a draft holds; null when the options come from a list or source that could not give them, and then any
+    /// answer is taken.
+    /// </summary>
+    public IReadOnlySet<string>? Options { get; }
     /// <summary>The errors reported, in order, each once.</summary>
     public ImmutableArray<FieldMessageKinds> Errors => _errors.Errors;
 
@@ -59,4 +69,30 @@ public sealed class FieldValidation
     /// </param>
     /// <exception cref="ArgumentException">The kind is not exactly one kind, or the type does not declare it.</exception>
     public void Fail(FieldMessageKinds kind) => _errors.Fail(kind);
+
+    // The options offered: those resolved, or the field's own; filtered by the parent's answers as the option service
+    // filters them, so options it already filtered pass again unchanged.
+    private static FrozenSet<string>? Offered(FormField field, FieldCheckInput input)
+    {
+        IEnumerable<(string Value, IReadOnlyList<string> ParentValues)>? offered = input.Options is { } resolved
+            ? resolved.Select(option => (option.Value, option.ParentValues))
+            : field.Options switch
+            {
+                null => [],
+                { Source: OptionSource.Items } own => own.Items.Select(item => (item.Value, item.ParentValues)),
+                _ => null,
+            };
+        if (offered is null)
+        {
+            return null;
+        }
+
+        if (field.Options?.Parent is { } parent)
+        {
+            var answers = input.Values.TryGetValue(parent, out var values) ? values : [];
+            offered = offered.Where(option => option.ParentValues.Count == 0 || option.ParentValues.Any(answers.Contains));
+        }
+
+        return offered.Select(option => option.Value).ToFrozenSet(StringComparer.Ordinal);
+    }
 }
