@@ -1,0 +1,130 @@
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
+using static Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags.MergeTagAnswerForms;
+
+namespace Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
+
+/// <summary>
+/// Answers to a choice whose options come from a library list or another source in <c>field.*</c> and
+/// <c>entry.answers</c> (ADR-0066, ADR-0077): each chosen value shows the label the source resolves in the entry's
+/// culture, with its dictionary item's text, as a field's own option shows its own; a value the source no longer offers,
+/// and every value of a source that cannot give its options, shows as it is stored. A cascading source resolves for the
+/// parent's answers in every row, and each source is asked once for a rendering.
+/// </summary>
+public sealed class ListAnswersTests
+{
+    private static readonly Guid Sizes = Guid.Parse("76000000-0000-4000-8000-000000000001");
+    private static readonly Guid Missing = Guid.Parse("76000000-0000-4000-8000-000000000002");
+    private static readonly Guid Page = Guid.Parse("76000000-0000-4000-8000-000000000003");
+
+    // A library list of sizes with labels in English and German, one of them a dictionary item.
+    private static OptionListTestSite Library(params IFormBuilderOptionSource[] sources)
+    {
+        var site = new OptionListTestSite(sources);
+        site.Umbraco.Language("en-GB", isDefault: true);
+        site.Umbraco.Language("de-DE");
+        site.Umbraco.Language("de-CH", fallback: "de-DE");
+        site.Umbraco.Item("Sizes.Large", new Dictionary<string, string> { ["en-GB"] = "Large", ["de-DE"] = "Gross" });
+        site.Repository.Write(Sizes, OptionListKind.Manual, items: """
+            [{"value":"s","label":{"":"Small","de":"Klein"}},{"value":"m","label":{"":"Medium","de":"Mittel"}},{"value":"l","label":{"":"#Sizes.Large"}},{"value":"xs"}]
+            """);
+        return site;
+    }
+
+    [TestCase("en-GB", "Medium|Small, Large|m|Size: Medium")]
+    [TestCase("de-DE", "Mittel|Klein, Gross|m|Size: Mittel")]
+    [TestCase("de-CH", "Mittel|Klein, Gross|m|Size: Mittel")]
+    public async Task AChoiceFromAList_ShowsTheListsLabels_InTheEntrysCulture(string culture, string expected)
+    {
+        var size = Field("dropdown", "size", "Size") with { Options = FromList(Sizes) };
+        var extras = Field("checkboxes", "extras", "Extras") with { Options = FromList(Sizes), IncludeInEmails = false };
+        var form = Form(size, extras);
+        var site = MergeTagTestSite.Create(options: Library().Options());
+
+        var rendered = await site.RenderAsync("{{ field.size }}|{{ field.extras }}|{{ field.size.value }}|{{ entry.answers }}", Scope(form, Answers(Answer(size, "m"), Answer(extras, "s", "l")), culture));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Text, Is.EqualTo(expected), "de-CH falls back to de; a label that names a dictionary item shows its text; the value stays the value");
+            Assert.That(rendered.Problems, Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task AValueTheListNoLongerOffers_AndAListTheSiteLacks_ShowTheStoredValues()
+    {
+        var size = Field("dropdown", "size", "Size") with { Options = FromList(Sizes) };
+        var gone = Field("dropdown", "gone", "Gone") with { Options = FromList(Missing) };
+        var form = Form(size, gone);
+        var site = MergeTagTestSite.Create(options: Library().Options());
+
+        var rendered = await site.RenderAsync("{{ field.size }}|{{ field.gone }}|{{ entry.answers }}", Scope(form, Answers(Answer(size, "xxl"), Answer(gone, "s")), "de-DE"));
+
+        Assert.That(rendered.Text, Is.EqualTo("xxl|s|Size: xxl\nGone: s"));
+    }
+
+    [Test]
+    public async Task AnOptionWithoutALabel_ShowsItsValue()
+    {
+        var size = Field("dropdown", "size", "Size") with { Options = FromList(Sizes) };
+        var site = MergeTagTestSite.Create(options: Library().Options());
+
+        var rendered = await site.RenderAsync("{{ field.size }}", Scope(Form(size), Answers(Answer(size, "xs")), "en-GB"));
+
+        Assert.That(rendered.Text, Is.EqualTo("xs"));
+    }
+
+    [Test]
+    public async Task ACascadingSource_ResolvesForTheParentsAnswersInEveryRow_OnTheScopesPage_OnceForARendering()
+    {
+        var towns = new TestOptionSource("towns", (request, _) => ValueTask.FromResult<IReadOnlyList<FormBuilderOption>>(
+        [
+            .. new[] { ("zurich", "Zurich", "CH"), ("berlin", "Berlin", "DE") }
+                .Where(town => request.ParentValues.Contains(town.Item3))
+                .Select(town => new FormBuilderOption(town.Item1, town.Item2)),
+        ]));
+        var country = Field("dropdown", "country", "Country") with { Options = Options(("CH", "Switzerland"), ("DE", "Germany")) };
+        var town = Field("dropdown", "town", "Town") with
+        {
+            Options = new FieldOptions { Source = OptionSource.Code, Config = SettingsObject.Parse("""{"source":"towns"}"""), Parent = country.Key },
+        };
+        var stops = Field("repeater", "stops", "Stops") with { Fields = [country, town] };
+        var form = Form(stops);
+        var answers = Answers(InRow(country, 0, "CH"), InRow(town, 0, "zurich"), InRow(country, 1, "DE"), InRow(town, 1, "berlin"));
+        var site = MergeTagTestSite.Create(options: Library(towns).Options());
+
+        var rendered = await site.RenderAsync(
+            "{{ field.stops.town }}|{{ field.town }}|{{ entry.answers }}",
+            MergeTagTestSite.Scope(form: form, culture: "de-DE", answers: answers, page: Page));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Text, Is.EqualTo("Zurich, Berlin|Zurich, Berlin|Stops:\n1. Country: Switzerland; Town: Zurich\n2. Country: Germany; Town: Berlin"));
+            Assert.That(towns.Requests.Select(request => (string.Join(",", request.ParentValues), request.Culture, request.Page)), Is.EqualTo(new[] { ("CH,DE", "de-DE", (Guid?)Page) }), "one request for every tag, with every row's answer");
+        });
+    }
+
+    [Test]
+    public async Task AChoiceTheRulesHid_OrWithoutAnAnswer_AsksItsSourceNothing()
+    {
+        var towns = new TestOptionSource("towns", new FormBuilderOption("zurich", "Zurich"));
+        var hidden = Field("dropdown", "hidden", "Hidden") with { Options = new FieldOptions { Source = OptionSource.Code, Config = SettingsObject.Parse("""{"source":"towns"}""") } };
+        var unanswered = Field("dropdown", "unanswered", "Unanswered") with { Options = new FieldOptions { Source = OptionSource.Code, Config = SettingsObject.Parse("""{"source":"towns"}""") } };
+        var name = Field("text", "name", "Name");
+        var site = MergeTagTestSite.Create(options: Library(towns).Options());
+
+        var rendered = await site.RenderAsync(
+            "{{ field.hidden }}|{{ field.unanswered }}|{{ entry.answers }}",
+            Scope(Form(hidden, unanswered, name), new MergeTagAnswers([Answer(hidden, "zurich"), Answer(name, "Ada")], [hidden.Key])));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Text, Is.EqualTo("||Name: Ada"));
+            Assert.That(towns.Requests, Is.Empty);
+        });
+    }
+
+    private static FieldOptions FromList(Guid list) => new() { Source = OptionSource.List, OptionList = list };
+}
