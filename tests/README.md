@@ -503,7 +503,14 @@ and what a publish adds, updates, brings back and ends, with the storage kind of
 from the code; the code of every refusal and conflict; the notifications' arguments (also of the folder service,
 `FolderNotificationTests`) and the structural publish check; the name rule of forms and folders (`LibraryNamesTests`);
 and the built-in templates (`BuiltInFormTemplatesTests`: one per file, each reading with its key, publishing and
-having English and German texts) with the package version an export names.
+having English and German texts) with the package version an export names. `FormImportListsTests` plans the option
+lists of an import (ADR-0078) over the library in memory: a list the file carries for a user who may manage the
+library, with its key, name, kind and contents; the first free alias past the site's aliases in any letter case and
+those the same import takes, one from the name for an alias that is none, cut for its number; a URL list on another
+host, a value given twice and a kind the site lacks left missing and logged by code and path, never the configuration,
+an item or the file's kind; a user who may not, a key that names no user and no user creating none, and nobody looked
+up while nothing is to be created; the lists written and forgotten by every server only once committed, and a list
+taken since the plan refused as taken.
 
 `Tests.Integration/Forms/` runs the service on a real site, with a fresh database per test: a create from blank with
 and without the consent default (and with a stored default a definition would refuse), aliases and their races,
@@ -515,6 +522,14 @@ notification and whether a unit was open, and cancels, fails or changes the form
 `TestPublishCheck` is a second publish check whose problems a test sets. `FormServiceLimitTests` lowers the pages a
 definition may have, so a form saved before still opens and its save returns `limit_exceeded`, as do a restore of a
 version above the limit, a duplicate of it, copied actions into it, a saved template and an import above it.
+`FormImportListTests` imports files that carry option lists (ADR-0078) for the personas of ADR-0013: a library
+manager gets a manual list, one whose alias another list has (numbered) and a URL list on a host the site calls, with
+their keys and contents, offered at once, counted in the audit entry and used by key on a second import; an entry
+handler, a key that names no user and no user get the form and `option_list_missing`, and no list; a URL list on a
+host the site does not call and an uploaded list with a value twice are reported and not created; and the lists are
+written with the form or not at all: none for a cancelled import, the rooms list rolled back and created again when
+another change takes the meals list's key at the same moment, and the import refused with no form and no list after
+three such races.
 `FieldSettingLockServiceTests` gives the site two designer locks of the text type: a form saved before them runs and
 is checked at publish with the locked values while its store keeps its own, a draft save refuses another value of a
 locked setting (a hidden one too) and takes the lock's value or the one the draft held, the published form is none for
