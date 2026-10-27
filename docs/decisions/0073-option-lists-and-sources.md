@@ -3,7 +3,8 @@
 - Status: accepted; amends [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (a field takes no
   upload as its source) and [ADR-0033](0033-schema-v1.md) (an option list's kind is an enum); builds on
   [ADR-0055](0055-field-type-framework.md) and [ADR-0056](0056-field-settings-checks.md) (settings classes and their
-  checks)
+  checks); amended in 5.5b by [ADR-0075](0075-content-and-data-type-lists.md) (what a configuration names on the site
+  is checked when a list is saved and a form is published; `cacheSeconds` for code and URL lists only)
 - Date: 2026-10-27
 - Roadmap step: 5.5a (decided and built); 5.5b adds content and data type lists, 5.5c URL and file lists, 5.5d holds
   answers to the resolved options, 5.5e imports lists, 6.1 serves `GET forms/{key}/options/{fieldKey}`, 6.2 renders

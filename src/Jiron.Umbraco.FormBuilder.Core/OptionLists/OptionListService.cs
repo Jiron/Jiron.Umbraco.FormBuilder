@@ -17,7 +17,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.OptionLists;
 /// <param name="Kind">Where its options come from.</param>
 /// <param name="Config">The kind's configuration as a JSON object.</param>
 /// <param name="Items">A manual or uploaded list's options as a JSON array, written as a field's own; <c>[]</c> for the other kinds.</param>
-/// <param name="CacheSeconds">How long a source's options are kept, from 0 (not kept) to 30 days.</param>
+/// <param name="CacheSeconds">
+/// How long a code or URL list keeps its options, from 0 (not kept) to 30 days; 0 for any other kind (ADR-0075).
+/// </param>
 internal sealed record OptionListInput(string Alias, string Name, OptionListKind Kind, string Config = "{}", string Items = "[]", int CacheSeconds = 0);
 
 /// <summary>The list a change stored, or the problems that refused it, each at its path.</summary>
@@ -68,14 +70,17 @@ internal sealed partial class OptionListService(
             appCaches.RuntimeCache,
             OptionListCacheKeys.Row(key),
             OptionListCacheKeys.RowLoading(key),
-            async () => await repository.GetAsync(key, CancellationToken.None) is { } row ? Entry(row) : (object)Missing,
+            async () => await repository.GetAsync(key, CancellationToken.None) is { } row ? await EntryAsync(row) : (object)Missing,
             RowDuration,
             cancellationToken);
         return kept as OptionListEntry;
     }
 
-    /// <summary>The problems of a list's contents, each at its path: <c>$.alias</c>, <c>$.config...</c>, <c>$.items...</c>.</summary>
-    public IReadOnlyList<DefinitionProblem> Check(OptionListInput input)
+    /// <summary>
+    /// The problems of a list's contents, each at its path: <c>$.alias</c>, <c>$.config...</c>, <c>$.items...</c>, with
+    /// what the configuration names on the site (ADR-0075).
+    /// </summary>
+    public async Task<IReadOnlyList<DefinitionProblem>> CheckAsync(OptionListInput input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
         var problems = new DefinitionProblems();
@@ -93,12 +98,18 @@ internal sealed partial class OptionListService(
             problems.Add(DefinitionErrors.LimitExceeded, "$.name", $"A name holds at most {AliasedLibraryTable<Persistence.Dtos.OptionListDto>.MaxNameLength} characters.");
         }
 
-        if (input.CacheSeconds is < 0 or > MaxCacheSeconds)
+        var ranged = input.CacheSeconds is >= 0 and <= MaxCacheSeconds;
+        if (!ranged)
         {
             problems.Add(DefinitionErrors.InvalidValue, "$.cacheSeconds", $"A list's options are kept for 0 to {MaxCacheSeconds} seconds (30 days).");
         }
 
-        Contents(input.Kind, input.Config, input.Items, problems);
+        var kind = await ContentsAsync(input.Kind, input.Config, input.Items, onSite: true, problems, cancellationToken);
+        if (ranged && input.CacheSeconds != 0 && kind is { UsesCacheSeconds: false })
+        {
+            problems.Add(DefinitionErrors.InvalidValue, "$.cacheSeconds", $"A {kind.Name} list keeps nothing for a time, so its cacheSeconds is 0.");
+        }
+
         return problems.ToReadOnlyList();
     }
 
@@ -106,7 +117,7 @@ internal sealed partial class OptionListService(
     public async Task<OptionListResult> CreateAsync(Guid key, OptionListInput input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
-        if (Check(input) is { Count: > 0 } problems)
+        if (await CheckAsync(input, cancellationToken) is { Count: > 0 } problems)
         {
             return new OptionListResult(null, problems);
         }
@@ -130,7 +141,7 @@ internal sealed partial class OptionListService(
     public async Task<OptionListResult> UpdateAsync(Guid key, int expectedConcurrencyVersion, OptionListInput input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
-        if (Check(input) is { Count: > 0 } problems)
+        if (await CheckAsync(input, cancellationToken) is { Count: > 0 } problems)
         {
             return new OptionListResult(null, problems);
         }
@@ -178,8 +189,9 @@ internal sealed partial class OptionListService(
         }
     }
 
-    // The configuration and items of a kind, each problem at its path.
-    private OptionKind? Contents(OptionListKind kind, string? config, string? items, DefinitionProblems problems)
+    // The configuration and items of a kind, each problem at its path; on the site, also what the configuration names
+    // there, which a stored list is not held to when it is read, as the site changes on its own (ADR-0075).
+    private async ValueTask<OptionKind?> ContentsAsync(OptionListKind kind, string? config, string? items, bool onSite, DefinitionProblems problems, CancellationToken cancellationToken)
     {
         if (kinds.Find(kind) is not { } found)
         {
@@ -190,7 +202,14 @@ internal sealed partial class OptionListService(
         var owner = $"A {found.Name} list";
         if (TryReadConfig(config, problems, out var read))
         {
-            found.Check(read, "$.config", owner, problems);
+            if (onSite)
+            {
+                await found.CheckOnSiteAsync(read, "$.config", owner, problems, cancellationToken);
+            }
+            else
+            {
+                _ = found.Check(read, "$.config", owner, problems);
+            }
         }
 
         if (ReadItems(items, problems) is { } options)
@@ -298,10 +317,10 @@ internal sealed partial class OptionListService(
         : new DefinitionProblem(DefinitionErrors.AliasDuplicate, "$.alias", "Another option list has this alias (letter case does not count).");
 
     // A list as resolving reads it: what does not read, or what its kind refuses, leaves it unreadable.
-    private OptionListEntry Entry(StoredOptionList row)
+    private async ValueTask<OptionListEntry> EntryAsync(StoredOptionList row)
     {
         var problems = new DefinitionProblems();
-        var kind = Contents(row.Kind, row.Config, row.Items, problems);
+        var kind = await ContentsAsync(row.Kind, row.Config, row.Items, onSite: false, problems, CancellationToken.None);
         if (kind is null || problems.Found > 0 || !TryReadConfig(row.Config, problems, out var config) || ReadItems(row.Items, problems) is not { } items)
         {
             // Logged once per server and load, as the list is kept until it changes.

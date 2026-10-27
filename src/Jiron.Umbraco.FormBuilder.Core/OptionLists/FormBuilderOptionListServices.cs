@@ -1,10 +1,12 @@
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Core.Notifications;
 
 namespace Jiron.Umbraco.FormBuilder.Core.OptionLists;
 
@@ -13,8 +15,9 @@ internal static class FormBuilderOptionListServices
 {
     /// <summary>
     /// Registers the collection of option sources with the standard lists, its registry and its start-up check, the
-    /// kinds, the library's lists with their cache refresher, the option service, and the publish check of a field's
-    /// source configuration.
+    /// kinds with what content and data type lists read from Umbraco and the handler that drops what they keep when the
+    /// site changes, the library's lists with their cache refresher, the option service, and the publish check of a
+    /// field's source configuration.
     /// </summary>
     public static IUmbracoBuilder AddFormBuilderOptionLists(this IUmbracoBuilder builder)
     {
@@ -25,7 +28,14 @@ internal static class FormBuilderOptionListServices
         builder.JironFormBuilder().OptionSources();
         builder.CacheRefreshers().Add<FormBuilderOptionListCacheRefresher>();
         builder.Services.TryAddSingleton<OptionSourceRegistry>();
+        builder.Services.TryAddSingleton<MergeTagCultures>();
+        builder.Services.TryAddSingleton<OptionListUmbraco>();
         builder.Services.TryAddSingleton<OptionKindRegistry>();
+        builder.AddNotificationHandler<ContentCacheRefresherNotification, OptionSiteCacheHandler>();
+        builder.AddNotificationHandler<ContentTypeCacheRefresherNotification, OptionSiteCacheHandler>();
+        builder.AddNotificationHandler<DataTypeCacheRefresherNotification, OptionSiteCacheHandler>();
+        builder.AddNotificationHandler<PublicAccessCacheRefresherNotification, OptionSiteCacheHandler>();
+        builder.AddNotificationHandler<LanguageCacheRefresherNotification, OptionSiteCacheHandler>();
         builder.Services.TryAddSingleton<OptionListService>();
         builder.Services.TryAddSingleton<IFormBuilderOptionService, FormBuilderOptionService>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IFormPublishCheck, OptionSourcePublishCheck>());

@@ -34,17 +34,13 @@ public sealed class OptionSourcePublishCheckTests
     public async Task AKindTheSiteLacks_AndAnUpload_AreRefusedAtTheSource()
     {
         var problems = await CheckAsync(
-            Field(OptionSource.Content, """{"root":"x"}"""),
-            Field(OptionSource.File) with { Key = Guid.NewGuid() },
-            Field(OptionSource.Url) with { Key = Guid.NewGuid() },
-            Field(OptionSource.DataType) with { Key = Guid.NewGuid() });
+            Field(OptionSource.File),
+            Field(OptionSource.Url) with { Key = Guid.NewGuid() });
 
         Assert.That(problems, Is.EqualTo(new[]
         {
-            new DefinitionProblem(DefinitionErrors.OptionsInvalid, "$.pages[0].groups[0].fields[0].options.source", "The site has no option source of the kind 'content'."),
-            new DefinitionProblem(DefinitionErrors.OptionsInvalid, "$.pages[0].groups[0].fields[1].options.source", "A field takes no upload as its source: an upload becomes the field's own options, or a library list's."),
-            new DefinitionProblem(DefinitionErrors.OptionsInvalid, "$.pages[0].groups[0].fields[2].options.source", "The site has no option source of the kind 'url'."),
-            new DefinitionProblem(DefinitionErrors.OptionsInvalid, "$.pages[0].groups[0].fields[3].options.source", "The site has no option source of the kind 'dataType'."),
+            new DefinitionProblem(DefinitionErrors.OptionsInvalid, "$.pages[0].groups[0].fields[0].options.source", "A field takes no upload as its source: an upload becomes the field's own options, or a library list's."),
+            new DefinitionProblem(DefinitionErrors.OptionsInvalid, "$.pages[0].groups[0].fields[1].options.source", "The site has no option source of the kind 'url'."),
         }));
     }
 

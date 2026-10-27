@@ -83,7 +83,8 @@ internal sealed partial class FormBuilderOptionService(
             return new FormBuilderResolvedOptions(Clean(await ItemsAsync(list.Items, request.Culture), "list", key), IsAvailable: true);
         }
 
-        if (list.Row.CacheSeconds == 0)
+        // A kind that keeps its options until the site changes, or keeps nothing, is asked each time (ADR-0075).
+        if (list.Row.CacheSeconds == 0 || !kind.UsesCacheSeconds)
         {
             return await SourceAsync(kind, list.Config, request, "list", key, cancellationToken);
         }

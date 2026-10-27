@@ -15,22 +15,28 @@ public sealed class OptionKindsTests
     private static readonly string OUmlaut = ((char)0xD6).ToString();
 
     [Test]
-    public void TheKinds_OfThisVersion_AreManualCountriesAndCode_WithWhereEachMayBeConfigured()
+    public void TheKinds_OfThisVersion_AreManualContentDataTypeCountriesAndCode_WithWhereEachMayBeConfigured()
     {
         var kinds = new OptionListTestSite().Kinds;
 
         Assert.Multiple(() =>
         {
-            Assert.That(kinds.All.Select(kind => (kind.Kind, kind.Name, kind.OnField, kind.HasItems)), Is.EqualTo(new[]
+            Assert.That(kinds.All.Select(kind => (kind.Kind, kind.Name, kind.OnField, kind.HasItems, kind.UsesCacheSeconds)), Is.EqualTo(new[]
             {
-                (OptionListKind.Manual, "manual", false, true),
-                (OptionListKind.Countries, "countries", true, false),
-                (OptionListKind.Code, "code", true, false),
+                (OptionListKind.Manual, "manual", false, true, false),
+                (OptionListKind.Content, "content", true, false, false),
+                (OptionListKind.DataType, "dataType", true, false, false),
+                (OptionListKind.Countries, "countries", true, false, false),
+                (OptionListKind.Code, "code", true, false, true),
             }));
-            Assert.That(new[] { OptionListKind.Content, OptionListKind.DataType, OptionListKind.Url, OptionListKind.File }.Select(kinds.Find), Has.All.Null, "5.5b and 5.5c add them");
+            Assert.That(new[] { OptionListKind.Url, OptionListKind.File }.Select(kinds.Find), Has.All.Null, "5.5c adds them");
             Assert.That(kinds.Find(OptionListKind.Countries)!.Schema.Settings.Select(setting => setting.Name), Is.EqualTo(new[] { "countries" }));
             Assert.That(kinds.Find(OptionListKind.Code)!.Schema.Settings.Select(setting => (setting.Name, setting.Rules.Required)), Is.EqualTo(new[] { ("source", true) }));
             Assert.That(kinds.Find(OptionListKind.Manual)!.Schema.Settings, Is.Empty);
+            Assert.That(
+                kinds.Find(OptionListKind.Content)!.Schema.Settings.Select(setting => (setting.Name, setting.Editor)),
+                Is.EqualTo(new[] { ("root", "contentPicker"), ("descendants", "boolean"), ("documentTypes", "documentTypePicker"), ("valueFrom", "text"), ("labelFrom", "text"), ("order", "choice") }));
+            Assert.That(kinds.Find(OptionListKind.DataType)!.Schema.Settings.Select(setting => (setting.Name, setting.Editor, setting.Rules.Required)), Is.EqualTo(new[] { ("dataType", "dataTypePicker", true) }));
         });
     }
 

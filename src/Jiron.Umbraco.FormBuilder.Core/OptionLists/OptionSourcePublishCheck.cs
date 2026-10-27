@@ -5,14 +5,15 @@ using Jiron.Umbraco.FormBuilder.Core.Forms;
 namespace Jiron.Umbraco.FormBuilder.Core.OptionLists;
 
 /// <summary>
-/// Holds each choice field's source configuration to its kind before the form goes live (ADR-0073): the kind's schema
-/// and its own check, at <c>...options.config</c>; a kind the site lacks and an upload as a field's source are refused at
-/// <c>...options.source</c>. A field's own options and a library list are the structural validation's (ADR-0035).
+/// Holds each choice field's source configuration to its kind before the form goes live (ADR-0073): the kind's schema,
+/// its own check and what it names on the site (ADR-0075), at <c>...options.config</c>; a kind the site lacks and an
+/// upload as a field's source are refused at <c>...options.source</c>. A field's own options and a library list are the
+/// structural validation's (ADR-0035).
 /// </summary>
 internal sealed class OptionSourcePublishCheck(OptionKindRegistry kinds) : IFormPublishCheck
 {
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<DefinitionProblem>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<DefinitionProblem>> CheckAsync(FormDefinition definition, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
         var problems = new DefinitionProblems();
@@ -22,14 +23,14 @@ internal sealed class OptionSourcePublishCheck(OptionKindRegistry kinds) : IForm
             var groupsPath = JsonPaths.Property(JsonPaths.Index(pagesPath, p), "groups");
             for (var g = 0; g < definition.Pages[p].Groups.Count; g++)
             {
-                Fields(definition.Pages[p].Groups[g].Fields, JsonPaths.Property(JsonPaths.Index(groupsPath, g), "fields"), problems);
+                await FieldsAsync(definition.Pages[p].Groups[g].Fields, JsonPaths.Property(JsonPaths.Index(groupsPath, g), "fields"), problems, cancellationToken);
             }
         }
 
-        return ValueTask.FromResult(problems.ToReadOnlyList());
+        return problems.ToReadOnlyList();
     }
 
-    private void Fields(IReadOnlyList<FormField> fields, string path, DefinitionProblems problems)
+    private async ValueTask FieldsAsync(IReadOnlyList<FormField> fields, string path, DefinitionProblems problems, CancellationToken cancellationToken)
     {
         for (var i = 0; i < fields.Count; i++)
         {
@@ -37,14 +38,14 @@ internal sealed class OptionSourcePublishCheck(OptionKindRegistry kinds) : IForm
             var fieldPath = JsonPaths.Index(path, i);
             if (field.Options is { } options)
             {
-                Check(options, JsonPaths.Property(fieldPath, "options"), problems);
+                await CheckAsync(options, JsonPaths.Property(fieldPath, "options"), problems, cancellationToken);
             }
 
-            Fields(field.Fields, JsonPaths.Property(fieldPath, "fields"), problems);
+            await FieldsAsync(field.Fields, JsonPaths.Property(fieldPath, "fields"), problems, cancellationToken);
         }
     }
 
-    private void Check(FieldOptions options, string path, DefinitionProblems problems)
+    private async ValueTask CheckAsync(FieldOptions options, string path, DefinitionProblems problems, CancellationToken cancellationToken)
     {
         OptionListKind kind;
         switch (options.Source)
@@ -79,6 +80,6 @@ internal sealed class OptionSourcePublishCheck(OptionKindRegistry kinds) : IForm
             return;
         }
 
-        found.Check(options.Config, JsonPaths.Property(path, "config"), $"A {found.Name} source", problems);
+        await found.CheckOnSiteAsync(options.Config, JsonPaths.Property(path, "config"), $"A {found.Name} source", problems, cancellationToken);
     }
 }

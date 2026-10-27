@@ -295,10 +295,10 @@ public sealed class OptionServiceTests
         var site = new OptionListTestSite();
         var service = site.Options();
 
-        var content = await service.GetAsync(Field(OptionSource.Content, """{"root":"x"}"""), new FormBuilderOptionContext("en"));
+        var url = await service.GetAsync(Field(OptionSource.Url, """{"url":"https://example.com"}"""), new FormBuilderOptionContext("en"));
         var file = await service.GetAsync(Field(OptionSource.File), new FormBuilderOptionContext("en"));
 
-        Assert.That(new[] { content, file }, Has.All.SameAs(FormBuilderResolvedOptions.Unavailable));
+        Assert.That(new[] { url, file }, Has.All.SameAs(FormBuilderResolvedOptions.Unavailable));
     }
 
     [Test]

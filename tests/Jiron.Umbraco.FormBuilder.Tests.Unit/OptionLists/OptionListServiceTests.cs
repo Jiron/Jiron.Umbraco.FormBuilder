@@ -15,71 +15,73 @@ public sealed class OptionListServiceTests
     private static readonly Guid ListKey = Guid.Parse("73000000-0000-4000-8000-000000000030");
 
     [Test]
-    public void AList_HasAnAliasANameAndATimeWithinTheirBounds()
+    public async Task AList_HasAnAliasANameAndATimeWithinTheirBounds()
     {
         var lists = new OptionListTestSite().Lists;
 
-        Assert.Multiple(() =>
+        Assert.Multiple(async () =>
         {
-            Assert.That(Check(lists, Manual() with { Alias = "Sizes" }), Is.EqualTo(new[] { (DefinitionErrors.AliasInvalid, "$.alias") }));
-            Assert.That(Check(lists, Manual() with { Alias = null! }), Is.EqualTo(new[] { (DefinitionErrors.AliasInvalid, "$.alias") }));
-            Assert.That(Check(lists, Manual() with { Name = "  " }), Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, "$.name") }));
-            Assert.That(Check(lists, Manual() with { Name = new string('n', 256) }), Is.EqualTo(new[] { (DefinitionErrors.LimitExceeded, "$.name") }));
-            Assert.That(Check(lists, Manual() with { Name = new string('n', 255) }), Is.Empty);
-            Assert.That(Check(lists, Manual() with { CacheSeconds = -1 }), Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, "$.cacheSeconds") }));
-            Assert.That(Check(lists, Manual() with { CacheSeconds = OptionListService.MaxCacheSeconds + 1 }), Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, "$.cacheSeconds") }));
-            Assert.That(Check(lists, Manual() with { CacheSeconds = OptionListService.MaxCacheSeconds }), Is.Empty, "30 days");
+            Assert.That(await CheckAsync(lists, Manual() with { Alias = "Sizes" }), Is.EqualTo(new[] { (DefinitionErrors.AliasInvalid, "$.alias") }));
+            Assert.That(await CheckAsync(lists, Manual() with { Alias = null! }), Is.EqualTo(new[] { (DefinitionErrors.AliasInvalid, "$.alias") }));
+            Assert.That(await CheckAsync(lists, Manual() with { Name = "  " }), Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, "$.name") }));
+            Assert.That(await CheckAsync(lists, Manual() with { Name = new string('n', 256) }), Is.EqualTo(new[] { (DefinitionErrors.LimitExceeded, "$.name") }));
+            Assert.That(await CheckAsync(lists, Manual() with { Name = new string('n', 255) }), Is.Empty);
+            Assert.That(await CheckAsync(lists, Manual() with { CacheSeconds = -1 }), Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, "$.cacheSeconds") }));
+            Assert.That(await CheckAsync(lists, Manual() with { CacheSeconds = OptionListService.MaxCacheSeconds + 1 }), Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, "$.cacheSeconds") }));
+            Assert.That(await CheckAsync(lists, Code("""{"source":"months"}""") with { CacheSeconds = OptionListService.MaxCacheSeconds }), Is.Empty, "30 days");
+            Assert.That(await CheckAsync(lists, Manual() with { CacheSeconds = 60 }), Is.EqualTo(new[] { (DefinitionErrors.InvalidValue, "$.cacheSeconds") }), "a manual list is kept until it changes");
+            Assert.That((await lists.CheckAsync(Countries("{}") with { CacheSeconds = 60 }))[0].Message, Is.EqualTo("A countries list keeps nothing for a time, so its cacheSeconds is 0."));
             Assert.That(OptionListService.MaxCacheSeconds, Is.EqualTo(2_592_000));
         });
     }
 
     [Test]
-    public void AListsConfiguration_IsHeldToItsKind_AtItsPath()
+    public async Task AListsConfiguration_IsHeldToItsKind_AtItsPath()
     {
         var lists = new OptionListTestSite().Lists;
 
-        Assert.Multiple(() =>
+        Assert.Multiple(async () =>
         {
-            Assert.That(Check(lists, Manual() with { Kind = OptionListKind.Content }), Is.EqualTo(new[] { (DefinitionErrors.OptionsInvalid, "$.kind") }), "a kind of a later step");
-            Assert.That(lists.Check(Manual() with { Kind = OptionListKind.Url })[0].Message, Is.EqualTo("The site has no option lists of the kind 'url'."));
-            Assert.That(Check(lists, Manual() with { Kind = (OptionListKind)99 }), Is.EqualTo(new[] { (DefinitionErrors.OptionsInvalid, "$.kind") }));
-            Assert.That(Check(lists, Manual() with { Config = "{" }), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$.config") }));
-            Assert.That(Check(lists, Manual() with { Config = null! }), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$.config") }));
-            Assert.That(Check(lists, Manual() with { Config = "[]" }).Select(problem => problem.Path), Is.EqualTo(new[] { "$.config" }));
-            Assert.That(Check(lists, Manual() with { Config = """{"sorted":true}""" }), Is.EqualTo(new[] { (DefinitionErrors.SettingUnknown, "$.config.sorted") }));
-            Assert.That(Check(lists, Manual() with { Config = """{ }""" }), Is.Empty, "an object with nothing in it is no configuration");
-            Assert.That(Check(lists, Countries("""{"countries":["CH","XX"]}""")), Is.EqualTo(new[] { (DefinitionErrors.SettingInvalid, "$.config.countries[1]") }));
-            Assert.That(Check(lists, Countries("{}")), Is.Empty);
-            Assert.That(Check(lists, Code("{}")), Is.EqualTo(new[] { (DefinitionErrors.SettingMissing, "$.config.source") }));
-            Assert.That(Check(lists, Code("""{"source":"products"}""")), Is.EqualTo(new[] { (DefinitionErrors.SettingInvalid, "$.config.source") }));
-            Assert.That(Check(lists, Code("""{"source":"months"}""")), Is.Empty);
+            Assert.That(await CheckAsync(lists, Manual() with { Kind = OptionListKind.File }), Is.EqualTo(new[] { (DefinitionErrors.OptionsInvalid, "$.kind") }), "a kind of a later step");
+            Assert.That((await lists.CheckAsync(Manual() with { Kind = OptionListKind.Url }))[0].Message, Is.EqualTo("The site has no option lists of the kind 'url'."));
+            Assert.That(await CheckAsync(lists, Manual() with { Kind = (OptionListKind)99 }), Is.EqualTo(new[] { (DefinitionErrors.OptionsInvalid, "$.kind") }));
+            Assert.That(await CheckAsync(lists, Manual() with { Config = "{" }), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$.config") }));
+            Assert.That(await CheckAsync(lists, Manual() with { Config = null! }), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$.config") }));
+            Assert.That((await CheckAsync(lists, Manual() with { Config = "[]" })).Select(problem => problem.Path), Is.EqualTo(new[] { "$.config" }));
+            Assert.That(await CheckAsync(lists, Manual() with { Config = """{"sorted":true}""" }), Is.EqualTo(new[] { (DefinitionErrors.SettingUnknown, "$.config.sorted") }));
+            Assert.That(await CheckAsync(lists, Manual() with { Config = """{ }""" }), Is.Empty, "an object with nothing in it is no configuration");
+            Assert.That(await CheckAsync(lists, Countries("""{"countries":["CH","XX"]}""")), Is.EqualTo(new[] { (DefinitionErrors.SettingInvalid, "$.config.countries[1]") }));
+            Assert.That(await CheckAsync(lists, Countries("{}")), Is.Empty);
+            Assert.That(await CheckAsync(lists, Code("{}")), Is.EqualTo(new[] { (DefinitionErrors.SettingMissing, "$.config.source") }));
+            Assert.That(await CheckAsync(lists, Code("""{"source":"products"}""")), Is.EqualTo(new[] { (DefinitionErrors.SettingInvalid, "$.config.source") }));
+            Assert.That(await CheckAsync(lists, Code("""{"source":"months"}""")), Is.Empty);
         });
     }
 
     [Test]
-    public void AListsItems_AreAFieldsOwnOptions_ForAManualListOnly()
+    public async Task AListsItems_AreAFieldsOwnOptions_ForAManualListOnly()
     {
         var lists = new OptionListTestSite().Lists;
         var tooMany = "[" + string.Join(",", Enumerable.Range(0, OptionListService.MaxOptions + 1).Select(i => string.Create(CultureInfo.InvariantCulture, $$"""{"value":"v{{i}}"}"""))) + "]";
         var most = "[" + string.Join(",", Enumerable.Range(0, OptionListService.MaxOptions).Select(i => string.Create(CultureInfo.InvariantCulture, $$"""{"value":"v{{i}}"}"""))) + "]";
 
-        Assert.Multiple(() =>
+        Assert.Multiple(async () =>
         {
-            Assert.That(Check(lists, Manual("""[{"value":"s","label":{"":"Small","de":"Klein"},"places":4,"parentValues":["x"]}]""")), Is.Empty);
-            Assert.That(Check(lists, Manual("""[{"value":1}]""")), Is.EqualTo(new[] { (DefinitionErrors.InvalidType, "$.items[0].value") }), "the shape checks of a field's own options");
-            Assert.That(Check(lists, Manual("""[{"value":"s","colour":"red"}]""")).Select(problem => problem.Path), Is.EqualTo(new[] { "$.items[0].colour" }));
-            Assert.That(Check(lists, Manual("[]")), Is.Empty, "no items");
-            Assert.That(Check(lists, Manual("[")), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$.items") }));
-            Assert.That(Check(lists, Manual("""{"value":"s"}""")), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$.items") }));
-            Assert.That(Check(lists, Manual("null")), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$.items") }));
-            Assert.That(Check(lists, Manual("[null]")), Is.EqualTo(new[] { (DefinitionErrors.InvalidType, "$.items[0]") }));
-            Assert.That(Check(lists, Manual("""[{"value":"s"},{"value":"S"}]""")), Is.EqualTo(new[] { (DefinitionErrors.OptionValueDuplicate, "$.items[1].value") }), "unique once folded");
-            Assert.That(Check(lists, Manual("""[{"value":" s"}]""")), Is.EqualTo(new[] { (DefinitionErrors.OptionValueInvalid, "$.items[0].value") }), "clean as answers are");
-            Assert.That(Check(lists, Manual("""[{"value":"s","places":-1}]""")).Select(problem => problem.Path), Is.EqualTo(new[] { "$.items[0].places" }));
-            Assert.That(Check(lists, Manual(tooMany)), Is.EqualTo(new[] { (DefinitionErrors.LimitExceeded, "$.items") }));
-            Assert.That(Check(lists, Manual(most)), Is.Empty, "10,000 options");
-            Assert.That(Check(lists, Countries("{}") with { Items = """[{"value":"s"}]""" }), Is.EqualTo(new[] { (DefinitionErrors.OptionsInvalid, "$.items") }), "a source's list has no items of its own");
-            Assert.That(lists.Check(Countries("{}") with { Items = """[{"value":"s"}]""" })[0].Message, Is.EqualTo("A countries list takes its options from its source and has no items of its own."));
+            Assert.That(await CheckAsync(lists, Manual("""[{"value":"s","label":{"":"Small","de":"Klein"},"places":4,"parentValues":["x"]}]""")), Is.Empty);
+            Assert.That(await CheckAsync(lists, Manual("""[{"value":1}]""")), Is.EqualTo(new[] { (DefinitionErrors.InvalidType, "$.items[0].value") }), "the shape checks of a field's own options");
+            Assert.That((await CheckAsync(lists, Manual("""[{"value":"s","colour":"red"}]"""))).Select(problem => problem.Path), Is.EqualTo(new[] { "$.items[0].colour" }));
+            Assert.That(await CheckAsync(lists, Manual("[]")), Is.Empty, "no items");
+            Assert.That(await CheckAsync(lists, Manual("[")), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$.items") }));
+            Assert.That(await CheckAsync(lists, Manual("""{"value":"s"}""")), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$.items") }));
+            Assert.That(await CheckAsync(lists, Manual("null")), Is.EqualTo(new[] { (DefinitionErrors.InvalidJson, "$.items") }));
+            Assert.That(await CheckAsync(lists, Manual("[null]")), Is.EqualTo(new[] { (DefinitionErrors.InvalidType, "$.items[0]") }));
+            Assert.That(await CheckAsync(lists, Manual("""[{"value":"s"},{"value":"S"}]""")), Is.EqualTo(new[] { (DefinitionErrors.OptionValueDuplicate, "$.items[1].value") }), "unique once folded");
+            Assert.That(await CheckAsync(lists, Manual("""[{"value":" s"}]""")), Is.EqualTo(new[] { (DefinitionErrors.OptionValueInvalid, "$.items[0].value") }), "clean as answers are");
+            Assert.That((await CheckAsync(lists, Manual("""[{"value":"s","places":-1}]"""))).Select(problem => problem.Path), Is.EqualTo(new[] { "$.items[0].places" }));
+            Assert.That(await CheckAsync(lists, Manual(tooMany)), Is.EqualTo(new[] { (DefinitionErrors.LimitExceeded, "$.items") }));
+            Assert.That(await CheckAsync(lists, Manual(most)), Is.Empty, "10,000 options");
+            Assert.That(await CheckAsync(lists, Countries("{}") with { Items = """[{"value":"s"}]""" }), Is.EqualTo(new[] { (DefinitionErrors.OptionsInvalid, "$.items") }), "a source's list has no items of its own");
+            Assert.That((await lists.CheckAsync(Countries("{}") with { Items = """[{"value":"s"}]""" }))[0].Message, Is.EqualTo("A countries list takes its options from its source and has no items of its own."));
         });
     }
 
@@ -189,6 +191,6 @@ public sealed class OptionListServiceTests
 
     private static OptionListInput Code(string config) => new("products", "Products", OptionListKind.Code, Config: config);
 
-    private static List<(string Code, string Path)> Check(OptionListService lists, OptionListInput input) =>
-        [.. lists.Check(input).Select(problem => (problem.Code, problem.Path))];
+    private static async Task<List<(string Code, string Path)>> CheckAsync(OptionListService lists, OptionListInput input) =>
+        [.. (await lists.CheckAsync(input)).Select(problem => (problem.Code, problem.Path))];
 }

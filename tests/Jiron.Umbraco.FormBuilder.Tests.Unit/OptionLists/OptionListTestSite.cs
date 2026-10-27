@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -8,14 +9,15 @@ using NSubstitute;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Serialization;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 
 /// <summary>
 /// One server of a site with option lists (ADR-0073): its sources, the library's lists in memory, a real runtime cache,
-/// the distributed cache over a messenger that records what it is told, Umbraco's dictionary and loggers that keep what
-/// is logged.
+/// the distributed cache over a messenger that records what it is told, Umbraco's dictionary, content, document types
+/// and data types, and loggers that keep what is logged.
 /// </summary>
 internal sealed class OptionListTestSite
 {
@@ -25,7 +27,8 @@ internal sealed class OptionListTestSite
         IFormBuilderOptionSource[] registered = sources.Length > 0 ? sources : Standard();
         Collection = new FormBuilderOptionSourceCollection(() => registered);
         Sources = new OptionSourceRegistry(Collection);
-        Kinds = new OptionKindRegistry(Sources);
+        UmbracoReads = new OptionListUmbraco(Umbraco.Contents, Umbraco.Navigation, PublicAccess, ContentTypes, DataTypes, Umbraco.Languages, new MergeTagCultures(), Caches);
+        Kinds = new OptionKindRegistry(Sources, UmbracoReads);
         Refresher = new FormBuilderOptionListCacheRefresher(Caches, Substitute.For<IJsonSerializer>(), Substitute.For<IEventAggregator>(), Substitute.For<ICacheRefresherNotificationFactory>());
         Lists = new OptionListService(Repository, Kinds, Caches, new DistributedCache(Messenger, new CacheRefresherCollection(() => [Refresher])), ListLogs);
     }
@@ -33,8 +36,20 @@ internal sealed class OptionListTestSite
     /// <summary>The library's lists.</summary>
     public MemoryOptionLists Repository { get; } = new();
 
-    /// <summary>Umbraco's languages and dictionary, which labels that name a dictionary item read.</summary>
+    /// <summary>Umbraco's languages and dictionary, which labels that name a dictionary item read, and its content.</summary>
     public TestUmbraco Umbraco { get; } = new();
+
+    /// <summary>Which pages need a member to sign in.</summary>
+    public IPublicAccessService PublicAccess { get; } = Substitute.For<IPublicAccessService>();
+
+    /// <summary>The document types.</summary>
+    public IContentTypeService ContentTypes { get; } = Substitute.For<IContentTypeService>();
+
+    /// <summary>The data types.</summary>
+    public IDataTypeService DataTypes { get; } = Substitute.For<IDataTypeService>();
+
+    /// <summary>What content and data type lists read from Umbraco.</summary>
+    public OptionListUmbraco UmbracoReads { get; }
 
     /// <summary>The server's caches, with a real runtime cache.</summary>
     public AppCaches Caches { get; } = new(new ObjectCacheAppCache(), NoAppCache.Instance, new IsolatedCaches(_ => NoAppCache.Instance));

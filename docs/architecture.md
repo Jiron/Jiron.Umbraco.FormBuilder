@@ -69,7 +69,7 @@ database connection of its own. Its areas:
 | Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions and their comparison, and the exchange of forms (`Exchange`: element keys and their remap, copied actions, the export envelope) | ADR-0002, ADR-0045, ADR-0046 |
 | Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good, and the published form as the site runs it), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053, ADR-0060 |
 | Fields and options | the field type registry, the built-in types, places on options | ADR-0002, §4.3.2 |
-| Option lists | the kinds with their configuration and its checks, the standard lists and a site's own sources with their start-up check, the library's lists with their cache refresher, the option service, and the publish check of a field's source | ADR-0002, ADR-0073 |
+| Option lists | the kinds with their configuration and its checks, content and data type lists with what they read from Umbraco and the handler that drops what they keep when the site changes, the standard lists and a site's own sources with their start-up check, the library's lists with their cache refresher, the option service, and the publish check of a field's source | ADR-0002, ADR-0073, ADR-0075 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030, ADR-0064, ADR-0068 |
 | Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`field`, `entry` with `entry.answers` and `entry.url`, `form`, `query`, `context`, `date`, and `page`, `site`, `member` and `dictionary` over Umbraco's content, members, domains, languages and dictionary), the answers as each field type shows them with what each place masks or leaves out and the dictionary's texts for labels that name an item, answer recall in visitor texts (only the fields before the text's page, group or field, by their current aliases, a site's type by its rule kind), a site's sources and filters with their start-up check, and the culture formats written from .NET's data | ADR-0014, ADR-0064, ADR-0065, ADR-0066, ADR-0067, ADR-0068 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
@@ -249,8 +249,12 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   `IFormBuilderOptionService` resolves a field's or a list's options in one culture (labels by the text's fallback,
   dictionary items in that culture), filters a cascading field's by the parent's answers, cleans what a source gives
   as entries need it, and marks a source that fails or takes longer than 5 seconds unavailable, logging it without
-  values. A library list is kept until it changes and a source list for its `cacheSeconds`; every change drops both on
-  every server through the option list cache refresher.
+  values. A library list is kept until it changes and a code list's options for its `cacheSeconds`; every change drops
+  both on every server through the option list cache refresher. Content and data type lists
+  ([ADR-0075](decisions/0075-content-and-data-type-lists.md)) read the published pages below a root, or a dropdown's,
+  checkbox list's or radio button list's values, and keep them until Umbraco's own cache refreshers tell each server
+  of a change to content, document types, data types, public access or languages (`OptionSiteCacheHandler`); what
+  their configuration names on the site is checked when a list is saved and a form is published.
 - **The public projection** is built from an allowlist of public types (`Core.Definitions.Projection`) and carries no
   actions, outcomes, recipients, option-source configuration, privacy settings or switched-off rules; its SHA-256 is
   `PublicHash`. Its TypeScript types and schema ship in `schemas/` (6.6).
