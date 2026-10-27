@@ -98,7 +98,8 @@ public sealed class FormBuilderCoreComposer : IComposer
         // The form service (ADR-0044): create, save, publish and the other changes, with their notifications.
         builder.AddFormBuilderForms();
 
-        // Entries' answers (ADR-0070): the consent wordings, and the store that writes the rows and reads them back typed.
+        // Entries' answers (ADR-0070, ADR-0072): the reader of a submission's answers over its form, the consent
+        // wordings, and the store that writes the rows and reads them back typed.
         builder.AddFormBuilderEntries();
 
         // The retention job (ADR-0045): the draft-version cleanup so far.

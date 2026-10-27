@@ -1,6 +1,7 @@
 # 0070. Storing answers and reading them back
 
-- Status: accepted
+- Status: accepted; the values the server works out (calculations, hidden fields) and a repeatable group's rows,
+  closed up, come from [ADR-0072](0072-a-submissions-answers.md) in 5.4d
 - Date: 2026-10-26
 - Roadmap step: 5.4b (decided and built); 6.1 calls it from the pipeline, 6.2 renders the consent wording into the
   markup, 5.4d adds the values the server works out (calculations, hidden fields)

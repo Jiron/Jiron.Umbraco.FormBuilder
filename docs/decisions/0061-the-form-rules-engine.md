@@ -3,7 +3,8 @@
 - Status: accepted; builds on [ADR-0005](0005-shared-logic-and-test-vectors.md) (conditions, their check and the
   vectors), [ADR-0030](0030-porting-the-shared-logic.md) (where the logic lives) and
   [ADR-0035](0035-structural-validation-and-public-projection.md) (what publishing refuses); amended in 5.3a by
-  [ADR-0063](0063-the-calculation-language.md) (calculations)
+  [ADR-0063](0063-the-calculation-language.md) (calculations) and in 5.4d by
+  [ADR-0072](0072-a-submissions-answers.md) (the rules run again once the server resolves a hidden field's value)
 - Date: 2026-10-26
 - Roadmap step: 5.2a (decided and built); 5.2b checks the values, 6.1 runs the engine in the pipeline, 6.4 in the
   visitor's browser, 9.x in the preview

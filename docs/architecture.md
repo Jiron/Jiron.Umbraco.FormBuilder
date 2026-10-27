@@ -223,6 +223,12 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   `EntryAnswerStore` stores an entry's answers as its rows, with the uploads they name and the consent wordings
   (`ConsentWordings`) they agreed to, in one unit of work, and reads them back typed, each value also as its type
   read it ([ADR-0070](decisions/0070-storing-answers-and-reading-them-back.md)).
+  `SubmissionReader` puts these together over a whole form for the pipeline: every answer cleaned, limited and read,
+  a repeatable group's rows counted against its limits before any is read, the rules over what was read with every
+  calculation worked out by the server, each shown hidden field's default resolved on submit (then the rules once
+  more, for the actions and the outcome), and the shown fields checked, a child in its row; it hands over what the
+  entry stores, the errors by field and row, the rules' state and the answers for merge tags. What the rules hide is
+  neither checked nor stored ([ADR-0072](decisions/0072-a-submissions-answers.md)).
   `Display` writes the texts merge tags show the values as, in the template's culture, with the wire number or date
   behind a text ([ADR-0066](decisions/0066-answers-as-merge-tags.md)); by default by the type's rule kind.
   `FieldTypeChanges` works out which types a field may become and what each change keeps and loses (its settings, by
