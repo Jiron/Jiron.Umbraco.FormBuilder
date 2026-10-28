@@ -46,6 +46,20 @@ public sealed class UploadTokensTests
     }
 
     [Test]
+    public void AToken_NamesItsFile_OnlyForItsFormAndItsField()
+    {
+        var token = _tokens.Issue(Form, Field, File);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_tokens.FileOf(token, Form, Field), Is.EqualTo(File));
+            Assert.That(_tokens.FileOf(token, Form, Guid.NewGuid()), Is.Null, "another field");
+            Assert.That(_tokens.FileOf(token, Guid.NewGuid(), Field), Is.Null, "another form");
+            Assert.That(_tokens.FileOf("not a token!", Form, Field), Is.Null);
+        });
+    }
+
+    [Test]
     public void AToken_CountsUntilItExpires_AndNotAfter()
     {
         var token = _tokens.Issue(Form, Field, File);

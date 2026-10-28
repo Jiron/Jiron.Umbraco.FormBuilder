@@ -33,6 +33,7 @@ public sealed partial class FormRefusalTests
         [FormBuilderConflict.Trashed] = "trashed",
         [FormBuilderConflict.NotTrashed] = "not_trashed",
         [FormBuilderConflict.LandingChanged] = "landing_changed",
+        [FormBuilderConflict.EntryLimitReached] = "entry_limit_reached",
     };
 
     [Test]

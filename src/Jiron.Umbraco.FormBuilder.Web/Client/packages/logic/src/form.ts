@@ -36,8 +36,13 @@ export interface LogicCalculation {
 /** A field: one with child fields is a repeatable group. */
 export interface LogicField {
   readonly id: string;
-  /** The kind its answers compare as; none for a field that holds no value. */
+  /** The kind its answers compare as; none for a field whose answers no condition compares, or that holds none. */
   readonly kind?: Kind | null;
+  /**
+   * Whether a field without a kind can be required: a name, an address or a grid takes answers that no condition
+   * compares (ADR-0062, ADR-0088). A field with a kind always can.
+   */
+  readonly canBeRequired?: boolean;
   /** The alias formulas name it by. */
   readonly alias?: string | null;
   /** A calculation field's formula, worked out instead of what is posted for it. */
@@ -153,6 +158,8 @@ interface Node {
   readonly repeater: Node | null;
   readonly kind: Kind | null;
   readonly required: boolean;
+  /** Whether a field can be required: one with a kind, or one that takes answers no condition compares. */
+  readonly canBeRequired: boolean;
   readonly rules: readonly Rule[];
   readonly repeats: boolean;
   readonly calculation: LogicCalculation | null;
@@ -194,6 +201,7 @@ function node(
     repeater,
     kind: field?.kind ?? null,
     required: field?.required === true,
+    canBeRequired: (field?.kind ?? null) !== null || field?.canBeRequired === true,
     rules: [],
     repeats: children.length > 0,
     calculation: field?.calculation ?? null,
@@ -266,14 +274,14 @@ function decimalsOf(calculation: LogicCalculation): number {
 function checkRules(
   rules: readonly Rule[],
   effects: readonly string[],
-  holdsValue: boolean,
+  canBeRequired: boolean,
   kinds: Readonly<Record<string, Kind>>,
   patterns: Map<string, Pattern>,
 ): void {
   const seen = new Set<string>();
   for (const rule of rules) {
     const effect = rule.effect;
-    if (!effects.includes(effect) || (effect === 'require' && !holdsValue) || seen.has(effect))
+    if (!effects.includes(effect) || (effect === 'require' && !canBeRequired) || seen.has(effect))
       throw new LogicError('invalid_rule');
     if ((effect === 'show' && seen.has('hide')) || (effect === 'hide' && seen.has('show')))
       throw new LogicError('invalid_rule');
@@ -354,13 +362,13 @@ export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Con
   // The check, before anything is evaluated.
   const patterns = new Map<string, Pattern>();
   for (const element of nodes)
-    checkRules(element.rules, effectsOf(element.type), element.kind !== null, kinds, patterns);
+    checkRules(element.rules, effectsOf(element.type), element.canBeRequired, kinds, patterns);
   for (const rule of form.validationRules ?? []) {
     if (!subjects.has(rule.field)) throw new LogicError('unknown_field');
     checkGroup(rule, kinds, patterns);
   }
-  for (const action of form.actions ?? []) checkRules(action.rules ?? [], ['run'], true, kinds, patterns);
-  for (const outcome of form.outcomes ?? []) checkRules(outcome.rules ?? [], ['use'], true, kinds, patterns);
+  for (const action of form.actions ?? []) checkRules(action.rules ?? [], ['run'], false, kinds, patterns);
+  for (const outcome of form.outcomes ?? []) checkRules(outcome.rules ?? [], ['use'], false, kinds, patterns);
   for (const element of nodes) {
     if (element.calculation === null) continue;
     const tree = parseFormula(element.calculation.formula);
@@ -460,12 +468,12 @@ export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Con
           return;
         }
         if (element.formula !== null) row.calculations.set(element.id, element.valueIn[at] ?? null);
-        if (element.kind !== null && requires(element, scopeOf(repeater, at))) row.required.push(element.id);
+        if (element.canBeRequired && requires(element, scopeOf(repeater, at))) row.required.push(element.id);
       });
     } else if (element.hidden) hidden.push(element.id);
     else {
       if (element.formula !== null) calculations.set(element.id, element.value);
-      if (element.kind !== null && requires(element, global)) required.push(element.id);
+      if (element.canBeRequired && requires(element, global)) required.push(element.id);
     }
   }
   for (const rule of form.validationRules ?? []) {

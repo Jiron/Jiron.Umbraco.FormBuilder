@@ -10,14 +10,23 @@ using Microsoft.Net.Http.Headers;
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
 /// <summary>
-/// Forms, as headless sites render them, their fields' options and the files visitors upload to them (section 4.6,
-/// ADR-0084, ADR-0086, ADR-0087).
+/// Forms, as headless sites render them, their fields' options, the files visitors upload to them and the entries they
+/// submit (section 4.6, ADR-0084, ADR-0086, ADR-0087, ADR-0088).
 /// </summary>
 /// <param name="requests">What the endpoints of forms read of a request and answer with.</param>
+/// <param name="pages">The culture and the page a request is for.</param>
 /// <param name="uploads">What the upload endpoint reads of a request and answers with.</param>
+/// <param name="entries">What the entries endpoint reads of a request and answers with.</param>
+/// <param name="availability">Whether a form takes entries now.</param>
 /// <param name="forms">The published forms.</param>
 [Route("forms")]
-internal sealed class FormController(FormRequests requests, UploadRequests uploads, PublishedFormCache forms) : FormBuilderPublicApiController
+internal sealed class FormController(
+    FormRequests requests,
+    FormPages pages,
+    UploadRequests uploads,
+    EntryRequests entries,
+    FormAvailability availability,
+    PublishedFormCache forms) : FormBuilderPublicApiController
 {
     /// <summary>
     /// A published form for headless rendering, when its settings allow it: its public projection with its texts in the
@@ -50,7 +59,7 @@ internal sealed class FormController(FormRequests requests, UploadRequests uploa
             content = key;
         }
 
-        if (!FormRequests.IsCulture(culture))
+        if (!FormPages.IsCulture(culture))
         {
             return FormBuilderPublicProblems.InvalidRequest("culture");
         }
@@ -62,7 +71,7 @@ internal sealed class FormController(FormRequests requests, UploadRequests uploa
             return FormBuilderPublicProblems.FormNotFound();
         }
 
-        return Answered(await requests.DefinitionAsync(form, await requests.CultureAsync(culture), await requests.PageAsync(content), cancellationToken));
+        return Answered(await requests.DefinitionAsync(form, await pages.CultureAsync(culture), await pages.PageAsync(content), cancellationToken));
     }
 
     /// <summary>
@@ -110,7 +119,7 @@ internal sealed class FormController(FormRequests requests, UploadRequests uploa
             content = page;
         }
 
-        if (!FormRequests.IsCulture(culture))
+        if (!FormPages.IsCulture(culture))
         {
             return FormBuilderPublicProblems.InvalidRequest("culture");
         }
@@ -130,7 +139,7 @@ internal sealed class FormController(FormRequests requests, UploadRequests uploa
             return FormBuilderPublicProblems.InvalidRequest("parent");
         }
 
-        return Answered(await requests.OptionsAsync(form, field, asked => answers.TryGetValue(asked, out var given) ? given : [], await requests.CultureAsync(culture), await requests.PageAsync(content), cancellationToken));
+        return Answered(await requests.OptionsAsync(form, field, asked => answers.TryGetValue(asked, out var given) ? given : [], await pages.CultureAsync(culture), await pages.PageAsync(content), cancellationToken));
     }
 
     /// <summary>
@@ -139,7 +148,8 @@ internal sealed class FormController(FormRequests requests, UploadRequests uploa
     /// field's limit, its type's or the site's, whichever is smaller, before and while it is read, and checked on its
     /// first bytes before any is stored: a program or a script, an extension the site blocks, one the field does not
     /// take, and bytes that are not the kind the extension names are refused, whatever the client says the file is.
-    /// The answer's token, which a submission posts in the field's value, counts for 24 hours.
+    /// The answer's token, which a submission posts in the field's value, counts for 24 hours. A form that takes no entry
+    /// now, by its times or its entry limit, takes no upload either (ADR-0088).
     /// </summary>
     /// <param name="key">The form's key.</param>
     /// <param name="fieldKey">The key of a field of the form that takes files, a repeatable group's among them.</param>
@@ -156,6 +166,7 @@ internal sealed class FormController(FormRequests requests, UploadRequests uploa
     [FormBuilderUploadBody]
     [ProducesResponseType<FileUploadResponseModel>(StatusCodes.Status200OK, "application/json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status413PayloadTooLarge, FormBuilderProblemResult.MediaType)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status415UnsupportedMediaType, FormBuilderProblemResult.MediaType)]
@@ -180,7 +191,53 @@ internal sealed class FormController(FormRequests requests, UploadRequests uploa
             return FormBuilderPublicProblems.NotFound();
         }
 
+        if (await availability.CheckAsync(form.Published.Definition.Settings.Availability, form.Published.Form.Key, cancellationToken) is { } unavailable)
+        {
+            FormBuilderPublicProblems.CloseConnection(HttpContext);
+            return unavailable == FormUnavailable.Closed ? FormBuilderPublicProblems.FormClosed() : FormBuilderPublicProblems.EntryLimitReached();
+        }
+
         return await uploads.UploadAsync(HttpContext, form.Published.Form.Key, field, cancellationToken);
+    }
+
+    /// <summary>
+    /// Submits a visitor's answers to a published form (ADR-0088), as JSON: by field alias, as the form endpoint names
+    /// them, with the revision the page showed, each ticked consent's wording hash and, for a field that stores files,
+    /// the tokens its uploads answered with. The answer is the entry's receipt and the outcome to show; a retry with the
+    /// same submission id and the same answers gets the same again, even once the form has closed.
+    /// </summary>
+    /// <param name="key">The form's key.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    /// <remarks>
+    /// <c>422 validation_failed</c> lists each error with its code (the field's kind of error, <c>check</c>, <c>rule</c>
+    /// or <c>empty</c>) and its path (the alias, <c>grid.rowKey</c>, <c>group[row].child</c>, or empty for the form).
+    /// <c>409 form_changed</c> asks the page to load the form again; <c>409 duplicate_submission</c> says the id was used
+    /// for other answers.
+    /// </remarks>
+    [HttpPost("{key}/entries")]
+    [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Submit)]
+    [FormBuilderBodyLimit(EntryRequests.MaxBodyBytes)]
+    [FormBuilderTimeLimit(30)]
+    [FormBuilderJsonBody(typeof(EntryRequestModel))]
+    [ProducesResponseType<EntryResponseModel>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status413PayloadTooLarge, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status415UnsupportedMediaType, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, FormBuilderProblemResult.MediaType)]
+    public async Task<IActionResult> Entries(string key, CancellationToken cancellationToken)
+    {
+        // A form the site does not serve answers before its body is read.
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is null)
+        {
+            FormBuilderPublicProblems.CloseConnection(HttpContext);
+            return FormBuilderPublicProblems.FormNotFound();
+        }
+
+        return await entries.SubmitAsync(HttpContext, formKey, cancellationToken);
     }
 
     // The field with this key, a repeatable group's child among them, when it has options of its own or from a source.

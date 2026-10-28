@@ -36,7 +36,7 @@ internal static class FormRules
         var patterns = new Dictionary<string, SafePattern>(StringComparer.Ordinal);
         foreach (var node in nodes)
         {
-            CheckRules(node.Rules, node.Type == ElementType.Field ? ["show", "hide", "require"] : ["show", "hide"], node.Kind is not null, kinds, patterns);
+            CheckRules(node.Rules, node.Type == ElementType.Field ? ["show", "hide", "require"] : ["show", "hide"], node.CanBeRequired, kinds, patterns);
         }
 
         foreach (var rule in form.ValidationRules)
@@ -51,12 +51,12 @@ internal static class FormRules
 
         foreach (var action in form.Actions)
         {
-            CheckRules(action.Rules, ["run"], holdsValue: true, kinds, patterns);
+            CheckRules(action.Rules, ["run"], canBeRequired: false, kinds, patterns);
         }
 
         foreach (var outcome in form.Outcomes)
         {
-            CheckRules(outcome.Rules, ["use"], holdsValue: true, kinds, patterns);
+            CheckRules(outcome.Rules, ["use"], canBeRequired: false, kinds, patterns);
         }
 
         foreach (var node in nodes)
@@ -197,7 +197,7 @@ internal static class FormRules
                         repeater.RowBuilders[row].Calculations[element.Id] = element.ValueIn[row];
                     }
 
-                    if (element.Kind is not null && Requires(element, ScopeOf(repeater, row)))
+                    if (element.CanBeRequired && Requires(element, ScopeOf(repeater, row)))
                     {
                         repeater.RowBuilders[row].Required.Add(element.Id);
                     }
@@ -214,7 +214,7 @@ internal static class FormRules
                     calculations[element.Id] = element.Value;
                 }
 
-                if (element.Kind is not null && Requires(element, global))
+                if (element.CanBeRequired && Requires(element, global))
                 {
                     required.Add(element.Id);
                 }
@@ -307,7 +307,11 @@ internal static class FormRules
         {
             foreach (var field in list)
             {
-                var element = Add(new Node(Claim(field.Id), ElementType.Field, container, repeater, field.Kind, field.Required, field.Rules, field.Fields.Count > 0) { Calculation = field.Calculation });
+                var element = Add(new Node(Claim(field.Id), ElementType.Field, container, repeater, field.Kind, field.Required, field.Rules, field.Fields.Count > 0)
+                {
+                    Calculation = field.Calculation,
+                    CanBeRequired = field.Kind is not null || field.CanBeRequired,
+                });
 
                 // A repeatable group holds no repeatable group.
                 if (repeater is not null && element.Repeats)
@@ -357,13 +361,13 @@ internal static class FormRules
 
     // An element's rules: effects it takes, one rule per effect and not both show and hide (invalid_rule), then each
     // rule's conditions.
-    private static void CheckRules(IReadOnlyList<LogicRule> rules, ReadOnlySpan<string> effects, bool holdsValue, IReadOnlyDictionary<string, FieldKind> kinds, Dictionary<string, SafePattern> patterns)
+    private static void CheckRules(IReadOnlyList<LogicRule> rules, ReadOnlySpan<string> effects, bool canBeRequired, IReadOnlyDictionary<string, FieldKind> kinds, Dictionary<string, SafePattern> patterns)
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var rule in rules)
         {
             var effect = rule.Effect;
-            if (!effects.Contains(effect) || (effect == "require" && !holdsValue) || seen.Contains(effect)
+            if (!effects.Contains(effect) || (effect == "require" && !canBeRequired) || seen.Contains(effect)
                 || (effect == "show" && seen.Contains("hide")) || (effect == "hide" && seen.Contains("show")))
             {
                 throw new LogicException(LogicErrors.InvalidRule);
@@ -508,6 +512,9 @@ internal static class FormRules
         public bool Repeats { get; } = repeats;
 
         public LogicCalculation? Calculation { get; init; }
+
+        /// <summary>Whether a field can be required: one with a kind, or one that takes answers no condition compares.</summary>
+        public bool CanBeRequired { get; init; }
 
         /// <summary>A calculation as the check read it.</summary>
         public Formula? Formula { get; set; }

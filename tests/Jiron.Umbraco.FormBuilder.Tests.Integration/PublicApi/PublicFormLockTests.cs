@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
@@ -46,6 +47,28 @@ public sealed class PublicFormLockTests : PublicApiTestBase
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), "the client's answer from before the lock is not the current one");
             Assert.That(field["settings"]!["maxLength"]!.GetValue<int>(), Is.EqualTo(100));
             Assert.That(response.Headers.ETag?.Tag, Is.Not.EqualTo(before.ETag));
+        });
+    }
+
+    [Test]
+    public async Task ASubmission_IsHeldToALockAddedBetweenTwoStarts()
+    {
+        var key = await BeforeTheLockAsync();
+        var draft = (await Forms.GetDraftAsync(key))!;
+        _ = await Forms.PublishAsync(key, draft.Form.ConcurrencyVersion, null, Editor);
+        async Task<HttpResponseMessage> SubmitAsync(int length) =>
+            await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/entries", request => request.Content = new StringContent(
+                $$$"""{"revision":1,"values":{"name":"{{{new string('a', length)}}}"}}""", Encoding.UTF8, "application/json"));
+
+        using var pastTheLock = await SubmitAsync(101);
+        using var withinTheLock = await SubmitAsync(100);
+        var errors = (await JsonAsync(pastTheLock))["errors"]!.AsArray().Select(error => $"{error!["code"]} at {error["path"]}");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await RefusalAsync(pastTheLock), Is.EqualTo("422 validation_failed"));
+            Assert.That(errors, Is.EqualTo(new[] { "maxLength at name" }), "the lock's 100, not the stored 500");
+            Assert.That(withinTheLock.StatusCode, Is.EqualTo(HttpStatusCode.OK), await withinTheLock.Content.ReadAsStringAsync());
         });
     }
 

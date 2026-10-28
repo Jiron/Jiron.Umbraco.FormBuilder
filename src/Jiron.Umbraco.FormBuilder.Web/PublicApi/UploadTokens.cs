@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Security.Cryptography;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
@@ -14,7 +15,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// </summary>
 /// <param name="protection">The site's Data Protection.</param>
 /// <param name="time">The site's clock.</param>
-internal sealed class UploadTokens(IDataProtectionProvider protection, TimeProvider time)
+internal sealed class UploadTokens(IDataProtectionProvider protection, TimeProvider time) : IUploadTokenReader
 {
     /// <summary>The Data Protection purpose of the tokens.</summary>
     public const string Purpose = "Jiron.FormBuilder.Upload.v1";
@@ -76,6 +77,9 @@ internal sealed class UploadTokens(IDataProtectionProvider protection, TimeProvi
             ? new UploadToken(new Guid(payload.AsSpan(1 + KeyLength, KeyLength)), new Guid(payload.AsSpan(1 + (2 * KeyLength), KeyLength)), expires)
             : null;
     }
+
+    /// <inheritdoc />
+    public Guid? FileOf(string token, Guid form, Guid field) => Read(token, form) is { } read && read.FieldKey == field ? read.FileKey : null;
 }
 
 /// <summary>The upload a token names.</summary>

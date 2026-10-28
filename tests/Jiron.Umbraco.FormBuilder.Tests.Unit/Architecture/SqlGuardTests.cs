@@ -5,7 +5,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Architecture;
 
 /// <summary>
 /// Guards are locking reads (ADR-0036, ADR-0038): every <c>EXISTS</c> check in the repositories' SQL, and every count of
-/// the ids a unit names, reads with <c>SqlNames.InsertOnceHint</c> or <c>SqlNames.LockingRead</c>. On SQL Server under
+/// the ids a unit names or of the entries that count toward a form's limit (ADR-0088), reads with <c>SqlNames.InsertOnceHint</c> or <c>SqlNames.LockingRead</c>. On SQL Server under
 /// read-committed snapshot a plain check reads a row's last committed version and misses a writer at the same moment;
 /// on SQLite the hints are empty, so no database test here can tell. The test reads the repositories' source, the
 /// strongest check that runs without a SQL Server.
@@ -60,7 +60,7 @@ public sealed partial class SqlGuardTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(counts.Select(count => count.File), Is.EqualTo(new[] { "EntryRepository.Values.cs", "EntryRepository.Values.cs" }), "the fields and the files an entry names");
+            Assert.That(counts.Select(count => count.File), Is.EqualTo(new[] { "EntryRepository.Values.cs", "EntryRepository.Values.cs", "EntryRepository.cs" }), "the fields and the files an entry names, and the entries that count toward a limit");
             Assert.That(counts.Where(count => !count.Match.Groups["hint"].Success).Select(count => $"{count.File}: {count.Match.Value}"), Is.Empty);
         });
     }

@@ -11,7 +11,8 @@ internal static class FormBuilderFormServices
     /// <summary>
     /// Registers the publish checks in the order they run, the form service with its versions and its exchange and what
     /// they share, the folder service, the permanent delete the form and folder services share (ADR-0047), and the
-    /// published forms the website serves with their cache refresher (ADR-0084).
+    /// published forms the website serves with their cache refresher (ADR-0084), with the culture and the page of a
+    /// visitor's request (ADR-0088).
     /// </summary>
     public static IUmbracoBuilder AddFormBuilderForms(this IUmbracoBuilder builder)
     {
@@ -31,6 +32,7 @@ internal static class FormBuilderFormServices
         builder.Services.TryAddSingleton<PublishedFormCache>();
         builder.Services.TryAddSingleton<EditorHtml>();
         builder.Services.TryAddSingleton<VisitorForms>();
+        builder.Services.TryAddSingleton<FormPages>();
         builder.CacheRefreshers().Add<FormBuilderFormCacheRefresher>();
         return builder;
     }

@@ -2,7 +2,9 @@
 
 - Status: accepted; extends [ADR-0006](0006-file-storage-and-uploads.md) (how a request names its field, the parts
   until the challenge is verified, the checks of a file's first bytes, the token and the answers) and
-  [ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md) (the declared body limit of an upload)
+  [ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md) (the declared body limit of an upload); a form's
+  availability checked before the file, with the submission's codes, extended by
+  [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) in 6.1e
 - Date: 2026-10-28
 - Roadmap step: 6.1d (decided and built); 6.1e checks the form's availability for uploads too, 6.2 applies the same
   checks to posts without JavaScript, 6.4 sends uploads and shares the table of kinds, 7.1 verifies the challenge, 7.3

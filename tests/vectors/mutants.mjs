@@ -3,8 +3,8 @@
 /**
  * The mutation check of the shared logic (ROADMAP 5.2a, ADR-0061), since 5.3a of the calculations (ADR-0063), since
  * 5.3f of answer recall (ADR-0068), since 5.4a of the forms of email addresses, phone numbers and web addresses
- * (ADR-0069), since 5.5d of the options a choice's answers are held to (ADR-0077), and since 5.5h of the reader of a
- * value's parts (ADR-0083).
+ * (ADR-0069), since 5.5d of the options a choice's answers are held to (ADR-0077), since 5.5h of the reader of a
+ * value's parts (ADR-0083), and since 6.1e of which fields can be required (ADR-0088).
  * Each mutant changes one piece of code in one runtime; that runtime's vector runner runs, and the file is put back. A
  * mutant that no vector catches survives, and the check fails unless the mutant is written down here as an equivalent
  * change, with the reason. A mutant written down as equivalent that a vector catches fails the check too, so the notes
@@ -238,12 +238,16 @@ const mutants = [
   ts('form-group-not-looked-at', 'form.ts', '    if (isGroup(item)) looksAt(item, into);', '    if (isGroup(item)) continue;'),
   ts('form-ids-twice', 'form.ts', "    if (typeof id !== 'string' || ids.has(id)) throw new LogicError('invalid_form');", "    if (typeof id !== 'string') throw new LogicError('invalid_form');"),
   ts('form-nested-repeater', 'form.ts', "      if (repeater !== null && element.repeats) throw new LogicError('invalid_form');" + NL, ''),
-  ts('form-require-without-kind', 'form.ts', "(effect === 'require' && !holdsValue) || ", ''),
+  ts('form-require-without-kind', 'form.ts', "(effect === 'require' && !canBeRequired) || ", ''),
+  ts('form-required-without-kind', 'form.ts', '      if (element.canBeRequired && requires(element, global)) required.push(element.id);', '      if (requires(element, global)) required.push(element.id);'),
+  ts('form-required-in-row-without-kind', 'form.ts', '        if (element.canBeRequired && requires(element, scopeOf(repeater, at))) row.required.push(element.id);', '        if (requires(element, scopeOf(repeater, at))) row.required.push(element.id);'),
+  ts('form-taking-answers-not-required', 'form.ts', '    canBeRequired: (field?.kind ?? null) !== null || field?.canBeRequired === true,', '    canBeRequired: (field?.kind ?? null) !== null,'),
+  ts('form-kind-not-required', 'form.ts', '    canBeRequired: (field?.kind ?? null) !== null || field?.canBeRequired === true,', '    canBeRequired: field?.canBeRequired === true,'),
   ts('form-show-and-hide', 'form.ts', lines("    if ((effect === 'show' && seen.has('hide')) || (effect === 'hide' && seen.has('show')))", "      throw new LogicError('invalid_rule');", ''), ''),
   ts('form-message-field-unchecked', 'form.ts', "    if (!subjects.has(rule.field)) throw new LogicError('unknown_field');" + NL, ''),
   ts('form-validation-rule-unchecked', 'form.ts', lines('    checkGroup(rule, kinds, patterns);', '  }', '  for (const action'), lines('  }', '  for (const action')),
-  ts('form-actions-unchecked', 'form.ts', "  for (const action of form.actions ?? []) checkRules(action.rules ?? [], ['run'], true, kinds, patterns);" + NL, ''),
-  ts('form-outcomes-unchecked', 'form.ts', "  for (const outcome of form.outcomes ?? []) checkRules(outcome.rules ?? [], ['use'], true, kinds, patterns);" + NL, ''),
+  ts('form-actions-unchecked', 'form.ts', "  for (const action of form.actions ?? []) checkRules(action.rules ?? [], ['run'], false, kinds, patterns);" + NL, ''),
+  ts('form-outcomes-unchecked', 'form.ts', "  for (const outcome of form.outcomes ?? []) checkRules(outcome.rules ?? [], ['use'], false, kinds, patterns);" + NL, ''),
   ts('form-order-before-check', 'form.ts', lines('  // The check, before anything is evaluated.', '  const patterns'), lines('  order(nodes, subjects);', '  const patterns')),
   ts('form-context-hidden-used', 'form.ts', '  const global: Scope = { fields: kinds, context, answers: (id) => answersOf(id, null, -1) };', '  const global: Scope = { fields: kinds, context, answers: (id) => (context.hidden.includes(id) ? undefined : answersOf(id, null, -1)) };'),
   ts('form-grid-rows-no-subjects', 'form.ts', '      for (const row of field.rows ?? []) subjects.set(claim(row.id), { kind: row.kind, owner: element });', '      for (const row of field.rows ?? []) claim(row.id);'),
@@ -1183,7 +1187,11 @@ const mutants = [
   cs('cs-form-group-not-looked-at', 'FormRules.cs', '                LooksAt(group.Conditions, into);', '                into.Remove(string.Empty);'),
   cs('cs-form-ids-twice', 'FormRules.cs', 'id is not null && ids.Add(id) ? id : throw', '(ids.Add(id ?? string.Empty) || id is not null) && id is not null ? id : throw'),
   cs('cs-form-nested-repeater', 'FormRules.cs', '                if (repeater is not null && element.Repeats)', '                if (repeater is not null && element.Repeats && element.Id.Length < 0)'),
-  cs('cs-form-require-without-kind', 'FormRules.cs', ' || (effect == "require" && !holdsValue) ||', ' || (effect == "require" && !holdsValue && effect.Length == 0) ||'),
+  cs('cs-form-require-without-kind', 'FormRules.cs', ' || (effect == "require" && !canBeRequired) ||', ' || (effect == "require" && !canBeRequired && effect.Length == 0) ||'),
+  cs('cs-form-required-without-kind', 'FormRules.cs', '                if (element.CanBeRequired && Requires(element, global))', '                if (Requires(element, global))'),
+  cs('cs-form-required-in-row-without-kind', 'FormRules.cs', '                    if (element.CanBeRequired && Requires(element, ScopeOf(repeater, row)))', '                    if (Requires(element, ScopeOf(repeater, row)))'),
+  cs('cs-form-taking-answers-not-required', 'FormRules.cs', '                    CanBeRequired = field.Kind is not null || field.CanBeRequired,', '                    CanBeRequired = field.Kind is not null,'),
+  cs('cs-form-kind-not-required', 'FormRules.cs', '                    CanBeRequired = field.Kind is not null || field.CanBeRequired,', '                    CanBeRequired = field.CanBeRequired,'),
   cs('cs-form-show-and-hide', 'FormRules.cs', '(effect == "show" && seen.Contains("hide")) || (effect == "hide" && seen.Contains("show"))', '(effect == "show" && seen.Contains("show!")) || (effect == "hide" && seen.Contains("hide!"))'),
   cs('cs-form-context-hidden-used', 'FormRules.cs', '{ Lookup = id => AnswersOf(id, null, -1) };', '{ Lookup = id => context.Hidden.Contains(id, StringComparer.Ordinal) ? null : AnswersOf(id, null, -1) };'),
   cs('cs-form-grid-rows-no-subjects', 'FormRules.cs', '                    subjects[Claim(row.Id)] = new SubjectOf(row.Kind, element);', '                    Claim(row.Id);'),

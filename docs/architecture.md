@@ -73,7 +73,7 @@ database connection of its own. Its areas:
 | Outbound | calls to other hosts (`OutboundHttp`): the host configuration's hosts and schemes, redirects to the same host only, one time limit and a cap; the transport that resolves names itself and connects only to globally reachable addresses, which only the Testing assembly replaces | ADR-0076, §4.10 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030, ADR-0064, ADR-0068 |
 | Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`field`, `entry` with `entry.answers` and `entry.url`, `form`, `query`, `context`, `date`, and `page`, `site`, `member` and `dictionary` over Umbraco's content, members, domains, languages and dictionary), the answers as each field type shows them with what each place masks or leaves out and the dictionary's texts for labels that name an item and the labels lists and other sources resolve for options, answer recall in visitor texts (only the fields before the text's page, group or field, by their current aliases, a site's type by its rule kind), a site's sources and filters with their start-up check, the culture formats written from .NET's data, and for a browser a template's values but recall's, the recall form cut down to what its texts need and the culture's formats as JSON | ADR-0014, ADR-0064, ADR-0065, ADR-0066, ADR-0067, ADR-0068, ADR-0077, ADR-0083, ADR-0085 |
-| Entries | the submission pipeline, states, values, files, events, notes, the entries query builder, and a consent's wording as shown, sanitised and hashed | ADR-0003, ADR-0070, ADR-0085, §4.4 |
+| Entries | the submission pipeline (`Submissions`: from a request by aliases to a stored entry with its receipt and outcome, below), states, values, files, events, notes, the entries query builder, and a consent's wording as shown, sanitised and hashed | ADR-0003, ADR-0070, ADR-0085, ADR-0088, §4.4 |
 | Actions and email | action types, action runs, the email outbox, the worker | ADR-0007 |
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
 | Files | the file store contract and the physical store, whose root is checked against the web root at start-up; the host's limits for files (`Files:MaxFileBytes`, `Files:BlockedExtensions`); the uploads before a submission: the name cleaned, the first bytes checked against the kinds of file (`FileKinds`), the bytes counted, hashed and stored, a row without an entry; scanning | ADR-0006, ADR-0041, ADR-0087 |
@@ -116,7 +116,7 @@ flowchart LR
 
 | Area | Holds | Decided in |
 | --- | --- | --- |
-| Public API | `/jfb/api/v1` below the host's base path: the base controller with each action's declarations and their filter, the middleware in front of it (no form content, origins, what ends a request early), the catch-all, the OpenAPI document `jfb-public`, the form endpoint, the options endpoint, the upload endpoint with its multipart reading and its tokens; the rate-limit middleware | ADR-0006, ADR-0012, ADR-0084, ADR-0086, ADR-0087 |
+| Public API | `/jfb/api/v1` below the host's base path: the base controller with each action's declarations and their filter, the middleware in front of it (no form content, origins, what ends a request early), the catch-all, the OpenAPI document `jfb-public`, the form endpoint, the options endpoint, the upload endpoint with its multipart reading and its tokens, the entries endpoint with its strict reading of a JSON body; the rate-limit middleware | ADR-0006, ADR-0012, ADR-0084, ADR-0086, ADR-0087, ADR-0088 |
 | Management API | `/umbraco/jfb/management/api/v1`: the base controller, the access declarations and their filter, the refusals with stable codes, the authorization policies with their resources and denials, the OpenAPI document `jfb`; the library tree, folders, the trash, forms and their versions, a definition carried as its document; the field types for the designer | ADR-0013, ADR-0049, ADR-0050, ADR-0051, ADR-0052, ADR-0057, §4.7 |
 | Rendering | the view component, `<jfb-render>`, `<jfb-assets>`, the surface controller, output cache rules, asset serving | ADR-0004, ADR-0015 |
 | Themes | the built-in themes, their views and stylesheets | ADR-0015 |
@@ -249,6 +249,16 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   [ADR-0077](decisions/0077-answers-and-labels-from-resolved-options.md),
   [ADR-0080](decisions/0080-reading-a-submission-after-the-phase-5-review.md),
   [ADR-0083](decisions/0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md)).
+  `FormSubmissions` runs a submission end to end for every transport
+  ([ADR-0088](decisions/0088-the-submission-pipeline-and-the-entries-endpoint.md)): the published form as the site
+  runs it (a trashed form is none), members-only forms refused until 14.3, a retry of the same answers (by the
+  digest `SubmissionDigest`) answered with its entry's receipt and outcome before anything else, the answers mapped
+  from the aliases of the revision the page showed (an older one through the newest version published with it) to
+  the live version's keys, `form_changed` when they do not fit or a ticked consent's wording changed, the
+  availability (`FormAvailability`, which the form endpoint's `open` and the uploads share), the empty submission,
+  then the reader; `SubmissionEntries` stores the entry with its `submitted` event, its action runs and its daily
+  count in the store's one unit, which counts the entry limit again after the form's counter, and
+  `SubmissionOutcomes` renders the outcome, a redirect checked again by the publish rule.
   `Display` writes the texts merge tags show the values as, in the template's culture, with the wire number or date
   behind a text ([ADR-0066](decisions/0066-answers-as-merge-tags.md)); by default by the type's rule kind. An option
   from a list or another source shows the label its source resolves for the parent answers the check holds it to, row
@@ -383,16 +393,17 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
 `docs/api/jfb-public.json` ([ADR-0012](decisions/0012-anonymous-endpoints-spam-protection-and-challenges.md),
 [ADR-0084](decisions/0084-the-public-apis-frame-and-the-form-endpoint.md),
 [ADR-0086](decisions/0086-the-options-endpoint.md),
-[ADR-0087](decisions/0087-the-upload-endpoint.md)).
+[ADR-0087](decisions/0087-the-upload-endpoint.md),
+[ADR-0088](decisions/0088-the-submission-pipeline-and-the-entries-endpoint.md)).
 
 | Route | Purpose | Rate-limit policy | Needs |
 | --- | --- | --- | --- |
 | `GET forms/{keyOrAlias}` | the published form in one culture with its revision, the site's time zone and whether it is open, when the form allows headless access, with what the browser renders its visitor texts with (`mergeTags`, null for none) and each consent's wording hash (`consents`); `no-cache` with an `ETag` from the answer's bytes | `read` | – |
 | `GET forms/{key}/render` | the published form as HTML for `form_changed` (ADR-0004) | `read` | a local `page` path |
 | `POST forms/{key}/challenge` | a signed challenge, places left, member values | `challenge` | – |
-| `POST forms/{key}/uploads` | one file to a field before submitting (`?fieldKey=`), streamed as `multipart/form-data`: an optional `challenge` part, then the `file` part; held to the field's limit (its type's or `Files:MaxFileBytes`) before and while it is read, checked on its first bytes (programs and scripts, blocked extensions, the field's own check, bytes of another kind than the extension names), stored with a row that waits for its entry; answers a token for 24 hours with the cleaned name, the size and the detected content type; every refusal closes the connection | `upload` | the challenge as the first part (verified from 7.1) |
+| `POST forms/{key}/uploads` | one file to a field before submitting (`?fieldKey=`), streamed as `multipart/form-data`: an optional `challenge` part, then the `file` part; held to the field's limit (its type's or `Files:MaxFileBytes`) before and while it is read, checked on its first bytes (programs and scripts, blocked extensions, the field's own check, bytes of another kind than the extension names), stored with a row that waits for its entry; answers a token for 24 hours with the cleaned name, the size and the detected content type; a form that takes no entry now refuses it with the submission's code before a byte is read; every refusal closes the connection | `upload` | the challenge as the first part (verified from 7.1) |
 | `POST forms/{key}/validate` | one page's server validation, without `uniquePerForm` | `submit` | the challenge |
-| `POST forms/{key}/entries` | submit | `submit` | the challenge, or a server key |
+| `POST forms/{key}/entries` | submit: a JSON object of at most 1 MiB, counted as it is read, with the revision the page showed and the answers by alias (`values`, a file field's upload tokens among them), the consents' wording hashes, the query and context values; answers the entry's `receipt` and `outcome`, the same for a retry of the same answers; refusals by code, `422 validation_failed` with each error's code and path and the check or rule whose message shows | `submit` | the challenge (from 7.1), or a server key |
 | `POST forms/{key}/receipt` | the receipt and outcome of an uncertain submission | `submit` | its challenge or server key |
 | `POST forms/{key}/drafts` | save and resume: the link is emailed, never returned | `submit` | the challenge |
 | `POST drafts/resume` | values and page for a resume token from the URL fragment | `submit` | the token |
@@ -411,7 +422,8 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
   before the body is read: a body above the limit, or any for an action that takes none, answers `413`; the time
   limit `504 timeout`; pending migrations `503 migrations_pending` with `Retry-After: 10`. Anything unexpected answers
   `500 server_error`, logged with the endpoint's name.
-- **Members-only forms** bind the challenge to the signed-in member (`member_required` without one), with no cookie.
+- **Members-only forms** bind the challenge to the signed-in member (`member_required` without one), with no cookie;
+  until that comes in 14.3, every submission to one answers `member_required`.
 - **Error codes:** `form_not_found`, `form_closed`, `form_changed`, `validation_failed`, `invalid_request`,
   `challenge_required`, `captcha_failed`, `rate_limited`, `payload_too_large`, `unsupported_media_type`,
   `member_required`, `duplicate_submission`, `entry_limit_reached`, `already_submitted`, `origin_denied`, `timeout`,

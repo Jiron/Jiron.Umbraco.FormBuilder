@@ -156,11 +156,35 @@ internal sealed record NewEntry
     /// <summary>When retention deletes it.</summary>
     public DateTimeOffset? PurgeAfterUtc { get; init; }
 
+    /// <summary>
+    /// The most entries the form takes (<c>availability.maxEntries</c>, ADR-0088), 1 or more, or null for no limit: the
+    /// unit counts the entries that count toward it (<see cref="EntryLimits"/>) right after the form's counter, so two
+    /// submissions at once cannot both take the last place, and refuses this one with
+    /// <see cref="FormBuilderConflict.EntryLimitReached"/> when the form holds that many already. An entry that does not
+    /// count itself is stored whatever the count.
+    /// </summary>
+    public int? EntryLimit { get; init; }
+
     /// <summary>The values.</summary>
     public IReadOnlyList<NewEntryValue> Values { get; init; } = [];
 
     /// <summary>The uploaded files of the form that the entry takes, none of them another entry's yet (ADR-0006).</summary>
     public IReadOnlyList<int> FileIds { get; init; } = [];
+}
+
+/// <summary>
+/// Which entries count toward a form's entry limit (<c>availability.maxEntries</c>, ADR-0088): every one but test
+/// entries, drafts, spam and rejected entries, so neither a preview nor a flood of spam can close a form.
+/// </summary>
+internal static class EntryLimits
+{
+    /// <summary>The states whose entries count, unless they are test entries.</summary>
+    public static readonly IReadOnlyList<EntryState> CountingStates = [EntryState.Unverified, EntryState.Submitted, EntryState.Approved];
+
+    /// <summary>Whether an entry in this state counts toward the limit.</summary>
+    /// <param name="state">Its state.</param>
+    /// <param name="isTest">Whether it came from the preview.</param>
+    public static bool Counts(EntryState state, bool isTest) => !isTest && CountingStates.Contains(state);
 }
 
 /// <summary>A stored entry, without its values.</summary>
@@ -322,11 +346,17 @@ internal interface IEntryRepository
     /// Stores an entry with its values and takes its files, and gives it the form's next number. The number comes from
     /// one update of the form's counter, the first write of the unit, so two submissions never share one, and a refused
     /// entry gives its number back. Null when the form does not exist. Refused with
-    /// <see cref="FormBuilderConflict.DuplicateSubmission"/>, <see cref="FormBuilderConflict.ChallengeUsed"/>,
-    /// <see cref="FormBuilderConflict.DuplicateKey"/>, <see cref="FormBuilderConflict.MissingVersion"/>,
-    /// <see cref="FormBuilderConflict.MissingField"/> or <see cref="FormBuilderConflict.MissingFile"/>.
+    /// <see cref="FormBuilderConflict.EntryLimitReached"/>, <see cref="FormBuilderConflict.DuplicateSubmission"/>,
+    /// <see cref="FormBuilderConflict.ChallengeUsed"/>, <see cref="FormBuilderConflict.DuplicateKey"/>,
+    /// <see cref="FormBuilderConflict.MissingVersion"/>, <see cref="FormBuilderConflict.MissingField"/> or
+    /// <see cref="FormBuilderConflict.MissingFile"/>.
     /// </summary>
     Task<StoredEntry?> CreateAsync(NewEntry entry, CancellationToken cancellationToken = default);
+
+    /// <summary>How many of a form's entries count toward its entry limit (<see cref="EntryLimits"/>, ADR-0088).</summary>
+    /// <param name="formId">The form.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<int> CountTowardsLimitAsync(int formId, CancellationToken cancellationToken = default);
 
     /// <summary>The entry with this key, or null.</summary>
     Task<StoredEntry?> GetAsync(Guid key, CancellationToken cancellationToken = default);

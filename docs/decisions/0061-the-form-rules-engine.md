@@ -4,7 +4,9 @@
   vectors), [ADR-0030](0030-porting-the-shared-logic.md) (where the logic lives) and
   [ADR-0035](0035-structural-validation-and-public-projection.md) (what publishing refuses); amended in 5.3a by
   [ADR-0063](0063-the-calculation-language.md) (calculations) and in 5.4d by
-  [ADR-0072](0072-a-submissions-answers.md) (the rules run again once the server resolves a hidden field's value)
+  [ADR-0072](0072-a-submissions-answers.md) (the rules run again once the server resolves a hidden field's value), and
+  in 6.1e by [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) (a field without a rule kind that
+  takes answers, a grid, a name or an address, can be required)
 - Date: 2026-10-26
 - Roadmap step: 5.2a (decided and built); 5.2b checks the values, 6.1 runs the engine in the pipeline, 6.4 in the
   visitor's browser, 9.x in the preview
@@ -64,7 +66,7 @@ hold it. Step 5.2a evaluates all of a form's rules at once, the same in C# and T
 | `LogicForm` | its pages, its form-level validation rules, its actions and its outcomes |
 | `LogicPage` | its id, its rules and its groups |
 | `LogicFormGroup` | its id, its rules and its fields (the conditions' own groups keep the name `LogicGroup`) |
-| `LogicField` | its id, the kind its answers compare as (none for a field that holds no value), whether it is `required`, its rules, a repeatable group's child fields, the ids and kinds of a grid's rows, and since 5.3a its alias and, for a calculation, its formula and places (ADR-0063) |
+| `LogicField` | its id, the kind its answers compare as (none for a field that holds no value, or whose answers no condition compares), whether it is `required`, its rules, a repeatable group's child fields, the ids and kinds of a grid's rows, since 5.3a its alias and, for a calculation, its formula and places (ADR-0063), and since 6.1e whether a field without a kind can be required (`canBeRequired` in the vectors, ADR-0088) |
 | `LogicValidationRule` | its id, the field that shows its message, whether it is switched on, and its conditions |
 | `LogicAction`, `LogicOutcome` | their id and their rules |
 
@@ -80,7 +82,8 @@ each field and grid row by its id, and for each repeatable group its rows, each 
   grid rows), with one compiled pattern per text for the whole form;
 - groups of conditions nested deeper than 10 levels: `too_deep`;
 - a rule whose effect the element does not take (pages and groups `show` and `hide`; fields `show`, `hide` and
-  `require`, `require` only on a field that holds a value; actions `run`; outcomes `use`), a second rule of one effect,
+  `require`, `require` only on a field that can be required: one with a kind, or one without that takes answers,
+  since 6.1e; actions `run`; outcomes `use`), a second rule of one effect,
   or both `show` and `hide`: `invalid_rule`;
 - a validation rule whose message no field that holds a value can show: `unknown_field`;
 - an id given twice: `invalid_form`;
@@ -94,7 +97,7 @@ counts as none. A hidden field's answers are gone: a condition sees it as empty,
 rows are gone with it. A repeatable group's child fields are decided row by row; a hidden repeatable group hides every
 row's child fields. Then, over the final visibility:
 
-- a shown field that holds a value is **required** when it is `required` itself or its switched-on `require` rule
+- a shown field that can be required is **required** when it is `required` itself or its switched-on `require` rule
   matches;
 - a switched-on **validation rule** that matches puts its id among the messages of its field, when that field is shown;
 - an **action** runs unless its switched-on `run` rule does not match;

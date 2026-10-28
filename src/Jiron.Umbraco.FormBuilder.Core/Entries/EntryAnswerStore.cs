@@ -1,6 +1,8 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Entries;
@@ -18,13 +20,19 @@ internal sealed class EntryAnswerStore(
 {
     /// <summary>
     /// Stores an entry with its answers, its uploads and the consent wordings they name, in one unit of work whose
-    /// first write is the form's counter (ADR-0038); a wording is stored once, under its hash. Null when the form does
-    /// not exist; refused as <see cref="IEntryRepository.CreateAsync"/> refuses.
+    /// first write is the form's counter (ADR-0038); a wording is stored once, under its hash. The entry's search text
+    /// is made of its values here (ADR-0003, ADR-0088): their texts, a value with parts by its parts' texts, but no
+    /// sensitive field's (a grid row's by its grid), no file, no yes or no and no consent's wording hash. Null when the
+    /// form does not exist; refused as <see cref="IEntryRepository.CreateAsync"/> refuses.
     /// </summary>
     /// <param name="entry">The entry, without values or uploads: its answers give them.</param>
     /// <param name="definition">The version <see cref="NewEntry.FormVersionId"/> names, which the answers were read with.</param>
     /// <param name="answers">The answers, at most one for each field and row.</param>
     /// <param name="wordings">The wording each ticked consent was shown, by the field's key (<see cref="ConsentWordings"/>).</param>
+    /// <param name="alongside">
+    /// What the unit stores besides, once the entry is stored (its event, its action runs and its counts, ADR-0088), or
+    /// null; its writes join the unit, so a refusal there rolls the entry back too.
+    /// </param>
     /// <param name="cancellationToken">Cancels the unit of work.</param>
     /// <exception cref="ArgumentException">
     /// The entry already has values or uploads, or the answers are refused (<see cref="EntryValueWriter.Of"/>).
@@ -34,6 +42,7 @@ internal sealed class EntryAnswerStore(
         FormDefinition definition,
         IEnumerable<EntryFieldAnswer> answers,
         IReadOnlyDictionary<Guid, ConsentWording> wordings,
+        Func<StoredEntry, Task>? alongside = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entry);
@@ -51,21 +60,49 @@ internal sealed class EntryAnswerStore(
         }
 
         var rows = EntryValueWriter.Of(entry.FormId, definition, catalogue, types, answers, wordings);
+        var searchText = EntrySearchText.For(Searchable(definition, catalogue, rows.Values));
         return await database.WriteAsync(
             async _ =>
             {
-                var stored = await entries.CreateAsync(entry with { Values = rows.Values, FileIds = rows.FileIds }, cancellationToken);
+                var stored = await entries.CreateAsync(entry with { Values = rows.Values, FileIds = rows.FileIds, SearchText = searchText }, cancellationToken);
                 if (stored is not null)
                 {
                     foreach (var wording in rows.Wordings)
                     {
                         await consentTexts.AddAsync(wording.Culture, wording.Text, cancellationToken);
                     }
+
+                    if (alongside is not null)
+                    {
+                        await alongside(stored);
+                    }
                 }
 
                 return stored;
             },
             cancellationToken);
+    }
+
+    // The texts search finds the entry by: its values' texts, a value with parts by its parts' texts (its key's text),
+    // but no sensitive field's, no file, no yes or no and no consent's wording hash.
+    private IEnumerable<string> Searchable(FormDefinition definition, IReadOnlyList<CatalogueField> catalogue, IReadOnlyList<NewEntryValue> values)
+    {
+        var fields = definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)).ToDictionary(field => field.Key);
+        var rows = catalogue.ToDictionary(field => field.Id);
+        foreach (var value in values)
+        {
+            if (value.FileId is not null || value.Bool is not null || !rows.TryGetValue(value.FieldId, out var row))
+            {
+                continue;
+            }
+
+            // A grid's row is its own row of the catalogue, whose parent is the grid.
+            var owner = fields.GetValueOrDefault(row.Values.FieldKey) ?? (row.Values.ParentFieldKey is { } parent ? fields.GetValueOrDefault(parent) : null);
+            if (owner is not null && !owner.Sensitive && types.FindType(owner.Type) is not ConsentFieldType && (value.KeyText ?? value.Text) is { Length: > 0 } text)
+            {
+                yield return text;
+            }
+        }
     }
 
     /// <summary>An entry's answers, typed; null when the entry does not exist.</summary>

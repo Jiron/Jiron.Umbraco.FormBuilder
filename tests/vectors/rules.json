@@ -5276,6 +5276,142 @@
       }
     },
     {
+      "id": "form-field-without-kind-that-takes-answers-can-be-required",
+      "description": "a name, an address or a grid takes answers that no condition compares (ADR-0062)",
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fullName",
+                    "canBeRequired": true,
+                    "required": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [
+          "fullName"
+        ],
+        "messages": {},
+        "calculations": {},
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-field-without-kind-that-takes-answers-required-by-a-rule",
+      "values": {
+        "agree": [
+          "true"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "agree",
+                    "kind": "checkbox"
+                  },
+                  {
+                    "id": "fullName",
+                    "canBeRequired": true,
+                    "rules": [
+                      {
+                        "effect": "require",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "agree",
+                            "op": "isChecked"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [
+          "fullName"
+        ],
+        "messages": {},
+        "calculations": {},
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-field-without-kind-that-takes-answers-not-required-when-its-rule-does-not-match",
+      "values": {},
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "agree",
+                    "kind": "checkbox"
+                  },
+                  {
+                    "id": "fullName",
+                    "canBeRequired": true,
+                    "rules": [
+                      {
+                        "effect": "require",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "agree",
+                            "op": "isChecked"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {},
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
       "id": "form-hidden-field-answers-are-gone",
       "values": {
         "a": [
@@ -9638,6 +9774,142 @@
               "hidden": [],
               "required": [
                 "phone"
+              ],
+              "messages": {},
+              "calculations": {}
+            },
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {}
+            }
+          ]
+        },
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-repeatable-group-child-without-kind-is-never-required",
+      "rows": {
+        "people": [
+          {
+            "name": [
+              "Anna"
+            ]
+          }
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "people",
+                    "fields": [
+                      {
+                        "id": "name",
+                        "kind": "text"
+                      },
+                      {
+                        "id": "intro",
+                        "required": true
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {},
+        "rows": {
+          "people": [
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {}
+            }
+          ]
+        },
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-repeatable-group-child-without-kind-required-per-row",
+      "rows": {
+        "people": [
+          {
+            "guest": [
+              "true"
+            ]
+          },
+          {}
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "people",
+                    "fields": [
+                      {
+                        "id": "guest",
+                        "kind": "checkbox"
+                      },
+                      {
+                        "id": "fullName",
+                        "canBeRequired": true,
+                        "rules": [
+                          {
+                            "effect": "require",
+                            "enabled": true,
+                            "match": "all",
+                            "conditions": [
+                              {
+                                "field": "guest",
+                                "op": "isChecked"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {},
+        "rows": {
+          "people": [
+            {
+              "hidden": [],
+              "required": [
+                "fullName"
               ],
               "messages": {},
               "calculations": {}

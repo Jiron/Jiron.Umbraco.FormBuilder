@@ -3,7 +3,9 @@
 - Status: accepted; rate limits (refines D14), member-bound challenges, the honeypot and `invalid_request`
   amended in 1.8; another origin's requests other than `GET`, the site's own pages behind a proxy that ends TLS and a
   body for an endpoint that takes none amended in 6.1a
-  ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md))
+  ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)); the body of a submission, its limits, the
+  receipt and the replay before 7.1 extended in 6.1e
+  ([ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the

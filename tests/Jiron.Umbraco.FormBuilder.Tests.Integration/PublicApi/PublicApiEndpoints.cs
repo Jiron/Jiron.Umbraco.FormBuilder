@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Microsoft.AspNetCore.Http;
@@ -53,8 +54,8 @@ internal sealed record PublicApiEndpoint(ApiDescription Description)
     public bool TakesBody => HttpMethods.IsPost(Method) || HttpMethods.IsPut(Method) || HttpMethods.IsPatch(Method);
 
     /// <summary>
-    /// A body it takes, for an endpoint that takes one: a small text file for an upload. An endpoint that takes a body
-    /// this list does not know yet fails here, so its body joins the list when it is written.
+    /// A body it takes, for an endpoint that takes one: a small text file for an upload, an answer for a submission.
+    /// An endpoint that takes a body this list does not know yet fails here, so its body joins the list when it is written.
     /// </summary>
     public HttpContent? Body()
     {
@@ -68,6 +69,11 @@ internal sealed record PublicApiEndpoint(ApiDescription Description)
             var content = new MultipartFormDataContent();
             content.Add(new ByteArrayContent("hello"u8.ToArray()), "file", "hello.txt");
             return content;
+        }
+
+        if (Description.RelativePath.EndsWith("/entries", StringComparison.Ordinal))
+        {
+            return new StringContent("""{"revision":1,"values":{"name":"Ada"}}""", Encoding.UTF8, "application/json");
         }
 
         throw new InvalidOperationException($"{Name} takes a body that {nameof(PublicApiEndpoint)}.{nameof(Body)} does not know yet; add one.");

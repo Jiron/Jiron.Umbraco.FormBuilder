@@ -6,6 +6,194 @@
     "version": "1.0"
   },
   "paths": {
+    "/jfb/api/v1/forms/{key}/entries": {
+      "post": {
+        "operationId": "FormEntries",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EntryRequestModel"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EntryResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden; also when a browser on an origin the site does not allow sent it (origin_denied).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error: something failed unexpectedly (server_error).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout: the endpoint did not answer within its time limit (timeout).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "x-jfb-rate-limit": "submit",
+        "x-jfb-body-limit": 1048576,
+        "x-jfb-time-limit": 30
+      }
+    },
     "/jfb/api/v1/forms/{key}/options/{fieldKey}": {
       "get": {
         "operationId": "FormOptions",
@@ -234,6 +422,20 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden; also when a browser on an origin the site does not allow sent it (origin_denied).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -249,7 +451,7 @@
             }
           },
           "413": {
-            "description": "Content Too Large",
+            "description": "Content Too Large; also when the body is longer than the endpoint takes (payload_too_large).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -278,20 +480,6 @@
           },
           "503": {
             "description": "Service Unavailable",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ProblemDetails"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden: a browser on an origin the site does not allow sent it (origin_denied).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -476,6 +664,140 @@
   },
   "components": {
     "schemas": {
+      "EntryOutcomeResponseModel": {
+        "required": [
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "delaySeconds": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "showAnswers": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryReceiptResponseModel": {
+        "required": [
+          "reference",
+          "submissionId",
+          "submittedUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "submissionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "submittedUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryRequestModel": {
+        "required": [
+          "revision"
+        ],
+        "type": "object",
+        "properties": {
+          "submissionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "culture": {
+            "type": "string",
+            "nullable": true
+          },
+          "contentKey": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true
+          },
+          "consents": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "query": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "challenge": {
+            "type": "string",
+            "nullable": true
+          },
+          "captchaToken": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntryResponseModel": {
+        "required": [
+          "outcome",
+          "receipt"
+        ],
+        "type": "object",
+        "properties": {
+          "receipt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryReceiptResponseModel"
+              }
+            ]
+          },
+          "outcome": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntryOutcomeResponseModel"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "FieldOptionResponseModel": {
         "required": [
           "label",

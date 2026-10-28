@@ -28,7 +28,16 @@ internal static class DefinitionLogic
             var rows = traits is not null && traits.Supports(FieldFeatures.Rows)
                 ? field.Rows.Select(row => new LogicGridRow(Id(row.Key), traits.RowKindOf(field))).ToList()
                 : [];
-            return new LogicField(Id(field.Key), traits?.KindOf(field), field.Required, Rules(field.Rules), [.. field.Fields.Select(Field)], rows, field.Alias, Calculation(field, traits));
+            return new LogicField(
+                Id(field.Key),
+                traits?.KindOf(field),
+                field.Required,
+                Rules(field.Rules),
+                [.. field.Fields.Select(Field)],
+                rows,
+                field.Alias,
+                Calculation(field, traits),
+                CanBeRequired: traits?.Supports(FieldFeatures.Required) == true);
         }
 
         return new LogicForm(

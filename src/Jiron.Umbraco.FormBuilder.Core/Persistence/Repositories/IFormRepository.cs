@@ -325,6 +325,12 @@ internal interface IFormRepository
     Task<StoredFormVersion?> GetVersionByIdAsync(int versionId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The newest published version of a form that published this public revision, or null when none did: the version
+    /// a submission against an older revision is mapped through (ADR-0002, ADR-0088).
+    /// </summary>
+    Task<StoredFormVersion?> GetRevisionAsync(int formId, int publicRevision, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// The versions of a form with these numbers, newest first, at most <see cref="FormRepository.MaxVersionsAtOnce"/>;
     /// the numbers it does not have are left out.
     /// </summary>

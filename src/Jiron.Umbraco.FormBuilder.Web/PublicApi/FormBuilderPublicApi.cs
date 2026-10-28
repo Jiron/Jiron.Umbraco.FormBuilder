@@ -151,6 +151,21 @@ internal sealed class FormBuilderUploadBodyAttribute : Attribute
 }
 
 /// <summary>
+/// An action that reads its JSON body itself, strictly (ADR-0088): the document describes the body with this model,
+/// and the public API's form feature keeps MVC's own binding from reading it.
+/// </summary>
+/// <param name="model">The model that describes the body.</param>
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+internal sealed class FormBuilderJsonBodyAttribute(Type model) : Attribute
+{
+    /// <summary>The media type of the body.</summary>
+    public const string MediaType = "application/json";
+
+    /// <summary>The model that describes the body.</summary>
+    public Type Model { get; } = model ?? throw new ArgumentNullException(nameof(model));
+}
+
+/// <summary>
 /// How long an endpoint may take (ADR-0012), on the site's <see cref="TimeProvider"/>: past it, the request is
 /// cancelled and answers <c>504 timeout</c>, unless the visitor left first.
 /// </summary>
@@ -201,9 +216,10 @@ internal sealed class FormBuilderPublicDocument : IDocumentFilter
 }
 
 /// <summary>
-/// Writes an operation's declarations into the document <c>jfb-public</c> as extensions, the body of an upload, and the
-/// refusals the frame answers for every operation: <c>413 payload_too_large</c>, <c>500 server_error</c> and
-/// <c>504 timeout</c>, and <c>403 origin_denied</c> for one a browser on another origin may not send.
+/// Writes an operation's declarations into the document <c>jfb-public</c> as extensions, the body of an upload or of a
+/// JSON action, and the refusals the frame answers for every operation: <c>413 payload_too_large</c>,
+/// <c>500 server_error</c> and <c>504 timeout</c>, and <c>403 origin_denied</c> for one a browser on another origin
+/// may not send.
 /// </summary>
 /// <param name="host">The host's limits for files, which give the largest upload.</param>
 internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOperationFilter
@@ -235,6 +251,18 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
             operation.RequestBody = UploadBody();
         }
 
+        if (method.GetCustomAttributes(typeof(FormBuilderJsonBodyAttribute), false).FirstOrDefault() is FormBuilderJsonBodyAttribute json)
+        {
+            operation.RequestBody = new OpenApiRequestBody
+            {
+                Required = true,
+                Content = new Dictionary<string, OpenApiMediaType>
+                {
+                    [FormBuilderJsonBodyAttribute.MediaType] = new() { Schema = context.SchemaGenerator.GenerateSchema(json.Model, context.SchemaRepository) },
+                },
+            };
+        }
+
         if (method.GetCustomAttributes(typeof(FormBuilderTimeLimitAttribute), false).FirstOrDefault() is FormBuilderTimeLimitAttribute time)
         {
             operation.Extensions[FormBuilderPublicApi.TimeLimitExtension] = new JsonNodeExtension(JsonValue.Create((int)time.Limit.TotalSeconds));
@@ -244,12 +272,12 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
         operation.Responses ??= [];
         if (!HttpMethods.IsGet(context.ApiDescription.HttpMethod ?? string.Empty) && !HttpMethods.IsHead(context.ApiDescription.HttpMethod ?? string.Empty))
         {
-            Refusal(operation.Responses, problem, StatusCodes.Status403Forbidden, "Forbidden: a browser on an origin the site does not allow sent it (origin_denied).");
+            Refusal(operation.Responses, problem, StatusCodes.Status403Forbidden, "Forbidden", "a browser on an origin the site does not allow sent it (origin_denied).");
         }
 
-        Refusal(operation.Responses, problem, StatusCodes.Status413PayloadTooLarge, "Payload Too Large: the body is longer than the endpoint takes (payload_too_large).");
-        Refusal(operation.Responses, problem, StatusCodes.Status500InternalServerError, "Internal Server Error: something failed unexpectedly (server_error).");
-        Refusal(operation.Responses, problem, StatusCodes.Status504GatewayTimeout, "Gateway Timeout: the endpoint did not answer within its time limit (timeout).");
+        Refusal(operation.Responses, problem, StatusCodes.Status413PayloadTooLarge, "Payload Too Large", "the body is longer than the endpoint takes (payload_too_large).");
+        Refusal(operation.Responses, problem, StatusCodes.Status500InternalServerError, "Internal Server Error", "something failed unexpectedly (server_error).");
+        Refusal(operation.Responses, problem, StatusCodes.Status504GatewayTimeout, "Gateway Timeout", "the endpoint did not answer within its time limit (timeout).");
     }
 
     // The parts of an upload: the challenge, which 7.1 requires, and the file.
@@ -284,13 +312,27 @@ internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOpe
         },
     };
 
-    // A refusal of the frame, unless the action describes the status itself.
-    private static void Refusal(OpenApiResponses responses, IOpenApiSchema problem, int status, string description) =>
-        responses.TryAdd(status.ToString(CultureInfo.InvariantCulture), new OpenApiResponse
+    // A refusal of the frame; when the action describes the status for its own refusals too, its description adds the
+    // frame's reason.
+    private static void Refusal(OpenApiResponses responses, IOpenApiSchema problem, int status, string phrase, string reason)
+    {
+        var key = status.ToString(CultureInfo.InvariantCulture);
+        if (responses.TryGetValue(key, out var declared))
         {
-            Description = description,
+            if (declared is OpenApiResponse response)
+            {
+                response.Description = $"{response.Description}; also when {reason}";
+            }
+
+            return;
+        }
+
+        responses[key] = new OpenApiResponse
+        {
+            Description = $"{phrase}: {reason}",
             Content = new Dictionary<string, OpenApiMediaType> { [FormBuilderProblemResult.MediaType] = new() { Schema = problem } },
-        });
+        };
+    }
 }
 
 /// <summary>

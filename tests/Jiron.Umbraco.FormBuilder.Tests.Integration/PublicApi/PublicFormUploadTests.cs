@@ -131,6 +131,46 @@ public sealed class PublicFormUploadTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task AnUploadToAFormThatTakesNoEntry_IsRefusedWithTheSubmissionsCode_BeforeAByteIsRead()
+    {
+        var now = DateTime.UtcNow;
+        var closed = await PublishAsync("Closed", change: definition => definition with
+        {
+            Settings = definition.Settings with { Availability = definition.Settings.Availability with { ClosesAt = new DateTime(now.Ticks - (now.Ticks % TimeSpan.TicksPerSecond), DateTimeKind.Utc).AddMinutes(-1) } },
+        }, fields: All);
+        var full = await PublishAsync("Full", change: definition => definition with
+        {
+            Settings = definition.Settings with { Availability = definition.Settings.Availability with { MaxEntries = 1 } },
+        }, fields: All);
+        using (var entry = await SendAsync(HttpMethod.Post, $"{Root}/forms/{full}/entries", request => request.Content = new StringContent("""{"revision":1,"values":{"name":"Ada"}}""", Encoding.UTF8, "application/json")))
+        {
+            Assert.That(entry.StatusCode, Is.EqualTo(HttpStatusCode.OK), await entry.Content.ReadAsStringAsync());
+        }
+
+        var answers = new Dictionary<string, string>();
+        var read = new Dictionary<string, long>();
+        foreach (var (what, form) in new[] { ("a closed form", closed), ("a full form", full) })
+        {
+            using var content = new StreamedUpload("report.pdf", Pdf, 1_048_576, declared: true);
+            using var response = await SendAsync(HttpMethod.Post, UploadPath(form, Attachment.Key), request => request.Content = content);
+            answers[what] = await AnswerAsync(response);
+            read[what] = Bodies.Read;
+        }
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(answers, Is.EqualTo(new Dictionary<string, string>
+            {
+                ["a closed form"] = "403 form_closed, close",
+                ["a full form"] = "403 entry_limit_reached, close",
+            }), string.Join(" | ", answers));
+            Assert.That(read.Values, Is.All.Zero, "refused before a byte of the file is read");
+            Assert.That(StoredFiles(), Is.Empty);
+            Assert.That(await OrphansAsync(), Is.Empty);
+        });
+    }
+
+    [Test]
     public async Task A60MiBFileToA50MiBField_IsCutOffAtItsLimit_WithoutBuffering_AndLeavesNothingInTheStoreOrTheTables()
     {
         var key = await PublishAsync(fields: All);

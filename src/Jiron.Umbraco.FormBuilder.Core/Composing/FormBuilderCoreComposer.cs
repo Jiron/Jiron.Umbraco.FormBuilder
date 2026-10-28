@@ -15,6 +15,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Queries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -116,6 +117,13 @@ public sealed class FormBuilderCoreComposer : IComposer
         // Uploads (ADR-0087): a file checked against its field and the host's limits and stored before its submission,
         // over the field types, the forms, the entries' files and the file store.
         builder.Services.TryAddSingleton<FileUploads>();
+
+        // The submission pipeline (ADR-0088): when a form takes entries, the outcomes, the transaction that stores an entry
+        // with its event, its action runs and its count, and the pipeline over the forms, the answers and the entries.
+        builder.Services.TryAddSingleton<FormAvailability>();
+        builder.Services.TryAddSingleton<SubmissionOutcomes>();
+        builder.Services.TryAddSingleton<SubmissionEntries>();
+        builder.Services.TryAddSingleton<FormSubmissions>();
 
         // The retention job (ADR-0045): the draft-version cleanup so far.
         builder.AddFormBuilderRetention();

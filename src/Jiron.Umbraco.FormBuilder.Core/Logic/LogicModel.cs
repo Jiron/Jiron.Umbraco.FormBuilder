@@ -101,13 +101,18 @@ internal sealed record LogicGridRow(string Id, FieldKind Kind);
 
 /// <summary>A field; one with child fields is a repeatable group, whose child fields have one answer per row.</summary>
 /// <param name="Id">The field's id.</param>
-/// <param name="Kind">The kind its answers compare as; null for a field that holds no value.</param>
+/// <param name="Kind">The kind its answers compare as; null for a field whose answers no condition compares, or that holds none.</param>
 /// <param name="Required">Whether the field is required of itself, whatever its rules say.</param>
 /// <param name="Rules">Its rules.</param>
 /// <param name="Fields">A repeatable group's child fields.</param>
 /// <param name="Rows">A grid's rows.</param>
 /// <param name="Alias">The alias formulas name it by.</param>
 /// <param name="Calculation">A calculation field's formula, worked out instead of what is posted for it.</param>
+/// <param name="CanBeRequired">
+/// Whether a field without a kind can still be required, by itself or a <c>require</c> rule: one that takes answers no
+/// condition compares, such as a name, an address or a grid (ADR-0062). A field with a kind always can, and any other
+/// field without one never is.
+/// </param>
 internal sealed record LogicField(
     string Id,
     FieldKind? Kind,
@@ -116,7 +121,8 @@ internal sealed record LogicField(
     IReadOnlyList<LogicField> Fields,
     IReadOnlyList<LogicGridRow> Rows,
     string? Alias = null,
-    LogicCalculation? Calculation = null);
+    LogicCalculation? Calculation = null,
+    bool CanBeRequired = false);
 
 /// <summary>A calculation's formula and the places its result is rounded to: 0 to 15, 2 when null (ADR-0063).</summary>
 internal sealed record LogicCalculation(string Formula, int? Decimals);

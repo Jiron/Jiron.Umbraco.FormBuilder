@@ -199,7 +199,8 @@ internal static class VectorReader
             ? new LogicCalculation(
                 calculation.GetProperty("formula").GetString()!,
                 calculation.TryGetProperty("decimals", out var decimals) && decimals.ValueKind == JsonValueKind.Number ? (decimals.TryGetInt32(out var places) ? places : -1) : null)
-            : null);
+            : null,
+        element.TryGetProperty("canBeRequired", out var canBeRequired) && canBeRequired.GetBoolean());
 
     private static string Id(JsonElement element) => element.GetProperty("id").GetString()!;
 

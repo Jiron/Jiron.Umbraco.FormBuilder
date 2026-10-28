@@ -6,11 +6,12 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 /// <inheritdoc />
 /// <remarks>
 /// An entry is stored in one unit of work (ADR-0003, ADR-0038). The form's counter comes first, so the unit holds the
-/// form's row before it does anything else and two submissions never share a number. Then the entry, as one insert
-/// whose conditions are its version, its submission id, its challenge, its key and its resume token; then its files,
-/// the check of its fields and its values. A refusal anywhere rolls the whole unit back, the number included. A service
-/// that stores more in the same unit (the timeline event, the action runs, ADR-0007) calls this first, so the counter
-/// stays the unit's first write.
+/// form's row before it does anything else and two submissions never share a number. Then the count toward the form's
+/// entry limit, which the counter makes the submissions to one form take in turns (ADR-0088); then the entry, as one
+/// insert whose conditions are its version, its submission id, its challenge, its key and its resume token; then its
+/// files, the check of its fields and its values. A refusal anywhere rolls the whole unit back, the number included. A
+/// service that stores more in the same unit (the timeline event, the action runs, ADR-0007) calls this first, so the
+/// counter stays the unit's first write.
 /// </remarks>
 internal sealed partial class EntryRepository(FormBuilderDatabase database) : IEntryRepository
 {
@@ -48,6 +49,10 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
                     return null;
                 }
 
+                if (entry.EntryLimit is { } limit && EntryLimits.Counts(entry.State, entry.IsTest) && await CountTowardsLimitAsync(db, n, entry.FormId) >= limit)
+                {
+                    throw new FormBuilderConflictException(FormBuilderConflict.EntryLimitReached, "The form holds as many entries as its limit allows.");
+                }
                 // One check per unique index, so each is a seek. IS NOT NULL lets SQL Server use the filtered indexes.
                 var free = $"NOT EXISTS (SELECT 1 FROM {table}{n.InsertOnceHint} WHERE";
                 var challenge = entry.ChallengeId is null ? string.Empty : $" AND {free} {n.C("formId")} = @1 AND {n.C("challengeId")} = @23 AND {n.C("challengeId")} IS NOT NULL)";
@@ -116,6 +121,10 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
             },
             cancellationToken);
     }
+
+    /// <inheritdoc />
+    public Task<int> CountTowardsLimitAsync(int formId, CancellationToken cancellationToken = default) =>
+        database.ReadAsync(db => CountTowardsLimitAsync(db, new SqlNames(db), formId), cancellationToken);
 
     /// <inheritdoc />
     public Task<StoredEntry?> GetAsync(Guid key, CancellationToken cancellationToken = default) =>
@@ -266,6 +275,16 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
         return row is null ? null : FromDto(row);
     }
 
+    // The entries of a form that count toward its limit: a seek on (formId, state, submittedUtc) for each state. In a
+    // unit it is a locking read (ADR-0038), so no entry can move into a state that counts until the unit ends.
+    private static Task<int> CountTowardsLimitAsync(IUmbracoDatabase db, SqlNames n, int formId)
+    {
+        var states = EntryLimits.CountingStates.Select(StoredNames.Of).ToArray();
+        return db.ScalarAsync<int>(
+            $"SELECT COUNT(*) FROM {n.T(FormBuilderTables.Entry)}{n.LockingRead} WHERE {n.C("formId")} = @0 AND {n.C("isTest")} = @1 AND {n.C("state")} IN ({SqlArgs.Placeholders(2, states.Length)})",
+            [formId, false, .. states]);
+    }
+
     /// <summary>Why the insert of an entry was refused, or null when none of its conditions explains it.</summary>
     private static async Task<FormBuilderConflictException?> RefusedCreateAsync(IUmbracoDatabase db, SqlNames n, NewEntry entry)
     {
@@ -325,6 +344,7 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
             $"An entry's page is a site path of 1 to {MaxPageUrlLength} characters, without a host, a query or a fragment.");
         Require(entry.IpAddress is null || entry.IpAddress.Length is > 0 and <= MaxIpAddressLength, $"An entry's address holds 1 to {MaxIpAddressLength} characters.");
         Require(entry.SpamScore >= 0, "An entry's spam score is 0 or more.");
+        Require(entry.EntryLimit is null or >= 1, "An entry limit is 1 or more.");
         Require(entry.SpamReasons is not null && entry.SpamReasons.Length <= MaxSpamReasonsLength, $"An entry's spam reasons hold at most {MaxSpamReasonsLength} characters.");
         Require(entry.SearchText is not null, "An entry's search text is not null.");
         Require(entry.Context is not null && JsonObjectText.IsObject(entry.Context), "An entry's context is a JSON object.");

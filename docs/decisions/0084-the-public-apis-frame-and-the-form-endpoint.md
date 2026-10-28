@@ -8,7 +8,9 @@
   `mergeTags` and `consents` extended by [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md)
   in 6.1b; the `options` endpoint, `no-cache` with an `ETag` as the form endpoint, added by
   [ADR-0086](0086-the-options-endpoint.md) in 6.1c; the largest upload as a body limit read from the host's limits,
-  and the server's own limit set to each endpoint's, added by [ADR-0087](0087-the-upload-endpoint.md) in 6.1d
+  and the server's own limit set to each endpoint's, added by [ADR-0087](0087-the-upload-endpoint.md) in 6.1d; `open`
+  false at the entry limit too, and an endpoint's own declaration of a status keeping the frame's reason in the
+  document, added by [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) in 6.1e
 - Date: 2026-10-28
 - Roadmap step: 6.1a (decided and built); 6.1b gives the consent wordings' hashes, 6.1d and 6.1e count a body without
   a declared length, 6.1e adds the entry limit to `open`, 7.1 enforces the rate-limit policies

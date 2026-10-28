@@ -14,7 +14,7 @@ internal static class EntrySearchText
     // Between two answers. Inside an answer or a term it becomes a space, so a term never matches across two answers.
     private const char Separator = (char)10;
 
-    /// <summary>The search text of an entry's answers: the sensitive ones are the pipeline's to leave out (6.x).</summary>
+    /// <summary>The search text of an entry's answers: the entry store leaves the sensitive ones out (ADR-0088).</summary>
     public static string For(IEnumerable<string> answers)
     {
         ArgumentNullException.ThrowIfNull(answers);

@@ -80,6 +80,12 @@ internal enum FormBuilderConflict
     /// back, since then (ADR-0047, amended in 4.8c).
     /// </summary>
     LandingChanged,
+
+    /// <summary>
+    /// The form holds as many entries as its limit allows (<c>availability.maxEntries</c>), counted inside the unit that
+    /// would store another (ADR-0088).
+    /// </summary>
+    EntryLimitReached,
 }
 
 /// <summary>

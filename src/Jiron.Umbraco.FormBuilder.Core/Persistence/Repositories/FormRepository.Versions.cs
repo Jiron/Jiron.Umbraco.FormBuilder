@@ -115,6 +115,21 @@ internal sealed partial class FormRepository
             cancellationToken);
 
     /// <inheritdoc />
+    public Task<StoredFormVersion?> GetRevisionAsync(int formId, int publicRevision, CancellationToken cancellationToken = default) =>
+        database.ReadAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var row = await db.FirstOrNullAsync<FormVersionDto>(
+                    $"SELECT * FROM {n.T(FormBuilderTables.FormVersion)} WHERE {n.C("formId")} = @0 AND {n.C("kind")} = @1 AND {n.C("publicRevision")} = @2 ORDER BY {n.C("number")} DESC {n.Page(0, 1)}",
+                    formId,
+                    StoredNames.Of(FormVersionKind.Published),
+                    publicRevision);
+                return row is null ? null : VersionFromDto(row);
+            },
+            cancellationToken);
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<StoredFormVersion>> GetVersionsAsync(int formId, IReadOnlyCollection<int> numbers, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(numbers);

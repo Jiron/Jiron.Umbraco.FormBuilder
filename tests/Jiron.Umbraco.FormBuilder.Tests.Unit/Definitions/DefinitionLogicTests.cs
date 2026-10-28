@@ -104,6 +104,55 @@ public sealed class DefinitionLogicTests
     }
 
     [Test]
+    public void From_AFieldWhoseTypeTakesARequirement_CanBeRequired_ThoughNoConditionComparesItsAnswers()
+    {
+        FormField Field(int key, string type, bool required = false) => new() { Key = Guid.Parse(K(key)), Type = type, Alias = type + key, Required = required };
+        var definition = new FormDefinition
+        {
+            Key = Guid.Parse(K(1)),
+            Pages =
+            [
+                new FormPage
+                {
+                    Key = Guid.Parse(K(2)),
+                    Groups =
+                    [
+                        new FormGroup
+                        {
+                            Key = Guid.Parse(K(3)),
+                            Fields =
+                            [
+                                Field(10, "text"), Field(11, "name", required: true), Field(12, "address", required: true), Field(13, "grid", required: true),
+                                Field(14, "heading"), Field(15, "repeater"), Field(16, "hidden"), Field(17, "colourPicker"),
+                            ],
+                        },
+                    ],
+                },
+            ],
+        };
+
+        var form = DefinitionLogic.From(definition, TestFieldTypes.Registry);
+        var fields = form.Pages[0].Groups[0].Fields.ToDictionary(field => field.Alias!, field => (field.Kind, field.CanBeRequired));
+        var state = FormRules.Evaluate(form, new FormAnswers(NoValues, NoRows), Context("en-US", NoValues));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(fields, Is.EqualTo(new Dictionary<string, (FieldKind?, bool)>
+            {
+                ["text10"] = (FieldKind.Text, true),
+                ["name11"] = (null, true),
+                ["address12"] = (null, true),
+                ["grid13"] = (null, true),
+                ["heading14"] = (null, false),
+                ["repeater15"] = (null, false),
+                ["hidden16"] = (FieldKind.Text, false),
+                ["colourPicker17"] = (null, false),
+            }), "by the type's required feature; a type the site lacks takes none");
+            Assert.That(state.Required, Is.EqualTo(new[] { DefinitionLogic.Id(Guid.Parse(K(11))), DefinitionLogic.Id(Guid.Parse(K(12))), DefinitionLogic.Id(Guid.Parse(K(13))) }));
+        });
+    }
+
+    [Test]
     public void From_EveryFieldKeepsItsAlias_AndACalculationItsFormulaAndPlaces()
     {
         var form = From(Changed(d =>

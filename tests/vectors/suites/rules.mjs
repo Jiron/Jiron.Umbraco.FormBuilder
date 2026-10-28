@@ -248,6 +248,24 @@ const forms = [
   { id: 'form-context-hidden-list-is-ignored', description: 'the engine decides what is hidden; the context list plays no part', context: { hidden: ['plan'] }, values: { plan: ['pro'] }, form: form([f('plan', 'choice'), f('contact', 'text', { rules: [rule('show', [cond('plan', 'equals', 'pro')])] })]), expect: state() },
   { id: 'form-field-without-kind-can-be-hidden', form: form([f('intro', null, { rules: [hiddenByCulture] })]), expect: state({ hidden: ['intro'] }) },
   { id: 'form-field-without-kind-is-never-required', form: form([f('intro', null, { required: true })]), expect: state() },
+  {
+    id: 'form-field-without-kind-that-takes-answers-can-be-required',
+    description: 'a name, an address or a grid takes answers that no condition compares (ADR-0062)',
+    form: form([f('fullName', null, { canBeRequired: true, required: true })]),
+    expect: state({ required: ['fullName'] }),
+  },
+  {
+    id: 'form-field-without-kind-that-takes-answers-required-by-a-rule',
+    values: { agree: ['true'] },
+    form: form([f('agree', 'checkbox'), f('fullName', null, { canBeRequired: true, rules: [rule('require', [cond('agree', 'isChecked')])] })]),
+    expect: state({ required: ['fullName'] }),
+  },
+  {
+    id: 'form-field-without-kind-that-takes-answers-not-required-when-its-rule-does-not-match',
+    values: {},
+    form: form([f('agree', 'checkbox'), f('fullName', null, { canBeRequired: true, rules: [rule('require', [cond('agree', 'isChecked')])] })]),
+    expect: state(),
+  },
 
   // Hidden means gone.
   { id: 'form-hidden-field-answers-are-gone', values: { a: ['x'] }, form: form([f('a', 'text', { rules: [hiddenByCulture] }), f('b', 'text', { rules: [rule('show', [cond('a', 'equals', 'x')])] })]), expect: state({ hidden: ['a', 'b'] }) },
@@ -408,6 +426,18 @@ const forms = [
     rows: { people: [{ contact: ['phone'] }, { contact: ['email'] }] },
     form: form([f('people', null, { fields: [f('contact', 'choice'), f('phone', 'text', { rules: [rule('require', [cond('contact', 'equals', 'phone')])] })] })]),
     expect: state({ rows: { people: [row({ required: ['phone'] }), row()] } }),
+  },
+  {
+    id: 'form-repeatable-group-child-without-kind-is-never-required',
+    rows: { people: [{ name: ['Anna'] }] },
+    form: form([f('people', null, { fields: [f('name', 'text'), f('intro', null, { required: true })] })]),
+    expect: state({ rows: { people: [row()] } }),
+  },
+  {
+    id: 'form-repeatable-group-child-without-kind-required-per-row',
+    rows: { people: [{ guest: ['true'] }, {}] },
+    form: form([f('people', null, { fields: [f('guest', 'checkbox'), f('fullName', null, { canBeRequired: true, rules: [rule('require', [cond('guest', 'isChecked')])] })] })]),
+    expect: state({ rows: { people: [row({ required: ['fullName'] }), row()] } }),
   },
   {
     id: 'form-hidden-repeatable-group-hides-every-row',
