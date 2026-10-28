@@ -17,6 +17,16 @@ namespace Jiron.Umbraco.FormBuilder.Core.Entries;
 internal sealed record SubmissionError(Guid Field, int? Row, FieldMessageKinds Kind, int? Check = null, Guid? Rule = null);
 
 /// <summary>
+/// An option with places that an answer chose (section 4.4, ADR-0090): one of the field's own options, or of those its
+/// list or source resolved for the submission, whose number of places is set. Each row and each chosen option is one.
+/// </summary>
+/// <param name="Field">The key of the field; a repeatable group's child has its own.</param>
+/// <param name="Row">The row of a repeatable group's child, as posted, from 0; null for any other field.</param>
+/// <param name="Value">The option's value, as the answer chose it.</param>
+/// <param name="Places">The option's number of places: 0 or more.</param>
+internal sealed record SubmissionPlace(Guid Field, int? Row, string Value, int Places);
+
+/// <summary>
 /// A submission's answers over its whole form (ADR-0072), as <see cref="SubmissionReader"/> reads them: what the entry
 /// stores, the errors by field and row, what the rules decide, and the answers as merge tags show them.
 /// </summary>
@@ -36,4 +46,10 @@ internal sealed record SubmissionAnswers(
 {
     /// <summary>Whether the submission has no error, so the entry may be stored.</summary>
     public bool IsValid => Errors.IsEmpty;
+
+    /// <summary>
+    /// The options with places that the answers that stand chose (ADR-0090), in the order of the form and its rows: what
+    /// the pipeline holds against the places left.
+    /// </summary>
+    public ImmutableArray<SubmissionPlace> Places { get; init; } = [];
 }

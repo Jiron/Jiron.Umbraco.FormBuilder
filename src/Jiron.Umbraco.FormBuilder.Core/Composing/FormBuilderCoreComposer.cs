@@ -122,6 +122,7 @@ public sealed class FormBuilderCoreComposer : IComposer
         // with its event, its action runs and its count, and the pipeline over the forms, the answers and the entries.
         builder.Services.TryAddSingleton<FormAvailability>();
         builder.Services.TryAddSingleton<SubmissionOutcomes>();
+        builder.Services.TryAddSingleton<OptionPlaces>();
         builder.Services.TryAddSingleton<SubmissionEntries>();
         builder.Services.TryAddSingleton<FormSubmissions>();
 

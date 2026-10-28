@@ -211,6 +211,31 @@ internal sealed class ConsentTextDto
     public DateTime FirstSeenUtc { get; set; }
 }
 
+/// <summary>A row of <c>jfbOptionCapacity</c>: the places held on one option of a field (ADR-0090).</summary>
+[TableName(FormBuilderTables.OptionCapacity)]
+[PrimaryKey(["formId", "fieldKey", "valueHash"], AutoIncrement = false)]
+[ExplicitColumns]
+internal sealed class OptionCapacityDto
+{
+    [Column("formId")]
+    public int FormId { get; set; }
+
+    [Column("fieldKey")]
+    public Guid FieldKey { get; set; }
+
+    [Column("valueHash")]
+    public string ValueHash { get; set; } = string.Empty;
+
+    [Column("optionValue")]
+    public string OptionValue { get; set; } = string.Empty;
+
+    [Column("taken")]
+    public int Taken { get; set; }
+
+    [Column("updatedUtc")]
+    public DateTime UpdatedUtc { get; set; }
+}
+
 /// <summary>A row of <c>jfbEntryEvent</c>.</summary>
 [TableName(FormBuilderTables.EntryEvent)]
 [PrimaryKey("id", AutoIncrement = true)]

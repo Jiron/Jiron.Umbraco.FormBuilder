@@ -69,6 +69,8 @@ internal sealed partial class EntryRepository
                 var deleted = 0;
                 foreach (var chunk in ids.Chunk(SqlArgs.MaxListLength))
                 {
+                    await LockFormsAsync(db, n, chunk);
+                    await AdjustPlacesAsync(db, n, chunk, add: false, holdingOnly: true);
                     deleted += await db.ExecAsync(
                         $"DELETE FROM {n.T(FormBuilderTables.Entry)} WHERE {n.C("id")} IN ({SqlArgs.Placeholders(0, chunk.Length)})",
                         [.. chunk.Cast<object?>()]);

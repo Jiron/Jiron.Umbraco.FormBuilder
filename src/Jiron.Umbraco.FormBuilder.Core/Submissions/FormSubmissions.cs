@@ -19,9 +19,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// idempotency, compatibility, availability, the answers read and checked, and one transaction that stores the entry
 /// with its event, its action runs and its count; then the outcome. A page's check runs the same steps but idempotency,
 /// the empty submission and the transaction, and answers its own fields' errors; a receipt answers an entry as a retry
-/// would (ADR-0089).
-/// Spam protection comes in 7.1, the places on options and <c>uniquePerForm</c> in 6.1g, and waking the action
-/// processor in 8.1.
+/// would (ADR-0089). The places on options are held while the answers are read and again inside the transaction
+/// (ADR-0090).
+/// Spam protection comes in 7.1, <c>uniquePerForm</c> in 6.1h, and waking the action processor in 8.1.
 /// </summary>
 internal sealed class FormSubmissions(
     PublishedFormCache cache,
@@ -34,6 +34,7 @@ internal sealed class FormSubmissions(
     SubmissionReader reader,
     ConsentWordings consents,
     SubmissionEntries recorder,
+    OptionPlaces places,
     FieldTypeRegistry types,
     TimeProvider time)
 {
@@ -95,6 +96,12 @@ internal sealed class FormSubmissions(
         catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.EntryLimitReached)
         {
             return SubmissionResult.Refused(SubmissionRefusal.EntryLimitReached);
+        }
+        catch (SubmissionInvalidException invalid)
+        {
+            // An option ran out of places meanwhile (ADR-0090): the choices past them, as the first check names them.
+            var paths = new FieldPaths(served.Form.Definition);
+            return SubmissionResult.Invalid(invalid.Errors.Select(paths.Problem));
         }
         catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.MissingFile)
         {
@@ -165,8 +172,9 @@ internal sealed class FormSubmissions(
     // The gate: members-only forms wait for 14.3, which binds a request to the signed-in member (ADR-0012).
     private static bool IsForMembers(PublishedForm form) => form.Definition.Settings.Availability.Access != MemberAccess.Anyone;
 
-    // Compatibility, availability and the answers read and checked (section 4.4, steps 4, 5 and 7). For a page, only the
-    // errors of its fields count, and a page without an answer is no error.
+    // Compatibility, availability and the answers read and checked (section 4.4, steps 4, 5 and 7), the places left on
+    // the options they chose among them (ADR-0090). For a page, only the errors of its fields count, and a page without
+    // an answer is no error.
     private async Task<Reading> ReadAsync(SubmissionRequest request, Served served, Guid? pageKey, CancellationToken cancellationToken)
     {
         var form = served.Form;
@@ -239,10 +247,12 @@ internal sealed class FormSubmissions(
                 Uploads = await UploadsAsync(request, answers, definition, served.Row.Id, cancellationToken),
             },
             cancellationToken);
-        ImmutableArray<SubmissionError> errors = onPage is null ? read.Errors : [.. read.Errors.Where(error => onPage.Contains(error.Field))];
+        var paths = new FieldPaths(definition);
+        var full = await places.CheckAsync(served.Row.Id, read.Places, cancellationToken);
+        var all = full.IsEmpty ? read.Errors : [.. read.Errors.Concat(full).OrderBy(paths.Rank)];
+        ImmutableArray<SubmissionError> errors = onPage is null ? all : [.. all.Where(error => onPage.Contains(error.Field))];
         if (!errors.IsEmpty)
         {
-            var paths = new FieldPaths(definition);
             return Reading.Refused(aliases.IsCurrent || errors.All(error => aliases.Shown.Contains(error.Field))
                 ? SubmissionResult.Invalid(errors.Select(paths.Problem))
                 : SubmissionResult.Refused(SubmissionRefusal.FormChanged));
@@ -569,23 +579,30 @@ internal sealed class FormSubmissions(
         IReadOnlyDictionary<Guid, PostedAnswer> Fields,
         IReadOnlyDictionary<Guid, IReadOnlyList<IReadOnlyDictionary<Guid, PostedAnswer>>> Rows);
 
-    // Where each field, child and grid row of the live version is, as a problem's path names it.
+    // Where each field, child and grid row of the live version is, as a problem's path names it, and its place in the
+    // order of the form and its rows, the order the reader lists errors in.
     private sealed class FieldPaths
     {
         private readonly Dictionary<Guid, (string Alias, FormField? Group)> _fields = [];
         private readonly Dictionary<Guid, (FormField Grid, FormField? Group)> _rows = [];
+        private readonly Dictionary<Guid, (int Field, int Child)> _order = [];
 
         public FieldPaths(FormDefinition definition)
         {
-            foreach (var field in Fields(definition))
+            foreach (var (field, index) in Fields(definition).Select((field, index) => (field, index)))
             {
-                Add(field, null);
-                foreach (var child in field.Fields)
+                Add(field, null, (index, -1));
+                foreach (var (child, position) in field.Fields.Select((child, position) => (child, position)))
                 {
-                    Add(child, field);
+                    Add(child, field, (index, position));
                 }
             }
         }
+
+        // An error's place: its field's, then its row's, then its place among its group's children. Errors that share a
+        // place keep their order (OrderBy is stable), so the reader's come before those added after it.
+        public (int Field, int Row, int Child) Rank(SubmissionError error) =>
+            _order.TryGetValue(error.Field, out var at) ? (at.Field, error.Row ?? -1, at.Child) : (int.MaxValue, 0, 0);
 
         public SubmissionProblem Problem(SubmissionError error)
         {
@@ -614,12 +631,14 @@ internal sealed class FormSubmissions(
                 : field.Alias;
         }
 
-        private void Add(FormField field, FormField? group)
+        private void Add(FormField field, FormField? group, (int Field, int Child) order)
         {
             _fields[field.Key] = (field.Alias ?? string.Empty, group);
+            _order[field.Key] = order;
             foreach (var row in field.Rows)
             {
                 _rows[row.Key] = (field, group);
+                _order[row.Key] = order;
             }
         }
     }

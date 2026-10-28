@@ -7,10 +7,11 @@
   [ADR-0087](0087-the-upload-endpoint.md) (an upload checks the form's availability); amends
   [ADR-0061](0061-the-form-rules-engine.md) (which fields can be required); a UUID with a lone surrogate amended,
   and the pipeline's steps for a page and a receipt extended, in 6.1f
-  ([ADR-0089](0089-the-validate-and-receipt-endpoints.md))
+  ([ADR-0089](0089-the-validate-and-receipt-endpoints.md)); the transaction's last check amended in 6.1g
+  ([ADR-0090](0090-places-on-options.md))
 - Date: 2026-10-28
 - Roadmap step: 6.1e (decided and built); 6.1f adds `validate` and `receipt` over the same pipeline, 6.1g the places
-  on options and `uniquePerForm`, 6.2 the post without JavaScript, 7.1 the gate and the spam score, 8.1 the processor
+  on options, 6.1h `uniquePerForm`, 6.2 the post without JavaScript, 7.1 the gate and the spam score, 8.1 the processor
   that runs the queued actions, 8.5 email verification and approval, 11.5 the insights metrics beyond `submissions`,
   13.1 the purge times, 13.3 the IP address, 14.3 members-only forms
 

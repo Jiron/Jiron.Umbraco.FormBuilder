@@ -174,7 +174,8 @@ internal sealed record NewEntry
 
 /// <summary>
 /// Which entries count toward a form's entry limit (<c>availability.maxEntries</c>, ADR-0088): every one but test
-/// entries, drafts, spam and rejected entries, so neither a preview nor a flood of spam can close a form.
+/// entries, drafts, spam and rejected entries, so neither a preview nor a flood of spam can close a form. The same
+/// entries hold places on options (ADR-0090).
 /// </summary>
 internal static class EntryLimits
 {
@@ -336,14 +337,29 @@ internal sealed record StoredEntryFile(
     DateTimeOffset CreatedUtc);
 
 /// <summary>
+/// An option whose places are counted (section 4.4, ADR-0090): the choice field's key and the option's value.
+/// </summary>
+/// <param name="FieldKey">The field's key; a repeatable group's child has its own.</param>
+/// <param name="Value">The option's value as entries store it: 1 to 200 characters.</param>
+internal readonly record struct OptionPlace(Guid FieldKey, string Value);
+
+/// <summary>
 /// The entries of <c>jfbEntry</c> with their values (<c>jfbEntryValue</c>) and files (<c>jfbEntryFile</c>), one aggregate
 /// (ADR-0003, ADR-0038). Lists, filters and search are the entries query builder's (4.3d); the consent wordings the
 /// values name are <see cref="IConsentTextRepository"/>'s.
 /// </summary>
+/// <remarks>
+/// The places held on options (<c>jfbOptionCapacity</c>, ADR-0090) follow the entries: an option's count is the number
+/// of the form's values at the field that equal the option's value and whose entry holds places (one that counts toward
+/// the entry limit, <see cref="EntryLimits"/>). Every write here that changes such a value, or whether its entry holds
+/// places, changes the counts in its own unit, after it has locked the form's row, so a form's places change one unit
+/// at a time. No write refuses a change for an option without a place left: that is the caller's to decide.
+/// </remarks>
 internal interface IEntryRepository
 {
     /// <summary>
-    /// Stores an entry with its values and takes its files, and gives it the form's next number. The number comes from
+    /// Stores an entry with its values and takes its files, and gives it the form's next number; an entry that holds
+    /// places adds its values to the counts of the options they match (ADR-0090). The number comes from
     /// one update of the form's counter, the first write of the unit, so two submissions never share one, and a refused
     /// entry gives its number back. Null when the form does not exist. Refused with
     /// <see cref="FormBuilderConflict.EntryLimitReached"/>, <see cref="FormBuilderConflict.DuplicateSubmission"/>,
@@ -357,6 +373,28 @@ internal interface IEntryRepository
     /// <param name="formId">The form.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     Task<int> CountTowardsLimitAsync(int formId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// How many places are held on each of these options of a form (ADR-0090): the option's count, or, for an option that
+    /// has none yet, the number of the form's values at the field that equal its value and whose entry holds places.
+    /// Reads only, so an option without a count gets none here.
+    /// </summary>
+    /// <param name="formId">The form.</param>
+    /// <param name="options">The options.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <exception cref="ArgumentException">An option without a field key, or whose value is empty, longer than 200 characters or holds a lone surrogate.</exception>
+    Task<IReadOnlyDictionary<OptionPlace, int>> GetPlacesTakenAsync(int formId, IReadOnlyCollection<OptionPlace> options, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Makes a count of each of these options of a form that has none yet, holding the places held on it then, and
+    /// answers every option's count (ADR-0090); from then on the writes here keep it. Inside a unit that locked the
+    /// form's row, a submission's, the counts hold until the unit ends. A form that does not exist has no counts.
+    /// </summary>
+    /// <param name="formId">The form.</param>
+    /// <param name="options">The options.</param>
+    /// <param name="cancellationToken">Cancels the unit of work.</param>
+    /// <exception cref="ArgumentException">An option without a field key, or whose value is empty, longer than 200 characters or holds a lone surrogate.</exception>
+    Task<IReadOnlyDictionary<OptionPlace, int>> CountPlacesAsync(int formId, IReadOnlyCollection<OptionPlace> options, CancellationToken cancellationToken = default);
 
     /// <summary>The entry with this key, or null.</summary>
     Task<StoredEntry?> GetAsync(Guid key, CancellationToken cancellationToken = default);
@@ -379,20 +417,24 @@ internal interface IEntryRepository
     /// <summary>
     /// Moves an entry from the state the user saw to another; null when it does not exist. Refused with
     /// <see cref="FormBuilderConcurrencyException"/> when it is no longer in <paramref name="expected"/>. A move to the
-    /// state it is in changes nothing.
+    /// state it is in changes nothing. A move out of the states that hold places takes the entry's values from the
+    /// counts of the options they match, and a move back adds them again, also to an option without a place left
+    /// (ADR-0090).
     /// </summary>
     Task<StoredEntry?> ChangeStateAsync(long entryId, EntryState expected, EntryState state, Guid? userKey, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Replaces the values of some fields of an entry, and its search text; null when it does not exist. Every value
     /// names one of <paramref name="fieldIds"/>, and a file value one of the entry's files. Refused with
-    /// <see cref="FormBuilderConflict.MissingField"/> or <see cref="FormBuilderConflict.MissingFile"/>.
+    /// <see cref="FormBuilderConflict.MissingField"/> or <see cref="FormBuilderConflict.MissingFile"/>. For an entry that
+    /// holds places, the counts of the options follow its values (ADR-0090).
     /// </summary>
     Task<StoredEntry?> ReplaceValuesAsync(long entryId, IReadOnlyCollection<int> fieldIds, IReadOnlyList<NewEntryValue> values, string searchText, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes an entry with its values, files, events and notes. True when it existed. The file store's bytes are the
-    /// service's to delete (<see cref="ListFilesAsync(long, CancellationToken)"/> first, ADR-0006).
+    /// Deletes an entry with its values, files, events and notes, and gives back the places it held (ADR-0090). True when
+    /// it existed. The file store's bytes are the service's to delete (<see cref="ListFilesAsync(long, CancellationToken)"/>
+    /// first, ADR-0006).
     /// </summary>
     Task<bool> DeleteAsync(long entryId, CancellationToken cancellationToken = default);
 
@@ -406,8 +448,9 @@ internal interface IEntryRepository
     Task<IReadOnlyList<StoredEntryFile>> ListFilesAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes these entries with their values, files, events, notes and action runs; how many existed. The file store's
-    /// bytes are the service's to delete (<see cref="ListFilesAsync(IReadOnlyCollection{long}, CancellationToken)"/> first).
+    /// Deletes these entries with their values, files, events, notes and action runs, and gives back the places they held
+    /// (ADR-0090); how many existed. The file store's bytes are the service's to delete
+    /// (<see cref="ListFilesAsync(IReadOnlyCollection{long}, CancellationToken)"/> first).
     /// </summary>
     Task<int> DeleteAsync(IReadOnlyCollection<long> entryIds, CancellationToken cancellationToken = default);
 

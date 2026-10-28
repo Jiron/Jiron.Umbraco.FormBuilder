@@ -43,11 +43,13 @@ internal sealed record SubmittedEntry(StoredEntry Entry, SubmissionReceipt Recei
 
 /// <summary>
 /// The entries of submissions (ADR-0088): stores a submission's entry in one transaction with its <c>submitted</c>
-/// event, its action runs and its daily count, and gives an entry's receipt and outcome again for a retry of the same
-/// answers, rendered with the version it was submitted with, its stored answers and the outcome its event names.
+/// event, its action runs and its daily count, once its choices are held against the places left (ADR-0090), and gives
+/// an entry's receipt and outcome again for a retry of the same answers, rendered with the version it was submitted
+/// with, its stored answers and the outcome its event names.
 /// </summary>
 internal sealed class SubmissionEntries(
     EntryAnswerStore store,
+    OptionPlaces places,
     IEntryEventRepository events,
     IActionRunRepository runs,
     IDailyStatRepository stats,
@@ -74,7 +76,8 @@ internal sealed class SubmissionEntries(
 
     /// <summary>
     /// Stores a submission's entry, with its event, its action runs and its count in the same unit, and renders its
-    /// outcome; null when the form no longer exists. Refused as <see cref="EntryAnswerStore.CreateAsync"/> refuses.
+    /// outcome; null when the form no longer exists. Refused as <see cref="EntryAnswerStore.CreateAsync"/> refuses, and
+    /// with <see cref="SubmissionInvalidException"/> when an option it chose has no place left for it (ADR-0090).
     /// </summary>
     /// <param name="submission">The submission.</param>
     /// <param name="scope">The scope its answers were read in, which the outcome renders in with the entry.</param>
@@ -111,6 +114,13 @@ internal sealed class SubmissionEntries(
             submission.Wordings,
             async created =>
             {
+                // Its values are counted now, and the unit holds the form's row: these counts are the last word.
+                if (EntryLimits.Counts(created.State, created.IsTest)
+                    && await places.CountAsync(created.FormId, submission.Answers.Places, cancellationToken) is { IsEmpty: false } full)
+                {
+                    throw new SubmissionInvalidException(full);
+                }
+
                 await events.AddAsync(new NewEntryEvent(created.Id, SubmittedEvent, Details: Details(outcome)), cancellationToken);
                 if (queued.Count > 0)
                 {

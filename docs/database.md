@@ -591,9 +591,14 @@ action run's do, and `purgeAfterUtc` is set once the mail is final or uncertain 
 
 ### `jfbOptionCapacity`
 
-Places taken on options with a limit; the limit itself is in the definition. A place is taken with one conditional
-update, so two visitors can never take the last place twice. The key is the form, the field and the SHA-256 of the
-option's value; the value itself is kept beside it for reading. No indexes besides the primary key.
+Places taken on options with a limit; the limit itself is in the definition or the option's source (ADR-0090).
+`taken` is the number of values at the field that equal the option's value exactly and whose entry holds places (one
+that counts toward the entry limit and is no test entry), each repeater row and each choice of several counting once.
+A row is made with that count when the option first needs one, so a limit set after entries came in counts them, and
+every write of an entry keeps it: storing one, a state change into or out of the states that hold places, a change of
+its values and a delete. Each such write first updates the form's row, so a form's places change one unit at a time
+and the submission's last check inside its transaction cannot be overtaken. The key is the form, the field and the
+SHA-256 of the option's value; the value itself is kept beside it for reading. No indexes besides the primary key.
 
 ### `jfbOptionList`
 

@@ -30,6 +30,7 @@ public sealed class ProductDtoTests
         new object[] { typeof(Dtos.EntryFileDto), typeof(CreateSchemaV1.EntryFileDto) },
         new object[] { typeof(Dtos.EntryValueDto), typeof(CreateSchemaV1.EntryValueDto) },
         new object[] { typeof(Dtos.ConsentTextDto), typeof(CreateSchemaV1.ConsentTextDto) },
+        new object[] { typeof(Dtos.OptionCapacityDto), typeof(CreateSchemaV1.OptionCapacityDto) },
         new object[] { typeof(Dtos.EntryEventDto), typeof(CreateSchemaV1.EntryEventDto) },
         new object[] { typeof(Dtos.EntryNoteDto), typeof(CreateSchemaV1.EntryNoteDto) },
         new object[] { typeof(Dtos.ActionRunDto), typeof(CreateSchemaV1.ActionRunDto) },

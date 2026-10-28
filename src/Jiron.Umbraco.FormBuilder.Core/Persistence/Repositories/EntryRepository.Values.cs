@@ -76,7 +76,9 @@ internal sealed partial class EntryRepository
                 var n = new SqlNames(db);
                 var entries = n.T(FormBuilderTables.Entry);
 
-                // The first write, and the entry's existence in one.
+                // The first write: the form's row, as the counts of its places may change (ADR-0090). Then the entry's
+                // existence.
+                await LockFormsAsync(db, n, [entryId]);
                 var updated = await db.ExecAsync(
                     $"UPDATE {entries} SET {n.C("searchText")} = @0, {n.C("updatedUtc")} = @1 WHERE {n.C("id")} = @2",
                     searchText,
@@ -87,9 +89,17 @@ internal sealed partial class EntryRepository
                     return null;
                 }
 
-                var formId = await db.ScalarAsync<int>($"SELECT {n.C("formId")} FROM {entries} WHERE {n.C("id")} = @0", entryId);
-                await CheckFieldsAsync(db, n, formId, fields);
+                var entry = (await FindAsync(db, n, $"{n.C("id")} = @0", entryId))!;
+                var holds = EntryLimits.Counts(entry.State, entry.IsTest);
+                await CheckFieldsAsync(db, n, entry.FormId, fields);
                 await CheckOwnFilesAsync(db, n, entryId, values.Where(value => value.FileId is not null).Select(value => value.FileId!.Value).Distinct().ToArray());
+
+                // The old values leave the counts of the options they match and the new ones join them.
+                if (holds)
+                {
+                    await AdjustPlacesAsync(db, n, [entryId], add: false, holdingOnly: false);
+                }
+
                 foreach (var chunk in fields.Chunk(SqlArgs.MaxListLength))
                 {
                     await db.ExecAsync(
@@ -98,6 +108,11 @@ internal sealed partial class EntryRepository
                 }
 
                 await InsertValuesAsync(db, n, entryId, values);
+                if (holds)
+                {
+                    await AdjustPlacesAsync(db, n, [entryId], add: true, holdingOnly: false);
+                }
+
                 return await FindAsync(db, n, $"{n.C("id")} = @0", entryId);
             },
             cancellationToken);

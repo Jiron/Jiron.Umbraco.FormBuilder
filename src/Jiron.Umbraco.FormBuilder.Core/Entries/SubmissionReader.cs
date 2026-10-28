@@ -52,14 +52,17 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
         // Only the rules of actions and outcomes may look at a value the server resolves (ADR-0035), so evaluating again
         // with the resolved values leaves what is shown as it was and decides the actions and the outcome.
-        var resolving = new Resolving(post, [], slots.SelectMany(slot => slot.Field.Fields.Prepend(slot.Field)).ToDictionary(field => field.Key));
+        var resolving = new Resolving(post, [], slots.SelectMany(slot => slot.Field.Fields.Prepend(slot.Field)).ToDictionary(field => field.Key), ImmutableArray.CreateBuilder<SubmissionPlace>());
         if (await ResolveAsync(slots, state, post, resolving, today, cancellationToken))
         {
             state = FormRules.Evaluate(logic, Answers(slots), context);
         }
 
         var stored = Stored(slots, state, post);
-        return new SubmissionAnswers(stored, await ErrorsAsync(slots, state, resolving, today, cancellationToken), state, ForMergeTags(stored, state));
+        return new SubmissionAnswers(stored, await ErrorsAsync(slots, state, resolving, today, cancellationToken), state, ForMergeTags(stored, state))
+        {
+            Places = resolving.Places.ToImmutable(),
+        };
     }
 
     // Every field of the version whose type the site has, outside repeatable groups and in the form's order, with its
@@ -572,6 +575,21 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         var found = FieldValues.Check(slot.Type, slot.Field, slot.Read, new FieldCheckInput(isRequired, today) { Files = files, Values = others, Options = offered });
         errors.AddRange(found.Errors.Select(error => new SubmissionError(key, row, error)));
         errors.AddRange(found.Checks.Select(check => new SubmissionError(key, row, FieldMessageKinds.None, Check: check)));
+        if (found.Errors.IsEmpty && found.Checks.IsEmpty && slot.Type.Declaration.Features.HasFlag(FieldFeatures.Places))
+        {
+            resolving.Places.AddRange(Places(slot, row, offered));
+        }
+    }
+
+    // The options with places an answer that stands chose (ADR-0090): of the field's own options, or of those its list or
+    // source resolved for it. A negative number of places, which only code can give, leaves none.
+    private static IEnumerable<SubmissionPlace> Places(Slot slot, int? row, IReadOnlyList<FormBuilderOption>? offered)
+    {
+        var limits = slot.Field.Options is { Source: OptionSource.Items } own
+            ? own.Items.Where(item => item.Places is not null).Select(item => (item.Value, Places: item.Places!.Value))
+            : (offered ?? []).Where(option => option.Places is not null).Select(option => (option.Value, Places: option.Places!.Value));
+        var places = limits.ToDictionary(limit => limit.Value, limit => Math.Max(0, limit.Places), StringComparer.Ordinal);
+        return Texts(slot.Values).Where(places.ContainsKey).Select(value => new SubmissionPlace(slot.Field.Key, row, value, places[value]));
     }
 
     // The form-level validation rules whose message shows at the field or one of its grid rows.
@@ -650,8 +668,13 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
             answer.Row));
 
     // What resolving a submission's options shares: the submission, what was resolved so far by field and parent answers,
-    // and every field of the form by key, a repeatable group's children among them, as a parent may be one.
-    private sealed record Resolving(PostedSubmission Post, Dictionary<(Guid Field, string Parents), FormBuilderResolvedOptions> Resolved, Dictionary<Guid, FormField> Fields);
+    // every field of the form by key, a repeatable group's children among them, as a parent may be one, and the options
+    // with places the answers chose, in the order of the form and its rows.
+    private sealed record Resolving(
+        PostedSubmission Post,
+        Dictionary<(Guid Field, string Parents), FormBuilderResolvedOptions> Resolved,
+        Dictionary<Guid, FormField> Fields,
+        ImmutableArray<SubmissionPlace>.Builder Places);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The default value of the field '{Field}' renders to a value its type cannot take, so the entry stores none.")]
     private static partial void LogDefaultNotTaken(ILogger logger, string field);

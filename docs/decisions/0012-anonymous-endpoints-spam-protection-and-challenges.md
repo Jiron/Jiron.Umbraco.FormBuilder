@@ -6,7 +6,8 @@
   ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)); the body of a submission, its limits, the
   receipt and the replay before 7.1 extended in 6.1e
   ([ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md)); what a page's validation checks and the
-  receipt before 7.1 extended in 6.1f ([ADR-0089](0089-the-validate-and-receipt-endpoints.md))
+  receipt before 7.1 extended in 6.1f ([ADR-0089](0089-the-validate-and-receipt-endpoints.md)); a page's places on
+  options extended in 6.1g ([ADR-0090](0090-places-on-options.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the

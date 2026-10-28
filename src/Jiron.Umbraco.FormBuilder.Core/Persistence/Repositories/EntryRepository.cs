@@ -9,7 +9,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 /// form's row before it does anything else and two submissions never share a number. Then the count toward the form's
 /// entry limit, which the counter makes the submissions to one form take in turns (ADR-0088); then the entry, as one
 /// insert whose conditions are its version, its submission id, its challenge, its key and its resume token; then its
-/// files, the check of its fields and its values. A refusal anywhere rolls the whole unit back, the number included. A
+/// files, the check of its fields and its values, which, for an entry that holds places, join the counts of the options
+/// they match (ADR-0090). A refusal anywhere rolls the whole unit back, the number included. A
 /// service that stores more in the same unit (the timeline event, the action runs, ADR-0007) calls this first, so the
 /// counter stays the unit's first write.
 /// </remarks>
@@ -117,6 +118,11 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
                 await TakeFilesAsync(db, n, entryId, entry.FormId, entry.FileIds);
                 await CheckFieldsAsync(db, n, entry.FormId, entry.Values.Select(value => value.FieldId).Distinct().ToArray());
                 await InsertValuesAsync(db, n, entryId, entry.Values);
+                if (EntryLimits.Counts(entry.State, entry.IsTest))
+                {
+                    await AdjustPlacesAsync(db, n, [entryId], add: true, holdingOnly: false);
+                }
+
                 return await FindAsync(db, n, $"{n.C("id")} = @0", entryId);
             },
             cancellationToken);
@@ -189,6 +195,7 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
             async db =>
             {
                 var n = new SqlNames(db);
+                await LockFormsAsync(db, n, [entryId]);
                 var changed = await db.ExecAsync(
                     $"UPDATE {n.T(FormBuilderTables.Entry)} SET {n.C("state")} = @0, {n.C("stateChangedUtc")} = @1, {n.C("updatedUtc")} = @1, {n.C("stateChangedByUserKey")} = @2 WHERE {n.C("id")} = @3 AND {n.C("state")} = @4",
                     StoredNames.Of(state),
@@ -201,6 +208,12 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
                 {
                     // Not in the state the user saw when the update ran, whatever it is in now: it may have come back since.
                     throw new FormBuilderConcurrencyException($"The entry was changed by someone else meanwhile (it was no longer {StoredNames.Describe(expected)}).");
+                }
+
+                // Out of the states that hold places, the entry's values leave the counts; back in, they join them again.
+                if (current is not null && EntryLimits.Counts(expected, current.IsTest) != EntryLimits.Counts(state, current.IsTest))
+                {
+                    await AdjustPlacesAsync(db, n, [entryId], add: EntryLimits.Counts(state, current.IsTest), holdingOnly: false);
                 }
 
                 return current;
@@ -218,6 +231,8 @@ internal sealed partial class EntryRepository(FormBuilderDatabase database) : IE
             async db =>
             {
                 var n = new SqlNames(db);
+                await LockFormsAsync(db, n, [entryId]);
+                await AdjustPlacesAsync(db, n, [entryId], add: false, holdingOnly: true);
                 return await db.ExecAsync($"DELETE FROM {n.T(FormBuilderTables.Entry)} WHERE {n.C("id")} = @0", entryId) == 1;
             },
             cancellationToken);
