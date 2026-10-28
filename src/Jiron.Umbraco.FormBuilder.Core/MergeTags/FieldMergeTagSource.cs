@@ -51,11 +51,15 @@ internal sealed class FieldMergeTagSource(MergeTagAnswerTexts answers) : IFinite
 
         return tag.Member switch
         {
-            "label" => MergeTagValue.Of(MergeTagAnswerTexts.Label(tag.Target.Field, scope.Culture, (await answers.TextsAsync(scope, cancellationToken)).Dictionary)),
+            "label" => MergeTagValue.Of(MergeTagAnswerTexts.Label(tag.Target.Field, scope.Culture, (await answers.TextsAsync(scope, [], cancellationToken)).Dictionary)),
             "value" => answers.Value(tag.Target, scope, request.Place),
             { } part => answers.Part(tag.Target, part, scope, request.Place),
-            null when tag.Target.Repeater is null && MergeTagAnswerTexts.IsRepeater(tag.Target.Field) => answers.Rows(tag.Target.Field, scope, request.Place, await answers.TextsAsync(scope, cancellationToken)),
-            null => answers.Display(tag.Target, scope, request.Place, await answers.TextsAsync(scope, cancellationToken)),
+            null when tag.Target.Repeater is null && MergeTagAnswerTexts.IsRepeater(tag.Target.Field) => answers.Rows(
+                tag.Target.Field,
+                scope,
+                request.Place,
+                await answers.TextsAsync(scope, tag.Target.Field.Fields.Select(child => new AnswerField(child, tag.Target.Field)), cancellationToken)),
+            null => answers.Display(tag.Target, scope, request.Place, await answers.TextsAsync(scope, [tag.Target], cancellationToken)),
         };
     }
 

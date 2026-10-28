@@ -3,7 +3,8 @@
 /**
  * The mutation check of the shared logic (ROADMAP 5.2a, ADR-0061), since 5.3a of the calculations (ADR-0063), since
  * 5.3f of answer recall (ADR-0068), since 5.4a of the forms of email addresses, phone numbers and web addresses
- * (ADR-0069), and since 5.5d of the options a choice's answers are held to (ADR-0077).
+ * (ADR-0069), since 5.5d of the options a choice's answers are held to (ADR-0077), and since 5.5h of the reader of a
+ * value's parts (ADR-0083).
  * Each mutant changes one piece of code in one runtime; that runtime's vector runner runs, and the file is put back. A
  * mutant that no vector catches survives, and the check fails unless the mutant is written down here as an equivalent
  * change, with the reason. A mutant written down as equivalent that a vector catches fails the check too, so the notes
@@ -1078,6 +1079,20 @@ const mutants = [
   dsp('calculation-places-default', "const places = typeof decimals === 'number' ? decimals : 2;", "const places = typeof decimals === 'number' ? decimals : null;"),
   dsp('calculation-places-ignored', "const places = typeof decimals === 'number' ? decimals : 2;", 'const places = 2;'),
   dsp('slider-unit-ignored', "for (const { text } of values) addNumber(display, around('', number(display, text), unit), text);", 'for (const { text } of values) addNumber(display, number(display, text), text);'),
+  // The parts reader (5.5h): what Core's FieldPartsJson.Read reads, from the text in its written order.
+  dsp('parts-a-name-twice', "    if (!isPart(name.text) || !isPart(part.text) || names.has(name.text)) return null;", "    if (!isPart(name.text) || !isPart(part.text)) return null;"),
+  dsp('parts-a-name-unchecked', "    if (!isPart(name.text) || !isPart(part.text) || names.has(name.text)) return null;", "    if (!isPart(part.text) || names.has(name.text)) return null;"),
+  dsp('parts-a-text-unchecked', "    if (!isPart(name.text) || !isPart(part.text) || names.has(name.text)) return null;", "    if (!isPart(name.text) || names.has(name.text)) return null;"),
+  dsp('parts-an-empty-one-kept', "const isPart = (text: string): boolean => text.length > 0 && isWellFormed(text);", "const isPart = (text: string): boolean => isWellFormed(text);"),
+  dsp('parts-a-lone-surrogate-kept', "const isPart = (text: string): boolean => text.length > 0 && isWellFormed(text);", "const isPart = (text: string): boolean => text.length > 0;"),
+  dsp('parts-a-number-as-a-text', "    if (text.charAt(at) !== '\"') return null;\n", ''),
+  dsp('parts-none-as-some', "  return found.length === 0 ? null : found;", "  return found;"),
+  dsp('parts-blanks-only-spaces', "  while (i < text.length && ' \\t\\n\\r'.includes(text.charAt(i))) i++;", "  while (i < text.length && ' '.includes(text.charAt(i))) i++;"),
+  dsp('parts-escapes-unskipped', "  while (i < text.length && text.charAt(i) !== '\"') i += text.charAt(i) === '\\\\' ? 2 : 1;", "  while (i < text.length && text.charAt(i) !== '\"') i += 1;"),
+  dsp('parts-an-array-as-an-object', "  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;\n  // The text is one JSON object", "  if (typeof value !== 'object' || value === null) return null;\n  // The text is one JSON object"),
+  ts('text-a-pair-as-lone', 'text.ts', "    if (isHigh(unit) && i + 1 < value.length && isLow(value.charCodeAt(i + 1))) i++;\n    else if (isHigh(unit) || isLow(unit)) return false;", "    if (isHigh(unit) || isLow(unit)) return false;"),
+  ts('text-a-lone-low-kept', 'text.ts', "    else if (isHigh(unit) || isLow(unit)) return false;", "    else if (isHigh(unit)) return false;"),
+  ts('text-a-lone-high-kept', 'text.ts', "    else if (isHigh(unit) || isLow(unit)) return false;", "    else if (isLow(unit)) return false;"),
   dsp('site-type-as-built-in', 'const builtIn = field.builtIn === true ? own(BUILT_IN, field.type) : undefined;', 'const builtIn = own(BUILT_IN, field.type);'),
 
   // ---- Answer recall: where a visitor text may look, and what it shows ----
@@ -1201,7 +1216,8 @@ const mutants = [
   csm('cs-recall-an-unknown-owner-first', 'MergeTagRecall.cs',
     lines('        if (!order.TryGetValue(owner, out var at))', '        {', '            return true;'),
     lines('        if (!order.TryGetValue(owner, out var at))', '        {', '            return false;')),
-  csm('cs-recall-a-later-field-shown', 'FormBuilderMergeTagService.cs', 'return place == MergeTagPlace.VisitorText && registry.Sources', 'return place == (MergeTagPlace)(-1) && registry.Sources'),
+  csm('cs-recall-a-later-field-shown', 'FormBuilderMergeTagService.cs', 'return place == MergeTagPlace.VisitorText && path.StartsWith', 'return place == (MergeTagPlace)(-1) && path.StartsWith'),
+  csm('cs-recall-the-source-alone-unguarded', 'FormBuilderMergeTagService.cs', ' && path.StartsWith("field.", StringComparison.Ordinal)' + NL, NL),
   csm('cs-recall-former-aliases', 'FieldMergeTagSource.cs', 'var formerAliases = place != MergeTagPlace.VisitorText;', 'var formerAliases = place != (MergeTagPlace)(-1);'),
   csm('cs-recall-site-display-used', 'MergeTagAnswerTexts.cs', 'private static bool Shared(MergeTagPlace place) => place == MergeTagPlace.VisitorText;', 'private static bool Shared(MergeTagPlace place) => place == (MergeTagPlace)(-1);'),
   csm('cs-recall-server-value-shown', 'MergeTagAnswerTexts.cs', '(place == MergeTagPlace.VisitorText && types.Find(target.Field.Type) is { ServerOnlyDefault: true })', '(place == (MergeTagPlace)(-1) && types.Find(target.Field.Type) is { ServerOnlyDefault: true })'),

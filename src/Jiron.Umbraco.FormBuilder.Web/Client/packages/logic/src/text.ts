@@ -50,6 +50,16 @@ function replaceInvalid(value: string): string {
   return out;
 }
 
+/** Whether the text holds no lone surrogate, as .NET reads a JSON string (a well-formed pair is one character). */
+export function isWellFormed(value: string): boolean {
+  for (let i = 0; i < value.length; i++) {
+    const unit = value.charCodeAt(i);
+    if (isHigh(unit) && i + 1 < value.length && isLow(value.charCodeAt(i + 1))) i++;
+    else if (isHigh(unit) || isLow(unit)) return false;
+  }
+  return true;
+}
+
 /** Lone surrogates and noncharacters become U+FFFD, and the text is normalised to NFC. Patterns get this too. */
 export function normalise(value: string): string {
   return replaceInvalid(value).normalize('NFC');

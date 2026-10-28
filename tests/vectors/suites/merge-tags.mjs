@@ -1335,6 +1335,27 @@ defaults.answers = {
     },
   },
   site: { fields: { [key('regular')]: answer('yes') } },
+  // Values with parts as a client may store them but Core never writes: a name twice, names that look like numbers,
+  // and an escape that decodes to a lone surrogate.
+  parts: {
+    fields: {
+      [key('name')]: answer('{"first":"Anna","first":"Berta","last":"Muster"}'),
+      [key('badge')]: answer(
+        '{"b":"Bee","2":"Two","1":"One"}',
+        '{"":"Empty"}',
+        '{"y":""}',
+        '{"n":1,"b":"B"}',
+        '{}',
+        '["x"]',
+        x('{ {09}"w" :{0a}"W" , "v":"V" }'),
+        x('{"q":"say {5c}"hi{5c}""}'),
+        x('{"e":"{5c}ud83d{5c}ude00"}'),
+        x('{"l":"{5c}udc00"}'),
+        x('{"{5c}ud800":"x"}'),
+      ),
+      [key('address')]: answer(x('{"street":"Main 1","city":"{5c}ud800"}')),
+    },
+  },
 };
 
 const MASK = x('{2022}{2022}{2022}');
@@ -1416,6 +1437,26 @@ const recalling = [
     description: 'the former alias "notes" of remarks is not in the projection, so neither runtime resolves it',
   }),
   r('recall-an-unknown-field', '[{{ field.nope }}]', '[]', [['unknown_path', 'field.nope']]),
+  r('recall-a-part-named-twice-reads-as-no-parts', '[{{ field.name }}][{{ field.name.first }}]', '[{"first":"Anna","first":"Berta","last":"Muster"}][]', [], {
+    answers: 'parts',
+  }),
+  r(
+    'recall-a-site-types-parts-as-core-reads-them',
+    '[{{ field.badge }}][{{ field.badge.1 }}]',
+    x('[Bee, Two, One, {"":"Empty"}, {"y":""}, {"n":1,"b":"B"}, {}, ["x"], W, V, say "hi", {1f600}, {"l":"{5c}udc00"}, {"{5c}ud800":"x"}][One]'),
+    [],
+    {
+      answers: 'parts',
+      description: 'names in their written order, those like numbers too; an empty name or text, a number, no part, an array, an escape that decodes to a lone surrogate in a text or a name: no parts, so the text as it is; JSON whitespace and escapes read',
+    },
+  ),
+  r('recall-a-lone-surrogate-reads-as-no-parts', '[{{ field.address }}][{{ field.address.street }}]', x('[{"street":"Main 1","city":"{5c}ud800"}][]'), [], {
+    answers: 'parts',
+  }),
+  r('recall-the-field-source-without-an-alias', '[{{ field }}][{{ field | upper }}]', '[][]', [
+    ['unknown_path', 'field'],
+    ['unknown_path', 'field', 1],
+  ]),
   r('recall-a-path-a-field-lacks', '[{{ field.email.first }}][{{ field.guests.value }}][{{ field.name.first.x }}]', '[][][]', [
     ['unknown_path', 'field.email.first'],
     ['unknown_path', 'field.guests.value'],

@@ -72,7 +72,7 @@ database connection of its own. Its areas:
 | Option lists | the kinds with their configuration and its checks, content and data type lists with what they read from Umbraco and the handler that drops what they keep when the site changes, URL lists with what they fetch and keep, the reader of uploaded CSV and TXT files, the standard lists and a site's own sources with their start-up check, the library's lists with their cache refresher, the option service, and the publish check of a field's source | ADR-0002, ADR-0073, ADR-0075, ADR-0076 |
 | Outbound | calls to other hosts (`OutboundHttp`): the host configuration's hosts and schemes, redirects to the same host only, one time limit and a cap; the transport that resolves names itself and connects only to globally reachable addresses, which only the Testing assembly replaces | ADR-0076, §4.10 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030, ADR-0064, ADR-0068 |
-| Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`field`, `entry` with `entry.answers` and `entry.url`, `form`, `query`, `context`, `date`, and `page`, `site`, `member` and `dictionary` over Umbraco's content, members, domains, languages and dictionary), the answers as each field type shows them with what each place masks or leaves out and the dictionary's texts for labels that name an item and the labels lists and other sources resolve for options, answer recall in visitor texts (only the fields before the text's page, group or field, by their current aliases, a site's type by its rule kind), a site's sources and filters with their start-up check, and the culture formats written from .NET's data | ADR-0014, ADR-0064, ADR-0065, ADR-0066, ADR-0067, ADR-0068, ADR-0077 |
+| Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`field`, `entry` with `entry.answers` and `entry.url`, `form`, `query`, `context`, `date`, and `page`, `site`, `member` and `dictionary` over Umbraco's content, members, domains, languages and dictionary), the answers as each field type shows them with what each place masks or leaves out and the dictionary's texts for labels that name an item and the labels lists and other sources resolve for options, answer recall in visitor texts (only the fields before the text's page, group or field, by their current aliases, a site's type by its rule kind), a site's sources and filters with their start-up check, and the culture formats written from .NET's data | ADR-0014, ADR-0064, ADR-0065, ADR-0066, ADR-0067, ADR-0068, ADR-0077, ADR-0083 |
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder | ADR-0003, §4.4 |
 | Actions and email | action types, action runs, the email outbox, the worker | ADR-0007 |
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
@@ -137,8 +137,10 @@ flowchart LR
   context, refusing a tag where a value could become code, and renders it over the values with every value encoded
   for its place ([ADR-0064](decisions/0064-the-merge-tag-engine.md)); its answer recall (`recall.ts`, with the answers'
   texts of `display.ts`; Core's `MergeTags/MergeTagRecall.cs` and the `field` source in visitor texts) fills a visitor
-  text's `field.*` tags from the answers so far, of the fields before the text only
-  ([ADR-0068](decisions/0068-answer-recall.md)); its `checkField` (`checks.ts`) runs the built-in types'
+  text's `field.*` tags from the answers so far, of the fields before the text only, and reads a value with parts as
+  Core's `FieldPartsJson` does ([ADR-0068](decisions/0068-answer-recall.md),
+  [ADR-0083](decisions/0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md)); its `checkField`
+  (`checks.ts`) runs the built-in types'
   checks of a field's answers as each type's `Validate` in Core does, and then the field's own `pattern` and
   `matchesField` checks as Core's `FieldValues` does, with the other fields' values
   ([ADR-0062](decisions/0062-the-built-in-types-checks.md)), a choice's answers held to its own options or those its
@@ -231,8 +233,9 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   `SubmissionReader` puts these together over a whole form for the pipeline: every answer and part name cleaned,
   limited and read (a hidden field's query value that does not fit counts as none, so its default stands in), a
   repeatable group's rows counted against its limits before any is read, the rules over what was read with every
-  calculation worked out by the server, each shown hidden field's default resolved on submit (then the rules once
-  more, for the actions and the outcome), and the shown fields checked, a child in its row, a choice from a list or
+  calculation worked out by the server, each shown hidden field's default resolved on submit over one scope that
+  takes each resolved value in turn (then the rules once more, for the actions and the outcome), and the shown fields
+  checked, a child in its row, a choice from a list or
   another source against the options the option service resolves for the submission's culture, page and parent
   answers (only those the parent offers, so no posted text reaches a source; with the parent's options unknown, the
   child's are unknown too: [ADR-0081](decisions/0081-what-visitors-and-failures-cost-the-option-lists.md)), once per
@@ -241,10 +244,12 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   by field and row, the rules' state and the answers for merge tags. What the rules hide is neither checked nor stored
   ([ADR-0072](decisions/0072-a-submissions-answers.md),
   [ADR-0077](decisions/0077-answers-and-labels-from-resolved-options.md),
-  [ADR-0080](decisions/0080-reading-a-submission-after-the-phase-5-review.md)).
+  [ADR-0080](decisions/0080-reading-a-submission-after-the-phase-5-review.md),
+  [ADR-0083](decisions/0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md)).
   `Display` writes the texts merge tags show the values as, in the template's culture, with the wire number or date
   behind a text ([ADR-0066](decisions/0066-answers-as-merge-tags.md)); by default by the type's rule kind. An option
-  from a list or another source shows the label its source resolves, read once for a rendering (ADR-0077).
+  from a list or another source shows the label its source resolves, read once per scope and only for a tag that
+  shows the field's answers (ADR-0077, ADR-0083).
   `FieldTypeChanges` works out which types a field may become and what each change keeps and loses (its settings, by
   name, kind and rules; common properties; messages; the operators of rules; the columns of older answers), from the
   declarations and schemas alone ([ADR-0059](decisions/0059-changing-field-types.md)), for the inspector's "Change
@@ -483,7 +488,11 @@ Two layers ([ADR-0008](decisions/0008-settings-model.md)):
   host grants and locked sections, each key arriving with the step that builds what it configures. One options tree
   (`FormBuilderOptions`), bound and read once, so a change takes effect at the next start. Start-up checks every key,
   a misspelt one included, with messages that name the key, and refuses a runtime without ICU
-  ([ADR-0042](decisions/0042-host-configuration-and-start-up-checks.md)). A lowered definition limit refuses saves,
+  ([ADR-0042](decisions/0042-host-configuration-and-start-up-checks.md)). Every server of a site runs the same .NET
+  version over the same ICU version: the months, weekdays and countries that sources of options give, the order of
+  labels in a culture and the date and number patterns of the public projection come from the culture data of the
+  server that answers ([ADR-0083](decisions/0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md)). A
+  lowered definition limit refuses saves,
   never what the site stored. An IntelliSense schema generated from the options ships with the Core package.
 - **Backoffice sections** in `jfbSetting` ([ADR-0043](decisions/0043-backoffice-settings-sections.md)): one immutable
   record each, whose initializers are the defaults, with a validator, its schema migrations and a host rule, each
@@ -510,7 +519,9 @@ hour, behind a loading token that keeps a read racing a save from caching the ol
 
 All registered through `builder.JironFormBuilder()`, documented in `docs/extending.md` (15.1), with samples (15.2).
 Registries are collections, so a site can add, replace or remove entries; merge tags keep their built-in sources and
-filters, beside which a site adds its own ([ADR-0065](decisions/0065-the-merge-tag-service-and-its-sources.md)).
+filters, beside which a site adds its own ([ADR-0065](decisions/0065-the-merge-tag-service-and-its-sources.md)), whose
+names and traits are read once, at start-up
+([ADR-0083](decisions/0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md)).
 
 | Extension | For | Decided in |
 | --- | --- | --- |

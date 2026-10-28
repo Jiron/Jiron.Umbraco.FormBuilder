@@ -85,9 +85,9 @@ internal static class MergeTagPlaces
     public static PlaceRules For(MergeTagPlace place) =>
         Rules.TryGetValue(place, out var rules) ? rules : throw new ArgumentOutOfRangeException(nameof(place), place, "Not a merge-tag place.");
 
-    /// <summary>Whether a place takes a site's source with the given traits.</summary>
-    public static bool TakesSiteSource(PlaceRules rules, MergeTagPlace place, IFormBuilderMergeTagSource source) =>
-        rules.TakesSiteSources && (!source.IsPerVisitor || rules.TakesPerVisitorSources) && (source.Places is null || source.Places.Contains(place));
+    /// <summary>Whether a place takes a site's source with the given traits, as the registry read them once.</summary>
+    public static bool TakesSiteSource(PlaceRules rules, MergeTagPlace place, MergeTagSourceTraits traits) =>
+        rules.TakesSiteSources && (!traits.IsPerVisitor || rules.TakesPerVisitorSources) && (traits.Places is null || traits.Places.Contains(place));
 
     private static FrozenSet<MergeTagContext> Contexts(params MergeTagContext[] contexts) => contexts.ToFrozenSet();
 

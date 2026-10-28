@@ -59,20 +59,20 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
         ArgumentNullException.ThrowIfNull(form);
         var rules = MergeTagPlaces.For(place);
         var paths = new List<MergeTagPathInfo>();
-        foreach (var source in registry.Ordered)
+        foreach (var name in registry.Ordered)
         {
-            if (!Takes(rules, place, source))
+            if (!Takes(rules, place, name))
             {
                 continue;
             }
 
             try
             {
-                paths.AddRange(source.Paths(form));
+                paths.AddRange(registry.Sources[name].Paths(form));
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
-                LogSourceFailed(logger, source.Name, exception.GetType().FullName, exception.StackTrace);
+                LogSourceFailed(logger, name, exception.GetType().FullName, exception.StackTrace);
             }
         }
 
@@ -92,7 +92,7 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
         }
 
         return new TemplateRules(
-            name => registry.Filters.TryGetValue(name, out var filter) ? Run(filter, culture) : null,
+            name => registry.Filters.TryGetValue(name, out var filter) ? Run(filter, name, culture) : null,
             rules.TakesSiteFilters,
             path => PathProblem(path, rules, place, form, textOwner));
     }
@@ -112,20 +112,22 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
                 return MergeTagProblems.SourceNotForPlace;
             }
 
-            return place == MergeTagPlace.VisitorText && registry.Sources.GetValueOrDefault(name) is FieldMergeTagSource fields
+            // A path of the field source alone, with no alias, names no field: it is an unknown path, as any other.
+            return place == MergeTagPlace.VisitorText && path.StartsWith("field.", StringComparison.Ordinal)
+                && registry.Sources.GetValueOrDefault(name) is FieldMergeTagSource fields
                 && fields.FieldOf(path["field.".Length..], form, place) is { } field && !MergeTagRecall.IsBefore(form, field, textOwner)
                 ? MergeTagProblems.FieldAfterText
                 : null;
         }
 
-        return registry.Sources.TryGetValue(name, out var source) && !MergeTagPlaces.TakesSiteSource(rules, place, source) ? MergeTagProblems.SourceNotForPlace : null;
+        return registry.Traits.TryGetValue(name, out var traits) && !MergeTagPlaces.TakesSiteSource(rules, place, traits) ? MergeTagProblems.SourceNotForPlace : null;
     }
 
-    /// <summary>Whether a place takes a source: a built-in one by the place's list, a site's by its traits.</summary>
-    private static bool Takes(PlaceRules rules, MergeTagPlace place, IFormBuilderMergeTagSource source) =>
-        MergeTagPlaces.BuiltInSources.ContainsKey(source.Name)
-            ? rules.Sources is null || rules.Sources.Contains(source.Name)
-            : MergeTagPlaces.TakesSiteSource(rules, place, source);
+    /// <summary>Whether a place takes a source: a built-in one by the place's list, a site's by the traits it said once.</summary>
+    private bool Takes(PlaceRules rules, MergeTagPlace place, string name) =>
+        MergeTagPlaces.BuiltInSources.ContainsKey(name)
+            ? rules.Sources is null || rules.Sources.Contains(name)
+            : registry.Traits.TryGetValue(name, out var traits) && MergeTagPlaces.TakesSiteSource(rules, place, traits);
 
     /// <summary>Whether a path is known in a place before any value: any path of a source whose paths are not all listed, and a listed one of the others.</summary>
     private bool IsKnown(string path, FormDefinition form, MergeTagPlace place)
@@ -164,7 +166,7 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
     }
 
     /// <summary>A site's filter as the engine runs it: arguments that fail to be checked do not fit, and a failing filter gives the empty text.</summary>
-    private SiteFilter Run(IFormBuilderMergeTagFilter filter, string culture) => new(
+    private SiteFilter Run(IFormBuilderMergeTagFilter filter, string name, string culture) => new(
         arguments =>
         {
             try
@@ -173,7 +175,7 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
-                LogFilterFailed(logger, filter.Name, exception.GetType().FullName, exception.StackTrace);
+                LogFilterFailed(logger, name, exception.GetType().FullName, exception.StackTrace);
                 return false;
             }
         },
@@ -185,7 +187,7 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
-                LogFilterFailed(logger, filter.Name, exception.GetType().FullName, exception.StackTrace);
+                LogFilterFailed(logger, name, exception.GetType().FullName, exception.StackTrace);
                 return MergeTagValue.Empty;
             }
         });

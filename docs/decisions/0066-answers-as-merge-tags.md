@@ -6,7 +6,8 @@
   [ADR-0065](0065-the-merge-tag-service-and-its-sources.md) (the scope carries the answers; the `field` source and
   `entry.answers`); the display texts in TypeScript, a site's type by its rule kind in visitor texts and the trimmed
   prefix and suffix added by [ADR-0068](0068-answer-recall.md) in 5.3f; the labels of options from a list or another
-  source added by [ADR-0077](0077-answers-and-labels-from-resolved-options.md) in 5.5d
+  source added by [ADR-0077](0077-answers-and-labels-from-resolved-options.md) in 5.5d; the `field` source without an
+  alias amended by [ADR-0083](0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md) in 5.5h
 - Date: 2026-10-26
 - Roadmap step: 5.3d (decided and built); 5.3e resolves dictionary texts in labels, 5.3f gives answer recall and the
   display texts to the browser's runtime, 5.5 the labels of options from a list, 14.2 the answer words in five more

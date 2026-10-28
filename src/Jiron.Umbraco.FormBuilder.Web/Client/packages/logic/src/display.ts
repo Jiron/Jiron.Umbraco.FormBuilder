@@ -6,7 +6,7 @@ import { formatCalendar, formatNumber, type CultureFormats } from './culture.ts'
 import { own } from './errors.ts';
 import type { Kind } from './rules.ts';
 import type { MergeItem } from './template.ts';
-import { trim } from './text.ts';
+import { isWellFormed, trim } from './text.ts';
 
 /** An option as answers show it: its value and its label in the page's culture. */
 export interface DisplayOption {
@@ -108,8 +108,10 @@ const around = (prefix: string, text: string, suffix: string): string =>
   [trim(prefix), text, trim(suffix)].filter((piece) => piece.length > 0).join(' ');
 
 /**
- * The parts of a value with parts in their order: null unless the text is a JSON object of at least one part, each
- * with a name and a text that are not empty. Core's reading writes each name once.
+ * The parts of a value with parts in the order the text writes them, as Core's FieldPartsJson.Read reads them: null
+ * unless the text is a JSON object of at least one part, each with a name and a text that are not empty, no name twice
+ * and no lone surrogate. The members are read from the text itself, since JSON.parse keeps a name's last text and puts
+ * names that look like numbers first.
  */
 export function valueParts(text: string): [string, string][] | null {
   let value: unknown;
@@ -119,14 +121,38 @@ export function valueParts(text: string): [string, string][] | null {
     return null;
   }
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
-  const parts = Object.entries(value as Record<string, unknown>);
-  if (parts.length === 0) return null;
+  // The text is one JSON object, so its members are strings, colons and commas between JSON whitespace.
   const found: [string, string][] = [];
-  for (const [name, part] of parts) {
-    if (name.length === 0 || typeof part !== 'string' || part.length === 0) return null;
-    found.push([name, part]);
+  const names = new Set<string>();
+  let at = space(text, text.indexOf('{') + 1);
+  while (text.charAt(at) !== '}') {
+    const name = stringAt(text, at);
+    at = space(text, space(text, name.end) + 1);
+    if (text.charAt(at) !== '"') return null;
+    const part = stringAt(text, at);
+    if (!isPart(name.text) || !isPart(part.text) || names.has(name.text)) return null;
+    names.add(name.text);
+    found.push([name.text, part.text]);
+    at = space(text, part.end);
+    if (text.charAt(at) === ',') at = space(text, at + 1);
   }
-  return found;
+  return found.length === 0 ? null : found;
+}
+
+const isPart = (text: string): boolean => text.length > 0 && isWellFormed(text);
+
+/** The index of the first character at or after `at` that is no JSON whitespace. */
+function space(text: string, at: number): number {
+  let i = at;
+  while (i < text.length && ' \t\n\r'.includes(text.charAt(i))) i++;
+  return i;
+}
+
+/** The JSON string that starts at `at`, decoded, and the index after its closing quote. */
+function stringAt(text: string, at: number): { text: string; end: number } {
+  let i = at + 1;
+  while (i < text.length && text.charAt(i) !== '"') i += text.charAt(i) === '\\' ? 2 : 1;
+  return { text: JSON.parse(text.slice(at, i + 1)) as string, end: i + 1 };
 }
 
 /** The default by the rule kind (Core's FieldDisplayDefaults). */

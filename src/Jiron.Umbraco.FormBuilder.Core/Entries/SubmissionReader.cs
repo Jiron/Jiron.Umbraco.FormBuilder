@@ -187,10 +187,13 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
     // Each shown field whose type keeps its value on the server and that the post gave none, in the form's order: its
     // default value rendered where hidden values render, over the answers so far (the earlier resolved values among
-    // them), cleaned, held to its type's limits and read by its type. Whether any value was resolved.
+    // them), cleaned, held to its type's limits and read by its type. All of them render over one scope, given the
+    // answers again after each value, so what its tags read once, such as an option's label, is read once (ADR-0083).
+    // Whether any value was resolved.
     private async Task<bool> ResolveAsync(List<Slot> slots, FormState state, PostedSubmission post, CancellationToken cancellationToken)
     {
         var resolved = false;
+        MergeTagScope? scope = null;
         foreach (var slot in Shown(slots, state))
         {
             if (!slot.Type.Declaration.ServerOnlyDefault || !slot.Values.IsEmpty || slot.Field.DefaultValue is not { } template)
@@ -198,7 +201,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
                 continue;
             }
 
-            var scope = post.Scope with { Answers = ForMergeTags(Stored(slots, state, post), state), TextOwner = null };
+            scope ??= post.Scope with { Answers = MergeTagAnswers.Replaceable(ForMergeTags(Stored(slots, state, post)), HiddenKeys(state)), TextOwner = null };
             var texts = new List<string>();
             foreach (var text in template.Values)
             {
@@ -217,7 +220,11 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
             }
 
             slot.Read = FieldValues.Read(slot.Type, slot.Field, answers);
-            resolved |= !slot.Values.IsEmpty;
+            if (!slot.Values.IsEmpty)
+            {
+                resolved = true;
+                scope.Answers.Replace(ForMergeTags(Stored(slots, state, post)));
+            }
         }
 
         return resolved;
@@ -554,13 +561,16 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
     private static IReadOnlyList<RowState> RowsOf(FormState state, string id) => state.Rows.GetValueOrDefault(id) ?? [];
 
     // The stored answers as merge tags show them, a file's with its name and size, and the fields the rules hid.
-    private static MergeTagAnswers ForMergeTags(ImmutableArray<EntryFieldAnswer> answers, FormState state) => new(
+    private static MergeTagAnswers ForMergeTags(ImmutableArray<EntryFieldAnswer> answers, FormState state) => new(ForMergeTags(answers), HiddenKeys(state));
+
+    private static IEnumerable<Guid> HiddenKeys(FormState state) => state.Hidden.Select(id => Guid.TryParse(id, out var key) ? key : (Guid?)null).OfType<Guid>();
+
+    private static IEnumerable<MergeTagAnswer> ForMergeTags(ImmutableArray<EntryFieldAnswer> answers) =>
         answers.Select(answer => new MergeTagAnswer(
             answer.Field,
             answer.Values,
             answer.Files.IsEmpty ? null : [.. answer.Files.Select(file => new FieldFile(file.OriginalName, file.SizeBytes))],
-            answer.Row)),
-        state.Hidden.Select(id => Guid.TryParse(id, out var key) ? key : (Guid?)null).OfType<Guid>());
+            answer.Row));
 
     // What resolving a submission's options shares: the submission, what was resolved so far by field and parent answers,
     // and every field of the form by key, a repeatable group's children among them, as a parent may be one.

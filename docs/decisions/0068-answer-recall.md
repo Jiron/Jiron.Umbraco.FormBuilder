@@ -5,7 +5,8 @@
   kind), [ADR-0064](0064-the-merge-tag-engine.md) (the problem `field_after_text`, and the parser's check of a path
   where the text stands), [ADR-0065](0065-the-merge-tag-service-and-its-sources.md) (the scope and the check know
   whose text it is, and a source knows its paths per place) and [ADR-0066](0066-answers-as-merge-tags.md) (the
-  answers' display texts in TypeScript too, and a prefix and a suffix trimmed with the set both runtimes share)
+  answers' display texts in TypeScript too, and a prefix and a suffix trimmed with the set both runtimes share); the
+  `field` source without an alias and the website's reading of a value with parts amended by [ADR-0083](0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md) in 5.5h
 - Date: 2026-10-26
 - Roadmap step: 5.3f (decided and built in both runtimes); 6.1 gives the browser what recall needs, 6.2 renders
   visitor texts on the server, 6.4 updates them as the visitor types, 10.x reports the problem in the form check

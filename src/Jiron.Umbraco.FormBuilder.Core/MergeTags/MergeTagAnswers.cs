@@ -13,6 +13,9 @@ public sealed class MergeTagAnswers
 {
     private readonly FrozenDictionary<(Guid Field, int Row), MergeTagAnswer> _answers;
 
+    // The answers a submission's reader gave last, for answers it made to be replaced; null for every other, which never
+    // change (ADR-0083).
+    private readonly Latest? _latest;
     /// <summary>The answers, and the fields the rules hid.</summary>
     /// <param name="answers">The answers, at most one for each field and row; one without values counts as none.</param>
     /// <param name="hidden">
@@ -21,6 +24,64 @@ public sealed class MergeTagAnswers
     /// </param>
     /// <exception cref="ArgumentException">An answer is null, or two answer the same field in the same row.</exception>
     public MergeTagAnswers(IEnumerable<MergeTagAnswer> answers, IEnumerable<Guid>? hidden = null)
+        : this(answers, hidden, replaceable: false)
+    {
+    }
+
+    private MergeTagAnswers(IEnumerable<MergeTagAnswer> answers, IEnumerable<Guid>? hidden, bool replaceable)
+    {
+        _answers = ByField(answers);
+        _latest = replaceable ? new Latest(_answers) : null;
+        Hidden = (hidden ?? []).ToFrozenSet();
+    }
+
+    /// <summary>No answers: before the visitor submits, or where no entry is rendered for.</summary>
+    public static MergeTagAnswers None { get; } = new([]);
+
+    /// <summary>The keys of the fields the rules hid for the entry.</summary>
+    public IReadOnlySet<Guid> Hidden { get; }
+
+    /// <summary>The answer of a field in a row, null for none or one without values.</summary>
+    /// <param name="field">The field's key.</param>
+    /// <param name="row">The row of a repeatable group's child, from 0; 0 for any other field.</param>
+    public MergeTagAnswer? Find(Guid field, int row = 0) =>
+        Current.TryGetValue((field, row), out var answer) && answer.Values.Length > 0 ? answer : null;
+
+    /// <summary>The rows any of the fields has an answer in, in their order.</summary>
+    /// <param name="fields">The keys of a repeatable group's children.</param>
+    internal IReadOnlyList<int> Rows(IEnumerable<Guid> fields)
+    {
+        var keys = fields.ToHashSet();
+        return [.. Current.Values.Where(answer => keys.Contains(answer.Field) && answer.Values.Length > 0).Select(answer => answer.Row).Distinct().Order()];
+    }
+
+    /// <summary>
+    /// Answers that <see cref="Replace"/> gives again (ADR-0083): a submission's reader renders all of its hidden fields'
+    /// defaults over one scope, whose answers it replaces after each value it resolves, so that a later default shows an
+    /// earlier one's value and what the scope's tags read once is read once per submission. A value it resolves is never
+    /// an option's or a parent's, so nothing read before changes. No other answers change.
+    /// </summary>
+    /// <param name="answers">The answers, at most one for each field and row.</param>
+    /// <param name="hidden">The keys of the fields the rules hid, which stay.</param>
+    internal static MergeTagAnswers Replaceable(IEnumerable<MergeTagAnswer> answers, IEnumerable<Guid> hidden) => new(answers, hidden, replaceable: true);
+
+    /// <summary>Takes these answers in place of those before, the hidden fields staying.</summary>
+    /// <param name="answers">The answers, at most one for each field and row.</param>
+    /// <exception cref="InvalidOperationException">The answers were not made <see cref="Replaceable"/>.</exception>
+    internal void Replace(IEnumerable<MergeTagAnswer> answers)
+    {
+        if (_latest is null)
+        {
+            throw new InvalidOperationException("Only answers made to be replaced change.");
+        }
+
+        _latest.Answers = ByField(answers);
+    }
+
+    // The answers as they are now.
+    private FrozenDictionary<(Guid Field, int Row), MergeTagAnswer> Current => _latest?.Answers ?? _answers;
+
+    private static FrozenDictionary<(Guid Field, int Row), MergeTagAnswer> ByField(IEnumerable<MergeTagAnswer> answers)
     {
         ArgumentNullException.ThrowIfNull(answers);
         var byField = new Dictionary<(Guid Field, int Row), MergeTagAnswer>();
@@ -37,28 +98,13 @@ public sealed class MergeTagAnswers
             }
         }
 
-        _answers = byField.ToFrozenDictionary();
-        Hidden = (hidden ?? []).ToFrozenSet();
+        return byField.ToFrozenDictionary();
     }
 
-    /// <summary>No answers: before the visitor submits, or where no entry is rendered for.</summary>
-    public static MergeTagAnswers None { get; } = new([]);
-
-    /// <summary>The keys of the fields the rules hid for the entry.</summary>
-    public IReadOnlySet<Guid> Hidden { get; }
-
-    /// <summary>The answer of a field in a row, null for none or one without values.</summary>
-    /// <param name="field">The field's key.</param>
-    /// <param name="row">The row of a repeatable group's child, from 0; 0 for any other field.</param>
-    public MergeTagAnswer? Find(Guid field, int row = 0) =>
-        _answers.TryGetValue((field, row), out var answer) && answer.Values.Length > 0 ? answer : null;
-
-    /// <summary>The rows any of the fields has an answer in, in their order.</summary>
-    /// <param name="fields">The keys of a repeatable group's children.</param>
-    internal IReadOnlyList<int> Rows(IEnumerable<Guid> fields)
+    // What replaceable answers hold now.
+    private sealed class Latest(FrozenDictionary<(Guid Field, int Row), MergeTagAnswer> answers)
     {
-        var keys = fields.ToHashSet();
-        return [.. _answers.Values.Where(answer => keys.Contains(answer.Field) && answer.Values.Length > 0).Select(answer => answer.Row).Distinct().Order()];
+        public FrozenDictionary<(Guid Field, int Row), MergeTagAnswer> Answers { get; set; } = answers;
     }
 }
 

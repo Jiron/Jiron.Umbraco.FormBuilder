@@ -5,7 +5,8 @@
   problems a place adds, and the form check's messages move to the form check); the scope's answers, the `field`
   source and `entry.answers` added by [ADR-0066](0066-answers-as-merge-tags.md) in 5.3d; the scope's page and member
   and the Umbraco sources added by [ADR-0067](0067-the-umbraco-sources-and-the-base-url.md) in 5.3e; the text's owner
-  in the scope and in `Check`, and a source's paths per place, added by [ADR-0068](0068-answer-recall.md) in 5.3f
+  in the scope and in `Check`, and a source's paths per place, added by [ADR-0068](0068-answer-recall.md) in 5.3f; a
+  site source's name and traits read once, at start-up, amended by [ADR-0083](0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md) in 5.5h
 - Date: 2026-10-26
 - Roadmap step: 5.3c (decided and built); 5.3d adds the answers (`field.*`, `entry.answers`), 5.3e the Umbraco
   sources (`page`, `member`, `site`, `dictionary`, `entry.url`), 5.3f answer recall and the copied-actions report

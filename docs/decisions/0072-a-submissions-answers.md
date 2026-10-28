@@ -3,7 +3,8 @@
 - Status: accepted; amends [ADR-0070](0070-storing-answers-and-reading-them-back.md) (the values the server works
   out, and a repeatable group's stored rows) and [ADR-0061](0061-the-form-rules-engine.md) (the rules run twice in a
   submission); a token named twice and a hidden field's query value that does not fit amended by
-  [ADR-0080](0080-reading-a-submission-after-the-phase-5-review.md) in 5.5f
+  [ADR-0080](0080-reading-a-submission-after-the-phase-5-review.md) in 5.5f; the hidden fields' defaults over one scope
+  amended by [ADR-0083](0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md) in 5.5h
 - Date: 2026-10-27
 - Roadmap step: 5.4d (decided and built); 6.1's pipeline and 6.2's posts without JavaScript call it, 6.5 adds the
   member and context prefill, 5.5's sweep checks that 6.1 wires it

@@ -8,8 +8,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 
 /// <summary>
 /// Every merge-tag source and filter a site has (ADR-0065): the built-in sources first, then the site's own, each by
-/// name. A site's source or filter whose name is taken is left out here; the start-up check refuses it, so a running
-/// site never has one.
+/// name. A site's source's name and traits and a filter's name are read once, here, so no rendering asks them again. A
+/// site's source or filter whose name is taken, or that fails to say its name or traits, is left out here; the start-up
+/// check refuses it, so a running site never has one.
 /// </summary>
 internal sealed partial class MergeTagRegistry
 {
@@ -26,47 +27,110 @@ internal sealed partial class MergeTagRegistry
             sources.TryAdd(source.Name, source);
         }
 
+        var traits = new Dictionary<string, MergeTagSourceTraits>(StringComparer.Ordinal);
         foreach (var source in siteSources)
         {
-            if (Problem("source", source.Name, MergeTagPlaces.BuiltInSources.ContainsKey) is null)
+            if (TryRead(source, out var name, out var read, out _) && Problem("source", name, MergeTagPlaces.BuiltInSources.ContainsKey) is null && sources.TryAdd(name!, source))
             {
-                sources.TryAdd(source.Name, source);
+                traits[name!] = read!;
             }
         }
 
         var filters = new Dictionary<string, IFormBuilderMergeTagFilter>(StringComparer.Ordinal);
         foreach (var filter in siteFilters)
         {
-            if (Problem("filter", filter.Name, MergeTagEngine.IsBuiltInFilter) is null)
+            if (TryName(filter, out var name, out _) && Problem("filter", name, MergeTagEngine.IsBuiltInFilter) is null)
             {
-                filters.TryAdd(filter.Name, filter);
+                filters.TryAdd(name!, filter);
             }
         }
 
         Sources = sources.ToFrozenDictionary(StringComparer.Ordinal);
+        Traits = traits.ToFrozenDictionary(StringComparer.Ordinal);
         Filters = filters.ToFrozenDictionary(StringComparer.Ordinal);
-        Ordered = [.. sources.Values];
+        Ordered = [.. sources.Keys];
     }
 
     /// <summary>Every source by name.</summary>
     public FrozenDictionary<string, IFormBuilderMergeTagSource> Sources { get; }
 
+    /// <summary>The traits of the site's own sources by name, as they were read once; a built-in source's place list decides for it.</summary>
+    public FrozenDictionary<string, MergeTagSourceTraits> Traits { get; }
+
     /// <summary>The site's own filters by name.</summary>
     public FrozenDictionary<string, IFormBuilderMergeTagFilter> Filters { get; }
 
-    /// <summary>Every source in the order the picker offers them: the built-in sources first.</summary>
-    public IReadOnlyList<IFormBuilderMergeTagSource> Ordered { get; }
+    /// <summary>Every source's name in the order the picker offers them: the built-in sources first.</summary>
+    public IReadOnlyList<string> Ordered { get; }
 
     /// <summary>
-    /// The problems of a site's sources and filters, which stop the site (ADR-0042): a name outside the grammar, a
-    /// built-in one's name, or a name two of them share; each names the type.
+    /// The problems of a site's sources and filters, which stop the site (ADR-0042): one that fails to say its name or
+    /// traits, a name outside the grammar, a built-in one's name, or a name two of them share; each names the type.
     /// </summary>
     public static IReadOnlyList<string> Problems(IEnumerable<IFormBuilderMergeTagSource> sources, IEnumerable<IFormBuilderMergeTagFilter> filters)
     {
+        ArgumentNullException.ThrowIfNull(sources);
+        ArgumentNullException.ThrowIfNull(filters);
         var problems = new List<string>();
-        Collect("source", sources.Select(source => ((string?)source.Name, source.GetType())), MergeTagPlaces.BuiltInSources.ContainsKey, problems);
-        Collect("filter", filters.Select(filter => ((string?)filter.Name, filter.GetType())), MergeTagEngine.IsBuiltInFilter, problems);
+        var named = new List<(string? Name, Type Type)>();
+        foreach (var source in sources)
+        {
+            if (TryRead(source, out var name, out _, out var failure))
+            {
+                named.Add((name, source.GetType()));
+            }
+            else
+            {
+                problems.Add($"The merge-tag source {source.GetType().FullName} failed with {failure!.GetType().FullName} as its {nameof(IFormBuilderMergeTagSource.Name)}, {nameof(IFormBuilderMergeTagSource.IsPerVisitor)} and {nameof(IFormBuilderMergeTagSource.Places)} were read: {failure.Message}");
+            }
+        }
+
+        Collect("source", named, MergeTagPlaces.BuiltInSources.ContainsKey, problems);
+        named.Clear();
+        foreach (var filter in filters)
+        {
+            if (TryName(filter, out var name, out var failure))
+            {
+                named.Add((name, filter.GetType()));
+            }
+            else
+            {
+                problems.Add($"The merge-tag filter {filter.GetType().FullName} failed with {failure!.GetType().FullName} as its {nameof(IFormBuilderMergeTagFilter.Name)} was read: {failure.Message}");
+            }
+        }
+
+        Collect("filter", named, MergeTagEngine.IsBuiltInFilter, problems);
         return problems;
+    }
+
+    // A site's source's name and traits, read once; false, with the exception, when the source fails to say them.
+    private static bool TryRead(IFormBuilderMergeTagSource source, out string? name, out MergeTagSourceTraits? traits, out Exception? failure)
+    {
+        try
+        {
+            (name, traits, failure) = (source.Name, MergeTagSourceTraits.Of(source), null);
+            return true;
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            (name, traits, failure) = (null, null, exception);
+            return false;
+        }
+    }
+
+    // A site's filter's name, read once; false, with the exception, when the filter fails to say it.
+    private static bool TryName(IFormBuilderMergeTagFilter filter, out string? name, out Exception? failure)
+    {
+        try
+        {
+            (name, failure) = (filter.Name, null);
+            return true;
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            (name, failure) = (null, exception);
+            return false;
+        }
     }
 
     private static void Collect(string kind, IEnumerable<(string? Name, Type Type)> items, Func<string, bool> builtIn, List<string> problems)
@@ -98,9 +162,25 @@ internal sealed partial class MergeTagRegistry
 }
 
 /// <summary>
-/// Stops the site when a site's merge-tag source or filter cannot be used (ADR-0042, ADR-0065): a name outside the
-/// grammar, a built-in one's name, or a name two of them share. It runs with the other start-up checks and names every
-/// problem at once.
+/// A site's source's traits as the registry read them once (ADR-0065): whether its values differ per visitor, and the
+/// places it may be used in, copied so that the source's own set cannot change them later.
+/// </summary>
+/// <param name="IsPerVisitor">Whether the values differ per visitor.</param>
+/// <param name="Places">The places, within those that take a site's sources; null for all of them.</param>
+internal sealed record MergeTagSourceTraits(bool IsPerVisitor, FrozenSet<MergeTagPlace>? Places)
+{
+    /// <summary>The traits <paramref name="source"/> says now; what it throws passes on.</summary>
+    public static MergeTagSourceTraits Of(IFormBuilderMergeTagSource source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        return new MergeTagSourceTraits(source.IsPerVisitor, source.Places?.ToFrozenSet());
+    }
+}
+
+/// <summary>
+/// Stops the site when a site's merge-tag source or filter cannot be used (ADR-0042, ADR-0065): one that fails to say
+/// its name or traits, a name outside the grammar, a built-in one's name, or a name two of them share. It runs with the
+/// other start-up checks and names every problem at once.
 /// </summary>
 /// <param name="sources">The site's sources, which the check creates.</param>
 /// <param name="filters">The site's filters, which the check creates.</param>

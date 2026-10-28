@@ -18,13 +18,15 @@ public interface IFormBuilderMergeTagSource
 
     /// <summary>
     /// Whether the values differ per visitor (a visitor's data, the request), so that no page that may be cached shows
-    /// them: visitor texts, consent texts and default values refuse such a source.
+    /// them: visitor texts, consent texts and default values refuse such a source. Read once as the site starts, with
+    /// <see cref="Name"/> and <see cref="Places"/>; a source that throws there stops the start, naming its type.
     /// </summary>
     bool IsPerVisitor { get; }
 
     /// <summary>
     /// The places the source may be used in, within those that take a site's sources; null for all of them. Entry
-    /// titles and consent texts take no site's source.
+    /// titles and consent texts take no site's source. Read once as the site starts, and copied: a later change to the
+    /// set changes nothing.
     /// </summary>
     IReadOnlySet<MergeTagPlace>? Places => null;
 
