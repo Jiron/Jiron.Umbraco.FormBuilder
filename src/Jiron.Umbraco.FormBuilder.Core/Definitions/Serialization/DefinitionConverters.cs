@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -92,6 +93,14 @@ internal sealed class StrictStringConverter : JsonConverter<string>
         }
 
         return true;
+    }
+
+    /// <summary>The string with each lone surrogate replaced by U+FFFD, as UTF-8 writes it; a well-formed one as it is.</summary>
+    /// <param name="text">The string, such as a dictionary item's text, which no check held to the definition's rules.</param>
+    public static string WellFormed(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return IsWellFormed(text) ? text : Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(text));
     }
 }
 

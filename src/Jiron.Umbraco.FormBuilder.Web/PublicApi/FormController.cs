@@ -56,7 +56,7 @@ internal sealed class FormController(FormRequests requests, PublishedFormCache f
             return FormBuilderPublicProblems.FormNotFound();
         }
 
-        var answer = await requests.DefinitionAsync(form, await requests.CultureAsync(culture), await requests.SiteAsync(content), cancellationToken);
+        var answer = await requests.DefinitionAsync(form, await requests.CultureAsync(culture), await requests.PageAsync(content), cancellationToken);
         Response.Headers.ETag = answer.ETag;
         Response.Headers.CacheControl = "no-cache";
         if (Matches(Request.GetTypedHeaders().IfNoneMatch, answer.ETag))
@@ -112,7 +112,19 @@ internal sealed record FormDefinitionResponseModel
 
     /// <summary>
     /// The form's public projection with its texts in the culture: the pages, groups and fields, their rules and checks,
-    /// and the settings the page needs.
+    /// and the settings the page needs; a consent's text is the wording it shows, its merge tags rendered.
     /// </summary>
     public required JsonElement Form { get; init; }
+
+    /// <summary>
+    /// What the browser renders the visitor texts with (ADR-0085); null when every one shows as it is written:
+    /// <c>texts</c>, each that renders as its owner's key, the property it is and its context (<c>html</c> or
+    /// <c>text</c>); <c>values</c>, each path's value but answer recall's by context; <c>recall</c>, the form answer
+    /// recall reads, cut down to what the texts need; <c>words</c>, the culture's words for yes and no; and
+    /// <c>culture</c>, its formats.
+    /// </summary>
+    public JsonElement? MergeTags { get; init; }
+
+    /// <summary>Each consent field's wording hash by its key, which a submission posts with the ticked consent (ADR-0009).</summary>
+    public required IReadOnlyDictionary<Guid, string> Consents { get; init; }
 }

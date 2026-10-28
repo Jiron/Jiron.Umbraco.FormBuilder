@@ -35,7 +35,7 @@ public sealed class PublicFormLockTests : PublicApiTestBase
         var running = (await Forms.GetPublishedAsync(key))!;
         var unlocked = running with { Definition = WithFields(running.Definition, NameField with { Settings = SettingsObject.Parse("""{"maxLength":500}""") }) };
         var before = await GetRequiredService<FormRequests>().DefinitionAsync(
-            new CachedForm(unlocked, PublicProjection.Create(unlocked.Definition, GetRequiredService<FieldTypeRegistry>())), "en-US", null, CancellationToken.None);
+            new CachedForm(unlocked, PublicProjection.Create(unlocked.Definition, GetRequiredService<FieldTypeRegistry>())), "en-US", new RequestPage(null, null), CancellationToken.None);
 
         using var response = await GetAsync($"{Root}/forms/{key}", request => request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(before.ETag)));
         var field = (await JsonAsync(response))["form"]!["pages"]![0]!["groups"]![0]!["fields"]![0]!;

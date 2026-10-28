@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Umbraco.Cms.Core.PublishedCache;
 using Umbraco.Cms.Core.Services;
@@ -66,29 +67,41 @@ internal sealed class FormRequests(
     }
 
     /// <summary>
-    /// The site a request is for: the root of the published content it names, or null for none, or for content that
-    /// is not published, so the values every site shares apply (section 4.8; the host's domain comes with 14.4).
+    /// The page a request is for: the published content it names, or none for none or for content that is not published,
+    /// and its site, the root of that content, whose settings apply; the values every site shares apply without one
+    /// (section 4.8; the host's domain comes with 14.4).
     /// </summary>
-    public async Task<Guid?> SiteAsync(Guid? contentKey)
+    public async Task<RequestPage> PageAsync(Guid? contentKey)
     {
         if (contentKey is not { } key || await contents.GetByIdAsync(key) is null)
         {
-            return null;
+            return new RequestPage(null, null);
         }
 
-        return navigation.TryGetAncestorsKeys(key, out var ancestors) && ancestors.LastOrDefault() is { } root && root != Guid.Empty ? root : key;
+        return new RequestPage(key, navigation.TryGetAncestorsKeys(key, out var ancestors) && ancestors.LastOrDefault() is { } root && root != Guid.Empty ? root : key);
     }
 
     /// <summary>
     /// The answer of the form endpoint: the form's alias, its public revision, the culture and the site's time zone it is
-    /// in, whether it is open now by its opening and closing times, and the visitor's form (ADR-0084).
+    /// in, whether it is open now by its opening and closing times, the visitor's form (ADR-0084), what the browser renders
+    /// its visitor texts with, and its consents' wording hashes (ADR-0085).
     /// </summary>
-    public async Task<FormAnswer> DefinitionAsync(CachedForm form, string culture, Guid? site, CancellationToken cancellationToken)
+    public async Task<FormAnswer> DefinitionAsync(CachedForm form, string culture, RequestPage page, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(form);
-        var zone = await timeZones.GetAsync(site, cancellationToken);
-        var visitorForm = await visitorForms.WriteAsync(form.Projection, culture);
-        var buffer = new ArrayBufferWriter<byte>(visitorForm.Length + 256);
+        ArgumentNullException.ThrowIfNull(page);
+        var zone = await timeZones.GetAsync(page.Site, cancellationToken);
+        var scope = new MergeTagScope
+        {
+            Form = form.Published.Definition,
+            FormName = form.Published.Form.Name,
+            FormAlias = form.Published.Form.Alias,
+            Culture = culture,
+            Site = page.Site,
+            Page = page.Content,
+        };
+        var visitor = await visitorForms.WriteAsync(form.Projection, scope, cancellationToken);
+        var buffer = new ArrayBufferWriter<byte>(visitor.Form.Length + visitor.MergeTags.Length + visitor.Consents.Length + 256);
         using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
@@ -98,7 +111,11 @@ internal sealed class FormRequests(
             writer.WriteString("timeZone", zone.Id);
             writer.WriteBoolean("open", IsOpen(form.Published.Definition.Settings.Availability, time.GetUtcNow()));
             writer.WritePropertyName("form");
-            writer.WriteRawValue(visitorForm, skipInputValidation: true);
+            writer.WriteRawValue(visitor.Form, skipInputValidation: true);
+            writer.WritePropertyName("mergeTags");
+            writer.WriteRawValue(visitor.MergeTags, skipInputValidation: true);
+            writer.WritePropertyName("consents");
+            writer.WriteRawValue(visitor.Consents, skipInputValidation: true);
             writer.WriteEndObject();
         }
 
@@ -106,10 +123,15 @@ internal sealed class FormRequests(
         return new FormAnswer(bytes, $"\"{Convert.ToHexStringLower(SHA256.HashData(bytes))[..32]}\"");
     }
 
-    // Open from its opening time, up to but not at its closing time; the entry limit is the submission's to count (6.1d).
+    // Open from its opening time, up to but not at its closing time; the entry limit is the submission's to count (6.1e).
     private static bool IsOpen(FormAvailabilitySettings availability, DateTimeOffset now) =>
         (availability.OpensAt is not { } opens || now.UtcDateTime >= opens) && (availability.ClosesAt is not { } closes || now.UtcDateTime < closes);
 }
+
+/// <summary>The page a form is shown on.</summary>
+/// <param name="Content">The published content page, which <c>page.*</c> reads; null for none.</param>
+/// <param name="Site">Its site's root, whose settings apply; null for the values every site shares.</param>
+internal sealed record RequestPage(Guid? Content, Guid? Site);
 
 /// <summary>An answer of the form endpoint.</summary>
 /// <param name="Body">The answer as UTF-8 JSON.</param>

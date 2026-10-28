@@ -3883,7 +3883,7 @@
           "description": null,
           "editor": "localizedText",
           "group": "essentials",
-          "supportsMergeTags": false,
+          "supportsMergeTags": true,
           "isPublic": true,
           "rules": {
             "required": true,
@@ -3959,7 +3959,7 @@
           "description": null,
           "editor": "localizedHtml",
           "group": "essentials",
-          "supportsMergeTags": false,
+          "supportsMergeTags": true,
           "isPublic": true,
           "rules": {
             "required": true,

@@ -40,6 +40,7 @@ internal static class FormBuilderMergeTagServices
         services.TryAddSingleton<MergeTagUmbraco>();
         services.TryAddSingleton<SiteBaseUrl>();
         services.TryAddSingleton<MergeTagAnswerTexts>();
+        services.TryAddSingleton<MergeTagRecallForms>();
         services.TryAddSingleton<SiteMergeTagExtensions>();
         services.TryAddSingleton(provider => new MergeTagRegistry(
             BuiltInSources(

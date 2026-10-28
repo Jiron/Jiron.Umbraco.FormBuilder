@@ -4,10 +4,12 @@
   origin's requests other than `GET`, the site's own pages behind a proxy that ends TLS, a body for an endpoint that
   takes none, the declarations), [ADR-0044](0044-form-service.md) (the published-form cache as built),
   [ADR-0043](0043-backoffice-settings-sections.md) (a stored time zone this server cannot resolve) and
-  [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the one sanitiser)
+  [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the one sanitiser); the answer's
+  `mergeTags` and `consents` extended by [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md)
+  in 6.1b
 - Date: 2026-10-28
-- Roadmap step: 6.1a (decided and built); 6.1b gives the consent wordings' hashes, 6.1c and 6.1d count a body without
-  a declared length, 6.1d adds the entry limit to `open`, 7.1 enforces the rate-limit policies
+- Roadmap step: 6.1a (decided and built); 6.1b gives the consent wordings' hashes, 6.1d and 6.1e count a body without
+  a declared length, 6.1e adds the entry limit to `open`, 7.1 enforces the rate-limit policies
 
 ## Context
 
@@ -78,7 +80,7 @@ path only, in any letter case:
 - **The filter** applies them before the body is read or bound: a declared length above the limit, or **any body for
   an action that takes none** (a declared length above 0, or a body the server sees without one), answers
   `413 payload_too_large` and closes the connection on HTTP/1.x (amends ADR-0012; counting a body without a declared
-  length while it is read comes with the first endpoints that take one, 6.1c and 6.1d). The time limit runs on the
+  length while it is read comes with the first endpoints that take one, 6.1d and 6.1e). The time limit runs on the
   site's `TimeProvider` and cancels the token the action gets, linked to the visitor's; the request's own token is put
   back when the action ends. While the migrations are pending every action answers `503 migrations_pending` with
   `Retry-After: 10`. An action without declarations gets no body and ten seconds.
@@ -102,7 +104,7 @@ path only, in any letter case:
   names; a page that is not published, or no page, gives the values every site shares.
 - **The answer** is `{alias, revision, culture, timeZone, open, form}`: `revision` is the public revision a submission
   posts; `timeZone` is the site's IANA zone, for the browser's `today`; `open` says whether the form takes entries now
-  by its opening and closing times (the entry limit joins in 6.1d); `form` is the visitor's form below.
+  by its opening and closing times (the entry limit joins in 6.1e); `form` is the visitor's form below.
 - **Caching:** `Cache-Control: no-cache` with an `ETag` of the first 32 hex digits of the SHA-256 of the answer's
   bytes, so it follows the publish, the culture, the dictionary, the site's zone, the sanitiser and the host's designer
   locks (ADR-0060) without a version of its own. `If-None-Match` compares weakly and answers `304`.

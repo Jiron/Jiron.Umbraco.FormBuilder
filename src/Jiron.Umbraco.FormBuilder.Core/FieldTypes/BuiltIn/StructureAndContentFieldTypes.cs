@@ -92,7 +92,7 @@ public sealed class HeadingFieldSettings
     /// <summary>The heading's text.</summary>
     [Required]
     [StringLength(300)]
-    [FormBuilderSetting("#jfbFieldSettings_headingText", Public = true)]
+    [FormBuilderSetting("#jfbFieldSettings_headingText", SupportsMergeTags = true, Public = true)]
     public LocalizedText? Text { get; init; }
 
     /// <summary>Its level, 2 to 4.</summary>
@@ -116,7 +116,7 @@ public sealed class ParagraphFieldSettings
 {
     /// <summary>The text.</summary>
     [Required]
-    [FormBuilderSetting("#jfbFieldSettings_paragraphHtml", Public = true)]
+    [FormBuilderSetting("#jfbFieldSettings_paragraphHtml", SupportsMergeTags = true, Public = true)]
     public LocalizedHtml? Html { get; init; }
 }
 

@@ -184,6 +184,19 @@ public sealed class DefinitionValueTests
     }
 
     [Test]
+    public void AStringFromOutsideTheDefinition_IsMadeWellFormed_EachLoneSurrogateReplaced()
+    {
+        var paired = "a" + (char)0xD83D + (char)0xDE00 + "b";
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(StrictStringConverter.WellFormed(paired), Is.SameAs(paired), "a well-formed string as it is");
+            Assert.That(StrictStringConverter.WellFormed((char)0xDC00 + "b" + (char)0xD800), Is.EqualTo((char)0xFFFD + "b" + (char)0xFFFD), "a low half first, and a high half last");
+            Assert.That(StrictStringConverter.WellFormed(string.Empty), Is.Empty);
+        });
+    }
+
+    [Test]
     public void SettingsObject_AcceptsTheLargestIntegers()
     {
         Assert.That(SettingsObject.Parse("""{ "a": 999999999999999, "b": -999999999999999 }""").ToString(), Is.EqualTo("""{"a":999999999999999,"b":-999999999999999}"""));

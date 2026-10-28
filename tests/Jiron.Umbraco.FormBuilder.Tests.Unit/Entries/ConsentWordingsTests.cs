@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Testing;
@@ -61,6 +62,27 @@ public sealed class ConsentWordingsTests
     }
 
     [Test]
+    public async Task TheWording_IsSanitisedBeforeItIsHashed_SoTheShownTheHashedAndTheStoredTextAreOne()
+    {
+        var umbraco = new TestUmbraco();
+        umbraco.Language("en-GB", isDefault: true);
+        umbraco.Item("broken", new Dictionary<string, string> { ["en-GB"] = "I agree" + (char)0xD800 + "." });
+        var wordings = Wordings(umbraco);
+
+        var hostile = await wordings.ShownAsync(Consent(new LocalizedHtml("""<p onclick="steal()">I agree<script>steal()</script> to the <a href="javascript:steal()">terms</a>.</p>""")), MergeTagTestSite.Scope());
+        var broken = await wordings.ShownAsync(Consent(new LocalizedHtml("#broken")), MergeTagTestSite.Scope());
+        var onlyUnsafe = await wordings.ShownAsync(Consent(new LocalizedHtml("<script>steal()</script>")), MergeTagTestSite.Scope());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(hostile!.Text, Is.EqualTo("<p>I agree to the <a>terms</a>.</p>"));
+            Assert.That(hostile.Hash, Is.EqualTo(ConsentTextHash.For("en-GB", hostile.Text)));
+            Assert.That(broken!.Text, Is.EqualTo("I agree" + (char)0xFFFD + "."), "a lone surrogate cannot be hashed or stored, so it is replaced");
+            Assert.That(onlyUnsafe, Is.Null, "nothing is left to agree to");
+        });
+    }
+
+    [Test]
     public async Task AFieldThatIsNoConsent_OrShowsNoText_HasNoWording()
     {
         var wordings = Wordings(new TestUmbraco());
@@ -86,7 +108,7 @@ public sealed class ConsentWordingsTests
     }
 
     private static ConsentWordings Wordings(TestUmbraco umbraco) =>
-        new(MergeTagTestSite.Create(umbraco: umbraco).Service, umbraco.DictionaryTexts(), TestFieldTypes.Registry);
+        new(MergeTagTestSite.Create(umbraco: umbraco).Service, umbraco.DictionaryTexts(), new EditorHtml(), TestFieldTypes.Registry);
 
     private static FormField Consent(LocalizedHtml text) => new()
     {

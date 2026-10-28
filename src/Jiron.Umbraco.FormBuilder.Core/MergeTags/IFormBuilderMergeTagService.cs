@@ -23,6 +23,21 @@ public interface IFormBuilderMergeTagService
     Task<MergeTagRendering> RenderAsync(string text, MergeTagPlace place, MergeTagContext context, MergeTagScope scope, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// What a visitor's browser renders a template with (ADR-0068, ADR-0085): whether it renders other than as it is
+    /// written, the value of each of its paths that the browser does not fill in itself (all but answer recall's
+    /// <c>field.*</c> in a visitor text), each resolved once as <see cref="RenderAsync"/> resolves it, and the fields its
+    /// answer-recall tags name, refused or not. A tag the place refuses is written as it stands in both runtimes, so it
+    /// gets no value.
+    /// </summary>
+    /// <param name="text">The template's text.</param>
+    /// <param name="place">Where the template is used.</param>
+    /// <param name="context">The context it renders in, one the place takes.</param>
+    /// <param name="scope">What it is rendered for: the form, the culture, the site and the page, and the text's owner.</param>
+    /// <param name="cancellationToken">Cancels the sources' work.</param>
+    /// <exception cref="ArgumentException">The place does not render in the context.</exception>
+    Task<MergeTagTemplateValues> ValuesAsync(string text, MergeTagPlace place, MergeTagContext context, MergeTagScope scope, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// The problems a template has where it is used, before any value: those of the language, a source or filter the
     /// place does not take, a field a visitor text names that does not come before it, and a source no one has (a
     /// warning), in the order of the template.

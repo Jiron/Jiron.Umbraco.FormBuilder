@@ -49,6 +49,6 @@ internal sealed record PublicApiEndpoint(ApiDescription Description)
     /// <summary>Its path with every route value filled with <paramref name="key"/>.</summary>
     public string PathFor(Guid key) => "/" + PublicApiEndpoints.RouteValue().Replace(Description.RelativePath!, key.ToString("D"));
 
-    /// <summary>Whether it takes a body; none does before the first that posts (6.1c).</summary>
+    /// <summary>Whether it takes a body; none does before the first that posts (6.1d).</summary>
     public bool TakesBody => HttpMethods.IsPost(Method) || HttpMethods.IsPut(Method) || HttpMethods.IsPatch(Method);
 }

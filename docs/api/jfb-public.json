@@ -147,6 +147,7 @@
       "FormDefinitionResponseModel": {
         "required": [
           "alias",
+          "consents",
           "culture",
           "form",
           "open",
@@ -171,7 +172,16 @@
           "open": {
             "type": "boolean"
           },
-          "form": {}
+          "form": {},
+          "mergeTags": {
+            "nullable": true
+          },
+          "consents": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
         },
         "additionalProperties": false
       },

@@ -6,7 +6,10 @@
   where the text stands), [ADR-0065](0065-the-merge-tag-service-and-its-sources.md) (the scope and the check know
   whose text it is, and a source knows its paths per place) and [ADR-0066](0066-answers-as-merge-tags.md) (the
   answers' display texts in TypeScript too, and a prefix and a suffix trimmed with the set both runtimes share); the
-  `field` source without an alias and the website's reading of a value with parts amended by [ADR-0083](0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md) in 5.5h
+  `field` source without an alias and the website's reading of a value with parts amended by [ADR-0083](0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md) in 5.5h;
+  the cut-down recall form the browser gets, with the fields a text names whether refused or not, and the text blocks'
+  texts taking merge tags, amended by [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) in
+  6.1b
 - Date: 2026-10-26
 - Roadmap step: 5.3f (decided and built in both runtimes); 6.1 gives the browser what recall needs, 6.2 renders
   visitor texts on the server, 6.4 updates them as the visitor types, 10.x reports the problem in the form check

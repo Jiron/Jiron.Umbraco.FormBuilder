@@ -35,7 +35,7 @@ public sealed class PublicFormApiTests : PublicApiTestBase
             Assert.That(Header(byKey, "Cache-Control"), Is.EqualTo("no-cache"));
             Assert.That(byKey.Headers.ETag?.Tag, Does.Match("^\"[0-9a-f]{32}\"$"));
             Assert.That(Header(byKey, "Vary"), Does.Contain("Origin"));
-            Assert.That(json.AsObject().Select(property => property.Key), Is.EqualTo(new[] { "alias", "revision", "culture", "timeZone", "open", "form" }));
+            Assert.That(json.AsObject().Select(property => property.Key), Is.EqualTo(new[] { "alias", "revision", "culture", "timeZone", "open", "form", "mergeTags", "consents" }));
             Assert.That((json["alias"]!.GetValue<string>(), json["revision"]!.GetValue<int>(), json["culture"]!.GetValue<string>(), json["timeZone"]!.GetValue<string>(), json["open"]!.GetValue<bool>()), Is.EqualTo(("contactUs", 1, "en-US", "UTC", true)));
             Assert.That(json["form"]!["key"]!.GetValue<Guid>(), Is.EqualTo(key));
             Assert.That(json["form"]!["pages"]![0]!["groups"]![0]!["fields"]![0]!["label"]!.GetValue<string>(), Is.EqualTo("Name"), "a text is the culture's string");

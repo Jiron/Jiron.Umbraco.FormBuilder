@@ -1,4 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
@@ -34,11 +36,13 @@ internal sealed record ConsentWording
 }
 
 /// <summary>
-/// The wording a consent field shows (ADR-0070): its text in the culture with the usual fallback, a dictionary item
-/// resolved through Umbraco's dictionary, and its merge tags rendered where consent texts render them, so the wording is
-/// the same for every visitor and holds no personal data (ADR-0014). The entry stores it, and 6.2 renders it.
+/// The wording a consent field shows (ADR-0070, ADR-0085): its text in the culture with the usual fallback, a dictionary
+/// item resolved through Umbraco's dictionary, its merge tags rendered where consent texts render them, so the wording
+/// is the same for every visitor and holds no personal data (ADR-0014), and the result through the one sanitiser, with a
+/// lone surrogate replaced, so the text the visitor reads, its hash and the text the entry stores are one. The form
+/// endpoint shows it, the entry stores it, and 6.2 renders it.
 /// </summary>
-internal sealed class ConsentWordings(IFormBuilderMergeTagService mergeTags, MergeTagDictionary dictionary, FieldTypeRegistry types)
+internal sealed class ConsentWordings(IFormBuilderMergeTagService mergeTags, MergeTagDictionary dictionary, EditorHtml html, FieldTypeRegistry types)
 {
     /// <summary>
     /// The wording the field shows in the scope's culture; null for a field that is no consent, or whose text renders
@@ -63,6 +67,7 @@ internal sealed class ConsentWordings(IFormBuilderMergeTagService mergeTags, Mer
         }
 
         var rendering = await mergeTags.RenderAsync(written, MergeTagPlace.ConsentText, MergeTagContext.Html, scope, cancellationToken);
-        return rendering.Text.Length == 0 ? null : new ConsentWording(scope.Culture, rendering.Text);
+        var shown = StrictStringConverter.WellFormed(html.Sanitise(rendering.Text));
+        return shown.Length == 0 ? null : new ConsentWording(scope.Culture, shown);
     }
 }

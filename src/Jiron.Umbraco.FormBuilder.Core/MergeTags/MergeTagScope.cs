@@ -91,6 +91,18 @@ public sealed record MergeTagEntry
 /// <param name="Problems">The problems, in the order of the template.</param>
 public sealed record MergeTagRendering(string Text, IReadOnlyList<MergeTagProblem> Problems);
 
+/// <summary>What a browser renders a template with (ADR-0085).</summary>
+/// <param name="Renders">
+/// Whether the template renders other than as it is written: it holds a tag the place takes, or a limit ends its output.
+/// A template that does not renders as its text in both runtimes, so the browser needs nothing for it.
+/// </param>
+/// <param name="Values">The value of each path the browser does not fill in itself, by path; a path no source knows is left out.</param>
+/// <param name="Recalled">
+/// The fields its answer-recall tags name, each once, in the order the template first names them; in a visitor text also
+/// those it refuses for not coming before the text, which the browser refuses by their places in the form.
+/// </param>
+public sealed record MergeTagTemplateValues(bool Renders, IReadOnlyDictionary<string, MergeTagValue> Values, IReadOnlyList<Guid> Recalled);
+
 /// <summary>A path a source offers in the picker, with what the picker shows for it.</summary>
 /// <param name="Path">The whole path, the source's name first, for example <c>entry.reference</c>.</param>
 /// <param name="Label">What the picker shows, such as a field's label; null to show the path.</param>

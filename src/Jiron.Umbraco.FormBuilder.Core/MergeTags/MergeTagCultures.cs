@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
@@ -68,5 +69,73 @@ internal sealed class MergeTagCultures
         {
             return CultureInfo.InvariantCulture;
         }
+    }
+
+    /// <summary>
+    /// Writes a culture's formats as the browser's runtime takes them (<c>CultureFormats</c> in
+    /// <c>packages/logic/src/culture.ts</c>, the shape the shared vectors write), so the browser prints what the server
+    /// prints (ADR-0064, ADR-0085).
+    /// </summary>
+    /// <param name="writer">Where the JSON object goes.</param>
+    /// <param name="formats">The formats.</param>
+    public static void Write(Utf8JsonWriter writer, CultureFormats formats)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(formats);
+        writer.WriteStartObject();
+        writer.WriteStartObject("dates");
+        writer.WriteString("short", formats.Dates.Short);
+        writer.WriteString("medium", formats.Dates.Medium);
+        writer.WriteString("long", formats.Dates.Long);
+        writer.WriteString("time", formats.Dates.Time);
+        writer.WriteString("dateTime", formats.Dates.DateTime);
+        writer.WriteEndObject();
+        Strings(writer, "months", formats.Months);
+        Strings(writer, "monthsShort", formats.MonthsShort);
+        Strings(writer, "monthsGenitive", formats.MonthsGenitive);
+        Strings(writer, "monthsShortGenitive", formats.MonthsShortGenitive);
+        Strings(writer, "days", formats.Days);
+        Strings(writer, "daysShort", formats.DaysShort);
+        writer.WriteString("am", formats.Am);
+        writer.WriteString("pm", formats.Pm);
+        writer.WriteString("minus", formats.Minus);
+        writer.WriteStartObject("number");
+        writer.WriteString("decimal", formats.Number.Decimal);
+        writer.WriteString("group", formats.Number.Group);
+        Sizes(writer, formats.Number.Sizes);
+        writer.WriteString("negative", formats.Number.Negative);
+        writer.WriteEndObject();
+        writer.WriteStartObject("currency");
+        writer.WriteString("code", formats.Currency.Code);
+        writer.WriteString("symbol", formats.Currency.Symbol);
+        writer.WriteString("decimal", formats.Currency.Decimal);
+        writer.WriteString("group", formats.Currency.Group);
+        Sizes(writer, formats.Currency.Sizes);
+        writer.WriteString("positive", formats.Currency.Positive);
+        writer.WriteString("negative", formats.Currency.Negative);
+        writer.WriteEndObject();
+        writer.WriteEndObject();
+    }
+
+    private static void Strings(Utf8JsonWriter writer, string name, IReadOnlyList<string> values)
+    {
+        writer.WriteStartArray(name);
+        foreach (var value in values)
+        {
+            writer.WriteStringValue(value);
+        }
+
+        writer.WriteEndArray();
+    }
+
+    private static void Sizes(Utf8JsonWriter writer, IReadOnlyList<int> sizes)
+    {
+        writer.WriteStartArray("sizes");
+        foreach (var size in sizes)
+        {
+            writer.WriteNumberValue(size);
+        }
+
+        writer.WriteEndArray();
     }
 }

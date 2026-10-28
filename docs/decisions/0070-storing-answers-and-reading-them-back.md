@@ -1,7 +1,8 @@
 # 0070. Storing answers and reading them back
 
 - Status: accepted; the values the server works out (calculations, hidden fields) and a repeatable group's rows,
-  closed up, come from [ADR-0072](0072-a-submissions-answers.md) in 5.4d
+  closed up, come from [ADR-0072](0072-a-submissions-answers.md) in 5.4d; the consent wording sanitised before it is
+  hashed and stored amended by [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) in 6.1b
 - Date: 2026-10-26
 - Roadmap step: 5.4b (decided and built); 6.1 calls it from the pipeline, 6.2 renders the consent wording into the
   markup, 5.4d adds the values the server works out (calculations, hidden fields)

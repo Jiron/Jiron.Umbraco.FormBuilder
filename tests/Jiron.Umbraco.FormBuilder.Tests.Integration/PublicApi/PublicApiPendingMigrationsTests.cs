@@ -30,7 +30,7 @@ public sealed class PublicApiPendingMigrationsTests : ConfiguredTestServerTestBa
         Assert.Multiple(() =>
         {
             Assert.That(endpoints, Is.Not.Empty);
-            Assert.That(endpoints.Where(endpoint => endpoint.TakesBody), Is.Empty, "a body for each comes with the first endpoint that takes one (6.1c)");
+            Assert.That(endpoints.Where(endpoint => endpoint.TakesBody), Is.Empty, "a body for each comes with the first endpoint that takes one (6.1d)");
             Assert.That(pending.Values, Is.All.EqualTo("503 migrations_pending, retry after 10 s"), string.Join("\n", pending));
             Assert.That(after.Values, Is.All.Not.StartWith("5"), string.Join("\n", after));
             Assert.That(after["GET (no endpoint)"], Is.EqualTo("404 not_found"));

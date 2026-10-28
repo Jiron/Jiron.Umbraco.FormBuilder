@@ -16,6 +16,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry registry, MergeTagCultures cultures, ILogger<FormBuilderMergeTagService> logger)
     : IFormBuilderMergeTagService
 {
+    // The source of answer recall in visitor texts.
+    private const string FieldSource = "field";
+
     /// <inheritdoc />
     public async Task<MergeTagRendering> RenderAsync(string text, MergeTagPlace place, MergeTagContext context, MergeTagScope scope, CancellationToken cancellationToken = default)
     {
@@ -33,6 +36,70 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
 
         var rendered = MergeTagEngine.Render(parsed, path => values.GetValueOrDefault(path), cultures.For(scope.Culture));
         return new MergeTagRendering(rendered.Text, rendered.Problems);
+    }
+
+    /// <inheritdoc />
+    public async Task<MergeTagTemplateValues> ValuesAsync(string text, MergeTagPlace place, MergeTagContext context, MergeTagScope scope, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(scope);
+        var rules = Rules(place, context, scope.Culture, scope.Form, scope.TextOwner);
+        var recalled = new List<Guid>();
+        if (place == MergeTagPlace.VisitorText && registry.Sources.GetValueOrDefault(FieldSource) is FieldMergeTagSource fields)
+        {
+            // Every field a well-formed tag names, refused or not: the browser refuses one that does not come before the
+            // text by the place it has in the form, as the server does, so it needs the field too (ADR-0085).
+            var refusal = rules.PathProblem;
+            rules = rules with
+            {
+                PathProblem = path =>
+                {
+                    if (path.Length > FieldSource.Length + 1 && SourceName(path) == FieldSource
+                        && fields.FieldOf(path[(FieldSource.Length + 1)..], scope.Form, place) is { } field && !recalled.Contains(field))
+                    {
+                        recalled.Add(field);
+                    }
+
+                    return refusal(path);
+                },
+            };
+        }
+
+        var parsed = MergeTagEngine.Parse(text, context, rules);
+        var values = new Dictionary<string, MergeTagValue>(StringComparer.Ordinal);
+        // Its own text and a tag with an error are written as they stand; a tag renders, and a limit ends the output.
+        var renders = false;
+        foreach (var part in parsed.Parts)
+        {
+            if (part is StopPart)
+            {
+                renders = true;
+            }
+
+            if (part is not TagPart tag)
+            {
+                continue;
+            }
+
+            renders = true;
+            if (tag.Path is not { } path || values.ContainsKey(path))
+            {
+                continue;
+            }
+
+            // The browser fills in answer recall itself, from the answers given so far (ADR-0068).
+            if (place == MergeTagPlace.VisitorText && SourceName(path) == FieldSource)
+            {
+                continue;
+            }
+
+            if (await ResolveAsync(path, scope, place, context, cancellationToken) is { } value)
+            {
+                values[path] = value;
+            }
+        }
+
+        return new MergeTagTemplateValues(renders, values, recalled);
     }
 
     /// <inheritdoc />
