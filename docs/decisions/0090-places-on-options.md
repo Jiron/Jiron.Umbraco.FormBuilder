@@ -3,7 +3,8 @@
 - Status: accepted; amends section 4.4 and section 4.5 (how a place is taken and given back, what `jfbOptionCapacity`
   counts) and [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) (the transaction's last check);
   extends [ADR-0012](0012-anonymous-endpoints-spam-protection-and-challenges.md) (what a page's validation checks) and
-  [ADR-0033](0033-schema-v1.md) (the capacity table's rows)
+  [ADR-0033](0033-schema-v1.md) (the capacity table's rows); the transaction's last check extended in 6.1h, which
+  holds unique answers beside the places ([ADR-0091](0091-unique-answers.md))
 - Date: 2026-10-28
 - Roadmap step: 6.1g (decided and built); 6.1h checks `uniquePerForm` under the same lock, 7.1 answers the places left
   with the challenge and keeps spam out of them, 8.6 takes a resumed draft's places when it is submitted, 11.2 moves an

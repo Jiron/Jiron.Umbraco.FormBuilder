@@ -16,7 +16,8 @@
   ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)); a visitor text's values beside its template, not
   resolved into it, amended by [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) in 6.1b; how
   a submission from an older revision is read, through the newest version published with it, extended by
-  [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) in 6.1e
+  [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) in 6.1e; which types may have a
+  `uniquePerForm` check, and how it compares answers, amended by [ADR-0091](0091-unique-answers.md) in 6.1h
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2a (the model, the schema, upgraders), 4.2b (structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)

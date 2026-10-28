@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Entries;
@@ -25,6 +26,17 @@ internal sealed record SubmissionError(Guid Field, int? Row, FieldMessageKinds K
 /// <param name="Value">The option's value, as the answer chose it.</param>
 /// <param name="Places">The option's number of places: 0 or more.</param>
 internal sealed record SubmissionPlace(Guid Field, int? Row, string Value, int Places);
+
+/// <summary>
+/// An answer that must be unique in its form (<c>uniquePerForm</c>, ADR-0091): a field's or a row's answer that stands,
+/// with its values as entries are compared by them and the indexes of the field's unique checks, which fail when another
+/// entry holds one of the values.
+/// </summary>
+/// <param name="Field">The key of the field; a repeatable group's child has its own.</param>
+/// <param name="Row">The row of a repeatable group's child, as posted, from 0; null for any other field.</param>
+/// <param name="Checks">The indexes of the field's <c>uniquePerForm</c> checks in its validation list.</param>
+/// <param name="Values">The answer's values, as entries are compared by them.</param>
+internal sealed record SubmissionUnique(Guid Field, int? Row, ImmutableArray<int> Checks, ImmutableArray<AnswerValue> Values);
 
 /// <summary>
 /// A submission's answers over its whole form (ADR-0072), as <see cref="SubmissionReader"/> reads them: what the entry
@@ -52,4 +64,10 @@ internal sealed record SubmissionAnswers(
     /// the pipeline holds against the places left.
     /// </summary>
     public ImmutableArray<SubmissionPlace> Places { get; init; } = [];
+
+    /// <summary>
+    /// The answers that stand of the fields with a <c>uniquePerForm</c> check (ADR-0091), in the order of the form and its
+    /// rows: what the pipeline holds against the other entries' answers.
+    /// </summary>
+    public ImmutableArray<SubmissionUnique> Unique { get; init; } = [];
 }

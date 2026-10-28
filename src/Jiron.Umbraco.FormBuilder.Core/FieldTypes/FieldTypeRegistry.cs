@@ -165,6 +165,11 @@ internal sealed partial class FieldTypeRegistry
             yield return "supports a matchesField or uniquePerForm check, which compare answers, so it has a rule kind.";
         }
 
+        if ((features & FieldFeatures.UniquePerFormCheck) != 0 && declaration.Storage is not (FieldStorageKind.Text or FieldStorageKind.LongText or FieldStorageKind.Number or FieldStorageKind.Date))
+        {
+            yield return "supports a uniquePerForm check, which compares an answer with the stored ones (ADR-0091), so it stores text, long text, a number or a date.";
+        }
+
         if (declaration.ServerOnlyDefault && (features & FieldFeatures.DefaultValue) == 0)
         {
             yield return "keeps its default value on the server, so it supports a default value.";

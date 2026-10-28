@@ -767,11 +767,12 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
   5. Check availability: dates, limits, members, uniqueness, and the places left on chosen options.
   6. Check protection: the challenge's single use, honeypot, time, captcha, content rules. The result is a spam score with reasons. A failed captcha is rejected. A high score is **accepted silently into `Spam`**, so bots learn nothing. An unavailable captcha provider, and a no-JS post on a form whose protection needs JavaScript, score into `Spam` too, so no lead is lost and none runs actions unchecked (ADR-0012).
   7. Read every answer through its field type before the rules, so rules compare what was read; after applying them, validate per field type. Hidden fields are stripped and never fail, and calculations are recomputed (ADR-0058).
-  8. **One transaction:** the entry, values, file links, consent texts, the timeline event, one `ActionRun` per action whose trigger and rule match (none for spam, test or unverified entries), the places taken, and the stats increment.
+  8. **One transaction:** the entry, values, file links, consent texts, the timeline event, one `ActionRun` per action whose trigger and rule match (none for spam, test or unverified entries), the places taken, the unique answers held, and the stats increment.
   9. After the commit, wake this server's action processor, then return the outcome.
 - **Places on options:**
   - The submission takes a place on each chosen option with a limit inside its transaction, which holds the form's row, so two servers can never overbook (ADR-0090). An option's places count every entry that holds one, those that came in before the limit was set included. When none is left, the field fails validation with its own message, and the visitor can choose another option.
   - Spam and test entries take no places. Rejecting, marking as spam, deleting and erasing an entry give its places back. Moving an entry back takes them again, and when an option is full by then, the backoffice asks before overbooking it.
+- **Unique answers:** a field's "unique per form" check holds its answer against the answers of the entries that count toward the entry limit, compared as the entries screen filters them (letter case and surrounding spaces make no difference, a number or a date compares by its value). It is checked while the answers are read and again inside the transaction, which holds the form's row, so two servers can never store the same answer twice (ADR-0091). Spam, rejected, draft and test entries hold none, and deleting, erasing or anonymising an entry gives its answers back. A page's validation leaves the check out (ADR-0012).
 - **Values kept only until the actions have run:** a field set to "only until the actions have run" is stored with the entry, used by its action runs, and deleted once every one of them is final (succeeded, failed for good or skipped) and no trigger can still fire for the entry (below). An entry event records it, and the entry shows the field as "not kept". A run applies when one exists, or when the form has an action whose trigger can still fire for the entry (any of the form's triggers while the entry is `Unverified`, or in `Spam` until it is purged; `approved` or `rejected` while it waits for approval); the value is kept until no such trigger can fire any more and every run is final, or until the entry expires unverified. When no run applies, the value is never stored.
 - **Actions:**
   - **Built-in types:**
@@ -2081,7 +2082,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the challenge id stored on the entry (unique per form), so a solved challenge can't be replayed.
   - **What cached markup cannot carry** (§4.6): the challenge response also brings the places left per option and the member values for rules. The runtime then shows the places ("3 places left", "full") and evaluates member conditions with them; the server has refused full options since 6.1 either way.
   - **Limits:** the ASP.NET Core rate limiter per IP, form and site, with bounded partitions; origin checks; member-bound challenges on members-only forms (ADR-0004); the blocked address ranges of the spam settings (§4.8).
-  - **Scoring:** the spam score with reasons, and silent acceptance into `Spam` (§4.4).
+  - **Scoring:** the spam score with reasons, and silent acceptance into `Spam` (§4.4). A submission put into `Spam` holds no place and no unique answer, and neither check runs for it, so a bot learns nothing from `full` or from a taken answer (ADR-0090, ADR-0091).
   - **Content rules and the spam folder:**
     - Blocked words, blocked email domains, maximum links, per-form strictness, and `IFormBuilderSpamCheck`.
     - The `Spam` state. "Not spam" runs the submitted actions then; on a form with email verification, 8.5 sends an unverified entry to `Unverified` instead.
@@ -2091,7 +2092,8 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a replay with the same body and its entry's own, already used challenge returns the original receipt and outcome, also once the form has closed or the option it took is full; the same `submissionId` and the same body with another challenge or server key gets `409` with neither receipt nor outcome;
     - `receipt` finds an entry by its challenge for up to 24 hours past that challenge's expiry and answers `404` after that, and a runtime test shows a retry after a lost answer, whose challenge has expired, asking `receipt` and showing the original outcome, and, past the grace, the fresh post's `409` shown as already sent;
     - tests cover a blocked IPv4 and IPv6 range, and Playwright shows the places left changing on a cached page after another visitor's submission, and a member condition applied for a signed-in member;
-    - tests cover each content rule, a custom `IFormBuilderSpamCheck`, and "not spam" running the submitted actions.
+    - tests cover each content rule, a custom `IFormBuilderSpamCheck`, and "not spam" running the submitted actions;
+    - a submission the protection puts into `Spam` is answered as accepted though its option is full and its unique answer is taken, and holds neither (ADR-0090, ADR-0091).
 - [ ] **7.2 Proof of work and captcha providers**
   - **Proof of work:** a SHA-256 puzzle with difficulty per level, a signed and expiring nonce, solved in a Web Worker with a progress hint for slow devices.
   - **Third-party providers:** reCAPTCHA v2 and v3 (ported from Ligata.Forms) and hCaptcha. Providers are greyed out without keys. The consent modes of §4.10 apply. Publishing refuses a provider the site lacks (`unknown_type` at `settings.protection.captcha.provider`, ADR-0035).
@@ -2189,10 +2191,10 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - expiry, and the page restored;
     - the runtime's "Save and continue later" control (the only use of browser storage, §4.10);
     - drafts purged when they expire.
-    - **Places** (ADR-0090): a draft holds no places; the submit that turns it into an entry takes them as a submission does, and fails with `full` where an option has none left.
+    - **Places and unique answers** (ADR-0090, ADR-0091): a draft holds no places and no unique answers; the submit that turns it into an entry takes them as a submission does, and fails with `full` where an option has none left, and with the field's `uniquePerForm` check where another entry holds the answer by then.
   - **Phase review:** write the handover note.
   - Done when:
-    - Playwright resumes a three-page form from the link in the pickup email, and tests cover expiry, a second resume, the submit that turns the draft into an entry (and takes its places then, ADR-0090), a resumed form asking again for the files it had and showing every consent unticked, and the visitor-address limits for resume mail (§4.10);
+    - Playwright resumes a three-page form from the link in the pickup email, and tests cover expiry, a second resume, the submit that turns the draft into an entry (and takes its places then, ADR-0090, and fails at a unique field whose answer another entry took meanwhile, ADR-0091), a resumed form asking again for the files it had and showing every consent unticked, and the visitor-address limits for resume mail (§4.10);
     - pushed, with the phase-review gate.
 
 ### Phase 9: The backoffice I: section, form library and designer
@@ -2362,18 +2364,18 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Metadata:** time, page, culture, member link, IP if stored, duration, spam reasons.
   - **The timeline:** events, action runs with retry, and emails.
   - **Notes:** add and edit your own.
-  - **State actions:** moving an entry back into a state that holds places takes them again, and asks before overbooking an option that is full by then (§4.4, ADR-0090).
-  - **Edit mode:** validation per type, audited; a changed choice moves its place, and asks before overbooking an option that is full (ADR-0090).
+  - **State actions:** moving an entry back into a state that holds places takes them again, and asks before overbooking an option that is full by then (§4.4, ADR-0090). Moving an entry back whose unique answer another entry holds by then asks first too (ADR-0091).
+  - **Edit mode:** validation per type, audited; a changed choice moves its place, and asks before overbooking an option that is full (ADR-0090); a changed answer that must be unique and that another entry holds asks first too (ADR-0091).
   - **Sensitive values:** masked, with an audited "reveal".
   - **Forward** (added in 1.1): send the entry to a backoffice user or to one of the team addresses of the email settings (§4.8), through the outbox. Sensitive values go along only when the user may see them and chooses to. Audited, and shown on the timeline.
   - **The entry's link** (added in 5.3e, ADR-0067): the entry's workspace (`BackofficeLinks.EntryEntityType`) answers `/umbraco/section/jfb-forms/workspace/jfb-entry/edit/<key>`, the link `entry.url` gives team mail, and opens the entry's panel without its list; a user who may not view the entry sees the backoffice's "not found" answer, as for an entry that is gone.
-  - Done when: Playwright passes, and the audit entries are asserted, including Approve in the panel followed by Undo from its toast (ADR-0023), and a rejected entry moved back onto an option that is full by then, which asks first and overbooks only once confirmed (ADR-0090). The panel's endpoint's integration test stores an entry of every type and gets each value back as `EntryAnswerStore.ReadAsync` reads it. A forwarded entry arrives in the pickup folder, and an address outside the allowed recipients is refused by the API. Playwright opens the `entry.url` link of a mail in the pickup folder and lands on that entry's panel, and the same link as a user without access to its form shows no value of it.
+  - Done when: Playwright passes, and the audit entries are asserted, including Approve in the panel followed by Undo from its toast (ADR-0023), and a rejected entry moved back onto an option that is full by then, which asks first and overbooks only once confirmed (ADR-0090), and one moved back whose unique answer another entry holds by then, which asks first too (ADR-0091). The panel's endpoint's integration test stores an entry of every type and gets each value back as `EntryAnswerStore.ReadAsync` reads it. A forwarded entry arrives in the pickup folder, and an address outside the allowed recipients is refused by the API. Playwright opens the `entry.url` link of a mail in the pickup folder and lands on that entry's panel, and the same link as a user without access to its form shows no value of it.
 - [ ] **11.3 The all-entries inbox and spam**
   - **The inbox:** a cross-form list with a form column and a form filter, unseen entries first. It holds the entries of the forms the user may view entries of, through the access filter of 4.6a in its query (ADR-0048).
-  - **Spam:** the spam folder with "not spam".
+  - **Spam:** the spam folder with "not spam", which asks first, as moving an entry back does (11.2), when an option is full or a unique answer is held by another entry by then (ADR-0090, ADR-0091).
   - **Badges:** unseen counts on the menu items, from a light count endpoint. The poll pauses while the user is idle and never renews an expired session (§4.10).
   - **The digest** (added in 1.1): each user can ask for a daily or weekly email ("12 new entries in 3 forms") instead of watching the inbox. It holds counts and links only, never entry values, covers only the forms the user may view, and goes out in the site's time zone through the outbox.
-  - Done when: Playwright passes, including an idle user whose session still ends on time (`page.clock`), and an inbox as the viewer that holds no entry of the restricted folder's forms. Tests with fake time show one digest per user and period, nothing for a user who has not asked for one, no form the user may not view, and no entry value in the mail.
+  - Done when: Playwright passes, including an idle user whose session still ends on time (`page.clock`), an inbox as the viewer that holds no entry of the restricted folder's forms, and "not spam" on an entry whose unique answer another entry holds by then, which asks first. Tests with fake time show one digest per user and period, nothing for a user who has not asked for one, no form the user may not view, and no entry value in the mail.
 - [ ] **11.4 Exports**
   - **Formats:**
     - **CSV:** delimiter, BOM, formula guard, headers as labels or aliases;

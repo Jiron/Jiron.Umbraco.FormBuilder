@@ -52,7 +52,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
         // Only the rules of actions and outcomes may look at a value the server resolves (ADR-0035), so evaluating again
         // with the resolved values leaves what is shown as it was and decides the actions and the outcome.
-        var resolving = new Resolving(post, [], slots.SelectMany(slot => slot.Field.Fields.Prepend(slot.Field)).ToDictionary(field => field.Key), ImmutableArray.CreateBuilder<SubmissionPlace>());
+        var resolving = new Resolving(post, [], slots.SelectMany(slot => slot.Field.Fields.Prepend(slot.Field)).ToDictionary(field => field.Key), ImmutableArray.CreateBuilder<SubmissionPlace>(), ImmutableArray.CreateBuilder<SubmissionUnique>());
         if (await ResolveAsync(slots, state, post, resolving, today, cancellationToken))
         {
             state = FormRules.Evaluate(logic, Answers(slots), context);
@@ -62,6 +62,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         return new SubmissionAnswers(stored, await ErrorsAsync(slots, state, resolving, today, cancellationToken), state, ForMergeTags(stored, state))
         {
             Places = resolving.Places.ToImmutable(),
+            Unique = resolving.Unique.ToImmutable(),
         };
     }
 
@@ -575,10 +576,36 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         var found = FieldValues.Check(slot.Type, slot.Field, slot.Read, new FieldCheckInput(isRequired, today) { Files = files, Values = others, Options = offered });
         errors.AddRange(found.Errors.Select(error => new SubmissionError(key, row, error)));
         errors.AddRange(found.Checks.Select(check => new SubmissionError(key, row, FieldMessageKinds.None, Check: check)));
-        if (found.Errors.IsEmpty && found.Checks.IsEmpty && slot.Type.Declaration.Features.HasFlag(FieldFeatures.Places))
+        if (!found.Errors.IsEmpty || !found.Checks.IsEmpty)
+        {
+            return;
+        }
+
+        if (slot.Type.Declaration.Features.HasFlag(FieldFeatures.Places))
         {
             resolving.Places.AddRange(Places(slot, row, offered));
         }
+
+        if (Unique(slot, row) is { } unique)
+        {
+            resolving.Unique.Add(unique);
+        }
+    }
+
+    // The answer that stands of a field with a uniquePerForm check (ADR-0091): its values as entries are compared by them,
+    // with the indexes of its unique checks; none without such a check or a value, and none for a type that does not
+    // support the check: publishing refuses one, but a site may change its types since, and such a type's values may not
+    // compare. The registry holds a type that supports it to a storage kind that compares.
+    private static SubmissionUnique? Unique(Slot slot, int? row)
+    {
+        ImmutableArray<int> checks = [.. slot.Field.Validation.Select((check, index) => (check, index)).Where(pair => pair.check is UniquePerFormCheck).Select(pair => pair.index)];
+        if (checks.IsEmpty || slot.Values.IsEmpty || !slot.Type.Declaration.Features.HasFlag(FieldFeatures.UniquePerFormCheck))
+        {
+            return null;
+        }
+
+        var storage = slot.Type.Declaration.Storage;
+        return new SubmissionUnique(slot.Field.Key, row, checks, [.. slot.Values.Select(value => EntryValueColumns.ComparedBy(storage, slot.Field.Key, value))]);
     }
 
     // The options with places an answer that stands chose (ADR-0090): of the field's own options, or of those its list or
@@ -669,12 +696,13 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
     // What resolving a submission's options shares: the submission, what was resolved so far by field and parent answers,
     // every field of the form by key, a repeatable group's children among them, as a parent may be one, and the options
-    // with places the answers chose, in the order of the form and its rows.
+    // with places and the answers that must be unique, in the order of the form and its rows.
     private sealed record Resolving(
         PostedSubmission Post,
         Dictionary<(Guid Field, string Parents), FormBuilderResolvedOptions> Resolved,
         Dictionary<Guid, FormField> Fields,
-        ImmutableArray<SubmissionPlace>.Builder Places);
+        ImmutableArray<SubmissionPlace>.Builder Places,
+        ImmutableArray<SubmissionUnique>.Builder Unique);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The default value of the field '{Field}' renders to a value its type cannot take, so the entry stores none.")]
     private static partial void LogDefaultNotTaken(ILogger logger, string field);

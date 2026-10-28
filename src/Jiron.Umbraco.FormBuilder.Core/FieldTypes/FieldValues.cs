@@ -167,8 +167,8 @@ internal static class FieldValues
 
     // The indexes of the field's own checks that fail, of those that need no other entry (ADR-0062): every value matches
     // the whole pattern, and the values match the other field's. A pattern outside the safe subset, which publishing
-    // refuses, checks nothing, so a draft's preview does not fail on it; uniquePerForm runs in the submission's
-    // transaction (6.1).
+    // refuses, checks nothing, so a draft's preview does not fail on it; uniquePerForm runs with the submission, which
+    // holds its answers against the other entries' (ADR-0091).
     private static ImmutableArray<int> OwnChecks(IFormBuilderFieldType type, FormField field, ImmutableArray<string> values, IReadOnlyDictionary<Guid, ImmutableArray<string>> others)
     {
         var failing = ImmutableArray.CreateBuilder<int>();

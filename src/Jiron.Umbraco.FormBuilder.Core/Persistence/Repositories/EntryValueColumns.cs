@@ -82,6 +82,37 @@ internal static class EntryValueColumns
         };
     }
 
+    /// <summary>
+    /// What a value of a field whose answers must be unique is compared by with the values entries hold (ADR-0091): the
+    /// column <see cref="Of"/> stores it in. A number or a date that its column takes compares by that column, and any
+    /// other value by its stored text, whose key the row gets.
+    /// </summary>
+    /// <param name="storage">The field's storage kind: text, long text, a number or a date, as the registry holds such a type to.</param>
+    /// <param name="fieldKey">The field's key.</param>
+    /// <param name="value">The value, which the storage kind holds (<see cref="Holds"/>).</param>
+    /// <exception cref="ArgumentException">The storage kind is another, or does not take the value.</exception>
+    public static AnswerValue ComparedBy(FieldStorageKind storage, Guid fieldKey, FieldValue value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (storage is not (FieldStorageKind.Text or FieldStorageKind.LongText or FieldStorageKind.Number or FieldStorageKind.Date))
+        {
+            throw new ArgumentException("Only text, long text, numbers and dates are compared for unique answers.", nameof(storage));
+        }
+
+        if (!Holds(storage, value))
+        {
+            throw new ArgumentException("The storage kind does not take the value: it is not in the kind's form.", nameof(value));
+        }
+
+        var stored = Stored(value);
+        return storage switch
+        {
+            FieldStorageKind.Number when StoredNumber(stored) is { } number => new AnswerValue(fieldKey, null, number, null),
+            FieldStorageKind.Date when StoredDate(stored) is { } date => new AnswerValue(fieldKey, null, null, date),
+            _ => new AnswerValue(fieldKey, stored, null, null),
+        };
+    }
+
     private static string Stored(FieldValue value) => value.StoredText ?? value.Text;
 
     // Fifteen digits survive a double both ways (ADR-0003); a longer number, such as a calculation's result, is text only

@@ -19,6 +19,7 @@ public sealed partial class SqlGuardTests
         ("ThemeRepository.cs", "themeAlias", "a name without a foreign key: ADR-0037 accepts a publish while a delete runs"),
         ("FormRepository.Versions.cs", "Entry)} e WHERE e.{n.C(\"formVersionId\")", "the cleanup's nominating read: each delete checks again with a locking read (ADR-0045)"),
         ("ActionRunRepository.cs", "{runs} p{(locking ? n.LockingRead : string.Empty)", "the due list only proposes; the claim makes the same check with a locking read (ADR-0040, ActionRunSqlTests)"),
+        ("EntryRepository.Unique.cs", "EXISTS (SELECT 1 FROM {held})", "the held answers read each table with a lock in the submission's unit; the read before it only proposes (ADR-0091, UniqueAnswerSqlTests)"),
     ];
 
     // Common table expressions a check may read: their own reads carry the hint.

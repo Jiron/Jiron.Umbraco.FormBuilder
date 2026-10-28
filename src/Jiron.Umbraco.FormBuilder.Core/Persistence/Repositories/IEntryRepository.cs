@@ -344,6 +344,18 @@ internal sealed record StoredEntryFile(
 internal readonly record struct OptionPlace(Guid FieldKey, string Value);
 
 /// <summary>
+/// A value of an answer that must be unique in its form (<c>uniquePerForm</c>, ADR-0091), as entries are compared by it:
+/// its number or its date in the column its storage kind fills, or else its text, compared by its key as the entries
+/// screen filters (cleaned and folded, ADR-0005) and whole where the key is cut
+/// (<see cref="EntryValueColumns.ComparedBy"/>).
+/// </summary>
+/// <param name="FieldKey">The field's key; a repeatable group's child has its own.</param>
+/// <param name="Text">The stored text, for a value its column stores as text only; null otherwise.</param>
+/// <param name="Number">The stored number, or null.</param>
+/// <param name="Date">The stored date, in UTC, or null.</param>
+internal readonly record struct AnswerValue(Guid FieldKey, string? Text, double? Number, DateTime? Date);
+
+/// <summary>
 /// The entries of <c>jfbEntry</c> with their values (<c>jfbEntryValue</c>) and files (<c>jfbEntryFile</c>), one aggregate
 /// (ADR-0003, ADR-0038). Lists, filters and search are the entries query builder's (4.3d); the consent wordings the
 /// values name are <see cref="IConsentTextRepository"/>'s.
@@ -395,6 +407,28 @@ internal interface IEntryRepository
     /// <param name="cancellationToken">Cancels the unit of work.</param>
     /// <exception cref="ArgumentException">An option without a field key, or whose value is empty, longer than 200 characters or holds a lone surrogate.</exception>
     Task<IReadOnlyDictionary<OptionPlace, int>> CountPlacesAsync(int formId, IReadOnlyCollection<OptionPlace> options, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The values of these that an entry of the form holds at their field, of the entries that hold their answers: those
+    /// that count toward the entry limit (<see cref="EntryLimits"/>, ADR-0091). Reads only, without locks: what a
+    /// submission learns while its answers are read; its unit asks again with <see cref="FindTakenAnswersAsync"/>.
+    /// </summary>
+    /// <param name="formId">The form.</param>
+    /// <param name="values">The values.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <exception cref="ArgumentException">A value without a field key, or with none or more than one of a text, a number and a date.</exception>
+    Task<IReadOnlySet<AnswerValue>> GetTakenAnswersAsync(int formId, IReadOnlyCollection<AnswerValue> values, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The values of these that another entry of this entry's form holds at their field, of the entries that hold their
+    /// answers (ADR-0091), in a unit that has locked the form's row first and reads with locks: inside a submission's
+    /// unit, which stored the entry, the answer holds until the unit ends. None for an entry that does not exist.
+    /// </summary>
+    /// <param name="entryId">The entry the values are of, which is left out.</param>
+    /// <param name="values">The values.</param>
+    /// <param name="cancellationToken">Cancels the unit of work.</param>
+    /// <exception cref="ArgumentException">A value without a field key, or with none or more than one of a text, a number and a date.</exception>
+    Task<IReadOnlySet<AnswerValue>> FindTakenAnswersAsync(long entryId, IReadOnlyCollection<AnswerValue> values, CancellationToken cancellationToken = default);
 
     /// <summary>The entry with this key, or null.</summary>
     Task<StoredEntry?> GetAsync(Guid key, CancellationToken cancellationToken = default);

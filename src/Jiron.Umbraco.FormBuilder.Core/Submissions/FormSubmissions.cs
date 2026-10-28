@@ -19,9 +19,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// idempotency, compatibility, availability, the answers read and checked, and one transaction that stores the entry
 /// with its event, its action runs and its count; then the outcome. A page's check runs the same steps but idempotency,
 /// the empty submission and the transaction, and answers its own fields' errors; a receipt answers an entry as a retry
-/// would (ADR-0089). The places on options are held while the answers are read and again inside the transaction
-/// (ADR-0090).
-/// Spam protection comes in 7.1, <c>uniquePerForm</c> in 6.1h, and waking the action processor in 8.1.
+/// would (ADR-0089). The places on options and the answers that must be unique are held while the answers are read and
+/// again inside the transaction (ADR-0090, ADR-0091).
+/// Spam protection comes in 7.1, and waking the action processor in 8.1.
 /// </summary>
 internal sealed class FormSubmissions(
     PublishedFormCache cache,
@@ -35,6 +35,7 @@ internal sealed class FormSubmissions(
     ConsentWordings consents,
     SubmissionEntries recorder,
     OptionPlaces places,
+    UniqueAnswers unique,
     FieldTypeRegistry types,
     TimeProvider time)
 {
@@ -99,9 +100,10 @@ internal sealed class FormSubmissions(
         }
         catch (SubmissionInvalidException invalid)
         {
-            // An option ran out of places meanwhile (ADR-0090): the choices past them, as the first check names them.
+            // An option ran out of places, or another entry took a unique answer, meanwhile (ADR-0090, ADR-0091): the
+            // choices past the places and the answers taken, in the order of the form.
             var paths = new FieldPaths(served.Form.Definition);
-            return SubmissionResult.Invalid(invalid.Errors.Select(paths.Problem));
+            return SubmissionResult.Invalid(invalid.Errors.OrderBy(paths.Rank).Select(paths.Problem));
         }
         catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.MissingFile)
         {
@@ -115,8 +117,8 @@ internal sealed class FormSubmissions(
     /// <summary>
     /// Checks one page's answers as the submission would check them (ADR-0089), and stores nothing: the form, the gate,
     /// the revision and the consent wordings, the availability, then every posted answer read, ruled and checked, with
-    /// only the errors of the page's fields answered. <c>uniquePerForm</c> is not checked: only the submission's
-    /// transaction checks it.
+    /// only the errors of the page's fields answered. <c>uniquePerForm</c> is not checked: only a submission checks it
+    /// (ADR-0091), so a page's check cannot tell whether an answer is taken.
     /// </summary>
     /// <param name="request">The answers the visitor gave so far, as the transport read them.</param>
     /// <param name="pageKey">The page's key, as the revision the visitor's page showed names it.</param>
@@ -173,8 +175,8 @@ internal sealed class FormSubmissions(
     private static bool IsForMembers(PublishedForm form) => form.Definition.Settings.Availability.Access != MemberAccess.Anyone;
 
     // Compatibility, availability and the answers read and checked (section 4.4, steps 4, 5 and 7), the places left on
-    // the options they chose among them (ADR-0090). For a page, only the errors of its fields count, and a page without
-    // an answer is no error.
+    // the options they chose among them (ADR-0090) and, for a submission, the answers that must be unique (ADR-0091). For
+    // a page, only the errors of its fields count, and a page without an answer is no error.
     private async Task<Reading> ReadAsync(SubmissionRequest request, Served served, Guid? pageKey, CancellationToken cancellationToken)
     {
         var form = served.Form;
@@ -249,7 +251,8 @@ internal sealed class FormSubmissions(
             cancellationToken);
         var paths = new FieldPaths(definition);
         var full = await places.CheckAsync(served.Row.Id, read.Places, cancellationToken);
-        var all = full.IsEmpty ? read.Errors : [.. read.Errors.Concat(full).OrderBy(paths.Rank)];
+        var taken = pageKey is null ? await unique.CheckAsync(served.Row.Id, read.Unique, cancellationToken) : [];
+        var all = full.IsEmpty && taken.IsEmpty ? read.Errors : [.. read.Errors.Concat(full).Concat(taken).OrderBy(paths.Rank)];
         ImmutableArray<SubmissionError> errors = onPage is null ? all : [.. all.Where(error => onPage.Contains(error.Field))];
         if (!errors.IsEmpty)
         {

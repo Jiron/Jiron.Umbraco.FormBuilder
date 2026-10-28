@@ -3,7 +3,8 @@
 - Status: accepted; extends [ADR-0012](0012-anonymous-endpoints-spam-protection-and-challenges.md) (what a page's
   validation checks, the receipt before 7.1) and
   [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) (the pipeline's steps for a page and for a
-  receipt); amends ADR-0088 (a UUID with a lone surrogate)
+  receipt); amends ADR-0088 (a UUID with a lone surrogate); where a submission checks `uniquePerForm` amended in
+  6.1h ([ADR-0091](0091-unique-answers.md))
 - Date: 2026-10-28
 - Roadmap step: 6.1f (decided and built); 6.1g checks the places on options for a page too (ADR-0090), 6.1h leaves
   `uniquePerForm` out of a page's validation, 6.5 calls `validate` between pages, 7.1 binds the receipt to the entry's
@@ -80,7 +81,7 @@ steps, numbered as in ADR-0088:
    page they are on.
 5. **Reading:** every answer posted, the earlier pages' and any later page's a visitor came back from among them, read
    by its type, ruled and checked as the submission's are, a file field's tokens by the uploads they stand for, every
-   check but `uniquePerForm`, which only the submission's transaction runs (6.1h).
+   check but `uniquePerForm`, which only a submission runs (ADR-0091).
 6. **The page's errors:** those at the fields of the page with that key, in the revision the visitor's page showed and
    in the live version, their repeatable groups' children and grid rows among them. Errors at other fields are not
    answered: the earlier pages were checked when the visitor left them, and the submission checks every page again.

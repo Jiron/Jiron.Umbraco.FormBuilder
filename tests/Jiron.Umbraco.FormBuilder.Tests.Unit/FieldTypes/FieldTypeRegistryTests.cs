@@ -56,6 +56,9 @@ public sealed class FieldTypeRegistryTests
         yield return Case("the required error without being required", Valid with { Features = FieldFeatures.Label | FieldFeatures.VisibilityRules }, "'required' error");
         yield return Case("the rows' error without child fields", Valid with { Messages = FieldMessageKinds.Required | FieldMessageKinds.RowCount }, "'rowCount' error");
         yield return Case("a comparing check without a rule kind", Valid with { RuleKind = null, Features = Input | FieldFeatures.MatchesFieldCheck }, "has a rule kind");
+        yield return Case("a unique check on yes or no", Valid with { Storage = FieldStorageKind.Bool, RuleKind = FieldKind.Checkbox, Features = Input | FieldFeatures.UniquePerFormCheck }, "stores text, long text, a number or a date");
+        yield return Case("a unique check on parts", Valid with { Storage = FieldStorageKind.Json, Features = Input | FieldFeatures.UniquePerFormCheck }, "stores text, long text, a number or a date");
+        yield return Case("a unique check on files", Valid with { Storage = FieldStorageKind.File, RuleKind = FieldKind.Files, Features = Input | FieldFeatures.UniquePerFormCheck }, "stores text, long text, a number or a date");
         yield return Case("a server-only default without a default", Valid with { ServerOnlyDefault = true }, "supports a default value");
         yield return Case("a server-only default that stores files", Valid with { ServerOnlyDefault = true, Storage = FieldStorageKind.File, RuleKind = FieldKind.Files, Features = Input | FieldFeatures.DefaultValue }, "stores no files");
         yield return Case("a multiple setting on a text", Valid with { MultipleSetting = true }, "compares as a choice or has rows");

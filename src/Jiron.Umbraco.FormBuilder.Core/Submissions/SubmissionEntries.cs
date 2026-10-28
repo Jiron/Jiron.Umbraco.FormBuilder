@@ -43,13 +43,15 @@ internal sealed record SubmittedEntry(StoredEntry Entry, SubmissionReceipt Recei
 
 /// <summary>
 /// The entries of submissions (ADR-0088): stores a submission's entry in one transaction with its <c>submitted</c>
-/// event, its action runs and its daily count, once its choices are held against the places left (ADR-0090), and gives
+/// event, its action runs and its daily count, once its choices are held against the places left (ADR-0090) and its
+/// answers that must be unique against the other entries' (ADR-0091), and gives
 /// an entry's receipt and outcome again for a retry of the same answers, rendered with the version it was submitted
 /// with, its stored answers and the outcome its event names.
 /// </summary>
 internal sealed class SubmissionEntries(
     EntryAnswerStore store,
     OptionPlaces places,
+    UniqueAnswers unique,
     IEntryEventRepository events,
     IActionRunRepository runs,
     IDailyStatRepository stats,
@@ -114,11 +116,16 @@ internal sealed class SubmissionEntries(
             submission.Wordings,
             async created =>
             {
-                // Its values are counted now, and the unit holds the form's row: these counts are the last word.
-                if (EntryLimits.Counts(created.State, created.IsTest)
-                    && await places.CountAsync(created.FormId, submission.Answers.Places, cancellationToken) is { IsEmpty: false } full)
+                // Its values are counted now, and the unit holds the form's row: these counts and answers are the last
+                // word. An entry that does not count holds no place and no answer, and takes none from another.
+                if (EntryLimits.Counts(created.State, created.IsTest))
                 {
-                    throw new SubmissionInvalidException(full);
+                    var full = await places.CountAsync(created.FormId, submission.Answers.Places, cancellationToken);
+                    var taken = await unique.FindAsync(created.Id, submission.Answers.Unique, cancellationToken);
+                    if (!full.IsEmpty || !taken.IsEmpty)
+                    {
+                        throw new SubmissionInvalidException([.. full, .. taken]);
+                    }
                 }
 
                 await events.AddAsync(new NewEntryEvent(created.Id, SubmittedEvent, Details: Details(outcome)), cancellationToken);

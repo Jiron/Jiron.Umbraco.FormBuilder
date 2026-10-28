@@ -123,6 +123,7 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<FormAvailability>();
         builder.Services.TryAddSingleton<SubmissionOutcomes>();
         builder.Services.TryAddSingleton<OptionPlaces>();
+        builder.Services.TryAddSingleton<UniqueAnswers>();
         builder.Services.TryAddSingleton<SubmissionEntries>();
         builder.Services.TryAddSingleton<FormSubmissions>();
 

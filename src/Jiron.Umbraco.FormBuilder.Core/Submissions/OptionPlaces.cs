@@ -50,13 +50,13 @@ internal sealed class OptionPlaces(IEntryRepository entries)
 }
 
 /// <summary>
-/// Thrown inside a submission's unit of work when its answers fail against the other entries (ADR-0090): the unit rolls
-/// back, entry and number with it, and the pipeline answers the errors.
+/// Thrown inside a submission's unit of work when its answers fail against the other entries (ADR-0090, ADR-0091): the
+/// unit rolls back, entry and number with it, and the pipeline answers the errors in the order of the form.
 /// </summary>
 internal sealed class SubmissionInvalidException : Exception
 {
     /// <summary>Creates the exception for these errors.</summary>
-    /// <param name="errors">The errors, in the order of the form and its rows.</param>
+    /// <param name="errors">The errors: the places run out, then the answers taken.</param>
     public SubmissionInvalidException(ImmutableArray<SubmissionError> errors)
         : base("The submission's answers fail against the form's other entries.")
     {

@@ -12,6 +12,8 @@ public sealed class EntryValueColumnsTests
 {
     private const int FieldId = 9;
 
+    private static readonly Guid FieldKey = Guid.Parse("44444444-4444-4444-4444-444444444444");
+
     private static readonly StoredEntryFile Upload = new(
         7, Guid.Parse("33333333-3333-3333-3333-333333333333"), 1, 1, Guid.NewGuid(), "cv.pdf", "a.bin", "application/pdf", 10, "hash", "clean", DateTimeOffset.UnixEpoch);
 
@@ -183,6 +185,35 @@ public sealed class EntryValueColumnsTests
         {
             Assert.That(() => EntryValueColumns.Holds(FieldStorageKind.Text, null!), Throws.ArgumentNullException);
             Assert.That(() => EntryValueColumns.Of(FieldStorageKind.Text, null!, FieldId), Throws.ArgumentNullException);
+            Assert.That(() => EntryValueColumns.ComparedBy(FieldStorageKind.Text, FieldKey, null!), Throws.ArgumentNullException);
         });
     }
+
+    [TestCase(FieldStorageKind.Text, " Ada ")]
+    [TestCase(FieldStorageKind.LongText, "Line one")]
+    [TestCase(FieldStorageKind.Number, "-12.5")]
+    [TestCase(FieldStorageKind.Number, "1234567890123456")]
+    [TestCase(FieldStorageKind.Date, "2026-10-25")]
+    [TestCase(FieldStorageKind.Date, "2026-10-25T08:30")]
+    public void AUniqueAnswer_ComparesByTheColumnItsRowFills(FieldStorageKind storage, string text)
+    {
+        var row = EntryValueColumns.Of(storage, new FieldValue(text), FieldId);
+
+        var compared = EntryValueColumns.ComparedBy(storage, FieldKey, new FieldValue(text));
+
+        Assert.That(compared, Is.EqualTo(new AnswerValue(FieldKey, row.IsText ? row.Text : null, row.Number, row.Date)), "a typed column, or else the text whose key the row gets");
+    }
+
+    [Test]
+    public void AUniqueAnswer_ComparesByTheTextItStores() =>
+        Assert.That(EntryValueColumns.ComparedBy(FieldStorageKind.Text, FieldKey, new FieldValue("Ada") { StoredText = "ada-hash" }), Is.EqualTo(new AnswerValue(FieldKey, "ada-hash", null, null)));
+
+    [TestCase(FieldStorageKind.Bool, "true")]
+    [TestCase(FieldStorageKind.Json, "{\"first\":\"Ada\"}")]
+    [TestCase(FieldStorageKind.File, "token")]
+    [TestCase(FieldStorageKind.None, "a")]
+    [TestCase(FieldStorageKind.Number, "1e3")]
+    [TestCase(FieldStorageKind.Date, "2026-02-30")]
+    public void AUniqueAnswer_IsRefused_OfAKindThatDoesNotCompare_OrNotInItsKindsForm(FieldStorageKind storage, string text) =>
+        Assert.That(() => EntryValueColumns.ComparedBy(storage, FieldKey, new FieldValue(text)), Throws.ArgumentException);
 }
