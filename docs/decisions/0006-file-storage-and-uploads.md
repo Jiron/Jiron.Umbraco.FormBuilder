@@ -2,7 +2,9 @@
 
 - Status: accepted; narrows §1.1 (amended in 1.8); the field's limit and its type's check of a file's first bytes
   amended by [ADR-0071](0071-the-advanced-types-own-checks.md) in 5.4c; one token standing for one value of a
-  submission amended by [ADR-0080](0080-reading-a-submission-after-the-phase-5-review.md) in 5.5f
+  submission amended by [ADR-0080](0080-reading-a-submission-after-the-phase-5-review.md) in 5.5f; the upload endpoint
+  (the field in the query, the parts before the challenge is verified, the kinds of file, the token and the answers)
+  extended by [ADR-0087](0087-the-upload-endpoint.md) in 6.1d
 - Date: 2026-10-23
 - Roadmap step: 1.4b (decided); built in 4.3 (the physical store), 6.1 (the upload endpoint), 6.2 (no-JS posts with
   files), 6.4 (the runtime's uploads), 7.3 (hardening, downloads), 15.2 (the blob sample); reviewed in 7.4 and 16.x

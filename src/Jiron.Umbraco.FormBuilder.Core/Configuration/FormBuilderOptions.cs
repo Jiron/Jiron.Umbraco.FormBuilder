@@ -19,7 +19,7 @@ public sealed class FormBuilderOptions
     /// <summary>The public API visitors' browsers and headless sites call: where it lives and who may call it.</summary>
     public FormBuilderPublicApiOptions PublicApi { get; } = new();
 
-    /// <summary>Where uploaded files are kept.</summary>
+    /// <summary>Where uploaded files are kept, how large one may be, and which extensions no field takes.</summary>
     public FormBuilderFilesOptions Files { get; } = new();
 
     /// <summary>Hard limits that editors cannot exceed.</summary>

@@ -76,7 +76,7 @@ database connection of its own. Its areas:
 | Entries | the submission pipeline, states, values, files, events, notes, the entries query builder, and a consent's wording as shown, sanitised and hashed | ADR-0003, ADR-0070, ADR-0085, §4.4 |
 | Actions and email | action types, action runs, the email outbox, the worker | ADR-0007 |
 | Protection | the spam score, content rules, captcha provider contract, mail caps | ADR-0012 |
-| Files | the file store contract and the physical store, whose root is checked against the web root at start-up, scanning | ADR-0006, ADR-0041 |
+| Files | the file store contract and the physical store, whose root is checked against the web root at start-up; the host's limits for files (`Files:MaxFileBytes`, `Files:BlockedExtensions`); the uploads before a submission: the name cleaned, the first bytes checked against the kinds of file (`FileKinds`), the bytes counted, hashed and stored, a row without an entry; scanning | ADR-0006, ADR-0041, ADR-0087 |
 | Privacy | retention, holds, data subject tools, masking, IP handling | ADR-0009 |
 | Retention | the hourly retention job and its parts, so far the draft-version cleanup | ADR-0007, ADR-0045 |
 | Access | the permission model (the flags, what each needs and where it may be granted), the evaluation from one cached snapshot per server with its refresher, the lists' filter, grants and restrictions with their audit entries, host grants and the access lock, and the grants of a user group Umbraco deletes | ADR-0013, ADR-0048 |
@@ -116,7 +116,7 @@ flowchart LR
 
 | Area | Holds | Decided in |
 | --- | --- | --- |
-| Public API | `/jfb/api/v1` below the host's base path: the base controller with each action's declarations and their filter, the middleware in front of it (no form content, origins, what ends a request early), the catch-all, the OpenAPI document `jfb-public`, the form endpoint, the options endpoint; the rate-limit middleware | ADR-0006, ADR-0012, ADR-0084, ADR-0086 |
+| Public API | `/jfb/api/v1` below the host's base path: the base controller with each action's declarations and their filter, the middleware in front of it (no form content, origins, what ends a request early), the catch-all, the OpenAPI document `jfb-public`, the form endpoint, the options endpoint, the upload endpoint with its multipart reading and its tokens; the rate-limit middleware | ADR-0006, ADR-0012, ADR-0084, ADR-0086, ADR-0087 |
 | Management API | `/umbraco/jfb/management/api/v1`: the base controller, the access declarations and their filter, the refusals with stable codes, the authorization policies with their resources and denials, the OpenAPI document `jfb`; the library tree, folders, the trash, forms and their versions, a definition carried as its document; the field types for the designer | ADR-0013, ADR-0049, ADR-0050, ADR-0051, ADR-0052, ADR-0057, §4.7 |
 | Rendering | the view component, `<jfb-render>`, `<jfb-assets>`, the surface controller, output cache rules, asset serving | ADR-0004, ADR-0015 |
 | Themes | the built-in themes, their views and stylesheets | ADR-0015 |
@@ -222,7 +222,9 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   holds a shown field's values to its settings, with whether it is required, today and its files; `FieldValues` runs
   the three in the pipeline's order, then the field's own checks, and refuses a type that breaks the contract, and `EntryValueColumns` stores each value in the typed column of its storage kind.
   A type that stores files also declares its uploads' limit (`UploadLimit`) and checks a file's name and first bytes
-  before it is stored (`CheckUpload`), which `FieldUploads` runs for the upload endpoint under the host's limit: a
+  before it is stored (`CheckUpload`), which `FieldUploads` runs for the upload endpoint (`FileUploads`, after the
+  checks of programs and blocked extensions and before the kinds of file, [ADR-0087](decisions/0087-the-upload-endpoint.md))
+  under the host's limit, which a type's settings check also sees (`FieldSettingsCheck.Host`): a
   signature is a well-formed PNG header within three times its pad in pixels and at most a mebibyte (`PngHeader`), a
   file field takes its extensions; and a type with child fields holds a submission's number of rows to its settings
   (`ValidateRows`, run by `FieldValues.CheckRows`), a repeatable group failing `rowCount`
@@ -380,14 +382,15 @@ sequenceDiagram
 codes, `no-store` except the form and the options, the OpenAPI document `jfb-public` with its reviewed snapshot
 `docs/api/jfb-public.json` ([ADR-0012](decisions/0012-anonymous-endpoints-spam-protection-and-challenges.md),
 [ADR-0084](decisions/0084-the-public-apis-frame-and-the-form-endpoint.md),
-[ADR-0086](decisions/0086-the-options-endpoint.md)).
+[ADR-0086](decisions/0086-the-options-endpoint.md),
+[ADR-0087](decisions/0087-the-upload-endpoint.md)).
 
 | Route | Purpose | Rate-limit policy | Needs |
 | --- | --- | --- | --- |
 | `GET forms/{keyOrAlias}` | the published form in one culture with its revision, the site's time zone and whether it is open, when the form allows headless access, with what the browser renders its visitor texts with (`mergeTags`, null for none) and each consent's wording hash (`consents`); `no-cache` with an `ETag` from the answer's bytes | `read` | – |
 | `GET forms/{key}/render` | the published form as HTML for `form_changed` (ADR-0004) | `read` | a local `page` path |
 | `POST forms/{key}/challenge` | a signed challenge, places left, member values | `challenge` | – |
-| `POST forms/{key}/uploads` | one file before submitting (ADR-0006) | `upload` | the challenge as the first part |
+| `POST forms/{key}/uploads` | one file to a field before submitting (`?fieldKey=`), streamed as `multipart/form-data`: an optional `challenge` part, then the `file` part; held to the field's limit (its type's or `Files:MaxFileBytes`) before and while it is read, checked on its first bytes (programs and scripts, blocked extensions, the field's own check, bytes of another kind than the extension names), stored with a row that waits for its entry; answers a token for 24 hours with the cleaned name, the size and the detected content type; every refusal closes the connection | `upload` | the challenge as the first part (verified from 7.1) |
 | `POST forms/{key}/validate` | one page's server validation, without `uniquePerForm` | `submit` | the challenge |
 | `POST forms/{key}/entries` | submit | `submit` | the challenge, or a server key |
 | `POST forms/{key}/receipt` | the receipt and outcome of an uncertain submission | `submit` | its challenge or server key |

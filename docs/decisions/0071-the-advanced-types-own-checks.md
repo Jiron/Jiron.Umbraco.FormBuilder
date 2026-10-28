@@ -2,7 +2,9 @@
 
 - Status: accepted; amends [ADR-0058](0058-field-answers-and-values.md) (what a type checks: its uploads and its
   rows), [ADR-0006](0006-file-storage-and-uploads.md) (the field's limit and the type's check of a file's first
-  bytes) and [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the message kind `rowCount`)
+  bytes) and [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the message kind `rowCount`);
+  the host's limits in a type's settings check (`FieldSettingsCheck.Host`) and the kind of a refusal outside the type
+  (`FieldUploads.Declared`) added by [ADR-0087](0087-the-upload-endpoint.md) in 6.1d
 - Date: 2026-10-27
 - Roadmap step: 5.4c (decided and built); 5.4d counts a repeatable group's rows, 6.1's `uploads` endpoint and 6.2's
   posts without JavaScript run the upload checks, 6.4's runtime keeps rows and signatures within these limits, 7.3

@@ -113,6 +113,10 @@ public sealed class FormBuilderCoreComposer : IComposer
         // wordings, and the store that writes the rows and reads them back typed.
         builder.AddFormBuilderEntries();
 
+        // Uploads (ADR-0087): a file checked against its field and the host's limits and stored before its submission,
+        // over the field types, the forms, the entries' files and the file store.
+        builder.Services.TryAddSingleton<FileUploads>();
+
         // The retention job (ADR-0045): the draft-version cleanup so far.
         builder.AddFormBuilderRetention();
     }

@@ -2,6 +2,7 @@ using System.Reflection;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Upgrades;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +31,9 @@ public sealed class FormBuilderOptionsTests
         {
             Assert.That(FormBuilderOptions.SectionName, Is.EqualTo("JironFormBuilder"));
             Assert.That(options.Files.Root, Is.EqualTo("~/umbraco/Data/JironFormBuilder/Uploads"));
+            Assert.That(options.Files.MaxFileBytes, Is.EqualTo(52_428_800), "50 MiB");
+            Assert.That(options.Files.BlockedExtensions, Is.Empty, "the defaults apply while a site lists none");
+            Assert.That(FormBuilderFilesOptions.DefaultBlockedExtensions, Is.EqualTo(new[] { "exe", "dll", "js", "bat", "cmd", "ps1", "sh", "msi", "html", "svg" }));
             Assert.That(options.Limits.Definitions, Is.EqualTo(new DefinitionLimits()));
             Assert.That(options.Designer.SettingLocks, Is.Empty);
             Assert.That(options.LockedSections, Is.Empty);
@@ -70,6 +74,9 @@ public sealed class FormBuilderOptionsTests
         var settings = new Dictionary<string, string?>
         {
             [$"{Root}:Files:Root"] = "~/App_Data/forms",
+            [$"{Root}:Files:MaxFileBytes"] = "1000",
+            [$"{Root}:Files:BlockedExtensions:0"] = "dwg",
+            [$"{Root}:Files:BlockedExtensions:1"] = "exe",
             [$"{Limits}MaxBytes"] = "1000",
             [$"{Limits}MaxPages"] = "2",
             [$"{Limits}MaxGroups"] = "3",
@@ -97,6 +104,7 @@ public sealed class FormBuilderOptionsTests
         Assert.Multiple(() =>
         {
             Assert.That(options.Files.Root, Is.EqualTo("~/App_Data/forms"));
+            Assert.That((options.Files.MaxFileBytes, options.Files.BlockedExtensions), Is.EqualTo((1000L, new[] { "dwg", "exe" })), "the site's own list, without the defaults");
             Assert.That(
                 options.Limits.Definitions,
                 Is.EqualTo(new DefinitionLimits { MaxBytes = 1000, MaxPages = 2, MaxGroups = 3, MaxFields = 4, MaxOptionsPerField = 5, MaxActions = 6, MaxOutcomes = 7, MaxRules = 8 }));
@@ -259,6 +267,36 @@ public sealed class FormBuilderOptionsTests
             Assert.That(FormBuilderSettingsSections.All, Is.EqualTo(new[] { "general", "email", "protection", "files", "privacy", "integrations" }));
             Assert.That(FormBuilderSettingsSections.Lockable, Is.EqualTo(new[] { "general", "email", "protection", "files", "privacy", "access", "integrations" }));
             Assert.That(HostOptions.Failures(options), Is.Empty);
+        });
+    }
+
+    [Test]
+    public void TheFileLimits_AreAFileSizeWithinItsBounds_AndExtensionsInLowercase_EachOnce()
+    {
+        var settings = new Dictionary<string, string?>
+        {
+            [$"{Root}:Files:MaxFileBytes"] = "0",
+            [$"{Root}:Files:BlockedExtensions:0"] = "exe",
+            [$"{Root}:Files:BlockedExtensions:1"] = ".js",
+            [$"{Root}:Files:BlockedExtensions:2"] = "EXE",
+            [$"{Root}:Files:BlockedExtensions:3"] = "abcdefghijk",
+            [$"{Root}:Files:BlockedExtensions:4"] = "exe",
+            [$"{Root}:Files:BlockedExtensions:5"] = "7z",
+        };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(HostOptions.Failures(settings), Is.EqualTo(new[]
+            {
+                $"{Root}:Files:MaxFileBytes (0) must be 1 to 999999999999999.",
+                $"{Root}:Files:BlockedExtensions:1 ('.js') must be an extension in lowercase letters and digits without the point, at most 10 of them, such as 'exe'.",
+                $"{Root}:Files:BlockedExtensions:2 ('EXE') must be an extension in lowercase letters and digits without the point, at most 10 of them, such as 'exe'.",
+                $"{Root}:Files:BlockedExtensions:3 ('abcdefghijk') must be an extension in lowercase letters and digits without the point, at most 10 of them, such as 'exe'.",
+                $"{Root}:Files:BlockedExtensions:4 ('exe') names an extension again; {Root}:Files:BlockedExtensions:0 names it already. Keep one.",
+            }));
+            Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Files:MaxFileBytes"] = "1000000000000000" }), Has.One.StartsWith($"{Root}:Files:MaxFileBytes (1000000000000000) must be"));
+            Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Files:MaxFileBytes"] = "999999999999999", [$"{Root}:Files:BlockedExtensions:0"] = "abcdefghij" }), Is.Empty, "the highest limit, the longest extension");
+            Assert.That(HostOptions.Failures(new Dictionary<string, string?> { [$"{Root}:Files:MaxFileBytes"] = "1" }), Is.Empty);
         });
     }
 

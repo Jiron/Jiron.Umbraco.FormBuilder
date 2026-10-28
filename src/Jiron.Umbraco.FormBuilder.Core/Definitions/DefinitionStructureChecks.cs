@@ -26,6 +26,7 @@ internal sealed partial class DefinitionStructureChecks
         new[] { "form", "entry", "page", "member", "query", "context", "site", "date", "ufprt" }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     private readonly FieldTypeRegistry _types;
+    private readonly FieldHostLimits _host;
     private readonly DefinitionProblems _problems = new();
 
     // Every field, repeatable group child and grid row by key; the first of two with one key wins (a save refuses both).
@@ -48,16 +49,21 @@ internal sealed partial class DefinitionStructureChecks
     private readonly HashSet<string> _onePerForm = new(StringComparer.Ordinal);
     private int _cursor;
 
-    private DefinitionStructureChecks(FieldTypeRegistry types) => _types = types;
+    private DefinitionStructureChecks(FieldTypeRegistry types, FieldHostLimits host)
+    {
+        _types = types;
+        _host = host;
+    }
 
     /// <summary>Every structural problem of the definition, at most <see cref="DefinitionProblems.Max"/>.</summary>
     /// <param name="definition">A definition the save checks accept.</param>
     /// <param name="types">The field types the site has.</param>
-    public static IReadOnlyList<DefinitionProblem> Check(FormDefinition definition, FieldTypeRegistry types)
+    /// <param name="host">The host's limits for uploaded files; those of a host that sets none when null.</param>
+    public static IReadOnlyList<DefinitionProblem> Check(FormDefinition definition, FieldTypeRegistry types, FieldHostLimits? host = null)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(types);
-        var checks = new DefinitionStructureChecks(types);
+        var checks = new DefinitionStructureChecks(types, host ?? FieldHostLimits.Default);
         checks.Index(definition);
         checks.CheckDefinition(definition);
         checks.CheckCycles();
@@ -364,7 +370,7 @@ internal sealed partial class DefinitionStructureChecks
 
         try
         {
-            traits.Type.CheckSettings(new FieldSettingsCheck(field, settingsPath, _problems));
+            traits.Type.CheckSettings(new FieldSettingsCheck(field, settingsPath, _problems, _host));
         }
         catch (Exception exception) when (exception is not (OperationCanceledException or OutOfMemoryException))
         {

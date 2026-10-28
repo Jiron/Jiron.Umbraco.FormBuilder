@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Logic;
 
@@ -317,6 +318,10 @@ public sealed class FileFieldType() : FormBuilderFieldTypeBase<FileFieldSettings
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Each extension lowercase letters and digits that the host does not block, and <c>maxBytes</c> no more than the
+    /// host's limit (ADR-0087); a type group's extensions that the host blocks are left out where the uploads are checked.
+    /// </remarks>
     protected override void CheckSettings(FileFieldSettings settings, FieldSettingsCheck check)
     {
         for (var i = 0; i < settings.Extensions.Count; i++)
@@ -326,6 +331,15 @@ public sealed class FileFieldType() : FormBuilderFieldTypeBase<FileFieldSettings
             {
                 check.Invalid(BuiltInChecks.At("extensions", i), $"An extension is lowercase letters and digits without the point, such as dwg, not '{extension}'.");
             }
+            else if (check.Host.BlockedExtensions.Contains(extension))
+            {
+                check.Invalid(BuiltInChecks.At("extensions", i), $"This site blocks the extension '{extension}' for every field (Files:BlockedExtensions).");
+            }
+        }
+
+        if (settings.MaxBytes > check.Host.MaxFileBytes)
+        {
+            check.Invalid("maxBytes", string.Create(CultureInfo.InvariantCulture, $"A file on this site has at most {check.Host.MaxFileBytes:N0} bytes (Files:MaxFileBytes)."));
         }
     }
 

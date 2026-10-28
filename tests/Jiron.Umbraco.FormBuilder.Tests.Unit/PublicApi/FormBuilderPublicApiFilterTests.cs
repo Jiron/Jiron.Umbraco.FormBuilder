@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
@@ -13,8 +14,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.PublicApi;
 
 /// <summary>
 /// The filter that applies each public action's declarations (ADR-0012, ADR-0084), without a host: the body limit
-/// before a byte is read, the time limit on the site's clock, the pending migrations, and the strictest declarations for
-/// an action without any.
+/// before a byte is read and as the server's own, the largest upload from the host's limits for files (ADR-0087), the
+/// time limit on the site's clock, the pending migrations, and the strictest declarations for an action without any.
 /// </summary>
 [TestFixture]
 public sealed class FormBuilderPublicApiFilterTests
@@ -28,7 +29,7 @@ public sealed class FormBuilderPublicApiFilterTests
     {
         _timers = new ManualTimers();
         _migrations = new Migrations();
-        _filter = new FormBuilderPublicApiFilter(_migrations, _timers);
+        _filter = new FormBuilderPublicApiFilter(_migrations, _timers, new FieldHostLimits(1000, []));
     }
 
     [TestCase(0L, null, null, "ran")]
@@ -49,6 +50,32 @@ public sealed class FormBuilderPublicApiFilterTests
         }
 
         Assert.That(await RunAsync(context), Is.EqualTo(answer));
+    }
+
+    [TestCase(66_536L, "ran")]
+    [TestCase(66_537L, "413 payload_too_large, close")]
+    public async Task TheLargestUpload_IsTheHostsMostBytesOfAFile_WithWhatARequestCarriesBesides(long length, string answer)
+    {
+        var context = Context(new FormBuilderBodyLimitAttribute(FormBuilderBodyLimitAttribute.LargestUpload));
+        context.HttpContext.Request.ContentLength = length;
+
+        Assert.That(await RunAsync(context), Is.EqualTo(answer), "1,000 bytes and 65,536");
+    }
+
+    [TestCase(100L, false, 100L)]
+    [TestCase(100L, true, 30_000_000L)]
+    [TestCase(0L, false, 30_000_000L)]
+    public async Task TheServersOwnLimit_BecomesTheEndpoints_WhileTheServerLetsItChange(long limit, bool readOnly, long seen)
+    {
+        var context = Context(new FormBuilderBodyLimitAttribute(limit));
+        var server = new MaxBodySize(readOnly) { MaxRequestBodySize = 30_000_000 };
+        context.HttpContext.Features.Set<IHttpMaxRequestBodySizeFeature>(server);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await RunAsync(context), Is.EqualTo("ran"));
+            Assert.That(server.MaxRequestBodySize, Is.EqualTo(seen));
+        });
     }
 
     [TestCase(true, "413 payload_too_large, close")]
@@ -182,6 +209,10 @@ public sealed class FormBuilderPublicApiFilterTests
             Assert.That(new FormBuilderRateLimitAttribute(FormBuilderRateLimitPolicies.Submit).Policy, Is.EqualTo("submit"));
             Assert.That(() => new FormBuilderBodyLimitAttribute(-1), Throws.InstanceOf<ArgumentOutOfRangeException>());
             Assert.That(new FormBuilderBodyLimitAttribute(0).Bytes, Is.Zero);
+            Assert.That(() => new FormBuilderBodyLimitAttribute("largest"), Throws.InstanceOf<ArgumentOutOfRangeException>());
+            Assert.That(new FormBuilderBodyLimitAttribute(FormBuilderBodyLimitAttribute.LargestUpload).Bytes, Is.Null);
+            Assert.That(new FormBuilderBodyLimitAttribute(FormBuilderBodyLimitAttribute.LargestUpload).BytesFor(FieldHostLimits.Default), Is.EqualTo(52_494_336), "50 MiB and 64 KiB");
+            Assert.That(new FormBuilderBodyLimitAttribute(20).BytesFor(FieldHostLimits.Default), Is.EqualTo(20));
             Assert.That(() => new FormBuilderTimeLimitAttribute(0), Throws.InstanceOf<ArgumentOutOfRangeException>());
             Assert.That(() => new FormBuilderTimeLimitAttribute(301), Throws.InstanceOf<ArgumentOutOfRangeException>());
             Assert.That(new FormBuilderTimeLimitAttribute(1).Limit, Is.EqualTo(TimeSpan.FromSeconds(1)));
@@ -242,5 +273,12 @@ public sealed class FormBuilderPublicApiFilterTests
     private sealed class BodyDetection(bool canHaveBody) : IHttpRequestBodyDetectionFeature
     {
         public bool CanHaveBody => canHaveBody;
+    }
+
+    private sealed class MaxBodySize(bool readOnly) : IHttpMaxRequestBodySizeFeature
+    {
+        public bool IsReadOnly => readOnly;
+
+        public long? MaxRequestBodySize { get; set; }
     }
 }

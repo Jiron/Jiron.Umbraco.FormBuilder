@@ -13,15 +13,19 @@ public sealed partial class FieldSettingsCheck
     private readonly string _path;
     private readonly DefinitionProblems _problems;
 
-    internal FieldSettingsCheck(FormField field, string path, DefinitionProblems problems)
+    internal FieldSettingsCheck(FormField field, string path, DefinitionProblems problems, FieldHostLimits? host = null)
     {
         Field = field;
+        Host = host ?? FieldHostLimits.Default;
         _path = path;
         _problems = problems;
     }
 
     /// <summary>The field whose settings are checked, with its options, rows and child fields.</summary>
     public FormField Field { get; }
+
+    /// <summary>The host's limits for uploaded files, which a type that stores files holds its settings to (ADR-0087).</summary>
+    public FieldHostLimits Host { get; }
 
     /// <summary>Refuses a value of the field's settings.</summary>
     /// <param name="setting">

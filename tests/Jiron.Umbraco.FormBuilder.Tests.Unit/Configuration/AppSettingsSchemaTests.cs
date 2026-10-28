@@ -43,6 +43,9 @@ public sealed class AppSettingsSchemaTests
             Assert.That(section["properties"]!["PublicApi"]!["properties"]!["BasePath"]!["default"]!.GetValue<string>(), Is.EqualTo("/jfb/api"));
             Assert.That(section["description"]!.GetValue<string>(), Does.StartWith("Jiron Form Builder's host configuration: the JironFormBuilder section of appsettings. It is for developers"));
             Assert.That(section["properties"]!["Files"]!["properties"]!["Root"]!["default"]!.GetValue<string>(), Is.EqualTo("~/umbraco/Data/JironFormBuilder/Uploads"));
+            Assert.That(Keys(section["properties"]!["Files"]!), Is.EqualTo(new[] { "Root", "MaxFileBytes", "BlockedExtensions" }));
+            Assert.That(section["properties"]!["Files"]!["properties"]!["MaxFileBytes"]!["default"]!.GetValue<long>(), Is.EqualTo(52_428_800));
+            Assert.That(section["properties"]!["Files"]!["properties"]!["BlockedExtensions"]!["items"]!["type"]!.ToJsonString(), Does.Contain("string"));
             Assert.That(Keys(definitions), Is.EqualTo(new[] { "MaxBytes", "MaxPages", "MaxGroups", "MaxFields", "MaxOptionsPerField", "MaxActions", "MaxOutcomes", "MaxRules" }));
             Assert.That(definitions["properties"]!["MaxFields"]!["default"]!.GetValue<int>(), Is.EqualTo(300));
             Assert.That(definitions["properties"]!["MaxBytes"]!["description"]!.GetValue<string>(), Is.EqualTo("The largest document, in UTF-8 bytes: 2 MB."));

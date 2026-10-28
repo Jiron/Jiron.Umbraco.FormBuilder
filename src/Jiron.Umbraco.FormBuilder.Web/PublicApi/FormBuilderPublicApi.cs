@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -92,12 +94,60 @@ internal sealed class FormBuilderRateLimitAttribute(string policy) : Attribute
 /// The most bytes an endpoint's body may hold (ADR-0012): a declared length above it is refused before a byte is read,
 /// and a body without one is counted while it is read, both with <c>413 payload_too_large</c>. 0 takes no body.
 /// </summary>
-/// <param name="bytes">The limit, 0 or more.</param>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-internal sealed class FormBuilderBodyLimitAttribute(long bytes) : Attribute
+internal sealed class FormBuilderBodyLimitAttribute : Attribute
 {
-    /// <summary>The limit in bytes.</summary>
-    public long Bytes { get; } = bytes >= 0 ? bytes : throw new ArgumentOutOfRangeException(nameof(bytes), bytes, "A body limit is 0 or more bytes.");
+    /// <summary>
+    /// The largest upload the host takes: <c>Files:MaxFileBytes</c> and what a request carries besides its file
+    /// (ADR-0087), which the upload endpoint lowers to its field's limit.
+    /// </summary>
+    public const string LargestUpload = "largestUpload";
+
+    /// <summary>A limit in bytes.</summary>
+    /// <param name="bytes">The limit, 0 or more.</param>
+    public FormBuilderBodyLimitAttribute(long bytes) =>
+        Bytes = bytes >= 0 ? bytes : throw new ArgumentOutOfRangeException(nameof(bytes), bytes, "A body limit is 0 or more bytes.");
+
+    /// <summary>A limit that the host's configuration gives (<see cref="BytesFor"/>).</summary>
+    /// <param name="limit"><see cref="LargestUpload"/>.</param>
+    public FormBuilderBodyLimitAttribute(string limit)
+    {
+        if (limit != LargestUpload)
+        {
+            throw new ArgumentOutOfRangeException(nameof(limit), limit, "Not a limit the host gives.");
+        }
+    }
+
+    /// <summary>The limit in bytes; null for one that the host's configuration gives.</summary>
+    public long? Bytes { get; }
+
+    /// <summary>The limit in bytes on a host with these limits for files.</summary>
+    /// <param name="host">The host's limits for files.</param>
+    public long BytesFor(FieldHostLimits host)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        return Bytes ?? host.MaxFileBytes + FileUploads.OverheadBytes;
+    }
+}
+
+
+
+/// <summary>
+/// An action that reads its <c>multipart/form-data</c> body itself, as it streams (ADR-0087): an optional
+/// <c>challenge</c> part, then the <c>file</c> part. The document describes the body; the public API's form feature
+/// (<see cref="NoFormFeature"/>) keeps every other part of the site from reading or buffering it.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+internal sealed class FormBuilderUploadBodyAttribute : Attribute
+{
+    /// <summary>The media type of the body.</summary>
+    public const string MediaType = "multipart/form-data";
+
+    /// <summary>The name of the optional first part, the challenge.</summary>
+    public const string ChallengePart = "challenge";
+
+    /// <summary>The name of the part that holds the file.</summary>
+    public const string FilePart = "file";
 }
 
 /// <summary>
@@ -151,11 +201,12 @@ internal sealed class FormBuilderPublicDocument : IDocumentFilter
 }
 
 /// <summary>
-/// Writes an operation's declarations into the document <c>jfb-public</c> as extensions, and the refusals the frame
-/// answers for every operation: <c>413 payload_too_large</c>, <c>500 server_error</c> and <c>504 timeout</c>, and
-/// <c>403 origin_denied</c> for one a browser on another origin may not send.
+/// Writes an operation's declarations into the document <c>jfb-public</c> as extensions, the body of an upload, and the
+/// refusals the frame answers for every operation: <c>413 payload_too_large</c>, <c>500 server_error</c> and
+/// <c>504 timeout</c>, and <c>403 origin_denied</c> for one a browser on another origin may not send.
 /// </summary>
-internal sealed class FormBuilderPublicDeclarations : IOperationFilter
+/// <param name="host">The host's limits for files, which give the largest upload.</param>
+internal sealed class FormBuilderPublicDeclarations(FieldHostLimits host) : IOperationFilter
 {
     /// <inheritdoc />
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
@@ -176,7 +227,12 @@ internal sealed class FormBuilderPublicDeclarations : IOperationFilter
 
         if (method.GetCustomAttributes(typeof(FormBuilderBodyLimitAttribute), false).FirstOrDefault() is FormBuilderBodyLimitAttribute body)
         {
-            operation.Extensions[FormBuilderPublicApi.BodyLimitExtension] = new JsonNodeExtension(JsonValue.Create(body.Bytes));
+            operation.Extensions[FormBuilderPublicApi.BodyLimitExtension] = new JsonNodeExtension(JsonValue.Create(body.BytesFor(host)));
+        }
+
+        if (method.GetCustomAttributes(typeof(FormBuilderUploadBodyAttribute), false).Length > 0)
+        {
+            operation.RequestBody = UploadBody();
         }
 
         if (method.GetCustomAttributes(typeof(FormBuilderTimeLimitAttribute), false).FirstOrDefault() is FormBuilderTimeLimitAttribute time)
@@ -195,6 +251,38 @@ internal sealed class FormBuilderPublicDeclarations : IOperationFilter
         Refusal(operation.Responses, problem, StatusCodes.Status500InternalServerError, "Internal Server Error: something failed unexpectedly (server_error).");
         Refusal(operation.Responses, problem, StatusCodes.Status504GatewayTimeout, "Gateway Timeout: the endpoint did not answer within its time limit (timeout).");
     }
+
+    // The parts of an upload: the challenge, which 7.1 requires, and the file.
+    private static OpenApiRequestBody UploadBody() => new()
+    {
+        Required = true,
+        Description = "An optional challenge part, then the file part with the file's name. Nothing may follow the file.",
+        Content = new Dictionary<string, OpenApiMediaType>
+        {
+            [FormBuilderUploadBodyAttribute.MediaType] = new()
+            {
+                Schema = new OpenApiSchema
+                {
+                    Type = JsonSchemaType.Object,
+                    Required = new HashSet<string> { FormBuilderUploadBodyAttribute.FilePart },
+                    Properties = new Dictionary<string, IOpenApiSchema>
+                    {
+                        [FormBuilderUploadBodyAttribute.ChallengePart] = new OpenApiSchema
+                        {
+                            Type = JsonSchemaType.String,
+                            Description = "The challenge, at most 4 KB, first; not a file.",
+                        },
+                        [FormBuilderUploadBodyAttribute.FilePart] = new OpenApiSchema
+                        {
+                            Type = JsonSchemaType.String,
+                            Format = "binary",
+                            Description = "The file, with its name.",
+                        },
+                    },
+                },
+            },
+        },
+    };
 
     // A refusal of the frame, unless the action describes the status itself.
     private static void Refusal(OpenApiResponses responses, IOpenApiSchema problem, int status, string description) =>

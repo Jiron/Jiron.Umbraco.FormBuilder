@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
@@ -9,13 +10,15 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// Applies each action's declarations before its body is read or bound (ADR-0012, ADR-0084): its time limit, on the
 /// site's <see cref="TimeProvider"/>, cancels the request's token, which the middleware answers with
 /// <c>504 timeout</c>; a declared length above its body limit, or any body for an action that takes none, answers
-/// <c>413 payload_too_large</c> and closes the connection; and while Jiron Form Builder's migrations are pending,
-/// every action answers <c>503 migrations_pending</c> with <c>Retry-After</c> and touches no table (ADR-0033). An
-/// action without a declaration gets the strictest: no body and <see cref="DefaultTimeLimit"/>.
+/// <c>413 payload_too_large</c> and closes the connection; a body without a declared length is held to the limit by
+/// the server while it is read; and while Jiron Form Builder's migrations are pending, every action answers
+/// <c>503 migrations_pending</c> with <c>Retry-After</c> and touches no table (ADR-0033). An action without a
+/// declaration gets the strictest: no body and <see cref="DefaultTimeLimit"/>.
 /// </summary>
 /// <param name="migrations">Whether the migration plan has run.</param>
 /// <param name="time">The site's clock.</param>
-internal sealed class FormBuilderPublicApiFilter(IFormBuilderMigrationState migrations, TimeProvider time) : IAsyncResourceFilter
+/// <param name="host">The host's limits for files, which give the largest upload.</param>
+internal sealed class FormBuilderPublicApiFilter(IFormBuilderMigrationState migrations, TimeProvider time, FieldHostLimits host) : IAsyncResourceFilter
 {
     /// <summary>The time limit of an action that declares none.</summary>
     public static readonly TimeSpan DefaultTimeLimit = TimeSpan.FromSeconds(10);
@@ -28,17 +31,20 @@ internal sealed class FormBuilderPublicApiFilter(IFormBuilderMigrationState migr
         var http = context.HttpContext;
         var metadata = context.ActionDescriptor.EndpointMetadata;
         var limit = metadata.OfType<FormBuilderTimeLimitAttribute>().FirstOrDefault()?.Limit ?? DefaultTimeLimit;
-        var bodyLimit = metadata.OfType<FormBuilderBodyLimitAttribute>().FirstOrDefault()?.Bytes ?? 0;
+        var bodyLimit = metadata.OfType<FormBuilderBodyLimitAttribute>().FirstOrDefault()?.BytesFor(host) ?? 0;
 
         if (TooLarge(http.Request, bodyLimit))
         {
-            if (HttpProtocol.IsHttp11(http.Request.Protocol) || HttpProtocol.IsHttp10(http.Request.Protocol))
-            {
-                http.Response.Headers.Connection = "close";
-            }
-
+            FormBuilderPublicProblems.CloseConnection(http);
             context.Result = FormBuilderPublicProblems.PayloadTooLarge();
             return;
+        }
+
+        // The server's own limit becomes the endpoint's, which an upload lowers to its field's: Files:MaxFileBytes is the
+        // host's setting for uploads, and Kestrel's default would refuse a file the host allows.
+        if (bodyLimit > 0 && http.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } server)
+        {
+            server.MaxRequestBodySize = bodyLimit;
         }
 
         var left = http.RequestAborted;

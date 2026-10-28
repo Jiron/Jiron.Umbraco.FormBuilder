@@ -49,6 +49,27 @@ internal sealed record PublicApiEndpoint(ApiDescription Description)
     /// <summary>Its path with every route value filled with <paramref name="key"/>.</summary>
     public string PathFor(Guid key) => "/" + PublicApiEndpoints.RouteValue().Replace(Description.RelativePath!, key.ToString("D"));
 
-    /// <summary>Whether it takes a body; none does before the first that posts (6.1d).</summary>
+    /// <summary>Whether it takes a body.</summary>
     public bool TakesBody => HttpMethods.IsPost(Method) || HttpMethods.IsPut(Method) || HttpMethods.IsPatch(Method);
+
+    /// <summary>
+    /// A body it takes, for an endpoint that takes one: a small text file for an upload. An endpoint that takes a body
+    /// this list does not know yet fails here, so its body joins the list when it is written.
+    /// </summary>
+    public HttpContent? Body()
+    {
+        if (!TakesBody)
+        {
+            return null;
+        }
+
+        if (Description.RelativePath!.EndsWith("/uploads", StringComparison.Ordinal))
+        {
+            var content = new MultipartFormDataContent();
+            content.Add(new ByteArrayContent("hello"u8.ToArray()), "file", "hello.txt");
+            return content;
+        }
+
+        throw new InvalidOperationException($"{Name} takes a body that {nameof(PublicApiEndpoint)}.{nameof(Body)} does not know yet; add one.");
+    }
 }

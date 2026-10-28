@@ -258,6 +258,22 @@ public sealed class BuiltInUploadTests
     }
 
     [Test]
+    public void AnErrorFoundOutsideTheType_IsOfAKindItDeclares_OrInvalid()
+    {
+        var file = TestFieldTypes.Registry.FindType("file")!;
+        var signature = TestFieldTypes.Registry.FindType("signature")!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(FieldUploads.Declared(file, FieldMessageKinds.FileType), Is.EqualTo(FieldMessageKinds.FileType));
+            Assert.That(FieldUploads.Declared(file, FieldMessageKinds.FileSize), Is.EqualTo(FieldMessageKinds.FileSize));
+            Assert.That(FieldUploads.Declared(signature, FieldMessageKinds.FileType), Is.EqualTo(FieldMessageKinds.Invalid));
+            Assert.That(FieldUploads.Declared(signature, FieldMessageKinds.FileSize), Is.EqualTo(FieldMessageKinds.Invalid));
+            Assert.That(() => FieldUploads.Declared(null!, FieldMessageKinds.FileType), Throws.ArgumentNullException);
+        });
+    }
+
+    [Test]
     public void TheBuiltInTypesThatStoreFiles_AreTheFileAndTheSignature() =>
         Assert.That(TestFieldTypes.Registry.All.Where(type => type.Storage == FieldStorageKind.File).Select(type => type.Alias), Is.EquivalentTo(new[] { "file", "signature" }), "each has its check of an upload here");
 

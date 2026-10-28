@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 
@@ -148,6 +149,9 @@ public sealed class BuiltInSettingsTests
         yield return Refuses("a file extension with its point", "file", """{"extensions":[".dwg"]}""", "extensions[0]");
         yield return Refuses("a file extension in capitals", "file", """{"extensions":["dwg","DXF"]}""", "extensions[1]");
         yield return Accepts("file extensions", "file", """{"extensions":["dwg","3ds"]}""");
+        yield return Refuses("a file extension the site blocks", "file", """{"extensions":["dwg","exe"]}""", "extensions[1]");
+        yield return Refuses("a file's most bytes above the site's", "file", """{"maxBytes":52428801}""", "maxBytes");
+        yield return Accepts("a file's most bytes at the site's", "file", """{"maxBytes":52428800}""");
         yield return Refuses("a repeatable group's fewest rows above its most", "repeater", """{"maxRows":2,"minRows":5}""", "minRows");
         yield return Accepts("a repeatable group's fewest rows at its most", "repeater", """{"maxRows":2,"minRows":2}""");
     }
@@ -223,6 +227,27 @@ public sealed class BuiltInSettingsTests
             Assert.That(MessageOf("dropdown", """{"minSelections":2,"multiple":true}"""), Is.EqualTo("The setting 'minSelections' is 2, but the field has 1 choice."));
             Assert.That(MessageOf("name", """{"requiredParts":["middle"]}"""), Is.EqualTo("The part 'middle' is required, but 'parts' does not ask for it."));
             Assert.That(MessageOf("date", """{"min":"31.12.2026"}"""), Is.EqualTo("The setting 'min' is a date such as \"2026-12-31\", or a date relative to today such as { \"today\": \"+2d\" }."));
+            Assert.That(MessageOf("file", """{"extensions":["svg"]}"""), Is.EqualTo("This site blocks the extension 'svg' for every field (Files:BlockedExtensions)."));
+            Assert.That(MessageOf("file", """{"maxBytes":52428801}"""), Is.EqualTo("A file on this site has at most 52,428,800 bytes (Files:MaxFileBytes)."));
+        });
+    }
+
+    [Test]
+    public void AFileField_IsHeldToTheSitesOwnLimits()
+    {
+        var site = new FieldHostLimits(1000, ["dwg"]);
+        List<string> PublishOn(string settings) =>
+        [
+            .. new StructuralPublishCheck(DefinitionFixtures.Serializer(), TestFieldTypes.Registry, site)
+                .Check(DefinitionFixtures.Read(Document(Field("file", JsonNode.Parse(settings)!.AsObject()))))
+                .Select(problem => $"{problem.Code} at {problem.Path}"),
+        ];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(PublishOn("""{"extensions":["svg","exe"],"maxBytes":1000}"""), Is.Empty, "the site's own list replaces the defaults");
+            Assert.That(PublishOn("""{"extensions":["svg","dwg"]}"""), Is.EqualTo(new[] { $"{DefinitionErrors.SettingInvalid} at {FieldPath}.settings.extensions[1]" }));
+            Assert.That(PublishOn("""{"maxBytes":1001}"""), Is.EqualTo(new[] { $"{DefinitionErrors.SettingInvalid} at {FieldPath}.settings.maxBytes" }));
         });
     }
 

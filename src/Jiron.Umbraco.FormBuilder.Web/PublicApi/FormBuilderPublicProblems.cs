@@ -1,3 +1,5 @@
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
 using Microsoft.AspNetCore.Http;
 
@@ -23,6 +25,12 @@ internal static class FormBuilderPublicProblems
 
     /// <summary>The body is larger than the endpoint takes.</summary>
     public const string PayloadTooLargeCode = "payload_too_large";
+
+    /// <summary>The body, or the file it holds, is of a kind the endpoint does not take.</summary>
+    public const string UnsupportedMediaTypeCode = "unsupported_media_type";
+
+    /// <summary>Where the errors of an upload point: its file part.</summary>
+    public const string FilePath = "file";
 
     /// <summary>The endpoint ran out of time.</summary>
     public const string TimeoutCode = "timeout";
@@ -55,6 +63,34 @@ internal static class FormBuilderPublicProblems
     public static FormBuilderProblemResult PayloadTooLarge() =>
         FormBuilderProblems.Problem(StatusCodes.Status413PayloadTooLarge, PayloadTooLargeCode, "The request is too large.");
 
+    /// <summary>An upload larger than its field takes, with the field's kind of error (ADR-0087).</summary>
+    /// <param name="kind">The kind: <c>fileSize</c>, or <c>invalid</c> for a type that does not declare it.</param>
+    public static FormBuilderProblemResult FileTooLarge(FieldMessageKinds kind) =>
+        FormBuilderProblems.Problem(StatusCodes.Status413PayloadTooLarge, PayloadTooLargeCode, "The file is too large.", extensions: FileErrors(kind));
+
+    /// <summary>A body of a kind the endpoint does not take.</summary>
+    public static FormBuilderProblemResult UnsupportedMediaType() =>
+        FormBuilderProblems.Problem(StatusCodes.Status415UnsupportedMediaType, UnsupportedMediaTypeCode, "The request is not of a kind this address takes.");
+
+    /// <summary>An upload whose name or first bytes its field does not take, with the field's kind of error (ADR-0087).</summary>
+    /// <param name="kind">The kind the checks reported.</param>
+    public static FormBuilderProblemResult FileRefused(FieldMessageKinds kind) =>
+        FormBuilderProblems.Problem(StatusCodes.Status415UnsupportedMediaType, UnsupportedMediaTypeCode, "This file cannot be uploaded here.", extensions: FileErrors(kind));
+
+    /// <summary>
+    /// Closes the connection after the answer on HTTP/1.x, whose body the server did not read to its end, so the rest
+    /// of it is never read; HTTP/2 and HTTP/3 reset the request's stream themselves.
+    /// </summary>
+    /// <param name="http">The request.</param>
+    public static void CloseConnection(HttpContext http)
+    {
+        ArgumentNullException.ThrowIfNull(http);
+        if (HttpProtocol.IsHttp11(http.Request.Protocol) || HttpProtocol.IsHttp10(http.Request.Protocol))
+        {
+            http.Response.Headers.Connection = "close";
+        }
+    }
+
     /// <summary>The endpoint ran out of time.</summary>
     public static FormBuilderProblemResult Timeout() =>
         FormBuilderProblems.Problem(StatusCodes.Status504GatewayTimeout, TimeoutCode, "This took too long. Please try again.");
@@ -62,6 +98,20 @@ internal static class FormBuilderPublicProblems
     /// <summary>Something unexpected went wrong.</summary>
     public static FormBuilderProblemResult ServerError() =>
         FormBuilderProblems.Problem(StatusCodes.Status500InternalServerError, ServerErrorCode, "Something went wrong. Please try again later.");
+
+    // The one error of an upload: the field's kind of error as the code, at the file part.
+    private static Dictionary<string, object?> FileErrors(FieldMessageKinds kind)
+    {
+        var name = FieldMessageProperties.All.FirstOrDefault(property => property.Kind == kind)?.Name
+            ?? throw new ArgumentOutOfRangeException(nameof(kind), kind, "Not one kind of error.");
+        var message = kind switch
+        {
+            FieldMessageKinds.FileSize => "The file is larger than this field takes.",
+            FieldMessageKinds.FileType => "This field does not take files of this kind.",
+            _ => "This field cannot take this file.",
+        };
+        return new Dictionary<string, object?> { ["errors"] = new List<FormBuilderProblemError> { new(name, FilePath, message) } };
+    }
 
     /// <summary>The tables are not ready yet; the answer says when to ask again (ADR-0033).</summary>
     public static FormBuilderProblemResult MigrationsPending(HttpContext http)

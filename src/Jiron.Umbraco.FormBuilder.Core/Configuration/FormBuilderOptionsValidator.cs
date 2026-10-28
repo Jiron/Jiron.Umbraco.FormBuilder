@@ -41,6 +41,7 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
             failures.Add(problem);
         }
 
+        CheckFileLimits(options.Files, failures);
         CheckDefinitionLimits(options.Limits.Definitions, failures);
         CheckSettingLocks(options.Designer.SettingLocks, failures);
         CheckLockedSections(options.LockedSections, failures);
@@ -57,6 +58,30 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
     /// <summary>Whether <paramref name="setting"/> can name a setting: a lowercase letter, then letters and digits.</summary>
     internal static bool IsSettingName(string? setting) =>
         setting is { Length: > 0 and <= MaxNameLength } && char.IsAsciiLetterLower(setting[0]) && setting.All(char.IsAsciiLetterOrDigit);
+
+    // The most bytes of a file within its bounds, and each blocked extension lowercase letters and digits, once (ADR-0087).
+    private static void CheckFileLimits(FormBuilderFilesOptions files, List<string> failures)
+    {
+        if (files.MaxFileBytes is < 1 or > FormBuilderFilesOptions.HighestMaxFileBytes)
+        {
+            failures.Add(string.Create(CultureInfo.InvariantCulture, $"{Root}:Files:MaxFileBytes ({files.MaxFileBytes}) must be 1 to {FormBuilderFilesOptions.HighestMaxFileBytes}."));
+        }
+
+        var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (var i = 0; i < files.BlockedExtensions.Count; i++)
+        {
+            var key = string.Create(CultureInfo.InvariantCulture, $"{Root}:Files:BlockedExtensions:{i}");
+            var extension = files.BlockedExtensions[i];
+            if (extension is not { Length: > 0 and <= FormBuilderFilesOptions.MaxExtensionLength } || !extension.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c)))
+            {
+                failures.Add(string.Create(CultureInfo.InvariantCulture, $"{key} ('{extension}') must be an extension in lowercase letters and digits without the point, at most {FormBuilderFilesOptions.MaxExtensionLength} of them, such as 'exe'."));
+            }
+            else if (!seen.TryAdd(extension, i))
+            {
+                failures.Add(string.Create(CultureInfo.InvariantCulture, $"{key} ('{extension}') names an extension again; {Root}:Files:BlockedExtensions:{seen[extension]} names it already. Keep one."));
+            }
+        }
+    }
 
     private static void CheckDefinitionLimits(DefinitionLimits limits, List<string> failures)
     {

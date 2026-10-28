@@ -42,12 +42,19 @@ internal static class FieldUploads
     public static FieldMessageKinds? CheckSize(IFormBuilderFieldType type, FormField field, long size, long hostLimit)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(size);
-        if (size <= Limit(type, field, hostLimit))
-        {
-            return null;
-        }
+        return size <= Limit(type, field, hostLimit) ? null : Declared(type, FieldMessageKinds.FileSize);
+    }
 
-        return type.Declaration.Messages.HasFlag(FieldMessageKinds.FileSize) ? FieldMessageKinds.FileSize : FieldMessageKinds.Invalid;
+    /// <summary>
+    /// The kind of error a check outside the type reports for its field: <paramref name="kind"/> when the type declares
+    /// it, so its field has a message for it, and <c>invalid</c> when it does not.
+    /// </summary>
+    /// <param name="type">The field's type.</param>
+    /// <param name="kind">The kind of error found.</param>
+    public static FieldMessageKinds Declared(IFormBuilderFieldType type, FieldMessageKinds kind)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        return type.Declaration.Messages.HasFlag(kind) ? kind : FieldMessageKinds.Invalid;
     }
 
     /// <summary>
