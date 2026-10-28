@@ -1,0 +1,7 @@
+@* A form through the view component. *@
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+}
+<h1>Contact</h1>
+@await Component.InvokeAsync("FormBuilderForm", new { form = "renderingContact" })
+<p id="after">The page goes on.</p>

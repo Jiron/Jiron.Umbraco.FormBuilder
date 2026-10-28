@@ -1,0 +1,14 @@
+@* The layout of the rendering tests' pages: a section for the head, then the page's body. *@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Rendering test</title>
+    @await RenderSectionAsync("head", required: false)
+</head>
+<body>
+    <main>
+        @RenderBody()
+    </main>
+</body>
+</html>

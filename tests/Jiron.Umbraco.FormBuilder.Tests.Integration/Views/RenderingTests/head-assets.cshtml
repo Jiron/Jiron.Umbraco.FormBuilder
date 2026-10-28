@@ -1,0 +1,8 @@
+@* A form whose layout puts the assets in its head, after the form ran. *@
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+}
+@section head {
+    <jfb-assets />
+}
+<jfb-render form="renderingContact" />

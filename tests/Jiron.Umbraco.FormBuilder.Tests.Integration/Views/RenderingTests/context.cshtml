@@ -1,0 +1,6 @@
+@* Context values the form lists, as an expression and as text with an expression, one too long and one it does not list. *@
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var campaign = "spring <2026> & \"co\" &amp; more";
+}
+<jfb-render form="renderingContext" context-campaign="@campaign" context-source="from @campaign" context-note="@(new string('x', 2001))" context-unlisted="not taken" />

@@ -1,0 +1,8 @@
+@* A form with a hidden field filled from the signed-in member, and who is signed in. *@
+@inject Umbraco.Cms.Core.Security.IMemberManager Members
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var member = await Members.GetCurrentMemberAsync();
+}
+<p id="member">@(member?.UserName ?? "nobody")</p>
+<jfb-render form="renderingMember" />

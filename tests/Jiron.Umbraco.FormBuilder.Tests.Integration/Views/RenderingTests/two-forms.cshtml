@@ -1,0 +1,6 @@
+@* Two forms on one page: the tag helper, then the view component, each with its assets. *@
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+}
+<jfb-render form="renderingContact" />
+@await Component.InvokeAsync("FormBuilderForm", new { form = "RENDERINGSECOND" })

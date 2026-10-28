@@ -1,0 +1,9 @@
+@* A form after a post without JavaScript that sent it: the outcome the surface action leaves (6.2e). *@
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var key = (await Requests.KeyOfAsync("renderingPosted", Context.RequestAborted))!.Value;
+    FormPosts.Set(Context, key, "jfb-1", new FormPostState { Outcome = new FormPostOutcome("<h2>Thank you, Bob</h2><p>We write back within a day.</p>", "REQ-2026-00042", IsPending: true) });
+}
+<jfb-render form="renderingPosted" />

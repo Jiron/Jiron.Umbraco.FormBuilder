@@ -1,0 +1,14 @@
+@* A form without the validation summary, rendered again after a post that failed. *@
+@using Jiron.Umbraco.FormBuilder.Core.FieldTypes
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var key = (await Requests.KeyOfAsync("renderingQuiet", Context.RequestAborted))!.Value;
+    FormPosts.Set(Context, key, "jfb-1", new FormPostState
+    {
+        Answers = new Dictionary<Guid, FieldAnswers> { [Guid.Parse("30000000-0000-4000-8000-000000000084")] = new FieldAnswers(["B"]) },
+        Errors = new Dictionary<Guid, string> { [Guid.Parse("30000000-0000-4000-8000-000000000084")] = "Enter your whole name" },
+    });
+}
+<jfb-render form="renderingQuiet" />
