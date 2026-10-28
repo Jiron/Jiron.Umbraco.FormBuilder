@@ -43,6 +43,7 @@ public sealed record StubCall(
 /// <param name="Body">The body.</param>
 /// <param name="DelayMs">How long to wait before answering, for timeout tests.</param>
 /// <param name="Location">The <c>Location</c> header of a redirect, or null for none.</param>
+/// <param name="ContentEncoding">The <c>Content-Encoding</c> header, or null for none; the body is sent as it is.</param>
 public sealed record StubAnswer(
     string Method,
     string Path,
@@ -50,7 +51,8 @@ public sealed record StubAnswer(
     string ContentType = "application/json",
     string Body = "",
     int DelayMs = 0,
-    string? Location = null);
+    string? Location = null,
+    string? ContentEncoding = null);
 
 /// <summary>
 /// The local HTTP stub of the test hosts (ADR-0011, ADR-0029; ROADMAP section 4.11: port 5560): it stands in for the
@@ -207,6 +209,11 @@ public sealed class StubServer : IAsyncDisposable
             if (answer.Location is { } location)
             {
                 context.Response.Headers.Location = location;
+            }
+
+            if (answer.ContentEncoding is { } encoding)
+            {
+                context.Response.Headers.ContentEncoding = encoding;
             }
 
             await context.Response.WriteAsync(answer.Body, context.RequestAborted);

@@ -19,6 +19,9 @@ public sealed class SubmissionParentAnswersTests
     private static readonly Guid Region = Key(3);
     private static readonly Guid Stop = Key(4);
     private static readonly Guid Place = Key(5);
+    private static readonly Guid Legs = Key(6);
+    private static readonly Guid Area = Key(7);
+    private static readonly Guid Halt = Key(8);
     private static readonly Guid Countries = Key(50);
     private static readonly Guid Towns = Key(51);
 
@@ -95,10 +98,27 @@ public sealed class SubmissionParentAnswersTests
         });
     }
 
-    private static string[] Errors(SubmissionAnswers read) =>
-        [.. read.Errors.Select(error => $"{AliasOf(error.Field)}: {FieldMessageProperties.All.Single(property => property.Kind == error.Kind).Name}")];
+    [Test]
+    public async Task AParentInARepeatableGroup_GivesEachRowsChildTheOptionsForThatRowsAnswer()
+    {
+        var site = new TestSite();
+        static Dictionary<Guid, PostedAnswer> Leg(string area, string halt) => new() { [Area] = new([area]), [Halt] = new([halt]) };
 
-    private static string AliasOf(Guid key) => Form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Single(field => field.Key == key).Alias!;
+        var read = await site.ReadAsync(Post([]) with { Rows = new Dictionary<Guid, IReadOnlyList<IReadOnlyDictionary<Guid, PostedAnswer>>> { [Legs] = [Leg("alps", "AT"), Leg("coast", "NL"), Leg("coast", "CH")] } });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Errors(read), Is.EqualTo(new[] { "halt@2: invalid" }), "CH is an option in the Alps, not on the coast");
+            Assert.That(site.Regions.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { "alps", "coast" }), "each row's own answer, asked once");
+        });
+    }
+
+    // Each error as "alias: kind", a child's with its row.
+    private static string[] Errors(SubmissionAnswers read) =>
+        [.. read.Errors.Select(error => $"{AliasOf(error.Field)}{(error.Row is { } row ? $"@{row}" : "")}: {FieldMessageProperties.All.Single(property => property.Kind == error.Kind).Name}")];
+
+    private static string AliasOf(Guid key) =>
+        Form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)).Single(field => field.Key == key).Alias!;
 
     private static FormField Field(Guid key, string type, string alias, FieldOptions options) => new() { Key = key, Type = type, Alias = alias, Options = options };
 
@@ -114,7 +134,8 @@ public sealed class SubmissionParentAnswersTests
     private static Guid Key(int number) => Guid.Parse($"81000000-0000-4000-8000-{number:D12}");
 
     // A country from a library list (unknown when the site lacks it) or the field's own options, its towns from a code
-    // source in a library list that keeps them, and a region whose countries come from a code source in turn.
+    // source in a library list that keeps them, a region whose countries come from a code source in turn, and a
+    // repeatable group of legs, each with an area and a halt whose countries come from that source for the leg's area.
     private static FormDefinition Form { get; } = new()
     {
         Key = Key(100),
@@ -135,6 +156,18 @@ public sealed class SubmissionParentAnswersTests
                             Field(Region, "radio", "region", new FieldOptions { Items = [new FieldOption { Value = "alps" }, new FieldOption { Value = "coast" }] }),
                             Field(Stop, "dropdown", "stop", new FieldOptions { Source = OptionSource.Code, Config = SettingsObject.Parse("""{"source":"regions"}"""), Parent = Region }),
                             Field(Place, "dropdown", "place", new FieldOptions { Source = OptionSource.Code, Config = SettingsObject.Parse("""{"source":"towns"}"""), Parent = Stop }),
+                            new FormField
+                            {
+                                Key = Legs,
+                                Type = "repeater",
+                                Alias = "legs",
+                                Settings = SettingsObject.Parse("""{"maxRows":3}"""),
+                                Fields =
+                                [
+                                    Field(Area, "radio", "area", new FieldOptions { Items = [new FieldOption { Value = "alps" }, new FieldOption { Value = "coast" }] }),
+                                    Field(Halt, "dropdown", "halt", new FieldOptions { Source = OptionSource.Code, Config = SettingsObject.Parse("""{"source":"regions"}"""), Parent = Area }),
+                                ],
+                            },
                         ],
                     },
                 ],

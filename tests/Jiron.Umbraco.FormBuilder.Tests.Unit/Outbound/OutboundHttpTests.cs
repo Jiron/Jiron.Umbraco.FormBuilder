@@ -399,6 +399,19 @@ public sealed class OutboundHttpTests
         });
     }
 
+    [TestCase("gzip")]
+    [TestCase("deflate")]
+    [TestCase("br")]
+    public async Task ABodyThatDoesNotDecompress_ThroughTheRealTransport_IsUnreadable(string encoding)
+    {
+        _stub.Answer(new StubAnswer("GET", "/list", Body: "JFB_TEST: these bytes are compressed in no encoding at all", ContentEncoding: encoding));
+        using var transport = StubTransport();
+
+        var reason = await ReasonAsync(() => Outbound(transport, allowHttp: true, Host).GetAsync(At("/list"), "application/json", Limits, CancellationToken.None));
+
+        Assert.That(reason, Is.EqualTo(OutboundFailure.AnswerUnreadable));
+    }
+
     [TestCase(false, Description = "the connection breaks off while the body is read")]
     [TestCase(true, Description = "the body does not decompress as its encoding says")]
     public async Task ABodyThatCannotBeRead_IsAFailure_NamingWhy(bool compressed)

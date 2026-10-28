@@ -313,6 +313,22 @@ public sealed class SiteMergeTagExtensionsTests
         });
     }
 
+    [Test]
+    public async Task ASitesSourcesTraits_AreReadOnce_AcrossTheStartupCheckAndTheRegistry()
+    {
+        using var site = Site(sources => sources.Append<CountingSource>(), _ => { });
+        var source = site.GetRequiredService<FormBuilderMergeTagSourceCollection>().OfType<CountingSource>().Single();
+
+        HostOptions.Start(site);
+        var rendered = await site.GetRequiredService<IFormBuilderMergeTagService>().RenderAsync("[{{ counted.x }}]", MergeTagPlace.Mail, MergeTagContext.Text, MergeTagTestSite.Scope());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Text, Is.EqualTo("[counted]"));
+            Assert.That((source.NameReads, source.IsPerVisitorReads, source.PlacesReads), Is.EqualTo((1, 1, 1)), "what the check let start is what the registry runs, read once for both");
+        });
+    }
+
     // The problems of a site's sources and filters, as they are read once.
     private static IReadOnlyList<string> Problems(IFormBuilderMergeTagSource[] sources, IFormBuilderMergeTagFilter[] filters) =>
         new SiteMergeTagExtensions(new FormBuilderMergeTagSourceCollection(() => sources), new FormBuilderMergeTagFilterCollection(() => filters)).Problems;

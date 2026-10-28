@@ -11,7 +11,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
 /// <c>entry.answers</c> (ADR-0066, ADR-0077): each chosen value shows the label the source resolves in the entry's
 /// culture, with its dictionary item's text, as a field's own option shows its own; a value the source no longer offers,
 /// and every value of a source that cannot give its options, shows as it is stored. A cascading source resolves for the
-/// parent's answers in every row, and each source is asked once for a rendering.
+/// parent's answers in every row, and each source is asked once for a rendering; two renderings that read one scope's
+/// labels at once both show the options kept first.
 /// </summary>
 public sealed class ListAnswersTests
 {
@@ -148,8 +149,44 @@ public sealed class ListAnswersTests
         {
             Assert.That((values.Text, town3.Text, all.Text), Is.EqualTo(("zurich|Town|m", "Zurich|Zurich|ZURICH", "Town: Zurich\nSize: Medium|Medium")));
             Assert.That(afterValues, Is.EqualTo((0, 0)), "a value or a label shows no option's label");
-            Assert.That(afterTowns, Is.EqualTo((1, 0)), "three tags of the town, one request, and none for the size no tag shows");
+            Assert.That(afterTowns, Is.EqualTo((1, 0)), "the town's three tags in one rendering, one request; the size, which none of them shows, none");
             Assert.That(Asked(), Is.EqualTo((2, 1)), "every answer once, and the size's tag after them nothing more");
+        });
+    }
+
+    [Test]
+    public async Task TwoRenderingsReadingOneScopesLabelsAtOnce_BothShowTheOptionsKeptFirst()
+    {
+        var calls = 0;
+        var bothAsked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource[] answered = [new(TaskCreationOptions.RunContinuationsAsynchronously), new(TaskCreationOptions.RunContinuationsAsynchronously)];
+        var towns = new TestOptionSource("towns", async (_, cancellationToken) =>
+        {
+            var call = Interlocked.Increment(ref calls);
+            if (call == 2)
+            {
+                bothAsked.SetResult();
+            }
+
+            await answered[call - 1].Task.WaitAsync(cancellationToken);
+            return [new FormBuilderOption("zurich", $"Zurich {call}")];
+        });
+        var town = Field("dropdown", "town", "Town") with { Options = FromCode("towns") };
+        var scope = Scope(Form(town), Answers(Answer(town, "zurich")));
+        var site = MergeTagTestSite.Create(options: Library(towns).Options());
+
+        var renderings = new[] { site.RenderAsync("{{ field.town }}", scope), site.RenderAsync("{{ field.town }}", scope) };
+        await bothAsked.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        answered[1].SetResult();
+        await Task.WhenAny(renderings).WaitAsync(TimeSpan.FromSeconds(10));
+        answered[0].SetResult();
+        var shown = await Task.WhenAll(renderings).WaitAsync(TimeSpan.FromSeconds(10));
+        var later = await site.RenderAsync("{{ field.town }}", scope);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(shown.Select(rendering => rendering.Text), Is.EqualTo(new[] { "Zurich 2", "Zurich 2" }), "the second answer came first, so it stands, for the slower rendering too");
+            Assert.That((later.Text, towns.Requests.Count), Is.EqualTo(("Zurich 2", 2)), "and later tags of the scope read it without asking again");
         });
     }
 

@@ -45,6 +45,14 @@ public sealed class FieldAnswersTests
         });
     }
 
+    [Test]
+    public void TheLongestText_CountsTheNameOfAPartWithTexts_AndNotThatOfOneWithout()
+    {
+        var answers = new FieldAnswers(["b"], [Part("a-name-longer-than-its-text", "1"), Part(new string('n', 40))]);
+
+        Assert.That(answers.LongestText, Is.EqualTo("a-name-longer-than-its-text".Length), "a ranking names its options in its parts; a part without texts is left out");
+    }
+
     [TestCase(null)]
     [TestCase("")]
     public void Answers_RefuseATextThatIsNullOrEmpty(string? text)

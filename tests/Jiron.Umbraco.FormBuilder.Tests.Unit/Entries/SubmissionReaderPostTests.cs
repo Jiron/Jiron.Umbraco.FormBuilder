@@ -10,8 +10,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Entries;
 
 /// <summary>
 /// Posts that a client can send but the browser's runtime never does (ADR-0080), as <see cref="SubmissionReader"/> reads
-/// them: one upload token named twice, a ranking's part names that are not clean or too long, a query value too long
-/// for its hidden field, and a checkbox's <c>false</c>.
+/// them: one upload named twice, by one token or by two, an upload an entry holds or another field's, a ranking's part
+/// names that are not clean or too long, a query value its hidden field cannot take, and a checkbox's <c>false</c>.
 /// </summary>
 public sealed class SubmissionReaderPostTests
 {
@@ -21,9 +21,11 @@ public sealed class SubmissionReaderPostTests
     private static readonly Guid Colours = Key(4);
     private static readonly Guid Campaign = Key(5);
     private static readonly Guid Newsletter = Key(6);
+    private static readonly Guid Wing = Key(7);
 
-    // A file field, a repeatable group of rooms with a plan each, a ranking whose list the site lacks (so its answers are
-    // taken without being held to options), a hidden field prefilled from the query, and a checkbox.
+    // A file field, a repeatable group of rooms with a plan and a hidden wing prefilled from the query each, a ranking
+    // whose list the site lacks (so its answers are taken without being held to options), a hidden field prefilled from
+    // the query, and a checkbox.
     private static FormDefinition Form { get; } = new()
     {
         Key = Key(100),
@@ -40,7 +42,14 @@ public sealed class SubmissionReaderPostTests
                         Fields =
                         [
                             Field(Attachment, "file", "attachment", """{"maxFiles":2}"""),
-                            Field(Rooms, "repeater", "rooms", """{"maxRows":3}""") with { Fields = [Field(Plan, "file", "plan")] },
+                            Field(Rooms, "repeater", "rooms", """{"maxRows":3}""") with
+                            {
+                                Fields =
+                                [
+                                    Field(Plan, "file", "plan"),
+                                    Field(Wing, "hidden", "wing") with { DefaultValue = FieldDefaultValue.Of("east"), Prefill = new FieldPrefill { Query = "wing" } },
+                                ],
+                            },
                             Field(Colours, "ranking", "colours") with { Options = new FieldOptions { Source = OptionSource.List, OptionList = Key(200) } },
                             Field(Campaign, "hidden", "campaign") with { DefaultValue = FieldDefaultValue.Of("web"), Prefill = new FieldPrefill { Query = "utm" } },
                             Field(Newsletter, "checkbox", "newsletter"),
@@ -49,7 +58,7 @@ public sealed class SubmissionReaderPostTests
                 ],
             },
         ],
-        Settings = new FormSettings { Developer = new FormDeveloperSettings { QueryValues = ["utm"] } },
+        Settings = new FormSettings { Developer = new FormDeveloperSettings { QueryValues = ["utm", "wing"] } },
     };
 
     [Test]
@@ -82,6 +91,74 @@ public sealed class SubmissionReaderPostTests
         {
             Assert.That(Errors(read), Is.EqualTo(new[] { "attachment: invalid" }));
             Assert.That(read.Answers.Where(answer => answer.Field == Attachment), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task TwoTokensForOneUploadInTwoRows_StandForTheFirstRowsValue_AndTheLaterOneIsInvalid()
+    {
+        var plan = Upload(3, Plan);
+        var read = await ReadAsync(Post() with
+        {
+            Rows = new Dictionary<Guid, IReadOnlyList<IReadOnlyDictionary<Guid, PostedAnswer>>> { [Rooms] = [Row(Plan, "token-a"), Row(Plan, "token-b")] },
+            Uploads = new Dictionary<string, StoredEntryFile> { ["token-a"] = plan, ["token-b"] = plan },
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Errors(read), Is.EqualTo(new[] { "plan@1: invalid" }), "the later row, whose token names the same upload");
+            Assert.That(read.Answers.Where(answer => answer.Field == Plan).Select(answer => (answer.Row, answer.Files.Single())), Is.EqualTo(new[] { (0, plan) }), "stored once, at the first row");
+        });
+    }
+
+    [Test]
+    public async Task TwoTokensForOneUploadInOneAnswer_AreInvalid_AndStoreNothing()
+    {
+        var attachment = Upload(4, Attachment);
+        var read = await ReadAsync(Post() with
+        {
+            Fields = new Dictionary<Guid, PostedAnswer> { [Attachment] = new(["token-a", "token-b"]) },
+            Uploads = new Dictionary<string, StoredEntryFile> { ["token-a"] = attachment, ["token-b"] = attachment },
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Errors(read), Is.EqualTo(new[] { "attachment: invalid" }));
+            Assert.That(read.Answers.Where(answer => answer.Field == Attachment), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task AnUploadAnEntryHolds_IsInvalid_AndStoresNothing()
+    {
+        var read = await ReadAsync(Post() with
+        {
+            Fields = new Dictionary<Guid, PostedAnswer> { [Attachment] = new(["token-5"]) },
+            Uploads = new Dictionary<string, StoredEntryFile> { ["token-5"] = Upload(5, Attachment) with { EntryId = 41 } },
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Errors(read), Is.EqualTo(new[] { "attachment: invalid" }), "an upload belongs to one entry");
+            Assert.That(read.Answers.Where(answer => answer.Field == Attachment), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task ATokenTwoFieldsName_IsInvalidAtTheFieldItsUploadIsNot_AndTheOtherKeepsIt()
+    {
+        var plan = Upload(6, Plan);
+        var read = await ReadAsync(Post() with
+        {
+            Fields = new Dictionary<Guid, PostedAnswer> { [Attachment] = new(["token-6"]) },
+            Rows = new Dictionary<Guid, IReadOnlyList<IReadOnlyDictionary<Guid, PostedAnswer>>> { [Rooms] = [Row(Plan, "token-6")] },
+            Uploads = new Dictionary<string, StoredEntryFile> { ["token-6"] = plan },
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Errors(read), Is.EqualTo(new[] { "attachment: invalid" }), "the earlier field names an upload of another, which it never takes");
+            Assert.That(read.Answers.Single(answer => answer.Field == Plan).Files, Is.EqualTo(new[] { plan }), "so the plan's own value still has it");
         });
     }
 
@@ -137,6 +214,40 @@ public sealed class SubmissionReaderPostTests
             Assert.That(read.Answers.Single(answer => answer.Field == Campaign).Values.Single().Text, Is.EqualTo("web"));
             Assert.That(logger.Entries.Select(entry => entry.Message), Has.One.Contains("'campaign'"), "the field by its alias");
             Assert.That(logger.Entries.Select(entry => entry.Message), Has.None.Contains("uuu"), "never the value");
+        });
+    }
+
+    [Test]
+    public async Task TwoQueryValuesForAHiddenField_CountAsNone_AndItsDefaultStandsIn_LoggedAsAValueItsTypeCannotTake()
+    {
+        var logger = new RecordingLogger<SubmissionReader>();
+
+        var read = await ReadAsync(Post() with { Fields = new Dictionary<Guid, PostedAnswer> { [Campaign] = new(["mail-secret", "print-secret"]) } }, logger);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Errors, Is.Empty, "the visitor can neither see nor change the field");
+            Assert.That(read.Answers.Single(answer => answer.Field == Campaign).Values.Single().Text, Is.EqualTo("web"));
+            Assert.That(logger.Entries.Select(entry => entry.Message), Has.One.Contains("'campaign' a value its type cannot take"), "a limit other than the length");
+            Assert.That(logger.Entries.Select(entry => entry.Message), Has.None.Contains("secret"), "never the values");
+        });
+    }
+
+    [Test]
+    public async Task AQueryValueTooLongForAHiddenFieldInARow_CountsAsNone_AndItsDefaultStandsInThere()
+    {
+        var logger = new RecordingLogger<SubmissionReader>();
+        var tooLong = new string('w', FieldAnswerLimits.DefaultTextLength + 1);
+        static Dictionary<Guid, PostedAnswer> Room(string wing) => new() { [Wing] = new([wing]) };
+
+        var read = await ReadAsync(Post() with { Rows = new Dictionary<Guid, IReadOnlyList<IReadOnlyDictionary<Guid, PostedAnswer>>> { [Rooms] = [Room("north"), Room(tooLong)] } }, logger);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Errors, Is.Empty, "the visitor can neither see nor change the field");
+            Assert.That(read.Answers.Where(answer => answer.Field == Wing).Select(answer => (answer.Row, answer.Values.Single().Text)), Is.EqualTo(new[] { (0, "north"), (1, "east") }), "the query's value in the first row, the default in the second");
+            Assert.That(logger.Entries.Select(entry => entry.Message), Has.One.Contains("'wing'"), "the field by its alias, once");
+            Assert.That(logger.Entries.Select(entry => entry.Message), Has.None.Contains("www"), "never the value");
         });
     }
 
