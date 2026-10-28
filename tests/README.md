@@ -38,8 +38,8 @@ npx playwright test --project=smoke
 
 | Project | What it holds |
 | --- | --- |
-| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the field types (`FieldTypes/`, below), the merge-tag service (`MergeTags/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the management API's policies, access filter and answers (`ManagementApi/`, below), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test (each service of Core resolved, one per site, and each notification handler registered), the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), a site's own field types (`FieldTypes/`, below) and merge-tag sources (`MergeTags/`, below), the form services and the change pipeline they share (`Forms/`, below), the access service with the authorization policies (`Access/`, below) and the management API (`ManagementApi/`, below). |
+| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the field types (`FieldTypes/`, below), the merge-tag service (`MergeTags/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the management API's policies, access filter and answers (`ManagementApi/`, below), the public API's middleware and filter (`PublicApi/`, below), and the Testing project's own tests. |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test (each service of Core resolved, one per site, and each notification handler registered), the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), a site's own field types (`FieldTypes/`, below) and merge-tag sources (`MergeTags/`, below), the form services and the change pipeline they share (`Forms/`, below), the access service with the authorization policies (`Access/`, below), the management API (`ManagementApi/`, below) and the public API (`PublicApi/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -356,7 +356,7 @@ A host turns these on in the `JironFormBuilderTesting` section; everything is of
 queries of its own (`SchemaInspector`), comparing it with `ExpectedSchemaV1`, which is written out by hand from §4.5
 and [ADR-0033](../docs/decisions/0033-schema-v1.md). The same tests run against SQL Server in the `sqlserver` CI job.
 Two of them compare with files under review, and rewrite them when `JFB_UPDATE_SNAPSHOTS=1` is set (and then fail, so
-the diff gets read and committed; the management API's document is the third such file, below):
+the diff gets read and committed; the API documents are more such files, below):
 
 - `SchemaV1DdlTests`: the SQL Server statements of step 1, rendered without a server, in
   `Persistence/schema-v1.sqlserver.sql`;
@@ -712,6 +712,38 @@ the generated client starts from the backoffice's own HTTP client, whose setting
 holds the English and German dictionaries to the same keys, each a text, to every `#` key of `docs/api/field-types.json`,
 and the field types' areas to no key nothing serves; `bundle.manifests.test.ts` shows a `localization` manifest for
 each of the two languages loading its dictionary.
+
+## The public API tests
+
+`Tests.Integration/PublicApi/` calls the public API anonymously on a real site that boots its runtime, with forms
+published through the form service (`PublicApiTestBase`) ([ADR-0084](../docs/decisions/0084-the-public-apis-frame-and-the-form-endpoint.md)).
+The base puts `WatchedForms` in front of the site's form service: it passes every call on and lets a test count the
+reads of published forms, make them fail, or hold them at a `ReadGate` until the test opens it. `PublicApiEndpoints`
+lists every endpoint through the API explorer and fills its route, so the tests that use it call a new endpoint by
+themselves:
+
+| Tests | What they show |
+| --- | --- |
+| `PublicApiFrameTests` | What every request meets: CORS for an allowed origin without credentials, nothing readable and `403 origin_denied` for a post or a preflight from another, the site's own pages and requests without an origin passing, `no-store` and `Vary: Origin`; `404 not_found` for an address that names no endpoint, whatever its method; `413 payload_too_large` with the connection closed for a body to an endpoint that takes none; `500 server_error` for a failing read, logged with the endpoint's name and none of the request's values. |
+| `PublicApiBasePathTests` | A base path of the host's own: every endpoint and the catch-all move there, the frame matches it in any letter case, and every route starts with it. |
+| `PublicApiPendingMigrationsTests` | Every endpoint, and an address that names none, answers `503 migrations_pending` with `Retry-After: 10` while the plan has not run, and normally once it ran. |
+| `PublicApiTimeLimitTests` | The time limit on the site's clock (`ManualTimers`): the request answers `504 timeout` once the test fires it, the read it waited for goes on, and the next request gets its answer from that one read. |
+| `PublicFormApiTests` | The form endpoint: a headless form by its key and its alias in any letter case; the same `404 form_not_found` for a form that is missing, unpublished, in the trash or not served to headless sites; the texts in the culture with the dictionary's items and rich text sanitised; an `ETag` that follows the answer, and `304` for a client that holds it; `open` from the opening time until the closing time. |
+| `PublicFormCacheTests` | The published forms each server keeps: every change of the form service drops the form and tells the other servers (`RecordingServerMessenger`), a folder's trash or restore drops them all and its delete each form it removes, another server's instruction drops it here and so does a refresh of everything, misses that come together share one read, nothing is kept for a key or alias that names no form, and a published version this server cannot read is answered as missing, logged once until it changes (`LogCapture`). |
+| `PublicFormSiteTests` | What the answer takes from the site: the time zone of the page's site or the global one, UTC with one warning for a stored zone this server cannot resolve, and of every settings section filled in full only the time zone (a guard fails for a section or field the test does not fill). |
+| `PublicFormLockTests` | A designer lock added after the publish: the locked value is served under another `ETag` than the answer without the lock. |
+| `PublicOpenApiSnapshotTests` | The document `jfb-public` against `docs/api/jfb-public.json` (rewritten with `JFB_UPDATE_SNAPSHOTS=1`, then fails), its paths and operation names, its own schemas only, and for every operation and action the rate-limit policy, body limit and time limit with the frame's refusals. |
+
+`Tests.Unit/PublicApi/` covers the frame without a host: the middleware only below the base path, the headers every
+answer carries, the CORS answer for each kind of origin and method and the answers to what ends a request early
+(`FormBuilderPublicApiMiddlewareTests`); the filter with the body limit before a byte is read, the time limit, the
+pending migrations and the declarations of an action without any (`FormBuilderPublicApiFilterTests`). Beside them,
+`Configuration/PublicApiRulesTests` holds the base paths a host may choose, the origins as browsers write them and the
+start-up check's messages; `Definitions/EditorHtmlTests` the one sanitiser; `Definitions/VisitorFormTests` the
+visitor's form made from the full fixture, every text of it a string and nothing else changed;
+`Forms/VisitorFormsTests` the culture, the dictionary read once per answer and a lone surrogate replaced; and
+`Settings/SiteTimeZonesTests` the zone per site with the warning at most once an hour per site and zone, within its
+bound.
 
 ## Writing tests
 

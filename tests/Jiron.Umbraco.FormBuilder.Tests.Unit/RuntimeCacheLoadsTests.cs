@@ -229,6 +229,29 @@ public sealed class RuntimeCacheLoadsTests
         Assert.That(seen, Is.EqualTo("nothing"));
     }
 
+    [Test]
+    public async Task AValueItIsNotToKeep_AnswersEveryCallerThatWaited_AndTheNextMissReadsAgain()
+    {
+        var gate = Gate();
+        static bool Keep(string value) => value != "missing";
+
+        var first = RuntimeCacheLoads.GetAsync(_cache, Key, Loading, () => Counted(gate.Task), Duration, CancellationToken.None, Keep);
+        var second = RuntimeCacheLoads.GetAsync(_cache, Key, Loading, () => Counted(gate.Task), Duration, CancellationToken.None, Keep);
+        gate.SetResult("missing");
+        var (one, two) = (await first, await second);
+        var notKept = (_cache.Get(Key), _cache.Get(Loading));
+        var again = await RuntimeCacheLoads.GetAsync(_cache, Key, Loading, () => Counted(Task.FromResult("found")), Duration, CancellationToken.None, Keep);
+        var hit = await GetAsync(() => Counted(Task.FromResult("other")));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((one, two), Is.EqualTo(("missing", "missing")), "both callers of the one load");
+            Assert.That(notKept, Is.EqualTo(((object?)null, (object?)null)), "neither the value nor its load stays");
+            Assert.That((again, hit), Is.EqualTo(("found", "found")), "the next miss read again, and kept what it may");
+            Assert.That(_loads, Is.EqualTo(2));
+        });
+    }
+
     private static TaskCompletionSource<string> Gate() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private Task<string> GetAsync(Func<Task<string>> load, CancellationToken cancellationToken = default) =>

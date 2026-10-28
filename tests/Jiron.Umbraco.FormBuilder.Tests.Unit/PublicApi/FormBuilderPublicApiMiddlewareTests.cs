@@ -1,0 +1,320 @@
+using System.Text.Json.Nodes;
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
+using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
+using Jiron.Umbraco.FormBuilder.Web.PublicApi;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace Jiron.Umbraco.FormBuilder.Tests.Unit.PublicApi;
+
+/// <summary>
+/// What every request to the public API meets (ADR-0012, ADR-0084), without a host: only below the base path, the
+/// headers every answer carries, the CORS answer for each kind of origin and method, and the answers to what ends a
+/// request early.
+/// </summary>
+[TestFixture]
+public sealed class FormBuilderPublicApiMiddlewareTests
+{
+    private const string Allowed = "https://shop.example.com";
+    private const string Own = "https://www.example.com";
+
+    private RecordingLogger<FormBuilderPublicApiMiddleware> _logger = null!;
+    private FormBuilderPublicApiMiddleware _middleware = null!;
+
+    [SetUp]
+    public void CreateTheMiddleware()
+    {
+        var options = new FormBuilderOptions();
+        options.PublicApi.AllowedOrigins.Add("HTTPS://Shop.Example.com:443");
+        _logger = new RecordingLogger<FormBuilderPublicApiMiddleware>();
+        _middleware = new FormBuilderPublicApiMiddleware(new FormBuilderPublicApiPaths(Options.Create(options)), _logger);
+    }
+
+    [TestCase("/")]
+    [TestCase("/jfb/api")]
+    [TestCase("/jfb/apiv1/forms")]
+    [TestCase("/jfb/api/v2/forms")]
+    [TestCase("/jfb/api/v10/forms")]
+    [TestCase("/umbraco/jfb/management/api/v1/tree/root")]
+    public async Task ARequestOutsideTheBasePath_PassesUntouched(string path)
+    {
+        var (http, passed) = await SendAsync(Request("POST", path, origin: "https://elsewhere.example"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(passed, Is.True);
+            Assert.That(http.Response.Headers.CacheControl.ToString(), Is.Empty);
+            Assert.That(http.Response.Headers.Vary.ToString(), Is.Empty);
+            Assert.That(http.Features.Get<IFormFeature>(), Is.Null);
+        });
+    }
+
+    [TestCase("/jfb/api/v1")]
+    [TestCase("/jfb/api/v1/forms/contact")]
+    [TestCase("/JFB/Api/V1/forms/contact")]
+    public async Task EveryAnswerBelowTheBasePath_IsNoStore_VariesByOrigin_AndHasNoForm(string path)
+    {
+        var (http, passed) = await SendAsync(Request("GET", path));
+        var form = http.Features.Get<IFormFeature>();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(passed, Is.True);
+            Assert.That(http.Response.Headers.CacheControl.ToString(), Is.EqualTo("no-store"));
+            Assert.That(http.Response.Headers.Vary.ToString(), Is.EqualTo("Origin"));
+            Assert.That(form, Is.SameAs(NoFormFeature.Instance));
+            Assert.That(form!.HasFormContentType, Is.False);
+            Assert.That(form.Form, Is.SameAs(FormCollection.Empty));
+            Assert.That(form.ReadForm(), Is.SameAs(FormCollection.Empty));
+            Assert.That(await form.ReadFormAsync(CancellationToken.None), Is.SameAs(FormCollection.Empty));
+        });
+    }
+
+    [TestCase("GET", null, "passed")]
+    [TestCase("POST", null, "passed")]
+    [TestCase("GET", Allowed, "passed, allowed https://shop.example.com")]
+    [TestCase("POST", Allowed, "passed, allowed https://shop.example.com")]
+    [TestCase("POST", "HTTPS://SHOP.example.com:443", "passed, allowed https://shop.example.com")]
+    [TestCase("POST", Own, "passed")]
+    [TestCase("POST", "https://WWW.example.com", "passed")]
+    [TestCase("GET", "https://evil.example", "passed")]
+    [TestCase("HEAD", "https://evil.example", "passed")]
+    [TestCase("POST", "https://evil.example", "403 origin_denied")]
+    [TestCase("PUT", "https://evil.example", "403 origin_denied")]
+    [TestCase("DELETE", "https://evil.example", "403 origin_denied")]
+    [TestCase("OPTIONS", "https://evil.example", "403 origin_denied")]
+    [TestCase("POST", "https://shop.example.com:8443", "403 origin_denied")]
+    [TestCase("POST", "http://shop.example.com", "403 origin_denied")]
+    [TestCase("POST", "http://www.example.com", "403 origin_denied")]
+    [TestCase("POST", "null", "403 origin_denied")]
+    [TestCase("POST", "*", "403 origin_denied")]
+    [TestCase("POST", "https://www.example.com/", "403 origin_denied")]
+    [TestCase("GET", "null", "passed")]
+    public async Task EachOrigin_GetsItsAnswer(string method, string? origin, string answer)
+    {
+        var (http, passed) = await SendAsync(Request(method, "/jfb/api/v1/forms/contact", origin));
+
+        Assert.That(await AnswerAsync(http, passed), Is.EqualTo(answer));
+    }
+
+    [Test]
+    public async Task TheSitesOwnHttpsPages_PassBehindAProxyThatEndsTls_ButNotTheOtherWayRound()
+    {
+        var (overHttp, passedOverHttp) = await SendAsync(Request("POST", "/jfb/api/v1/forms/contact", Own, scheme: "http"));
+        var (downgraded, passedDowngraded) = await SendAsync(Request("POST", "/jfb/api/v1/forms/contact", "http://www.example.com", scheme: "https"));
+        var (ported, passedPorted) = await SendAsync(Request("POST", "/jfb/api/v1/forms/contact", "http://localhost:5500", scheme: "http", host: "localhost:5500"));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await AnswerAsync(overHttp, passedOverHttp), Is.EqualTo("passed"), "the request came over http from the site's https page");
+            Assert.That(await AnswerAsync(downgraded, passedDowngraded), Is.EqualTo("403 origin_denied"), "an http page is not the https site's own");
+            Assert.That(await AnswerAsync(ported, passedPorted), Is.EqualTo("passed"), "the port is part of the origin");
+        });
+    }
+
+    [Test]
+    public async Task SeveralOrigins_AreNone()
+    {
+        var http = Request("POST", "/jfb/api/v1/forms/contact");
+        http.Request.Headers.Origin = new[] { Allowed, Own };
+
+        var (answered, passed) = await SendAsync(http);
+
+        Assert.That(await AnswerAsync(answered, passed), Is.EqualTo("403 origin_denied"));
+    }
+
+    [Test]
+    public async Task APreflight_FromAnAllowedOrigin_AnswersItself_WithWhatItMaySend()
+    {
+        var http = Request("OPTIONS", "/jfb/api/v1/forms/contact/entries", Allowed);
+        http.Request.Headers.AccessControlRequestMethod = "POST";
+        http.Request.Headers.AccessControlRequestHeaders = "content-type";
+
+        var (answered, passed) = await SendAsync(http);
+        var headers = answered.Response.Headers;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(passed, Is.False);
+            Assert.That(answered.Response.StatusCode, Is.EqualTo(StatusCodes.Status204NoContent));
+            Assert.That(headers.AccessControlAllowOrigin.ToString(), Is.EqualTo(Allowed));
+            Assert.That(headers.AccessControlAllowMethods.ToString(), Is.EqualTo("GET, POST"));
+            Assert.That(headers.AccessControlAllowHeaders.ToString(), Is.EqualTo("Content-Type"));
+            Assert.That(headers.AccessControlMaxAge.ToString(), Is.EqualTo("600"));
+            Assert.That(headers.AccessControlAllowCredentials.ToString(), Is.Empty);
+            Assert.That(headers.CacheControl.ToString(), Is.EqualTo("no-store"));
+            Assert.That(answered.Response.Body.Length, Is.Zero);
+        });
+    }
+
+    [TestCase("https://evil.example", "403 origin_denied")]
+    [TestCase("null", "403 origin_denied")]
+    [TestCase(Own, "passed")]
+    [TestCase(null, "passed")]
+    public async Task APreflight_FromAnyOtherOrigin_IsRefused_AndAnOptionsWithoutOne_IsNoPreflight(string? origin, string answer)
+    {
+        var http = Request("OPTIONS", "/jfb/api/v1/forms/contact/entries", origin);
+        http.Request.Headers.AccessControlRequestMethod = "POST";
+
+        var (answered, passed) = await SendAsync(http);
+
+        Assert.That(await AnswerAsync(answered, passed), Is.EqualTo(origin == Own ? "204" : answer));
+    }
+
+    [Test]
+    public async Task AnAllowedOriginsAnswer_ShowsTheETagAndRetryAfter_WithoutCredentials()
+    {
+        var (http, _) = await SendAsync(Request("GET", "/jfb/api/v1/forms/contact", Allowed));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(http.Response.Headers.AccessControlExposeHeaders.ToString(), Is.EqualTo("ETag, Retry-After"));
+            Assert.That(http.Response.Headers.AccessControlAllowCredentials.ToString(), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task AVisitorWhoLeft_GetsNoAnswer_AndIsNoError()
+    {
+        using var left = new CancellationTokenSource();
+        var http = Request("GET", "/jfb/api/v1/forms/contact");
+        http.RequestAborted = left.Token;
+
+        var (answered, _) = await SendAsync(http, async _ =>
+        {
+            await left.CancelAsync();
+            left.Token.ThrowIfCancellationRequested();
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(answered.Response.StatusCode, Is.EqualTo(StatusCodes.Status200OK), "nothing was written");
+            Assert.That(answered.Response.Body.Length, Is.Zero);
+            Assert.That(_logger.Entries, Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task ARequestPastItsTimeLimit_IsTimeout_WithoutWhatTheEndpointSetBefore()
+    {
+        using var limit = new CancellationTokenSource();
+        var http = Request("GET", "/jfb/api/v1/forms/contact");
+        http.Features.Set(new FormBuilderTimeLimitFeature(limit.Token));
+
+        var (answered, passed) = await SendAsync(http, async context =>
+        {
+            context.Response.Headers.ETag = "\"0123\"";
+            context.Response.Headers.CacheControl = "no-cache";
+            await limit.CancelAsync();
+            limit.Token.ThrowIfCancellationRequested();
+        });
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await AnswerAsync(answered, passed), Is.EqualTo("504 timeout"));
+            Assert.That(answered.Response.Headers.ETag.ToString(), Is.Empty);
+            Assert.That(answered.Response.Headers.CacheControl.ToString(), Is.EqualTo("no-store"));
+            Assert.That(_logger.Entries, Is.Empty, "a time limit is no error of the site");
+        });
+    }
+
+    [Test]
+    public async Task WhatFailsUnexpectedly_IsServerError_LoggedWithTheEndpointOnly()
+    {
+        var http = Request("GET", "/jfb/api/v1/forms/contact");
+        http.Request.QueryString = new QueryString("?culture=de-CH");
+        http.SetEndpoint(new Endpoint(null, null, "FormController.Definition"));
+        var failure = new InvalidOperationException("JFB_TEST: the read fails.");
+
+        var (answered, passed) = await SendAsync(http, context =>
+        {
+            context.Response.Headers.ETag = "\"0123\"";
+            throw failure;
+        });
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await AnswerAsync(answered, passed), Is.EqualTo("500 server_error"));
+            Assert.That(answered.Response.Headers.ETag.ToString(), Is.Empty);
+            Assert.That(_logger.Entries.Select(entry => (entry.Level, entry.Exception)), Is.EqualTo(new[] { (LogLevel.Error, (Exception?)failure) }));
+            Assert.That(_logger.Entries[0].Message, Does.Contain("FormController.Definition").And.Not.Contain("de-CH"));
+        });
+    }
+
+    [Test]
+    public async Task ACancellationNobodyAskedFor_IsUnexpected()
+    {
+        var (answered, passed) = await SendAsync(Request("GET", "/jfb/api/v1/forms/contact"), _ => throw new OperationCanceledException("JFB_TEST"));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await AnswerAsync(answered, passed), Is.EqualTo("500 server_error"));
+            Assert.That(_logger.Entries.Single().Message, Does.Contain("no endpoint"));
+        });
+    }
+
+    [Test]
+    public void AFailureAfterTheAnswerStarted_GoesOnToTheSite()
+    {
+        var started = Request("GET", "/jfb/api/v1/forms/contact");
+        started.Features.Set<IHttpResponseFeature>(new StartedResponse());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(async () => await SendAsync(started, _ => throw new InvalidOperationException("JFB_TEST")), Throws.InvalidOperationException);
+
+            Assert.That(_logger.Entries, Is.Empty);
+        });
+    }
+
+    private static DefaultHttpContext Request(string method, string path, string? origin = null, string scheme = "https", string host = "www.example.com")
+    {
+        var http = new DefaultHttpContext();
+        http.Request.Method = method;
+        http.Request.Path = path;
+        http.Request.Scheme = scheme;
+        http.Request.Host = new HostString(host);
+        if (origin is not null)
+        {
+            http.Request.Headers.Origin = origin;
+        }
+
+        http.Response.Body = new MemoryStream();
+        return http;
+    }
+
+    // What the middleware answered: passed on to the site (with the CORS origin it allowed), or its own status and code.
+    private static async Task<string> AnswerAsync(DefaultHttpContext http, bool passed)
+    {
+        if (passed)
+        {
+            var allowed = http.Response.Headers.AccessControlAllowOrigin.ToString();
+            return allowed.Length == 0 ? "passed" : $"passed, allowed {allowed}";
+        }
+
+        http.Response.Body.Position = 0;
+        var body = await new StreamReader(http.Response.Body).ReadToEndAsync();
+        return body.Length == 0
+            ? $"{http.Response.StatusCode}"
+            : $"{http.Response.StatusCode} {JsonNode.Parse(body)!["code"]!.GetValue<string>()}";
+    }
+
+    private async Task<(DefaultHttpContext Http, bool Passed)> SendAsync(DefaultHttpContext http, RequestDelegate? next = null)
+    {
+        var passed = false;
+        await _middleware.InvokeAsync(http, context =>
+        {
+            passed = true;
+            return next is null ? Task.CompletedTask : next(context);
+        });
+        return (http, passed && http.Response.Body.Length == 0 && http.Response.StatusCode == StatusCodes.Status200OK);
+    }
+
+    // A response whose headers went out already.
+    private sealed class StartedResponse : HttpResponseFeature
+    {
+        public override bool HasStarted => true;
+    }
+}
