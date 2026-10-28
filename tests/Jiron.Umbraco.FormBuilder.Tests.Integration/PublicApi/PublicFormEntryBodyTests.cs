@@ -54,6 +54,7 @@ public sealed class PublicFormEntryBodyTests : PublicApiTestBase
         {
             ["an escaped lone surrogate in an answer"] = Utf8($$$"""{"revision":1,"values":{"name":"{{{Backslash}}}uD800"}}"""),
             ["an escaped lone surrogate in a name"] = Utf8($$$"""{"revision":1,"values":{"{{{Backslash}}}uDC00":"Ada"}}"""),
+            ["an escaped lone surrogate as the submission id"] = Utf8($$$"""{"revision":1,"submissionId":"{{{Backslash}}}uD800","values":{"name":"Ada"}}"""),
             ["an escaped lone surrogate in a query value"] = Utf8($$$"""{"revision":1,"values":{"name":"Ada"},"query":{"source":"{{{Backslash}}}uD800"}}"""),
             ["bytes that are not UTF-8"] = [.. Utf8("""{"revision":1,"values":{"name":"Ad"""), 0xFF, .. Utf8("\"}}")],
             ["no JSON"] = Utf8("""{"revision":1,"""),
@@ -91,6 +92,7 @@ public sealed class PublicFormEntryBodyTests : PublicApiTestBase
             {
                 ["an escaped lone surrogate in an answer"] = "400 invalid_request invalid_value at values.name",
                 ["an escaped lone surrogate in a name"] = "400 invalid_request invalid_value at values",
+                ["an escaped lone surrogate as the submission id"] = "400 invalid_request invalid_value at submissionId",
                 ["an escaped lone surrogate in a query value"] = "400 invalid_request invalid_value at query.source",
                 ["bytes that are not UTF-8"] = "400 invalid_request invalid_value at body",
                 ["no JSON"] = "400 invalid_request invalid_value at body",

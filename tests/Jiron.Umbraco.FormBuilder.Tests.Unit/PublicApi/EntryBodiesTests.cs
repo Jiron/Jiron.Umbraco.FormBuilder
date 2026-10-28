@@ -138,6 +138,7 @@ public sealed class EntryBodiesTests
         var surrogateValue = Read($$$"""{"revision":1,"values":{"name":"{{{backslash}}}uDFFF"}}""", out var inValue);
         var surrogateRow = Read($$$"""{"revision":1,"values":{"g":[{"c":"{{{backslash}}}uD800x"}]}}""", out var inRow);
         var surrogateName = Read($$$"""{"revision":1,"query":{"{{{backslash}}}uD800":"x"}}""", out var inName);
+        var surrogateKeys = Read($$$"""{"revision":1,"submissionId":"{{{backslash}}}uD800","contentKey":"{{{backslash}}}uDC00"}""", out var inKeys);
         var pair = Read($$$"""{"revision":1,"values":{"name":"{{{backslash}}}uD83D{{{backslash}}}uDE00"}}""", out var none);
 
         Assert.Multiple(() =>
@@ -146,6 +147,7 @@ public sealed class EntryBodiesTests
             Assert.That((surrogateValue, inValue), Is.EqualTo(((SubmissionRequest?)null, new List<string> { "values.name" })));
             Assert.That((surrogateRow, inRow), Is.EqualTo(((SubmissionRequest?)null, new List<string> { "values.g[0].c" })));
             Assert.That((surrogateName, inName), Is.EqualTo(((SubmissionRequest?)null, new List<string> { "query" })));
+            Assert.That((surrogateKeys, inKeys), Is.EqualTo(((SubmissionRequest?)null, new List<string> { "submissionId", "contentKey" })), "a key with a lone surrogate is no UUID");
             Assert.That(none, Is.Empty, "a surrogate pair is one character");
             Assert.That(pair!.Fields["name"].Values[0], Is.EqualTo(char.ConvertFromUtf32(0x1F600)));
         });

@@ -320,10 +320,11 @@ internal static class EntryBodies
         return dot > 0 && dot < name.Length - 1 ? (name[..dot], name[(dot + 1)..]) : null;
     }
 
+    // A UUID in its usual form, or null for null; a value of another shape, or a string with a lone surrogate, is named.
     private static Guid? Key(JsonElement value, string name, List<string> invalid) => value.ValueKind switch
     {
         JsonValueKind.Null => null,
-        JsonValueKind.String when Guid.TryParseExact(value.GetString(), "D", out var key) => key,
+        JsonValueKind.String when Guid.TryParseExact(JsonPaths.TryGetString(value), "D", out var key) => key,
         _ => Invalid(invalid, name, (Guid?)null),
     };
 
