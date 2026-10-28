@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
@@ -11,10 +12,10 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
 /// Answers to a choice whose options come from a library list or another source in <c>field.*</c> and
 /// <c>entry.answers</c> (ADR-0066, ADR-0077): each chosen value shows the label the source resolves in the entry's
 /// culture, with its dictionary item's text, as a field's own option shows its own; a value the source no longer offers,
-/// and every value of a source that cannot give its options, shows as it is stored. A cascading source resolves for the
-/// parent's answers the parent offers, a repeatable group's child row by row, and each source is asked once for a
-/// rendering for each field and parent answers; two renderings that read one scope's labels at once both show the
-/// options kept first.
+/// and every value of a source that cannot give its options, shows as it is stored; a grid's columns from a list show
+/// their labels too. A cascading source resolves for the parent's answers the parent offers, a repeatable group's child
+/// row by row (for every answer of a parent outside its group), and each source is asked once for a rendering for each
+/// field and parent answers; two renderings that read one scope's labels at once both show the options kept first.
 /// </summary>
 public sealed class ListAnswersTests
 {
@@ -237,6 +238,87 @@ public sealed class ListAnswersTests
             Assert.That(rendered.Text, Is.EqualTo("zurich"), "no town is an option without a country");
             Assert.That(towns.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { string.Empty }), "a hidden answer counts for nothing");
         });
+    }
+
+    [Test]
+    public async Task AParentTheRulesHidInOneRow_HasNoAnswerThere_SoThatRowsChildHasNoParentAnswer()
+    {
+        // The submission's reader leaves out what the rules hid in a row, so that row has no answer of the parent at all.
+        var towns = Towns();
+        var country = Field("dropdown", "country", "Country") with { Options = Options(("CH", "Switzerland"), ("DE", "Germany")) };
+        var town = Field("dropdown", "town", "Town") with { Options = FromCode("towns", parent: country) };
+        var stops = Field("repeater", "stops", "Stops") with { Fields = [country, town] };
+        var site = MergeTagTestSite.Create(options: Library(towns).Options());
+
+        var rendered = await site.RenderAsync("{{ field.town }}", Scope(Form(stops), Answers(InRow(country, 0, "CH"), InRow(town, 0, "zurich"), InRow(town, 1, "zurich"))));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Text, Is.EqualTo("Zurich, zurich"), "no town is an option without a country");
+            Assert.That(towns.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { "CH", string.Empty }));
+        });
+    }
+
+    [TestCase(false, "Zurich, Zurich", "CH", Description = "a parent outside any repeatable group")]
+    [TestCase(true, "Zurich, Berlin", "CH,DE", Description = "a parent in another repeatable group")]
+    public async Task ARowsChildWhoseParentIsOutsideItsGroup_IsAskedForEveryAnswerOfTheParent_OnceForAllItsRows(bool inAnotherGroup, string expected, string asked)
+    {
+        var towns = Towns();
+        var country = Field("dropdown", "country", "Country") with { Options = Options(("CH", "Switzerland"), ("DE", "Germany")) };
+        var town = Field("dropdown", "town", "Town") with { Options = FromCode("towns", parent: country) };
+        var stops = Field("repeater", "stops", "Stops") with { Fields = [town] };
+        var people = Field("repeater", "people", "People") with { Fields = [country] };
+        MergeTagAnswer[] countries = inAnotherGroup ? [InRow(country, 0, "CH"), InRow(country, 1, "DE")] : [Answer(country, "CH")];
+        var answers = Answers([.. countries, InRow(town, 0, "zurich"), InRow(town, 1, inAnotherGroup ? "berlin" : "zurich")]);
+        var site = MergeTagTestSite.Create(options: Library(towns).Options());
+
+        var rendered = await site.RenderAsync("{{ field.town }}", Scope(inAnotherGroup ? Form(people, stops) : Form(country, stops), answers));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Text, Is.EqualTo(expected));
+            Assert.That(towns.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { asked }), "never the parent's answer in the child's row, which is no row of the parent's");
+        });
+    }
+
+    [Test]
+    public async Task AChainThroughARowAndOutOfIt_AsksTheRowsParentInItsRow_AndTheOuterOneOnceForAllRows()
+    {
+        var towns = Towns();
+        var countries = new TestOptionSource("countries", (request, _) =>
+            ValueTask.FromResult<IReadOnlyList<FormBuilderOption>>(request.ParentValues.Contains("alps") ? [new FormBuilderOption("CH"), new FormBuilderOption("DE")] : []));
+        var region = Field("radio", "region", "Region") with { Options = Options(("alps", "Alps"), ("coast", "Coast")) };
+        var country = Field("dropdown", "country", "Country") with { Options = FromCode("countries", parent: region) };
+        var town = Field("dropdown", "town", "Town") with { Options = FromCode("towns", parent: country) };
+        var stops = Field("repeater", "stops", "Stops") with { Fields = [country, town] };
+        var answers = Answers(Answer(region, "alps"), InRow(country, 0, "CH"), InRow(town, 0, "zurich"), InRow(country, 1, "DE"), InRow(town, 1, "berlin"));
+        var site = MergeTagTestSite.Create(options: Library(towns, countries).Options());
+
+        var rendered = await site.RenderAsync("{{ field.town }}", Scope(Form(region, stops), answers));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Text, Is.EqualTo("Zurich, Berlin"));
+            Assert.That(countries.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { "alps" }), "the region, outside the group, for every row at once");
+            Assert.That(towns.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { "CH", "DE" }), "each row's own country");
+        });
+    }
+
+    [Test]
+    public async Task AGridsColumnsFromAList_ShowTheListsLabels_RowByRow()
+    {
+        var service = NewKey();
+        var speed = NewKey();
+        var rating = Field("grid", "rating", "Rating") with
+        {
+            Options = FromList(Sizes),
+            Rows = [new GridRow { Key = service, Label = new LocalizedText("Service") }, new GridRow { Key = speed, Label = new LocalizedText("Speed") }],
+        };
+        var site = MergeTagTestSite.Create(options: Library().Options());
+
+        var rendered = await site.RenderAsync("{{ field.rating }}", Scope(Form(rating), Answers(new MergeTagAnswer(rating.Key, [new FieldValue("m", service), new FieldValue("l", speed)])), "de-DE"));
+
+        Assert.That(rendered.Text, Is.EqualTo("Service: Mittel, Speed: Gross"), "a grid's values name their rows, and its columns are the list's options");
     }
 
     [Test]

@@ -353,6 +353,21 @@ public sealed class SiteMergeTagExtensionsTests
         });
     }
 
+    [Test]
+    public void ASourceWhoseConstructorThrows_StopsTheStart_NamingWhatItThrew_AndLeavesTheFiltersUsable()
+    {
+        using var site = Site(sources => sources.Append<KeylessSource>(), filters => filters.Append<RepeatFilter>());
+
+        var read = site.GetRequiredService<SiteMergeTagExtensions>();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Problems, Is.EqualTo(new[] { "Jiron Form Builder cannot create the site's merge-tag sources: System.ArgumentException: JFB_TEST: no CRM key." }), "the container lets the constructor's exception through as it is");
+            Assert.That((read.Sources.Count, read.Filters.Keys.Single()), Is.EqualTo((0, "repeat")), "the filters stay");
+            Assert.That(() => HostOptions.Start(site), Throws.TypeOf<OptionsValidationException>().With.Message.Contains("System.ArgumentException: JFB_TEST: no CRM key."));
+        });
+    }
+
     // A site's sources and filters, as they are read once: those the registry may use, and the problems.
     private static SiteMergeTagExtensions Read(IFormBuilderMergeTagSource[] sources, IFormBuilderMergeTagFilter[] filters) =>
         new(new FormBuilderMergeTagSourceCollection(() => sources), new FormBuilderMergeTagFilterCollection(() => filters));
@@ -429,6 +444,18 @@ public sealed class SiteMergeTagExtensionsTests
     public sealed class UnconfiguredSource : IFormBuilderMergeTagSource
     {
         public UnconfiguredSource() => throw new InvalidOperationException("Set Crm:Url to the CRM's address.");
+
+        public string Name => "crm";
+
+        public bool IsPerVisitor => true;
+
+        public ValueTask<MergeTagValue?> ResolveAsync(MergeTagSourceRequest request, CancellationToken cancellationToken) => ValueTask.FromResult<MergeTagValue?>(null);
+    }
+
+    /// <summary>A site's source whose constructor throws, as one that checks what it is given does.</summary>
+    public sealed class KeylessSource : IFormBuilderMergeTagSource
+    {
+        public KeylessSource() => throw new ArgumentException("JFB_TEST: no CRM key.");
 
         public string Name => "crm";
 

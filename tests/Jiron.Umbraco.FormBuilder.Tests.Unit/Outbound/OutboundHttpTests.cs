@@ -7,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Core;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Outbound;
 using Jiron.Umbraco.FormBuilder.Testing.Stub;
+using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Microsoft.Extensions.DependencyInjection;
 using MsOptions = Microsoft.Extensions.Options.Options;
 
@@ -438,6 +439,20 @@ public sealed class OutboundHttpTests
     }
 
     [Test]
+    public async Task AStreamDisposedAsTheTimeLimitPasses_TimesOut()
+    {
+        var timers = new ManualTimers();
+        var transport = new ScriptedTransport(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StreamContent(new BreakingStream(new ObjectDisposedException("JFB_TEST: the body"), before: timers.FireAll)),
+        });
+
+        var reason = await ReasonAsync(() => Calling(transport, allowHttp: false, timers, Host).GetAsync(new Uri($"https://{Host}/list"), "application/json", Limits, CancellationToken.None));
+
+        Assert.That(reason, Is.EqualTo(OutboundFailure.TimedOut), "the time limit's end disposed it");
+    }
+
+    [Test]
     public void AFailure_NamesItsReasonAndStatus_NeverTheAddress()
     {
         _stub.Answer(new StubAnswer("GET", "/token-abc123", Status: 503));
@@ -460,7 +475,10 @@ public sealed class OutboundHttpTests
         Calling(transport, allowHttp, [.. hosts.SelectMany(host => new[] { host, $"{host}:{Port}" })]);
 
     // Calls allowed to exactly the entries given, as the host configuration names them.
-    private static OutboundHttp Calling(IFormBuilderHttpTransport transport, bool allowHttp, params string[] entries)
+    private static OutboundHttp Calling(IFormBuilderHttpTransport transport, bool allowHttp, params string[] entries) => Calling(transport, allowHttp, TimeProvider.System, entries);
+
+    // The same, on the clock given.
+    private static OutboundHttp Calling(IFormBuilderHttpTransport transport, bool allowHttp, TimeProvider time, params string[] entries)
     {
         var options = new FormBuilderOptions();
         foreach (var entry in entries)
@@ -469,7 +487,7 @@ public sealed class OutboundHttpTests
         }
 
         options.Webhooks.AllowHttp = allowHttp;
-        return new OutboundHttp(transport, MsOptions.Create(options), TimeProvider.System);
+        return new OutboundHttp(transport, MsOptions.Create(options), time);
     }
 
     private static async Task<OutboundFailure?> ReasonAsync(Func<Task> call)
@@ -499,8 +517,8 @@ public sealed class OutboundHttpTests
     private FormBuilderHttpTransport StubTransport() =>
         new((name, _) => Task.FromResult(name == Host ? new[] { IPAddress.Loopback } : []), new IPEndPoint(IPAddress.Loopback, Port));
 
-    // A body that sends one byte and then fails, by default as a connection that broke off.
-    private sealed class BreakingStream(Exception? breaksWith = null) : Stream
+    // A body that sends one byte and then fails, by default as a connection that broke off, doing what it is given first.
+    private sealed class BreakingStream(Exception? breaksWith = null, Action? before = null) : Stream
     {
         private bool _sent;
 
@@ -523,6 +541,7 @@ public sealed class OutboundHttpTests
             ArgumentNullException.ThrowIfNull(buffer);
             if (_sent)
             {
+                before?.Invoke();
                 throw breaksWith ?? new IOException("JFB_TEST: the connection broke off.");
             }
 

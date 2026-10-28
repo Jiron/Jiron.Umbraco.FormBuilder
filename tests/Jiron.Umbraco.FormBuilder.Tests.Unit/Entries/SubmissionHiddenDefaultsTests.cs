@@ -18,6 +18,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Entries;
 /// all of them over one scope, so the labels of a source's options that several of them show are asked for once; only
 /// the answers the reader makes to be replaced change. A label's options are asked for the parent's answers that the
 /// parent offers, and kept for those answers, so a parent resolved between two defaults gives the later one its own.
+/// Each value is checked as it is resolved, over the answers so far, and not again (ADR-0080).
 /// </summary>
 public sealed class SubmissionHiddenDefaultsTests
 {
@@ -129,6 +130,51 @@ public sealed class SubmissionHiddenDefaultsTests
     }
 
     [Test]
+    public async Task AValueTheServerResolves_IsCheckedAsItIsResolved_NotAgainOnceALaterOneChangesItsOptions()
+    {
+        var letters = new TestOptionSource("letters", (request, _) =>
+            ValueTask.FromResult<IReadOnlyList<FormBuilderOption>>(request.ParentValues.Contains("b") ? [new FormBuilderOption("y")] : [new FormBuilderOption("x")]));
+        var types = TestFieldTypes.Build(builder => builder.Append<ServerChoiceFieldType>());
+        var second = Field("acme.serverChoice", "second", "Second") with { Options = Options(("a", "A"), ("b", "B")), DefaultValue = FieldDefaultValue.Of("b") };
+        var first = Field("acme.serverChoice", "first", "First") with
+        {
+            Options = new FieldOptions { Source = OptionSource.Code, Config = SettingsObject.Parse("""{"source":"letters"}"""), Parent = second.Key },
+            DefaultValue = FieldDefaultValue.Of("x"),
+        };
+        var options = new OptionListTestSite(letters).Options();
+        var reader = new SubmissionReader(types, MergeTagTestSite.Create(types: types, options: options).Service, options, NullLogger<SubmissionReader>.Instance);
+
+        var read = await reader.ReadAsync(Post(Form(first, second)));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Errors, Is.Empty, "the visitor can neither see nor change either");
+            Assert.That(read.Answers.Select(answer => answer.Values.Single().Text), Is.EqualTo(new[] { "x", "b" }), "x was an option when it was resolved, before the second had a value");
+            Assert.That(letters.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { string.Empty }), "the submission's check asks nothing again");
+        });
+    }
+
+    [Test]
+    public async Task ADefaultNotAmongItsOptions_IsNotStored_AndIsNoError()
+    {
+        var types = TestFieldTypes.Build(builder => builder.Append<ServerChoiceFieldType>());
+        var country = Field("acme.serverChoice", "country", "Country") with { Options = Options(("CH", "Switzerland"), ("DE", "Germany")), DefaultValue = FieldDefaultValue.Of("zz-secret") };
+        var options = new OptionListTestSite().Options();
+        var logger = new RecordingLogger<SubmissionReader>();
+        var reader = new SubmissionReader(types, MergeTagTestSite.Create(types: types, options: options).Service, options, logger);
+
+        var read = await reader.ReadAsync(Post(Form(country)));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Errors, Is.Empty, "the visitor can neither see nor change the field");
+            Assert.That(read.Answers, Is.Empty, "the entry stores none");
+            Assert.That(logger.Entries.Select(entry => entry.Message), Has.One.Contains("default value of the field 'country' renders to a value its type cannot take"));
+            Assert.That(logger.Entries.Select(entry => entry.Message), Has.None.Contains("secret"), "never the value");
+        });
+    }
+
+    [Test]
     public void OnlyAnswersMadeToBeReplaced_Change_AndTheirHiddenFieldsStay()
     {
         var shown = Guid.NewGuid();
@@ -167,7 +213,10 @@ public sealed class SubmissionHiddenDefaultsTests
         Fields = answers.ToDictionary(answer => answer.Field.Key, answer => new PostedAnswer(answer.Texts)),
     };
 
-    /// <summary>A site's type that keeps its value on the server and has options, as no built-in type does (ADR-0083).</summary>
+    /// <summary>
+    /// A site's type that keeps its value on the server and has options, as no built-in type does (ADR-0083), and holds
+    /// its values to them.
+    /// </summary>
     public sealed class ServerChoiceFieldType() : FormBuilderFieldTypeBase<NoFieldSettings>(new FieldTypeDeclaration
     {
         Alias = "acme.serverChoice",
@@ -179,5 +228,15 @@ public sealed class SubmissionHiddenDefaultsTests
         RuleKind = FieldKind.Choice,
         ServerOnlyDefault = true,
         Features = FieldFeatures.Label | FieldFeatures.DefaultValue | FieldFeatures.VisibilityRules | FieldFeatures.Options | FieldFeatures.NeedsOptions,
-    });
+    })
+    {
+        /// <inheritdoc />
+        protected override void Validate(NoFieldSettings settings, FieldValidation validation)
+        {
+            if (validation.Options is { } options && !validation.Values.All(value => options.Contains(value.Text)))
+            {
+                validation.Fail(FieldMessageKinds.Invalid);
+            }
+        }
+    }
 }

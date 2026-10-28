@@ -12,8 +12,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Entries;
 /// <summary>
 /// Posts that a client can send but the browser's runtime never does (ADR-0080), as <see cref="SubmissionReader"/> reads
 /// them: one upload named twice, by one token or by two, an upload an entry holds or another field's, an answer that
-/// fails after one of its tokens stood, a ranking's part names that are not clean or too long, a query value a field
-/// that keeps its value on the server cannot take or read, and a checkbox's <c>false</c>.
+/// fails after one of its tokens stood, a ranking's part names that are not clean or too long, a query value or a
+/// default a field that keeps its value on the server cannot take, read or pass its type's check with, and a
+/// checkbox's <c>false</c>.
 /// </summary>
 public sealed class SubmissionReaderPostTests
 {
@@ -25,6 +26,8 @@ public sealed class SubmissionReaderPostTests
     private static readonly Guid Newsletter = Key(6);
     private static readonly Guid Wing = Key(7);
     private static readonly Guid Count = Key(8);
+    private static readonly Guid Seats = Key(9);
+    private static readonly Guid Booked = Key(10);
 
     // A file field, a repeatable group of rooms with up to two plans and a hidden wing prefilled from the query each, a
     // ranking whose list the site lacks (so its answers are taken without being held to options), a hidden field and a
@@ -291,6 +294,52 @@ public sealed class SubmissionReaderPostTests
         });
     }
 
+    [TestCase("many-secret", null, Description = "one its type cannot read, without a default")]
+    [TestCase("1234567890123456", null, Description = "one its type's check refuses: more digits than a stored number keeps")]
+    [TestCase("1234567890123456", "3", Description = "the same, with a default")]
+    public async Task AQueryValueASitesServerSideTypeDoesNotTake_CountsAsNone_AndIsNoError(string posted, string? defaultValue)
+    {
+        var logger = new RecordingLogger<SubmissionReader>();
+
+        var read = await ReadAsync(Seating(defaultValue) with { Fields = new Dictionary<Guid, PostedAnswer> { [Seats] = new([posted]) } }, logger);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Errors, Is.Empty, "the visitor can neither see nor change the field, so no error could tell them anything");
+            Assert.That(read.Answers.SingleOrDefault(answer => answer.Field == Seats)?.Values.Single().Text, Is.EqualTo(defaultValue), "its default, if it has one, stands in");
+            Assert.That(read.State.Actions, defaultValue is null ? Is.Empty : Is.EqualTo(new[] { DefinitionLogic.Id(Booked) }), "the action's rule sees what was taken");
+            Assert.That(logger.Entries.Select(entry => entry.Message), Has.One.Contains("'seats' a value its type cannot take"));
+            Assert.That(logger.Entries.Select(entry => entry.Message), Has.None.Contains(posted), "never the value");
+        });
+    }
+
+    [TestCase("lots-secret", Description = "one its type cannot read")]
+    [TestCase("1234567890123456", Description = "one its type's check refuses")]
+    [TestCase("12345678901234567890123456789012345678901234567890123456789012345", Description = "one longer than its type takes")]
+    public async Task ADefaultASitesServerSideTypeDoesNotTake_IsNotStored_AndIsNoError(string defaultValue)
+    {
+        var logger = new RecordingLogger<SubmissionReader>();
+
+        var read = await ReadAsync(Seating(defaultValue), logger);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Errors, Is.Empty, "the visitor can neither see nor change the field");
+            Assert.That(read.Answers, Is.Empty, "the entry stores none");
+            Assert.That(read.State.Actions, Is.Empty);
+            Assert.That(logger.Entries.Select(entry => entry.Message), Has.One.Contains("default value of the field 'seats' renders to a value its type cannot take"));
+            Assert.That(logger.Entries.Select(entry => entry.Message), Has.None.Contains(defaultValue), "never the value");
+        });
+    }
+
+    [Test]
+    public async Task ARequiredServerSideField_ThatNeitherTheQueryNorItsDefaultGivesAValueItsTypeTakes_IsRequired()
+    {
+        var read = await ReadAsync(Seating("lots", required: true) with { Fields = new Dictionary<Guid, PostedAnswer> { [Seats] = new(["1234567890123456"]) } });
+
+        Assert.That(read.Errors.Select(error => (error.Field, error.Row, error.Kind)), Is.EqualTo(new[] { (Seats, (int?)null, FieldMessageKinds.Required) }), "the author asked for a value, and none came that its type takes");
+    }
+
     [TestCase("false", false)]
     [TestCase("no", false)]
     [TestCase("true", true)]
@@ -311,6 +360,33 @@ public sealed class SubmissionReaderPostTests
         Now = new DateTimeOffset(2026, 10, 27, 12, 0, 0, TimeSpan.Zero),
         TimeZone = "Europe/Zurich",
     };
+
+    // A post of a form with only a site's number that keeps its value on the server, prefilled from the query, with the
+    // default given and required when it says so, and an action whose rule runs when the number has a value.
+    private static PostedSubmission Seating(string? defaultValue, bool required = false)
+    {
+        var seats = Field(Seats, "acme.serverNumber", "seats") with
+        {
+            DefaultValue = defaultValue is null ? null : FieldDefaultValue.Of(defaultValue),
+            Prefill = new FieldPrefill { Query = "seats" },
+            Required = required,
+        };
+        var form = Form with
+        {
+            Pages = [new FormPage { Key = Key(101), Groups = [new FormGroup { Key = Key(102), Fields = [seats] }] }],
+            Actions =
+            [
+                new FormAction
+                {
+                    Key = Booked,
+                    Type = "email",
+                    Rules = [new FormRule { Key = Key(11), Effect = RuleEffect.Run, Conditions = [new RuleCondition { Field = Seats, Operator = "isNotEmpty" }] }],
+                },
+            ],
+            Settings = new FormSettings { Developer = new FormDeveloperSettings { QueryValues = ["seats"] } },
+        };
+        return Post() with { Scope = MergeTagTestSite.Scope(form: form) };
+    }
 
     // A ranking posted without JavaScript: each option's value as a part's name, its position as the part's text.
     private static PostedSubmission Ranking(params (string Name, string Position)[] parts) => Post() with
@@ -349,7 +425,10 @@ public sealed class SubmissionReaderPostTests
 
     private static Guid Key(int number) => Guid.Parse($"80000000-0000-4000-8000-{number:D12}");
 
-    /// <summary>A site's number that keeps its value on the server and may be prefilled from the query, which reads only numbers.</summary>
+    /// <summary>
+    /// A site's number that keeps its value on the server, may be prefilled from the query and may be required, which
+    /// reads only numbers and checks that a stored number keeps them.
+    /// </summary>
     public sealed class ServerNumberFieldType() : FormBuilderFieldTypeBase<NoFieldSettings>(new FieldTypeDeclaration
     {
         Alias = "acme.serverNumber",
@@ -360,6 +439,7 @@ public sealed class SubmissionReaderPostTests
         Storage = FieldStorageKind.Number,
         RuleKind = FieldKind.Number,
         ServerOnlyDefault = true,
-        Features = FieldFeatures.Label | FieldFeatures.DefaultValue | FieldFeatures.Prefill | FieldFeatures.VisibilityRules,
+        Features = FieldFeatures.Label | FieldFeatures.Required | FieldFeatures.DefaultValue | FieldFeatures.Prefill | FieldFeatures.VisibilityRules,
+        Messages = FieldMessageKinds.Required,
     });
 }
