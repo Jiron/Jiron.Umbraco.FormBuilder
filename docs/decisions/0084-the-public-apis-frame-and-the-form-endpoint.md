@@ -6,7 +6,8 @@
   [ADR-0043](0043-backoffice-settings-sections.md) (a stored time zone this server cannot resolve) and
   [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the one sanitiser); the answer's
   `mergeTags` and `consents` extended by [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md)
-  in 6.1b
+  in 6.1b; the `options` endpoint, `no-cache` with an `ETag` as the form endpoint, added by
+  [ADR-0086](0086-the-options-endpoint.md) in 6.1c
 - Date: 2026-10-28
 - Roadmap step: 6.1a (decided and built); 6.1b gives the consent wordings' hashes, 6.1d and 6.1e count a body without
   a declared length, 6.1e adds the entry limit to `open`, 7.1 enforces the rate-limit policies

@@ -69,7 +69,7 @@ database connection of its own. Its areas:
 | Definitions | the model, its JSON, upgraders, structural validation, the public projection and the visitor's form made from it (one string per text) with its visitor texts and their owners, the one HTML sanitiser (`EditorHtml`), versions and their comparison, and the exchange of forms (`Exchange`: element keys and their remap, copied actions, the export envelope) | ADR-0002, ADR-0045, ADR-0046, ADR-0084, ADR-0085 |
 | Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good, and the published form as the site runs it), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code; the published forms each server keeps with their cache refresher, and a published form in a visitor's culture (the dictionary's items read once, rich text sanitised, each consent's wording with its hash, and what the browser renders the visitor texts that render with) | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053, ADR-0060, ADR-0078, ADR-0084, ADR-0085 |
 | Fields and options | the field type registry, the built-in types, places on options | ADR-0002, §4.3.2 |
-| Option lists | the kinds with their configuration and its checks, content and data type lists with what they read from Umbraco and the handler that drops what they keep when the site changes, URL lists with what they fetch and keep, the reader of uploaded CSV and TXT files, the standard lists and a site's own sources with their start-up check, the library's lists with their cache refresher, the option service, and the publish check of a field's source | ADR-0002, ADR-0073, ADR-0075, ADR-0076 |
+| Option lists | the kinds with their configuration and its checks, content and data type lists with what they read from Umbraco and the handler that drops what they keep when the site changes, URL lists with what they fetch and keep, the reader of uploaded CSV and TXT files, the standard lists and a site's own sources with their start-up check, the library's lists with their cache refresher, the option service with what holds a request's answers up a chain of parents, and the publish check of a field's source | ADR-0002, ADR-0073, ADR-0075, ADR-0076, ADR-0081, ADR-0086 |
 | Outbound | calls to other hosts (`OutboundHttp`): the host configuration's hosts and schemes, redirects to the same host only, one time limit and a cap; the transport that resolves names itself and connects only to globally reachable addresses, which only the Testing assembly replaces | ADR-0076, §4.10 |
 | Logic | rules, validation, the pattern matcher, merge tags, calculations, text cleaning and folding | ADR-0005, ADR-0014, ADR-0030, ADR-0064, ADR-0068 |
 | Merge tags | the merge-tag service over the engine: the places and what each takes, the built-in sources (`field`, `entry` with `entry.answers` and `entry.url`, `form`, `query`, `context`, `date`, and `page`, `site`, `member` and `dictionary` over Umbraco's content, members, domains, languages and dictionary), the answers as each field type shows them with what each place masks or leaves out and the dictionary's texts for labels that name an item and the labels lists and other sources resolve for options, answer recall in visitor texts (only the fields before the text's page, group or field, by their current aliases, a site's type by its rule kind), a site's sources and filters with their start-up check, the culture formats written from .NET's data, and for a browser a template's values but recall's, the recall form cut down to what its texts need and the culture's formats as JSON | ADR-0014, ADR-0064, ADR-0065, ADR-0066, ADR-0067, ADR-0068, ADR-0077, ADR-0083, ADR-0085 |
@@ -116,7 +116,7 @@ flowchart LR
 
 | Area | Holds | Decided in |
 | --- | --- | --- |
-| Public API | `/jfb/api/v1` below the host's base path: the base controller with each action's declarations and their filter, the middleware in front of it (no form content, origins, what ends a request early), the catch-all, the OpenAPI document `jfb-public`, the form endpoint; the rate-limit middleware | ADR-0006, ADR-0012, ADR-0084 |
+| Public API | `/jfb/api/v1` below the host's base path: the base controller with each action's declarations and their filter, the middleware in front of it (no form content, origins, what ends a request early), the catch-all, the OpenAPI document `jfb-public`, the form endpoint, the options endpoint; the rate-limit middleware | ADR-0006, ADR-0012, ADR-0084, ADR-0086 |
 | Management API | `/umbraco/jfb/management/api/v1`: the base controller, the access declarations and their filter, the refusals with stable codes, the authorization policies with their resources and denials, the OpenAPI document `jfb`; the library tree, folders, the trash, forms and their versions, a definition carried as its document; the field types for the designer | ADR-0013, ADR-0049, ADR-0050, ADR-0051, ADR-0052, ADR-0057, §4.7 |
 | Rendering | the view component, `<jfb-render>`, `<jfb-assets>`, the surface controller, output cache rules, asset serving | ADR-0004, ADR-0015 |
 | Themes | the built-in themes, their views and stylesheets | ADR-0015 |
@@ -377,9 +377,10 @@ sequenceDiagram
 ## 5. The public API
 
 `/jfb/api/v1` (the base path is `JironFormBuilder:PublicApi:BasePath`), anonymous, JSON, ProblemDetails with stable
-codes, `no-store` except the form, the OpenAPI document `jfb-public` with its reviewed snapshot
+codes, `no-store` except the form and the options, the OpenAPI document `jfb-public` with its reviewed snapshot
 `docs/api/jfb-public.json` ([ADR-0012](decisions/0012-anonymous-endpoints-spam-protection-and-challenges.md),
-[ADR-0084](decisions/0084-the-public-apis-frame-and-the-form-endpoint.md)).
+[ADR-0084](decisions/0084-the-public-apis-frame-and-the-form-endpoint.md),
+[ADR-0086](decisions/0086-the-options-endpoint.md)).
 
 | Route | Purpose | Rate-limit policy | Needs |
 | --- | --- | --- | --- |
@@ -394,7 +395,7 @@ codes, `no-store` except the form, the OpenAPI document `jfb-public` with its re
 | `POST drafts/resume` | values and page for a resume token from the URL fragment | `submit` | the token |
 | `GET verify` | the page with the confirm button for double opt-in | `verify` | the verification token |
 | `POST verify` | confirms the address once | `verify` | the verification token |
-| `GET forms/{key}/options/{fieldKey}` | options for cascading and list-backed fields | `read` | – |
+| `GET forms/{key}/options/{fieldKey}` | a field's options in one culture for the answers up its chain of parents (`parent` for its parent, `parent.{fieldKey}` for any level), each held to the options its parent offers, for every published form; `available: false` when a source failed; `no-cache` with an `ETag` from the answer's bytes | `read` | – |
 | `POST forms/{key}/events` | the insights beacon, no identifiers | `events` | – |
 
 - **Every request** below the base path, in any letter case, meets a middleware before Umbraco's routing: no form

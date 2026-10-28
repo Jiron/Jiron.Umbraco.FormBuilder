@@ -2515,13 +2515,14 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - a test fails when any key is missing in any language;
     - a review subagent per language reads the texts in context (screenshots) and its fixes are applied.
 - [ ] **14.3 Members**
-  - **Access:** members-only forms and member groups, one entry per member.
+  - **Access:** members-only forms and member groups, one entry per member; the `options` endpoint answers a members-only form's options only to a member the form admits (added in 6.1c, ADR-0086).
   - **Prefill** (show and tamper-proof hide), and the member link on entries.
   - **Member deletion:** a handler deletes or anonymises the deleted member's entries, per a setting.
   - **Entries on the member:**
     - A workspace view on the member editor lists that member's entries, with permissions applied.
   - Done when:
     - tests and Playwright pass with the seeded members, including the entries view on the member;
+    - the `options` endpoint gives a members-only form's options to a member the form admits and none to an anonymous request or a member it does not admit (added in 6.1c, ADR-0086);
     - a members-only post with another member's challenge, without a challenge, with a challenge fetched without the member's cookie, or from a page on another origin is refused on both paths; a members-only page refuses to be framed by another origin; a repeated no-JS post leads to the first entry's outcome without a second entry, and an expired challenge renders the form again with its answers; a cross-origin or `Origin: null` post with a bad challenge, over the per-address limit, or with validation errors is refused without its answers; a server-key submission to a members-only form answers `member_required`; a no-JS post faster than the minimum fill time is accepted; no Jiron Form Builder response sets a cookie.
 - [ ] **14.4 Multi-site and phase review**
   - **Per-site settings:** sender, base URL, defaults and theme, resolved by the request's root or host. Links in emails follow the site. A root deleted for good takes its settings rows with it (ADR-0043).

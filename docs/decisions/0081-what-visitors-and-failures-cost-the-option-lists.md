@@ -6,7 +6,9 @@
   decompress) and [ADR-0077](0077-answers-and-labels-from-resolved-options.md) (the parent answers a submission's
   check resolves for); the parent answers merge tags resolve labels for held the same way, row by row too (5.5j), by
   [ADR-0083](0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md), and a Brotli body that does not
-  decompress, added in 5.5i; a stream disposed as the time limit passes counted as the time limit, added in 5.5k
+  decompress, added in 5.5i; a stream disposed as the time limit passes counted as the time limit, added in 5.5k;
+  the `options` endpoint's `parent` held up a chain of parents by
+  [ADR-0086](0086-the-options-endpoint.md) in 6.1c
 - Date: 2026-10-27
 - Roadmap step: 5.5g (decided and built); 6.1's `options` endpoint holds its `parent` and `culture` the same way
 
