@@ -1989,7 +1989,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     Umbraco's static files send no compression and no caching headers (§3.4).
   - **`<jfb-assets>`:** the tag helper that writes the module script (and, from 6.3, the stylesheets) once per page under the fingerprint, with the nonce option (`<jfb-assets nonce>` and `IFormBuilderCspNonceProvider`, ADR-0004). 6.2b includes it automatically.
   - Done when: TestServer tests pass, including the compressed and cacheable asset responses, every built website asset found in the assembly with both its copies, and `404` for an unknown, differently cased or traversing asset path; `<jfb-assets>` named twice on a page writes its tags once, with the nonce of its attribute or of a registered `IFormBuilderCspNonceProvider`, and without a nonce when there is neither.
-- [ ] **6.2b The view component and the markup contract** (6.2 split in six, WORKLOG 2026-10-28; then 6.2b in two, WORKLOG 2026-10-28)
+- [x] **6.2b The view component and the markup contract** (6.2 split in six, WORKLOG 2026-10-28; then 6.2b in two, WORKLOG 2026-10-28) (2026-10-28, 89549d8)
   - **Rendering:**
     - the view component and the `<jfb-render>` tag helper, which includes the assets once per page automatically unless turned off (6.2a), with its `context-…` values (§4.9) for the context values the form lists;
     - the views of ADR-0015 in the default view folder, each with its contract header, and a form's own overrides: Form, Page, Group, Field, Navigation, Progress, ErrorSummary, Outcome and Notice, with the controls of the text, number and content types and of the hidden field (6.2d adds the others; the themes and their resolution order come in 6.3);
