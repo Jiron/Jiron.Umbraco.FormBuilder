@@ -965,7 +965,8 @@ A settings change raises a notification and a cache refresher: the saving server
   - `IFormBuilderFormService` with its parts `IFormBuilderFormVersionService` and `IFormBuilderFormExchangeService` (ADR-0053), `IFormBuilderEntryService` (query, create programmatically, change state);
   - `IFormBuilderEntryReader` (read approved entries on the website, for example a guestbook);
   - `IFormBuilderRenderer`;
-  - `IFormBuilderMergeTagService`.
+  - `IFormBuilderMergeTagService`;
+  - `IFormBuilderOptionService` (a field's or a library list's options, resolved in a culture and for a parent's answers, ADR-0073, ADR-0077).
 - **Rendering:**
   - the `<jfb-render form="alias|key" theme="…" context-…="…">` tag helper, `@await Component.InvokeAsync("FormBuilderForm", …)` and `<jfb-assets>`. The custom element `<jfb-form>` belongs to the headless renderer;
   - the CSP nonce: `<jfb-assets nonce="…">`, or an `IFormBuilderCspNonceProvider` that a site (or its CSP package) registers to return the request's nonce, which `<jfb-assets>` also uses when it is included automatically (ADR-0004);
@@ -2250,9 +2251,14 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Per-culture texts** with a culture switcher and "missing translation" marks.
   - **Fields:** alias editing with its lock rules, and change field type (compatible types only, with a preview of what is lost).
   - **Changing types** (added in 5.1e, ADR-0059): the field types endpoint (5.1c) also serves each type's changes from 5.1e's map, with the permission matrix and the regenerated client, and the preview applies a change to the selected field: its values of lost and narrowed settings, the properties it uses that go, the conditions naming it whose operator goes, and the settings and options it needs.
+  - **Option sources** (added in 5.5j by the Phase 5 wiring sweep; ADR-0073, ADR-0075, ADR-0076, ADR-0077): the option lists' configuration has a service and a publish check but no endpoint and no texts yet.
+    - **The endpoint** serves the option kinds a field's source may use, each with its configuration's settings schema as the field types endpoint serves a type's settings (kinds, rules, `#jfbOption*` labels and descriptions), and the code sources' names with their labels in the registry's order, for any user of the Forms section, with the permission matrix and the regenerated client.
+    - **The source picker** in the option editor: the field's own options, a library list (with its kind and how many options it offers), or a kind configured on the field through the generic renderer; for a cascading field, the parent among the earlier choice fields.
+    - **The texts:** the backoffice dictionaries get English and German texts for every `#jfbOption*` key the kinds and the standard sources name, and the dictionaries' check holds them to the endpoint's snapshot, as it holds the field types' keys to theirs.
+  - **The tag picker's paths** (added in 5.5j by the Phase 5 wiring sweep; ADR-0065, ADR-0066): `IFormBuilderMergeTagService.Paths` has no caller yet. An endpoint serves the paths a form's merge tags may use in a place (the form's fields', the built-in sources' and the site's own, each with its label), for a user who may edit the form, with the permission matrix and the regenerated client. The tag picker of merge-tag-aware text offers the paths of its setting's place and inserts the tag; 10.2's email editor uses the same endpoint for mail.
   - **Locks:** host-locked settings are shown as locked.
   - **Designer locks** (added in 5.1f, ADR-0060): a setting the field types endpoint marks with a lock shows read-only with its locked value and the configuration key behind it, a hidden one does not show at all, and the change-type preview treats a locked setting of the target type as set by the lock: neither carried over nor needed.
-  - Done when: Playwright configures every built-in type through the UI, and axe is clean on the inspector. Playwright changes a text field with a placeholder and a condition using `contains` into a dropdown, and the preview names the placeholder, the condition and the options it needs before the change; the endpoint's integration tests cover the served changes (ADR-0059). With a designer lock of the text type's maximum length and a hidden lock of its prefix, Playwright finds the maximum length read-only with its value and key and no prefix in a text field's inspector (ADR-0060).
+  - Done when: Playwright configures every built-in type through the UI, and axe is clean on the inspector. The option sources endpoint's integration tests cover its answer (held to a snapshot in `docs/api/`) and the permission matrix; the dictionaries' check fails for a `#jfbOption*` key without an English or a German text; Playwright picks a library list, a code source and a cascading parent for a dropdown, and the canvas shows the options they resolve. The merge-tag paths endpoint's integration tests cover its answer for a form with fields and a site's source in two places (held to a snapshot in `docs/api/`) and the permission matrix, and Playwright inserts a field's tag through the picker. Playwright changes a text field with a placeholder and a condition using `contains` into a dropdown, and the preview names the placeholder, the condition and the options it needs before the change; the endpoint's integration tests cover the served changes (ADR-0059). With a designer lock of the text type's maximum length and a hidden lock of its prefix, Playwright finds the maximum length read-only with its value and key and no prefix in a text field's inspector (ADR-0060).
 - [ ] **9.5a The rules builder**
   - **The builder:** rule rows in plain language ("Show this field when **Country** **is** **Germany**"), any/all groups, operators per field type, and value pickers (options, dates including relative ones, numbers).
     - "Required when", a value taken from another field ("is after **Arrival**"), and the context conditions (language, member, query value, today), all of §4.3.3.
@@ -2292,7 +2298,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 - [ ] **10.2 The actions view and its editors**
   - **The list:** action cards per trigger (Submitted, Approved, Rejected, Verified), with order (drag and keyboard), an on/off switch, a rule chip and the last-run status.
   - **Adding:** an "add action" modal with presets.
-  - **The email editor:** a recipient builder, the merge-tag picker, and a live preview with a sample entry.
+  - **The email editor:** a recipient builder, the merge-tag picker (its paths from 9.4's endpoint, for mail), and a live preview with a sample entry.
   - **Test run.**
   - **The other action editors:**
     - **Webhook:** a mapping table, a signature help text and a test.
@@ -2328,7 +2334,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Working on many:** bulk actions (approve, reject, spam, not spam, delete, export selected, re-run actions) and the keyboard shortcuts of §4.13.
   - Done when: Playwright passes with 1,000 seeded entries, including a saved filter set reopened in a second browser and a bulk approval undone from its toast inside the window (`page.clock`; every entry back in its state, no approved action run, and no Undo offered once the window has passed, ADR-0023), and the 100,000-entry budget of §4.12 is measured and met.
 - [ ] **11.2 The entry panel**
-  - **Values:** grouped by page and group, with fields from older versions marked as such, plus files and the consent proof (the exact text).
+  - **Values:** grouped by page and group, with fields from older versions marked as such, plus files and the consent proof (the exact text). The panel's endpoint reads them through `EntryAnswerStore.ReadAsync` (named in 5.5j by the Phase 5 wiring sweep, ADR-0070), each value as its type read it.
   - **Metadata:** time, page, culture, member link, IP if stored, duration, spam reasons.
   - **The timeline:** events, action runs with retry, and emails.
   - **Notes:** add and edit your own.
@@ -2337,7 +2343,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - **Sensitive values:** masked, with an audited "reveal".
   - **Forward** (added in 1.1): send the entry to a backoffice user or to one of the team addresses of the email settings (§4.8), through the outbox. Sensitive values go along only when the user may see them and chooses to. Audited, and shown on the timeline.
   - **The entry's link** (added in 5.3e, ADR-0067): the entry's workspace (`BackofficeLinks.EntryEntityType`) answers `/umbraco/section/jfb-forms/workspace/jfb-entry/edit/<key>`, the link `entry.url` gives team mail, and opens the entry's panel without its list; a user who may not view the entry sees the backoffice's "not found" answer, as for an entry that is gone.
-  - Done when: Playwright passes, and the audit entries are asserted, including Approve in the panel followed by Undo from its toast (ADR-0023). A forwarded entry arrives in the pickup folder, and an address outside the allowed recipients is refused by the API. Playwright opens the `entry.url` link of a mail in the pickup folder and lands on that entry's panel, and the same link as a user without access to its form shows no value of it.
+  - Done when: Playwright passes, and the audit entries are asserted, including Approve in the panel followed by Undo from its toast (ADR-0023). The panel's endpoint's integration test stores an entry of every type and gets each value back as `EntryAnswerStore.ReadAsync` reads it. A forwarded entry arrives in the pickup folder, and an address outside the allowed recipients is refused by the API. Playwright opens the `entry.url` link of a mail in the pickup folder and lands on that entry's panel, and the same link as a user without access to its form shows no value of it.
 - [ ] **11.3 The all-entries inbox and spam**
   - **The inbox:** a cross-form list with a form column and a form filter, unseen entries first. It holds the entries of the forms the user may view entries of, through the access filter of 4.6a in its query (ADR-0048).
   - **Spam:** the spam folder with "not spam".
@@ -2394,7 +2400,8 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 - [ ] **12.1 Option lists**
   - A list, an editor per kind with a live preview of the options, CSV/TXT upload, the cache setting, and "used by".
-  - Done when: Playwright passes.
+  - **From 9.4** (added in 5.5j): the editor per kind is the generic settings renderer over the option kinds' schemas that 9.4's endpoint serves, with the same texts; a code list picks its source from the endpoint's names, and a manual list's items use 9.4's option editor.
+  - Done when: Playwright passes, creating a list of every kind through the UI (a URL list against a local stub host the test site allows), and axe is clean on the list editor.
 - [ ] **12.2 Themes and email layouts**
   - **The editor:** a theme list, and a visual token editor:
     - light and dark colours;

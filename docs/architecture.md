@@ -233,9 +233,10 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   `SubmissionReader` puts these together over a whole form for the pipeline: every answer and part name cleaned,
   limited and read (a hidden field's query value that does not fit counts as none, so its default stands in), a
   repeatable group's rows counted against its limits before any is read, the rules over what was read with every
-  calculation worked out by the server, each shown hidden field's default resolved on submit over one scope that
-  takes each resolved value in turn (then the rules once more, for the actions and the outcome), and the shown fields
-  checked, a child in its row, a choice from a list or
+  calculation worked out by the server, each shown hidden field's value checked as it is resolved on submit (a query
+  value its type does not take counts as none, a default it does not take is not stored, ADR-0080) and its default
+  rendered over one scope that takes each resolved value in turn (then the rules once more, for the actions and the
+  outcome), and the other shown fields checked, a child in its row, a choice from a list or
   another source against the options the option service resolves for the submission's culture, page and parent
   answers (only those the parent offers, so no posted text reaches a source; with the parent's options unknown, the
   child's are unknown too: [ADR-0081](decisions/0081-what-visitors-and-failures-cost-the-option-lists.md)), once per

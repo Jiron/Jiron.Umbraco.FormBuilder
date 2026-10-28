@@ -152,6 +152,11 @@ internal sealed class OutboundHttp(IFormBuilderHttpTransport transport, IOptions
             // The connection broke off while the body was read (ADR-0081).
             throw new FormBuilderOutboundException(OutboundFailure.NoConnection, innerException: exception);
         }
+        catch (ObjectDisposedException exception) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            // A stream disposed as the time limit passed; otherwise one disposed while it is read stays what it is.
+            throw new FormBuilderOutboundException(OutboundFailure.TimedOut, innerException: exception);
+        }
         catch (InvalidDataException exception)
         {
             // The body does not decompress as its encoding says (ADR-0081).

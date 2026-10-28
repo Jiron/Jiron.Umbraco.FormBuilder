@@ -263,7 +263,7 @@ public sealed class SiteMergeTagExtensionsTests
             Assert.That(() => HostOptions.Start(taken), Throws.TypeOf<OptionsValidationException>().With.Message.Contains(
                 $"The merge-tag source {typeof(DateNamedSource).FullName} is named 'date', which a built-in source has."));
             Assert.That(() => HostOptions.Start(broken), Throws.TypeOf<OptionsValidationException>().With.Message.Contains(
-                "Jiron Form Builder cannot create the site's merge-tag sources: Set Crm:Url to the CRM's address."));
+                "Jiron Form Builder cannot create the site's merge-tag sources: System.InvalidOperationException: Set Crm:Url to the CRM's address."));
         });
     }
 
@@ -348,7 +348,7 @@ public sealed class SiteMergeTagExtensionsTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(site.Problems, Is.EqualTo(new[] { $"Jiron Form Builder cannot create the site's merge-tag {(sourcesFail ? "sources" : "filters")}: JFB_TEST: no CRM address." }));
+            Assert.That(site.Problems, Is.EqualTo(new[] { $"Jiron Form Builder cannot create the site's merge-tag {(sourcesFail ? "sources" : "filters")}: System.InvalidOperationException: JFB_TEST: no CRM address." }));
             Assert.That((site.Sources.Count, site.Filters.Count), Is.EqualTo(sourcesFail ? (0, 1) : (1, 0)), "the other collection's items stay");
         });
     }

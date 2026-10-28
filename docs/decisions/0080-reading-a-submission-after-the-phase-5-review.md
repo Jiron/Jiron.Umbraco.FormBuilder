@@ -5,7 +5,8 @@
   submission) and [ADR-0072](0072-a-submissions-answers.md) (a hidden field's query value that does not fit); the
   upload taken once by any token and one an entry holds refused added in 5.5i, after the second review, which also
   logs a query value that fails any of its type's limits as one its type cannot take (5.5f already counted it as
-  none); a query value its type cannot read counting as none added in 5.5j, after the third
+  none); a query value its type cannot read counting as none added in 5.5j, after the third; a value the server
+  resolves checked as it is resolved, from the query or from a default, added in 5.5k, after the fourth
 - Date: 2026-10-27
 - Roadmap step: 5.5f (decided and built); 6.1 runs the reader in the submission pipeline
 
@@ -67,6 +68,19 @@ answers, which costs the number of options times the number of answers.
   gives none: the visitor can neither see nor change the field, so no error could tell them anything. The server logs
   a warning that names the field, never the value, once for each value, so at most once for each row of a repeatable
   group.
+- **A value the server resolves is checked as it is resolved** (5.5k, after the fourth review). In the form's order,
+  a repeatable group's rows among them, each shown field that keeps its value on the server has its value held to its
+  type's check, against the options its list or source resolves, and to its own checks, over the answers so far (in
+  its row, that row's): a query value that fails counts as none, so its default stands in, and a default that renders
+  to a value its type cannot take (over its limits, unreadable or failing those checks) is not stored. Each is logged
+  as above, and the rules run once more when a value changed. The submission's check does not check such a field's
+  value again, so it fails a submission only for being required without a value: the author asked for one, and
+  neither the query nor the default gave one its type takes. Before, a readable query value or a default that failed
+  its type's check (a site's number with more digits than a stored number keeps), or a default its type could not
+  read, made the submission `invalid` at a field the visitor cannot see. Show and hide rules never read such a field
+  (ADR-0035), so what is shown is the same when the values are resolved and when the answers are checked. A type that
+  keeps its default on the server stores no files: its default is a text it renders, and the start-up check refuses
+  such a type that does.
 - **A checkbox takes `false`.** Its longest answer is 5 characters, so `false` reads as unticked, as ADR-0058 says.
 - **The parent filter** holds the parent's answers in a set.
 
@@ -75,5 +89,7 @@ answers, which costs the number of options times the number of answers.
 - A client that posts one upload twice, by one token or by two, gets `invalid` at the later field or row, never a
   server error. The pipeline gives the reader only the form's uploads (6.1), which the reader cannot tell by itself.
 - Every part's name is held to its type's longest text, for every type with parts.
-- A link whose query value is too long for its hidden field still submits, with the field's default.
+- A link whose query value is too long for its hidden field still submits, with the field's default, and so does one
+  whose value the field's type refuses.
+- A check that compares a field the server resolves with one resolved after it sees the later one as it was then.
 - The browser's runtime posts neither form, so nothing changes there; the shared vectors do not cover the reader.

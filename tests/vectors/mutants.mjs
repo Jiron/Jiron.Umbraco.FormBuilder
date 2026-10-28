@@ -1259,6 +1259,66 @@ const mutants = [
   csm('cs-a-hidden-groups-child-as-a-parent', 'MergeTagAnswerTexts.cs', ' || asking.Contains(parent) || IsHidden(found, scope))', ' || asking.Contains(parent) || scope.Answers.Hidden.Contains(parent))', {
     tests: 'FullyQualifiedName~ListAnswersTests',
   }),
+  // ---- The fourth review's fixes (ROADMAP 5.5k, ADR-0080, ADR-0081, ADR-0083): no vector holds a submission or a scope ----
+  csm('cs-a-grids-labels', 'MergeTagAnswerTexts.cs', 'if (scope.Answers.Find(field.Key, row) is not null && await ResolvedAsync(', 'if (AnswersOf(scope, field.Key, row).Count > 0 && await ResolvedAsync(', {
+    tests: 'FullyQualifiedName~ListAnswersTests',
+  }),
+  csm('cs-a-rows-parent-outside-its-group', 'MergeTagAnswerTexts.cs', 'var answers = where is { } at && found.Repeater?.Key == at.Repeater ? AnswersOf(', 'var answers = where is { } at ? AnswersOf(', {
+    tests: 'FullyQualifiedName~ListAnswersTests',
+  }),
+  csm('cs-a-collection-whose-constructor-throws', 'MergeTagRegistry.cs',
+    lines('        catch (Exception exception) when (exception is not OutOfMemoryException)', '        {', '            problems.Add('),
+    lines('        catch (InvalidOperationException exception)', '        {', '            problems.Add('), {
+      tests: 'FullyQualifiedName~SiteMergeTagExtensionsTests',
+    }),
+  {
+    runtime: 'cs',
+    name: 'cs-a-query-value-taken-unchecked',
+    file: 'src/Jiron.Umbraco.FormBuilder.Core/Entries/SubmissionReader.cs',
+    from: lines('            if (!slot.Values.IsEmpty)', '            {', '                if (await TakesAsync(slot, row, slots, state, resolving, today, cancellationToken))'),
+    to: lines('            if (!slot.Values.IsEmpty)', '            {', '                if (slot.Read is not null)'),
+    tests: 'FullyQualifiedName~SubmissionReaderPostTests',
+  },
+  {
+    runtime: 'cs',
+    name: 'cs-a-default-taken-unchecked',
+    file: 'src/Jiron.Umbraco.FormBuilder.Core/Entries/SubmissionReader.cs',
+    from: lines('                if (await TakesAsync(slot, row, slots, state, resolving, today, cancellationToken))', '                {', '                    changed = true;'),
+    to: lines('                if (!slot.Read.IsUnreadable)', '                {', '                    changed = true;'),
+    tests: 'FullyQualifiedName~SubmissionReaderPostTests|FullyQualifiedName~SubmissionHiddenDefaultsTests',
+  },
+  {
+    runtime: 'cs',
+    name: 'cs-a-query-value-dropped-without-the-rules-again',
+    file: 'src/Jiron.Umbraco.FormBuilder.Core/Entries/SubmissionReader.cs',
+    from: lines('                slot.Read = FieldValues.Read(slot.Type, slot.Field, FieldAnswers.None);', '                changed = true;'),
+    to: lines('                slot.Read = FieldValues.Read(slot.Type, slot.Field, FieldAnswers.None);'),
+    tests: 'FullyQualifiedName~SubmissionReaderPostTests',
+  },
+  {
+    runtime: 'cs',
+    name: 'cs-a-server-side-value-checked-again',
+    file: 'src/Jiron.Umbraco.FormBuilder.Core/Entries/SubmissionReader.cs',
+    from: lines('        if (slot.Type.Declaration.ServerOnlyDefault)', '        {', '            if (slot.Values.IsEmpty)'),
+    to: lines('        if (slot.Type.Declaration.ServerOnlyDefault && slot.Values.IsEmpty)', '        {', '            if (slot.Values.IsEmpty)'),
+    tests: 'FullyQualifiedName~SubmissionHiddenDefaultsTests',
+  },
+  {
+    runtime: 'cs',
+    name: 'cs-a-server-side-type-storing-files',
+    file: 'src/Jiron.Umbraco.FormBuilder.Core/FieldTypes/FieldTypeRegistry.cs',
+    from: 'if (declaration.ServerOnlyDefault && declaration.Storage == FieldStorageKind.File)',
+    to: 'if (declaration.ServerOnlyDefault && declaration.Storage == FieldStorageKind.Json)',
+    tests: 'FullyQualifiedName~FieldTypeRegistryTests',
+  },
+  {
+    runtime: 'cs',
+    name: 'cs-a-stream-disposed-as-the-limit-passes',
+    file: 'src/Jiron.Umbraco.FormBuilder.Core/Outbound/OutboundHttp.cs',
+    from: 'catch (ObjectDisposedException exception) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)',
+    to: 'catch (ObjectDisposedException exception) when (cancellationToken.IsCancellationRequested)',
+    tests: 'FullyQualifiedName~OutboundHttpTests',
+  },
 ];
 
 // ---- Running ----

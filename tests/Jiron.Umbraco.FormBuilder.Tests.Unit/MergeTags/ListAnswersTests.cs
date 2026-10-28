@@ -221,6 +221,8 @@ public sealed class ListAnswersTests
     [TestCase(true, Description = "by its repeatable group's")]
     public async Task AParentTheRulesHid_GivesItsChildNoParentAnswers(bool byItsGroup)
     {
+        // Answers as any caller of the public answers may give them: the submission's reader leaves out a hidden group's
+        // children, but the hidden keys alone decide here.
         var towns = Towns();
         var country = Field("dropdown", "country", "Country") with { Options = Options(("CH", "Switzerland"), ("DE", "Germany")) };
         var stops = Field("repeater", "stops", "Stops") with { Fields = [country] };

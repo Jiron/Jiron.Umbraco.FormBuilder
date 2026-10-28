@@ -16,8 +16,10 @@ namespace Jiron.Umbraco.FormBuilder.Core.Entries;
 /// answer cleaned, held to its type's limits and read by its type before the rules; a repeatable group's rows counted
 /// and held to its limits; the rules over what was read, with every calculation worked out by the server; a hidden
 /// field's server-only value resolved; and each field the rules leave shown checked, a repeatable group's children row
-/// by row, a choice whose options come from a list or another source against the options it resolves (ADR-0077). What
-/// the rules hide is neither checked nor stored.
+/// by row, a choice whose options come from a list or another source against the options it resolves (ADR-0077). A
+/// field that keeps its value on the server is checked as its value is resolved, and a value its type does not take is
+/// not taken, so it fails a submission only for being required without one (ADR-0080). What the rules hide is neither
+/// checked nor stored.
 /// </summary>
 internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBuilderMergeTagService mergeTags, IFormBuilderOptionService options, ILogger<SubmissionReader> logger)
 {
@@ -50,13 +52,14 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
         // Only the rules of actions and outcomes may look at a value the server resolves (ADR-0035), so evaluating again
         // with the resolved values leaves what is shown as it was and decides the actions and the outcome.
-        if (await ResolveAsync(slots, state, post, cancellationToken))
+        var resolving = new Resolving(post, [], slots.SelectMany(slot => slot.Field.Fields.Prepend(slot.Field)).ToDictionary(field => field.Key));
+        if (await ResolveAsync(slots, state, post, resolving, today, cancellationToken))
         {
             state = FormRules.Evaluate(logic, Answers(slots), context);
         }
 
         var stored = Stored(slots, state, post);
-        return new SubmissionAnswers(stored, await ErrorsAsync(slots, state, post, today, cancellationToken), state, ForMergeTags(stored, state));
+        return new SubmissionAnswers(stored, await ErrorsAsync(slots, state, resolving, today, cancellationToken), state, ForMergeTags(stored, state));
     }
 
     // Every field of the version whose type the site has, outside repeatable groups and in the form's order, with its
@@ -102,16 +105,18 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
     // A field's answer held to its type's limits and read. A value the server resolves is never taken from the post,
     // unless the field is prefilled from the query, whose value only the visitor's page has (ADR-0002); a prefilled value
     // the field cannot take (too long, more texts or parts than it takes, or one its type cannot read) counts as none,
-    // so its default stands in, as the visitor can neither see nor change it (ADR-0080).
+    // so its default stands in, as the visitor can neither see nor change it (ADR-0080). Its type's check waits for the
+    // rules (ResolveAsync).
     private Slot Read(Slot slot, PostedAnswer? posted)
     {
+        var prefilled = slot.Field.Prefill?.Query is not null;
         var serverOnly = slot.Type.Declaration.ServerOnlyDefault;
-        var answers = serverOnly && slot.Field.Prefill?.Query is null ? FieldAnswers.None : Clean(posted);
+        var answers = serverOnly && !prefilled ? FieldAnswers.None : Clean(posted);
         slot.OverLimit = FieldValues.CheckLimits(slot.Type, slot.Field, answers);
         slot.Read = slot.OverLimit is null ? FieldValues.Read(slot.Type, slot.Field, answers) : Slot.Nothing;
-        if (serverOnly && (slot.OverLimit is not null || slot.Read.IsUnreadable))
+        if (serverOnly && prefilled && (slot.OverLimit is not null || slot.Read.IsUnreadable))
         {
-            LogPrefillNotTaken(logger, slot.Field.Alias ?? DefinitionLogic.Id(slot.Field.Key));
+            LogPrefillNotTaken(logger, NameOf(slot));
             slot.OverLimit = null;
             slot.Read = FieldValues.Read(slot.Type, slot.Field, FieldAnswers.None);
         }
@@ -186,18 +191,39 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         }
     }
 
-    // Each shown field whose type keeps its value on the server and that the post gave none, in the form's order: its
-    // default value rendered where hidden values render, over the answers so far (the earlier resolved values among
-    // them), cleaned, held to its type's limits and read by its type. All of them render over one scope, given the
-    // answers again after each value, so what its tags read once, such as an option's label, is read once (ADR-0083).
-    // Whether any value was resolved.
-    private async Task<bool> ResolveAsync(List<Slot> slots, FormState state, PostedSubmission post, CancellationToken cancellationToken)
+    // Each shown field whose type keeps its value on the server, in the form's order, a repeatable group's children row
+    // by row. A value the query gave it that its type does not take counts as none (TakesAsync). A field without a value
+    // then gets its default value rendered where hidden values render, over the answers so far (the earlier resolved
+    // values among them), cleaned, held to its type's limits and read by its type; a value its type does not take is not
+    // stored. The visitor can neither see nor change such a field, so no error could tell them anything (ADR-0080); each
+    // value not taken is logged, naming the field, never the value. All the defaults render over one scope, given the
+    // answers again after each change, so what its tags read once, such as an option's label, is read once (ADR-0083).
+    // Whether any value changed.
+    private async Task<bool> ResolveAsync(List<Slot> slots, FormState state, PostedSubmission post, Resolving resolving, DateOnly today, CancellationToken cancellationToken)
     {
-        var resolved = false;
+        var changed = false;
         MergeTagScope? scope = null;
-        foreach (var slot in Shown(slots, state))
+        foreach (var (slot, row) in Shown(slots, state))
         {
-            if (!slot.Type.Declaration.ServerOnlyDefault || !slot.Values.IsEmpty || slot.Field.DefaultValue is not { } template)
+            if (!slot.Type.Declaration.ServerOnlyDefault)
+            {
+                continue;
+            }
+
+            if (!slot.Values.IsEmpty)
+            {
+                if (await TakesAsync(slot, row, slots, state, resolving, today, cancellationToken))
+                {
+                    continue;
+                }
+
+                LogPrefillNotTaken(logger, NameOf(slot));
+                slot.Read = FieldValues.Read(slot.Type, slot.Field, FieldAnswers.None);
+                changed = true;
+                scope?.Answers.Replace(ForMergeTags(Stored(slots, state, post)));
+            }
+
+            if (slot.Field.DefaultValue is not { } template)
             {
                 continue;
             }
@@ -214,25 +240,49 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
             }
 
             var answers = new FieldAnswers(texts);
-            if (FieldValues.CheckLimits(slot.Type, slot.Field, answers) is not null)
+            var none = slot.Read;
+            if (FieldValues.CheckLimits(slot.Type, slot.Field, answers) is null)
             {
-                LogValueTooLong(logger, slot.Field.Alias ?? DefinitionLogic.Id(slot.Field.Key));
-                continue;
+                slot.Read = FieldValues.Read(slot.Type, slot.Field, answers);
+                if (slot.Read is { IsUnreadable: false, Values.IsEmpty: true })
+                {
+                    continue;
+                }
+
+                if (await TakesAsync(slot, row, slots, state, resolving, today, cancellationToken))
+                {
+                    changed = true;
+                    scope.Answers.Replace(ForMergeTags(Stored(slots, state, post)));
+                    continue;
+                }
             }
 
-            slot.Read = FieldValues.Read(slot.Type, slot.Field, answers);
-            if (!slot.Values.IsEmpty)
-            {
-                resolved = true;
-                scope.Answers.Replace(ForMergeTags(Stored(slots, state, post)));
-            }
+            LogDefaultNotTaken(logger, NameOf(slot));
+            slot.Read = none;
         }
 
-        return resolved;
+        return changed;
     }
 
-    // The shown fields outside repeatable groups and, for a shown group, the children shown in each of its rows.
-    private static IEnumerable<Slot> Shown(List<Slot> slots, FormState state)
+    // Whether a field's value, as its type read it, is one its type takes: its type's check, against the options its
+    // source resolves, and its own checks pass over the answers so far (FieldValues.Check), in a repeatable group's row
+    // over that row's.
+    private async Task<bool> TakesAsync(Slot slot, ShownRow? row, List<Slot> slots, FormState state, Resolving resolving, DateOnly today, CancellationToken cancellationToken)
+    {
+        var others = Others(slots, state, state.Hidden.ToHashSet(StringComparer.Ordinal));
+        if (row is { } at)
+        {
+            others = RowOthers(others, at.Fields, at.State);
+        }
+
+        var offered = await OfferedAsync(slot, others, resolving, cancellationToken);
+        var found = FieldValues.Check(slot.Type, slot.Field, slot.Read, new FieldCheckInput(IsRequired: false, today) { Values = others, Options = offered });
+        return found.Errors.IsEmpty && found.Checks.IsEmpty;
+    }
+
+    // The shown fields outside repeatable groups and, for a shown group, the children shown in each of its rows, each with
+    // its row's fields and state.
+    private static IEnumerable<(Slot Slot, ShownRow? Row)> Shown(List<Slot> slots, FormState state)
     {
         var hidden = state.Hidden.ToHashSet(StringComparer.Ordinal);
         foreach (var slot in slots)
@@ -245,7 +295,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
             if (!slot.IsGroup)
             {
-                yield return slot;
+                yield return (slot, null);
                 continue;
             }
 
@@ -254,7 +304,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
             {
                 foreach (var child in slot.Rows[row].Where(child => !rows[row].Hidden.Contains(DefinitionLogic.Id(child.Field.Key))))
                 {
-                    yield return child;
+                    yield return (child, new ShownRow(slot.Rows[row], rows[row]));
                 }
             }
         }
@@ -348,12 +398,11 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
     // The errors of the shown fields in the form's order: a group's own, then its children's row by row; for each field
     // its type's error kinds, its own checks and the form-level validation rules whose message shows at it.
-    private async Task<ImmutableArray<SubmissionError>> ErrorsAsync(List<Slot> slots, FormState state, PostedSubmission post, DateOnly today, CancellationToken cancellationToken)
+    private async Task<ImmutableArray<SubmissionError>> ErrorsAsync(List<Slot> slots, FormState state, Resolving resolving, DateOnly today, CancellationToken cancellationToken)
     {
         var hidden = state.Hidden.ToHashSet(StringComparer.Ordinal);
         var required = state.Required.ToHashSet(StringComparer.Ordinal);
         var others = Others(slots, state, hidden);
-        var resolving = new Resolving(post, [], slots.SelectMany(slot => slot.Field.Fields.Prepend(slot.Field)).ToDictionary(field => field.Key));
         var claimed = new HashSet<int>();
         var errors = ImmutableArray.CreateBuilder<SubmissionError>();
         foreach (var slot in slots)
@@ -366,7 +415,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
             if (!slot.IsGroup)
             {
-                Check(errors, slot, null, required.Contains(id), others, await OfferedAsync(slot, others, resolving, cancellationToken), post, claimed, today);
+                await CheckAsync(errors, slot, null, required.Contains(id), others, resolving, claimed, today, cancellationToken);
                 Messages(errors, state.Messages, slot.Field, null);
                 continue;
             }
@@ -376,18 +425,13 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
             var rows = RowsOf(state, id);
             for (var row = 0; row < slot.Rows.Count && row < rows.Count; row++)
             {
-                var rowOthers = new Dictionary<Guid, ImmutableArray<string>>(others);
-                foreach (var child in slot.Rows[row])
-                {
-                    rowOthers[child.Field.Key] = rows[row].Hidden.Contains(DefinitionLogic.Id(child.Field.Key)) ? [] : Texts(ValuesOf(child, rows[row].Calculations));
-                }
-
+                var rowOthers = RowOthers(others, slot.Rows[row], rows[row]);
                 foreach (var child in slot.Rows[row])
                 {
                     var childId = DefinitionLogic.Id(child.Field.Key);
                     if (!rows[row].Hidden.Contains(childId))
                     {
-                        Check(errors, child, row, rows[row].Required.Contains(childId), rowOthers, await OfferedAsync(child, rowOthers, resolving, cancellationToken), post, claimed, today);
+                        await CheckAsync(errors, child, row, rows[row].Required.Contains(childId), rowOthers, resolving, claimed, today, cancellationToken);
                         Messages(errors, rows[row].Messages, child.Field, row);
                     }
                 }
@@ -476,18 +520,19 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
     // One shown field's errors: over its type's limits alone; a file token that stands for no upload of the field, for
     // one an entry holds, or for one an earlier value or another token of the answer named, as invalid; otherwise its
-    // type's check, against the options its source resolved, and its own checks (FieldValues.Check). A calculation's
-    // value is the server's.
-    private static void Check(
+    // type's check, against the options its source resolves, and its own checks (FieldValues.Check). A calculation's
+    // value is the server's; a value a field that keeps its value on the server took was checked as it was resolved, so
+    // such a field fails only for being required without one (ADR-0080), and its options are not asked for again.
+    private async Task CheckAsync(
         ImmutableArray<SubmissionError>.Builder errors,
         Slot slot,
         int? row,
         bool isRequired,
-        IReadOnlyDictionary<Guid, ImmutableArray<string>> others,
-        IReadOnlyList<FormBuilderOption>? offered,
-        PostedSubmission post,
+        Dictionary<Guid, ImmutableArray<string>> others,
+        Resolving resolving,
         HashSet<int> claimed,
-        DateOnly today)
+        DateOnly today,
+        CancellationToken cancellationToken)
     {
         var key = slot.Field.Key;
         if (slot.OverLimit is { } kind)
@@ -501,10 +546,20 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
             return;
         }
 
+        if (slot.Type.Declaration.ServerOnlyDefault)
+        {
+            if (slot.Values.IsEmpty)
+            {
+                errors.AddRange(FieldValues.Check(slot.Type, slot.Field, Slot.Nothing, new FieldCheckInput(isRequired, today)).Errors.Select(error => new SubmissionError(key, row, error)));
+            }
+
+            return;
+        }
+
         ImmutableArray<FieldFile> files = [];
         if (slot.Type.Declaration.Storage == FieldStorageKind.File && !slot.Values.IsEmpty)
         {
-            if (UploadsOf(slot, slot.Values, post, claimed) is not { } uploads)
+            if (UploadsOf(slot, slot.Values, resolving.Post, claimed) is not { } uploads)
             {
                 errors.Add(new SubmissionError(key, row, FieldMessageKinds.Invalid));
                 return;
@@ -513,6 +568,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
             files = [.. uploads.Select(upload => new FieldFile(upload.OriginalName, upload.SizeBytes))];
         }
 
+        var offered = await OfferedAsync(slot, others, resolving, cancellationToken);
         var found = FieldValues.Check(slot.Type, slot.Field, slot.Read, new FieldCheckInput(isRequired, today) { Files = files, Values = others, Options = offered });
         errors.AddRange(found.Errors.Select(error => new SubmissionError(key, row, error)));
         errors.AddRange(found.Checks.Select(check => new SubmissionError(key, row, FieldMessageKinds.None, Check: check)));
@@ -562,7 +618,22 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         return others;
     }
 
+    // The values a repeatable group's child's checks compare with in a row: every shown field's (Others), with the row's
+    // own children's values in place of every row's.
+    private static Dictionary<Guid, ImmutableArray<string>> RowOthers(Dictionary<Guid, ImmutableArray<string>> others, List<Slot> fields, RowState row)
+    {
+        var rowOthers = new Dictionary<Guid, ImmutableArray<string>>(others);
+        foreach (var child in fields)
+        {
+            rowOthers[child.Field.Key] = row.Hidden.Contains(DefinitionLogic.Id(child.Field.Key)) ? [] : Texts(ValuesOf(child, row.Calculations));
+        }
+
+        return rowOthers;
+    }
+
     private static ImmutableArray<string> Texts(ImmutableArray<FieldValue> values) => [.. values.Where(value => value.Row is null).Select(value => value.Text)];
+
+    private static string NameOf(Slot slot) => slot.Field.Alias ?? DefinitionLogic.Id(slot.Field.Key);
 
     private static IReadOnlyList<RowState> RowsOf(FormState state, string id) => state.Rows.GetValueOrDefault(id) ?? [];
 
@@ -582,14 +653,17 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
     // and every field of the form by key, a repeatable group's children among them, as a parent may be one.
     private sealed record Resolving(PostedSubmission Post, Dictionary<(Guid Field, string Parents), FormBuilderResolvedOptions> Resolved, Dictionary<Guid, FormField> Fields);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "The value the server resolves for the field '{Field}' is longer than its type takes, so the entry stores none.")]
-    private static partial void LogValueTooLong(ILogger logger, string field);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The default value of the field '{Field}' renders to a value its type cannot take, so the entry stores none.")]
+    private static partial void LogDefaultNotTaken(ILogger logger, string field);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The options of the field '{Field}' could not be resolved, so its answers are taken without being held to them.")]
     private static partial void LogOptionsUnavailable(ILogger logger, string field);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The query gives the field '{Field}' a value its type cannot take, so its default stands in.")]
     private static partial void LogPrefillNotTaken(ILogger logger, string field);
+
+    // A repeatable group's row a child is shown in: the row's fields and its state.
+    private readonly record struct ShownRow(List<Slot> Fields, RowState State);
 
     // One field's answer in the submission: the field and its type, what its type read, and a repeatable group's rows.
     private sealed class Slot(FormField field, IFormBuilderFieldType type)

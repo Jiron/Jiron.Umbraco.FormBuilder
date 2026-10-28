@@ -170,6 +170,11 @@ internal sealed partial class FieldTypeRegistry
             yield return "keeps its default value on the server, so it supports a default value.";
         }
 
+        if (declaration.ServerOnlyDefault && declaration.Storage == FieldStorageKind.File)
+        {
+            yield return "keeps its default value on the server, a text it renders, so it stores no files.";
+        }
+
         if (declaration.MultipleSetting)
         {
             if (declaration.RuleKind != Logic.FieldKind.Choice && (features & FieldFeatures.Rows) == 0)

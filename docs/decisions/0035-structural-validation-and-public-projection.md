@@ -80,7 +80,8 @@ Option 2 for all three. In detail:
   Each such type counts on its own (amended in 4.8e), so a form may hold a captcha and a field of another
   one-per-form type;
 - `ServerOnlyDefault`: the default is resolved when the entry is submitted and never reaches the page (the hidden
-  field, whose default may use member and context values, ADR-0014);
+  field, whose default may use member and context values, ADR-0014); such a type stores no files, and its value is
+  checked as it is resolved (ADR-0080);
 - `PublicSettings`.
 
 How the traits are used:

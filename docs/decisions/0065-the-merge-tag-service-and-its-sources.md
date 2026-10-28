@@ -116,7 +116,7 @@ receives templates that the server has checked, so its engine needs no place rul
   checks its arguments (`Accepts`) and maps a value (`Apply`), and never encodes: the context escapes what it gives.
 - Start-up refuses (ADR-0042) a name outside the grammar, a built-in name, and a name two of a site's sources or two
   of its filters share, each problem naming the type; a source or filter the container cannot create is reported
-  with the container's message. The registry leaves such a one out, so the built-in one stays.
+  with the exception's type and message (ADR-0083). The registry leaves such a one out, so the built-in one stays.
 - A source or filter that throws gives the empty text (an `Accepts` that throws counts as arguments that do not fit),
   and the service logs the source's or filter's name, the exception's type and its stack trace, at error level. A
   cancelled rendering cancels; a source's own timeout is a failure like any other.

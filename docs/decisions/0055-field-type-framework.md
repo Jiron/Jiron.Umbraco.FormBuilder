@@ -87,7 +87,7 @@ the type's alias and class:
 - storage `None` other than exactly for a type with rows or child fields, and a type with both;
 - required options or places without options; the required feature without the `required` error kind, or the other
   way round; the comparing checks (`matchesField`, `uniquePerForm`) without a rule kind; a server-only default without
-  a default value;
+  a default value, or one that stores files (ADR-0080);
 - a multiple setting on a type that neither compares as a choice nor has rows, or without a boolean `multiple` setting.
 
 The registry throws `InvalidOperationException` with every problem. At start-up, `FieldTypeStartupCheck` runs the

@@ -58,7 +58,9 @@ public sealed record FieldTypeDeclaration
 
     /// <summary>
     /// Whether the default value stays on the server: it is resolved when the entry is submitted and never reaches the
-    /// page (the hidden field, which may use member and context values, ADR-0014). The type then supports a default value.
+    /// page (the hidden field, which may use member and context values, ADR-0014). The type then supports a default value
+    /// and stores no files. Its value, from its default or the query, is checked as it is resolved and is not taken when
+    /// its type does not take it, so the field fails a submission only for being required without one (ADR-0080).
     /// </summary>
     public bool ServerOnlyDefault { get; init; }
 }

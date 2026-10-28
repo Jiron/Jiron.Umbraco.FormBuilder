@@ -120,8 +120,9 @@ internal sealed partial class SiteMergeTagExtensions
 
     /// <summary>
     /// The problems of the site's sources and filters, which stop the site (ADR-0042): a collection the container cannot
-    /// create one of, with what the container said; and one that fails to say its name or traits, a name outside the
-    /// grammar, a built-in one's name, or a name two of them share, each naming the type.
+    /// create one of, as it cannot resolve what one needs or its constructor throws, with the exception and what it said;
+    /// and one that fails to say its name or traits, a name outside the grammar, a built-in one's name, or a name two of
+    /// them share, each naming the type.
     /// </summary>
     public IReadOnlyList<string> Problems { get; }
 
@@ -130,16 +131,17 @@ internal sealed partial class SiteMergeTagExtensions
     private static partial Regex NamePattern();
 
     // A collection's items, which the container creates as it is read; none, with the problem, when it cannot create one
-    // of them, so the other collection's items stay usable.
+    // of them, whether the container cannot resolve what one needs or its constructor throws, so the other collection's
+    // items stay usable.
     private static T[] Created<T>(IEnumerable<T> collection, string kind, List<string> problems)
     {
         try
         {
             return [.. collection];
         }
-        catch (InvalidOperationException exception)
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            problems.Add($"Jiron Form Builder cannot create the site's merge-tag {kind}: {exception.Message}");
+            problems.Add($"Jiron Form Builder cannot create the site's merge-tag {kind}: {exception.GetType().FullName}: {exception.Message}");
             return [];
         }
     }

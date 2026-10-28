@@ -6,7 +6,7 @@
   decompress) and [ADR-0077](0077-answers-and-labels-from-resolved-options.md) (the parent answers a submission's
   check resolves for); the parent answers merge tags resolve labels for held the same way, row by row too (5.5j), by
   [ADR-0083](0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md), and a Brotli body that does not
-  decompress, added in 5.5i
+  decompress, added in 5.5i; a stream disposed as the time limit passes counted as the time limit, added in 5.5k
 - Date: 2026-10-27
 - Roadmap step: 5.5g (decided and built); 6.1's `options` endpoint holds its `parent` and `culture` the same way
 
@@ -66,8 +66,9 @@ attempt's flag.
 - **A body that breaks off is no connection, and one that does not decompress is unreadable**, each a failure with its
   reason, as every other failure of a call is. The decoders fail differently: gzip and deflate with invalid data, Brotli
   with an invalid operation, and each is unreadable (5.5i, through the real transport); a stream disposed while it is
-  read is no answer of the host and is not taken for one (5.5j). A body cut short decodes without an error in all
-  three, so the kind that called gets it short and reads it as the text it is.
+  read is no answer of the host and is not taken for one (5.5j), unless the time limit has passed, when it is the time
+  limit's (5.5k). A body cut short decodes without an error in all three, so the kind that called gets it short and
+  reads it as the text it is.
 - **A form's create tells its alias taken by the exception's type:** the form's own insert wraps the conflict, so each
   attempt of the unit tells it anew and nothing carries over from one attempt to the next.
 

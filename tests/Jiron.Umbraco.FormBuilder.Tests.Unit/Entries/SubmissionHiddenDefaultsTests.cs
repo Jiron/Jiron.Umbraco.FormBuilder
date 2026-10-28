@@ -114,14 +114,17 @@ public sealed class SubmissionHiddenDefaultsTests
 
         var read = await reader.ReadAsync(Post(Form(stops, where)) with
         {
-            Rows = new Dictionary<Guid, IReadOnlyList<IReadOnlyDictionary<Guid, PostedAnswer>>> { [stops.Key] = [Stop(country, "CH", town, "zurich"), Stop(country, "zz-secret", town, "berlin")] },
+            Rows = new Dictionary<Guid, IReadOnlyList<IReadOnlyDictionary<Guid, PostedAnswer>>>
+            {
+                [stops.Key] = [Stop(country, "CH", town, "zurich"), Stop(country, "DE", town, "berlin"), Stop(country, "zz-secret", town, "zurich")],
+            },
         });
 
         Assert.Multiple(() =>
         {
-            Assert.That(read.Answers.Single(answer => answer.Field == where.Key).Values.Single().Text, Is.EqualTo("Zurich, berlin"), "the second row's country is no option, so its town has none");
+            Assert.That(read.Answers.Single(answer => answer.Field == where.Key).Values.Single().Text, Is.EqualTo("Zurich, Berlin, zurich"), "the third row's country is no option, so its town has none, whatever the other rows answered");
             Assert.That(towns.Requests.SelectMany(request => request.ParentValues), Has.None.Contains("secret"), "neither alone nor beside another row's answer");
-            Assert.That(towns.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { "CH", string.Empty, "CH", string.Empty }), "for the labels, then for the check, row by row both");
+            Assert.That(towns.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { "CH", "DE", string.Empty, "CH", "DE", string.Empty }), "for the labels, then for the check, row by row both");
         });
     }
 

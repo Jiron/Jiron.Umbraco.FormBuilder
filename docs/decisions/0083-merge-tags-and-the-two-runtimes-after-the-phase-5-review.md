@@ -9,7 +9,7 @@
 - Roadmap step: 5.5h (decided and built); 5.5i (the second review's fixes: parent answers held in merge tags,
   options kept per parent answers, traits read once, a raw lone surrogate); 5.5j (the third review's fixes: a
   repeatable group's child asked row by row, a parent in a hidden group, one reader for the traits, each collection
-  read on its own)
+  read on its own); 5.5k (the fourth review's fixes: a grid's labels, a collection item whose constructor throws)
 
 ## Context
 
@@ -41,8 +41,9 @@ The Phase 5 review read the merge tags in both runtimes once more and found five
   check reads that copy. The start-up check takes its problems and the registry its usable sources and filters, so
   what the check let start is what the registry runs: a source whose traits throw, or a filter whose `Name` throws,
   stops the start with a message naming its type and the exception's type, and a registry made anyway leaves it out.
-  A collection the container cannot create one of stops the start with what the container said and leaves that
-  collection's sources or filters out, the other's staying (5.5j).
+  A collection the container cannot create one of stops the start with the exception's type and message and leaves
+  that collection's sources or filters out, the other's staying (5.5j), whether the container cannot resolve what one
+  needs or one's constructor throws, which the container lets through as it is (5.5k).
 - **The website reads parts as Core does.** `valueParts` lets `JSON.parse` check the text, then reads the members from
   the text in their written order, with JSON's whitespace and escapes: no parts (so the text shows as it is) for a name
   written twice, an empty name or text, a text that is no string, an empty object, an array, or a name or text with a
@@ -61,7 +62,9 @@ The Phase 5 review read the merge tags in both runtimes once more and found five
   has an answer in, for that row's answer of a parent in the same group, and for every row's answers of a parent
   outside it; its labels are kept by row. Asked for every row's parent answers at once, two rows whose parents' sources
   offer the same value would show one label for both (a source's options keep a value once), and a request for several
-  parent answers would pass the lists' cache by.
+  parent answers would pass the lists' cache by. A grid whose columns come from a list or source is asked too: its
+  values name its rows, which keeps them out of a child's parent answers, not out of its own labels (5.5k; until then
+  such a grid showed its values).
 - **A submission's hidden fields render over one scope.** The reader makes the scope at the first hidden field with a
   default and gives it the answers again after each value it resolves, so a later default still shows an earlier
   one's value, and the rows of a repeatable group are counted as before. What the scope keeps stays true: its options

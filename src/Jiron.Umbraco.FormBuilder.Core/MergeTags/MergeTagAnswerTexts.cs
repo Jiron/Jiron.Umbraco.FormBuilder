@@ -30,7 +30,10 @@ internal sealed record AnswerField(FormField Field, FormField? Repeater);
 /// </param>
 internal sealed record ScopeTexts(DictionaryTexts Dictionary, IReadOnlyDictionary<(Guid Field, int Row), IReadOnlyDictionary<string, string>> OptionLabels)
 {
-    /// <summary>A field's options' labels by value in a row; null for a field whose options are its own, or one the tag does not show.</summary>
+    /// <summary>
+    /// A field's options' labels by value in a row; null for a field whose options are its own, one the tag does not show
+    /// or the rules hid, and in a row where it has no answer or its parent's options are unknown.
+    /// </summary>
     public IReadOnlyDictionary<string, string>? LabelsOf(Guid field, int row) => OptionLabels.GetValueOrDefault((field, row));
 }
 
@@ -435,10 +438,10 @@ internal sealed partial class MergeTagAnswerTexts(
 
     /// <summary>
     /// The labels of the options a list or another source resolves for a field the rules did not hide, by value, in each
-    /// row it has an answer in (row 0 outside repeatable groups); none for a field whose options are its own, and none in
-    /// a row where its parent's options are unknown. A repeatable group's child asks for each row as the submission's
-    /// check does, so two rows whose parents differ each show the labels of their own parent's options, even where those
-    /// share a value (ADR-0083). A value without a label shows itself.
+    /// row it has an answer in (row 0 outside repeatable groups), a grid's answer of its rows among them; none for a field
+    /// whose options are its own, and none in a row where its parent's options are unknown. A repeatable group's child
+    /// asks for each row as the submission's check does, so two rows whose parents differ each show the labels of their
+    /// own parent's options, even where those share a value (ADR-0083). A value without a label shows itself.
     /// </summary>
     private async Task<List<(int Row, IReadOnlyDictionary<string, string> Labels)>> OptionLabelsAsync(AnswerField found, MergeTagScope scope, ScopeReads reads, CancellationToken cancellationToken)
     {
@@ -453,7 +456,7 @@ internal sealed partial class MergeTagAnswerTexts(
         foreach (var row in rows)
         {
             InRow? where = found.Repeater is { } repeater ? new InRow(repeater.Key, row) : null;
-            if (AnswersOf(scope, field.Key, row).Count > 0 && await ResolvedAsync(field, scope, reads, [], where, cancellationToken) is { } resolved)
+            if (scope.Answers.Find(field.Key, row) is not null && await ResolvedAsync(field, scope, reads, [], where, cancellationToken) is { } resolved)
             {
                 labels.Add((row, resolved.Labels));
             }
@@ -601,7 +604,7 @@ internal sealed partial class MergeTagAnswerTexts(
     private static List<string> AnswersOf(MergeTagScope scope, Guid field, int row) =>
         [.. ValuesIn(scope, field, row).Distinct(StringComparer.Ordinal)];
 
-    // A grid's values, which name their own rows, are not choices a child's options depend on.
+    // A parent's answers: a grid's values, which name their own rows, are not choices a child's options depend on.
     private static IEnumerable<string> ValuesIn(MergeTagScope scope, Guid field, int row) =>
         scope.Answers.Find(field, row)?.Values.Where(value => value.Row is null).Select(value => value.Text) ?? [];
 
