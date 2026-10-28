@@ -193,6 +193,117 @@ public sealed class ListAnswersTests
         });
     }
 
+    [Test]
+    public async Task TwoRowsWhoseParentsSourcesShareAValue_EachShowTheirOwnLabel()
+    {
+        var codes = new TestOptionSource("codes", (request, _) => ValueTask.FromResult<IReadOnlyList<FormBuilderOption>>(
+        [
+            .. new[] { ("1000", "Lausanne", "CH"), ("1000", "Brussels", "BE") }
+                .Where(code => request.ParentValues.Contains(code.Item3))
+                .Select(code => new FormBuilderOption(code.Item1, code.Item2)),
+        ]));
+        var country = Field("dropdown", "country", "Country") with { Options = Options(("CH", "Switzerland"), ("BE", "Belgium")) };
+        var code = Field("dropdown", "code", "Postal code") with { Options = FromCode("codes", parent: country) };
+        var stops = Field("repeater", "stops", "Stops") with { Fields = [country, code] };
+        var answers = Answers(InRow(country, 0, "CH"), InRow(code, 0, "1000"), InRow(country, 1, "BE"), InRow(code, 1, "1000"));
+        var site = MergeTagTestSite.Create(options: Library(codes).Options());
+
+        var rendered = await site.RenderAsync("{{ field.code }}", Scope(Form(stops), answers));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Text, Is.EqualTo("Lausanne, Brussels"), "a source's options keep a value once, so both rows' parents at once would give one label");
+            Assert.That(codes.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { "CH", "BE" }), "each row's own answer, as the check asks, which the lists' cache can keep");
+        });
+    }
+
+    [TestCase(false, Description = "by its own rule")]
+    [TestCase(true, Description = "by its repeatable group's")]
+    public async Task AParentTheRulesHid_GivesItsChildNoParentAnswers(bool byItsGroup)
+    {
+        var towns = Towns();
+        var country = Field("dropdown", "country", "Country") with { Options = Options(("CH", "Switzerland"), ("DE", "Germany")) };
+        var stops = Field("repeater", "stops", "Stops") with { Fields = [country] };
+        var town = Field("dropdown", "town", "Town") with { Options = FromCode("towns", parent: country) };
+        var answers = new MergeTagAnswers([InRow(country, 0, "CH"), Answer(town, "zurich")], [byItsGroup ? stops.Key : country.Key]);
+        var site = MergeTagTestSite.Create(options: Library(towns).Options());
+
+        var rendered = await site.RenderAsync("{{ field.town }}", Scope(Form(stops, town), answers));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Text, Is.EqualTo("zurich"), "no town is an option without a country");
+            Assert.That(towns.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { string.Empty }), "a hidden answer counts for nothing");
+        });
+    }
+
+    [Test]
+    public async Task AParentFromASource_GivesItsChildsSourceOnlyTheOptionsItResolved()
+    {
+        var towns = Towns();
+        var regions = new TestOptionSource("regions", (request, _) =>
+            ValueTask.FromResult<IReadOnlyList<FormBuilderOption>>(request.ParentValues.Contains("alps") ? [new FormBuilderOption("CH"), new FormBuilderOption("AT")] : [new FormBuilderOption("NL")]));
+        var region = Field("radio", "region", "Region") with { Options = Options(("alps", "Alps"), ("coast", "Coast")) };
+        var stop = Field("checkboxes", "stop", "Stop") with { Options = FromCode("regions", parent: region) };
+        var place = Field("dropdown", "place", "Place") with { Options = FromCode("towns", parent: stop) };
+        var site = MergeTagTestSite.Create(options: Library(towns, regions).Options());
+
+        var rendered = await site.RenderAsync("{{ field.place }}", Scope(Form(region, stop, place), Answers(Answer(region, "alps"), Answer(stop, "CH", "NL"), Answer(place, "zurich"))));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Text, Is.EqualTo("Zurich"));
+            Assert.That(regions.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { "alps" }), "the stop's options, for the region");
+            Assert.That(towns.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { "CH" }), "NL is no stop in the Alps");
+        });
+    }
+
+    [Test]
+    public async Task AParentWhoseOptionsAreUnknown_LeavesItsChildShowingItsValues_AskingNothing()
+    {
+        var towns = Towns();
+        var country = Field("dropdown", "country", "Country") with { Options = FromList(Missing) };
+        var town = Field("dropdown", "town", "Town") with { Options = FromCode("towns", parent: country) };
+        var site = MergeTagTestSite.Create(options: Library(towns).Options());
+
+        var rendered = await site.RenderAsync("{{ field.town }}", Scope(Form(country, town), Answers(Answer(country, "CH"), Answer(town, "zurich"))));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Text, Is.EqualTo("zurich"));
+            Assert.That(towns.Requests, Is.Empty, "no parent answer can be held to options nobody knows");
+        });
+    }
+
+    [Test]
+    public async Task AChainOfParentsLeadingBack_IsCutWhereItMeetsItself()
+    {
+        var letters = new TestOptionSource("letters", (request, _) =>
+            ValueTask.FromResult<IReadOnlyList<FormBuilderOption>>(request.ParentValues.Contains("x") ? [new FormBuilderOption("y", "Why")] : [new FormBuilderOption("x", "Ex")]));
+        var first = Field("dropdown", "first", "First");
+        var second = Field("dropdown", "second", "Second") with { Options = FromCode("letters", parent: first) };
+        first = first with { Options = FromCode("letters", parent: second) };
+        var site = MergeTagTestSite.Create(options: Library(letters).Options());
+
+        var rendered = await site.RenderAsync("{{ field.first }}", Scope(Form(first, second), Answers(Answer(first, "y"), Answer(second, "x"))));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Text, Is.EqualTo("Why"), "the second's options for no parent offer x, so the first's are asked for it");
+            Assert.That(letters.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { string.Empty, "x" }));
+        });
+    }
+
+    // The towns of a country, as a site's code source gives them, filtered by the parent's answers itself.
+    private static TestOptionSource Towns() => new("towns", (request, _) => ValueTask.FromResult<IReadOnlyList<FormBuilderOption>>(
+    [
+        .. new[] { ("zurich", "Zurich", "CH"), ("berlin", "Berlin", "DE") }
+            .Where(town => request.ParentValues.Contains(town.Item3))
+            .Select(town => new FormBuilderOption(town.Item1, town.Item2)),
+    ]));
+
+    private static FieldOptions FromCode(string source, FormField parent) => FromCode(source) with { Parent = parent.Key };
+
     private static FieldOptions FromList(Guid list) => new() { Source = OptionSource.List, OptionList = list };
 
     private static FieldOptions FromCode(string source) => new() { Source = OptionSource.Code, Config = SettingsObject.Parse($$"""{"source":"{{source}}"}""") };

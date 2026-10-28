@@ -337,6 +337,22 @@ public sealed class SiteMergeTagExtensionsTests
         });
     }
 
+    [TestCase(true, Description = "the sources")]
+    [TestCase(false, Description = "the filters")]
+    public void ACollectionTheContainerCannotCreate_StopsTheStart_AndLeavesTheOthersItemsUsable(bool sourcesFail)
+    {
+        Func<IEnumerable<IFormBuilderMergeTagSource>> sources = sourcesFail ? () => throw new InvalidOperationException("JFB_TEST: no CRM address.") : () => [new NamedSource("crm")];
+        Func<IEnumerable<IFormBuilderMergeTagFilter>> filters = sourcesFail ? () => [new NamedFilter("repeat")] : () => throw new InvalidOperationException("JFB_TEST: no CRM address.");
+
+        var site = new SiteMergeTagExtensions(new FormBuilderMergeTagSourceCollection(sources), new FormBuilderMergeTagFilterCollection(filters));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(site.Problems, Is.EqualTo(new[] { $"Jiron Form Builder cannot create the site's merge-tag {(sourcesFail ? "sources" : "filters")}: JFB_TEST: no CRM address." }));
+            Assert.That((site.Sources.Count, site.Filters.Count), Is.EqualTo(sourcesFail ? (0, 1) : (1, 0)), "the other collection's items stay");
+        });
+    }
+
     // A site's sources and filters, as they are read once: those the registry may use, and the problems.
     private static SiteMergeTagExtensions Read(IFormBuilderMergeTagSource[] sources, IFormBuilderMergeTagFilter[] filters) =>
         new(new FormBuilderMergeTagSourceCollection(() => sources), new FormBuilderMergeTagFilterCollection(() => filters));

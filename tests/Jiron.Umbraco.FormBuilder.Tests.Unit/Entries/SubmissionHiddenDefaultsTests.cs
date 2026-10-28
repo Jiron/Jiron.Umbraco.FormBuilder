@@ -101,6 +101,31 @@ public sealed class SubmissionHiddenDefaultsTests
     }
 
     [Test]
+    public async Task AHiddenDefaultsLabelsInRows_AskForEachRowsParentAnswer_NeverAPostedText()
+    {
+        var towns = Towns();
+        var country = Field("dropdown", "country", "Country") with { Options = Options(("CH", "Switzerland"), ("DE", "Germany")) };
+        var town = TownOf(country);
+        var stops = Field("repeater", "stops", "Stops", """{"maxRows":3}""") with { Fields = [country, town] };
+        var where = Field("hidden", "where") with { DefaultValue = FieldDefaultValue.Of("{{ field.town }}") };
+        var options = new OptionListTestSite(towns).Options();
+        var reader = new SubmissionReader(TestFieldTypes.Registry, MergeTagTestSite.Create(options: options).Service, options, NullLogger<SubmissionReader>.Instance);
+        static Dictionary<Guid, PostedAnswer> Stop(FormField country, string answer, FormField town, string place) => new() { [country.Key] = new([answer]), [town.Key] = new([place]) };
+
+        var read = await reader.ReadAsync(Post(Form(stops, where)) with
+        {
+            Rows = new Dictionary<Guid, IReadOnlyList<IReadOnlyDictionary<Guid, PostedAnswer>>> { [stops.Key] = [Stop(country, "CH", town, "zurich"), Stop(country, "zz-secret", town, "berlin")] },
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Answers.Single(answer => answer.Field == where.Key).Values.Single().Text, Is.EqualTo("Zurich, berlin"), "the second row's country is no option, so its town has none");
+            Assert.That(towns.Requests.SelectMany(request => request.ParentValues), Has.None.Contains("secret"), "neither alone nor beside another row's answer");
+            Assert.That(towns.Requests.Select(request => string.Join(",", request.ParentValues)), Is.EqualTo(new[] { "CH", string.Empty, "CH", string.Empty }), "for the labels, then for the check, row by row both");
+        });
+    }
+
+    [Test]
     public void OnlyAnswersMadeToBeReplaced_Change_AndTheirHiddenFieldsStay()
     {
         var shown = Guid.NewGuid();

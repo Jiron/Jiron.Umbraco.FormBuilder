@@ -427,6 +427,17 @@ public sealed class OutboundHttpTests
     }
 
     [Test]
+    public void AStreamDisposedWhileItIsRead_IsNoAnswerOfTheHost_AndStaysWhatItIs()
+    {
+        var transport = new ScriptedTransport(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StreamContent(new BreakingStream(new ObjectDisposedException("JFB_TEST: the body"))),
+        });
+
+        Assert.ThrowsAsync<ObjectDisposedException>(() => Calling(transport, allowHttp: false, Host).GetAsync(new Uri($"https://{Host}/list"), "application/json", Limits, CancellationToken.None), "a fault of the code that read it, not an unreadable answer");
+    }
+
+    [Test]
     public void AFailure_NamesItsReasonAndStatus_NeverTheAddress()
     {
         _stub.Answer(new StubAnswer("GET", "/token-abc123", Status: 503));
@@ -488,8 +499,8 @@ public sealed class OutboundHttpTests
     private FormBuilderHttpTransport StubTransport() =>
         new((name, _) => Task.FromResult(name == Host ? new[] { IPAddress.Loopback } : []), new IPEndPoint(IPAddress.Loopback, Port));
 
-    // A body whose connection breaks off after its first byte.
-    private sealed class BreakingStream : Stream
+    // A body that sends one byte and then fails, by default as a connection that broke off.
+    private sealed class BreakingStream(Exception? breaksWith = null) : Stream
     {
         private bool _sent;
 
@@ -512,7 +523,7 @@ public sealed class OutboundHttpTests
             ArgumentNullException.ThrowIfNull(buffer);
             if (_sent)
             {
-                throw new IOException("JFB_TEST: the connection broke off.");
+                throw breaksWith ?? new IOException("JFB_TEST: the connection broke off.");
             }
 
             _sent = true;

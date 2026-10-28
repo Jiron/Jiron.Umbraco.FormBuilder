@@ -2,6 +2,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
@@ -10,8 +11,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Entries;
 
 /// <summary>
 /// Posts that a client can send but the browser's runtime never does (ADR-0080), as <see cref="SubmissionReader"/> reads
-/// them: one upload named twice, by one token or by two, an upload an entry holds or another field's, a ranking's part
-/// names that are not clean or too long, a query value its hidden field cannot take, and a checkbox's <c>false</c>.
+/// them: one upload named twice, by one token or by two, an upload an entry holds or another field's, an answer that
+/// fails after one of its tokens stood, a ranking's part names that are not clean or too long, a query value a field
+/// that keeps its value on the server cannot take or read, and a checkbox's <c>false</c>.
 /// </summary>
 public sealed class SubmissionReaderPostTests
 {
@@ -22,10 +24,11 @@ public sealed class SubmissionReaderPostTests
     private static readonly Guid Campaign = Key(5);
     private static readonly Guid Newsletter = Key(6);
     private static readonly Guid Wing = Key(7);
+    private static readonly Guid Count = Key(8);
 
-    // A file field, a repeatable group of rooms with a plan and a hidden wing prefilled from the query each, a ranking
-    // whose list the site lacks (so its answers are taken without being held to options), a hidden field prefilled from
-    // the query, and a checkbox.
+    // A file field, a repeatable group of rooms with up to two plans and a hidden wing prefilled from the query each, a
+    // ranking whose list the site lacks (so its answers are taken without being held to options), a hidden field and a
+    // site's number that keeps its value on the server, both prefilled from the query, and a checkbox.
     private static FormDefinition Form { get; } = new()
     {
         Key = Key(100),
@@ -46,19 +49,20 @@ public sealed class SubmissionReaderPostTests
                             {
                                 Fields =
                                 [
-                                    Field(Plan, "file", "plan"),
+                                    Field(Plan, "file", "plan", """{"maxFiles":2}"""),
                                     Field(Wing, "hidden", "wing") with { DefaultValue = FieldDefaultValue.Of("east"), Prefill = new FieldPrefill { Query = "wing" } },
                                 ],
                             },
                             Field(Colours, "ranking", "colours") with { Options = new FieldOptions { Source = OptionSource.List, OptionList = Key(200) } },
                             Field(Campaign, "hidden", "campaign") with { DefaultValue = FieldDefaultValue.Of("web"), Prefill = new FieldPrefill { Query = "utm" } },
                             Field(Newsletter, "checkbox", "newsletter"),
+                            Field(Count, "acme.serverNumber", "count") with { DefaultValue = FieldDefaultValue.Of("3"), Prefill = new FieldPrefill { Query = "count" } },
                         ],
                     },
                 ],
             },
         ],
-        Settings = new FormSettings { Developer = new FormDeveloperSettings { QueryValues = ["utm", "wing"] } },
+        Settings = new FormSettings { Developer = new FormDeveloperSettings { QueryValues = ["utm", "wing", "count"] } },
     };
 
     [Test]
@@ -163,6 +167,26 @@ public sealed class SubmissionReaderPostTests
     }
 
     [Test]
+    public async Task AnAnswerThatFailsAfterOneOfItsTokensStood_TakesNothing_SoALaterValueGetsTheUpload()
+    {
+        var plan = Upload(7, Plan);
+        var read = await ReadAsync(Post() with
+        {
+            Rows = new Dictionary<Guid, IReadOnlyList<IReadOnlyDictionary<Guid, PostedAnswer>>>
+            {
+                [Rooms] = [new Dictionary<Guid, PostedAnswer> { [Plan] = new(["token-7", "token-other"]) }, Row(Plan, "token-7")],
+            },
+            Uploads = new Dictionary<string, StoredEntryFile> { ["token-7"] = plan, ["token-other"] = Upload(8, Attachment) },
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Errors(read), Is.EqualTo(new[] { "plan@0: invalid" }), "the first row's second token names another field's upload");
+            Assert.That(read.Answers.Where(answer => answer.Field == Plan).Select(answer => (answer.Row, answer.Files.Single())), Is.EqualTo(new[] { (1, plan) }), "so its first token took nothing, and the second row has it");
+        });
+    }
+
+    [Test]
     public async Task ARankingsPartNames_AreCleaned_EvenWhereItsOptionsAreUnknown()
     {
         var read = await ReadAsync(Ranking(("  red ", "1"), ("blue" + (char)0x2003, "3"), ("green", "2")));
@@ -251,6 +275,22 @@ public sealed class SubmissionReaderPostTests
         });
     }
 
+    [Test]
+    public async Task AQueryValueASitesServerSideTypeCannotRead_CountsAsNone_AndItsDefaultStandsIn()
+    {
+        var logger = new RecordingLogger<SubmissionReader>();
+
+        var read = await ReadAsync(Post() with { Fields = new Dictionary<Guid, PostedAnswer> { [Count] = new(["many-secret"]) } }, logger);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Errors, Is.Empty, "the visitor can neither see nor change the field, so no error could tell them anything");
+            Assert.That(read.Answers.Single(answer => answer.Field == Count).Values.Single().Text, Is.EqualTo("3"));
+            Assert.That(logger.Entries.Select(entry => entry.Message), Has.One.Contains("'count' a value its type cannot take"));
+            Assert.That(logger.Entries.Select(entry => entry.Message), Has.None.Contains("secret"), "never the value");
+        });
+    }
+
     [TestCase("false", false)]
     [TestCase("no", false)]
     [TestCase("true", true)]
@@ -281,9 +321,11 @@ public sealed class SubmissionReaderPostTests
     private static async Task<SubmissionAnswers> ReadAsync(PostedSubmission post, RecordingLogger<SubmissionReader>? logger = null)
     {
         var options = new OptionListTestSite().Options();
-        var site = MergeTagTestSite.Create(options: options);
-        return await new SubmissionReader(TestFieldTypes.Registry, site.Service, options, logger ?? new RecordingLogger<SubmissionReader>()).ReadAsync(post);
+        var site = MergeTagTestSite.Create(types: Types, options: options);
+        return await new SubmissionReader(Types, site.Service, options, logger ?? new RecordingLogger<SubmissionReader>()).ReadAsync(post);
     }
+
+    private static FieldTypeRegistry Types { get; } = TestFieldTypes.Build(builder => builder.Append<ServerNumberFieldType>());
 
     // Each error as "alias: kind", a child's with its row.
     private static string[] Errors(SubmissionAnswers read) =>
@@ -306,4 +348,18 @@ public sealed class SubmissionReaderPostTests
     };
 
     private static Guid Key(int number) => Guid.Parse($"80000000-0000-4000-8000-{number:D12}");
+
+    /// <summary>A site's number that keeps its value on the server and may be prefilled from the query, which reads only numbers.</summary>
+    public sealed class ServerNumberFieldType() : FormBuilderFieldTypeBase<NoFieldSettings>(new FieldTypeDeclaration
+    {
+        Alias = "acme.serverNumber",
+        Name = "Server number",
+        Icon = "icon-calculator",
+        PaletteGroup = FieldPaletteGroup.Structure,
+        HoldsValue = true,
+        Storage = FieldStorageKind.Number,
+        RuleKind = FieldKind.Number,
+        ServerOnlyDefault = true,
+        Features = FieldFeatures.Label | FieldFeatures.DefaultValue | FieldFeatures.Prefill | FieldFeatures.VisibilityRules,
+    });
 }
