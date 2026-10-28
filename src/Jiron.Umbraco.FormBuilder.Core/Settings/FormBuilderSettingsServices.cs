@@ -16,6 +16,7 @@ internal static class FormBuilderSettingsServices
     {
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.TryAddSingleton<IFormBuilderSettingsService, FormBuilderSettingsService>();
+        builder.Services.TryAddSingleton<SiteTimeZones>();
         builder.CacheRefreshers().Add<FormBuilderSettingsCacheRefresher>();
 
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsValidator<GeneralSettings>, GeneralSettingsValidator>());

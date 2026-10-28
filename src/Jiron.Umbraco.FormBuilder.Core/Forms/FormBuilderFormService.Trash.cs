@@ -39,6 +39,7 @@ internal sealed partial class FormBuilderFormService
             return null;
         }
 
+        formCache.Changed(key);
         var info = await infos.InfoAsync(changed, cancellationToken);
         await changes.PublishedAsync(new FormTrashedNotification(info.Key, info.Alias, info.Name, userKey), FormAudit.Subject(info.Key));
         return info;
@@ -96,6 +97,7 @@ internal sealed partial class FormBuilderFormService
         }
 
         var (row, back) = changed;
+        formCache.Changed(key);
         await changes.PublishedAsync(new FormRestoredNotification(row.Key, row.Alias, row.Name, back, userKey), FormAudit.Subject(row.Key));
         return FormInfos.Info(row, back);
     }
@@ -119,8 +121,10 @@ internal sealed partial class FormBuilderFormService
         }
         finally
         {
-            // Its grants go in its last unit; the snapshot drops whether the delete finished or not (ADR-0048).
+            // Its grants go in its last unit; the snapshot drops whether the delete finished or not (ADR-0048), and so
+            // does what the website kept of it, its alias among them (ADR-0084).
             snapshots.Changed();
+            formCache.Changed(key);
         }
 
         if (removed is null)

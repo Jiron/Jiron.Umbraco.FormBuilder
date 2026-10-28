@@ -140,6 +140,7 @@ internal sealed partial class FormBuilderFormService
             return null;
         }
 
+        formCache.Changed(key);
         var info = await infos.InfoAsync(published.Form, cancellationToken);
         var revisionChanged = published.Form.PublicRevision != form.PublicRevision;
         await changes.PublishedAsync(new FormPublishedNotification(info.Key, info.Alias, info.Name, published.Version.Info.Number, info.PublicRevision, revisionChanged, userKey), FormAudit.Subject(info.Key));
@@ -172,6 +173,7 @@ internal sealed partial class FormBuilderFormService
             return null;
         }
 
+        formCache.Changed(key);
         var info = await infos.InfoAsync(changed, cancellationToken);
         await changes.PublishedAsync(new FormUnpublishedNotification(info.Key, info.Alias, info.Name, userKey), FormAudit.Subject(info.Key));
         return info;
@@ -207,6 +209,7 @@ internal sealed partial class FormBuilderFormService
             return null;
         }
 
+        formCache.Changed(key);
         var info = await infos.InfoAsync(changed, cancellationToken);
         await changes.PublishedAsync(new FormRenamedNotification(info.Key, info.Alias, info.Name, form.Alias, form.Name, userKey), FormAudit.Subject(info.Key));
         return info;

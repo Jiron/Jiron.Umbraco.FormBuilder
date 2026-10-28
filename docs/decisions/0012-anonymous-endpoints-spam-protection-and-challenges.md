@@ -1,7 +1,9 @@
 # 0012. Anonymous endpoints, spam protection and challenges
 
 - Status: accepted; rate limits (refines D14), member-bound challenges, the honeypot and `invalid_request`
-  amended in 1.8
+  amended in 1.8; another origin's requests other than `GET`, the site's own pages behind a proxy that ends TLS and a
+  body for an endpoint that takes none amended in 6.1a
+  ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the
@@ -71,6 +73,9 @@ away, and a real visitor behind a busy address keeps every answer and is told wh
   is refused before reading, and a body without one is counted while it is read (`413 payload_too_large`,
   `415 unsupported_media_type`). JSON with a lone surrogate, or a body that is not the request's shape, is
   `400 invalid_request` (ADR-0005).
+  **Amended in 6.1a ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)):** an endpoint that takes no
+  body refuses any body, declared or not, before reading it; each endpoint declares its body limit, time limit and
+  rate-limit policy, and a test fails for one that does not.
 - **Time limits:** each endpoint has one, on the site's `TimeProvider`. Running out answers `504 timeout`; a visitor
   who left gets no answer.
 - **Errors** are ProblemDetails with the stable codes of §4.6, plus `origin_denied`, `timeout`, `not_found`, and
@@ -88,6 +93,10 @@ away, and a real visitor behind a busy address keeps every answer and is told wh
   `403 origin_denied`. Actual requests from allowed origins get `Access-Control-Allow-Origin` and expose `ETag` and
   `Retry-After`, never `Access-Control-Allow-Credentials`; others get no CORS headers, so the browser hands them
   nothing.
+  **Amended in 6.1a ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)):** that holds for `GET` and
+  `HEAD`; another origin's other requests answer `403 origin_denied` before anything runs, since a browser sends some
+  posts without a preflight. When a request came over `http`, an `https` origin on its host counts as the site's own
+  (a proxy that ends TLS), never the other way round.
 - A request without an `Origin` (a server, a no-JS post) passes the origin check and meets every other check.
 - **The preview frame** has the opaque origin `null` (§4.10). The public API accepts `Origin: null` only with a preview
   ticket: a Data Protection token bound to the form's draft, valid for ten minutes, issued by the management API to a

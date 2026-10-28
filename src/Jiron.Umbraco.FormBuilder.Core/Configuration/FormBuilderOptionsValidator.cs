@@ -46,6 +46,7 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
         CheckLockedSections(options.LockedSections, failures);
         CheckHostGrants(options.Access.Grants, failures);
         CheckAllowedHosts(options.Webhooks.AllowedHosts, failures);
+        CheckPublicApi(options.PublicApi, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
 
@@ -195,6 +196,29 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
             else if (!seen.TryAdd(host, i))
             {
                 failures.Add(string.Create(CultureInfo.InvariantCulture, $"{key} ('{hosts[i]}') names a host and port again; {Root}:Webhooks:AllowedHosts:{seen[host]} names them already. Keep one."));
+            }
+        }
+    }
+
+    // The base path is one the site leaves free, and each allowed origin an origin, named once (ADR-0084).
+    private static void CheckPublicApi(FormBuilderPublicApiOptions api, List<string> failures)
+    {
+        if (!PublicApiRules.IsBasePath(api.BasePath, out var problem))
+        {
+            failures.Add($"{Root}:PublicApi:BasePath ('{api.BasePath}') {problem}");
+        }
+
+        var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (var i = 0; i < api.AllowedOrigins.Count; i++)
+        {
+            var key = string.Create(CultureInfo.InvariantCulture, $"{Root}:PublicApi:AllowedOrigins:{i}");
+            if (PublicApiRules.Origin(api.AllowedOrigins[i]) is not { } origin)
+            {
+                failures.Add($"{key} ('{api.AllowedOrigins[i]}') must be an origin such as 'https://www.example.com': http or https, a host and a port when it is not the scheme's, and nothing after them, with no '/' at the end.");
+            }
+            else if (!seen.TryAdd(origin, i))
+            {
+                failures.Add(string.Create(CultureInfo.InvariantCulture, $"{key} ('{api.AllowedOrigins[i]}') names an origin again; {Root}:PublicApi:AllowedOrigins:{seen[origin]} names it already. Keep one."));
             }
         }
     }

@@ -12,7 +12,8 @@
   the message kind `confirmation` and the effective public settings in the projection amended by
   [ADR-0062](0062-the-built-in-types-checks.md) in 5.2b; the message kind `digits` amended by
   [ADR-0069](0069-the-checks-from-text-to-country.md) in 5.4a, and `rowCount` by
-  [ADR-0071](0071-the-advanced-types-own-checks.md) in 5.4c
+  [ADR-0071](0071-the-advanced-types-own-checks.md) in 5.4c; the one sanitiser built in 6.1a
+  ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2a (the model, the schema, upgraders), 4.2b (structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
@@ -97,8 +98,10 @@ default and is required whenever the object has any entry; other keys are cultur
 A value that is exactly `#` followed by a dictionary key (letters, digits, `.`, `_` and `-`) resolves through
 Umbraco's dictionary; when no such item exists, the text shows as written and the form check warns. `LocalizedHtml`
 has the same shape and holds rich text, stored as the editor wrote it and passed through the one sanitiser on every
-output (§4.10). Plain texts that render on one line (labels, titles, placeholders, button labels) take at most 500
-characters and no line breaks, other plain texts 2,000 characters, rich texts 50,000.
+output (§4.10; HtmlSanitizer with Jiron Form Builder's allowlist since 6.1a,
+[ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)). Plain texts that render on one line (labels, titles,
+placeholders, button labels) take at most 500 characters and no line breaks, other plain texts 2,000 characters, rich
+texts 50,000.
 
 **Page:**
 

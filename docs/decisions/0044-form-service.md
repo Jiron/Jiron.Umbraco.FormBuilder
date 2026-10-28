@@ -5,7 +5,8 @@
   [ADR-0046](0046-copies-templates-and-import.md) in 4.5c; the trash, the permanent delete and the folder service
   added by [ADR-0047](0047-trash-delete-and-folders.md) in 4.5d; split in three parts with one change pipeline by
   [ADR-0053](0053-form-service-in-parts.md) in 4.8d; its field types come from the registry of
-  [ADR-0055](0055-field-type-framework.md) since 5.1a
+  [ADR-0055](0055-field-type-framework.md) since 5.1a; the published-form cache built in 6.1a
+  ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md))
 - Date: 2026-10-24
 - Roadmap step: 4.5a (decided and built); 4.5b to 4.5d add versions, copies and the trash on the same rules, 4.7
   maps the refusals to the API, 5.1 takes over the storage kinds, 6.1 adds the published-form cache, 8.3 the
@@ -233,6 +234,9 @@ the log. The roadmap's §4.8 says these defaults are for every site at once.
   cache refresher, which the service's publish, unpublish, rename, trash, restore and delete then raise. A refresher
   with nothing to refresh would be wiring that nothing uses (§5, the wiring sweep). A trashed form is answered as a
   missing one and takes no submission.
+  **Built in 6.1a ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)):** it keeps a published form with
+  its projection, a mark for a form that exists and is not served, and an alias's key, never anything for a key or
+  alias that names no form; the folder service's trash, restore and delete raise the refresher too.
 - **The notify-the-creator default (8.3),** with the email action.
 - **The storage kinds (5.1),** declared by each type; its registry replaces the registered catalogue.
 - **The public surface (15.1):** the service and its records become public, with a snapshot test.

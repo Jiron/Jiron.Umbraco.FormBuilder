@@ -1,6 +1,7 @@
 # 0043. The backoffice settings sections
 
-- Status: accepted; amended in 4.8c, 4.8g and 4.8i (the shared load)
+- Status: accepted; amended in 4.8c, 4.8g and 4.8i (the shared load); a stored time zone this server cannot resolve
+  amended in 6.1a ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md))
 - Date: 2026-10-24
 - Roadmap step: 4.4b (decided and built); every step that adds a section or a field (4.5, 6.x, 7.x, 8.x, 13.x),
   6.1 (the first reader of the time zone), 12.4a (the screens and endpoints), 14.4 (the site of a request)
@@ -148,5 +149,8 @@ it fails or is cancelled, and a caller that hears of the failure clears it befor
   adds ADR-0008's allowlist test, since the zone is the first setting visitors see; 12.4a offers the zones as a list
   and checks that a site scope names a root; 14.4 removes a deleted root's rows; the 4.8 review names the time zone
   in its wiring sweep.
+- **Amended in 6.1a ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)):** the warning for a stored zone
+  this server cannot resolve names the setting, the site and the zone, at most once an hour per site and zone on each
+  server, in a list emptied before it holds more than 256.
 - **Revisit** if a section needs per-site values below the top level, or if Umbraco delivers scoped notifications
   asynchronously, which would allow saves inside a caller's transaction.

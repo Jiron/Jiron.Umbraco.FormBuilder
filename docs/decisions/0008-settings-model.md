@@ -4,7 +4,8 @@
   amended in 1.8; site rows, host rules, the save and the time zone's spelling amended in 4.4b
   ([ADR-0043](0043-backoffice-settings-sections.md)); designer locks of field settings amended in 5.1f
   ([ADR-0060](0060-designer-locks-of-field-settings.md)); the base URL's form and its default from the domains amended
-  in 5.3e ([ADR-0067](0067-the-umbraco-sources-and-the-base-url.md))
+  in 5.3e ([ADR-0067](0067-the-umbraco-sources-and-the-base-url.md)); the allowlist test built in 6.1a
+  ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.4 (the framework), each section in the step that builds its service, the
   screens in Phase 9 and later
@@ -152,6 +153,9 @@ throws, naming the section and the version. The upgrade test (16.5) reads a migr
 button labels, the theme, the required marker and what the protection needs (the captcha provider, its site key and
 the consent mode). A test fills every section and checks the public output against the allowlist, in the step that
 first exposes a setting to visitors.
+**Built in 6.1a ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)):** the test fills every field of
+every section and shows that only the time zone reaches the form endpoint's answer, and a guard fails for a section or
+field it does not fill.
 
 **Secrets never live in settings.** A setting may hold a reference (`$JironFormBuilder:Secrets:<Name>`), resolved
 from configuration when it is used; the screen shows only whether it resolves.

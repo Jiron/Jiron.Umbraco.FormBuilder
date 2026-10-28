@@ -138,6 +138,7 @@ internal sealed partial class FormBuilderFormService(
     IEnumerable<IFormPublishCheck> publishChecks,
     FormRemoval removal,
     AccessSnapshotInvalidator snapshots,
+    FormCacheInvalidator formCache,
     FormBuilderChanges<FormBuilderFormService> changes)
     : IFormBuilderFormService
 {

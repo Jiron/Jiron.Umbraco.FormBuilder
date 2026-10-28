@@ -182,13 +182,20 @@ internal sealed class FormBuilderProblemResult(ProblemDetails problem) : IAction
     public int? StatusCode => Problem.Status;
 
     /// <inheritdoc />
-    public async Task ExecuteResultAsync(ActionContext context)
+    public Task ExecuteResultAsync(ActionContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        var response = context.HttpContext.Response;
+        return WriteAsync(context.HttpContext);
+    }
+
+    /// <summary>Writes the answer outside MVC, as a middleware does.</summary>
+    public async Task WriteAsync(HttpContext http)
+    {
+        ArgumentNullException.ThrowIfNull(http);
+        var response = http.Response;
         response.StatusCode = Problem.Status ?? StatusCodes.Status500InternalServerError;
         response.ContentType = MediaType;
-        await JsonSerializer.SerializeAsync(response.Body, Problem, Json, context.HttpContext.RequestAborted);
+        await JsonSerializer.SerializeAsync(response.Body, Problem, Json, http.RequestAborted);
     }
 }
 

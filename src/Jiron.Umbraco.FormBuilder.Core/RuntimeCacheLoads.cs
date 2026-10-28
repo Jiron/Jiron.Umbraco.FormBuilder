@@ -16,9 +16,11 @@ internal static class RuntimeCacheLoads
     /// The value under <paramref name="key"/>, or the one <paramref name="load"/> reads, shared with every miss that comes
     /// while it runs. The load runs without the caller's cancellation, as other callers may wait for it; the caller
     /// stops waiting when <paramref name="cancellationToken"/> is cancelled. A load that fails is forgotten as it fails,
-    /// even when every caller stopped waiting for it, so the next miss reads anew.
+    /// even when every caller stopped waiting for it, so the next miss reads anew. A value <paramref name="keep"/> refuses
+    /// answers the callers that waited for it and is not kept, so a cache that visitors may ask for any key keeps only
+    /// what exists (ADR-0084).
     /// </summary>
-    public static async Task<T> GetAsync<T>(IAppPolicyCache cache, string key, string loadingKey, Func<Task<T>> load, TimeSpan duration, CancellationToken cancellationToken)
+    public static async Task<T> GetAsync<T>(IAppPolicyCache cache, string key, string loadingKey, Func<Task<T>> load, TimeSpan duration, CancellationToken cancellationToken, Func<T, bool>? keep = null)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(cache);
@@ -44,8 +46,18 @@ internal static class RuntimeCacheLoads
 
         // One caller keeps the value, and only while the load is still the current one. A change clears the load with the
         // value, as one step of the cache, so a change between the first check and the insert is found by the second,
-        // which takes the value out again: a value read before a change is never kept.
-        if (loading.Claim() && ReferenceEquals(cache.Get(loadingKey), loading))
+        // which takes the value out again: a value read before a change is never kept. A value that is not to be kept only
+        // lets go of its load, so the next miss reads again.
+        if (!loading.Claim())
+        {
+            return value;
+        }
+
+        if (keep?.Invoke(value) == false)
+        {
+            Forget(cache, loadingKey, loading);
+        }
+        else if (ReferenceEquals(cache.Get(loadingKey), loading))
         {
             cache.Insert(key, () => value, duration);
             if (ReferenceEquals(cache.Get(loadingKey), loading))

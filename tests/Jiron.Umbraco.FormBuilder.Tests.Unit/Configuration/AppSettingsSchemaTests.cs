@@ -39,7 +39,8 @@ public sealed class AppSettingsSchemaTests
         Assert.Multiple(() =>
         {
             Assert.That(schema["$schema"]!.GetValue<string>(), Is.EqualTo("http://json-schema.org/draft-04/schema#"), "as Umbraco's own schemas");
-            Assert.That(Keys(section), Is.EqualTo(new[] { "Files", "Limits", "Designer", "Access", "Webhooks", "LockedSections" }));
+            Assert.That(Keys(section), Is.EqualTo(new[] { "PublicApi", "Files", "Limits", "Designer", "Access", "Webhooks", "LockedSections" }));
+            Assert.That(section["properties"]!["PublicApi"]!["properties"]!["BasePath"]!["default"]!.GetValue<string>(), Is.EqualTo("/jfb/api"));
             Assert.That(section["description"]!.GetValue<string>(), Does.StartWith("Jiron Form Builder's host configuration: the JironFormBuilder section of appsettings. It is for developers"));
             Assert.That(section["properties"]!["Files"]!["properties"]!["Root"]!["default"]!.GetValue<string>(), Is.EqualTo("~/umbraco/Data/JironFormBuilder/Uploads"));
             Assert.That(Keys(definitions), Is.EqualTo(new[] { "MaxBytes", "MaxPages", "MaxGroups", "MaxFields", "MaxOptionsPerField", "MaxActions", "MaxOutcomes", "MaxRules" }));

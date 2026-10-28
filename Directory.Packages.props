@@ -26,6 +26,15 @@
     <PackageVersion Include="Umbraco.Cms.Api.Delivery" Version="[17.6.0, 18.0.0)" />
   </ItemGroup>
 
+  <!--
+    Shipped to sites (CLAUDE.md rule 4): the allowlist sanitiser of editors' rich text (section 4.10, ADR-0084), MIT,
+    with its MIT dependencies AngleSharp and AngleSharp.Css. The packages depend on this version or a later one, and the
+    builds restore exactly this one.
+  -->
+  <ItemGroup>
+    <PackageVersion Include="HtmlSanitizer" Version="9.2.1039" />
+  </ItemGroup>
+
   <!-- The demo site and the test hosts only: the latest 17.x, pinned exactly (D3). -->
   <ItemGroup>
     <PackageVersion Include="Umbraco.Cms" Version="17.7.1" />

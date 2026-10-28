@@ -112,6 +112,7 @@ internal sealed class FormBuilderFolderService(
     IPermissionRepository permissions,
     FormRemoval removal,
     AccessSnapshotInvalidator snapshots,
+    FormCacheInvalidator formCache,
     FormBuilderChanges<FormBuilderFolderService> changes)
     : IFormBuilderFolderService
 {
@@ -271,6 +272,7 @@ internal sealed class FormBuilderFolderService(
             return await folders.GetAsync(key, cancellationToken) is { } current ? await UnchangedAsync(current, cancellationToken) : null;
         }
 
+        FormsChanged(changed.Forms);
         var result = Result(changed);
         await PublishedAsync(new FolderTrashedNotification(folder.Key, result.Folder.Name, result.Folders, result.Forms, userKey));
         return result;
@@ -334,6 +336,7 @@ internal sealed class FormBuilderFolderService(
             return await folders.GetAsync(key, cancellationToken) is { } current ? await UnchangedAsync(current, cancellationToken) : null;
         }
 
+        FormsChanged(changed.Forms);
         var result = Result(changed);
         await PublishedAsync(new FolderRestoredNotification(folder.Key, result.Folder.Name, changed.ParentKey, result.Folders, result.Forms, userKey));
         return result;
@@ -504,7 +507,17 @@ internal sealed class FormBuilderFolderService(
         long files = 0;
         foreach (var form in list)
         {
-            if (await removal.DeleteAsync(form, userKey, cancellationToken) is { } removed)
+            FormDeletion? removed;
+            try
+            {
+                removed = await removal.DeleteAsync(form, userKey, cancellationToken);
+            }
+            finally
+            {
+                formCache.Changed(form.Key);
+            }
+
+            if (removed is not null)
             {
                 gone.Add(Summary(form));
                 entries += removed.Entries;
@@ -513,6 +526,16 @@ internal sealed class FormBuilderFolderService(
         }
 
         return new LibraryDeletion([], gone, entries, files);
+    }
+
+    // The forms a trash or a restore of folders moved: what the website kept of them drops on every server at once
+    // (ADR-0084), as one change, however many there were.
+    private void FormsChanged(IReadOnlyList<StoredForm> moved)
+    {
+        if (moved.Count > 0)
+        {
+            formCache.ChangedAll();
+        }
     }
 
     // The forms first, then the folders from the deepest up in one unit, each with its grants and its audit entry. The

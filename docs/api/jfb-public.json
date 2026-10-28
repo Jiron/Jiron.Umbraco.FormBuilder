@@ -1,0 +1,207 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "Jiron Form Builder public API",
+    "description": "What visitors' browsers and headless sites call: forms, their options, uploads and entries. Anonymous; errors are ProblemDetails with a stable code.",
+    "version": "1.0"
+  },
+  "paths": {
+    "/jfb/api/v1/forms/{keyOrAlias}": {
+      "get": {
+        "operationId": "FormDefinition",
+        "parameters": [
+          {
+            "name": "keyOrAlias",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "culture",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "contentKey",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FormDefinitionResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large: the body is longer than the endpoint takes (payload_too_large).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error: something failed unexpectedly (server_error).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout: the endpoint did not answer within its time limit (timeout).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemDetails"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "x-jfb-rate-limit": "read",
+        "x-jfb-body-limit": 0,
+        "x-jfb-time-limit": 10
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FormDefinitionResponseModel": {
+        "required": [
+          "alias",
+          "culture",
+          "form",
+          "open",
+          "revision",
+          "timeZone"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "culture": {
+            "type": "string"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "open": {
+            "type": "boolean"
+          },
+          "form": {}
+        },
+        "additionalProperties": false
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": {}
+      }
+    }
+  }
+}

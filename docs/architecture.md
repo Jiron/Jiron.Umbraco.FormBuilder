@@ -66,8 +66,8 @@ database connection of its own. Its areas:
 
 | Area | Holds | Decided in |
 | --- | --- | --- |
-| Definitions | the model, its JSON, upgraders, structural validation, the public projection, versions and their comparison, and the exchange of forms (`Exchange`: element keys and their remap, copied actions, the export envelope) | ADR-0002, ADR-0045, ADR-0046 |
-| Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good, and the published form as the site runs it), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053, ADR-0060, ADR-0078 |
+| Definitions | the model, its JSON, upgraders, structural validation, the public projection and the visitor's form made from it (one string per text), the one HTML sanitiser (`EditorHtml`), versions and their comparison, and the exchange of forms (`Exchange`: element keys and their remap, copied actions, the export envelope) | ADR-0002, ADR-0045, ADR-0046, ADR-0084 |
+| Forms | the form service in three parts (below): the lifecycle with the trash (create from blank, save, publish, unpublish, rename, move, trash, restore, delete for good, and the published form as the site runs it), the versions (the History with what changed, one version, two compared, restore, pins and comments) and the exchange (create from a template, import and export, duplicate, copy actions to another form); the folder service (create, rename, move, trash, restore, delete, empty the trash); each change a unit of work of its own; the built-in templates, aliases from names, the publish checks, the field catalogue, the form and folder notifications, the one trash check and the one mapping from a refusal to its code; the published forms each server keeps with their cache refresher, and a published form in a visitor's culture (the dictionary's items read once, rich text sanitised) | ADR-0002, ADR-0044, ADR-0045, ADR-0046, ADR-0047, ADR-0053, ADR-0060, ADR-0078, ADR-0084 |
 | Fields and options | the field type registry, the built-in types, places on options | ADR-0002, §4.3.2 |
 | Option lists | the kinds with their configuration and its checks, content and data type lists with what they read from Umbraco and the handler that drops what they keep when the site changes, URL lists with what they fetch and keep, the reader of uploaded CSV and TXT files, the standard lists and a site's own sources with their start-up check, the library's lists with their cache refresher, the option service, and the publish check of a field's source | ADR-0002, ADR-0073, ADR-0075, ADR-0076 |
 | Outbound | calls to other hosts (`OutboundHttp`): the host configuration's hosts and schemes, redirects to the same host only, one time limit and a cap; the transport that resolves names itself and connects only to globally reachable addresses, which only the Testing assembly replaces | ADR-0076, §4.10 |
@@ -80,9 +80,9 @@ database connection of its own. Its areas:
 | Privacy | retention, holds, data subject tools, masking, IP handling | ADR-0009 |
 | Retention | the hourly retention job and its parts, so far the draft-version cleanup | ADR-0007, ADR-0045 |
 | Access | the permission model (the flags, what each needs and where it may be granted), the evaluation from one cached snapshot per server with its refresher, the lists' filter, grants and restrictions with their audit entries, host grants and the access lock, and the grants of a user group Umbraco deletes | ADR-0013, ADR-0048 |
-| Settings | host options and their start-up checks; the backoffice sections with their validators, migrations and host rules, the cached reader, the save and the cache refresher; a site's base URL (the setting, the site's `https` domains, Umbraco's application URL) | ADR-0008, ADR-0042, ADR-0043, ADR-0067 |
+| Settings | host options and their start-up checks; the backoffice sections with their validators, migrations and host rules, the cached reader, the save and the cache refresher; a site's base URL (the setting, the site's `https` domains, Umbraco's application URL); a site's time zone, UTC with a warning for one this server cannot resolve | ADR-0008, ADR-0042, ADR-0043, ADR-0067, ADR-0084 |
 | Persistence | NPoco DTOs, repositories, the entries query builder, the outbox, the audit log and daily statistics, the migration plan with schema v1 frozen, the database gate and units of work ([database.md](database.md#access)) | ADR-0003, ADR-0007, ADR-0033, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0041, ADR-0054, D7 |
-| Platform | jobs, notifications, the one change pipeline of the services, the audit log's details (keys, numbers, flags, enum values, times and identifiers only), the HTML and CSS sanitiser | ADR-0007, ADR-0041, ADR-0053, §4.10 |
+| Platform | jobs, notifications, the one change pipeline of the services, the audit log's details (keys, numbers, flags, enum values, times and identifiers only), the CSS sanitiser | ADR-0007, ADR-0041, ADR-0053, §4.10 |
 
 **The form services** ([ADR-0053](decisions/0053-form-service-in-parts.md)) are three, each with its own interface and
 registration, over internal parts they share. Every change of Core's services takes the same steps through
@@ -116,7 +116,7 @@ flowchart LR
 
 | Area | Holds | Decided in |
 | --- | --- | --- |
-| Public API | `/jfb/api/v1`, CORS, body and time limits, the rate-limit middleware, the no-form middleware | ADR-0012, ADR-0006 |
+| Public API | `/jfb/api/v1` below the host's base path: the base controller with each action's declarations and their filter, the middleware in front of it (no form content, origins, what ends a request early), the catch-all, the OpenAPI document `jfb-public`, the form endpoint; the rate-limit middleware | ADR-0006, ADR-0012, ADR-0084 |
 | Management API | `/umbraco/jfb/management/api/v1`: the base controller, the access declarations and their filter, the refusals with stable codes, the authorization policies with their resources and denials, the OpenAPI document `jfb`; the library tree, folders, the trash, forms and their versions, a definition carried as its document; the field types for the designer | ADR-0013, ADR-0049, ADR-0050, ADR-0051, ADR-0052, ADR-0057, §4.7 |
 | Rendering | the view component, `<jfb-render>`, `<jfb-assets>`, the surface controller, output cache rules, asset serving | ADR-0004, ADR-0015 |
 | Themes | the built-in themes, their views and stylesheets | ADR-0015 |
@@ -377,12 +377,13 @@ sequenceDiagram
 ## 5. The public API
 
 `/jfb/api/v1` (the base path is `JironFormBuilder:PublicApi:BasePath`), anonymous, JSON, ProblemDetails with stable
-codes, `no-store` except the definition, the OpenAPI document `jfb-public`
-([ADR-0012](decisions/0012-anonymous-endpoints-spam-protection-and-challenges.md)).
+codes, `no-store` except the form, the OpenAPI document `jfb-public` with its reviewed snapshot
+`docs/api/jfb-public.json` ([ADR-0012](decisions/0012-anonymous-endpoints-spam-protection-and-challenges.md),
+[ADR-0084](decisions/0084-the-public-apis-frame-and-the-form-endpoint.md)).
 
 | Route | Purpose | Rate-limit policy | Needs |
 | --- | --- | --- | --- |
-| `GET forms/{keyOrAlias}` | the public projection, when the form allows headless access; `ETag` from the response | `read` | – |
+| `GET forms/{keyOrAlias}` | the published form in one culture with its revision, the site's time zone and whether it is open, when the form allows headless access; `no-cache` with an `ETag` from the answer's bytes | `read` | – |
 | `GET forms/{key}/render` | the published form as HTML for `form_changed` (ADR-0004) | `read` | a local `page` path |
 | `POST forms/{key}/challenge` | a signed challenge, places left, member values | `challenge` | – |
 | `POST forms/{key}/uploads` | one file before submitting (ADR-0006) | `upload` | the challenge as the first part |
@@ -396,13 +397,21 @@ codes, `no-store` except the definition, the OpenAPI document `jfb-public`
 | `GET forms/{key}/options/{fieldKey}` | options for cascading and list-backed fields | `read` | – |
 | `POST forms/{key}/events` | the insights beacon, no identifiers | `events` | – |
 
-- **Origins:** the same origin always; others only from `AllowedOrigins`; the preview's opaque origin only with a
-  preview ticket.
+- **Every request** below the base path, in any letter case, meets a middleware before Umbraco's routing: no form
+  content, `no-store`, `Vary: Origin`. An address that names no endpoint answers `404 not_found`, never a page of the
+  site.
+- **Origins:** the same origin always, and an `https` origin on the host of a request that came over `http` (a proxy
+  ended TLS); others only from `AllowedOrigins`. Another origin's requests other than `GET` and `HEAD`, and its
+  preflights, answer `403 origin_denied` before anything runs. The preview's opaque origin only with a preview ticket.
+- **Each action declares** its rate-limit policy, body limit and time limit (`x-jfb-*` in the document), applied
+  before the body is read: a body above the limit, or any for an action that takes none, answers `413`; the time
+  limit `504 timeout`; pending migrations `503 migrations_pending` with `Retry-After: 10`. Anything unexpected answers
+  `500 server_error`, logged with the endpoint's name.
 - **Members-only forms** bind the challenge to the signed-in member (`member_required` without one), with no cookie.
 - **Error codes:** `form_not_found`, `form_closed`, `form_changed`, `validation_failed`, `invalid_request`,
   `challenge_required`, `captcha_failed`, `rate_limited`, `payload_too_large`, `unsupported_media_type`,
   `member_required`, `duplicate_submission`, `entry_limit_reached`, `already_submitted`, `origin_denied`, `timeout`,
-  `not_found`, `server_error` (§4.6).
+  `migrations_pending`, `not_found`, `server_error` (§4.6).
 - **The no-JS path** posts to the page through Umbraco's surface routing, not to this API (ADR-0004).
 
 ## 6. The management API

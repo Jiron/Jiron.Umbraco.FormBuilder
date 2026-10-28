@@ -14,7 +14,11 @@ Runtime dependencies, direct and transitive, may only be MIT, Apache-2.0, BSD-2-
 0BSD.
 
 <!-- jfb-shipped:start -->
-None: Jiron Form Builder's packages bring nothing to a site that Umbraco CMS does not already bring.
+| Package | Version | Licence | Copyright |
+| --- | --- | --- | --- |
+| `AngleSharp` | 1.7.2 | MIT | Copyright 2013-2026, AngleSharp. |
+| `AngleSharp.Css` | 1.0.2 | MIT | - |
+| `HtmlSanitizer` | 9.2.1039 | MIT | Copyright 2013-2026 Michael Ganss |
 <!-- jfb-shipped:end -->
 
 Umbraco CMS packages, and what they bring, are not listed here: sites already run them, and Jiron Form Builder only

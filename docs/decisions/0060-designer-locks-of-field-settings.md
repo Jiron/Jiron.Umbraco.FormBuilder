@@ -2,7 +2,8 @@
 
 - Status: accepted; builds on [ADR-0008](0008-settings-model.md) (designer locks),
   [ADR-0042](0042-host-configuration-and-start-up-checks.md) (their shape), [ADR-0055](0055-field-type-framework.md)
-  and [ADR-0056](0056-field-settings-checks.md) (settings schemas and their rules)
+  and [ADR-0056](0056-field-settings-checks.md) (settings schemas and their rules); the form endpoint's validator
+  built in 6.1a ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md))
 - Date: 2026-10-26
 - Roadmap step: 5.1f (locks of kind `field`); 8.1 applies the locks of kind `action` the same way
 
@@ -104,6 +105,8 @@ the default, and always null for a hidden lock.
 - 6.1 caches what `GetPublishedAsync` answers. The public revision moves with the stored projection, so a lock that a
   restart brings changes what visitors get without a new revision: the public definition's cache validators carry a
   fingerprint of the locks too.
+  **Built in 6.1a ([ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md)):** the validator is a hash of the
+  answer's bytes, which hold the locked values, so it moves with the locks without a fingerprint of its own.
 - 9.4 shows a locked setting read-only with its key, never a hidden one, and its change-type preview treats a locked
   setting of the target type as set by the lock: neither carried over nor needed.
 - 8.1 checks and applies the locks of kind `action` against the action types in the same way.

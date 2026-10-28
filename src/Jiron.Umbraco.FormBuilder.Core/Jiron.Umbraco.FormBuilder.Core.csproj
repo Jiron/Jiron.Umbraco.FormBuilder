@@ -14,6 +14,7 @@
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Core" />
     <PackageReference Include="Umbraco.Cms.Infrastructure" />
+    <PackageReference Include="HtmlSanitizer" />
   </ItemGroup>
 
   <ItemGroup>
