@@ -55,7 +55,7 @@ public sealed class PublicOpenApiSnapshotTests : FormBuilderTestServerTestBase
             Assert.That(paths.Select(path => path.Key), Is.Not.Empty.And.All.StartWith("/jfb/api/v1/"));
             Assert.That(operations, Is.All.Not.Null);
             Assert.That(operations, Is.Unique);
-            Assert.That(operations, Does.Contain("FormDefinition").And.Contain("FormOptions").And.Contain("FormUpload"));
+            Assert.That(operations, Does.Contain("FormDefinition").And.Contain("FormOptions").And.Contain("FormUpload").And.Contain("FormEntries").And.Contain("FormValidate").And.Contain("FormReceipt"));
             Assert.That(operations, Has.Count.EqualTo(PublicApiEndpoints.All(Services).Count), "every endpoint, once");
             Assert.That(document["components"]!["schemas"]!.AsObject().Select(schema => schema.Key), Is.All.Matches<string>(name => name.EndsWith("RequestModel", StringComparison.Ordinal) || name.EndsWith("ResponseModel", StringComparison.Ordinal) || name == "ProblemDetails"), "only its own models, never a framework type described by its properties");
         });

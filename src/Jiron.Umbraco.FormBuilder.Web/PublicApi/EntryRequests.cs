@@ -11,17 +11,23 @@ using Microsoft.Net.Http.Headers;
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
 /// <summary>
-/// What the entries endpoint reads of a request and answers with (ADR-0088): a JSON body of at most
-/// <see cref="MaxBodyBytes"/>, counted while it is read, which <see cref="EntryBodies"/> reads strictly and
-/// <see cref="FormSubmissions"/> runs through the pipeline with this site's upload tokens; the answer is the entry's
-/// receipt and outcome, or the refusal with its code.
+/// What the entries, validate and receipt endpoints read of a request and answer with (ADR-0088, ADR-0089): a JSON
+/// body, counted while it is read, which <see cref="EntryBodies"/> reads strictly and <see cref="FormSubmissions"/> runs
+/// through the pipeline with this site's upload tokens; the answer is an entry's receipt and outcome, nothing for a page
+/// that passes, or the refusal with its code.
 /// </summary>
 /// <param name="submissions">The submission pipeline.</param>
 /// <param name="tokens">The upload tokens, which the values of fields storing files post.</param>
 internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens tokens)
 {
-    /// <summary>The most bytes a submission's body holds.</summary>
+    /// <summary>The most bytes a submission's body holds, and a page's.</summary>
     public const int MaxBodyBytes = 1_048_576;
+
+    /// <summary>
+    /// The most bytes a receipt's body holds: a submission id and the longest challenge
+    /// (<see cref="EntryBodies.MaxChallengeLength"/>), with room for escapes.
+    /// </summary>
+    public const int MaxReceiptBodyBytes = 16_384;
 
     /// <summary>The media type of the body.</summary>
     public const string MediaType = "application/json";
@@ -34,47 +40,93 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
     public async Task<IActionResult> SubmitAsync(HttpContext http, Guid formKey, CancellationToken cancellationToken)
     {
+        var body = await ReadAsync(http, MaxBodyBytes, cancellationToken);
+        if (body.Refusal is { } refusal)
+        {
+            return refusal;
+        }
+
+        var invalid = new List<string>();
+        return EntryBodies.Read(body.Bytes, formKey, invalid) is { } submission
+            ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens }, cancellationToken))
+            : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
+    }
+
+    /// <summary>Reads one page's answers to a form and checks them (ADR-0089): <c>204</c> when they pass, or the refusal.</summary>
+    /// <param name="http">The request.</param>
+    /// <param name="formKey">The form's key, from the route.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    public async Task<IActionResult> ValidateAsync(HttpContext http, Guid formKey, CancellationToken cancellationToken)
+    {
+        var body = await ReadAsync(http, MaxBodyBytes, cancellationToken);
+        if (body.Refusal is { } refusal)
+        {
+            return refusal;
+        }
+
+        var invalid = new List<string>();
+        return EntryBodies.ReadPage(body.Bytes, formKey, invalid) is ({ } submission, var page)
+            ? Answer(await submissions.ValidateAsync(submission with { Tokens = tokens }, page, cancellationToken))
+            : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
+    }
+
+    /// <summary>Reads a receipt's submission id and answers with its entry's receipt and outcome, or the refusal (ADR-0089).</summary>
+    /// <param name="http">The request.</param>
+    /// <param name="formKey">The form's key, from the route.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    public async Task<IActionResult> ReceiptAsync(HttpContext http, Guid formKey, CancellationToken cancellationToken)
+    {
+        var body = await ReadAsync(http, MaxReceiptBodyBytes, cancellationToken);
+        if (body.Refusal is { } refusal)
+        {
+            return refusal;
+        }
+
+        var invalid = new List<string>();
+        return EntryBodies.ReadReceipt(body.Bytes, invalid) is { } submissionId
+            ? Answer(await submissions.ReceiptAsync(formKey, submissionId, cancellationToken))
+            : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
+    }
+
+    // The body of JSON in UTF-8, read whole when it holds at most the limit; otherwise the refusal, and a body past the
+    // limit closes the connection.
+    private static async Task<Body> ReadAsync(HttpContext http, int limit, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(http);
         var request = http.Request;
         if (!MediaTypeHeaderValue.TryParse(request.ContentType, out var media)
             || !media.MediaType.Equals(MediaType, StringComparison.OrdinalIgnoreCase)
             || (media.Charset.HasValue && !media.Charset.Equals("utf-8", StringComparison.OrdinalIgnoreCase)))
         {
-            return FormBuilderPublicProblems.UnsupportedMediaType();
+            return new Body([], FormBuilderPublicProblems.UnsupportedMediaType());
         }
 
-        byte[]? body;
+        byte[]? bytes;
         try
         {
-            body = await BodyAsync(request, cancellationToken);
+            bytes = await BytesAsync(request, limit, cancellationToken);
         }
         catch (BadHttpRequestException exception)
         {
             FormBuilderPublicProblems.CloseConnection(http);
-            return exception.StatusCode == StatusCodes.Status413PayloadTooLarge
+            return new Body([], exception.StatusCode == StatusCodes.Status413PayloadTooLarge
                 ? FormBuilderPublicProblems.PayloadTooLarge()
-                : FormBuilderPublicProblems.InvalidRequest(EntryBodies.Body);
+                : FormBuilderPublicProblems.InvalidRequest(EntryBodies.Body));
         }
 
-        if (body is null)
+        if (bytes is null)
         {
             FormBuilderPublicProblems.CloseConnection(http);
-            return FormBuilderPublicProblems.PayloadTooLarge();
+            return new Body([], FormBuilderPublicProblems.PayloadTooLarge());
         }
 
-        var invalid = new List<string>();
-        if (EntryBodies.Read(body, formKey, invalid) is not { } submission)
-        {
-            return FormBuilderPublicProblems.InvalidRequest([.. invalid]);
-        }
-
-        return Answer(await submissions.SubmitAsync(submission with { Tokens = tokens }, cancellationToken));
+        return new Body(bytes, null);
     }
 
-    // The body, or null once it holds more than the limit; the server's own limit throws past it too.
-    private static async Task<byte[]?> BodyAsync(HttpRequest request, CancellationToken cancellationToken)
+    // The body's bytes, or null once they are more than the limit; the server's own limit throws past it too.
+    private static async Task<byte[]?> BytesAsync(HttpRequest request, int limit, CancellationToken cancellationToken)
     {
-        var buffer = new ArrayBufferWriter<byte>(request.ContentLength is { } length and > 0 and <= MaxBodyBytes ? (int)length : 16_384);
+        var buffer = new ArrayBufferWriter<byte>(request.ContentLength is { } length and > 0 && length <= limit ? (int)length : Math.Min(limit, 16_384));
         while (true)
         {
             var read = await request.Body.ReadAsync(buffer.GetMemory(16_384), cancellationToken);
@@ -84,7 +136,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
             }
 
             buffer.Advance(read);
-            if (buffer.WrittenCount > MaxBodyBytes)
+            if (buffer.WrittenCount > limit)
             {
                 return null;
             }
@@ -118,6 +170,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         return result.Refusal switch
         {
+            null => new NoContentResult(),
             SubmissionRefusal.FormNotFound => FormBuilderPublicProblems.FormNotFound(),
             SubmissionRefusal.MemberRequired => FormBuilderPublicProblems.MemberRequired(),
             SubmissionRefusal.DuplicateSubmission => FormBuilderPublicProblems.DuplicateSubmission(),
@@ -126,9 +179,13 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
             SubmissionRefusal.EntryLimitReached => FormBuilderPublicProblems.EntryLimitReached(),
             SubmissionRefusal.InvalidRequest => FormBuilderPublicProblems.InvalidRequest([.. result.Problems.Select(problem => problem.Path)]),
             SubmissionRefusal.ValidationFailed => FormBuilderPublicProblems.ValidationFailed(result.Problems),
-            _ => throw new InvalidOperationException("A submission's result is an entry or a refusal."),
+            SubmissionRefusal.EntryNotFound => FormBuilderPublicProblems.NotFound(),
+            _ => throw new InvalidOperationException("A submission's result is an entry, a page that passes or a refusal."),
         };
     }
+
+    // A body as it was read, or the refusal of it.
+    private readonly record struct Body(byte[] Bytes, IActionResult? Refusal);
 }
 
 /// <summary>
@@ -171,6 +228,54 @@ internal sealed record EntryRequestModel
 
     /// <summary>The captcha's token, for a form whose protection uses one (from 7.1).</summary>
     public string? CaptchaToken { get; init; }
+}
+
+/// <summary>
+/// One page's answers to check (ADR-0089), as the document describes them: a submission's body with the page's key and
+/// without a submission id or a captcha token. Every member but <c>revision</c> and <c>pageKey</c> may be left out or
+/// null, and any other member is refused.
+/// </summary>
+internal sealed record PageRequestModel
+{
+    /// <summary>The form's public revision the page showed, as the form endpoint gives it.</summary>
+    public required int Revision { get; init; }
+
+    /// <summary>The key of the page whose answers are checked, as the form endpoint gives it.</summary>
+    public required Guid PageKey { get; init; }
+
+    /// <summary>The culture the page is in: one of the site's languages, otherwise the default language.</summary>
+    public string? Culture { get; init; }
+
+    /// <summary>The page the form is on, whose site's settings apply.</summary>
+    public Guid? ContentKey { get; init; }
+
+    /// <summary>
+    /// The answers the visitor gave so far by field alias, those of the pages before it among them, as a submission
+    /// posts them; only the errors of the page's fields are answered.
+    /// </summary>
+    public IReadOnlyDictionary<string, JsonElement>? Values { get; init; }
+
+    /// <summary>Each ticked consent's wording hash by its alias, as the form endpoint gives it (ADR-0009).</summary>
+    public IReadOnlyDictionary<string, string>? Consents { get; init; }
+
+    /// <summary>The page's query values by name, a string or an array of at most 20 strings; only the names the form lists are read.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? Query { get; init; }
+
+    /// <summary>Context values by name; only the names the form lists are read.</summary>
+    public IReadOnlyDictionary<string, string>? Context { get; init; }
+
+    /// <summary>The challenge (from 7.1).</summary>
+    public string? Challenge { get; init; }
+}
+
+/// <summary>A submission whose answer was lost, to look up (ADR-0012, ADR-0089); any other member is refused.</summary>
+internal sealed record ReceiptRequestModel
+{
+    /// <summary>The submission id the submission posted.</summary>
+    public required Guid SubmissionId { get; init; }
+
+    /// <summary>The challenge the submission was sent with (from 7.1).</summary>
+    public string? Challenge { get; init; }
 }
 
 /// <summary>A stored entry's receipt and the outcome to show (ADR-0088), for a new submission and its retries alike.</summary>

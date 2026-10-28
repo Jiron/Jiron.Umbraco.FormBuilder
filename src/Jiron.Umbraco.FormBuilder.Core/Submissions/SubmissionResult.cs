@@ -3,7 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 
-/// <summary>Why a submission was refused (ADR-0088); each is one stable code of the public API.</summary>
+/// <summary>Why a submission, a page's check or a receipt was refused (ADR-0088, ADR-0089); each is one stable code of the public API.</summary>
 internal enum SubmissionRefusal
 {
     /// <summary>The form is missing, unpublished, in the trash or unreadable (<c>form_not_found</c>).</summary>
@@ -29,6 +29,9 @@ internal enum SubmissionRefusal
 
     /// <summary>The answers fail their checks (<c>validation_failed</c>).</summary>
     ValidationFailed,
+
+    /// <summary>The form has no entry with the submission id a receipt names, or only a draft (<c>not_found</c>, every miss alike).</summary>
+    EntryNotFound,
 }
 
 /// <summary>
@@ -95,14 +98,17 @@ internal sealed record SubmissionOutcome
     public bool ShowAnswers { get; init; }
 }
 
-/// <summary>What <see cref="FormSubmissions.SubmitAsync"/> answers (ADR-0088): an entry's receipt and outcome, or a refusal.</summary>
+/// <summary>
+/// What <see cref="FormSubmissions"/> answers (ADR-0088, ADR-0089): an entry's receipt and outcome, a page whose answers
+/// pass, or a refusal.
+/// </summary>
 internal sealed record SubmissionResult
 {
     private SubmissionResult()
     {
     }
 
-    /// <summary>Why it was refused; null for an entry.</summary>
+    /// <summary>Why it was refused; null for an entry and for a page that passes.</summary>
     public SubmissionRefusal? Refusal { get; private init; }
 
     /// <summary>The entry's receipt; null for a refusal.</summary>
@@ -124,6 +130,9 @@ internal sealed record SubmissionResult
         Outcome = outcome ?? throw new ArgumentNullException(nameof(outcome)),
         Replayed = replayed,
     };
+
+    /// <summary>A page whose answers pass every check (ADR-0089): neither an entry nor a refusal.</summary>
+    public static SubmissionResult Valid() => new();
 
     /// <summary>A refusal without problems.</summary>
     /// <exception cref="ArgumentException">The refusal is one that has problems.</exception>

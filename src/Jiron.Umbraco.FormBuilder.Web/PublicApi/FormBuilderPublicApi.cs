@@ -192,7 +192,7 @@ internal sealed class ConfigureFormBuilderPublicApiSwagger : IConfigureOptions<S
         {
             Title = "Jiron Form Builder public API",
             Version = "1.0",
-            Description = "What visitors' browsers and headless sites call: forms, their options, uploads and entries. Anonymous; errors are ProblemDetails with a stable code.",
+            Description = "What visitors' browsers and headless sites call: forms, their options, uploads, the checks of a page, entries and their receipts. Anonymous; errors are ProblemDetails with a stable code.",
         });
         options.OperationFilter<FormBuilderPublicDeclarations>();
         options.DocumentFilter<FormBuilderPublicDocument>();

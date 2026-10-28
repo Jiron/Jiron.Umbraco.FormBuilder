@@ -10,8 +10,9 @@ using Microsoft.Net.Http.Headers;
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
 /// <summary>
-/// Forms, as headless sites render them, their fields' options, the files visitors upload to them and the entries they
-/// submit (section 4.6, ADR-0084, ADR-0086, ADR-0087, ADR-0088).
+/// Forms, as headless sites render them, their fields' options, the files visitors upload to them, the pages they check
+/// and the entries they submit, and the receipts of those (section 4.6, ADR-0084, ADR-0086, ADR-0087, ADR-0088,
+/// ADR-0089).
 /// </summary>
 /// <param name="requests">What the endpoints of forms read of a request and answer with.</param>
 /// <param name="pages">The culture and the page a request is for.</param>
@@ -238,6 +239,76 @@ internal sealed class FormController(
         }
 
         return await entries.SubmitAsync(HttpContext, formKey, cancellationToken);
+    }
+
+    /// <summary>
+    /// Checks one page's answers on the server before the visitor goes on (ADR-0089), as the submission will check them:
+    /// a submission's body with the page's key, holding the answers the visitor gave so far, which the rules and checks
+    /// read as the submission's. <c>204</c> when the page's answers pass; nothing is stored either way.
+    /// </summary>
+    /// <param name="key">The form's key.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    /// <remarks>
+    /// <c>422 validation_failed</c> lists the errors of the page's fields only, as the entries endpoint lists them. Every
+    /// check runs but <c>uniquePerForm</c>, which only a submission runs, so the endpoint cannot tell whether an answer is
+    /// taken. <c>403 form_closed</c> and <c>403 entry_limit_reached</c> come as early as the page that meets them.
+    /// </remarks>
+    [HttpPost("{key}/validate")]
+    [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Submit)]
+    [FormBuilderBodyLimit(EntryRequests.MaxBodyBytes)]
+    [FormBuilderTimeLimit(30)]
+    [FormBuilderJsonBody(typeof(PageRequestModel))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status413PayloadTooLarge, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status415UnsupportedMediaType, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, FormBuilderProblemResult.MediaType)]
+    public async Task<IActionResult> Validate(string key, CancellationToken cancellationToken)
+    {
+        // A form the site does not serve answers before its body is read.
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is null)
+        {
+            FormBuilderPublicProblems.CloseConnection(HttpContext);
+            return FormBuilderPublicProblems.FormNotFound();
+        }
+
+        return await entries.ValidateAsync(HttpContext, formKey, cancellationToken);
+    }
+
+    /// <summary>
+    /// The receipt and the outcome of the entry a submission id names on this form (ADR-0012, ADR-0089), for a page whose
+    /// answer to a submission was lost: what a retry of the same answers gets. Every miss answers the same
+    /// <c>404 not_found</c>, so submission ids cannot be probed; from 7.1 the entry must have been made with the posted
+    /// challenge.
+    /// </summary>
+    /// <param name="key">The form's key.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    [HttpPost("{key}/receipt")]
+    [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Submit)]
+    [FormBuilderBodyLimit(EntryRequests.MaxReceiptBodyBytes)]
+    [FormBuilderTimeLimit(30)]
+    [FormBuilderJsonBody(typeof(ReceiptRequestModel))]
+    [ProducesResponseType<EntryResponseModel>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status413PayloadTooLarge, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status415UnsupportedMediaType, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, FormBuilderProblemResult.MediaType)]
+    public async Task<IActionResult> Receipt(string key, CancellationToken cancellationToken)
+    {
+        // A form the site does not serve answers before its body is read.
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is null)
+        {
+            FormBuilderPublicProblems.CloseConnection(HttpContext);
+            return FormBuilderPublicProblems.FormNotFound();
+        }
+
+        return await entries.ReceiptAsync(HttpContext, formKey, cancellationToken);
     }
 
     // The field with this key, a repeatable group's child among them, when it has options of its own or from a source.

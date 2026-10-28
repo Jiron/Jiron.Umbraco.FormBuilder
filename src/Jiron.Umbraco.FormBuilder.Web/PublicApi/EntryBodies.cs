@@ -9,9 +9,10 @@ using Jiron.Umbraco.FormBuilder.Core.Submissions;
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
 /// <summary>
-/// Reads the JSON body of a submission (ADR-0088) strictly: UTF-8 throughout, at most <see cref="MaxDepth"/> levels,
-/// an object of the known members each once, a value of the shape its member takes, and no lone surrogate, escaped or
-/// not. Anything else is named by where it is, as <c>400 invalid_request</c> names it.
+/// Reads the JSON body of a submission (ADR-0088), of a page to check and of a receipt (ADR-0089) strictly: UTF-8
+/// throughout, at most <see cref="MaxDepth"/> levels, an object of the known members each once, a value of the shape its
+/// member takes, and no lone surrogate, escaped or not. Anything else is named by where it is, as
+/// <c>400 invalid_request</c> names it.
 /// </summary>
 internal static class EntryBodies
 {
@@ -34,10 +35,71 @@ internal static class EntryBodies
     /// <param name="body">The body's bytes.</param>
     /// <param name="form">The form's key, from the route.</param>
     /// <param name="invalid">Receives where the body cannot be read.</param>
-    public static SubmissionRequest? Read(byte[] body, Guid form, List<string> invalid)
+    public static SubmissionRequest? Read(byte[] body, Guid form, List<string> invalid) =>
+        Submission(body, form, page: false, invalid) is ({ } request, _) ? request : null;
+
+    /// <summary>
+    /// The answers a page's body holds for a form, and the page's key (ADR-0089): a submission's members with
+    /// <c>pageKey</c> and without <c>submissionId</c> and <c>captchaToken</c>; null with where it cannot be read. The
+    /// transport's upload tokens are the caller's to add.
+    /// </summary>
+    /// <param name="body">The body's bytes.</param>
+    /// <param name="form">The form's key, from the route.</param>
+    /// <param name="invalid">Receives where the body cannot be read.</param>
+    public static (SubmissionRequest Request, Guid Page)? ReadPage(byte[] body, Guid form, List<string> invalid) =>
+        Submission(body, form, page: true, invalid) is ({ } request, { } page) ? (request, page) : null;
+
+    /// <summary>The submission id a receipt's body names (ADR-0089), or null with where the body cannot be read.</summary>
+    /// <param name="body">The body's bytes: <c>submissionId</c>, and the optional <c>challenge</c>.</param>
+    /// <param name="invalid">Receives where the body cannot be read.</param>
+    public static Guid? ReadReceipt(byte[] body, List<string> invalid)
     {
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(invalid);
+        using var document = Parse(body, invalid);
+        if (document is null)
+        {
+            return null;
+        }
+
+        Guid? submissionId = null;
+        foreach (var (name, value) in Members(document.RootElement, string.Empty, invalid))
+        {
+            switch (name)
+            {
+                case "submissionId":
+                    submissionId = Key(value, name, invalid);
+                    break;
+                case "challenge":
+                    _ = Text(value, name, invalid, MaxChallengeLength);
+                    break;
+                default:
+                    invalid.Add(name);
+                    break;
+            }
+        }
+
+        if (submissionId is null)
+        {
+            Add(invalid, "submissionId");
+        }
+
+        return invalid.Count > 0 ? null : submissionId;
+    }
+
+    // A submission's body, or a page's with the page's key.
+    private static (SubmissionRequest? Request, Guid? Page) Submission(byte[] body, Guid form, bool page, List<string> invalid)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(invalid);
+        using var document = Parse(body, invalid);
+        return document is null ? default : Read(document.RootElement, form, page, invalid);
+    }
+
+    // The body as a JSON object, or null with where it goes wrong: bytes that are not UTF-8, text that is not JSON or
+    // nests deeper than MaxDepth, or a value that is not an object.
+    private static JsonDocument? Parse(byte[] body, List<string> invalid)
+    {
         if (!System.Text.Unicode.Utf8.IsValid(body))
         {
             invalid.Add(Body);
@@ -55,16 +117,21 @@ internal static class EntryBodies
             return null;
         }
 
-        using (document)
+        if (document.RootElement.ValueKind == JsonValueKind.Object)
         {
-            return document.RootElement.ValueKind == JsonValueKind.Object ? Read(document.RootElement, form, invalid) : Fail(invalid, Body);
+            return document;
         }
+
+        document.Dispose();
+        invalid.Add(Body);
+        return null;
     }
 
-    private static SubmissionRequest? Read(JsonElement root, Guid form, List<string> invalid)
+    private static (SubmissionRequest? Request, Guid? Page) Read(JsonElement root, Guid form, bool page, List<string> invalid)
     {
         int? revision = null;
         Guid? submissionId = null;
+        Guid? pageKey = null;
         Guid? contentKey = null;
         string? culture = null;
         var answers = new Answers();
@@ -79,8 +146,11 @@ internal static class EntryBodies
                 case "revision":
                     revision = value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number) && number >= 1 ? number : Invalid(invalid, name, (int?)null);
                     break;
-                case "submissionId":
+                case "submissionId" when !page:
                     submissionId = Key(value, name, invalid);
+                    break;
+                case "pageKey" when page:
+                    pageKey = Key(value, name, invalid);
                     break;
                 case "contentKey":
                     contentKey = Key(value, name, invalid);
@@ -103,7 +173,7 @@ internal static class EntryBodies
                 case "challenge":
                     _ = Text(value, name, invalid, MaxChallengeLength);
                     break;
-                case "captchaToken":
+                case "captchaToken" when !page:
                     _ = Text(value, name, invalid, MaxCaptchaTokenLength);
                     break;
                 default:
@@ -112,12 +182,17 @@ internal static class EntryBodies
             }
         }
 
-        if (revision is null && !invalid.Contains("revision"))
+        if (revision is null)
         {
-            invalid.Add("revision");
+            Add(invalid, "revision");
         }
 
-        return invalid.Count > 0 ? null : new SubmissionRequest
+        if (page && pageKey is null)
+        {
+            Add(invalid, "pageKey");
+        }
+
+        return invalid.Count > 0 ? default : (new SubmissionRequest
         {
             Form = form,
             Revision = revision!.Value,
@@ -128,7 +203,7 @@ internal static class EntryBodies
             Rows = answers.Rows(),
             Query = query,
             Context = context,
-        };
+        }, pageKey);
     }
 
     // The members of an object, each name once; a name with a lone surrogate, or one given twice, is named once.
@@ -153,7 +228,7 @@ internal static class EntryBodies
     {
         if (values.ValueKind != JsonValueKind.Object)
         {
-            Fail(invalid, "values");
+            Add(invalid, "values");
             return;
         }
 
@@ -211,7 +286,7 @@ internal static class EntryBodies
     {
         if (consents.ValueKind != JsonValueKind.Object)
         {
-            Fail(invalid, "consents");
+            Add(invalid, "consents");
             return;
         }
 
@@ -235,7 +310,7 @@ internal static class EntryBodies
     {
         if (values.ValueKind != JsonValueKind.Object)
         {
-            Fail(invalid, "query");
+            Add(invalid, "query");
             return;
         }
 
@@ -257,7 +332,7 @@ internal static class EntryBodies
     {
         if (values.ValueKind != JsonValueKind.Object)
         {
-            Fail(invalid, "context");
+            Add(invalid, "context");
             return;
         }
 
@@ -350,12 +425,6 @@ internal static class EntryBodies
         }
 
         return none;
-    }
-
-    private static SubmissionRequest? Fail(List<string> invalid, string path)
-    {
-        Add(invalid, path);
-        return null;
     }
 
     private static void Add(List<string> invalid, string path)

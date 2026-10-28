@@ -116,7 +116,7 @@ flowchart LR
 
 | Area | Holds | Decided in |
 | --- | --- | --- |
-| Public API | `/jfb/api/v1` below the host's base path: the base controller with each action's declarations and their filter, the middleware in front of it (no form content, origins, what ends a request early), the catch-all, the OpenAPI document `jfb-public`, the form endpoint, the options endpoint, the upload endpoint with its multipart reading and its tokens, the entries endpoint with its strict reading of a JSON body; the rate-limit middleware | ADR-0006, ADR-0012, ADR-0084, ADR-0086, ADR-0087, ADR-0088 |
+| Public API | `/jfb/api/v1` below the host's base path: the base controller with each action's declarations and their filter, the middleware in front of it (no form content, origins, what ends a request early), the catch-all, the OpenAPI document `jfb-public`, the form endpoint, the options endpoint, the upload endpoint with its multipart reading and its tokens, the entries, validate and receipt endpoints with their strict reading of a JSON body; the rate-limit middleware | ADR-0006, ADR-0012, ADR-0084, ADR-0086, ADR-0087, ADR-0088, ADR-0089 |
 | Management API | `/umbraco/jfb/management/api/v1`: the base controller, the access declarations and their filter, the refusals with stable codes, the authorization policies with their resources and denials, the OpenAPI document `jfb`; the library tree, folders, the trash, forms and their versions, a definition carried as its document; the field types for the designer | ADR-0013, ADR-0049, ADR-0050, ADR-0051, ADR-0052, ADR-0057, §4.7 |
 | Rendering | the view component, `<jfb-render>`, `<jfb-assets>`, the surface controller, output cache rules, asset serving | ADR-0004, ADR-0015 |
 | Themes | the built-in themes, their views and stylesheets | ADR-0015 |
@@ -258,7 +258,10 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   availability (`FormAvailability`, which the form endpoint's `open` and the uploads share), the empty submission,
   then the reader; `SubmissionEntries` stores the entry with its `submitted` event, its action runs and its daily
   count in the store's one unit, which counts the entry limit again after the form's counter, and
-  `SubmissionOutcomes` renders the outcome, a redirect checked again by the publish rule.
+  `SubmissionOutcomes` renders the outcome, a redirect checked again by the publish rule. A page's check runs the
+  same steps but idempotency, the empty submission and the unit, and answers only the errors of the page's fields;
+  a receipt answers an entry as a retry of its answers would
+  ([ADR-0089](decisions/0089-the-validate-and-receipt-endpoints.md)).
   `Display` writes the texts merge tags show the values as, in the template's culture, with the wire number or date
   behind a text ([ADR-0066](decisions/0066-answers-as-merge-tags.md)); by default by the type's rule kind. An option
   from a list or another source shows the label its source resolves for the parent answers the check holds it to, row
@@ -394,7 +397,8 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
 [ADR-0084](decisions/0084-the-public-apis-frame-and-the-form-endpoint.md),
 [ADR-0086](decisions/0086-the-options-endpoint.md),
 [ADR-0087](decisions/0087-the-upload-endpoint.md),
-[ADR-0088](decisions/0088-the-submission-pipeline-and-the-entries-endpoint.md)).
+[ADR-0088](decisions/0088-the-submission-pipeline-and-the-entries-endpoint.md),
+[ADR-0089](decisions/0089-the-validate-and-receipt-endpoints.md)).
 
 | Route | Purpose | Rate-limit policy | Needs |
 | --- | --- | --- | --- |
@@ -402,9 +406,9 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
 | `GET forms/{key}/render` | the published form as HTML for `form_changed` (ADR-0004) | `read` | a local `page` path |
 | `POST forms/{key}/challenge` | a signed challenge, places left, member values | `challenge` | – |
 | `POST forms/{key}/uploads` | one file to a field before submitting (`?fieldKey=`), streamed as `multipart/form-data`: an optional `challenge` part, then the `file` part; held to the field's limit (its type's or `Files:MaxFileBytes`) before and while it is read, checked on its first bytes (programs and scripts, blocked extensions, the field's own check, bytes of another kind than the extension names), stored with a row that waits for its entry; answers a token for 24 hours with the cleaned name, the size and the detected content type; a form that takes no entry now refuses it with the submission's code before a byte is read; every refusal closes the connection | `upload` | the challenge as the first part (verified from 7.1) |
-| `POST forms/{key}/validate` | one page's server validation, without `uniquePerForm` | `submit` | the challenge |
+| `POST forms/{key}/validate` | one page's check: a submission's body with the page's key, of at most 1 MiB, the answers given so far read and ruled as the submission's; `204` when the page's answers pass, `422 validation_failed` with the errors of its fields only, the submission's refusals before (a closed or full form among them); every check but `uniquePerForm`; nothing stored | `submit` | the challenge (from 7.1) |
 | `POST forms/{key}/entries` | submit: a JSON object of at most 1 MiB, counted as it is read, with the revision the page showed and the answers by alias (`values`, a file field's upload tokens among them), the consents' wording hashes, the query and context values; answers the entry's `receipt` and `outcome`, the same for a retry of the same answers; refusals by code, `422 validation_failed` with each error's code and path and the check or rule whose message shows | `submit` | the challenge (from 7.1), or a server key |
-| `POST forms/{key}/receipt` | the receipt and outcome of an uncertain submission | `submit` | its challenge or server key |
+| `POST forms/{key}/receipt` | the receipt and outcome of an uncertain submission by its `submissionId`, in a body of at most 16 KiB: what a retry of its answers gets, also once the form is full; the same `404 not_found` for every miss (no such entry, another form's, a draft) | `submit` | its challenge or server key (from 7.1) |
 | `POST forms/{key}/drafts` | save and resume: the link is emailed, never returned | `submit` | the challenge |
 | `POST drafts/resume` | values and page for a resume token from the URL fragment | `submit` | the token |
 | `GET verify` | the page with the confirm button for double opt-in | `verify` | the verification token |

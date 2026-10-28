@@ -268,40 +268,42 @@ public sealed class PublicFormEntryBodyTests : PublicApiTestBase
             public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
     }
+}
 
-    // A JSON body padded with spaces after its object to the given size, written in chunks as it is sent: with its
-    // length, or chunked.
-    private sealed class PaddedBody : HttpContent
+/// <summary>
+/// A JSON body padded with spaces after its object to the given size, written in chunks as it is sent: with its length,
+/// or chunked; for the tests of the public API's JSON bodies.
+/// </summary>
+internal sealed class PaddedBody : HttpContent
+{
+    private readonly byte[] _json;
+    private readonly long _size;
+    private readonly bool _declared;
+
+    public PaddedBody(string json, long size, bool declared)
     {
-        private readonly byte[] _json;
-        private readonly long _size;
-        private readonly bool _declared;
+        _json = Encoding.UTF8.GetBytes(json);
+        _size = size;
+        _declared = declared;
+        Headers.ContentType = MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
+    }
 
-        public PaddedBody(string json, long size, bool declared)
+    protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+    {
+        await stream.WriteAsync(_json);
+        var spaces = new byte[65_536];
+        Array.Fill(spaces, (byte)' ');
+        for (var written = (long)_json.Length; written < _size;)
         {
-            _json = Encoding.UTF8.GetBytes(json);
-            _size = size;
-            _declared = declared;
-            Headers.ContentType = MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
+            var length = (int)Math.Min(spaces.Length, _size - written);
+            await stream.WriteAsync(spaces.AsMemory(0, length));
+            written += length;
         }
+    }
 
-        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
-        {
-            await stream.WriteAsync(_json);
-            var spaces = new byte[65_536];
-            Array.Fill(spaces, (byte)' ');
-            for (var written = (long)_json.Length; written < _size;)
-            {
-                var length = (int)Math.Min(spaces.Length, _size - written);
-                await stream.WriteAsync(spaces.AsMemory(0, length));
-                written += length;
-            }
-        }
-
-        protected override bool TryComputeLength(out long length)
-        {
-            length = _size;
-            return _declared;
-        }
+    protected override bool TryComputeLength(out long length)
+    {
+        length = _size;
+        return _declared;
     }
 }

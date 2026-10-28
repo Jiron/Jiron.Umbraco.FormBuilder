@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
@@ -15,8 +17,11 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <summary>
 /// The submission pipeline of section 4.4 (ADR-0088), which every transport runs: the published form, the gate,
 /// idempotency, compatibility, availability, the answers read and checked, and one transaction that stores the entry
-/// with its event, its action runs and its count; then the outcome. Spam protection comes in 7.1, the places on options
-/// and <c>uniquePerForm</c> in 6.1g, and waking the action processor in 8.1.
+/// with its event, its action runs and its count; then the outcome. A page's check runs the same steps but idempotency,
+/// the empty submission and the transaction, and answers its own fields' errors; a receipt answers an entry as a retry
+/// would (ADR-0089).
+/// Spam protection comes in 7.1, the places on options and <c>uniquePerForm</c> in 6.1g, and waking the action
+/// processor in 8.1.
 /// </summary>
 internal sealed class FormSubmissions(
     PublishedFormCache cache,
@@ -38,50 +43,154 @@ internal sealed class FormSubmissions(
     /// <summary>The longest query or context value, in UTF-16 code units.</summary>
     public const int MaxValueLength = 2_000;
 
+    /// <summary>Where a page key that names no page of the form is, as a request names it.</summary>
+    public const string PageKeyPath = "pageKey";
+
     /// <summary>Runs a submission through the pipeline.</summary>
     /// <param name="request">The submission, as its transport read it.</param>
     /// <param name="cancellationToken">Cancelled when the request is, or when its time limit runs out.</param>
     public async Task<SubmissionResult> SubmitAsync(SubmissionRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-
-        // The form, as the site serves it, and its row read again, so a form trashed a moment ago takes nothing.
-        if (await cache.GetAsync(request.Form, cancellationToken) is not { } cached
-            || await forms.GetAsync(request.Form, cancellationToken) is not { TrashedUtc: null, PublishedVersionId: not null } row
-            || await forms.GetVersionAsync(row.Id, cached.Published.Version, cancellationToken) is not { } version)
+        if (await ServedAsync(request.Form, cancellationToken) is not { } served
+            || await forms.GetVersionAsync(served.Row.Id, served.Form.Version, cancellationToken) is not { } version)
         {
             return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
         }
 
-        var form = cached.Published;
-        var definition = form.Definition;
-
-        // The gate: members-only forms wait for 14.3, which binds a submission to the signed-in member (ADR-0012).
-        if (definition.Settings.Availability.Access != MemberAccess.Anyone)
+        if (IsForMembers(served.Form))
         {
             return SubmissionResult.Refused(SubmissionRefusal.MemberRequired);
         }
 
         // Idempotency, before anything that could refuse a retry (section 4.4).
         var digest = SubmissionDigest.Of(request);
-        if (request.SubmissionId is { } posted && await entries.GetBySubmissionAsync(row.Id, posted, cancellationToken) is { } earlier)
+        if (request.SubmissionId is { } posted && await entries.GetBySubmissionAsync(served.Row.Id, posted, cancellationToken) is { } earlier)
         {
-            return await RetryAsync(earlier, digest, form, cancellationToken);
+            return await RetryAsync(earlier, digest, served.Form, cancellationToken);
         }
 
-        // Compatibility: the aliases of the revision the page showed (ADR-0002).
-        if (await AliasesAsync(request.Revision, row.Id, form, cancellationToken) is not { } aliases)
+        var reading = await ReadAsync(request, served, pageKey: null, cancellationToken);
+        if (reading.IsRefused)
         {
-            return SubmissionResult.Refused(SubmissionRefusal.FormChanged);
+            return reading.Refusal;
+        }
+
+        // One transaction (section 4.4, step 8).
+        var (scope, page, read, wordings) = reading.Read;
+        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context);
+        try
+        {
+            return await recorder.CreateAsync(submission, scope, cancellationToken) is { } created
+                ? SubmissionResult.Accepted(created.Receipt, created.Outcome, replayed: false)
+                : SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
+        }
+        catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.DuplicateSubmission)
+        {
+            // Another request with this submission id was stored a moment earlier: answer as a retry of it.
+            return await entries.GetBySubmissionAsync(served.Row.Id, submission.SubmissionId, cancellationToken) is { } other
+                ? await RetryAsync(other, digest, served.Form, cancellationToken)
+                : SubmissionResult.Refused(SubmissionRefusal.DuplicateSubmission);
+        }
+        catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.EntryLimitReached)
+        {
+            return SubmissionResult.Refused(SubmissionRefusal.EntryLimitReached);
+        }
+        catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.MissingFile)
+        {
+            // An upload went meanwhile, to another entry that named it at the same moment: each answer that names one is invalid.
+            var paths = new FieldPaths(served.Form.Definition);
+            return SubmissionResult.Invalid(read.Answers.Where(answer => answer.Files.Length > 0)
+                .Select(answer => new SubmissionProblem(NameOf(FieldMessageKinds.Invalid), paths.Of(answer.Field, answer.Row))));
+        }
+    }
+
+    /// <summary>
+    /// Checks one page's answers as the submission would check them (ADR-0089), and stores nothing: the form, the gate,
+    /// the revision and the consent wordings, the availability, then every posted answer read, ruled and checked, with
+    /// only the errors of the page's fields answered. <c>uniquePerForm</c> is not checked: only the submission's
+    /// transaction checks it.
+    /// </summary>
+    /// <param name="request">The answers the visitor gave so far, as the transport read them.</param>
+    /// <param name="pageKey">The page's key, as the revision the visitor's page showed names it.</param>
+    /// <param name="cancellationToken">Cancelled when the request is, or when its time limit runs out.</param>
+    public async Task<SubmissionResult> ValidateAsync(SubmissionRequest request, Guid pageKey, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (await ServedAsync(request.Form, cancellationToken) is not { } served)
+        {
+            return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
+        }
+
+        if (IsForMembers(served.Form))
+        {
+            return SubmissionResult.Refused(SubmissionRefusal.MemberRequired);
+        }
+
+        var reading = await ReadAsync(request, served, pageKey, cancellationToken);
+        return reading.IsRefused ? reading.Refusal : SubmissionResult.Valid();
+    }
+
+    /// <summary>
+    /// The receipt and the outcome of the form's entry that a submission id names (ADR-0012, ADR-0089), as a retry of its
+    /// answers gets them; <see cref="SubmissionRefusal.EntryNotFound"/> when the form has no such entry, or only a draft.
+    /// </summary>
+    /// <param name="form">The form's key.</param>
+    /// <param name="submissionId">The submission id the submission posted.</param>
+    /// <param name="cancellationToken">Cancelled when the request is, or when its time limit runs out.</param>
+    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, CancellationToken cancellationToken = default)
+    {
+        if (await ServedAsync(form, cancellationToken) is not { } served)
+        {
+            return SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
+        }
+
+        if (IsForMembers(served.Form))
+        {
+            return SubmissionResult.Refused(SubmissionRefusal.MemberRequired);
+        }
+
+        return await entries.GetBySubmissionAsync(served.Row.Id, submissionId, cancellationToken) is { State: not EntryState.Draft } entry
+            ? await ReplayAsync(entry, served.Form, cancellationToken)
+            : SubmissionResult.Refused(SubmissionRefusal.EntryNotFound);
+    }
+
+    // The form, as the site serves it, and its row read again, so a form trashed a moment ago takes nothing (step 1).
+    private async Task<Served?> ServedAsync(Guid key, CancellationToken cancellationToken) =>
+        await cache.GetAsync(key, cancellationToken) is { } cached
+        && await forms.GetAsync(key, cancellationToken) is { TrashedUtc: null, PublishedVersionId: not null } row
+            ? new Served(cached.Published, row)
+            : null;
+
+    // The gate: members-only forms wait for 14.3, which binds a request to the signed-in member (ADR-0012).
+    private static bool IsForMembers(PublishedForm form) => form.Definition.Settings.Availability.Access != MemberAccess.Anyone;
+
+    // Compatibility, availability and the answers read and checked (section 4.4, steps 4, 5 and 7). For a page, only the
+    // errors of its fields count, and a page without an answer is no error.
+    private async Task<Reading> ReadAsync(SubmissionRequest request, Served served, Guid? pageKey, CancellationToken cancellationToken)
+    {
+        var form = served.Form;
+        var definition = form.Definition;
+
+        // Compatibility: the aliases of the revision the page showed (ADR-0002).
+        if (await AliasesAsync(request.Revision, served.Row.Id, form, cancellationToken) is not { } aliases)
+        {
+            return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.FormChanged));
         }
 
         var unreadable = new List<string>();
         var answers = Answers(request, aliases, definition, unreadable, out var changed);
+        var onPage = pageKey is { } key ? aliases.OnPage(key, definition) : null;
+        if (pageKey is not null && onPage is null)
+        {
+            changed |= Unknown(aliases, null, PageKeyPath, unreadable);
+        }
+
         var query = Query(request, definition, unreadable);
         var context = Context(request, definition, unreadable);
         if (unreadable.Count > 0)
         {
-            return SubmissionResult.Unreadable(unreadable);
+            return Reading.Refused(SubmissionResult.Unreadable(unreadable));
         }
 
         var culture = await pages.CultureAsync(request.Culture);
@@ -100,22 +209,22 @@ internal sealed class FormSubmissions(
         var wordings = changed ? null : await WordingsAsync(definition, answers, scope, cancellationToken);
         if (wordings is null)
         {
-            return SubmissionResult.Refused(SubmissionRefusal.FormChanged);
+            return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.FormChanged));
         }
 
         // Availability, by the site's clock and the entries that count toward the limit.
-        switch (await availability.CheckAsync(definition.Settings.Availability, row.Id, cancellationToken))
+        switch (await availability.CheckAsync(definition.Settings.Availability, served.Row.Id, cancellationToken))
         {
             case FormUnavailable.Closed:
-                return SubmissionResult.Refused(SubmissionRefusal.FormClosed);
+                return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.FormClosed));
             case FormUnavailable.Full:
-                return SubmissionResult.Refused(SubmissionRefusal.EntryLimitReached);
+                return Reading.Refused(SubmissionResult.Refused(SubmissionRefusal.EntryLimitReached));
         }
 
         // The answers, read by their types before the rules and checked once the rules leave them shown (ADR-0072).
-        if (IsEmpty(request))
+        if (pageKey is null && IsEmpty(request))
         {
-            return SubmissionResult.Invalid([new SubmissionProblem(SubmissionProblems.Empty, string.Empty)]);
+            return Reading.Refused(SubmissionResult.Invalid([new SubmissionProblem(SubmissionProblems.Empty, string.Empty)]));
         }
 
         var zone = await timeZones.GetAsync(page.Site, cancellationToken);
@@ -127,53 +236,30 @@ internal sealed class FormSubmissions(
                 TimeZone = zone.Id,
                 Fields = answers.Fields,
                 Rows = answers.Rows,
-                Uploads = await UploadsAsync(request, answers, definition, row.Id, cancellationToken),
+                Uploads = await UploadsAsync(request, answers, definition, served.Row.Id, cancellationToken),
             },
             cancellationToken);
-        if (!read.IsValid)
+        ImmutableArray<SubmissionError> errors = onPage is null ? read.Errors : [.. read.Errors.Where(error => onPage.Contains(error.Field))];
+        if (!errors.IsEmpty)
         {
             var paths = new FieldPaths(definition);
-            return aliases.IsCurrent || read.Errors.All(error => aliases.Shown.Contains(error.Field))
-                ? SubmissionResult.Invalid(read.Errors.Select(paths.Problem))
-                : SubmissionResult.Refused(SubmissionRefusal.FormChanged);
+            return Reading.Refused(aliases.IsCurrent || errors.All(error => aliases.Shown.Contains(error.Field))
+                ? SubmissionResult.Invalid(errors.Select(paths.Problem))
+                : SubmissionResult.Refused(SubmissionRefusal.FormChanged));
         }
 
-        // One transaction (section 4.4, step 8).
-        var submission = new NewSubmission(row.Id, version.Info.Id, form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, culture, page, context);
-        try
-        {
-            return await recorder.CreateAsync(submission, scope, cancellationToken) is { } created
-                ? SubmissionResult.Accepted(created.Receipt, created.Outcome, replayed: false)
-                : SubmissionResult.Refused(SubmissionRefusal.FormNotFound);
-        }
-        catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.DuplicateSubmission)
-        {
-            // Another request with this submission id was stored a moment earlier: answer as a retry of it.
-            return await entries.GetBySubmissionAsync(row.Id, submission.SubmissionId, cancellationToken) is { } other
-                ? await RetryAsync(other, digest, form, cancellationToken)
-                : SubmissionResult.Refused(SubmissionRefusal.DuplicateSubmission);
-        }
-        catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.EntryLimitReached)
-        {
-            return SubmissionResult.Refused(SubmissionRefusal.EntryLimitReached);
-        }
-        catch (FormBuilderConflictException conflict) when (conflict.Conflict == FormBuilderConflict.MissingFile)
-        {
-            // An upload went meanwhile, to another entry that named it at the same moment: each answer that names one is invalid.
-            var paths = new FieldPaths(definition);
-            return SubmissionResult.Invalid(read.Answers.Where(answer => answer.Files.Length > 0)
-                .Select(answer => new SubmissionProblem(NameOf(FieldMessageKinds.Invalid), paths.Of(answer.Field, answer.Row))));
-        }
+        return new Reading(null, new ReadSubmission(scope, page, read, wordings));
     }
 
     // A retry of an entry's submission id: the same answers get the entry's receipt and outcome, others 409.
-    private async Task<SubmissionResult> RetryAsync(StoredEntry entry, string digest, PublishedForm form, CancellationToken cancellationToken)
-    {
-        if (!string.Equals(entry.SubmissionHash, digest, StringComparison.Ordinal))
-        {
-            return SubmissionResult.Refused(SubmissionRefusal.DuplicateSubmission);
-        }
+    private async Task<SubmissionResult> RetryAsync(StoredEntry entry, string digest, PublishedForm form, CancellationToken cancellationToken) =>
+        string.Equals(entry.SubmissionHash, digest, StringComparison.Ordinal)
+            ? await ReplayAsync(entry, form, cancellationToken)
+            : SubmissionResult.Refused(SubmissionRefusal.DuplicateSubmission);
 
+    // An entry's receipt and outcome again, as it was answered.
+    private async Task<SubmissionResult> ReplayAsync(StoredEntry entry, PublishedForm form, CancellationToken cancellationToken)
+    {
         var replayed = await recorder.ReplayAsync(entry, form, cancellationToken);
         return SubmissionResult.Accepted(replayed.Receipt, replayed.Outcome, replayed: true);
     }
@@ -426,8 +512,11 @@ internal sealed class FormSubmissions(
     // A revision's fields outside repeatable groups by alias, and the keys of every field and grid row it has.
     private sealed class Aliases
     {
+        private readonly FormDefinition _shown;
+
         public Aliases(FormDefinition shown, bool isCurrent)
         {
+            _shown = shown;
             IsCurrent = isCurrent;
             foreach (var field in Fields(shown))
             {
@@ -435,13 +524,9 @@ internal sealed class FormSubmissions(
                 {
                     Top[alias] = field;
                 }
-
-                foreach (var item in field.Fields.Prepend(field))
-                {
-                    Shown.Add(item.Key);
-                    Shown.UnionWith(item.Rows.Select(row => row.Key));
-                }
             }
+
+            Shown.UnionWith(Keys(Fields(shown)));
         }
 
         public bool IsCurrent { get; }
@@ -449,7 +534,35 @@ internal sealed class FormSubmissions(
         public Dictionary<string, FormField> Top { get; } = new(StringComparer.Ordinal);
 
         public HashSet<Guid> Shown { get; } = [];
+
+        // The keys of the page with this key in this revision and in the live version, whose errors a page's check
+        // answers (ADR-0089); null when neither has the page.
+        public HashSet<Guid>? OnPage(Guid key, FormDefinition live)
+        {
+            var found = new[] { _shown, live }.Select(definition => definition.Pages.FirstOrDefault(page => page.Key == key)).OfType<FormPage>().ToList();
+            return found.Count == 0 ? null : new HashSet<Guid>(Keys(found.SelectMany(page => page.Groups).SelectMany(group => group.Fields)));
+        }
+
+        // The keys of these fields, of their repeatable groups' children and of their grid rows.
+        private static IEnumerable<Guid> Keys(IEnumerable<FormField> fields) =>
+            fields.SelectMany(field => field.Fields.Prepend(field)).SelectMany(item => item.Rows.Select(row => row.Key).Prepend(item.Key));
     }
+
+    // A form the site serves: as it serves it, and its row.
+    private sealed record Served(PublishedForm Form, StoredForm Row);
+
+    // What a request's reading gave: its refusal, or the answers with what they were read in.
+    private sealed record Reading(SubmissionResult? Refusal, ReadSubmission? Read)
+    {
+        [MemberNotNullWhen(true, nameof(Refusal))]
+        [MemberNotNullWhen(false, nameof(Read))]
+        public bool IsRefused => Refusal is not null;
+
+        public static Reading Refused(SubmissionResult refusal) => new(refusal, null);
+    }
+
+    // Answers that stand, with the scope and the page they were read in and the wording each ticked consent was shown.
+    private sealed record ReadSubmission(MergeTagScope Scope, RequestPage Page, SubmissionAnswers Answers, IReadOnlyDictionary<Guid, ConsentWording> Wordings);
 
     // The answers by the live version's keys.
     private sealed record PostedAnswers(

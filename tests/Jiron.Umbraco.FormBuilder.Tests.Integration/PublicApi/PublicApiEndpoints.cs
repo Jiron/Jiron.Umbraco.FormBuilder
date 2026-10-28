@@ -54,7 +54,8 @@ internal sealed record PublicApiEndpoint(ApiDescription Description)
     public bool TakesBody => HttpMethods.IsPost(Method) || HttpMethods.IsPut(Method) || HttpMethods.IsPatch(Method);
 
     /// <summary>
-    /// A body it takes, for an endpoint that takes one: a small text file for an upload, an answer for a submission.
+    /// A body it takes, for an endpoint that takes one: a small text file for an upload, an answer for a submission and a
+    /// page, a submission id for a receipt.
     /// An endpoint that takes a body this list does not know yet fails here, so its body joins the list when it is written.
     /// </summary>
     public HttpContent? Body()
@@ -74,6 +75,16 @@ internal sealed record PublicApiEndpoint(ApiDescription Description)
         if (Description.RelativePath.EndsWith("/entries", StringComparison.Ordinal))
         {
             return new StringContent("""{"revision":1,"values":{"name":"Ada"}}""", Encoding.UTF8, "application/json");
+        }
+
+        if (Description.RelativePath.EndsWith("/validate", StringComparison.Ordinal))
+        {
+            return new StringContent($$$"""{"revision":1,"pageKey":"{{{Guid.NewGuid()}}}","values":{"name":"Ada"}}""", Encoding.UTF8, "application/json");
+        }
+
+        if (Description.RelativePath.EndsWith("/receipt", StringComparison.Ordinal))
+        {
+            return new StringContent($$$"""{"submissionId":"{{{Guid.NewGuid()}}}"}""", Encoding.UTF8, "application/json");
         }
 
         throw new InvalidOperationException($"{Name} takes a body that {nameof(PublicApiEndpoint)}.{nameof(Body)} does not know yet; add one.");

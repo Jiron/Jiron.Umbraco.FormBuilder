@@ -7,7 +7,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.PublicApi;
 /// <summary>
 /// How the entries endpoint reads its body (ADR-0088): every answer shape by alias, parts as <c>alias.part</c>, a
 /// repeatable group's rows, consents as their wording part, query values and context values, each into the submission
-/// the pipeline takes; and where a body cannot be read, by the path of the value, every one named once.
+/// the pipeline takes; and where a body cannot be read, by the path of the value, every one named once. A page's body
+/// is a submission's with its page key, and a receipt's names a submission id (ADR-0089).
 /// </summary>
 public sealed class EntryBodiesTests
 {
@@ -150,6 +151,116 @@ public sealed class EntryBodiesTests
             Assert.That((surrogateKeys, inKeys), Is.EqualTo(((SubmissionRequest?)null, new List<string> { "submissionId", "contentKey" })), "a key with a lone surrogate is no UUID");
             Assert.That(none, Is.Empty, "a surrogate pair is one character");
             Assert.That(pair!.Fields["name"].Values[0], Is.EqualTo(char.ConvertFromUtf32(0x1F600)));
+        });
+    }
+
+    [Test]
+    public void APagesBody_IsReadAsASubmissions_WithThePagesKey()
+    {
+        var invalid = new List<string>();
+        var read = EntryBodies.ReadPage(Encoding.UTF8.GetBytes($$"""
+            {"revision":2,"pageKey":"{{Page}}","culture":"de-CH","values":{"name":"Ada","guests":[{"guestName":"Grace"}]},
+             "consents":{"privacy":"0123abcd"},"query":{"source":"news"},"context":{"campaign":"autumn"},"challenge":"a challenge"}
+            """), Form, invalid);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(invalid, Is.Empty);
+            Assert.That(read?.Page, Is.EqualTo(Page));
+            Assert.That((read!.Value.Request.Form, read.Value.Request.Revision, read.Value.Request.SubmissionId, read.Value.Request.Culture), Is.EqualTo((Form, 2, (Guid?)null, "de-CH")));
+            Assert.That(read.Value.Request.Fields["name"].Values, Is.EqualTo(new[] { "Ada" }));
+            Assert.That(read.Value.Request.Rows["guests"][0]["guestName"].Values, Is.EqualTo(new[] { "Grace" }));
+            Assert.That(read.Value.Request.Fields["privacy"].Parts!["wording"], Is.EqualTo(new[] { "0123abcd" }));
+            Assert.That(read.Value.Request.Query["source"], Is.EqualTo(new[] { "news" }));
+            Assert.That(read.Value.Request.Context["campaign"], Is.EqualTo("autumn"));
+        });
+    }
+
+    [TestCase("""{"revision":1}""", "pageKey")]
+    [TestCase("""{"revision":1,"pageKey":null}""", "pageKey")]
+    [TestCase("""{"revision":1,"pageKey":"first"}""", "pageKey")]
+    [TestCase("""{"revision":1,"pageKey":1}""", "pageKey")]
+    [TestCase("""{"revision":1,"pageKey":"c0000000-0000-4000-8000-000000000088","submissionId":"e0000000-0000-4000-8000-000000000088"}""", "submissionId")]
+    [TestCase("""{"revision":1,"pageKey":"c0000000-0000-4000-8000-000000000088","captchaToken":"a token"}""", "captchaToken")]
+    [TestCase("""{"pageKey":"c0000000-0000-4000-8000-000000000088"}""", "revision")]
+    [TestCase("""[]""", "body")]
+    public void APagesValueThatCannotBeRead_IsNamedByItsPath(string body, string path)
+    {
+        var invalid = new List<string>();
+        var read = EntryBodies.ReadPage(Encoding.UTF8.GetBytes(body), Form, invalid);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read, Is.Null);
+            Assert.That(invalid, Is.EqualTo(new[] { path }));
+        });
+    }
+
+    [Test]
+    public void AnEntrysBody_TakesNoPageKey()
+    {
+        var submission = Read($$"""{"revision":1,"pageKey":"{{Page}}"}""", out var invalid);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(submission, Is.Null);
+            Assert.That(invalid, Is.EqualTo(new[] { "pageKey" }));
+        });
+    }
+
+    [TestCase("""{"submissionId":"e0000000-0000-4000-8000-000000000088"}""")]
+    [TestCase("""{"challenge":"a challenge","submissionId":"e0000000-0000-4000-8000-000000000088"}""")]
+    [TestCase("""{"submissionId":"e0000000-0000-4000-8000-000000000088","challenge":null}""")]
+    public void AReceiptsBody_NamesItsSubmission(string body)
+    {
+        var invalid = new List<string>();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(EntryBodies.ReadReceipt(Encoding.UTF8.GetBytes(body), invalid), Is.EqualTo(Submission));
+            Assert.That(invalid, Is.Empty);
+        });
+    }
+
+    [TestCase("""{}""", "submissionId")]
+    [TestCase("""{"submissionId":null}""", "submissionId")]
+    [TestCase("""{"submissionId":"E0000000-0000-4000-8000-00000000008"}""", "submissionId")]
+    [TestCase("""{"submissionId":7}""", "submissionId")]
+    [TestCase("""{"submissionId":"e0000000-0000-4000-8000-000000000088","revision":1}""", "revision")]
+    [TestCase("""{"submissionId":"e0000000-0000-4000-8000-000000000088","challenge":1}""", "challenge")]
+    [TestCase("""{"submissionId":"e0000000-0000-4000-8000-000000000088","submissionId":"e0000000-0000-4000-8000-000000000088"}""", "submissionId")]
+    [TestCase("""{"submissionId":"e0000000-0000-4000-8000-000000000088"} {}""", "body")]
+    [TestCase(""" "e0000000-0000-4000-8000-000000000088" """, "body")]
+    public void AReceiptsValueThatCannotBeRead_IsNamedByItsPath(string body, string path)
+    {
+        var invalid = new List<string>();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(EntryBodies.ReadReceipt(Encoding.UTF8.GetBytes(body), invalid), Is.Null);
+            Assert.That(invalid, Is.EqualTo(new[] { path }));
+        });
+    }
+
+    [Test]
+    public void AReceiptsChallenge_IsHeldToItsLimit_AndALoneSurrogateOrBytesThatAreNotUtf8_AreNamed()
+    {
+        var backslash = (char)92;
+        string Body(string challenge) => $$$"""{"submissionId":"{{{Submission}}}","challenge":"{{{challenge}}}"}""";
+        List<string> Invalid(byte[] body)
+        {
+            var invalid = new List<string>();
+            _ = EntryBodies.ReadReceipt(body, invalid);
+            return invalid;
+        }
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Invalid(Encoding.UTF8.GetBytes(Body(new string('c', EntryBodies.MaxChallengeLength)))), Is.Empty);
+            Assert.That(Invalid(Encoding.UTF8.GetBytes(Body(new string('c', EntryBodies.MaxChallengeLength + 1)))), Is.EqualTo(new[] { "challenge" }));
+            Assert.That(Invalid(Encoding.UTF8.GetBytes(Body(backslash + "uD800"))), Is.EqualTo(new[] { "challenge" }));
+            Assert.That(Invalid(Encoding.UTF8.GetBytes($$$"""{"submissionId":"{{{backslash}}}uDC00"}""")), Is.EqualTo(new[] { "submissionId" }));
+            Assert.That(Invalid([.. Encoding.UTF8.GetBytes("{\"submissionId\":\""), 0xC3, 0x28, .. Encoding.UTF8.GetBytes("\"}")]), Is.EqualTo(new[] { "body" }));
         });
     }
 

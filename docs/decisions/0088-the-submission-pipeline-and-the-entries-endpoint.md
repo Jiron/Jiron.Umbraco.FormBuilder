@@ -5,7 +5,9 @@
   [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (how an older revision is mapped),
   [ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md) (the form endpoint's `open` at the entry limit) and
   [ADR-0087](0087-the-upload-endpoint.md) (an upload checks the form's availability); amends
-  [ADR-0061](0061-the-form-rules-engine.md) (which fields can be required)
+  [ADR-0061](0061-the-form-rules-engine.md) (which fields can be required); a UUID with a lone surrogate amended,
+  and the pipeline's steps for a page and a receipt extended, in 6.1f
+  ([ADR-0089](0089-the-validate-and-receipt-endpoints.md))
 - Date: 2026-10-28
 - Roadmap step: 6.1e (decided and built); 6.1f adds `validate` and `receipt` over the same pipeline, 6.1g the places
   on options and `uniquePerForm`, 6.2 the post without JavaScript, 7.1 the gate and the spam score, 8.1 the processor
