@@ -494,11 +494,8 @@ internal sealed class FormSubmissions(
                 return $"{Of(grid.Grid.Key, row)}.{key:D}";
             }
 
-            if (!_fields.TryGetValue(key, out var field))
-            {
-                return string.Empty;
-            }
-
+            // Every problem names a field of the live version, which the reader read the answers by.
+            var field = _fields[key];
             return field.Group is { Alias: { } group }
                 ? string.Create(CultureInfo.InvariantCulture, $"{group}[{row ?? 0}].{field.Alias}")
                 : field.Alias;

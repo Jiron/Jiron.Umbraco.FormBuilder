@@ -387,11 +387,7 @@ internal static class EntryBodies
         {
             if (part is null)
             {
-                if (_values is not null)
-                {
-                    return false;
-                }
-
+                // Members gives each name once, so an answer's own texts come once.
                 _values = texts;
                 return true;
             }
