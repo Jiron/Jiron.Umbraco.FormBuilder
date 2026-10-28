@@ -14,8 +14,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
 
 /// <summary>
 /// A site's own merge-tag sources and filters (ADR-0065): added through the interfaces and the collections, escaped by
-/// the context like every value, empty and logged without values when they fail, and refused at start-up when a name is
-/// taken or outside the grammar, naming the type.
+/// the context like every value, empty and logged without values when they fail, their names and traits read once and
+/// refused at start-up when a name is taken or outside the grammar or when they fail to say them, naming the type.
 /// </summary>
 public sealed class SiteMergeTagExtensionsTests
 {
@@ -262,6 +262,57 @@ public sealed class SiteMergeTagExtensionsTests
         });
     }
 
+    [Test]
+    public void TheProblems_NameEachSourceOrFilter_ThatFailsToSayItsNameOrTraits()
+    {
+        var problems = MergeTagRegistry.Problems(
+            [new FailingTraitsSource(), new FailingTraitsSource(inPlaces: true), new NamedSource("crm")],
+            [new FailingNameFilter(), new NamedFilter("repeat")]);
+
+        Assert.That(problems, Is.EqualTo(new[]
+        {
+            $"The merge-tag source {typeof(FailingTraitsSource).FullName} failed with {typeof(NotSupportedException).FullName} as its Name, IsPerVisitor and Places were read: JFB_TEST: IsPerVisitor is not ready.",
+            $"The merge-tag source {typeof(FailingTraitsSource).FullName} failed with {typeof(NotSupportedException).FullName} as its Name, IsPerVisitor and Places were read: JFB_TEST: Places is not ready.",
+            $"The merge-tag filter {typeof(FailingNameFilter).FullName} failed with {typeof(NotSupportedException).FullName} as its Name was read: JFB_TEST: the name is not ready.",
+        }));
+    }
+
+    [Test]
+    public async Task ASourceThatFailsToSayItsTraits_StopsTheStart_NamingItsType_AndARunningRegistryLeavesItOut()
+    {
+        using var failing = Site(sources => sources.Append<FailingTraitsSource>(), _ => { });
+        var registry = new MergeTagRegistry([], new FormBuilderMergeTagSourceCollection(() => [new FailingTraitsSource()]), new FormBuilderMergeTagFilterCollection(() => [new FailingNameFilter()]));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(() => HostOptions.Start(failing), Throws.TypeOf<OptionsValidationException>().With.Message.Contains(
+                $"The merge-tag source {typeof(FailingTraitsSource).FullName} failed with {typeof(NotSupportedException).FullName} as its Name, IsPerVisitor and Places were read"));
+            Assert.That((registry.Sources.Count, registry.Filters.Count), Is.EqualTo((0, 0)), "neither the source nor the filter");
+            Assert.That((await Create([new FailingTraitsSource()], [new FailingNameFilter()]).RenderAsync("[{{ form.alias }}]")).Text, Is.EqualTo("[contact]"), "the rest of the site renders");
+        });
+    }
+
+    [Test]
+    public async Task ASourcesTraits_AreReadOnce_AndItsSetChangedLaterChangesNothing()
+    {
+        var source = new CountingSource();
+        var site = Create([source]);
+
+        var mail = await site.RenderAsync("[{{ counted.x }}]");
+        _ = await site.RenderAsync("[{{ counted.x }}]", place: MergeTagPlace.Outcome, context: MergeTagContext.Html);
+        _ = site.Service.Paths(MergeTagPlace.Mail, Form());
+        _ = site.Service.Paths(MergeTagPlace.Outcome, Form());
+        source.MayBeUsedIn.Add(MergeTagPlace.Outcome);
+        var outcome = site.Service.Check("[{{ counted.x }}]", MergeTagPlace.Outcome, MergeTagContext.Html, Form());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(mail.Text, Is.EqualTo("[counted]"));
+            Assert.That((source.NameReads, source.IsPerVisitorReads, source.PlacesReads), Is.EqualTo((1, 1, 1)), "as the registry was made, and never since");
+            Assert.That(outcome.Select(problem => problem.Code), Is.EqualTo(new[] { MergeTagProblems.SourceNotForPlace }), "the places it said then");
+        });
+    }
+
     // The services of a site whose composers added merge-tag sources and filters, as the core composer registers them,
     // with the clock, the settings, the field types and the logging every site has.
     private static ServiceProvider Site(Action<FormBuilderMergeTagSourceCollectionBuilder> sources, Action<FormBuilderMergeTagFilterCollectionBuilder> filters)
@@ -371,6 +422,84 @@ public sealed class SiteMergeTagExtensionsTests
             var times = int.Parse(request.Arguments[0].Text, System.Globalization.CultureInfo.InvariantCulture);
             return new MergeTagValue([.. request.Value.Items.Select(item => new MergeTagItem(string.Concat(Enumerable.Repeat(item.Text, times))))], request.Value.IsList);
         }
+    }
+
+    /// <summary>A site's source that throws as it is asked whether its values are per visitor, or for its places.</summary>
+    public sealed class FailingTraitsSource : IFormBuilderMergeTagSource
+    {
+        private readonly bool _inPlaces;
+
+        /// <summary>The source as a composer adds it: its <see cref="IsPerVisitor"/> throws.</summary>
+        public FailingTraitsSource()
+        {
+        }
+
+        internal FailingTraitsSource(bool inPlaces) => _inPlaces = inPlaces;
+
+        public string Name => "late";
+
+        public bool IsPerVisitor => _inPlaces ? false : throw new NotSupportedException("JFB_TEST: IsPerVisitor is not ready.");
+
+        public IReadOnlySet<MergeTagPlace>? Places => _inPlaces ? throw new NotSupportedException("JFB_TEST: Places is not ready.") : null;
+
+        public ValueTask<MergeTagValue?> ResolveAsync(MergeTagSourceRequest request, CancellationToken cancellationToken) => ValueTask.FromResult<MergeTagValue?>(null);
+    }
+
+    /// <summary>A source that counts how often it is asked for its name and traits, in mail only unless a test widens its set.</summary>
+    private sealed class CountingSource : IFormBuilderMergeTagSource
+    {
+        private int _nameReads;
+        private int _isPerVisitorReads;
+        private int _placesReads;
+
+        public HashSet<MergeTagPlace> MayBeUsedIn { get; } = [MergeTagPlace.Mail];
+
+        public int NameReads => _nameReads;
+
+        public int IsPerVisitorReads => _isPerVisitorReads;
+
+        public int PlacesReads => _placesReads;
+
+        public string Name
+        {
+            get
+            {
+                Interlocked.Increment(ref _nameReads);
+                return "counted";
+            }
+        }
+
+        public bool IsPerVisitor
+        {
+            get
+            {
+                Interlocked.Increment(ref _isPerVisitorReads);
+                return false;
+            }
+        }
+
+        public IReadOnlySet<MergeTagPlace>? Places
+        {
+            get
+            {
+                Interlocked.Increment(ref _placesReads);
+                return MayBeUsedIn;
+            }
+        }
+
+        public IEnumerable<MergeTagPathInfo> Paths(FormDefinition form) => [new("counted.x")];
+
+        public ValueTask<MergeTagValue?> ResolveAsync(MergeTagSourceRequest request, CancellationToken cancellationToken) => ValueTask.FromResult<MergeTagValue?>(MergeTagValue.Of("counted"));
+    }
+
+    /// <summary>A filter that throws as it is asked for its name.</summary>
+    private sealed class FailingNameFilter : IFormBuilderMergeTagFilter
+    {
+        public string Name => throw new NotSupportedException("JFB_TEST: the name is not ready.");
+
+        public bool Accepts(IReadOnlyList<MergeTagArgument> arguments) => true;
+
+        public MergeTagValue Apply(MergeTagFilterRequest request) => request.Value;
     }
 
     /// <summary>A filter with any name, which changes nothing.</summary>

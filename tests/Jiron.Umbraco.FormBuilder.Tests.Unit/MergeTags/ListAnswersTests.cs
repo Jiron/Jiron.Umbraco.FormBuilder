@@ -126,5 +126,34 @@ public sealed class ListAnswersTests
         });
     }
 
+    [Test]
+    public async Task ASourcesLabels_AreReadOnlyForTheTagsThatShowItsAnswer_OnceForEveryTagOfARendering()
+    {
+        var towns = new TestOptionSource("towns", new FormBuilderOption("zurich", "Zurich"));
+        var sizes = new TestOptionSource("sizes", new FormBuilderOption("m", "Medium"));
+        var town = Field("dropdown", "town", "Town") with { Options = FromCode("towns") };
+        var size = Field("dropdown", "size", "Size") with { Options = FromCode("sizes") };
+        var form = Form(town, size);
+        var answers = Answers(Answer(town, "zurich"), Answer(size, "m"));
+        var site = MergeTagTestSite.Create(options: Library(towns, sizes).Options());
+        (int Towns, int Sizes) Asked() => (towns.Requests.Count, sizes.Requests.Count);
+
+        var values = await site.RenderAsync("{{ field.town.value }}|{{ field.town.label }}|{{ field.size.value }}", Scope(form, answers));
+        var afterValues = Asked();
+        var town3 = await site.RenderAsync("{{ field.town }}|{{ field.town }}|{{ field.town | upper }}", Scope(form, answers));
+        var afterTowns = Asked();
+        var all = await site.RenderAsync("{{ entry.answers }}|{{ field.size }}", Scope(form, answers));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((values.Text, town3.Text, all.Text), Is.EqualTo(("zurich|Town|m", "Zurich|Zurich|ZURICH", "Town: Zurich\nSize: Medium|Medium")));
+            Assert.That(afterValues, Is.EqualTo((0, 0)), "a value or a label shows no option's label");
+            Assert.That(afterTowns, Is.EqualTo((1, 0)), "three tags of the town, one request, and none for the size no tag shows");
+            Assert.That(Asked(), Is.EqualTo((2, 1)), "every answer once, and the size's tag after them nothing more");
+        });
+    }
+
     private static FieldOptions FromList(Guid list) => new() { Source = OptionSource.List, OptionList = list };
+
+    private static FieldOptions FromCode(string source) => new() { Source = OptionSource.Code, Config = SettingsObject.Parse($$"""{"source":"{{source}}"}""") };
 }

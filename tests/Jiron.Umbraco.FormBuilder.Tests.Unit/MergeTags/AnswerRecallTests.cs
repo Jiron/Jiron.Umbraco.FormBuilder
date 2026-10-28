@@ -49,6 +49,25 @@ public sealed class AnswerRecallTests
     }
 
     [Test]
+    public async Task TheFieldSourceWithoutAnAlias_IsAnUnknownPath_RenderedEmptyAndCheckedInEveryPlace()
+    {
+        var email = Field("email", "email", "Email");
+        var form = Form(email);
+        var site = MergeTagTestSite.Create();
+
+        var visitor = await site.RenderAsync("[{{ field }}]", Scope(form, Answers(Answer(email, "anna@example.org"))), MergeTagPlace.VisitorText);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(visitor.Text, Is.EqualTo("[]"));
+            Assert.That(visitor.Problems, Is.EqualTo(new[] { new MergeTagProblem(MergeTagProblems.UnknownPath, 4) }), "a warning, not a failure");
+            Assert.That(site.Service.Check("{{ field }}", MergeTagPlace.VisitorText, MergeTagContext.Text, form, email.Key), Is.EqualTo(new[] { new MergeTagProblem(MergeTagProblems.UnknownPath, 3) }));
+            Assert.That(site.Service.Check("{{ field }}", MergeTagPlace.VisitorText, MergeTagContext.Text, form), Is.EqualTo(new[] { new MergeTagProblem(MergeTagProblems.UnknownPath, 3) }), "after every field");
+            Assert.That(site.Service.Check("{{ field }}", MergeTagPlace.Mail, MergeTagContext.Text, form), Is.EqualTo(new[] { new MergeTagProblem(MergeTagProblems.UnknownPath, 3) }));
+        });
+    }
+
+    [Test]
     public async Task AFormerAlias_IsUnknownInAVisitorText_AndFindsItsFieldInMail()
     {
         var email = Field("email", "email", "Email") with { FormerAliases = ["mail"] };
