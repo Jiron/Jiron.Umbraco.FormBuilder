@@ -1980,7 +1980,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **6.1h Unique answers** (6.1g split in two, WORKLOG 2026-10-28) (2026-10-28, 88b3656)
   - **Unique per form** (added in 5.2, ADR-0002): a field's `uniquePerForm` check fails when another entry of the form already holds the same answer, compared as entries filter (cleaned and folded, `TextKey`), checked inside the submission's transaction, so that two submissions at once cannot both pass; a deleted or erased entry no longer counts.
   - Done when: of 10 parallel submissions with the same answer to a unique field, exactly one is accepted and the others fail at that field, and an answer that differs only in case or surrounding spaces counts as the same. `validate` passes an answer that another entry already holds, so it cannot tell whether an answer is taken (ADR-0012).
-- [ ] **6.2a Website assets and `<jfb-assets>`** (6.2 split in six, WORKLOG 2026-10-28)
+- [x] **6.2a Website assets and `<jfb-assets>`** (6.2 split in six, WORKLOG 2026-10-28) (2026-10-28, e2f6b23)
   - **Serving the assets** under `/jfb/assets/` itself, from the resources embedded in the Web assembly (ADR-0026): only names the assembly holds, compared exactly (no case folding, no decoded `%2F`, nothing outside `jfb/assets/`):
     - the precompressed Brotli or gzip copy, chosen by `Accept-Encoding`;
     - `Cache-Control: public, max-age=31536000, immutable` under a `?v=` fingerprint;
