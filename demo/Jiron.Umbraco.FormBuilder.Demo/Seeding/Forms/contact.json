@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "key": "d0000000-0000-4000-8000-000000000001",
+  "settings": {
+    "submission": {
+      "submitLabel": { "": "Send message", "de": "Nachricht senden" }
+    }
+  },
+  "pages": [
+    {
+      "key": "d0000000-0000-4000-8000-000000000010",
+      "groups": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000011",
+          "columns": 2,
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000101",
+              "type": "text",
+              "alias": "name",
+              "label": { "": "Your name", "de": "Ihr Name" },
+              "required": true,
+              "autocomplete": "name"
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000102",
+              "type": "email",
+              "alias": "email",
+              "label": { "": "Email address", "de": "E-Mail-Adresse" },
+              "help": { "": "We use it only to answer you.", "de": "Wir nutzen sie nur für unsere Antwort." },
+              "required": true,
+              "sensitive": true,
+              "autocomplete": "email"
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000103",
+              "type": "phone",
+              "alias": "phone",
+              "span": 2,
+              "label": { "": "Phone", "de": "Telefon" },
+              "help": { "": "If you would rather we call you back.", "de": "Falls Sie lieber einen Rückruf möchten." },
+              "sensitive": true,
+              "autocomplete": "tel"
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000104",
+              "type": "textarea",
+              "alias": "message",
+              "span": 2,
+              "label": { "": "Your message", "de": "Ihre Nachricht" },
+              "required": true,
+              "settings": { "rows": 6, "counter": true, "maxLength": 2000 }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

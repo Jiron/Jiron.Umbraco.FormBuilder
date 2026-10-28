@@ -59,10 +59,14 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
 - the pages, from `Seeding/DemoContent.json`: home, events, careers, feedback, contact, members, sign-in, privacy
   and imprint, with English under `/en` and German under `/de`;
 - the newsletter slot in the footer (its texts now; the newsletter form comes with a later step);
-- the member group "Library members", the two members, and public access on the members page.
+- the member group "Library members", the two members, and public access on the members page;
+- the demo forms, from `Seeding/Forms/<alias>.json` in the package's definition format, created and published
+  through the form service when their alias is missing ([ADR-0094](../docs/decisions/0094-demo-forms.md)): the
+  contact form, which the contact page shows through its `form` property.
 
 To add a page, add it to `DemoContent.json` with a new fixed key. Texts the views show belong in its `dictionary`.
-The seeder never changes a page that exists, so after changing texts, run `reset`.
+To add a form, add its definition to `Seeding/Forms/` and its alias to `DemoFormSeeder`, and name it in a page's
+`form`. The seeder never changes a page, a type or a form that exists, so after changing texts or types, run `reset`.
 
 Umbraco writes each new template's view back with a byte-order mark; the seeder removes it at once, so the
 committed views stay as they are.

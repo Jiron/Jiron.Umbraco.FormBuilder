@@ -1,5 +1,5 @@
 @inherits UmbracoViewPage
-@* A page's own content: its heading, introduction, body text and blocks (ROADMAP 3.3). *@
+@* A page's own content: its heading, introduction, body text, blocks and form (ROADMAP 3.3, 6.2b). *@
 <h1>@(Model.Value<string>("heading") ?? Model.Name)</h1>
 @if (Model.HasValue("lede"))
 {
@@ -10,3 +10,7 @@
     <div class="site-body">@(Model.Value<IHtmlEncodedString>("bodyText"))</div>
 }
 @await Html.GetBlockListHtmlAsync(Model, "blocks")
+@if (Model.Value<string>("form") is { Length: > 0 } form)
+{
+    <jfb-render form="@form" />
+}

@@ -31,11 +31,15 @@
     <None Include="$(MSBuildThisFileDirectory)..\LICENSE.md" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 
-  <!-- Tests may see internals; NSubstitute needs DynamicProxyGenAssembly2 to substitute internal interfaces. -->
+  <!--
+    Tests may see internals; NSubstitute needs DynamicProxyGenAssembly2 to substitute internal interfaces. The demo's
+    seeder creates its forms through the form service as an editor would (ADR-0094); the demo is never packed.
+  -->
   <ItemGroup>
     <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.Unit" />
     <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Tests.Integration" />
     <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Testing" />
+    <InternalsVisibleTo Include="Jiron.Umbraco.FormBuilder.Demo" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 

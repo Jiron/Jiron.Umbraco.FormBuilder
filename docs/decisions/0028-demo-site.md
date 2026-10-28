@@ -1,6 +1,6 @@
 # 0028. The demo site: seeded from code, started only by its script
 
-- Status: accepted
+- Status: accepted; how the feature steps add their forms decided in 6.2b ([ADR-0094](0094-demo-forms.md))
 - Date: 2026-10-23
 - Roadmap step: 3.3 (decided and built); every feature step adds its demo forms to the seeder, and ADR-0011's
   end-to-end host (3.4) runs the same site with its own content root

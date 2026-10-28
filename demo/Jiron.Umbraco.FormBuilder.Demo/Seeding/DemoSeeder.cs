@@ -15,9 +15,9 @@ namespace Jiron.Umbraco.FormBuilder.Demo.Seeding;
 /// <summary>
 /// Seeds the demo site once it has started (ROADMAP 3.3): the German language, the dictionary items of the views, the
 /// templates, a block list with two element types, the document types, the English and German pages with their
-/// domains, and the members area (<see cref="DemoMemberSeeder"/>). Idempotent: every item is created only when it is
-/// missing, so a restart changes nothing, and a later step adds a page by adding it to <c>DemoContent.json</c>.
-/// Demo forms are added by the feature steps as the features arrive.
+/// domains, the members area (<see cref="DemoMemberSeeder"/>) and the demo forms (<see cref="DemoFormSeeder"/>).
+/// Idempotent: every item is created only when it is missing, so a restart changes nothing, and a later step adds a
+/// page by adding it to <c>DemoContent.json</c>. The feature steps add their demo forms as the features arrive.
 /// </summary>
 internal sealed partial class DemoSeeder(
     ILanguageService languages,
@@ -33,6 +33,7 @@ internal sealed partial class DemoSeeder(
     IDomainService domains,
     IWebHostEnvironment environment,
     DemoMemberSeeder members,
+    DemoFormSeeder demoForms,
     ILogger<DemoSeeder> logger) : INotificationAsyncHandler<UmbracoApplicationStartedNotification>
 {
     public const string English = "en-US";
@@ -50,6 +51,7 @@ internal sealed partial class DemoSeeder(
             var content = DemoContent.Load();
             var created = await SeedAsync(content);
             created |= await members.SeedAsync(content);
+            created |= await demoForms.SeedAsync(cancellationToken);
             LogSeeded(logger, created);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -261,6 +263,9 @@ internal sealed partial class DemoSeeder(
         AddProperty(type, properties.TextArea, "lede", "Introduction", "content", "Content");
         AddProperty(type, properties.RichText, "bodyText", "Body text", "content", "Content");
         AddProperty(type, properties.Blocks, "blocks", "Blocks", "content", "Content");
+
+        // The form below the content, by its alias, the same in both languages (the form picker replaces it with 6.7).
+        type.AddPropertyType(new PropertyType(shortStrings, properties.TextBox, "form") { Name = "Form", Description = "The alias of a form to show below the content." }, "content", "Content");
         if (isRoot)
         {
             // The footer's newsletter slot: its texts now, the newsletter form once a step brings it.
@@ -306,6 +311,11 @@ internal sealed partial class DemoSeeder(
 
         var (type, template) = types[page.Type];
         var properties = new List<PropertyValueModel>();
+        if (page.Form is not null)
+        {
+            properties.Add(new PropertyValueModel { Alias = "form", Value = page.Form });
+        }
+
         foreach (var (culture, german) in new[] { (English, false), (German, true) })
         {
             var texts = page.Texts(german);
