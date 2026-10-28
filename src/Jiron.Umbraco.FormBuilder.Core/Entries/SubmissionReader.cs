@@ -101,7 +101,8 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
     // A field's answer held to its type's limits and read. A value the server resolves is never taken from the post,
     // unless the field is prefilled from the query, whose value only the visitor's page has (ADR-0002); a prefilled value
-    // the field cannot take counts as none, so its default stands in (ADR-0080).
+    // the field cannot take (too long, or more texts or parts than it takes) counts as none, so its default stands in
+    // (ADR-0080).
     private Slot Read(Slot slot, PostedAnswer? posted)
     {
         var serverOnly = slot.Type.Declaration.ServerOnlyDefault;
@@ -109,7 +110,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         slot.OverLimit = FieldValues.CheckLimits(slot.Type, slot.Field, answers);
         if (serverOnly && slot.OverLimit is not null)
         {
-            LogPrefillTooLong(logger, slot.Field.Alias ?? DefinitionLogic.Id(slot.Field.Key));
+            LogPrefillNotTaken(logger, slot.Field.Alias ?? DefinitionLogic.Id(slot.Field.Key));
             slot.OverLimit = null;
             answers = FieldAnswers.None;
         }
@@ -264,7 +265,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
     private static ImmutableArray<EntryFieldAnswer> Stored(List<Slot> slots, FormState state, PostedSubmission post)
     {
         var hidden = state.Hidden.ToHashSet(StringComparer.Ordinal);
-        var claimed = new HashSet<string>(StringComparer.Ordinal);
+        var claimed = new HashSet<int>();
         var answers = ImmutableArray.CreateBuilder<EntryFieldAnswer>();
         foreach (var slot in slots)
         {
@@ -300,7 +301,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         return answers.ToImmutable();
     }
 
-    private static void Add(ImmutableArray<EntryFieldAnswer>.Builder answers, Slot slot, ImmutableArray<FieldValue> values, int row, PostedSubmission post, HashSet<string> claimed)
+    private static void Add(ImmutableArray<EntryFieldAnswer>.Builder answers, Slot slot, ImmutableArray<FieldValue> values, int row, PostedSubmission post, HashSet<int> claimed)
     {
         if (values.IsEmpty)
         {
@@ -323,14 +324,17 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         !slot.Calculates ? slot.Values
             : calculations.GetValueOrDefault(DefinitionLogic.Id(slot.Field.Key)) is { } result ? [new FieldValue(result)] : [];
 
-    // The upload each token stands for, when every one stands for an upload of the field that no earlier value of the
-    // submission named (in the form's order, a repeatable group's rows among them); otherwise null (ADR-0080).
-    private static ImmutableArray<StoredEntryFile>? UploadsOf(Slot slot, ImmutableArray<FieldValue> values, PostedSubmission post, HashSet<string> claimed)
+    // The upload each token stands for, when every one stands for an upload of the field that no entry holds and that no
+    // other value took, by any token: neither an earlier value of the submission (in the form's order, a repeatable
+    // group's rows among them) nor one of the same answer; otherwise null (ADR-0080). The uploads are claimed only when
+    // the whole answer stands, so a value that fails takes nothing from a later one.
+    private static ImmutableArray<StoredEntryFile>? UploadsOf(Slot slot, ImmutableArray<FieldValue> values, PostedSubmission post, HashSet<int> claimed)
     {
         var uploads = ImmutableArray.CreateBuilder<StoredEntryFile>(values.Length);
         foreach (var value in values)
         {
-            if (!claimed.Add(value.Text) || !post.Uploads.TryGetValue(value.Text, out var upload) || upload.FieldKey != slot.Field.Key)
+            if (!post.Uploads.TryGetValue(value.Text, out var upload) || upload.FieldKey != slot.Field.Key || upload.EntryId is not null
+                || claimed.Contains(upload.Id) || uploads.Any(earlier => earlier.Id == upload.Id))
             {
                 return null;
             }
@@ -338,6 +342,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
             uploads.Add(upload);
         }
 
+        claimed.UnionWith(uploads.Select(upload => upload.Id));
         return uploads.MoveToImmutable();
     }
 
@@ -349,7 +354,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         var required = state.Required.ToHashSet(StringComparer.Ordinal);
         var others = Others(slots, state, hidden);
         var resolving = new Resolving(post, [], slots.SelectMany(slot => slot.Field.Fields.Prepend(slot.Field)).ToDictionary(field => field.Key));
-        var claimed = new HashSet<string>(StringComparer.Ordinal);
+        var claimed = new HashSet<int>();
         var errors = ImmutableArray.CreateBuilder<SubmissionError>();
         foreach (var slot in slots)
         {
@@ -480,7 +485,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         IReadOnlyDictionary<Guid, ImmutableArray<string>> others,
         IReadOnlyList<FormBuilderOption>? offered,
         PostedSubmission post,
-        HashSet<string> claimed,
+        HashSet<int> claimed,
         DateOnly today)
     {
         var key = slot.Field.Key;
@@ -582,8 +587,8 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
     [LoggerMessage(Level = LogLevel.Warning, Message = "The options of the field '{Field}' could not be resolved, so its answers are taken without being held to them.")]
     private static partial void LogOptionsUnavailable(ILogger logger, string field);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "The query gives the field '{Field}' a value longer than its type takes, so its default stands in.")]
-    private static partial void LogPrefillTooLong(ILogger logger, string field);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The query gives the field '{Field}' a value its type cannot take, so its default stands in.")]
+    private static partial void LogPrefillNotTaken(ILogger logger, string field);
 
     // One field's answer in the submission: the field and its type, what its type read, and a repeatable group's rows.
     private sealed class Slot(FormField field, IFormBuilderFieldType type)

@@ -45,8 +45,9 @@ public interface IFormBuilderFieldType
     /// The longest answer a field of the type takes (ADR-0030, ADR-0058), which the pipeline holds every answer to before
     /// the rules run: the type's own ceiling, never the field's own checks. By default one text, or as many as a field can
     /// have options when the type takes several, as long as its rule kind needs (a date's ten characters, a plain text's
-    /// 2,000); none for a type that holds no value of its own. <see cref="FieldAnswerLimits.None"/> makes the pipeline
-    /// ignore what is posted for the field.
+    /// 2,000); none for a type that holds no value of its own. The name of a part with texts counts as a text's length
+    /// (ADR-0080), so a type whose answers have parts takes texts at least as long as its parts' names.
+    /// <see cref="FieldAnswerLimits.None"/> makes the pipeline ignore what is posted for the field.
     /// </summary>
     /// <param name="field">The field, with its settings.</param>
     FieldAnswerLimits AnswerLimits(FormField field) => FieldAnswerDefaults.Limits(Declaration, field);

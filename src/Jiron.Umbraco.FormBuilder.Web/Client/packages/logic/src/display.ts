@@ -114,6 +114,8 @@ const around = (prefix: string, text: string, suffix: string): string =>
  * names that look like numbers first.
  */
 export function valueParts(text: string): [string, string][] | null {
+  // A lone surrogate in the text itself, outside any escape, is no JSON for Core, which reads no parts then.
+  if (!isWellFormed(text)) return null;
   let value: unknown;
   try {
     value = JSON.parse(text);

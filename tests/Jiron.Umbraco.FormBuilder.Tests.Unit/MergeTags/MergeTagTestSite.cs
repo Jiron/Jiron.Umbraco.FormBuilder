@@ -94,8 +94,7 @@ internal static class MergeTagTestSite
         var answers = new MergeTagAnswerTexts(types ?? TestFieldTypes.Registry, cultures, dictionary, options ?? new OptionListTestSite().Options(), log);
         var registry = new MergeTagRegistry(
             FormBuilderMergeTagServices.BuiltInSources(clock, cultures, answers, umbraco.Umbraco(), umbraco.BaseUrls(settings), dictionary),
-            new FormBuilderMergeTagSourceCollection(() => sources ?? []),
-            new FormBuilderMergeTagFilterCollection(() => filters ?? []));
+            new SiteMergeTagExtensions(new FormBuilderMergeTagSourceCollection(() => sources ?? []), new FormBuilderMergeTagFilterCollection(() => filters ?? [])));
         return new Site(new FormBuilderMergeTagService(registry, cultures, log), log);
     }
 

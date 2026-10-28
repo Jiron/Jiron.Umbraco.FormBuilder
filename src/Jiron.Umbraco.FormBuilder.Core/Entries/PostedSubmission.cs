@@ -49,6 +49,9 @@ internal sealed record PostedSubmission
     /// </summary>
     public IReadOnlyDictionary<Guid, IReadOnlyList<IReadOnlyDictionary<Guid, PostedAnswer>>> Rows { get; init => field = value ?? NoRows; } = NoRows;
 
-    /// <summary>The uploads of the form that the posted upload tokens stand for, by token, as the pipeline found them (6.1).</summary>
+    /// <summary>
+    /// The uploads of the form that the posted upload tokens stand for, by token, as the pipeline found them (6.1). Two
+    /// tokens may stand for one upload, which the submission takes once; one an entry holds it takes not at all (ADR-0080).
+    /// </summary>
     public IReadOnlyDictionary<string, StoredEntryFile> Uploads { get; init => field = value ?? NoUploads; } = NoUploads;
 }

@@ -226,7 +226,7 @@ public sealed class SiteMergeTagExtensionsTests
     [Test]
     public void TheProblems_NameEachSourceOrFilter_WhoseNameIsTakenOrOutsideTheGrammar()
     {
-        var problems = MergeTagRegistry.Problems(
+        var problems = Problems(
             [new NamedSource("entry"), new NamedSource("Crm"), new NamedSource("crm-x"), new NamedSource(null!), new NamedSource("crm"), new CrmSource(_ => null), new NamedSource("crm2")],
             [new NamedFilter("upper"), new NamedFilter("1st"), new RepeatFilter(), new NamedFilter("repeat")]);
 
@@ -265,7 +265,7 @@ public sealed class SiteMergeTagExtensionsTests
     [Test]
     public void TheProblems_NameEachSourceOrFilter_ThatFailsToSayItsNameOrTraits()
     {
-        var problems = MergeTagRegistry.Problems(
+        var problems = Problems(
             [new FailingTraitsSource(), new FailingTraitsSource(inPlaces: true), new NamedSource("crm")],
             [new FailingNameFilter(), new NamedFilter("repeat")]);
 
@@ -281,7 +281,7 @@ public sealed class SiteMergeTagExtensionsTests
     public async Task ASourceThatFailsToSayItsTraits_StopsTheStart_NamingItsType_AndARunningRegistryLeavesItOut()
     {
         using var failing = Site(sources => sources.Append<FailingTraitsSource>(), _ => { });
-        var registry = new MergeTagRegistry([], new FormBuilderMergeTagSourceCollection(() => [new FailingTraitsSource()]), new FormBuilderMergeTagFilterCollection(() => [new FailingNameFilter()]));
+        var registry = new MergeTagRegistry([], new SiteMergeTagExtensions(new FormBuilderMergeTagSourceCollection(() => [new FailingTraitsSource()]), new FormBuilderMergeTagFilterCollection(() => [new FailingNameFilter()])));
 
         Assert.Multiple(async () =>
         {
@@ -312,6 +312,10 @@ public sealed class SiteMergeTagExtensionsTests
             Assert.That(outcome.Select(problem => problem.Code), Is.EqualTo(new[] { MergeTagProblems.SourceNotForPlace }), "the places it said then");
         });
     }
+
+    // The problems of a site's sources and filters, as they are read once.
+    private static IReadOnlyList<string> Problems(IFormBuilderMergeTagSource[] sources, IFormBuilderMergeTagFilter[] filters) =>
+        new SiteMergeTagExtensions(new FormBuilderMergeTagSourceCollection(() => sources), new FormBuilderMergeTagFilterCollection(() => filters)).Problems;
 
     // The services of a site whose composers added merge-tag sources and filters, as the core composer registers them,
     // with the clock, the settings, the field types and the logging every site has.

@@ -8,19 +8,16 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 
 /// <summary>
 /// Every merge-tag source and filter a site has (ADR-0065): the built-in sources first, then the site's own, each by
-/// name. A site's source's name and traits and a filter's name are read once, here, so no rendering asks them again. A
-/// site's source or filter whose name is taken, or that fails to say its name or traits, is left out here; the start-up
-/// check refuses it, so a running site never has one.
+/// name, as <see cref="SiteMergeTagExtensions"/> read them once, so no rendering asks a site's source again. A site's
+/// source or filter whose name is taken, or that fails to say its name or traits, is left out; the start-up check
+/// refuses it, so a running site never has one.
 /// </summary>
-internal sealed partial class MergeTagRegistry
+internal sealed class MergeTagRegistry
 {
-    /// <summary>A source's or filter's name, as the grammar reads it (ADR-0014): a lowercase letter, then letters and digits.</summary>
-    [GeneratedRegex("^[a-z][A-Za-z0-9]*$", RegexOptions.CultureInvariant)]
-    private static partial Regex NamePattern();
-
     /// <summary>The registry of the built-in sources and the site's own.</summary>
-    public MergeTagRegistry(IEnumerable<IFormBuilderMergeTagSource> builtIn, FormBuilderMergeTagSourceCollection siteSources, FormBuilderMergeTagFilterCollection siteFilters)
+    public MergeTagRegistry(IEnumerable<IFormBuilderMergeTagSource> builtIn, SiteMergeTagExtensions site)
     {
+        ArgumentNullException.ThrowIfNull(site);
         var sources = new Dictionary<string, IFormBuilderMergeTagSource>(StringComparer.Ordinal);
         foreach (var source in builtIn)
         {
@@ -28,26 +25,17 @@ internal sealed partial class MergeTagRegistry
         }
 
         var traits = new Dictionary<string, MergeTagSourceTraits>(StringComparer.Ordinal);
-        foreach (var source in siteSources)
+        foreach (var found in site.Sources)
         {
-            if (TryRead(source, out var name, out var read, out _) && Problem("source", name, MergeTagPlaces.BuiltInSources.ContainsKey) is null && sources.TryAdd(name!, source))
+            if (sources.TryAdd(found.Name, found.Source))
             {
-                traits[name!] = read!;
-            }
-        }
-
-        var filters = new Dictionary<string, IFormBuilderMergeTagFilter>(StringComparer.Ordinal);
-        foreach (var filter in siteFilters)
-        {
-            if (TryName(filter, out var name, out _) && Problem("filter", name, MergeTagEngine.IsBuiltInFilter) is null)
-            {
-                filters.TryAdd(name!, filter);
+                traits[found.Name] = found.Traits;
             }
         }
 
         Sources = sources.ToFrozenDictionary(StringComparer.Ordinal);
         Traits = traits.ToFrozenDictionary(StringComparer.Ordinal);
-        Filters = filters.ToFrozenDictionary(StringComparer.Ordinal);
+        Filters = site.Filters.ToFrozenDictionary(StringComparer.Ordinal);
         Ordered = [.. sources.Keys];
     }
 
@@ -62,48 +50,95 @@ internal sealed partial class MergeTagRegistry
 
     /// <summary>Every source's name in the order the picker offers them: the built-in sources first.</summary>
     public IReadOnlyList<string> Ordered { get; }
+}
 
-    /// <summary>
-    /// The problems of a site's sources and filters, which stop the site (ADR-0042): one that fails to say its name or
-    /// traits, a name outside the grammar, a built-in one's name, or a name two of them share; each names the type.
-    /// </summary>
-    public static IReadOnlyList<string> Problems(IEnumerable<IFormBuilderMergeTagSource> sources, IEnumerable<IFormBuilderMergeTagFilter> filters)
+/// <summary>
+/// The site's own merge-tag sources and filters (ADR-0065, ADR-0083), each read once, here: a source's name and traits,
+/// a filter's name. The registry takes those it may use and the start-up check the problems, so no source is asked
+/// twice, and what the check let start is what the registry runs.
+/// </summary>
+internal sealed partial class SiteMergeTagExtensions
+{
+    /// <summary>The site's sources and filters, read from their collections, which create them.</summary>
+    /// <param name="sources">The site's sources.</param>
+    /// <param name="filters">The site's filters.</param>
+    public SiteMergeTagExtensions(FormBuilderMergeTagSourceCollection sources, FormBuilderMergeTagFilterCollection filters)
     {
         ArgumentNullException.ThrowIfNull(sources);
         ArgumentNullException.ThrowIfNull(filters);
         var problems = new List<string>();
-        var named = new List<(string? Name, Type Type)>();
-        foreach (var source in sources)
+        IFormBuilderMergeTagSource[] siteSources;
+        IFormBuilderMergeTagFilter[] siteFilters;
+        try
         {
-            if (TryRead(source, out var name, out _, out var failure))
-            {
-                named.Add((name, source.GetType()));
-            }
-            else
+            (siteSources, siteFilters) = ([.. sources], [.. filters]);
+        }
+        catch (InvalidOperationException exception)
+        {
+            // A source or filter the container cannot create fails as the collection is read.
+            problems.Add($"Jiron Form Builder cannot create the site's merge-tag sources and filters: {exception.Message}");
+            (siteSources, siteFilters) = ([], []);
+        }
+
+        var named = new List<(string? Name, Type Type)>();
+        var usable = new List<UsableMergeTagSource>();
+        foreach (var source in siteSources)
+        {
+            if (!TryRead(source, out var name, out var traits, out var failure))
             {
                 problems.Add($"The merge-tag source {source.GetType().FullName} failed with {failure!.GetType().FullName} as its {nameof(IFormBuilderMergeTagSource.Name)}, {nameof(IFormBuilderMergeTagSource.IsPerVisitor)} and {nameof(IFormBuilderMergeTagSource.Places)} were read: {failure.Message}");
+                continue;
+            }
+
+            named.Add((name, source.GetType()));
+            if (Problem("source", name, MergeTagPlaces.BuiltInSources.ContainsKey) is null && usable.TrueForAll(earlier => earlier.Name != name))
+            {
+                usable.Add(new UsableMergeTagSource(name!, source, traits!));
             }
         }
 
         Collect("source", named, MergeTagPlaces.BuiltInSources.ContainsKey, problems);
         named.Clear();
-        foreach (var filter in filters)
+        var usableFilters = new Dictionary<string, IFormBuilderMergeTagFilter>(StringComparer.Ordinal);
+        foreach (var filter in siteFilters)
         {
-            if (TryName(filter, out var name, out var failure))
-            {
-                named.Add((name, filter.GetType()));
-            }
-            else
+            if (!TryName(filter, out var name, out var failure))
             {
                 problems.Add($"The merge-tag filter {filter.GetType().FullName} failed with {failure!.GetType().FullName} as its {nameof(IFormBuilderMergeTagFilter.Name)} was read: {failure.Message}");
+                continue;
+            }
+
+            named.Add((name, filter.GetType()));
+            if (Problem("filter", name, MergeTagEngine.IsBuiltInFilter) is null)
+            {
+                usableFilters.TryAdd(name!, filter);
             }
         }
 
         Collect("filter", named, MergeTagEngine.IsBuiltInFilter, problems);
-        return problems;
+        Sources = usable;
+        Filters = usableFilters;
+        Problems = problems;
     }
 
-    // A site's source's name and traits, read once; false, with the exception, when the source fails to say them.
+    /// <summary>The site's sources the registry may use, in their order, each with its name and traits as they were read.</summary>
+    public IReadOnlyList<UsableMergeTagSource> Sources { get; }
+
+    /// <summary>The site's filters the registry may use, by name.</summary>
+    public IReadOnlyDictionary<string, IFormBuilderMergeTagFilter> Filters { get; }
+
+    /// <summary>
+    /// The problems of the site's sources and filters, which stop the site (ADR-0042): one the container cannot create,
+    /// one that fails to say its name or traits, a name outside the grammar, a built-in one's name, or a name two of
+    /// them share; each names the type.
+    /// </summary>
+    public IReadOnlyList<string> Problems { get; }
+
+    /// <summary>A source's or filter's name, as the grammar reads it (ADR-0014): a lowercase letter, then letters and digits.</summary>
+    [GeneratedRegex("^[a-z][A-Za-z0-9]*$", RegexOptions.CultureInvariant)]
+    private static partial Regex NamePattern();
+
+    // A site's source's name and traits; false, with the exception, when the source fails to say them.
     private static bool TryRead(IFormBuilderMergeTagSource source, out string? name, out MergeTagSourceTraits? traits, out Exception? failure)
     {
         try
@@ -118,7 +153,7 @@ internal sealed partial class MergeTagRegistry
         }
     }
 
-    // A site's filter's name, read once; false, with the exception, when the filter fails to say it.
+    // A site's filter's name; false, with the exception, when the filter fails to say it.
     private static bool TryName(IFormBuilderMergeTagFilter filter, out string? name, out Exception? failure)
     {
         try
@@ -161,8 +196,14 @@ internal sealed partial class MergeTagRegistry
     }
 }
 
+/// <summary>A site's source the registry may use, with its name and traits as they were read once.</summary>
+/// <param name="Name">Its name.</param>
+/// <param name="Source">The source.</param>
+/// <param name="Traits">Its traits.</param>
+internal sealed record UsableMergeTagSource(string Name, IFormBuilderMergeTagSource Source, MergeTagSourceTraits Traits);
+
 /// <summary>
-/// A site's source's traits as the registry read them once (ADR-0065): whether its values differ per visitor, and the
+/// A site's source's traits as they were read once (ADR-0065, ADR-0083): whether its values differ per visitor, and the
 /// places it may be used in, copied so that the source's own set cannot change them later.
 /// </summary>
 /// <param name="IsPerVisitor">Whether the values differ per visitor.</param>
@@ -178,28 +219,15 @@ internal sealed record MergeTagSourceTraits(bool IsPerVisitor, FrozenSet<MergeTa
 }
 
 /// <summary>
-/// Stops the site when a site's merge-tag source or filter cannot be used (ADR-0042, ADR-0065): one that fails to say
-/// its name or traits, a name outside the grammar, a built-in one's name, or a name two of them share. It runs with the
-/// other start-up checks and names every problem at once.
+/// Stops the site when a site's merge-tag source or filter cannot be used (ADR-0042, ADR-0065): one the container cannot
+/// create, one that fails to say its name or traits, a name outside the grammar, a built-in one's name, or a name two
+/// of them share, as <see cref="SiteMergeTagExtensions"/> read them. It runs with the other start-up checks and names
+/// every problem at once.
 /// </summary>
-/// <param name="sources">The site's sources, which the check creates.</param>
-/// <param name="filters">The site's filters, which the check creates.</param>
-internal sealed class MergeTagStartupCheck(FormBuilderMergeTagSourceCollection sources, FormBuilderMergeTagFilterCollection filters) : IValidateOptions<FormBuilderStartupChecks>
+/// <param name="site">The site's sources and filters, as they were read once.</param>
+internal sealed class MergeTagStartupCheck(SiteMergeTagExtensions site) : IValidateOptions<FormBuilderStartupChecks>
 {
     /// <inheritdoc />
-    public ValidateOptionsResult Validate(string? name, FormBuilderStartupChecks options)
-    {
-        IReadOnlyList<string> problems;
-        try
-        {
-            problems = MergeTagRegistry.Problems([.. sources], [.. filters]);
-        }
-        catch (InvalidOperationException exception)
-        {
-            // A source or filter the container cannot create fails as the collection is read.
-            problems = [$"Jiron Form Builder cannot create the site's merge-tag sources and filters: {exception.Message}"];
-        }
-
-        return problems.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(problems);
-    }
+    public ValidateOptionsResult Validate(string? name, FormBuilderStartupChecks options) =>
+        site.Problems.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(site.Problems);
 }

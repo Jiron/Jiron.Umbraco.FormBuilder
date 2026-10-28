@@ -40,6 +40,7 @@ internal static class FormBuilderMergeTagServices
         services.TryAddSingleton<MergeTagUmbraco>();
         services.TryAddSingleton<SiteBaseUrl>();
         services.TryAddSingleton<MergeTagAnswerTexts>();
+        services.TryAddSingleton<SiteMergeTagExtensions>();
         services.TryAddSingleton(provider => new MergeTagRegistry(
             BuiltInSources(
                 provider.GetRequiredService<MergeTagClock>(),
@@ -48,8 +49,7 @@ internal static class FormBuilderMergeTagServices
                 provider.GetRequiredService<MergeTagUmbraco>(),
                 provider.GetRequiredService<SiteBaseUrl>(),
                 provider.GetRequiredService<MergeTagDictionary>()),
-            provider.GetRequiredService<FormBuilderMergeTagSourceCollection>(),
-            provider.GetRequiredService<FormBuilderMergeTagFilterCollection>()));
+            provider.GetRequiredService<SiteMergeTagExtensions>()));
         services.TryAddSingleton<IFormBuilderMergeTagService, FormBuilderMergeTagService>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderStartupChecks>, MergeTagStartupCheck>());
         return services;

@@ -1,7 +1,7 @@
 # 0082. Ports of calls to other hosts
 
 - Status: accepted; amends [ADR-0076](0076-url-and-file-lists.md) (what `JironFormBuilder:Webhooks:AllowedHosts`
-  holds, and the port a call may use)
+  holds, and the port a call may use); its third option worded as its decision reads in 5.5i
 - Date: 2026-10-27
 - Roadmap step: 5.5g (decided and built); every later call to another host (webhooks in Phase 8) goes through it
 
@@ -19,8 +19,8 @@ only one an editor's address meets before the call, and that a redirect may chan
 2. **A fixed list of web ports** (443, 80, 8443, 8080). Arbitrary: a site's own service may answer on another, and a
    listed port may be the very one a host does not mean to open.
 3. **The scheme's standard port, unless the host's entry names another.** A host alone is called on 443 (or 80 for
-   `http`); `events.example.com:8443` allows that port as well. The person who configures the site decides, as for the
-   hosts themselves. Chosen.
+   `http`); `events.example.com:8443` allows that port and no other, so a site that calls both lists the host twice,
+   with the port and without. The person who configures the site decides, as for the hosts themselves. Chosen.
 
 ## Decision
 

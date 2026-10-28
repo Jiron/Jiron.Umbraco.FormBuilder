@@ -33,11 +33,17 @@ internal static class FieldPartsJson
 
     /// <summary>
     /// The parts of a value with parts, in their order: null unless the text is a JSON object of at least one part, each
-    /// with a name and a text that are not empty, and no name twice.
+    /// with a name and a text that are not empty, and no name twice. A text that holds a lone surrogate itself, outside
+    /// any escape, is no JSON and has no parts, as the website reads it (ADR-0083); the JSON reader would throw for it.
     /// </summary>
     public static IReadOnlyList<KeyValuePair<string, string>>? Read(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
+        if (!StrictStringConverter.IsWellFormed(json))
+        {
+            return null;
+        }
+
         try
         {
             using var document = JsonDocument.Parse(json);

@@ -3,10 +3,11 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 
 /// <summary>
-/// The longest answer a field takes (ADR-0030, ADR-0058): the most UTF-16 code units in any one text, and the most texts
-/// in all, the parts' included. The pipeline holds every answer to them before the rules run, so no rule, pattern or
-/// comparison reads more than a field takes; an answer over them fails at its field. A type's limits are its own
-/// ceiling, the most any field of it can take, never the field's own checks such as its <c>maxLength</c>.
+/// The longest answer a field takes (ADR-0030, ADR-0058): the most UTF-16 code units in any one text or in the name of a
+/// part with texts (ADR-0080), and the most texts in all, the parts' included. The pipeline holds every answer to them
+/// before the rules run, so no rule, pattern or comparison reads more than a field takes; an answer over them fails at
+/// its field. A type's limits are its own ceiling, the most any field of it can take, never the field's own checks such
+/// as its <c>maxLength</c>.
 /// </summary>
 public sealed record FieldAnswerLimits
 {
@@ -20,7 +21,7 @@ public sealed record FieldAnswerLimits
     public static int DefaultManyTexts { get; } = DefinitionLimits.Ceiling.MaxOptionsPerField;
 
     /// <summary>Limits of a field that takes answers.</summary>
-    /// <param name="longestText">The most code units in any one text, 1 or more.</param>
+    /// <param name="longestText">The most code units in any one text or a part's name, 1 or more.</param>
     /// <param name="mostTexts">The most texts in all, 1 or more.</param>
     /// <exception cref="ArgumentOutOfRangeException">Either is below 1.</exception>
     public FieldAnswerLimits(int longestText, int mostTexts)
@@ -41,7 +42,7 @@ public sealed record FieldAnswerLimits
     /// </summary>
     public static FieldAnswerLimits None { get; } = new();
 
-    /// <summary>The most UTF-16 code units in any one text; 0 for a field that takes no answer.</summary>
+    /// <summary>The most UTF-16 code units in any one text or in the name of a part with texts; 0 for a field that takes no answer.</summary>
     public int LongestText { get; }
 
     /// <summary>The most texts in all, the parts' included; 0 for a field that takes no answer.</summary>

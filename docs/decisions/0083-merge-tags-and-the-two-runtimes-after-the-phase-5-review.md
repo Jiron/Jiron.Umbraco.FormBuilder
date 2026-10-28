@@ -6,7 +6,8 @@
   (when the labels of resolved options are read) and [ADR-0072](0072-a-submissions-answers.md) (the scope a
   submission's hidden fields render over)
 - Date: 2026-10-28
-- Roadmap step: 5.5h (decided and built)
+- Roadmap step: 5.5h (decided and built); 5.5i (the second review's fixes: parent answers held in merge tags,
+  options kept per parent answers, traits read once, a raw lone surrogate)
 
 ## Context
 
@@ -40,16 +41,24 @@ The Phase 5 review read the merge tags in both runtimes once more and found five
   the text in their written order, with JSON's whitespace and escapes: no parts (so the text shows as it is) for a name
   written twice, an empty name or text, a text that is no string, an empty object, an array, or a name or text with a
   lone surrogate after its escapes are decoded. Shared vectors hold each case.
-- **Labels are read when a tag shows them.** The scope's texts hold the dictionary's texts, read once per scope, and
-  the labels of each field's resolved options, read the first time a tag shows that field's answers (`field.<alias>`,
-  a repeatable group's rows, `entry.answers`) and kept for the scope's other tags. A tag that shows a value or a label
-  asks no source.
+- **Labels are read when a tag shows them.** The scope keeps the dictionary's texts, read once per scope, and the
+  options each list or source resolved, read the first time a tag shows a field's answers (`field.<alias>`, a
+  repeatable group's rows, `entry.answers`) and kept for the scope's other tags under the field and the parent answers
+  they were asked for. A tag that shows a value or a label asks no source.
+- **Parent answers are held, in merge tags too** (5.5i, after the second review). A cascading field's options are
+  asked for the parent's answers that are options the parent offers (its own, or those its list or source resolves,
+  in turn), as a submission's check holds them (ADR-0081); with the parent's options unknown, the field shows its
+  values as they are. A hidden field's default renders before the answers are checked, and without this a visitor's
+  text would reach a source and become a cache key there.
 - **A submission's hidden fields render over one scope.** The reader makes the scope at the first hidden field with a
   default and gives it the answers again after each value it resolves, so a later default still shows an earlier
-  one's value, and the rows of a repeatable group are counted as before. What the scope read stays true: a resolved
-  value is a hidden field's, whose type has no options and is no parent, so no label read before changes. Only the
-  answers the reader makes to be replaced change; every other answers, those every scope without any shares among
-  them, refuse it, so no answers kept in a static field can change.
+  one's value, and the rows of a repeatable group are counted as before. What the scope keeps stays true: its options
+  are kept for the parent answers they were read for, so when a site's type that keeps its value on the server and
+  has options is a parent and resolves after them, the next tag reads the options for its value (5.5i; this step first
+  held that a resolved value is never a parent's, which is so for the built-in types only). Only the answers the
+  reader makes to be replaced change, between two renderings and never during one, as `MergeTagAnswers` says; every
+  other answers, those every scope without any shares among them, refuse it, so no answers kept in a static field can
+  change.
 - **Culture data is the same on every server.** The texts a source of options gives (months, weekdays, countries),
   the order of labels in a culture, and the date and number patterns of the public projection come from the culture
   data of the server that answers, which each server keeps. A site's servers run the same .NET version over the same

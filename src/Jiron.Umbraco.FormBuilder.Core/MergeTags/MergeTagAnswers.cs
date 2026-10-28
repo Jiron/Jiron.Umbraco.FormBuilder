@@ -7,7 +7,10 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 /// <summary>
 /// The answers merge tags show (ADR-0014, ADR-0066): each field's values as its type read them, a repeatable group's
 /// child once for each row, and the fields the rules hid, which show nothing. The submission pipeline gives them once
-/// the visitor has submitted; a page shown again with what the visitor typed gives them too.
+/// the visitor has submitted; a page shown again with what the visitor typed gives them too. Answers do not change,
+/// with one exception (ADR-0083): while a submission's reader renders its hidden fields' defaults over one scope, it
+/// gives that scope's answers again between two of those renderings, never during one, so a source keeps nothing it
+/// read of a scope's answers past a rendering.
 /// </summary>
 public sealed class MergeTagAnswers
 {
@@ -58,8 +61,9 @@ public sealed class MergeTagAnswers
     /// <summary>
     /// Answers that <see cref="Replace"/> gives again (ADR-0083): a submission's reader renders all of its hidden fields'
     /// defaults over one scope, whose answers it replaces after each value it resolves, so that a later default shows an
-    /// earlier one's value and what the scope's tags read once is read once per submission. A value it resolves is never
-    /// an option's or a parent's, so nothing read before changes. No other answers change.
+    /// earlier one's value and what the scope's tags read once is read once per submission. What the scope keeps of its
+    /// options is kept for the parent answers it was read for, so a value resolved later gives later tags its own. No
+    /// other answers change.
     /// </summary>
     /// <param name="answers">The answers, at most one for each field and row.</param>
     /// <param name="hidden">The keys of the fields the rules hid, which stay.</param>

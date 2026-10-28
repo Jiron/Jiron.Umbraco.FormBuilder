@@ -1732,6 +1732,12 @@
                 "text": "{\"q\":\"say \\\"hi\\\"\"}"
               },
               {
+                "text": "{\"r\":\"R\",\r\"s\":\"S\"}"
+              },
+              {
+                "text": "{\"t\":\"x\\\\\"}"
+              },
+              {
                 "text": "{\"e\":\"\\ud83d\\ude00\"}"
               },
               {
@@ -12676,7 +12682,7 @@
     },
     {
       "id": "recall-a-site-types-parts-as-core-reads-them",
-      "description": "names in their written order, those like numbers too; an empty name or text, a number, no part, an array, an escape that decodes to a lone surrogate in a text or a name: no parts, so the text as it is; JSON whitespace and escapes read",
+      "description": "names in their written order, those like numbers too; an empty name or text, a number, no part, an array, an escape that decodes to a lone surrogate in a text or a name: no parts, so the text as it is; JSON whitespace (a carriage return among it) and escapes (an escaped backslash before a closing quote among them) read",
       "recall": {
         "form": "library",
         "answers": "parts",
@@ -12686,7 +12692,7 @@
         "context": "text"
       },
       "expect": {
-        "text": "[Bee, Two, One, {\"\":\"Empty\"}, {\"y\":\"\"}, {\"n\":1,\"b\":\"B\"}, {}, [\"x\"], W, V, say \"hi\", \ud83d\ude00, {\"l\":\"\\udc00\"}, {\"\\ud800\":\"x\"}][One]",
+        "text": "[Bee, Two, One, {\"\":\"Empty\"}, {\"y\":\"\"}, {\"n\":1,\"b\":\"B\"}, {}, [\"x\"], W, V, say \"hi\", R, S, x\\, \ud83d\ude00, {\"l\":\"\\udc00\"}, {\"\\ud800\":\"x\"}][One]",
         "problems": []
       }
     },

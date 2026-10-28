@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -17,45 +19,16 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 internal sealed record AnswerField(FormField Field, FormField? Repeater);
 
 /// <summary>
-/// What a scope's answers show besides their values, each read once for every tag of a rendering: the dictionary's
-/// texts that the form names, and the labels of the options that lists and other sources resolve for an answered field
-/// (ADR-0077), by field and then by value, read only for a field whose tag shows its answer (ADR-0083).
+/// What a tag's answers show besides their values: the dictionary's texts that the form names, and the labels of the
+/// options that lists and other sources resolve for the fields the tag shows (ADR-0077, ADR-0083), by field and then by
+/// value.
 /// </summary>
-/// <param name="dictionary">The dictionary's texts in the scope's culture.</param>
-internal sealed class ScopeTexts(DictionaryTexts dictionary)
+/// <param name="Dictionary">The dictionary's texts in the scope's culture.</param>
+/// <param name="OptionLabels">For each field the tag shows whose options come from a list or another source, its options' labels by value.</param>
+internal sealed record ScopeTexts(DictionaryTexts Dictionary, IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, string>> OptionLabels)
 {
-    private readonly Lock _lock = new();
-    private readonly Dictionary<Guid, IReadOnlyDictionary<string, string>> _labels = [];
-
-    /// <summary>The dictionary's texts in the scope's culture.</summary>
-    public DictionaryTexts Dictionary => dictionary;
-
-    /// <summary>A field's options' labels by value, once read; null before, and for a field whose options are its own.</summary>
-    public IReadOnlyDictionary<string, string>? LabelsOf(Guid field)
-    {
-        lock (_lock)
-        {
-            return _labels.GetValueOrDefault(field);
-        }
-    }
-
-    /// <summary>Whether a field's labels were read.</summary>
-    public bool HasLabels(Guid field)
-    {
-        lock (_lock)
-        {
-            return _labels.ContainsKey(field);
-        }
-    }
-
-    /// <summary>Keeps a field's labels; the first read stands, should two renderings read them at once.</summary>
-    public void KeepLabels(Guid field, IReadOnlyDictionary<string, string> labels)
-    {
-        lock (_lock)
-        {
-            _labels.TryAdd(field, labels);
-        }
-    }
+    /// <summary>A field's options' labels by value; null for a field whose options are its own, or one the tag does not show.</summary>
+    public IReadOnlyDictionary<string, string>? LabelsOf(Guid field) => OptionLabels.GetValueOrDefault(field);
 }
 
 /// <summary>
@@ -81,8 +54,8 @@ internal sealed partial class MergeTagAnswerTexts(
     /// <summary>What a sensitive field shows where its answer may not be shown: three bullets.</summary>
     public static readonly string Masked = new((char)0x2022, 3);
 
-    /// <summary>The texts each scope's answers show besides their values, read once for every tag of a rendering.</summary>
-    private readonly ConditionalWeakTable<MergeTagScope, ScopeTexts> _texts = new();
+    /// <summary>What each scope read for its answers' texts, kept for the scope's other tags.</summary>
+    private readonly ConditionalWeakTable<MergeTagScope, ScopeReads> _reads = new();
 
     /// <summary>How a field shows in a place.</summary>
     private enum Showing
@@ -143,8 +116,10 @@ internal sealed partial class MergeTagAnswerTexts(
     /// the dictionary items that its form names in the texts its answers show (labels, options' labels, grid rows and the
     /// strings of the fields' settings), not read at all for a form that names none; and the labels of the options that a
     /// list or another source resolves for <paramref name="showing"/>, the fields whose answers a tag shows, each that is
-    /// answered and that the rules did not hide, on the scope's page and for all of its parent's answers (ADR-0077), none
-    /// for a source that cannot give them. Another field's labels are read when a tag shows it (ADR-0083).
+    /// answered and that the rules did not hide, on the scope's page and for the parent's answers in every row that are
+    /// options the parent offers (ADR-0077, ADR-0081), none for a source that cannot give them or whose parent's options
+    /// are unknown. Each field's options are read once per scope for the parent answers they are asked for, when a tag
+    /// first shows the field (ADR-0083).
     /// </summary>
     /// <param name="scope">What the template renders for.</param>
     /// <param name="showing">The fields whose answers the tag shows; none for a tag that shows a label or a value.</param>
@@ -153,21 +128,25 @@ internal sealed partial class MergeTagAnswerTexts(
     {
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(showing);
-        if (!_texts.TryGetValue(scope, out var texts))
+        if (!_reads.TryGetValue(scope, out var reads))
         {
             var keys = DictionaryKeys(scope.Form, scope.Culture);
-            var made = new ScopeTexts(keys.Count == 0 ? DictionaryTexts.None : await dictionary.TextsAsync(keys, scope.Culture));
+            var made = new ScopeReads(keys.Count == 0 ? DictionaryTexts.None : await dictionary.TextsAsync(keys, scope.Culture), FieldsByKey(scope.Form));
 
             // Two renderings that read a scope's texts at once keep the first.
-            texts = _texts.GetValue(scope, _ => made);
+            reads = _reads.GetValue(scope, _ => made);
         }
 
+        var labels = new Dictionary<Guid, IReadOnlyDictionary<string, string>>();
         foreach (var found in showing)
         {
-            await OptionLabelsAsync(found, scope, texts, cancellationToken);
+            if (!labels.ContainsKey(found.Field.Key) && await OptionLabelsAsync(found, scope, reads, cancellationToken) is { } byValue)
+            {
+                labels[found.Field.Key] = byValue;
+            }
         }
 
-        return texts;
+        return new ScopeTexts(reads.Dictionary, labels);
     }
 
     /// <summary><c>field.&lt;alias&gt;</c>: the answer as its type shows it, a list where the type takes several values.</summary>
@@ -450,30 +429,135 @@ internal sealed partial class MergeTagAnswerTexts(
 
     /// <summary>
     /// The labels of the options a list or another source resolves for an answered field the rules did not hide, by
-    /// value, kept in the scope's texts once read: in the scope's culture and on its page, for all of the parent's answers
-    /// in every row; a value without a label shows itself.
+    /// value; null for a field whose options are its own, and for one whose parent's options are unknown. A value without
+    /// a label shows itself.
     /// </summary>
-    private async Task OptionLabelsAsync(AnswerField found, MergeTagScope scope, ScopeTexts texts, CancellationToken cancellationToken)
+    private async Task<IReadOnlyDictionary<string, string>?> OptionLabelsAsync(AnswerField found, MergeTagScope scope, ScopeReads reads, CancellationToken cancellationToken)
     {
         var field = found.Field;
-        if (field.Options is not { Source: not OptionSource.Items } source || texts.HasLabels(field.Key) || IsHidden(found, scope) || AnswersOf(scope, field.Key).Count == 0)
+        if (field.Options is not { Source: not OptionSource.Items } || IsHidden(found, scope) || AnswersOf(scope, field.Key).Count == 0)
         {
-            return;
+            return null;
         }
 
-        var parentValues = source.Parent is { } parent ? AnswersOf(scope, parent) : [];
-        var context = new FormBuilderOptionContext(scope.Culture) { ParentValues = parentValues, Page = scope.Page };
-        var resolved = await options.GetAsync(field, context, cancellationToken);
-        var byValue = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var option in resolved.Options)
+        return (await ResolvedAsync(field, scope, reads, [], cancellationToken))?.Labels;
+    }
+
+    /// <summary>
+    /// A field's options from its list or source, in the scope's culture and on its page, for its parent's answers held
+    /// to the options the parent offers, so that no text of the scope's answers that the parent does not offer reaches a
+    /// source or becomes a cache key, as a submission's check holds them (ADR-0081); read once per scope for the field
+    /// and those parent answers (ADR-0083). Null when the parent's options are unknown.
+    /// </summary>
+    private async Task<Resolved?> ResolvedAsync(FormField field, MergeTagScope scope, ScopeReads reads, ImmutableHashSet<Guid> asking, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<string> parentValues = [];
+        if (field.Options?.Parent is { } parent)
         {
-            if (option.Label is { Length: > 0 } label)
+            if (await HeldParentAnswersAsync(parent, scope, reads, asking.Add(field.Key), cancellationToken) is not { } held)
             {
-                byValue.TryAdd(option.Value, label);
+                return null;
+            }
+
+            parentValues = held;
+        }
+
+        // Each value after its length, so no two lists of values make one key.
+        var key = (field.Key, string.Concat(parentValues.Select(value => $"{value.Length}:{value}")));
+        if (reads.Find(key) is { } known)
+        {
+            return known;
+        }
+
+        var resolved = await options.GetAsync(field, new FormBuilderOptionContext(scope.Culture) { ParentValues = parentValues, Page = scope.Page }, cancellationToken);
+        return reads.Keep(key, Resolved.Of(resolved));
+    }
+
+    /// <summary>
+    /// The parent's answers in every row that are options the parent offers, its own or those its list or source
+    /// resolves, in their order; none for a parent the rules hid, one the form lacks or one that a chain of parents leads
+    /// back to; null when the parent's options are unknown.
+    /// </summary>
+    private async Task<IReadOnlyList<string>?> HeldParentAnswersAsync(Guid parent, MergeTagScope scope, ScopeReads reads, ImmutableHashSet<Guid> asking, CancellationToken cancellationToken)
+    {
+        var answers = scope.Answers.Hidden.Contains(parent) ? [] : AnswersOf(scope, parent);
+        if (answers.Count == 0 || !reads.Fields.TryGetValue(parent, out var parentField) || parentField.Options is not { } parentOptions || asking.Contains(parent))
+        {
+            return [];
+        }
+
+        var offered = parentOptions.Source == OptionSource.Items
+            ? parentOptions.Items.Select(item => item.Value)
+            : (await ResolvedAsync(parentField, scope, reads, asking, cancellationToken))?.Values;
+        if (offered is null)
+        {
+            return null;
+        }
+
+        var values = offered.ToHashSet(StringComparer.Ordinal);
+        return [.. answers.Where(values.Contains)];
+    }
+
+    /// <summary>Every field of the form by its key, a repeatable group's children among them; the first of a key twice.</summary>
+    private static FrozenDictionary<Guid, FormField> FieldsByKey(FormDefinition form)
+    {
+        var fields = new Dictionary<Guid, FormField>();
+        foreach (var field in form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)))
+        {
+            fields.TryAdd(field.Key, field);
+        }
+
+        return fields.ToFrozenDictionary();
+    }
+
+    /// <summary>
+    /// What one scope read for its answers' texts, kept for its other tags: the dictionary's texts, the form's fields by
+    /// key, and the options each list or source resolved for a field and the parent answers it was asked for, which a
+    /// later answer the reader gives the scope (ADR-0083) cannot make stale. Two renderings that read one at once keep
+    /// the first.
+    /// </summary>
+    private sealed class ScopeReads(DictionaryTexts dictionary, FrozenDictionary<Guid, FormField> fields)
+    {
+        private readonly Lock _lock = new();
+        private readonly Dictionary<(Guid Field, string Parents), Resolved> _resolved = [];
+
+        public DictionaryTexts Dictionary => dictionary;
+
+        public FrozenDictionary<Guid, FormField> Fields => fields;
+
+        public Resolved? Find((Guid Field, string Parents) key)
+        {
+            lock (_lock)
+            {
+                return _resolved.GetValueOrDefault(key);
             }
         }
 
-        texts.KeepLabels(field.Key, byValue);
+        public Resolved Keep((Guid Field, string Parents) key, Resolved resolved)
+        {
+            lock (_lock)
+            {
+                return _resolved.TryAdd(key, resolved) ? resolved : _resolved[key];
+            }
+        }
+    }
+
+    /// <summary>What a list or source resolved: its options' values, null when it could not give them, and their labels by value.</summary>
+    private sealed record Resolved(IReadOnlyList<string>? Values, IReadOnlyDictionary<string, string> Labels)
+    {
+        public static Resolved Of(FormBuilderResolvedOptions resolved)
+        {
+            var labels = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var option in resolved.Options)
+            {
+                if (option.Label is { Length: > 0 } label)
+                {
+                    labels.TryAdd(option.Value, label);
+                }
+            }
+
+            return new Resolved(resolved.IsAvailable ? [.. resolved.Options.Select(option => option.Value)] : null, labels);
+        }
     }
 
     /// <summary>A field's values in every row it has an answer in, each once, in their order.</summary>

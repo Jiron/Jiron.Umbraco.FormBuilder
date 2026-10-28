@@ -1349,6 +1349,8 @@ defaults.answers = {
         '["x"]',
         x('{ {09}"w" :{0a}"W" , "v":"V" }'),
         x('{"q":"say {5c}"hi{5c}""}'),
+        x('{"r":"R",{0d}"s":"S"}'),
+        x('{"t":"x{5c}{5c}"}'),
         x('{"e":"{5c}ud83d{5c}ude00"}'),
         x('{"l":"{5c}udc00"}'),
         x('{"{5c}ud800":"x"}'),
@@ -1443,11 +1445,11 @@ const recalling = [
   r(
     'recall-a-site-types-parts-as-core-reads-them',
     '[{{ field.badge }}][{{ field.badge.1 }}]',
-    x('[Bee, Two, One, {"":"Empty"}, {"y":""}, {"n":1,"b":"B"}, {}, ["x"], W, V, say "hi", {1f600}, {"l":"{5c}udc00"}, {"{5c}ud800":"x"}][One]'),
+    x('[Bee, Two, One, {"":"Empty"}, {"y":""}, {"n":1,"b":"B"}, {}, ["x"], W, V, say "hi", R, S, x{5c}, {1f600}, {"l":"{5c}udc00"}, {"{5c}ud800":"x"}][One]'),
     [],
     {
       answers: 'parts',
-      description: 'names in their written order, those like numbers too; an empty name or text, a number, no part, an array, an escape that decodes to a lone surrogate in a text or a name: no parts, so the text as it is; JSON whitespace and escapes read',
+      description: 'names in their written order, those like numbers too; an empty name or text, a number, no part, an array, an escape that decodes to a lone surrogate in a text or a name: no parts, so the text as it is; JSON whitespace (a carriage return among it) and escapes (an escaped backslash before a closing quote among them) read',
     },
   ),
   r('recall-a-lone-surrogate-reads-as-no-parts', '[{{ field.address }}][{{ field.address.street }}]', x('[{"street":"Main 1","city":"{5c}ud800"}][]'), [], {

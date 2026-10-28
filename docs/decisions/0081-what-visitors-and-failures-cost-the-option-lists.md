@@ -4,7 +4,9 @@
   sees and a library list keeps options for, and a stored kind this version does not know),
   [ADR-0076](0076-url-and-file-lists.md) (a URL list that fails with no copy, and a body that breaks off or does not
   decompress) and [ADR-0077](0077-answers-and-labels-from-resolved-options.md) (the parent answers a submission's
-  check resolves for)
+  check resolves for); the parent answers merge tags resolve labels for held the same way, by
+  [ADR-0083](0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md), and a Brotli body that does not
+  decompress, added in 5.5i
 - Date: 2026-10-27
 - Roadmap step: 5.5g (decided and built); 6.1's `options` endpoint holds its `parent` and `culture` the same way
 
@@ -62,7 +64,8 @@ attempt's flag.
   `RetryAfter`; meanwhile the kind says its options are unavailable without asking the address again, and without
   logging again, as the fetch logged why.
 - **A body that breaks off is no connection, and one that does not decompress is unreadable**, each a failure with its
-  reason, as every other failure of a call is.
+  reason, as every other failure of a call is. The decoders fail differently: gzip and deflate with invalid data, Brotli
+  with an invalid operation, and each is unreadable (5.5i, through the real transport).
 - **A form's create tells its alias taken by the exception's type:** the form's own insert wraps the conflict, so each
   attempt of the unit tells it anew and nothing carries over from one attempt to the next.
 
