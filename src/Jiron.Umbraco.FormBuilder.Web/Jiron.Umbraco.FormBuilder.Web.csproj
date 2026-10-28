@@ -11,6 +11,8 @@
     <Title>Jiron Form Builder Web</Title>
     <Description>The public and management APIs, form rendering, themes and the Forms section of Jiron Form Builder for Umbraco 17. Sites install Jiron.Umbraco.FormBuilder, which brings this package.</Description>
     <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+    <!-- The form views under Views/JironFormBuilder/ are compiled into this assembly (ADR-0093). -->
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
   </PropertyGroup>
 
   <ItemGroup>

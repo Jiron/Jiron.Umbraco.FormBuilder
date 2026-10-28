@@ -1,0 +1,34 @@
+@* jfb-view: Group 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.GroupViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@if (Model.Title is not null)
+{
+    <fieldset class="@Model.CssClass" data-jfb-group="@Model.Key" hidden="@Model.IsHidden" @FormBuilderHtml.Flag("data-jfb-hidden", Model.IsHidden) aria-describedby="@(Model.Description is null ? null : Model.DescriptionId)">
+        <legend>@Model.Title</legend>
+        @if (Model.Description is not null)
+        {
+            <div class="jfb-help" id="@Model.DescriptionId">@Model.Description</div>
+        }
+        <div class="jfb-fields">
+            @foreach (var field in Model.Fields)
+            {
+                @await Html.PartialAsync(Model.Views.Field, field)
+            }
+        </div>
+    </fieldset>
+}
+else
+{
+    <div class="@Model.CssClass" data-jfb-group="@Model.Key" hidden="@Model.IsHidden" @FormBuilderHtml.Flag("data-jfb-hidden", Model.IsHidden)>
+        @if (Model.Description is not null)
+        {
+            <div class="jfb-help" id="@Model.DescriptionId">@Model.Description</div>
+        }
+        <div class="jfb-fields">
+            @foreach (var field in Model.Fields)
+            {
+                @await Html.PartialAsync(Model.Views.Field, field)
+            }
+        </div>
+    </div>
+}

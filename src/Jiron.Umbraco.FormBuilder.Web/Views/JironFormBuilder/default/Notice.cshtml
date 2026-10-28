@@ -1,0 +1,9 @@
+@* jfb-view: Notice 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.NoticeViewModel
+<div class="jfb-notice">
+    @if (Model.Heading is not null)
+    {
+        <h2>@Model.Heading</h2>
+    }
+    @Model.Text
+</div>

@@ -1,0 +1,51 @@
+@* jfb-view: Form 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FormViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@if (Model.Display == FormDisplay.Form)
+{
+    <form class="@Model.CssClass" id="@Model.Id" data-jfb-form="@Model.Key" data-jfb-revision="@Model.Revision" data-jfb-api="@Model.ApiBase" data-jfb-contract="@FormViewModel.ContractVersion" lang="@Model.Culture" dir="@Model.Direction" method="post" action="@Model.Action" enctype="@Model.EncodingType" novalidate>
+        <script type="application/json" data-jfb-model>@Model.ModelData</script>
+        @if (Model.Progress is { } progress)
+        {
+            @await Html.PartialAsync(Model.Views.Progress, progress)
+        }
+        @if (Model.Notice is { } notice)
+        {
+            @await Html.PartialAsync(Model.Views.Notice, notice)
+        }
+        @if (Model.ErrorSummary is { } summary)
+        {
+            @await Html.PartialAsync(Model.Views.ErrorSummary, summary)
+        }
+        @if (Model.RequiredNote is { } note)
+        {
+            <p class="jfb-help">@note</p>
+        }
+        @foreach (var page in Model.Pages)
+        {
+            @await Html.PartialAsync(Model.Views.Page, page)
+        }
+        @if (Model.Navigation is { } navigation)
+        {
+            @await Html.PartialAsync(Model.Views.Navigation, navigation)
+        }
+        @foreach (var input in Model.ContextValues)
+        {
+            <input type="hidden" name="@input.Name" value="@input.Value">
+        }
+        <div data-jfb-live aria-live="polite"></div>
+    </form>
+}
+else
+{
+    <div class="@Model.CssClass" id="@Model.Id" data-jfb-form="@Model.Key" data-jfb-contract="@FormViewModel.ContractVersion" lang="@Model.Culture" dir="@Model.Direction">
+        @if (Model.Outcome is { } outcome)
+        {
+            @await Html.PartialAsync(Model.Views.Outcome, outcome)
+        }
+        else if (Model.Notice is { } notice)
+        {
+            @await Html.PartialAsync(Model.Views.Notice, notice)
+        }
+    </div>
+}

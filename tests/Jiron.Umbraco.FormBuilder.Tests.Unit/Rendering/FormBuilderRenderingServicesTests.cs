@@ -8,12 +8,14 @@ using Umbraco.Cms.Web.Common.ApplicationBuilder;
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Rendering;
 
 /// <summary>
-/// The registrations of the website rendering (ADR-0092), without a host: made twice, they add each service and the
-/// pipeline filter before Umbraco's routing once.
+/// The registrations of the website rendering (ADR-0092, ADR-0093), without a host: made twice, they add each service
+/// and the pipeline filter before Umbraco's routing once.
 /// </summary>
 [TestFixture]
 public sealed class FormBuilderRenderingServicesTests
 {
+    private static readonly Type[] Rendering = [typeof(WebsiteAssets), typeof(PageAssets), typeof(FormViews), typeof(FormModels), typeof(FormRendering)];
+
     [Test]
     public void MadeTwice_TheRegistrationsAddEachServiceAndTheFilterOnce()
     {
@@ -31,7 +33,10 @@ public sealed class FormBuilderRenderingServicesTests
             Assert.That(services.Count(service => service.ServiceType == typeof(WebsiteAssets)), Is.EqualTo(1));
             Assert.That(services.Count(service => service.ServiceType == typeof(WebsiteAssetsMiddleware)), Is.EqualTo(1));
             Assert.That(services.Count(service => service.ServiceType == typeof(PageAssets)), Is.EqualTo(1));
-            Assert.That(services.Where(service => service.ServiceType == typeof(WebsiteAssets) || service.ServiceType == typeof(PageAssets)).Select(service => service.Lifetime), Is.All.EqualTo(ServiceLifetime.Singleton));
+            Assert.That(services.Count(service => service.ServiceType == typeof(FormViews)), Is.EqualTo(1));
+            Assert.That(services.Count(service => service.ServiceType == typeof(FormModels)), Is.EqualTo(1));
+            Assert.That(services.Count(service => service.ServiceType == typeof(FormRendering)), Is.EqualTo(1));
+            Assert.That(services.Where(service => Rendering.Contains(service.ServiceType)).Select(service => service.Lifetime), Is.All.EqualTo(ServiceLifetime.Singleton));
             Assert.That(filters.Select(filter => filter.Name), Is.EqualTo(new[] { "Jiron.FormBuilder.WebsiteAssets" }));
             Assert.That(((UmbracoPipelineFilter)filters.Single()).PrePipeline, Is.Not.Null, "before Umbraco's routing");
         });

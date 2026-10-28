@@ -1,0 +1,7 @@
+@* jfb-view: fields/phone 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@{
+    var control = (TextControlModel)Model.Control!;
+}
+<input class="jfb-control" type="@control.InputType" id="@Model.Id" name="@Model.Name" value="@(Model.Value.Length == 0 ? null : Model.Value)" placeholder="@Model.Placeholder" autocomplete="@Model.Autocomplete" spellcheck="@(control.Spellcheck is { } check ? (check ? "true" : "false") : null)" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">

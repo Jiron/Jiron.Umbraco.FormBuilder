@@ -1,6 +1,7 @@
 # 0015. Themes and the markup contract
 
-- Status: accepted; the functional base rules and theme resolution amended in 1.8
+- Status: accepted; the functional base rules and theme resolution amended in 1.8; the default view folder, its
+  views and the hooks they hold built in 6.2b (ADR-0093)
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 2.3 (the visual design and its tokens), 6.2 (rendering), 6.3 (the themes),
   6.4 (the runtime), 6.6 (the headless element) and 12.2 (the theme editor)

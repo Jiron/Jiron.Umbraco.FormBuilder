@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
@@ -42,7 +43,18 @@ internal sealed class FormRequests(
     /// in, whether it takes entries now by its opening and closing times and its entry limit (ADR-0088), the visitor's
     /// form (ADR-0084), what the browser renders its visitor texts with, and its consents' wording hashes (ADR-0085).
     /// </summary>
-    public async Task<FormAnswer> DefinitionAsync(CachedForm form, string culture, RequestPage page, CancellationToken cancellationToken)
+    public async Task<FormAnswer> DefinitionAsync(CachedForm form, string culture, RequestPage page, CancellationToken cancellationToken) =>
+        (await ShowAsync(form, culture, page, cancellationToken)).Answer;
+
+    /// <summary>
+    /// The form as a visitor's page shows it (ADR-0093): the form endpoint's answer, made by the same code, the visitor's
+    /// form it holds, why the form takes no entry now, and the site's time zone.
+    /// </summary>
+    /// <param name="form">The published form.</param>
+    /// <param name="culture">The culture, one of the site's languages.</param>
+    /// <param name="page">The page the form is shown on.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public async Task<FormShown> ShowAsync(CachedForm form, string culture, RequestPage page, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(form);
         ArgumentNullException.ThrowIfNull(page);
@@ -56,8 +68,9 @@ internal sealed class FormRequests(
             Site = page.Site,
             Page = page.Content,
         };
-        var visitor = await visitorForms.WriteAsync(form.Projection, scope, cancellationToken);
-        var open = await availability.CheckAsync(form.Published.Definition.Settings.Availability, form.Published.Form.Key, cancellationToken) is null;
+        var shown = await visitorForms.ShowAsync(form.Projection, scope, cancellationToken);
+        var visitor = shown.Answer;
+        var unavailable = await availability.CheckAsync(form.Published.Definition.Settings.Availability, form.Published.Form.Key, cancellationToken);
         var buffer = new ArrayBufferWriter<byte>(visitor.Form.Length + visitor.MergeTags.Length + visitor.Consents.Length + 256);
         using (var writer = new Utf8JsonWriter(buffer))
         {
@@ -66,7 +79,7 @@ internal sealed class FormRequests(
             writer.WriteNumber("revision", form.Published.Form.PublicRevision);
             writer.WriteString("culture", culture);
             writer.WriteString("timeZone", zone.Id);
-            writer.WriteBoolean("open", open);
+            writer.WriteBoolean("open", unavailable is null);
             writer.WritePropertyName("form");
             writer.WriteRawValue(visitor.Form, skipInputValidation: true);
             writer.WritePropertyName("mergeTags");
@@ -76,7 +89,7 @@ internal sealed class FormRequests(
             writer.WriteEndObject();
         }
 
-        return Answer(buffer);
+        return new FormShown(Answer(buffer), shown.Form, unavailable, zone);
     }
 
     /// <summary>
@@ -140,6 +153,13 @@ internal sealed class FormRequests(
         return new FormAnswer(bytes, $"\"{Convert.ToHexStringLower(SHA256.HashData(bytes))[..32]}\"");
     }
 }
+
+/// <summary>A form as a visitor's page shows it (ADR-0093).</summary>
+/// <param name="Answer">The form endpoint's answer.</param>
+/// <param name="Form">The visitor's form the answer holds, each text as the culture shows it.</param>
+/// <param name="Unavailable">Why the form takes no entry now; null when it takes one.</param>
+/// <param name="TimeZone">The site's time zone.</param>
+internal sealed record FormShown(FormAnswer Answer, PublicForm Form, FormUnavailable? Unavailable, TimeZoneInfo TimeZone);
 
 /// <summary>An answer of the form or the options endpoint.</summary>
 /// <param name="Body">The answer as UTF-8 JSON.</param>

@@ -1,0 +1,17 @@
+@* jfb-view: Navigation 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.NavigationViewModel
+@* Next or Send comes first, so Enter in a field means it. *@
+<div class="jfb-navigation">
+    @if (Model.Next is { } next)
+    {
+        <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="@next.Value" data-jfb-nav="@next.Value">@next.Label</button>
+    }
+    @if (Model.Submit is { } submit)
+    {
+        <button type="submit" class="jfb-button jfb-button-primary" name="jfb-nav" value="@submit.Value" data-jfb-nav="@submit.Value">@submit.Label</button>
+    }
+    @if (Model.Back is { } back)
+    {
+        <button type="submit" class="jfb-button" name="jfb-nav" value="@back.Value" data-jfb-nav="@back.Value"><span class="jfb-icon jfb-icon-back" aria-hidden="true"></span>@back.Label</button>
+    }
+</div>

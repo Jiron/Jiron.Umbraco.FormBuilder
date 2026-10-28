@@ -1,0 +1,17 @@
+@* jfb-view: Page 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.PageViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+<section class="jfb-page" data-jfb-page="@Model.Key" hidden="@(!Model.IsCurrent || Model.IsHidden)" @FormBuilderHtml.Flag("data-jfb-hidden", Model.IsHidden)>
+    @if (Model.Title is not null)
+    {
+        <h2 class="jfb-title">@Model.Title</h2>
+    }
+    @if (Model.Description is not null)
+    {
+        <div class="jfb-intro">@Model.Description</div>
+    }
+    @foreach (var group in Model.Groups)
+    {
+        @await Html.PartialAsync(Model.Views.Group, group)
+    }
+</section>

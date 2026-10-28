@@ -1,5 +1,6 @@
 using System.Text.Encodings.Web;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
+using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Razor.TagHelpers;
@@ -11,7 +12,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Rendering;
 /// <c>&lt;jfb-assets&gt;</c> (ADR-0004, ADR-0092), run as Razor runs it, over the test's own files
 /// (<see cref="WebsiteAssetsTests"/>): the module script under the fingerprint and the path base, written once per
 /// request however often the page names it, without the element itself, and with the nonce of the attribute, else of
-/// the site's provider, else none.
+/// the site's provider, else none; and the tags a form adds by itself, which are written when the page writes them.
 /// </summary>
 [TestFixture]
 public sealed class FormBuilderAssetsTagHelperTests
@@ -135,6 +136,42 @@ public sealed class FormBuilderAssetsTagHelperTests
         var http = Request();
 
         Assert.That(Run(http, "a\"b<c"), Does.Contain("nonce=\"a&quot;b&lt;c\""));
+    }
+
+    [Test]
+    public void TheAutomaticTags_DecideWhenTheyAreWritten_SoATagWrittenBeforeThemWins()
+    {
+        var http = Request(new Provider("from-the-site"));
+        var automatic = http.RequestServices.GetRequiredService<PageAssets>().Automatic(http);
+
+        var tag = Run(http, "from-the-page");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(tag, Does.Contain("nonce=\"from-the-page\""), "taking the automatic tags writes nothing yet");
+            Assert.That(Write(automatic), Is.Empty);
+        });
+    }
+
+    [Test]
+    public void TheAutomaticTags_WrittenFirst_CarryTheProvidersNonce_AndLeaveTheTagNothing()
+    {
+        var http = Request(new Provider("from-the-site"));
+        var automatic = http.RequestServices.GetRequiredService<PageAssets>().Automatic(http);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Write(automatic), Is.EqualTo($"<script nonce=\"from-the-site\" src=\"{Src()}\" type=\"module\"></script>"));
+            Assert.That(Write(automatic), Is.Empty, "once per request");
+            Assert.That(Run(http), Is.Empty);
+        });
+    }
+
+    private static string Write(IHtmlContent content)
+    {
+        using var writer = new StringWriter();
+        content.WriteTo(writer, HtmlEncoder.Default);
+        return writer.ToString();
     }
 
     // A request whose services hold the page's assets over the test's files, and the provider when one is given.

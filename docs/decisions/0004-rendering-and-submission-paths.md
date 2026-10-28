@@ -1,7 +1,8 @@
 # 0004. Rendering and submission paths
 
 - Status: accepted; members-only forms and the no-JS action amended in 1.8; the assets amended in 3.2 (ADR-0026);
-  `<jfb-assets>` and its nonce built in 6.2a (ADR-0092)
+  `<jfb-assets>` and its nonce built in 6.2a (ADR-0092); the view component, `<jfb-render>` and the views built in 6.2b
+  (ADR-0093)
 - Date: 2026-10-23
 - Roadmap step: 1.4a (decided); built in 6.1 (the public API), 6.2 (Razor rendering, the no-JS post, the cache
   rules, `render`), 6.4 (the runtime) and 6.6 (headless); reviewed in 6.8 and 16.x

@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -6,8 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
 /// <summary>
-/// The tags that load the website assets into a page (ADR-0004, ADR-0092), written at most once per request: by the
-/// first <c>&lt;jfb-assets&gt;</c>, or else by the first <c>&lt;jfb-render&gt;</c> (6.2b), whichever comes first.
+/// The tags that load the website assets into a page (ADR-0004, ADR-0092), written at most once per request. A
+/// <c>&lt;jfb-assets&gt;</c> writes them as it runs; a form's own tags decide when the page is written (ADR-0093). Razor
+/// runs a view before its layout and writes the layout's head before the view's body, so a <c>&lt;jfb-assets&gt;</c>
+/// anywhere on the page wins, and without one the tags appear once, before the first form.
 /// </summary>
 internal sealed class PageAssets(WebsiteAssets assets)
 {
@@ -50,5 +53,21 @@ internal sealed class PageAssets(WebsiteAssets assets)
         }
 
         return script;
+    }
+
+    /// <summary>
+    /// The request's tags as a form includes them: content that writes them, with the site's nonce, when the page is
+    /// written, unless they were written before; written twice, it writes them once.
+    /// </summary>
+    /// <param name="httpContext">The request.</param>
+    public IHtmlContent Automatic(HttpContext httpContext)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+        return new AutomaticTags(this, httpContext);
+    }
+
+    private sealed class AutomaticTags(PageAssets assets, HttpContext httpContext) : IHtmlContent
+    {
+        public void WriteTo(TextWriter writer, HtmlEncoder encoder) => assets.TagsOnce(httpContext, null)?.WriteTo(writer, encoder);
     }
 }

@@ -1,0 +1,18 @@
+@* jfb-view: fields/heading 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@{
+    var control = (HeadingControlModel)Model.Control!;
+}
+@switch (control.Level)
+{
+    case 3:
+        <h3 class="jfb-heading">@control.Text</h3>
+        break;
+    case 4:
+        <h4 class="jfb-heading">@control.Text</h4>
+        break;
+    default:
+        <h2 class="jfb-heading">@control.Text</h2>
+        break;
+}

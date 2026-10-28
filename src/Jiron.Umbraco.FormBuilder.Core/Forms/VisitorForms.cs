@@ -16,6 +16,11 @@ namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 /// <param name="Consents">Each consent field's wording hash, by the field's key.</param>
 internal sealed record VisitorAnswer(byte[] Form, byte[] MergeTags, byte[] Consents);
 
+/// <summary>A published form as a visitor's page shows it (ADR-0093): the visitor's form, and its parts as JSON.</summary>
+/// <param name="Form">The projection with each text as the culture shows it, a consent's text as the wording it shows.</param>
+/// <param name="Answer">Its parts as the form endpoint writes them.</param>
+internal sealed record VisitorPage(PublicForm Form, VisitorAnswer Answer);
+
 /// <summary>
 /// A published form as a visitor's page gets it in one culture (ADR-0084, ADR-0085): each text of its projection in the
 /// culture with the usual fallback (ADR-0002), a text that names a dictionary item (<c>#key</c>) as the item's text in
@@ -42,7 +47,14 @@ internal sealed class VisitorForms(
     /// one of the site's languages), the site and the content page.
     /// </param>
     /// <param name="cancellationToken">Cancels the merge-tag and option sources' work.</param>
-    public async Task<VisitorAnswer> WriteAsync(PublicForm projection, MergeTagScope scope, CancellationToken cancellationToken = default)
+    public async Task<VisitorAnswer> WriteAsync(PublicForm projection, MergeTagScope scope, CancellationToken cancellationToken = default) =>
+        (await ShowAsync(projection, scope, cancellationToken)).Answer;
+
+    /// <summary>The visitor's form as a page shows it, with its parts as JSON, which a Razor page renders (ADR-0093).</summary>
+    /// <param name="projection">The form's public projection.</param>
+    /// <param name="scope">The page, as for <see cref="WriteAsync"/>.</param>
+    /// <param name="cancellationToken">Cancels the merge-tag and option sources' work.</param>
+    public async Task<VisitorPage> ShowAsync(PublicForm projection, MergeTagScope scope, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(projection);
         ArgumentNullException.ThrowIfNull(scope);
@@ -64,7 +76,7 @@ internal sealed class VisitorForms(
             types);
         var items = keys.Count == 0 ? DictionaryTexts.None : await dictionary.TextsAsync(keys, culture);
         var (shown, hashes) = await WithWordingsAsync(VisitorForm.Map(projection, text => Show(text, culture, items), types), scope, cancellationToken);
-        return new VisitorAnswer(VisitorForm.Write(shown), await MergeTagsAsync(shown, scope, cancellationToken), Consents(hashes));
+        return new VisitorPage(shown, new VisitorAnswer(VisitorForm.Write(shown), await MergeTagsAsync(shown, scope, cancellationToken), Consents(hashes)));
     }
 
     private string Show(LocalizedString text, string culture, DictionaryTexts items)

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <!--
     Integration tests on a real Umbraco (ADR-0011): Umbraco.Cms.Tests.Integration 17.x, SQLite here and SQL Server in
@@ -12,6 +12,11 @@
   <PropertyGroup>
     <!-- It runs a whole Umbraco site, so the host-only audit entries apply (NuGetAudit.props, ADR-0024). -->
     <JfbUmbracoHost>true</JfbUmbracoHost>
+    <!--
+      The rendering tests' pages and a form's override views (Views/) are compiled into this assembly, which those tests
+      add to the site's application parts (ADR-0093).
+    -->
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,0 +1,12 @@
+@* jfb-view: fields/image 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@{
+    var control = (ImageControlModel)Model.Control!;
+}
+@if (control.Url is not null)
+{
+    <figure class="jfb-image jfb-image-@control.Size">
+        <img src="@control.Url" alt="@control.Alt" width="@control.Width" height="@control.Height" loading="lazy" decoding="async">
+    </figure>
+}
