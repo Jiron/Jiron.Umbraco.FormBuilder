@@ -1244,6 +1244,21 @@ const mutants = [
   csv('every-answers-option-dropped', 'option.ParentValues.Count == 0 || option.ParentValues.Any(answers.Contains)', 'option.ParentValues.Any(answers.Contains)'),
   csv('all-parent-answers', 'option.ParentValues.Any(answers.Contains)', 'option.ParentValues.All(answers.Contains)'),
   csv('other-fields-answers', 'input.Values.TryGetValue(parent, out var values) ? values : []', 'parent == Guid.Empty ? [] : input.Values.Values.SelectMany(each => each).ToImmutableArray()'),
+  // ---- The third review's fixes (ROADMAP 5.5j, ADR-0080, ADR-0083): no vector holds a submission or a scope ----
+  {
+    runtime: 'cs',
+    name: 'cs-an-upload-claimed-before-its-answer-stands',
+    file: 'src/Jiron.Umbraco.FormBuilder.Core/Entries/SubmissionReader.cs',
+    from: lines('            uploads.Add(upload);', '        }', '', '        claimed.UnionWith(uploads.Select(upload => upload.Id));'),
+    to: lines('            uploads.Add(upload);', '            claimed.Add(upload.Id);', '        }', ''),
+    tests: 'FullyQualifiedName~SubmissionReaderPostTests',
+  },
+  csm('cs-rows-labels-for-every-row', 'MergeTagAnswerTexts.cs', 'var answers = where is { } at && found.Repeater?.Key == at.Repeater ? AnswersOf(scope, parent, at.Row) : AnswersOf(scope, parent);', 'var answers = AnswersOf(scope, parent);', {
+    tests: 'FullyQualifiedName~ListAnswersTests|FullyQualifiedName~SubmissionHiddenDefaultsTests',
+  }),
+  csm('cs-a-hidden-groups-child-as-a-parent', 'MergeTagAnswerTexts.cs', ' || asking.Contains(parent) || IsHidden(found, scope))', ' || asking.Contains(parent) || scope.Answers.Hidden.Contains(parent))', {
+    tests: 'FullyQualifiedName~ListAnswersTests',
+  }),
 ];
 
 // ---- Running ----

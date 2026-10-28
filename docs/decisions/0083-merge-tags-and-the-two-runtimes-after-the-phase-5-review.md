@@ -7,7 +7,9 @@
   submission's hidden fields render over)
 - Date: 2026-10-28
 - Roadmap step: 5.5h (decided and built); 5.5i (the second review's fixes: parent answers held in merge tags,
-  options kept per parent answers, traits read once, a raw lone surrogate)
+  options kept per parent answers, traits read once, a raw lone surrogate); 5.5j (the third review's fixes: a
+  repeatable group's child asked row by row, a parent in a hidden group, one reader for the traits, each collection
+  read on its own)
 
 ## Context
 
@@ -33,10 +35,14 @@ The Phase 5 review read the merge tags in both runtimes once more and found five
 - **The field source alone** is an unknown path: `{{ field }}` renders empty with an `UnknownPath` warning in every
   place, and the publish check reports it at its position like any unknown path. The website renders it the same, as a
   shared vector shows.
-- **A site source's traits are read once.** The registry reads each site source's `Name`, `IsPerVisitor` and `Places`
-  when it is built, copies `Places` to a set of its own, and every check reads that copy. The start-up check reads them
-  inside a guard: a source whose traits throw, or a filter whose `Name` throws, stops the start with a message naming
-  its type and the exception's type, and a registry built anyway leaves it out.
+- **A site source's traits are read once.** One reader of the site's sources and filters (`SiteMergeTagExtensions`,
+  5.5i) reads each source's `Name`, `IsPerVisitor` and `Places` and each filter's `Name` once, inside a guard, when it
+  is first needed, which in a host is as the start-up check is made; it copies `Places` to a set of its own, and every
+  check reads that copy. The start-up check takes its problems and the registry its usable sources and filters, so
+  what the check let start is what the registry runs: a source whose traits throw, or a filter whose `Name` throws,
+  stops the start with a message naming its type and the exception's type, and a registry made anyway leaves it out.
+  A collection the container cannot create one of stops the start with what the container said and leaves that
+  collection's sources or filters out, the other's staying (5.5j).
 - **The website reads parts as Core does.** `valueParts` lets `JSON.parse` check the text, then reads the members from
   the text in their written order, with JSON's whitespace and escapes: no parts (so the text shows as it is) for a name
   written twice, an empty name or text, a text that is no string, an empty object, an array, or a name or text with a
@@ -49,7 +55,13 @@ The Phase 5 review read the merge tags in both runtimes once more and found five
   asked for the parent's answers that are options the parent offers (its own, or those its list or source resolves,
   in turn), as a submission's check holds them (ADR-0081); with the parent's options unknown, the field shows its
   values as they are. A hidden field's default renders before the answers are checked, and without this a visitor's
-  text would reach a source and become a cache key there.
+  text would reach a source and become a cache key there. A parent the rules hid, by its own rule or its repeatable
+  group's, gives none (5.5j).
+- **A repeatable group's child is asked row by row** (5.5j, after the third review), as the check asks: in each row it
+  has an answer in, for that row's answer of a parent in the same group, and for every row's answers of a parent
+  outside it; its labels are kept by row. Asked for every row's parent answers at once, two rows whose parents' sources
+  offer the same value would show one label for both (a source's options keep a value once), and a request for several
+  parent answers would pass the lists' cache by.
 - **A submission's hidden fields render over one scope.** The reader makes the scope at the first hidden field with a
   default and gives it the answers again after each value it resolves, so a later default still shows an earlier
   one's value, and the rows of a repeatable group are counted as before. What the scope keeps stays true: its options
@@ -71,6 +83,9 @@ The Phase 5 review read the merge tags in both runtimes once more and found five
 - A site source cannot change where it is offered after start-up; one whose traits fail is found before the site
   takes a request.
 - A value with parts shows the same in both runtimes, whatever a client stored.
-- A rendering asks each source at most once for each field whose answers it shows, and a submission at most once for
-  all of its hidden fields together; a template of values and labels asks none.
+- A rendering asks a list or source at most once for each field and parent answers it needs, for a field whose answers
+  a tag shows or a parent of one, and a submission's hidden fields, rendering over one scope, at most once together for
+  each; the submission's check asks on its own. A template of values and labels asks none.
+- What the label path keeps of a scope's answers past a rendering is kept under the parent answers it was read for,
+  so answers that change between renderings never meet a stale label; a site's source keeps nothing of them.
 - Operating several servers needs the same runtime and culture data on each, written in the architecture's settings.

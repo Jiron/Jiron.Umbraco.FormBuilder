@@ -226,11 +226,16 @@ public sealed class SiteMergeTagExtensionsTests
     [Test]
     public void TheProblems_NameEachSourceOrFilter_WhoseNameIsTakenOrOutsideTheGrammar()
     {
-        var problems = Problems(
-            [new NamedSource("entry"), new NamedSource("Crm"), new NamedSource("crm-x"), new NamedSource(null!), new NamedSource("crm"), new CrmSource(_ => null), new NamedSource("crm2")],
-            [new NamedFilter("upper"), new NamedFilter("1st"), new RepeatFilter(), new NamedFilter("repeat")]);
+        var first = new NamedSource("crm");
+        var repeat = new RepeatFilter();
+        var site = Read(
+            [new NamedSource("entry"), new NamedSource("Crm"), new NamedSource("crm-x"), new NamedSource(null!), first, new CrmSource(_ => null), new NamedSource("crm2")],
+            [new NamedFilter("upper"), new NamedFilter("1st"), repeat, new NamedFilter("repeat")]);
 
-        Assert.That(problems, Is.EqualTo(new[]
+        Assert.That(site.Sources.Select(found => found.Name), Is.EqualTo(new[] { "crm", "crm2" }), "the first of a shared name, and the source without a problem");
+        Assert.That(site.Sources[0].Source, Is.SameAs(first));
+        Assert.That(site.Filters, Is.EqualTo(new Dictionary<string, IFormBuilderMergeTagFilter> { ["repeat"] = repeat }), "the first of a shared name");
+        Assert.That(site.Problems, Is.EqualTo(new[]
         {
             $"The merge-tag source {typeof(NamedSource).FullName} is named 'entry', which a built-in source has.",
             $"The merge-tag source {typeof(NamedSource).FullName} is named 'Crm', which is not a name merge tags can use: a lowercase letter, then letters and digits.",
@@ -258,18 +263,19 @@ public sealed class SiteMergeTagExtensionsTests
             Assert.That(() => HostOptions.Start(taken), Throws.TypeOf<OptionsValidationException>().With.Message.Contains(
                 $"The merge-tag source {typeof(DateNamedSource).FullName} is named 'date', which a built-in source has."));
             Assert.That(() => HostOptions.Start(broken), Throws.TypeOf<OptionsValidationException>().With.Message.Contains(
-                "Jiron Form Builder cannot create the site's merge-tag sources and filters: Set Crm:Url to the CRM's address."));
+                "Jiron Form Builder cannot create the site's merge-tag sources: Set Crm:Url to the CRM's address."));
         });
     }
 
     [Test]
     public void TheProblems_NameEachSourceOrFilter_ThatFailsToSayItsNameOrTraits()
     {
-        var problems = Problems(
+        var site = Read(
             [new FailingTraitsSource(), new FailingTraitsSource(inPlaces: true), new NamedSource("crm")],
             [new FailingNameFilter(), new NamedFilter("repeat")]);
 
-        Assert.That(problems, Is.EqualTo(new[]
+        Assert.That((site.Sources.Single().Name, site.Filters.Keys.Single()), Is.EqualTo(("crm", "repeat")), "only those that said them");
+        Assert.That(site.Problems, Is.EqualTo(new[]
         {
             $"The merge-tag source {typeof(FailingTraitsSource).FullName} failed with {typeof(NotSupportedException).FullName} as its Name, IsPerVisitor and Places were read: JFB_TEST: IsPerVisitor is not ready.",
             $"The merge-tag source {typeof(FailingTraitsSource).FullName} failed with {typeof(NotSupportedException).FullName} as its Name, IsPerVisitor and Places were read: JFB_TEST: Places is not ready.",
@@ -320,18 +326,20 @@ public sealed class SiteMergeTagExtensionsTests
         var source = site.GetRequiredService<FormBuilderMergeTagSourceCollection>().OfType<CountingSource>().Single();
 
         HostOptions.Start(site);
+        var byTheCheck = (source.NameReads, source.IsPerVisitorReads, source.PlacesReads);
         var rendered = await site.GetRequiredService<IFormBuilderMergeTagService>().RenderAsync("[{{ counted.x }}]", MergeTagPlace.Mail, MergeTagContext.Text, MergeTagTestSite.Scope());
 
         Assert.Multiple(() =>
         {
             Assert.That(rendered.Text, Is.EqualTo("[counted]"));
+            Assert.That(byTheCheck, Is.EqualTo((1, 1, 1)), "the start-up check, before any registry is made, read them");
             Assert.That((source.NameReads, source.IsPerVisitorReads, source.PlacesReads), Is.EqualTo((1, 1, 1)), "what the check let start is what the registry runs, read once for both");
         });
     }
 
-    // The problems of a site's sources and filters, as they are read once.
-    private static IReadOnlyList<string> Problems(IFormBuilderMergeTagSource[] sources, IFormBuilderMergeTagFilter[] filters) =>
-        new SiteMergeTagExtensions(new FormBuilderMergeTagSourceCollection(() => sources), new FormBuilderMergeTagFilterCollection(() => filters)).Problems;
+    // A site's sources and filters, as they are read once: those the registry may use, and the problems.
+    private static SiteMergeTagExtensions Read(IFormBuilderMergeTagSource[] sources, IFormBuilderMergeTagFilter[] filters) =>
+        new(new FormBuilderMergeTagSourceCollection(() => sources), new FormBuilderMergeTagFilterCollection(() => filters));
 
     // The services of a site whose composers added merge-tag sources and filters, as the core composer registers them,
     // with the clock, the settings, the field types and the logging every site has.

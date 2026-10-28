@@ -8,9 +8,10 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 
 /// <summary>
 /// Every merge-tag source and filter a site has (ADR-0065): the built-in sources first, then the site's own, each by
-/// name, as <see cref="SiteMergeTagExtensions"/> read them once, so no rendering asks a site's source again. A site's
-/// source or filter whose name is taken, or that fails to say its name or traits, is left out; the start-up check
-/// refuses it, so a running site never has one.
+/// name, as <see cref="SiteMergeTagExtensions"/> read them once, so no rendering asks a site's source for its name or
+/// traits again. A site's source or filter with a problem is left out: one whose name is outside the grammar, a
+/// built-in one's or an earlier one's, one that fails to say its name or traits, and every one of a collection the
+/// container cannot create; the start-up check refuses each, so a running site never has one.
 /// </summary>
 internal sealed class MergeTagRegistry
 {
@@ -67,18 +68,8 @@ internal sealed partial class SiteMergeTagExtensions
         ArgumentNullException.ThrowIfNull(sources);
         ArgumentNullException.ThrowIfNull(filters);
         var problems = new List<string>();
-        IFormBuilderMergeTagSource[] siteSources;
-        IFormBuilderMergeTagFilter[] siteFilters;
-        try
-        {
-            (siteSources, siteFilters) = ([.. sources], [.. filters]);
-        }
-        catch (InvalidOperationException exception)
-        {
-            // A source or filter the container cannot create fails as the collection is read.
-            problems.Add($"Jiron Form Builder cannot create the site's merge-tag sources and filters: {exception.Message}");
-            (siteSources, siteFilters) = ([], []);
-        }
+        var siteSources = Created(sources, "sources", problems);
+        var siteFilters = Created(filters, "filters", problems);
 
         var named = new List<(string? Name, Type Type)>();
         var usable = new List<UsableMergeTagSource>();
@@ -128,15 +119,30 @@ internal sealed partial class SiteMergeTagExtensions
     public IReadOnlyDictionary<string, IFormBuilderMergeTagFilter> Filters { get; }
 
     /// <summary>
-    /// The problems of the site's sources and filters, which stop the site (ADR-0042): one the container cannot create,
-    /// one that fails to say its name or traits, a name outside the grammar, a built-in one's name, or a name two of
-    /// them share; each names the type.
+    /// The problems of the site's sources and filters, which stop the site (ADR-0042): a collection the container cannot
+    /// create one of, with what the container said; and one that fails to say its name or traits, a name outside the
+    /// grammar, a built-in one's name, or a name two of them share, each naming the type.
     /// </summary>
     public IReadOnlyList<string> Problems { get; }
 
     /// <summary>A source's or filter's name, as the grammar reads it (ADR-0014): a lowercase letter, then letters and digits.</summary>
     [GeneratedRegex("^[a-z][A-Za-z0-9]*$", RegexOptions.CultureInvariant)]
     private static partial Regex NamePattern();
+
+    // A collection's items, which the container creates as it is read; none, with the problem, when it cannot create one
+    // of them, so the other collection's items stay usable.
+    private static T[] Created<T>(IEnumerable<T> collection, string kind, List<string> problems)
+    {
+        try
+        {
+            return [.. collection];
+        }
+        catch (InvalidOperationException exception)
+        {
+            problems.Add($"Jiron Form Builder cannot create the site's merge-tag {kind}: {exception.Message}");
+            return [];
+        }
+    }
 
     // A site's source's name and traits; false, with the exception, when the source fails to say them.
     private static bool TryRead(IFormBuilderMergeTagSource source, out string? name, out MergeTagSourceTraits? traits, out Exception? failure)

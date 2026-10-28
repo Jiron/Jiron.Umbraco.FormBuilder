@@ -248,8 +248,9 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   [ADR-0083](decisions/0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md)).
   `Display` writes the texts merge tags show the values as, in the template's culture, with the wire number or date
   behind a text ([ADR-0066](decisions/0066-answers-as-merge-tags.md)); by default by the type's rule kind. An option
-  from a list or another source shows the label its source resolves, read once per scope and only for a tag that
-  shows the field's answers (ADR-0077, ADR-0083).
+  from a list or another source shows the label its source resolves for the parent answers the check holds it to, row
+  by row in a repeatable group, read once per scope for each field and parent answers, for a tag that shows the
+  field's answers or those of a child of it (ADR-0077, ADR-0081, ADR-0083).
   `FieldTypeChanges` works out which types a field may become and what each change keeps and loses (its settings, by
   name, kind and rules; common properties; messages; the operators of rules; the columns of older answers), from the
   declarations and schemas alone ([ADR-0059](decisions/0059-changing-field-types.md)), for the inspector's "Change

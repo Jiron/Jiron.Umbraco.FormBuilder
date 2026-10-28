@@ -51,7 +51,8 @@ internal sealed record PostedSubmission
 
     /// <summary>
     /// The uploads of the form that the posted upload tokens stand for, by token, as the pipeline found them (6.1). Two
-    /// tokens may stand for one upload, which the submission takes once; one an entry holds it takes not at all (ADR-0080).
+    /// tokens may stand for one upload, which the first value naming it takes and a later one is invalid for; an upload
+    /// an entry holds is invalid wherever it is named (ADR-0080).
     /// </summary>
     public IReadOnlyDictionary<string, StoredEntryFile> Uploads { get; init => field = value ?? NoUploads; } = NoUploads;
 }

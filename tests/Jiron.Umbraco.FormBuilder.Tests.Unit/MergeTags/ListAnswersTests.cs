@@ -1,6 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 using static Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags.MergeTagAnswerForms;
 
@@ -11,8 +12,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
 /// <c>entry.answers</c> (ADR-0066, ADR-0077): each chosen value shows the label the source resolves in the entry's
 /// culture, with its dictionary item's text, as a field's own option shows its own; a value the source no longer offers,
 /// and every value of a source that cannot give its options, shows as it is stored. A cascading source resolves for the
-/// parent's answers in every row, and each source is asked once for a rendering; two renderings that read one scope's
-/// labels at once both show the options kept first.
+/// parent's answers the parent offers, a repeatable group's child row by row, and each source is asked once for a
+/// rendering for each field and parent answers; two renderings that read one scope's labels at once both show the
+/// options kept first.
 /// </summary>
 public sealed class ListAnswersTests
 {
@@ -78,7 +80,7 @@ public sealed class ListAnswersTests
     }
 
     [Test]
-    public async Task ACascadingSource_ResolvesForTheParentsAnswersInEveryRow_OnTheScopesPage_OnceForARendering()
+    public async Task ACascadingSource_ResolvesForEachRowsParentAnswer_OnTheScopesPage_OnceForEachInARendering()
     {
         var towns = new TestOptionSource("towns", (request, _) => ValueTask.FromResult<IReadOnlyList<FormBuilderOption>>(
         [
@@ -103,7 +105,7 @@ public sealed class ListAnswersTests
         Assert.Multiple(() =>
         {
             Assert.That(rendered.Text, Is.EqualTo("Zurich, Berlin|Zurich, Berlin|Stops:\n1. Country: Switzerland; Town: Zurich\n2. Country: Germany; Town: Berlin"));
-            Assert.That(towns.Requests.Select(request => (string.Join(",", request.ParentValues), request.Culture, request.Page)), Is.EqualTo(new[] { ("CH,DE", "de-DE", (Guid?)Page) }), "one request for every tag, with every row's answer");
+            Assert.That(towns.Requests.Select(request => (string.Join(",", request.ParentValues), request.Culture, request.Page)), Is.EqualTo(new[] { ("CH", "de-DE", (Guid?)Page), ("DE", "de-DE", (Guid?)Page) }), "one request for each row's answer, for every tag");
         });
     }
 
@@ -173,7 +175,8 @@ public sealed class ListAnswersTests
         });
         var town = Field("dropdown", "town", "Town") with { Options = FromCode("towns") };
         var scope = Scope(Form(town), Answers(Answer(town, "zurich")));
-        var site = MergeTagTestSite.Create(options: Library(towns).Options());
+        // Timers that never fire on their own, so a slow run waits for the source rather than timing it out.
+        var site = MergeTagTestSite.Create(options: Library(towns).Options(new ManualTimers()));
 
         var renderings = new[] { site.RenderAsync("{{ field.town }}", scope), site.RenderAsync("{{ field.town }}", scope) };
         await bothAsked.Task.WaitAsync(TimeSpan.FromSeconds(10));

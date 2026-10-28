@@ -101,21 +101,21 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
     // A field's answer held to its type's limits and read. A value the server resolves is never taken from the post,
     // unless the field is prefilled from the query, whose value only the visitor's page has (ADR-0002); a prefilled value
-    // the field cannot take (too long, or more texts or parts than it takes) counts as none, so its default stands in
-    // (ADR-0080).
+    // the field cannot take (too long, more texts or parts than it takes, or one its type cannot read) counts as none,
+    // so its default stands in, as the visitor can neither see nor change it (ADR-0080).
     private Slot Read(Slot slot, PostedAnswer? posted)
     {
         var serverOnly = slot.Type.Declaration.ServerOnlyDefault;
         var answers = serverOnly && slot.Field.Prefill?.Query is null ? FieldAnswers.None : Clean(posted);
         slot.OverLimit = FieldValues.CheckLimits(slot.Type, slot.Field, answers);
-        if (serverOnly && slot.OverLimit is not null)
+        slot.Read = slot.OverLimit is null ? FieldValues.Read(slot.Type, slot.Field, answers) : Slot.Nothing;
+        if (serverOnly && (slot.OverLimit is not null || slot.Read.IsUnreadable))
         {
             LogPrefillNotTaken(logger, slot.Field.Alias ?? DefinitionLogic.Id(slot.Field.Key));
             slot.OverLimit = null;
-            answers = FieldAnswers.None;
+            slot.Read = FieldValues.Read(slot.Type, slot.Field, FieldAnswers.None);
         }
 
-        slot.Read = slot.OverLimit is null ? FieldValues.Read(slot.Type, slot.Field, answers) : Slot.Nothing;
         return slot;
     }
 
@@ -474,9 +474,10 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         return [.. answers.Where(values.Contains).Distinct(StringComparer.Ordinal)];
     }
 
-    // One shown field's errors: over its type's limits alone; a file token that stands for no upload of the field, or
-    // for one an earlier value named, as invalid; otherwise its type's check, against the options its source resolved,
-    // and its own checks (FieldValues.Check). A calculation's value is the server's.
+    // One shown field's errors: over its type's limits alone; a file token that stands for no upload of the field, for
+    // one an entry holds, or for one an earlier value or another token of the answer named, as invalid; otherwise its
+    // type's check, against the options its source resolved, and its own checks (FieldValues.Check). A calculation's
+    // value is the server's.
     private static void Check(
         ImmutableArray<SubmissionError>.Builder errors,
         Slot slot,

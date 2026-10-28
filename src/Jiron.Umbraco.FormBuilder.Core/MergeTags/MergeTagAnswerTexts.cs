@@ -20,15 +20,18 @@ internal sealed record AnswerField(FormField Field, FormField? Repeater);
 
 /// <summary>
 /// What a tag's answers show besides their values: the dictionary's texts that the form names, and the labels of the
-/// options that lists and other sources resolve for the fields the tag shows (ADR-0077, ADR-0083), by field and then by
-/// value.
+/// options that lists and other sources resolve for the fields the tag shows (ADR-0077, ADR-0083), by field and row, and
+/// then by value.
 /// </summary>
 /// <param name="Dictionary">The dictionary's texts in the scope's culture.</param>
-/// <param name="OptionLabels">For each field the tag shows whose options come from a list or another source, its options' labels by value.</param>
-internal sealed record ScopeTexts(DictionaryTexts Dictionary, IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, string>> OptionLabels)
+/// <param name="OptionLabels">
+/// For each field the tag shows whose options come from a list or another source, its options' labels by value in each
+/// row it has an answer in; row 0 for a field outside repeatable groups.
+/// </param>
+internal sealed record ScopeTexts(DictionaryTexts Dictionary, IReadOnlyDictionary<(Guid Field, int Row), IReadOnlyDictionary<string, string>> OptionLabels)
 {
-    /// <summary>A field's options' labels by value; null for a field whose options are its own, or one the tag does not show.</summary>
-    public IReadOnlyDictionary<string, string>? LabelsOf(Guid field) => OptionLabels.GetValueOrDefault(field);
+    /// <summary>A field's options' labels by value in a row; null for a field whose options are its own, or one the tag does not show.</summary>
+    public IReadOnlyDictionary<string, string>? LabelsOf(Guid field, int row) => OptionLabels.GetValueOrDefault((field, row));
 }
 
 /// <summary>
@@ -116,10 +119,12 @@ internal sealed partial class MergeTagAnswerTexts(
     /// the dictionary items that its form names in the texts its answers show (labels, options' labels, grid rows and the
     /// strings of the fields' settings), not read at all for a form that names none; and the labels of the options that a
     /// list or another source resolves for <paramref name="showing"/>, the fields whose answers a tag shows, each that is
-    /// answered and that the rules did not hide, on the scope's page and for the parent's answers in every row that are
-    /// options the parent offers (ADR-0077, ADR-0081), none for a source that cannot give them or whose parent's options
-    /// are unknown. Each field's options are read once per scope for the parent answers they are asked for, when a tag
-    /// first shows the field (ADR-0083).
+    /// answered and that the rules did not hide, on the scope's page and for the parent's answers that are options the
+    /// parent offers, as a submission's check holds them (ADR-0077, ADR-0081): a repeatable group's child for each row
+    /// it has an answer in, with that row's answer of a parent in the same group, and every row's answer of a parent in
+    /// another; none for a source that cannot give them or whose parent's options are unknown. What a list or source
+    /// resolves, the parent's options among it, is read once per scope for each field and parent answers it is asked for,
+    /// when a tag first needs it (ADR-0083).
     /// </summary>
     /// <param name="scope">What the template renders for.</param>
     /// <param name="showing">The fields whose answers the tag shows; none for a tag that shows a label or a value.</param>
@@ -137,12 +142,13 @@ internal sealed partial class MergeTagAnswerTexts(
             reads = _reads.GetValue(scope, _ => made);
         }
 
-        var labels = new Dictionary<Guid, IReadOnlyDictionary<string, string>>();
-        foreach (var found in showing)
+        var labels = new Dictionary<(Guid Field, int Row), IReadOnlyDictionary<string, string>>();
+        var asked = new HashSet<Guid>();
+        foreach (var found in showing.Where(found => asked.Add(found.Field.Key)))
         {
-            if (!labels.ContainsKey(found.Field.Key) && await OptionLabelsAsync(found, scope, reads, cancellationToken) is { } byValue)
+            foreach (var (row, byValue) in await OptionLabelsAsync(found, scope, reads, cancellationToken))
             {
-                labels[found.Field.Key] = byValue;
+                labels[(found.Field.Key, row)] = byValue;
             }
         }
 
@@ -277,7 +283,7 @@ internal sealed partial class MergeTagAnswerTexts(
         }
 
         var formats = cultures.For(culture);
-        var labels = texts.LabelsOf(field.Key);
+        var labels = texts.LabelsOf(field.Key, answer.Row);
         var display = new FieldDisplay(field, answer.Values, answer.Files, culture, formats, listing, texts.Dictionary, labels);
         try
         {
@@ -428,33 +434,47 @@ internal sealed partial class MergeTagAnswerTexts(
         types.Find(field.Type) is { } traits && (traits.KindOf(field) is FieldKind.Choices or FieldKind.Files || traits.Supports(FieldFeatures.Rows));
 
     /// <summary>
-    /// The labels of the options a list or another source resolves for an answered field the rules did not hide, by
-    /// value; null for a field whose options are its own, and for one whose parent's options are unknown. A value without
-    /// a label shows itself.
+    /// The labels of the options a list or another source resolves for a field the rules did not hide, by value, in each
+    /// row it has an answer in (row 0 outside repeatable groups); none for a field whose options are its own, and none in
+    /// a row where its parent's options are unknown. A repeatable group's child asks for each row as the submission's
+    /// check does, so two rows whose parents differ each show the labels of their own parent's options, even where those
+    /// share a value (ADR-0083). A value without a label shows itself.
     /// </summary>
-    private async Task<IReadOnlyDictionary<string, string>?> OptionLabelsAsync(AnswerField found, MergeTagScope scope, ScopeReads reads, CancellationToken cancellationToken)
+    private async Task<List<(int Row, IReadOnlyDictionary<string, string> Labels)>> OptionLabelsAsync(AnswerField found, MergeTagScope scope, ScopeReads reads, CancellationToken cancellationToken)
     {
         var field = found.Field;
-        if (field.Options is not { Source: not OptionSource.Items } || IsHidden(found, scope) || AnswersOf(scope, field.Key).Count == 0)
+        var labels = new List<(int Row, IReadOnlyDictionary<string, string> Labels)>();
+        if (field.Options is not { Source: not OptionSource.Items } || IsHidden(found, scope))
         {
-            return null;
+            return labels;
         }
 
-        return (await ResolvedAsync(field, scope, reads, [], cancellationToken))?.Labels;
+        IEnumerable<int> rows = found.Repeater is null ? [0] : scope.Answers.Rows([field.Key]);
+        foreach (var row in rows)
+        {
+            InRow? where = found.Repeater is { } repeater ? new InRow(repeater.Key, row) : null;
+            if (AnswersOf(scope, field.Key, row).Count > 0 && await ResolvedAsync(field, scope, reads, [], where, cancellationToken) is { } resolved)
+            {
+                labels.Add((row, resolved.Labels));
+            }
+        }
+
+        return labels;
     }
 
     /// <summary>
     /// A field's options from its list or source, in the scope's culture and on its page, for its parent's answers held
     /// to the options the parent offers, so that no text of the scope's answers that the parent does not offer reaches a
     /// source or becomes a cache key, as a submission's check holds them (ADR-0081); read once per scope for the field
-    /// and those parent answers (ADR-0083). Null when the parent's options are unknown.
+    /// and those parent answers (ADR-0083). Null when the parent's options are unknown. In a repeatable group's row
+    /// (<paramref name="where"/>), a parent in the same group answers in that row.
     /// </summary>
-    private async Task<Resolved?> ResolvedAsync(FormField field, MergeTagScope scope, ScopeReads reads, ImmutableHashSet<Guid> asking, CancellationToken cancellationToken)
+    private async Task<Resolved?> ResolvedAsync(FormField field, MergeTagScope scope, ScopeReads reads, ImmutableHashSet<Guid> asking, InRow? where, CancellationToken cancellationToken)
     {
         IReadOnlyList<string> parentValues = [];
         if (field.Options?.Parent is { } parent)
         {
-            if (await HeldParentAnswersAsync(parent, scope, reads, asking.Add(field.Key), cancellationToken) is not { } held)
+            if (await HeldParentAnswersAsync(parent, scope, reads, asking.Add(field.Key), where, cancellationToken) is not { } held)
             {
                 return null;
             }
@@ -474,21 +494,27 @@ internal sealed partial class MergeTagAnswerTexts(
     }
 
     /// <summary>
-    /// The parent's answers in every row that are options the parent offers, its own or those its list or source
-    /// resolves, in their order; none for a parent the rules hid, one the form lacks or one that a chain of parents leads
-    /// back to; null when the parent's options are unknown.
+    /// The parent's answers that are options the parent offers, its own or those its list or source resolves, in their
+    /// order: in the row of <paramref name="where"/> for a parent in the same repeatable group, otherwise in every row;
+    /// none for a parent the rules hid, by its own rule or its repeatable group's, one the form lacks or one that a chain
+    /// of parents leads back to; null when the parent's options are unknown.
     /// </summary>
-    private async Task<IReadOnlyList<string>?> HeldParentAnswersAsync(Guid parent, MergeTagScope scope, ScopeReads reads, ImmutableHashSet<Guid> asking, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<string>?> HeldParentAnswersAsync(Guid parent, MergeTagScope scope, ScopeReads reads, ImmutableHashSet<Guid> asking, InRow? where, CancellationToken cancellationToken)
     {
-        var answers = scope.Answers.Hidden.Contains(parent) ? [] : AnswersOf(scope, parent);
-        if (answers.Count == 0 || !reads.Fields.TryGetValue(parent, out var parentField) || parentField.Options is not { } parentOptions || asking.Contains(parent))
+        if (!reads.Fields.TryGetValue(parent, out var found) || found.Field.Options is not { } parentOptions || asking.Contains(parent) || IsHidden(found, scope))
+        {
+            return [];
+        }
+
+        var answers = where is { } at && found.Repeater?.Key == at.Repeater ? AnswersOf(scope, parent, at.Row) : AnswersOf(scope, parent);
+        if (answers.Count == 0)
         {
             return [];
         }
 
         var offered = parentOptions.Source == OptionSource.Items
             ? parentOptions.Items.Select(item => item.Value)
-            : (await ResolvedAsync(parentField, scope, reads, asking, cancellationToken))?.Values;
+            : (await ResolvedAsync(found.Field, scope, reads, asking, where, cancellationToken))?.Values;
         if (offered is null)
         {
             return null;
@@ -498,13 +524,20 @@ internal sealed partial class MergeTagAnswerTexts(
         return [.. answers.Where(values.Contains)];
     }
 
-    /// <summary>Every field of the form by its key, a repeatable group's children among them; the first of a key twice.</summary>
-    private static FrozenDictionary<Guid, FormField> FieldsByKey(FormDefinition form)
+    /// <summary>
+    /// Every field of the form by its key with its repeatable group, if any, a group's children among them; the first of
+    /// a key twice.
+    /// </summary>
+    private static FrozenDictionary<Guid, AnswerField> FieldsByKey(FormDefinition form)
     {
-        var fields = new Dictionary<Guid, FormField>();
-        foreach (var field in form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)))
+        var fields = new Dictionary<Guid, AnswerField>();
+        foreach (var field in form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields))
         {
-            fields.TryAdd(field.Key, field);
+            fields.TryAdd(field.Key, new AnswerField(field, null));
+            foreach (var child in field.Fields)
+            {
+                fields.TryAdd(child.Key, new AnswerField(child, field));
+            }
         }
 
         return fields.ToFrozenDictionary();
@@ -516,14 +549,14 @@ internal sealed partial class MergeTagAnswerTexts(
     /// later answer the reader gives the scope (ADR-0083) cannot make stale. Two renderings that read one at once keep
     /// the first.
     /// </summary>
-    private sealed class ScopeReads(DictionaryTexts dictionary, FrozenDictionary<Guid, FormField> fields)
+    private sealed class ScopeReads(DictionaryTexts dictionary, FrozenDictionary<Guid, AnswerField> fields)
     {
         private readonly Lock _lock = new();
         private readonly Dictionary<(Guid Field, string Parents), Resolved> _resolved = [];
 
         public DictionaryTexts Dictionary => dictionary;
 
-        public FrozenDictionary<Guid, FormField> Fields => fields;
+        public FrozenDictionary<Guid, AnswerField> Fields => fields;
 
         public Resolved? Find((Guid Field, string Parents) key)
         {
@@ -562,11 +595,20 @@ internal sealed partial class MergeTagAnswerTexts(
 
     /// <summary>A field's values in every row it has an answer in, each once, in their order.</summary>
     private static List<string> AnswersOf(MergeTagScope scope, Guid field) =>
-        [.. scope.Answers.Rows([field])
-            .Select(row => scope.Answers.Find(field, row))
-            .OfType<MergeTagAnswer>()
-            .SelectMany(answer => answer.Values.Where(value => value.Row is null).Select(value => value.Text))
-            .Distinct(StringComparer.Ordinal)];
+        [.. scope.Answers.Rows([field]).SelectMany(row => ValuesIn(scope, field, row)).Distinct(StringComparer.Ordinal)];
+
+    /// <summary>A field's values in one row (0 outside repeatable groups), each once, in their order.</summary>
+    private static List<string> AnswersOf(MergeTagScope scope, Guid field, int row) =>
+        [.. ValuesIn(scope, field, row).Distinct(StringComparer.Ordinal)];
+
+    // A grid's values, which name their own rows, are not choices a child's options depend on.
+    private static IEnumerable<string> ValuesIn(MergeTagScope scope, Guid field, int row) =>
+        scope.Answers.Find(field, row)?.Values.Where(value => value.Row is null).Select(value => value.Text) ?? [];
+
+    /// <summary>A row of a repeatable group, where its children's options are asked for that row's answers.</summary>
+    /// <param name="Repeater">The repeatable group's key.</param>
+    /// <param name="Row">The row, from 0.</param>
+    private readonly record struct InRow(Guid Repeater, int Row);
 
     /// <summary>The dictionary keys the texts of the form's fields that hold a value name in a culture.</summary>
     private HashSet<string> DictionaryKeys(FormDefinition form, string culture)

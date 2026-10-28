@@ -3,8 +3,9 @@
 - Status: accepted; amends [ADR-0058](0058-field-answers-and-values.md) (a checkbox's longest answer, and part names
   held to a type's longest text), [ADR-0006](0006-file-storage-and-uploads.md) (one token stands for one value of a
   submission) and [ADR-0072](0072-a-submissions-answers.md) (a hidden field's query value that does not fit); the
-  upload taken once by any token, one an entry holds refused, and a query value that fails any of its type's limits
-  added in 5.5i, after the second review
+  upload taken once by any token and one an entry holds refused added in 5.5i, after the second review, which also
+  logs a query value that fails any of its type's limits as one its type cannot take (5.5f already counted it as
+  none); a query value its type cannot read counting as none added in 5.5j, after the third
 - Date: 2026-10-27
 - Roadmap step: 5.5f (decided and built); 6.1 runs the reader in the submission pipeline
 
@@ -49,18 +50,23 @@ answers, which costs the number of options times the number of answers.
   first shown value whose token stands for it, whichever token that is. A later value whose token stands for the same
   upload, by the same token or another, makes its field's answer invalid, as a token of no upload does, and so does a
   token of an upload of another field or one an entry already holds; that field stores nothing. An answer takes its
-  uploads only when all of its values stand, so a value that fails takes nothing from a later field. The stored answers
-  and the errors walk the shown fields in the same order, so the same values fail in both.
+  uploads only when every one of its tokens stands for an upload it may take, so a token that fails takes nothing
+  from a later field, not even the uploads of the answer's other tokens. An answer whose tokens stand but whose type's
+  check then fails (too many files, a type or size it refuses) has still taken them, so a later value naming one is
+  `invalid` too; the submission fails either way. The stored answers and the errors walk the shown fields in the same
+  order, so the same values fail in both.
 - **Part names are cleaned and counted.** The reader cleans each part's name as it cleans texts (ADR-0005), leaves out a
   name that cleans to nothing, and keeps the texts of names that clean to one name under that name, in their order. A
   ranking that names an option twice that way gets two positions for it, which it reads as unreadable (ADR-0069).
   `FieldAnswers.LongestText` counts the names of the parts that have texts, so a ranking's name longer than an option
   value is refused before the type reads it, as any of its answers over the limits is (`invalid`, as a ranking has no
   message of its own for a length). The part names of a name, an address or an email are short words.
-- **A query value that does not fit counts as none.** A hidden field prefilled from the query whose value its type
-  cannot take (longer than it takes, or more texts or parts than it takes) reads as no value, so its default stands in,
-  as it does when the query gives none. The server logs a warning that names the field, never the value, once for each
-  value, so at most once for each row of a repeatable group.
+- **A query value that does not fit counts as none.** A field that keeps its value on the server and is prefilled
+  from the query, whose value its type cannot take (longer than it takes, more texts or parts than it takes, or one it
+  cannot read, which a site's type may refuse), reads as no value, so its default stands in, as it does when the query
+  gives none: the visitor can neither see nor change the field, so no error could tell them anything. The server logs
+  a warning that names the field, never the value, once for each value, so at most once for each row of a repeatable
+  group.
 - **A checkbox takes `false`.** Its longest answer is 5 characters, so `false` reads as unticked, as ADR-0058 says.
 - **The parent filter** holds the parent's answers in a set.
 

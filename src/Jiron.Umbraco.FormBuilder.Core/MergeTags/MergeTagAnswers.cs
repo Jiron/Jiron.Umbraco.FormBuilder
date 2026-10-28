@@ -9,8 +9,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.MergeTags;
 /// child once for each row, and the fields the rules hid, which show nothing. The submission pipeline gives them once
 /// the visitor has submitted; a page shown again with what the visitor typed gives them too. Answers do not change,
 /// with one exception (ADR-0083): while a submission's reader renders its hidden fields' defaults over one scope, it
-/// gives that scope's answers again between two of those renderings, never during one, so a source keeps nothing it
-/// read of a scope's answers past a rendering.
+/// gives that scope's answers again between two of those renderings, never during one. A source keeps nothing it read
+/// of a scope's answers past a rendering; the labels of a scope's options are kept past one only under the parent
+/// answers they were read for, which no change makes stale.
 /// </summary>
 public sealed class MergeTagAnswers
 {

@@ -224,9 +224,10 @@ internal sealed class OutboundHttp(IFormBuilderHttpTransport transport, IOptions
                 body.Write(chunk.AsSpan(0, read));
             }
         }
-        catch (InvalidOperationException exception)
+        catch (InvalidOperationException exception) when (exception is not ObjectDisposedException)
         {
             // A Brotli body that does not decompress fails so; gzip and deflate fail with InvalidDataException (ADR-0081).
+            // A stream disposed while it is read is no answer of the host, so it stays what it is.
             throw new FormBuilderOutboundException(OutboundFailure.AnswerUnreadable, innerException: exception);
         }
         finally
