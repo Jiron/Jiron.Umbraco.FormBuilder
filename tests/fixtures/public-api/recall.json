@@ -1,0 +1,604 @@
+{
+  "about": "The form endpoint's answer for a page and the server's renderings of its visitor texts for these answers (ADR-0085); written by PublicFormRecallTests.",
+  "answer": {
+    "form": {
+      "key": "00000000-0000-4000-8000-000000000001",
+      "settings": {
+        "summaryPage": false,
+        "progress": "steps",
+        "resume": false,
+        "membersOnly": false,
+        "protection": "inherit",
+        "requiredMarker": "inherit",
+        "validationSummary": true,
+        "choiceLayout": "vertical",
+        "queryValues": []
+      },
+      "pages": [
+        {
+          "key": "00000000-0000-4000-8000-000000000002",
+          "rules": [],
+          "groups": [
+            {
+              "key": "00000000-0000-4000-8000-000000000003",
+              "title": "Welcome to {{ site.name }}",
+              "description": "<p>{{ field.fullName }}</p>",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "00000000-0000-4000-8000-000000000004",
+                  "type": "text",
+                  "alias": "fullName",
+                  "span": 1,
+                  "label": "Your name",
+                  "hideLabel": false,
+                  "help": "Asked before {{ field.topic }}",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "counter": false,
+                    "maxLength": 255,
+                    "minLength": 0
+                  }
+                },
+                {
+                  "key": "00000000-0000-4000-8000-000000000005",
+                  "type": "dropdown",
+                  "alias": "topic",
+                  "span": 1,
+                  "label": "Topic",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "sales",
+                        "label": "Sales",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "help",
+                        "label": "Support",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "multiple": false
+                  }
+                },
+                {
+                  "key": "00000000-0000-4000-8000-000000000006",
+                  "type": "number",
+                  "alias": "guests",
+                  "span": 1,
+                  "label": "Guests",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "decimals": 0
+                  }
+                },
+                {
+                  "key": "00000000-0000-4000-8000-000000000007",
+                  "type": "yesno",
+                  "alias": "subscriber",
+                  "span": 1,
+                  "label": "Subscriber",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "style": "buttons"
+                  }
+                },
+                {
+                  "key": "00000000-0000-4000-8000-000000000008",
+                  "type": "text",
+                  "alias": "card",
+                  "span": 1,
+                  "label": "Card",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "counter": false,
+                    "maxLength": 255,
+                    "minLength": 0
+                  }
+                },
+                {
+                  "key": "00000000-0000-4000-8000-000000000009",
+                  "type": "repeater",
+                  "alias": "party",
+                  "span": 1,
+                  "label": "Party",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [
+                    {
+                      "key": "00000000-0000-4000-8000-000000000010",
+                      "type": "text",
+                      "alias": "who",
+                      "span": 1,
+                      "label": "Who",
+                      "hideLabel": false,
+                      "required": false,
+                      "messages": {},
+                      "validation": [],
+                      "rules": [],
+                      "rows": [],
+                      "fields": [],
+                      "settings": {
+                        "counter": false,
+                        "maxLength": 255,
+                        "minLength": 0
+                      }
+                    }
+                  ],
+                  "settings": {
+                    "maxRows": 10,
+                    "minRows": 0
+                  }
+                },
+                {
+                  "key": "00000000-0000-4000-8000-000000000011",
+                  "type": "heading",
+                  "span": 1,
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "level": 2,
+                    "text": "{{ field.fullName }} from {{ site.name }} on {{ page.name }}: {{ field.topic }}, {{ field.guests }} guests, subscriber {{ field.subscriber }}, card {{ field.card }}, with {{ field.party.who }}; later {{ field.notes | upper }}"
+                  }
+                },
+                {
+                  "key": "00000000-0000-4000-8000-000000000012",
+                  "type": "paragraph",
+                  "span": 1,
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "html": "<p>Hello {{ field.fullName | upper }}, this is <b>{{ form.name }}</b>.</p>"
+                  }
+                },
+                {
+                  "key": "00000000-0000-4000-8000-000000000013",
+                  "type": "textarea",
+                  "alias": "notes",
+                  "span": 1,
+                  "label": "Anything else, {{ field.fullName }}?",
+                  "hideLabel": false,
+                  "placeholder": "{{ member.name }} writes here",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "autoGrow": true,
+                    "counter": false,
+                    "maxLength": 4000,
+                    "minLength": 0,
+                    "rows": 4
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    },
+    "mergeTags": {
+      "texts": [
+        {
+          "owner": "00000000-0000-4000-8000-000000000003",
+          "text": "title",
+          "context": "text"
+        },
+        {
+          "owner": "00000000-0000-4000-8000-000000000011",
+          "text": "settings.text",
+          "context": "text"
+        },
+        {
+          "owner": "00000000-0000-4000-8000-000000000012",
+          "text": "settings.html",
+          "context": "html"
+        },
+        {
+          "owner": "00000000-0000-4000-8000-000000000013",
+          "text": "label",
+          "context": "text"
+        }
+      ],
+      "values": {
+        "html": {
+          "form.name": "Contact us"
+        },
+        "text": {
+          "site.name": "Shop",
+          "page.name": "Contact"
+        }
+      },
+      "recall": {
+        "pages": [
+          {
+            "id": "00000000-0000-4000-8000-000000000002",
+            "groups": [
+              {
+                "id": "00000000-0000-4000-8000-000000000003",
+                "fields": [
+                  {
+                    "id": "00000000-0000-4000-8000-000000000004",
+                    "type": "text",
+                    "holdsValue": true,
+                    "builtIn": true,
+                    "kind": "text",
+                    "alias": "fullName",
+                    "label": "Your name",
+                    "settings": {
+                      "counter": false,
+                      "maxLength": 255,
+                      "minLength": 0
+                    }
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-000000000005",
+                    "type": "dropdown",
+                    "holdsValue": true,
+                    "builtIn": true,
+                    "kind": "choice",
+                    "alias": "topic",
+                    "label": "Topic",
+                    "settings": {
+                      "multiple": false
+                    },
+                    "options": [
+                      {
+                        "value": "sales",
+                        "label": "Sales"
+                      },
+                      {
+                        "value": "help",
+                        "label": "Support"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-000000000006",
+                    "type": "number",
+                    "holdsValue": true,
+                    "builtIn": true,
+                    "kind": "number",
+                    "alias": "guests",
+                    "label": "Guests",
+                    "settings": {
+                      "decimals": 0
+                    }
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-000000000007",
+                    "type": "yesno",
+                    "holdsValue": true,
+                    "builtIn": true,
+                    "kind": "choice",
+                    "alias": "subscriber",
+                    "label": "Subscriber",
+                    "settings": {
+                      "style": "buttons"
+                    }
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-000000000008",
+                    "type": "text",
+                    "holdsValue": true,
+                    "builtIn": true,
+                    "kind": "text",
+                    "alias": "card",
+                    "label": "Card",
+                    "recall": "masked",
+                    "settings": {
+                      "counter": false,
+                      "maxLength": 255,
+                      "minLength": 0
+                    }
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-000000000009",
+                    "type": "repeater",
+                    "holdsValue": true,
+                    "builtIn": true,
+                    "kind": null,
+                    "alias": "party",
+                    "label": "Party",
+                    "settings": {
+                      "maxRows": 10,
+                      "minRows": 0
+                    },
+                    "fields": [
+                      {
+                        "id": "00000000-0000-4000-8000-000000000010",
+                        "type": "text",
+                        "holdsValue": true,
+                        "builtIn": true,
+                        "kind": "text",
+                        "alias": "who",
+                        "label": "Who",
+                        "settings": {
+                          "counter": false,
+                          "maxLength": 255,
+                          "minLength": 0
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-000000000011",
+                    "type": "heading",
+                    "holdsValue": false
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-000000000012",
+                    "type": "paragraph",
+                    "holdsValue": false
+                  },
+                  {
+                    "id": "00000000-0000-4000-8000-000000000013",
+                    "type": "textarea",
+                    "holdsValue": true,
+                    "builtIn": true,
+                    "kind": "text",
+                    "alias": "notes",
+                    "label": "Anything else, {{ field.fullName }}?",
+                    "settings": {
+                      "autoGrow": true,
+                      "counter": false,
+                      "maxLength": 4000,
+                      "minLength": 0,
+                      "rows": 4
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "words": {
+        "yes": "Yes",
+        "no": "No"
+      },
+      "culture": {
+        "dates": {
+          "short": "M\\/d\\/yyyy",
+          "medium": "MMM d, yyyy",
+          "long": "dddd, MMMM d, yyyy",
+          "time": "h\\:mm tt",
+          "dateTime": "M\\/d\\/yyyy h\\:mm tt"
+        },
+        "months": [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December"
+        ],
+        "monthsShort": [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec"
+        ],
+        "monthsGenitive": [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December"
+        ],
+        "monthsShortGenitive": [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec"
+        ],
+        "days": [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday"
+        ],
+        "daysShort": [
+          "Sun",
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "Sat"
+        ],
+        "am": "AM",
+        "pm": "PM",
+        "minus": "-",
+        "number": {
+          "decimal": ".",
+          "group": ",",
+          "sizes": [
+            3
+          ],
+          "negative": "-n"
+        },
+        "currency": {
+          "code": "USD",
+          "symbol": "$",
+          "decimal": ".",
+          "group": ",",
+          "sizes": [
+            3
+          ],
+          "positive": "$n",
+          "negative": "-$n"
+        }
+      }
+    }
+  },
+  "answers": {
+    "fields": {
+      "00000000-0000-4000-8000-000000000004": {
+        "values": [
+          {
+            "text": "Anna"
+          }
+        ]
+      },
+      "00000000-0000-4000-8000-000000000005": {
+        "values": [
+          {
+            "text": "help"
+          }
+        ]
+      },
+      "00000000-0000-4000-8000-000000000006": {
+        "values": [
+          {
+            "text": "1234.5"
+          }
+        ]
+      },
+      "00000000-0000-4000-8000-000000000007": {
+        "values": [
+          {
+            "text": "yes"
+          }
+        ]
+      },
+      "00000000-0000-4000-8000-000000000008": {
+        "values": [
+          {
+            "text": "4111"
+          }
+        ]
+      }
+    },
+    "rows": {
+      "00000000-0000-4000-8000-000000000009": [
+        {
+          "00000000-0000-4000-8000-000000000010": {
+            "values": [
+              {
+                "text": "Ben"
+              }
+            ]
+          }
+        },
+        {
+          "00000000-0000-4000-8000-000000000010": {
+            "values": [
+              {
+                "text": "Cleo"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "hidden": [],
+  "rendered": [
+    {
+      "owner": "00000000-0000-4000-8000-000000000003",
+      "text": "title",
+      "server": "Welcome to Shop"
+    },
+    {
+      "owner": "00000000-0000-4000-8000-000000000011",
+      "text": "settings.text",
+      "server": "Anna from Shop on Contact: Support, 1,234.5 guests, subscriber Yes, card •••, with Ben, Cleo; later {{ field.notes | upper }}"
+    },
+    {
+      "owner": "00000000-0000-4000-8000-000000000012",
+      "text": "settings.html",
+      "server": "<p>Hello ANNA, this is <b>Contact us</b>.</p>"
+    },
+    {
+      "owner": "00000000-0000-4000-8000-000000000013",
+      "text": "label",
+      "server": "Anything else, Anna?"
+    }
+  ]
+}
