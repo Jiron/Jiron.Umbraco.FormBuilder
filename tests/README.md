@@ -38,8 +38,8 @@ npx playwright test --project=smoke
 
 | Project | What it holds |
 | --- | --- |
-| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the field types (`FieldTypes/`, below), the merge-tag service (`MergeTags/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the management API's policies, access filter and answers (`ManagementApi/`, below), the public API's middleware and filter (`PublicApi/`, below), and the Testing project's own tests. |
-| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test (each service of Core resolved, one per site, and each notification handler registered), the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), a site's own field types (`FieldTypes/`, below) and merge-tag sources (`MergeTags/`, below), the form services and the change pipeline they share (`Forms/`, below), the access service with the authorization policies (`Access/`, below), the management API (`ManagementApi/`, below) and the public API (`PublicApi/`, below). |
+| `Jiron.Umbraco.FormBuilder.Tests.Unit` | NUnit 3 and NSubstitute, no Umbraco host: the architecture tests (Core knows nothing about HTTP), the vector runner and the tables check for Core's shared logic (`Logic/`), the definition model and its JSON (`Definitions/`, below), the field types (`FieldTypes/`, below), the merge-tag service (`MergeTags/`, below), the host configuration with its start-up checks and IntelliSense schema (`Configuration/`, below), the backoffice settings (`Settings/`, below), the form service's parts (`Forms/`, below), the permission model (`Access/`, below), the management API's policies, access filter and answers (`ManagementApi/`, below), the public API's middleware and filter (`PublicApi/`, below), the website assets and `<jfb-assets>` (`Rendering/`, below), and the Testing project's own tests. |
+| `Jiron.Umbraco.FormBuilder.Tests.Integration` | A real Umbraco (`Umbraco.Cms.Tests.Integration` 17.x) with Jiron Form Builder's composers: the boot test (each service of Core resolved, one per site, and each notification handler registered), the people factories against real services, the test-only endpoints on a real site, the schema and its migrations, the repositories (`Persistence/`, below), the settings service (`Settings/`, below), a site's own field types (`FieldTypes/`, below) and merge-tag sources (`MergeTags/`, below), the form services and the change pipeline they share (`Forms/`, below), the access service with the authorization policies (`Access/`, below), the management API (`ManagementApi/`, below), the public API (`PublicApi/`, below) and the website assets (`Rendering/`, below). |
 | `Jiron.Umbraco.FormBuilder.Testing` | Test-only code for the tests and the test hosts, never packed. |
 | `vectors/` | The shared vectors that Core and `packages/logic` both run (below). |
 | `e2e/` | The browser tests: Playwright against a fresh demo host on 5520 ([e2e/README.md](e2e/README.md), [ADR-0031](../docs/decisions/0031-browser-harness.md)). |
@@ -822,6 +822,27 @@ wording with its hash (none for one that renders as nothing), and `mergeTags` nu
 values, recall form, words and formats when one does; and
 `Settings/SiteTimeZonesTests` the zone per site with the warning at most once an hour per site and zone, within its
 bound.
+
+## The rendering tests
+
+`Tests.Unit/Rendering/` covers the website assets without a host, over files of the test's own
+([ADR-0092](../docs/decisions/0092-serving-the-website-assets.md)):
+
+| Fixture | Holds |
+| --- | --- |
+| `WebsiteAssetsTests` | The catalogue: only the originals are names, each with its Brotli and gzip copies (a name ending in `.br` without its original is an original); no other spelling finds one (case, `%2F`, dot segments, doubled or back slashes, a leading or trailing slash); the media type by the extension as written; the fingerprint of the original, not of a copy; a name in a `chunks/` or `assets/` folder named by its content, a file named like those folders not; the copy for each `Accept-Encoding` (Brotli, then gzip, then the original; a quality of zero refuses, `*` stands for the codings not named, codings in any case) with its own entity tag, never a copy the build did not make; the address below the path base with `?v=`, and a missing asset's message saying to build the client. |
+| `WebsiteAssetsMiddlewareTests` | The middleware: a request outside `/jfb/assets/` passes untouched; an unknown name, a copy's name, another spelling or a traversing path answers `404` with no body and `nosniff`, and is not passed on; the base path in any casing; another method `405` with `Allow: GET, HEAD`; each copy with its type, length, coding, `Vary`, entity tag, `nosniff`, CORS for any origin without credentials and `Cross-Origin-Resource-Policy`; `HEAD` without the body; a year's caching only under exactly one current fingerprint or for a name of content; `If-None-Match` with the copy's tag, its weak form, one of a list or `*` answering `304` without the body's headers. |
+| `FormBuilderAssetsTagHelperTests` | `<jfb-assets>` run as Razor runs it: the module script under the fingerprint and the path base without the element itself, written once per request however often it is named (each request its own), never its children, the nonce of the attribute before the provider's, the provider's for this request without one, none when both are empty, and the nonce written as an attribute value. |
+| `FormBuilderRenderingServicesTests` | The registrations made twice add each service once, as singletons, and one pipeline filter before Umbraco's routing. |
+
+`Tests.Integration/Rendering/WebsiteAssetTests` serves the assets on a real site whose migration plan has not run:
+every file the client build wrote under `src/Jiron.Umbraco.FormBuilder.Web/WebsiteAssets/` is in the assembly with
+both copies, each copy decompresses to its original, each fingerprint is its original's, and each copy goes out with
+the same bytes and every header, cached for a year under `?v=` and revalidated without it; an unknown, differently
+cased, copy's or `%2F` name answers `404` without a page, as does a traversing path handed to the server as it is;
+the base path in another casing serves the same file; `<jfb-assets>` with the site's services writes the address
+that is served, once per request, with the nonce of the site's provider or none; and the composer adds the
+middleware once.
 
 ## Writing tests
 
