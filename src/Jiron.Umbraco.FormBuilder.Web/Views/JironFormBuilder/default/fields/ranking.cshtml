@@ -1,0 +1,35 @@
+@* jfb-view: fields/ranking 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@*
+    The options in order, each ranked one posting its position. The move buttons are submit buttons, so a page without
+    JavaScript moves an option by rendering the page again; one at an end is aria-disabled and stays in the tab order.
+*@
+@{
+    var control = (RankingControlModel)Model.Control!;
+    void Move(RankingMoveModel move, string icon)
+    {
+        <button type="submit" class="jfb-button jfb-button-icon" id="@move.Id" name="jfb-nav" value="@move.Value" aria-disabled="@(move.IsDisabled ? "true" : null)" disabled="@Model.IsDisabled"><span class="jfb-icon @icon" aria-hidden="true"></span><span class="jfb-visually-hidden">@move.Label</span></button>
+    }
+}
+@if (control.Empty is { } empty)
+{
+    <p class="jfb-help" id="@Model.Id">@empty</p>
+}
+else
+{
+    <ol class="jfb-ranking">
+        @foreach (var item in control.Items)
+        {
+            <li>
+                <span>@item.Position</span>
+                <span>@item.Label</span>
+                @if (item.Input is { } input)
+                {
+                    <input type="hidden" name="@input.Name" value="@input.Value" disabled="@Model.IsDisabled">
+                }
+                @{ Move(item.Up, "jfb-icon-up"); Move(item.Down, "jfb-icon-down"); }
+            </li>
+        }
+    </ol>
+}

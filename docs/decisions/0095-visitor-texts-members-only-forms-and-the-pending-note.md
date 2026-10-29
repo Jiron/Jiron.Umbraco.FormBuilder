@@ -7,7 +7,7 @@
   [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) (the visitor's form carries the site's
   style and labels) and [ADR-0033](0033-schema-v1.md) (how a website page knows a backoffice user)
 - Date: 2026-10-29
-- Roadmap step: 6.2c (decided and built); 6.2e fills the post's answers and rows, 6.2g keeps the renders that are per
+- Roadmap step: 6.2c (decided and built); 6.2f fills the post's answers and rows, 6.2h keeps the renders that are per
   visitor out of the output cache, 7.1 adds the member-bound challenge, 12.4a the settings screens, 14.3 the members'
   submissions
 
@@ -47,7 +47,7 @@
 1. **Render the form for everyone** and let the submission refuse it. A visitor fills in a form only to learn at the end
    that it is not theirs.
 2. **Ask who is signed in when the page renders,** and show a notice in the form's place to a visitor it does not admit.
-   The render is then per visitor. Chosen; 6.2g keeps such a render out of the output cache.
+   The render is then per visitor. Chosen; 6.2h keeps such a render out of the output cache.
 
 **How a website page knows a backoffice user:**
 
@@ -65,11 +65,11 @@
   progress's step names included. The place takes the field, form, page, site, date and dictionary sources, never the
   member or the query, so a first render stays the same for every visitor.
 - **The answers a text recalls** are the page's: on a first render the default values without tags (ADR-0093), after a
-  post the posted answers (6.2e's state). Each is read by its field's type as both runtimes read it (ADR-0058). An
+  post the posted answers (6.2f's state). Each is read by its field's type as both runtimes read it (ADR-0058). An
   answer past what its field's type takes (more texts, or longer ones, than the type accepts) or one its type cannot
   read, a field whose value stays on the server and a field the rules hide recall nothing (ADR-0068). A field's own
-  checks, such as its longest answer, are the submission's: an answer that fails them still recalls, as in the browser. A repeatable group's rows and a calculation's value join with 6.2e's post state
-  and the calculations.
+  checks, such as its longest answer, are the submission's: an answer that fails them still recalls, as in the
+  browser. A repeatable group's rows and a calculation's value join with 6.2f's post state and the calculations.
 - **The site's style and labels** (`general`, per site, ADR-0043):
   - `requiredMarker`: `optional` (the default), `required` or `none`. `inherit` cannot be saved: it is how a form takes
     the site's style.
@@ -92,7 +92,7 @@
     help.
   - Until 14.3 builds members' submissions, the entries endpoint still refuses a submission to a members-only form
     (`member_required`). The page only stops showing a form its visitor cannot send.
-  - Who is signed in decides what the page shows, so the render is per visitor and 6.2g sends it `no-store`. The first
+  - Who is signed in decides what the page shows, so the render is per visitor and 6.2h sends it `no-store`. The first
     render's rules still run without the member (ADR-0093); member values reach the runtime through the challenge
     (7.1).
 - **While the migrations are pending** a form renders nothing for a visitor, and the rest of the page renders as usual
@@ -115,7 +115,7 @@
 - A label that recalls an answer reads the same with and without JavaScript, from one service.
 - A headless page gets the site's style and labels in the endpoint's answer and needs no settings of its own.
 - A page with a members-only form, and any page with a form while the migrations are pending, renders per visitor;
-  6.2g's cache rules cover both, and its check shows neither stored (ROADMAP 6.2g, strengthened in this step).
+  6.2h's cache rules cover both, and its check shows neither stored (ROADMAP 6.2h, strengthened in this step).
 - The settings screens of 12.4a show the four new fields; until then the settings service sets them.
 - **Revisit if** sites need a sign-in link in the members' notice (a setting that names the login page); Umbraco offers
   a supported way to know the backoffice user on a website page; or a date in a visitor text proves stale on cached

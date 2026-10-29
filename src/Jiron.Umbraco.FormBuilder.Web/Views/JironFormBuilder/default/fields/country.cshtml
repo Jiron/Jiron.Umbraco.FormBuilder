@@ -1,0 +1,16 @@
+@* jfb-view: fields/country 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@* The countries named in the page's language: the ones the field shows first, then the others in that language's order. *@
+@{
+    var control = (SelectControlModel)Model.Control!;
+}
+<div class="jfb-select">
+    <select class="jfb-control" id="@Model.Id" name="@Model.Name" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+        <option value="">@control.Prompt</option>
+        @foreach (var option in control.Options)
+        {
+            <option value="@option.Value" selected="@option.IsSelected">@option.Label</option>
+        }
+    </select>
+</div>

@@ -1,0 +1,42 @@
+@* jfb-view: fields/radio 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@{
+    var control = (ChoicesControlModel)Model.Control!;
+    void Choice(ChoiceModel choice)
+    {
+        <div class="jfb-choice">
+            @if (choice.Image is { } image)
+            {
+                <img src="@image.Url" alt="" width="@image.Width" height="@image.Height">
+            }
+            <input type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-describedby="@(choice.Description is null ? null : choice.DescriptionId)">
+            <label for="@choice.Id">@choice.Label</label>
+            @if (choice.Description is not null)
+            {
+                <p class="jfb-help" id="@choice.DescriptionId">@choice.Description</p>
+            }
+        </div>
+    }
+}
+@if (control.Empty is { } empty)
+{
+    <p class="jfb-help" id="@Model.Id">@empty</p>
+}
+else
+{
+    <div class="@control.CssClass">
+        @foreach (var choice in control.Choices)
+        {
+            Choice(choice);
+        }
+        @if (control.Other is { } other)
+        {
+            Choice(other.Choice);
+            <div class="jfb-other">
+                <label class="jfb-visually-hidden" for="@other.TextId">@other.TextLabel</label>
+                <input class="jfb-control" id="@other.TextId" name="@other.TextName" value="@(other.Text.Length == 0 ? null : other.Text)" disabled="@Model.IsDisabled">
+            </div>
+        }
+    </div>
+}

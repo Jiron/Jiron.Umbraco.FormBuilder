@@ -1,0 +1,30 @@
+@* jfb-view: fields/rating 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@* The symbols show; each label's number is for screen readers, with the word at its end when the rating has one. *@
+@{
+    var control = (ChoicesControlModel)Model.Control!;
+    void Choices()
+    {
+        <div class="@control.CssClass">
+            @foreach (var choice in control.Choices)
+            {
+                <div class="jfb-choice">
+                    <input type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" disabled="@Model.IsDisabled">
+                    <label for="@choice.Id"><span class="jfb-visually-hidden">@choice.Label@choice.HiddenText</span></label>
+                </div>
+            }
+        </div>
+    }
+}
+@if (control.Ends is { } ends)
+{
+    <div class="jfb-scale">
+        @{ Choices(); }
+        <div class="jfb-ends" aria-hidden="true"><span>@ends.Low</span><span>@ends.High</span></div>
+    </div>
+}
+else
+{
+    Choices();
+}

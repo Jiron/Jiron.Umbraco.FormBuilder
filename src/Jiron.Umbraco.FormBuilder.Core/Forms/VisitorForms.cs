@@ -21,7 +21,8 @@ internal sealed record VisitorAnswer(byte[] Form, byte[] MergeTags, byte[] Conse
 /// <param name="Form">The projection with each text as the culture shows it, a consent's text as the wording it shows.</param>
 /// <param name="Answer">Its parts as the form endpoint writes them.</param>
 /// <param name="Tagged">The visitor texts that hold tags, in the form's order, which the page renders with its answers (ADR-0095).</param>
-internal sealed record VisitorPage(PublicForm Form, VisitorAnswer Answer, IReadOnlyList<VisitorText> Tagged);
+/// <param name="Consents">Each consent field's wording hash by the field's key, as <see cref="VisitorAnswer.Consents"/> writes them (ADR-0096).</param>
+internal sealed record VisitorPage(PublicForm Form, VisitorAnswer Answer, IReadOnlyList<VisitorText> Tagged, IReadOnlyDictionary<Guid, string> Consents);
 
 /// <summary>
 /// A published form as a visitor's page gets it in one culture (ADR-0084, ADR-0085): the site's required-marker style
@@ -83,7 +84,7 @@ internal sealed class VisitorForms(
         var items = keys.Count == 0 ? DictionaryTexts.None : await dictionary.TextsAsync(keys, culture);
         var (shown, hashes) = await WithWordingsAsync(VisitorForm.Map(site, text => Show(text, culture, items), types), scope, cancellationToken);
         var (tags, tagged) = await MergeTagsAsync(shown, scope, cancellationToken);
-        return new VisitorPage(shown, new VisitorAnswer(VisitorForm.Write(shown), tags, Consents(hashes)), tagged);
+        return new VisitorPage(shown, new VisitorAnswer(VisitorForm.Write(shown), tags, Consents(hashes)), tagged, hashes.ToDictionary(pair => pair.Field, pair => pair.Hash));
     }
 
     // The site's style for a form whose marker is inherit, and the site's label for each button the form labels not

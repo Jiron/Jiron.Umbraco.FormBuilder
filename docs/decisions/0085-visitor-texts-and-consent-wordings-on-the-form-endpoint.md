@@ -6,7 +6,8 @@
   (the consent wording is sanitised before it is hashed and stored); extends
   [ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md) (the form endpoint's answer); the same texts
   rendered on the server, and the site's required-marker style and labels in the visitor's form, added by
-  [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md) in 6.2c
+  [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md) in 6.2c; the consents' hashes handed to
+  the page, for its consents' hidden inputs, by [ADR-0096](0096-the-choice-controls.md) in 6.2d
 - Date: 2026-10-28
 - Roadmap step: 6.1b (decided and built); 6.1c's `options` endpoint gives a cascading field's options, 6.2 renders
   the same texts on the server, 6.4 renders them in the browser as the visitor types, 6.1e compares a posted

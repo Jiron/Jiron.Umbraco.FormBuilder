@@ -2,32 +2,56 @@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
 @using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@using Microsoft.AspNetCore.Html
 @{
     var labelClass = Model.HideLabel ? "jfb-label jfb-visually-hidden" : "jfb-label";
-}
-<div class="@Model.CssClass" data-jfb-field="@Model.Key" @FormBuilderHtml.Attribute("data-jfb-alias", Model.Alias) data-jfb-type="@Model.Type" hidden="@Model.IsHidden" @FormBuilderHtml.Flag("data-jfb-hidden", Model.IsHidden)>
-    @if (Model.LabelElement == FieldLabelElement.Label)
+    IHtmlContent? mark = Model.Mark switch
     {
-        switch (Model.Mark)
+        FieldMark.Optional => new HtmlContentBuilder().AppendHtml(" <span class=\"jfb-mark\">").Append(Model.MarkText).AppendHtml("</span>"),
+        FieldMark.Required => new HtmlContentBuilder().AppendHtml(" <span class=\"jfb-mark\" aria-hidden=\"true\">").Append(Model.MarkText).AppendHtml("</span>"),
+        _ => null,
+    };
+    void Help()
+    {
+        if (Model.Help is not null)
         {
-            case FieldMark.Optional:
-                <label class="@labelClass" for="@Model.Id">@Model.Label <span class="jfb-mark">@Model.MarkText</span></label>
-                break;
-            case FieldMark.Required:
-                <label class="@labelClass" for="@Model.Id">@Model.Label <span class="jfb-mark" aria-hidden="true">@Model.MarkText</span></label>
-                break;
-            default:
-                <label class="@labelClass" for="@Model.Id">@Model.Label</label>
-                break;
+            <p class="jfb-help" id="@Model.HelpId">@Model.Help</p>
         }
     }
-    @if (Model.Help is not null)
+    void Error()
     {
-        <p class="jfb-help" id="@Model.HelpId">@Model.Help</p>
+        if (Model.Error is not null)
+        {
+            <p class="jfb-error" id="@Model.ErrorId" data-jfb-error>@Model.Error</p>
+        }
     }
-    @await Html.PartialAsync(Model.ControlView, Model)
-    @if (Model.Error is not null)
+}
+<div class="@Model.CssClass" data-jfb-field="@Model.Key" @FormBuilderHtml.Attribute("data-jfb-alias", Model.Alias) data-jfb-type="@Model.Type" hidden="@Model.IsHidden" @FormBuilderHtml.Flag("data-jfb-hidden", Model.IsHidden)>
+    @switch (Model.LabelElement)
     {
-        <p class="jfb-error" id="@Model.ErrorId" data-jfb-error>@Model.Error</p>
+        case FieldLabelElement.Legend:
+            @* A group of choices: the fieldset carries the description and the error state. *@
+            <fieldset aria-describedby="@Model.DescribedBy" aria-invalid="@(Model.Error is null ? null : "true")">
+                <legend class="@labelClass">@Model.Label@mark</legend>
+                @{ Help(); }
+                @await Html.PartialAsync(Model.ControlView, Model)
+                @{ Error(); }
+            </fieldset>
+            break;
+        case FieldLabelElement.Choice:
+            @* One box with its own label: the help follows the choice. *@
+            @await Html.PartialAsync(Model.ControlView, Model)
+            Help();
+            Error();
+            break;
+        default:
+            if (Model.LabelElement == FieldLabelElement.Label)
+            {
+                <label class="@labelClass" for="@Model.Id">@Model.Label@mark</label>
+            }
+            Help();
+            @await Html.PartialAsync(Model.ControlView, Model)
+            Error();
+            break;
     }
 </div>

@@ -118,6 +118,8 @@ public sealed class RenderingPartsTests
             {
                 words.Back, words.Next, words.Send, words.Optional, words.Asterisk, words.ErrorSummary, words.Progress,
                 words.ConfirmEmail, words.OpensText, words.ClosedHeading, words.ClosedText, words.FullHeading, words.FullText,
+                words.Other, words.OtherText, words.Choose, words.ChooseCountry, words.SeveralHint, words.NoChoices,
+                words.ChoicesUnavailable,
             };
             Assert.Multiple(() =>
             {
@@ -128,6 +130,9 @@ public sealed class RenderingPartsTests
                 Assert.That(Format(words.Counter, 40), Does.Contain("40"), culture);
                 Assert.That(Format(words.Reference, "REQ-1"), Does.Contain("REQ-1"), culture);
                 Assert.That(Format(words.OpensHeading, "1 May"), Does.Contain("1 May"), culture);
+                Assert.That(Format(words.MoveUp, "Seats"), Does.Contain("Seats"), culture);
+                Assert.That(Format(words.MoveDown, "Seats"), Does.Contain("Seats").And.Not.EqualTo(Format(words.MoveUp, "Seats")), culture);
+                Assert.That(Format(words.Row, 2), Does.Contain("2"), culture);
             });
         }
     }
@@ -142,6 +147,8 @@ public sealed class RenderingPartsTests
             Assert.That(words.Back, Is.EqualTo("Zur" + (char)0xFC + "ck"));
             Assert.That(words.ErrorSummary, Is.EqualTo("Diese Antworten brauchen eine " + (char)0xC4 + "nderung"));
             Assert.That(words.OpensHeading, Is.EqualTo("Dieses Formular " + (char)0xF6 + "ffnet am {0}"));
+            Assert.That(words.Choose, Is.EqualTo("Bitte w" + (char)0xE4 + "hlen"));
+            Assert.That(words.SeveralHint, Does.Contain("gedr" + (char)0xFC + "ckt"));
         });
     }
 

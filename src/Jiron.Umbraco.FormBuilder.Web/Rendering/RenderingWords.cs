@@ -10,6 +10,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 internal sealed record RenderingWords
 {
     // The letters outside ASCII the German words need.
+    private const char AUmlaut = (char)0xE4;
     private const char CapitalAUmlaut = (char)0xC4;
     private const char OUmlaut = (char)0xF6;
     private const char UUmlaut = (char)0xFC;
@@ -43,6 +44,16 @@ internal sealed record RenderingWords
             GroupsText = "It is for members of certain groups.",
             PendingHeading = "This form waits for an update",
             PendingText = "Visitors see nothing here until Jiron Form Builder's database update has run. Only signed-in backoffice users see this note.",
+            Other = "Other",
+            OtherText = "Your own answer",
+            Choose = "Choose one",
+            ChooseCountry = "Choose a country",
+            SeveralHint = "To choose more than one, hold Ctrl (Cmd on a Mac) while you click.",
+            NoChoices = "There is nothing to choose from yet.",
+            ChoicesUnavailable = "The choices could not be loaded. Please try again later.",
+            MoveUp = "Move {0} up",
+            MoveDown = "Move {0} down",
+            Row = "Row {0}",
         },
         ["de"] = new RenderingWords
         {
@@ -71,6 +82,16 @@ internal sealed record RenderingWords
             GroupsText = "Es ist nur f" + UUmlaut + "r Mitglieder bestimmter Gruppen.",
             PendingHeading = "Dieses Formular wartet auf ein Update",
             PendingText = "Besucher sehen hier nichts, bis das Datenbank-Update von Jiron Form Builder gelaufen ist. Diesen Hinweis sehen nur angemeldete Backoffice-Benutzer.",
+            Other = "Sonstiges",
+            OtherText = "Ihre eigene Antwort",
+            Choose = "Bitte w" + AUmlaut + "hlen",
+            ChooseCountry = "Land w" + AUmlaut + "hlen",
+            SeveralHint = "Um mehr als eine Antwort zu w" + AUmlaut + "hlen, halten Sie beim Klicken Strg gedr" + UUmlaut + "ckt (am Mac Cmd).",
+            NoChoices = "Hier gibt es noch nichts zur Auswahl.",
+            ChoicesUnavailable = "Die Auswahl konnte nicht geladen werden. Bitte versuchen Sie es sp" + AUmlaut + "ter noch einmal.",
+            MoveUp = "{0} nach oben verschieben",
+            MoveDown = "{0} nach unten verschieben",
+            Row = "Zeile {0}",
         },
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
@@ -151,6 +172,36 @@ internal sealed record RenderingWords
 
     /// <summary>The text of the note a signed-in backoffice user sees in a form's place while the migrations are pending.</summary>
     public required string PendingText { get; init; }
+
+    /// <summary>The label of the "Other" choice of a field that does not label it.</summary>
+    public required string Other { get; init; }
+
+    /// <summary>The label, for screen readers, of the input that takes the text of the "Other" choice.</summary>
+    public required string OtherText { get; init; }
+
+    /// <summary>The first line of a dropdown that does not say its own.</summary>
+    public required string Choose { get; init; }
+
+    /// <summary>The first line of a country's dropdown.</summary>
+    public required string ChooseCountry { get; init; }
+
+    /// <summary>The line below a list box that says how to choose several options.</summary>
+    public required string SeveralHint { get; init; }
+
+    /// <summary>What a field with options shows while it has none to offer, such as a list below a parent not answered yet.</summary>
+    public required string NoChoices { get; init; }
+
+    /// <summary>What a field with options shows when their source could not give them.</summary>
+    public required string ChoicesUnavailable { get; init; }
+
+    /// <summary>The words of a ranking's button that moves an option up; <c>{0}</c> is the option's label.</summary>
+    public required string MoveUp { get; init; }
+
+    /// <summary>The words of a ranking's button that moves an option down; <c>{0}</c> is the option's label.</summary>
+    public required string MoveDown { get; init; }
+
+    /// <summary>The statement of a grid's row without one; <c>{0}</c> is its number.</summary>
+    public required string Row { get; init; }
 
     /// <summary>The words of a culture, of its more general culture, or English.</summary>
     /// <param name="culture">The culture, such as <c>de-CH</c>.</param>

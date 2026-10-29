@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
@@ -9,6 +10,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
@@ -43,10 +45,12 @@ internal sealed record FormRender(
 /// instance, and every page, group and field in the state its rules give for the default values that hold no merge tag
 /// (or a post's answers), with the site's clock and time zone, no member and no query value, so the markup is the same
 /// for every visitor but where a form for members does not admit them. A hidden field renders nothing, nor does a field
-/// whose type the site lacks.
+/// whose type the site lacks. Options from a list or another source, and options a parent field filters, are those the
+/// options endpoint answers for the page's answers (ADR-0096).
 /// </summary>
 /// <param name="types">The field types.</param>
 /// <param name="mergeTags">The merge-tag service, which renders the visitor texts that hold tags.</param>
+/// <param name="cascading">The options of a field for its parents' answers, as the options endpoint resolves them.</param>
 /// <param name="views">Which view writes each part.</param>
 /// <param name="paths">The public API's paths.</param>
 /// <param name="media">The published media, which an image field shows.</param>
@@ -56,6 +60,7 @@ internal sealed record FormRender(
 internal sealed partial class FormModels(
     FieldTypeRegistry types,
     IFormBuilderMergeTagService mergeTags,
+    CascadingOptions cascading,
     FormViews views,
     FormBuilderPublicApiPaths paths,
     IPublishedMediaCache media,
@@ -71,6 +76,9 @@ internal sealed partial class FormModels(
 
     /// <summary>The prefix of the hidden inputs that carry context values.</summary>
     public const string ContextPrefix = "jfb-context-";
+
+    /// <summary>The prefix of the hidden input that carries a consent's wording hash, before the field's alias (ADR-0015).</summary>
+    public const string ConsentPrefix = "jfb-consent-";
 
     private static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> NoQuery = FrozenDictionary<string, IReadOnlyList<string>>.Empty;
 
@@ -169,7 +177,7 @@ internal sealed partial class FormModels(
         var shownPages = shown.Pages.Where(page => !hidden.Contains(Id(page.Key))).ToList();
         var current = shownPages.FirstOrDefault(page => page.Key == post?.Page) ?? shownPages.FirstOrDefault();
         var recalled = await RecalledAsync(render, answers, hidden, cancellationToken);
-        var build = new Build(render, root, post, words, culture, answers, hidden, required, MarkerOf(settings.RequiredMarker), recalled);
+        var build = new Build(render, root, post, words, culture, answers, hidden, required, MarkerOf(settings.RequiredMarker), recalled, settings.ChoiceLayout);
         var pages = new List<PageViewModel>();
         foreach (var page in shown.Pages)
         {
@@ -212,13 +220,17 @@ internal sealed partial class FormModels(
             });
         }
 
+        var navigation = Navigation(settings, shownPages, current, words);
         return root.Model(
             pages: pages,
+            defaultButton: pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Control is RankingControlModel)
+                ? navigation.Next ?? navigation.Submit
+                : null,
             progress: Progress(settings, shownPages, current, build),
             errors: build.Errors.Count > 0 && settings.ValidationSummary
                 ? new ErrorSummaryViewModel { Heading = words.ErrorSummary, HeadingId = root.Id + "-summary", Errors = build.Errors }
                 : null,
-            navigation: Navigation(settings, shownPages, current, words),
+            navigation: navigation,
             requiredNote: build.MarksRequired
                 ? WithMarkup(words.RequiredNote, "<span aria-hidden=\"true\">*</span><span class=\"jfb-visually-hidden\">" + WebUtility.HtmlEncode(words.Asterisk) + "</span>")
                 : null,
@@ -331,13 +343,9 @@ internal sealed partial class FormModels(
         var control = root.Id + "-" + (field.Alias ?? field.Key.ToString("N"));
         var isRequired = build.Required.Contains(id);
         var isHidden = build.Hidden.Contains(id);
-        var labelled = traits.HoldsValue;
-        var mark = !labelled ? FieldMark.None : build.Marker switch
-        {
-            RequiredMarker.Optional when !isRequired => FieldMark.Optional,
-            RequiredMarker.Required when isRequired => FieldMark.Required,
-            _ => FieldMark.None,
-        };
+        var shownSettings = new ShownSettings(field.Settings, build.Settings(field.Key));
+        var element = traits.HoldsValue ? LabelElementOf(traits.Type, shownSettings) : FieldLabelElement.None;
+        var mark = MarkOf(build, field, traits.Type, element, isRequired);
         build.MarksRequired |= mark == FieldMark.Required;
         var error = build.Post?.Errors.GetValueOrDefault(field.Key);
         if (error is not null)
@@ -346,7 +354,7 @@ internal sealed partial class FormModels(
         }
 
         var answers = build.Answers.GetValueOrDefault(field.Key) ?? FieldAnswers.None;
-        var (model, described) = await ControlAsync(build, field, traits, new ShownSettings(field.Settings, build.Settings(field.Key)), control, answers);
+        var (model, described) = await ControlAsync(build, field, traits, shownSettings, control, answers, cancellationToken);
         var help = build.Text(field.Key, "help", field.Help);
         var describedBy = new List<string>();
         if (help is not null)
@@ -368,8 +376,8 @@ internal sealed partial class FormModels(
             Id = control,
             Name = field.Alias ?? string.Empty,
             CssClass = Classes("jfb-field", "jfb-field-" + field.Type, field.Span > 1 ? "jfb-span-" + field.Span.ToString(CultureInfo.InvariantCulture) : null, field.CssClass),
-            LabelElement = labelled ? FieldLabelElement.Label : FieldLabelElement.None,
-            Label = labelled ? build.Text(field.Key, "label", field.Label) : null,
+            LabelElement = element,
+            Label = traits.HoldsValue ? build.Text(field.Key, "label", field.Label) : null,
             HideLabel = field.HideLabel,
             Mark = mark,
             MarkText = mark switch
@@ -396,8 +404,13 @@ internal sealed partial class FormModels(
 
     // What a type adds to its control, and the ids of its parts that the control names in aria-describedby.
     private async Task<(object? Model, IReadOnlyList<string> DescribedBy)> ControlAsync(
-        Build build, PublicField field, FieldTypeTraits traits, ShownSettings settings, string id, FieldAnswers answers)
+        Build build, PublicField field, FieldTypeTraits traits, ShownSettings settings, string id, FieldAnswers answers, CancellationToken cancellationToken)
     {
+        if (await ChoiceControlAsync(build, field, traits.Type, settings, id, answers, cancellationToken) is { } choice)
+        {
+            return choice;
+        }
+
         switch (traits.Type)
         {
             case TextFieldType:
@@ -478,20 +491,23 @@ internal sealed partial class FormModels(
     {
         var size = settings.Text("size") is "small" or "medium" or "large" or "full" ? settings.Text("size")! : "medium";
         var alt = settings.Text("alt") ?? string.Empty;
-        if (!Guid.TryParse(settings.Text("media"), out var key) || await media.GetByIdAsync(key) is not { } item)
+        var (url, width, height) = Guid.TryParse(settings.Text("media"), out var key) ? await MediaAsync(key) : default;
+        return new ImageControlModel { Url = url, Alt = alt, Size = size, Width = width, Height = height };
+    }
+
+    // A media item's address and size: no address when the item is gone or has none, no size when it gives none.
+    private async Task<(string? Url, int? Width, int? Height)> MediaAsync(Guid key)
+    {
+        if (await media.GetByIdAsync(key) is not { } item)
         {
-            return new ImageControlModel { Alt = alt, Size = size };
+            return default;
         }
 
         var url = urls.GetMediaUrl(item);
-        return new ImageControlModel
-        {
-            Url = string.IsNullOrEmpty(url) || url == "#" ? null : url,
-            Alt = alt,
-            Size = size,
-            Width = Pixels(item.GetProperty("umbracoWidth")?.GetValue()),
-            Height = Pixels(item.GetProperty("umbracoHeight")?.GetValue()),
-        };
+        return (
+            string.IsNullOrEmpty(url) || url == "#" ? null : url,
+            Pixels(item.GetProperty("umbracoWidth")?.GetValue()),
+            Pixels(item.GetProperty("umbracoHeight")?.GetValue()));
     }
 
     // Umbraco's image media type holds its width and height as integer labels; none, or zero, is no size.
@@ -585,6 +601,7 @@ internal sealed partial class FormModels(
         "email" => "email",
         "phone" => "tel",
         "url" => "url",
+        "country" => "country",
         _ => null,
     };
 
@@ -637,6 +654,7 @@ internal sealed partial class FormModels(
     {
         public FormViewModel Model(
             IReadOnlyList<PageViewModel>? pages = null,
+            NavigationButtonModel? defaultButton = null,
             ProgressViewModel? progress = null,
             ErrorSummaryViewModel? errors = null,
             NavigationViewModel? navigation = null,
@@ -659,6 +677,7 @@ internal sealed partial class FormModels(
                 ModelData = ModelData,
                 Views = Views,
                 Pages = pages ?? [],
+                DefaultButton = defaultButton,
                 Progress = progress,
                 ErrorSummary = errors,
                 Navigation = navigation,
@@ -680,12 +699,17 @@ internal sealed partial class FormModels(
         HashSet<string> hidden,
         HashSet<string> required,
         RequiredMarker marker,
-        Dictionary<(Guid Owner, string Name), string> recalled)
+        Dictionary<(Guid Owner, string Name), string> recalled,
+        ChoiceLayout layout)
     {
         // The prefix of a visitor text that is a field's setting, such as settings.text.
         private const string SettingPrefix = "settings.";
 
         private readonly Dictionary<string, string> _controls = new(StringComparer.Ordinal);
+
+        private Dictionary<Guid, FormField>? _fields;
+
+        public FormRender Render => render;
 
         public Root Root => root;
 
@@ -702,6 +726,9 @@ internal sealed partial class FormModels(
         public HashSet<string> Required => required;
 
         public RequiredMarker Marker => marker;
+
+        // How the form lays out choices whose field says inherit.
+        public ChoiceLayout Layout => layout;
 
         public List<ErrorLinkModel> Errors { get; } = [];
 
@@ -720,6 +747,21 @@ internal sealed partial class FormModels(
             recalled.Where(pair => pair.Key.Owner == owner && pair.Key.Name.StartsWith(SettingPrefix, StringComparison.Ordinal))
                 .ToDictionary(pair => pair.Key.Name[SettingPrefix.Length..], pair => pair.Value, StringComparer.Ordinal);
 
+        // A field's answers as rules see them: none for a field a rule hides (FormRules).
+        public ImmutableArray<string> ShownAnswers(Guid key) =>
+            hidden.Contains(Id(key)) ? [] : answers.TryGetValue(key, out var given) ? given.Values : [];
+
+        // A field of the published version by its key, a repeatable group's child among them; the page shows that
+        // version's fields, so each one it asks for is there.
+        public FormField Definition(Guid key)
+        {
+            _fields ??= render.Form.Published.Definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields)
+                .SelectMany(field => field.Fields.Prepend(field))
+                .GroupBy(field => field.Key)
+                .ToDictionary(group => group.Key, group => group.First());
+            return _fields[key];
+        }
+
         public async Task<string> ControlViewAsync(FormViews views, string type, CancellationToken cancellationToken)
         {
             if (!_controls.TryGetValue(type, out var path))
@@ -735,8 +777,13 @@ internal sealed partial class FormModels(
     // The public settings as the form endpoint shows them: each text as the string the culture shows (a number's limits
     // are exact decimals in text), a text that holds tags as rendered for the page's answers, everything else as the
     // projection holds it; a setting left out takes its type's default.
-    private readonly struct ShownSettings(SettingsObject? settings, IReadOnlyDictionary<string, string> recalled)
+    private readonly struct ShownSettings(JsonElement? settings, IReadOnlyDictionary<string, string> recalled)
     {
+        public ShownSettings(SettingsObject? settings, IReadOnlyDictionary<string, string> recalled)
+            : this(settings?.Value, recalled)
+        {
+        }
+
         public string? Text(string name) =>
             recalled.TryGetValue(name, out var shown) ? shown : Find(name) is { ValueKind: JsonValueKind.String } value ? value.GetString() : null;
 
@@ -744,7 +791,17 @@ internal sealed partial class FormModels(
 
         public bool Bool(string name, bool fallback) => Find(name) is { ValueKind: JsonValueKind.True or JsonValueKind.False } value ? value.GetBoolean() : fallback;
 
+        // The texts of a list setting, such as a country's allowed codes; none for a setting that is no list.
+        public IReadOnlyList<string> Texts(string name) =>
+            Find(name) is { ValueKind: JsonValueKind.Array } value
+                ? [.. value.EnumerateArray().Where(item => item.ValueKind == JsonValueKind.String).Select(item => item.GetString()!)]
+                : [];
+
+        // The settings of an object setting, such as a grid's scale; null for a setting that is no object.
+        public ShownSettings? Child(string name) =>
+            Find(name) is { ValueKind: JsonValueKind.Object } value ? new ShownSettings(value, FrozenDictionary<string, string>.Empty) : null;
+
         private JsonElement? Find(string name) =>
-            settings is not null && settings.Value.ValueKind == JsonValueKind.Object && settings.Value.TryGetProperty(name, out var value) ? value : null;
+            settings is { ValueKind: JsonValueKind.Object } given && given.TryGetProperty(name, out var value) ? value : null;
     }
 }

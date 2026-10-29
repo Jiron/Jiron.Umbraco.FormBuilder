@@ -63,6 +63,18 @@ public enum FieldLabelElement
 
     /// <summary>A <c>label</c> for the control.</summary>
     Label,
+
+    /// <summary>
+    /// A <c>fieldset</c> around the field's help, control and error, with the label as its <c>legend</c>: a group of
+    /// choices, such as radio buttons, a grid or a ranking (ADR-0096).
+    /// </summary>
+    Legend,
+
+    /// <summary>
+    /// The control's own label beside its box, with the help after it: a single checkbox, a consent, or yes or no as a
+    /// switch (ADR-0096).
+    /// </summary>
+    Choice,
 }
 
 /// <summary>How a field's label is marked (the form's required-marker style, ADR-0093).</summary>
@@ -130,7 +142,10 @@ public sealed class FieldViewModel
     /// <summary>The id of the error.</summary>
     public required string ErrorId { get; init; }
 
-    /// <summary>The ids the control names in <c>aria-describedby</c>: its help, its control's parts and its error; null for none.</summary>
+    /// <summary>
+    /// The ids the control names in <c>aria-describedby</c>, or the fieldset of a group of choices: its help, its
+    /// control's parts and its error; null for none.
+    /// </summary>
     public string? DescribedBy { get; init; }
 
     /// <summary>Whether an answer is required now, by the field or a rule (<c>required</c>).</summary>

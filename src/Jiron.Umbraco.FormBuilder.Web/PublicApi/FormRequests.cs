@@ -90,7 +90,7 @@ internal sealed class FormRequests(
             writer.WriteEndObject();
         }
 
-        return new FormShown(Answer(buffer), shown.Form, unavailable, zone, scope, shown.Tagged);
+        return new FormShown(Answer(buffer), shown.Form, unavailable, zone, scope, shown.Tagged, shown.Consents);
     }
 
     /// <summary>
@@ -162,7 +162,8 @@ internal sealed class FormRequests(
 /// <param name="TimeZone">The site's time zone.</param>
 /// <param name="Scope">What the form's merge tags are rendered for: the form, the culture, the site and the page.</param>
 /// <param name="Tagged">The visitor texts that hold tags, in the form's order.</param>
-internal sealed record FormShown(FormAnswer Answer, PublicForm Form, FormUnavailable? Unavailable, TimeZoneInfo TimeZone, MergeTagScope Scope, IReadOnlyList<VisitorText> Tagged);
+/// <param name="Consents">Each consent field's wording hash by the field's key, as the answer holds them (ADR-0096).</param>
+internal sealed record FormShown(FormAnswer Answer, PublicForm Form, FormUnavailable? Unavailable, TimeZoneInfo TimeZone, MergeTagScope Scope, IReadOnlyList<VisitorText> Tagged, IReadOnlyDictionary<Guid, string> Consents);
 
 /// <summary>An answer of the form or the options endpoint.</summary>
 /// <param name="Body">The answer as UTF-8 JSON.</param>
