@@ -296,7 +296,7 @@ public sealed partial class FormPostTests : RenderingTestBase
     }
 
     [Test]
-    public async Task ASentValue_ForgedExpiredOrForAnotherInstance_ShowsTheFormAsForAnyVisitor()
+    public async Task ASentValue_ForgedExpiredOrForAnotherInstance_ShowsTheFormAsForAnyVisitor_AndThePageIsNoStore()
     {
         _ = await PublishFormAsync("postWays", Ways, Way);
         _ = await PagesAsync("post-ways");
@@ -307,9 +307,10 @@ public sealed partial class FormPostTests : RenderingTestBase
         var token = location[(location.IndexOf("jfb-1.", StringComparison.Ordinal) + "jfb-1.".Length)..location.IndexOf('#', StringComparison.Ordinal)];
 
         var (fresh, freshPage) = await PageAndHtmlAsync(location);
-        var forged = await DocumentAsync("/post-ways/?jfb-sent=jfb-1.AAAA" + token[4..]);
-        var other = await DocumentAsync("/post-ways/?jfb-sent=jfb-2." + token);
-        var twice = await DocumentAsync("/post-ways/?jfb-sent=jfb-1." + token + "&jfb-sent=jfb-1." + token);
+        var (forgedCache, forged) = await PageAndHtmlAsync("/post-ways/?jfb-sent=jfb-1.AAAA" + token[4..]);
+        var (otherCache, other) = await PageAndHtmlAsync("/post-ways/?jfb-sent=jfb-2." + token);
+        var (twiceCache, twice) = await PageAndHtmlAsync("/post-ways/?jfb-sent=jfb-1." + token + "&jfb-sent=jfb-1." + token);
+        var (plain, _) = await PageAndHtmlAsync("/post-ways/");
         _clock.Advance(SentTokens.Lifetime + TimeSpan.FromSeconds(1));
         var (expired, expiredPage) = await PageAndHtmlAsync(location);
 
@@ -321,7 +322,8 @@ public sealed partial class FormPostTests : RenderingTestBase
             Assert.That(other.QuerySelector("form#jfb-1"), Is.Not.Null, "another instance's");
             Assert.That(twice.QuerySelector("form#jfb-1"), Is.Not.Null, "two values");
             Assert.That(expiredPage.QuerySelector("form#jfb-1"), Is.Not.Null, "after 30 minutes");
-            Assert.That(expired, Is.Not.EqualTo("no-store"), "a page that shows the form only");
+            Assert.That(new[] { forgedCache, otherCache, twiceCache, expired }, Is.All.EqualTo("no-store"), "a page that carries jfb-sent, whatever it shows (ADR-0104)");
+            Assert.That(plain ?? string.Empty, Does.Not.Contain("no-store"), "the page without it");
         });
     }
 
@@ -512,6 +514,7 @@ public sealed partial class FormPostTests : RenderingTestBase
         using var badInstance = await PostPairsAsync("/post/", [new(FormPostFields.RouteToken, route), new(FormPostFields.Form, K(0x01).ToString("D")), new(FormPostFields.Instance, "evil"), new(FormPostFields.Revision, "1")], OwnOrigin);
         using var wordy = await PostPairsAsync("/post/", [new(FormPostFields.RouteToken, route), new(FormPostFields.Form, K(0x01).ToString("D")), new(FormPostFields.Instance, "jfb-one"), new(FormPostFields.Revision, "1")], OwnOrigin);
         using var bare = await PostPairsAsync("/post/", [new(FormPostFields.RouteToken, route), new(FormPostFields.Form, K(0x01).ToString("D")), new(FormPostFields.Instance, "jfb-"), new(FormPostFields.Revision, "1")], OwnOrigin);
+        using var zero = await PostPairsAsync("/post/", [new(FormPostFields.RouteToken, route), new(FormPostFields.Form, K(0x01).ToString("D")), new(FormPostFields.Instance, "jfb-0"), new(FormPostFields.Revision, "1")], OwnOrigin);
         using var gone = await PostPairsAsync("/post/", [new(FormPostFields.RouteToken, route), new(FormPostFields.Form, Guid.NewGuid().ToString("D")), new(FormPostFields.Instance, "jfb-1"), new(FormPostFields.Revision, "1")], OwnOrigin);
 
         Assert.Multiple(() =>
@@ -522,6 +525,7 @@ public sealed partial class FormPostTests : RenderingTestBase
             Assert.That(Header(nameless, "Cache-Control"), Is.EqualTo("no-store"));
             Assert.That(badInstance.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest), "an instance id the render never gives");
             Assert.That((wordy.StatusCode, bare.StatusCode), Is.EqualTo((HttpStatusCode.BadRequest, HttpStatusCode.BadRequest)), "the prefix without its number");
+            Assert.That(zero.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest), "the count starts from 1");
             Assert.That(gone.StatusCode, Is.EqualTo(HttpStatusCode.OK), "a form gone meanwhile: the page without it");
             Assert.That(Header(gone, "Cache-Control"), Is.EqualTo("no-store"));
         });

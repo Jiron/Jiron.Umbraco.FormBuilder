@@ -4,12 +4,14 @@ using Microsoft.Extensions.Options;
 using NSubstitute;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Web.Common.ApplicationBuilder;
+using Umbraco.Cms.Web.Website.Caching;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Rendering;
 
 /// <summary>
-/// The registrations of the website rendering (ADR-0092, ADR-0093), without a host: made twice, they add each service
-/// and each pipeline filter before Umbraco's routing once.
+/// The registrations of the website rendering (ADR-0092, ADR-0093, ADR-0104), without a host: made twice, they add each
+/// service, the output cache's vary rule and each pipeline filter before Umbraco's routing once, and never a request filter
+/// of the output cache, which would replace the site's.
 /// </summary>
 [TestFixture]
 public sealed class FormBuilderRenderingServicesTests
@@ -41,6 +43,8 @@ public sealed class FormBuilderRenderingServicesTests
             Assert.That(services.Count(service => service.ServiceType == typeof(SentTokens)), Is.EqualTo(1));
             Assert.That(services.Count(service => service.ServiceType == typeof(BackOfficeVisitors)), Is.EqualTo(1));
             Assert.That(services.Single(service => service.ServiceType == typeof(FormMembers)).Lifetime, Is.EqualTo(ServiceLifetime.Scoped), "one per request, as Umbraco's member manager is");
+            Assert.That(services.Where(service => service.ServiceType == typeof(IWebsiteOutputCacheVaryByProvider)).Select(service => (service.ImplementationType, service.Lifetime)), Is.EqualTo(new[] { (typeof(SentVaryBy), ServiceLifetime.Singleton) }));
+            Assert.That(services.Any(service => service.ServiceType == typeof(IWebsiteOutputCacheRequestFilter)), Is.False, "the site's filter stays");
             Assert.That(services.Where(service => Rendering.Contains(service.ServiceType)).Select(service => service.Lifetime), Is.All.EqualTo(ServiceLifetime.Singleton));
             Assert.That(filters.Select(filter => filter.Name), Is.EqualTo(new[] { "Jiron.FormBuilder.WebsiteAssets", "Jiron.FormBuilder.PostFiles" }));
             Assert.That(filters.Select(filter => ((UmbracoPipelineFilter)filter).PrePipeline), Is.All.Not.Null, "before Umbraco's routing");

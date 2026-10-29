@@ -100,6 +100,10 @@ public sealed class RenderingPartsTests
 
     [TestCase("jfb-1", true)]
     [TestCase("jfb-42", true)]
+    [TestCase("jfb-10", true)]
+    [TestCase("jfb-0", false)]
+    [TestCase("jfb-01", false)]
+    [TestCase("jfb-007", false)]
     [TestCase("jfb-123456789012", true)]
     [TestCase("jfb-1234567890123", false)]
     [TestCase("jfb-", false)]
@@ -108,7 +112,7 @@ public sealed class RenderingPartsTests
     [TestCase("jfb--1", false)]
     [TestCase("form-1", false)]
     [TestCase("", false)]
-    public void AnInstanceId_IsThePrefixAndANumber_NoLongerThanAPageReaches(string instance, bool isId) =>
+    public void AnInstanceId_IsThePrefixAndANumberFromOneWithoutALeadingZero_NoLongerThanAPageReaches(string instance, bool isId) =>
         Assert.That(FormInstances.IsId(instance), Is.EqualTo(isId));
 
     [Test]

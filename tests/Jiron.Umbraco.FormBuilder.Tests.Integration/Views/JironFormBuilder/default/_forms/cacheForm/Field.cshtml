@@ -1,0 +1,7 @@
+@* jfb-view: Field 1 *@
+@* The form cacheForm's own field wrapper, which writes the culture it renders in, as a site's view that reads the dictionary would use it (6.2l). *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+<div class="jfb-field" data-jfb-field="@Model.Key" data-test-culture="@System.Globalization.CultureInfo.CurrentCulture.Name @System.Globalization.CultureInfo.CurrentUICulture.Name">
+    <label for="@Model.Id">@Model.Label</label>
+    @await Html.PartialAsync(Model.ControlView, Model)
+</div>

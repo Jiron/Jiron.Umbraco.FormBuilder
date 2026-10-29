@@ -1,0 +1,6 @@
+@* A page that shows when it was rendered, and a form: what Umbraco's output cache stores, and for whom (6.2l). *@
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+}
+<p id="rendered">@Guid.NewGuid().ToString("N")</p>
+<jfb-render form="cacheForm" />

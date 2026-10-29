@@ -14,8 +14,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Rendering;
 /// <summary>
 /// What a page renders before it looks for a form (ADR-0093): nothing without a reference, nothing for a value of
 /// another type (logged once per type), and nothing for a visitor while the migrations are pending, with no form read
-/// (ADR-0033). The forms, the requests, the pages and the models are left out, so a read of any of them would fail the
-/// test.
+/// (ADR-0033) and the page kept out of every cache (ADR-0104). The forms, the requests, the pages and the models are left
+/// out, so a read of any of them would fail the test.
 /// </summary>
 [TestFixture]
 public sealed class FormRenderingTests
@@ -62,20 +62,35 @@ public sealed class FormRenderingTests
     }
 
     [Test]
-    public async Task WhileTheMigrationsArePending_NothingRendersForAVisitor_AndNoFormIsRead()
+    public async Task WhileTheMigrationsArePending_NothingRendersForAVisitor_NoFormIsRead_AndThePageIsNoStore()
     {
         var migrations = new Migrations { Pending = true };
         var logger = new RecordingLogger<FormRendering>();
         var rendering = Rendering(migrations, logger);
-        static DefaultHttpContext Visitor() => new();
+        var visitors = new[] { new DefaultHttpContext(), new DefaultHttpContext(), new DefaultHttpContext() };
 
         Assert.Multiple(async () =>
         {
-            Assert.That(await rendering.RenderAsync(Visitor(), "contact", null, CancellationToken.None), Is.Null);
-            Assert.That(await rendering.RenderAsync(Visitor(), Guid.NewGuid(), null, CancellationToken.None), Is.Null);
-            Assert.That(await rendering.RenderAsync(Visitor(), new FormBuilderFormReference(Guid.NewGuid()), null, CancellationToken.None), Is.Null);
+            Assert.That(await rendering.RenderAsync(visitors[0], "contact", null, CancellationToken.None), Is.Null);
+            Assert.That(await rendering.RenderAsync(visitors[1], Guid.NewGuid(), null, CancellationToken.None), Is.Null);
+            Assert.That(await rendering.RenderAsync(visitors[2], new FormBuilderFormReference(Guid.NewGuid()), null, CancellationToken.None), Is.Null);
             Assert.That(logger.Entries, Is.Empty, "a pending migration is no missing form");
             Assert.That(migrations.Asked, Is.EqualTo(3));
+            Assert.That(visitors.Select(visitor => visitor.Response.Headers.CacheControl.ToString()), Is.All.EqualTo("no-store"), "a backoffice user's page shows the note");
+        });
+    }
+
+    [Test]
+    public async Task WithoutAReference_AnyRequestsPageIsLeftAsItIs()
+    {
+        var post = new DefaultHttpContext();
+        post.Request.Method = HttpMethods.Post;
+        post.Request.QueryString = new QueryString("?jfb-sent=x");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await Rendering(new Migrations { Pending = true }, new RecordingLogger<FormRendering>()).RenderAsync(post, null, null, CancellationToken.None), Is.Null);
+            Assert.That(post.Response.Headers.ContainsKey("Cache-Control"), Is.False, "nothing renders");
         });
     }
 

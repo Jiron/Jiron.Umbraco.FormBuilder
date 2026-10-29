@@ -153,13 +153,14 @@ public sealed partial class FormPostTests
     public async Task APostPastTheDrainAllowance_ShowsTheFormWithTheNotice_AndAPostWithoutTheMarker_HoldsItsFilesToTheSameRules()
     {
         var key = await PublishFormAsync("postFiles", FilesForm);
-        _ = await PagesAsync("post-files");
+        _ = await PagesAsync("post-files", "plain");
         var first = FormOf(await DocumentAsync(FilesPage), "jfb-1");
         Fill(first, "subject", "Room plan");
 
         using var past = await SubmitFilesAsync(first, FormPostFields.Submit, ("attachment", "huge.pdf", Bytes(Pdf, 3_000_000)));
         var readOfPast = GetRequiredService<BodyCap>().LastRead;
         var refused = FormOf(await ParseAsync(past), "jfb-1");
+        using var elsewhere = await SubmitFilesAsync(first, FormPostFields.Submit, "/plain/?" + FormPostFields.PostMarker + "=" + key.ToString("D") + ".jfb-1", ("attachment", "huge.pdf", Bytes(Pdf, 3_000_000)));
         using var unmarked = await SubmitFilesAsync(first, FormPostFields.Submit, FilesPage, ("attachment", "plan.pdf", Bytes(Pdf, 500)));
         var entryId = (await Entries.ListIdsAsync((await FormRows.GetAsync(key))!.Id, 10)).Single();
         var files = await Entries.ListFilesAsync(entryId);
@@ -169,6 +170,7 @@ public sealed partial class FormPostTests
             Assert.That(3_000_000, Is.GreaterThan(FormLimit * 2), "past the drain allowance");
             Assert.That(readOfPast, Is.Zero, "a declared length past the allowance is not read at all");
             Assert.That(Header(past, "Cache-Control"), Is.EqualTo("no-store"));
+            Assert.That((elsewhere.StatusCode, Header(elsewhere, "Cache-Control")), Is.EqualTo((HttpStatusCode.OK, "no-store")), "the reader marks a post it refused, also on a page without the form");
             Assert.That(refused.QuerySelector("[data-jfb-notice='too_large'] h2")!.TextContent, Is.EqualTo("Your answers weren't sent"));
             Assert.That(refused.QuerySelector("[data-jfb-notice='too_large']")!.GetAttribute("class"), Is.EqualTo("jfb-notice jfb-notice-error"));
             Assert.That(Value(refused, "subject"), Is.Null, "nothing of the post could be kept");
