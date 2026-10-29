@@ -5,9 +5,9 @@ import { expect, test } from '../../fixtures.ts';
 import type { SubmitResult } from '../../support/form.ts';
 import { demoProject } from '../../support/paths.ts';
 
-// A visitor without JavaScript (ROADMAP 6.2h to 6.2j, ADR-0100 to ADR-0102): the demo's forms post back to their page,
+// A visitor without JavaScript (ROADMAP 6.2h to 6.2k, ADR-0100 to ADR-0103): the demo's forms post back to their page,
 // which renders again with the answers and the errors, moves through the pages with Next and Back, adds and removes
-// rows, moves a ranking's options, takes files, or redirects to the outcome. Every page holds the newsletter form in
+// rows, moves a ranking's options, takes files and a typed signature, or redirects to the outcome. Every page holds the newsletter form in
 // its footer beside its own form. What a post stores is compared with what the runtime's post to `entries` stores for
 // the same answers, through the test host's entries endpoint.
 
@@ -34,6 +34,8 @@ interface StoredFile {
   field: string;
   name: string;
   size: number;
+  /** The name a typed signature's PNG holds (ADR-0103), or null. */
+  typed: string | null;
 }
 
 interface DefinitionField {
@@ -451,7 +453,41 @@ test('the job application takes a CV without JavaScript: one too large and a pro
   await fillForm({ privacy: true }, pageFormOn(page));
   expect(outcomeOf(await submitForm(pageFormOn(page))).message).toBe('Thank you, Ada. We reply within two weeks.');
   const entries = (await filesOf(request, 'application')).slice(before);
-  expect(entries).toEqual([[{ field: keys.cv, name: 'cv.pdf', size: 100_000 }]]);
+  expect(entries).toEqual([[{ field: keys.cv, name: 'cv.pdf', size: 100_000, typed: null }]]);
+});
+
+test('the room hire form takes a signature typed without JavaScript: none is an error at its field, and the name typed is stored as the signature', async ({
+  page,
+  request,
+  submitForm,
+}) => {
+  const keys = keysOf('roomHire');
+  const before = (await filesOf(request, 'roomHire')).length;
+  const day = new Date(Date.now() + 7 * 24 * 3_600_000).toISOString().slice(0, 10);
+  await page.goto('/en/room-hire/');
+  const form = (): Locator => pageFormOn(page);
+  await form().locator('[name="day"]').fill(day);
+  await form().locator('[name="from"]').fill('10:00');
+  await form().locator('[name="contact.first"]').fill('Daniel');
+  await form().locator('[name="contact.last"]').fill('Fernandes');
+  await form().locator('[name="email"]').fill('daniel@visitor.jfb.test');
+  await form().locator('[name="billing.street"]').fill('Main Street 1');
+  await form().locator('[name="billing.postcode"]').fill('10115');
+  await form().locator('[name="billing.city"]').fill('Berlin');
+  await form().locator('[name="billing.country"]').selectOption('DE');
+  await expect(form().locator('[name="signature.typed"]')).toHaveAttribute('maxlength', '100');
+
+  const unsigned = await submitForm(form());
+  expect(unsigned.state).toBe('errors');
+  await expect(form().locator('#jfb-1-signature-error')).toHaveText('Add your signature, or type your name instead');
+  await expect(form().locator('[name="contact.last"]')).toHaveValue('Fernandes');
+
+  // A name with an accent, which the hand draws with its mark.
+  const name = 'Daniel Fern' + String.fromCharCode(0xe1) + 'ndez';
+  await form().locator('[name="signature.typed"]').fill(name);
+  expect((await submitForm(form())).state).toBe('sent');
+  const entries = (await filesOf(request, 'roomHire')).slice(before);
+  expect(entries).toEqual([[{ field: keys.signature, name: 'signature.png', size: expect.any(Number), typed: name }]]);
 });
 
 test('a consent whose wording changed after the page was rendered comes back unticked with a notice, and is sent once ticked again', async ({

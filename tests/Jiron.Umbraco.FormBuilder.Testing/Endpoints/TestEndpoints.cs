@@ -1,8 +1,10 @@
 using System.Net;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Access;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Signatures;
 using Jiron.Umbraco.FormBuilder.Testing.Stub;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Microsoft.AspNetCore.Builder;
@@ -72,9 +74,9 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// globally, at the root and on each root folder outside the trash in the library's order (ADR-0049), so the browser
 /// tests can see that the personas have their grants.</description></item>
 /// <item><description><c>GET /jfb-testing/entries?form=&lt;alias&gt;</c>: the form's entries, oldest first, each with its
-/// stored values by the field's key, row and item (ADR-0100) and its files by the field's key, name and size (ADR-0102),
-/// so the browser tests can compare what two paths stored for the same answers; <c>404</c> for a form the host does not
-/// have.</description></item>
+/// stored values by the field's key, row and item (ADR-0100) and its files by the field's key, name, size and the name
+/// a typed signature holds (ADR-0102, ADR-0103), so the browser tests can compare what two paths stored for the same
+/// answers; <c>404</c> for a form the host does not have.</description></item>
 /// </list>
 /// Requests from another machine, and paths outside <c>/jfb-testing/</c>, go on to the site as if this did not exist.
 /// </summary>
@@ -219,6 +221,13 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
         var ids = await entries.ListIdsAsync(form.Id, MaxEntries, context.RequestAborted);
         var values = ids.Count == 0 ? [] : await entries.ListValuesAsync(ids, context.RequestAborted);
         var files = ids.Count == 0 ? [] : await entries.ListFilesAsync(ids, context.RequestAborted);
+        var store = services.GetRequiredService<IFormBuilderFileStore>();
+        var typed = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var file in files)
+        {
+            typed[file.StoredName] = await TypedNameAsync(store, file.StoredName, context.RequestAborted);
+        }
+
         var answer = ids.Order().Select(id => new
         {
             id,
@@ -229,9 +238,23 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
             files = files
                 .Where(file => file.EntryId == id)
                 .OrderBy(file => file.Id)
-                .Select(file => new { field = file.FieldKey, name = file.OriginalName, size = file.SizeBytes }),
+                .Select(file => new { field = file.FieldKey, name = file.OriginalName, size = file.SizeBytes, typed = typed[file.StoredName] }),
         });
         await context.Response.WriteAsJsonAsync(new { entries = answer }, Json, context.RequestAborted);
+    }
+
+    // The name a stored signature's PNG holds as typed (ADR-0103); null for any other file.
+    private static async Task<string?> TypedNameAsync(IFormBuilderFileStore store, string storedName, CancellationToken cancellationToken)
+    {
+        await using var content = await store.OpenReadAsync(storedName, cancellationToken);
+        if (content is null)
+        {
+            return null;
+        }
+
+        using var bytes = new MemoryStream();
+        await content.CopyToAsync(bytes, cancellationToken);
+        return TypedSignature.NameOf(bytes.ToArray());
     }
 
     private sealed record ClockRequest(DateTimeOffset? Utc = null, double? AdvanceSeconds = null);
