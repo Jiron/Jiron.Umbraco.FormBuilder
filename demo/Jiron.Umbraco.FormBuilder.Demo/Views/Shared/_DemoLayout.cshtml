@@ -51,10 +51,11 @@
 
     <footer class="site-foot">
         <div class="site-foot-wrap">
-            @* The newsletter slot: a later step puts the newsletter form here (ROADMAP 3.3). *@
+            @* The newsletter slot: its heading, its text and the newsletter form, on every page (ROADMAP 3.3, 6.2h). *@
             <section class="site-slot" data-demo-slot="newsletter" aria-labelledby="newsletter-heading">
                 <h2 id="newsletter-heading">@(home.Value<string>("newsletterHeading"))</h2>
                 <p>@(home.Value<string>("newsletterText"))</p>
+                <jfb-render form="newsletter" />
             </section>
             <div class="site-foot-meta">
                 <p>@Umbraco.GetDictionaryValue("Demo.Address")</p>

@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "key": "d0000000-0000-4000-8000-000000000006",
+  "settings": {
+    "submission": {
+      "submitLabel": { "": "Send my application", "de": "Bewerbung senden" }
+    }
+  },
+  "pages": [
+    {
+      "key": "d0000000-0000-4000-8000-000000000060",
+      "title": { "": "About you", "de": "Über Sie" },
+      "groups": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000061",
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000601",
+              "type": "name",
+              "alias": "fullName",
+              "label": { "": "Your name", "de": "Ihr Name" },
+              "required": true
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000602",
+              "type": "email",
+              "alias": "email",
+              "label": { "": "Email address", "de": "E-Mail-Adresse" },
+              "required": true,
+              "autocomplete": "email"
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000603",
+              "type": "radio",
+              "alias": "post",
+              "label": { "": "Which post are you applying for?", "de": "Auf welche Stelle bewerben Sie sich?" },
+              "required": true,
+              "options": {
+                "items": [
+                  { "value": "assistant", "label": { "": "Library assistant (60%)", "de": "Bibliotheksassistenz (60 %)" } },
+                  { "value": "coordinator", "label": { "": "Volunteer coordinator (40%)", "de": "Koordination Ehrenamt (40 %)" } }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "d0000000-0000-4000-8000-000000000062",
+      "title": { "": "Your references", "de": "Ihre Referenzen" },
+      "groups": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000063",
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000604",
+              "type": "repeater",
+              "alias": "referees",
+              "label": { "": "Who can tell us about your work?", "de": "Wer kann uns etwas über Ihre Arbeit sagen?" },
+              "help": { "": "Two people, for example a former manager.", "de": "Zwei Personen, zum Beispiel eine frühere Vorgesetzte." },
+              "settings": {
+                "minRows": 2,
+                "maxRows": 3,
+                "rowLabel": { "": "Reference", "de": "Referenz" },
+                "addLabel": { "": "Add a reference", "de": "Referenz hinzufügen" }
+              },
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000605",
+                  "type": "text",
+                  "alias": "refName",
+                  "label": { "": "Name", "de": "Name" },
+                  "required": true
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000606",
+                  "type": "text",
+                  "alias": "refContact",
+                  "label": { "": "Phone or email", "de": "Telefon oder E-Mail" },
+                  "required": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "d0000000-0000-4000-8000-000000000064",
+      "title": { "": "Your letter", "de": "Ihr Anschreiben" },
+      "groups": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000065",
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000607",
+              "type": "textarea",
+              "alias": "letter",
+              "label": { "": "Why would you like to work with us?", "de": "Warum möchten Sie bei uns arbeiten?" },
+              "required": true,
+              "settings": { "rows": 6, "counter": true, "maxLength": 4000 }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000608",
+              "type": "yesno",
+              "alias": "startEarly",
+              "label": { "": "Could you start earlier than the posting says?", "de": "Könnten Sie früher beginnen als ausgeschrieben?" },
+              "settings": { "style": "switch" }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000609",
+              "type": "consent",
+              "alias": "privacy",
+              "label": { "": "Consent", "de": "Einwilligung" },
+              "hideLabel": true,
+              "required": true,
+              "settings": {
+                "text": {
+                  "": "I agree that the library keeps my application until six months after the post is filled.",
+                  "de": "Ich bin einverstanden, dass die Bibliothek meine Bewerbung bis sechs Monate nach der Besetzung aufbewahrt."
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    {
+      "key": "d0000000-0000-4000-8000-00000000060a",
+      "message": {
+        "": "<p>Thank you, {{ field.fullName.first }}. We reply within two weeks.</p>",
+        "de": "<p>Danke, {{ field.fullName.first }}. Wir antworten innerhalb von zwei Wochen.</p>"
+      }
+    }
+  ]
+}

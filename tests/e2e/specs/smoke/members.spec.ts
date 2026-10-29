@@ -14,9 +14,11 @@ LANGUAGES.forEach((language, index) => {
       .getByRole('link', { name: pageOf('demoMembers', language).name })
       .click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(pageOf('demoLogin', language).heading);
-    await page.getByLabel(textOf('Demo.Login.Email', language)).fill(member.email);
-    await page.getByLabel(textOf('Demo.Login.Password', language), { exact: true }).fill(member.password);
-    await page.getByRole('button', { name: textOf('Demo.Login.Submit', language) }).click();
+    // The sign-in form is the page's own; the footer's newsletter asks for an email address too.
+    const main = page.getByRole('main');
+    await main.getByLabel(textOf('Demo.Login.Email', language)).fill(member.email);
+    await main.getByLabel(textOf('Demo.Login.Password', language), { exact: true }).fill(member.password);
+    await main.getByRole('button', { name: textOf('Demo.Login.Submit', language) }).click();
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(pageOf('demoMembers', language).heading);
     await expect(page.locator('.site-account strong')).toHaveText(member.name);

@@ -58,7 +58,8 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
 - a block list ("Demo blocks") with a text block and a highlight;
 - the pages, from `Seeding/DemoContent.json`: home, events, careers, feedback, contact, members, sign-in, privacy
   and imprint, with English under `/en` and German under `/de`;
-- the newsletter slot in the footer (its texts now; the newsletter form comes with a later step);
+- the newsletter slot in the footer, with its texts and the newsletter form on every page, so a page with a form of
+  its own holds two;
 - the member group "Library members", the two members, and public access on the members page;
 - the demo forms, from `Seeding/Forms/<alias>.json` in the package's definition format, created and published
   through the form service when their alias is missing ([ADR-0094](../docs/decisions/0094-demo-forms.md)): the
@@ -71,7 +72,10 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
   a ranking, yes or no and a scale ([ADR-0096](../docs/decisions/0096-the-choice-controls.md)); and the room hire
   form on its page, with a day from tomorrow to three months ahead, a start time, the hours on a slider and the cost
   worked out from them, the key's pick-up, a name, an address, a file and a signature
-  ([ADR-0097](../docs/decisions/0097-the-part-date-and-output-controls.md)).
+  ([ADR-0097](../docs/decisions/0097-the-part-date-and-output-controls.md)); the newsletter form in the footer, with an
+  email address, a switch and a consent; and the job application on the careers page, three pages long, with a name,
+  two references as the rows of a repeatable group, a letter, a switch and a consent, which works without JavaScript
+  too ([ADR-0100](../docs/decisions/0100-the-post-without-javascript.md)).
 
 To add a page, add it to `DemoContent.json` with a new fixed key. Texts the views show belong in its `dictionary`.
 To add a form, add its definition to `Seeding/Forms/` and its alias to `DemoFormSeeder`, and name it in a page's

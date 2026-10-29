@@ -31,6 +31,8 @@ internal sealed class DemoFormSeeder(
         ("workshop", "Workshop booking"),
         ("feedback", "Feedback"),
         ("roomHire", "Room hire"),
+        ("newsletter", "Newsletter"),
+        ("application", "Job application"),
     ];
 
     /// <summary>Creates and publishes each missing form; true when one was created.</summary>

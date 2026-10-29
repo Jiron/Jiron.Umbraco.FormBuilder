@@ -176,7 +176,8 @@
             "text": "<p>Sie begrüßen neue Ehrenamtliche, planen das Reparatur-Café und halten alle auf dem Laufenden. Beginn: so bald wie möglich.</p>"
           }
         }
-      ]
+      ],
+      "form": "application"
     },
     {
       "key": "e0433b9a-d747-44b8-8ec1-fd17e114f344",

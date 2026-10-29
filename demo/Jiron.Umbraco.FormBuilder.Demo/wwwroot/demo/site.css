@@ -160,7 +160,7 @@ main:focus {
 
 .site-block h2,
 .site-highlight h2,
-.site-slot h2 {
+.site-slot > h2 {
   margin: 0 0 8px;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 26px;
@@ -273,8 +273,9 @@ main:focus {
   color: var(--site-ink);
 }
 
-.site-slot p {
-  margin: 0;
+/* The site styles its own heading and text in the slot, never the form's. */
+.site-slot > p {
+  margin: 0 0 16px;
 }
 
 .site-foot-meta {
@@ -324,7 +325,7 @@ main:focus {
 
   .site-block h2,
   .site-highlight h2,
-  .site-slot h2 {
+  .site-slot > h2 {
     font-size: 22px;
   }
 
