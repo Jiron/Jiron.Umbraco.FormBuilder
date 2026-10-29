@@ -56,7 +56,8 @@ should adopt:
   (a `progress` element), each with `jfb-progress-text`.
 - **Choices:** `jfb-choices-horizontal`, `-cards`, `-buttons` (yes/no), `-scale`, `-rating`; `jfb-scale` and
   `jfb-ends` around a scale; `jfb-switch` (with `role="switch"`) on a yes/no checkbox; `jfb-matrix` with
-  `jfb-matrix-head` for a grid; `jfb-ranking` for a ranking with move buttons.
+  `jfb-matrix-head` for a grid; `jfb-ranking` for a ranking with move buttons; an option's description as a
+  `jfb-help` after its label in the `jfb-choice`, which its input names in `aria-describedby` (added in 6.2d).
 - **Other parts:** `jfb-affix` (prefix and suffix); `jfb-select` around a single dropdown for the theme's chevron;
   `jfb-range` (a slider and its `output`); `jfb-output` (a calculated value); `jfb-parts`, `jfb-part` and
   `jfb-part-wide` (name and address); `jfb-repeater` and `jfb-row`; `jfb-signature`, `jfb-signature-pad` and

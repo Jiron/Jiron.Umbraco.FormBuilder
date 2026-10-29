@@ -705,6 +705,18 @@
   padding-inline-start: calc(24px + var(--_s3));
 }
 
+/* An option's description sits under its label text, the box beside both */
+.jfb-form .jfb-choice:has(> .jfb-help) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--_s3);
+}
+
+.jfb-form .jfb-choice > .jfb-help {
+  grid-column: 2;
+  margin-block-start: calc(-1 * var(--_s2));
+}
+
 /* Cards: the whole card is the target; a chosen card takes the accent; a full one is dashed but still readable. */
 .jfb-form .jfb-choices-cards {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
@@ -714,6 +726,7 @@
 .jfb-form .jfb-choices-cards > .jfb-choice {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
   gap: 0 var(--_s3);
   padding: var(--_s4);
   background: var(--_surface);
@@ -749,6 +762,10 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
+}
+
+.jfb-form .jfb-choices-cards > .jfb-choice > .jfb-help {
+  margin-block-start: var(--_s1);
 }
 
 .jfb-form .jfb-choices-cards .jfb-places {
