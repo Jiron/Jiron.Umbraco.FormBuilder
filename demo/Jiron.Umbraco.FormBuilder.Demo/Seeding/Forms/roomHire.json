@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "key": "d0000000-0000-4000-8000-000000000004",
+  "settings": {
+    "submission": {
+      "submitLabel": { "": "Request the room", "de": "Raum anfragen" }
+    }
+  },
+  "pages": [
+    {
+      "key": "d0000000-0000-4000-8000-000000000040",
+      "groups": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000041",
+          "title": { "": "When", "de": "Wann" },
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000401",
+              "type": "date",
+              "alias": "day",
+              "label": { "": "Which day?", "de": "An welchem Tag?" },
+              "help": { "": "We take bookings from tomorrow up to three months ahead.", "de": "Wir nehmen Buchungen ab morgen bis drei Monate im Voraus an." },
+              "required": true,
+              "settings": { "min": { "today": "+1d" }, "max": { "today": "+3m" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000402",
+              "type": "time",
+              "alias": "from",
+              "label": { "": "From", "de": "Ab" },
+              "required": true,
+              "settings": { "min": "09:00", "max": "17:00", "stepMinutes": 30 }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000403",
+              "type": "slider",
+              "alias": "hours",
+              "label": { "": "How many hours?", "de": "Wie viele Stunden?" },
+              "settings": { "min": "1", "max": "8", "step": "1", "unit": { "": "hours", "de": "Stunden" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000404",
+              "type": "calculation",
+              "alias": "cost",
+              "label": { "": "Room hire", "de": "Raummiete" },
+              "help": { "": "15 euros an hour.", "de": "15 Euro pro Stunde." },
+              "settings": { "formula": "hours * 15", "format": { "decimals": 2, "prefix": { "": "EUR", "de": "EUR" } } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000405",
+              "type": "datetime",
+              "alias": "keyPickup",
+              "label": { "": "When will you pick up the key?", "de": "Wann holen Sie den Schlüssel ab?" },
+              "help": { "": "The library desk is open from 9:00 to 18:00.", "de": "Die Ausleihe ist von 9 bis 18 Uhr geöffnet." },
+              "settings": { "min": { "today": "" }, "stepMinutes": 15 }
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000042",
+          "title": { "": "Who", "de": "Wer" },
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000406",
+              "type": "name",
+              "alias": "contact",
+              "label": { "": "Who is the contact on the day?", "de": "Wer ist am Tag Ansprechperson?" },
+              "required": true
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000407",
+              "type": "email",
+              "alias": "email",
+              "label": { "": "Email address", "de": "E-Mail-Adresse" },
+              "help": { "": "We send the confirmation there.", "de": "Dorthin schicken wir die Bestätigung." },
+              "required": true
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000408",
+              "type": "address",
+              "alias": "billing",
+              "label": { "": "Address for the invoice", "de": "Rechnungsadresse" },
+              "required": true,
+              "settings": { "parts": ["street2", "country"] }
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000043",
+          "title": { "": "Plan and signature", "de": "Plan und Unterschrift" },
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000409",
+              "type": "file",
+              "alias": "plan",
+              "label": { "": "A plan of the room as you need it", "de": "Ein Plan des Raums, wie Sie ihn brauchen" },
+              "help": { "": "A PDF or a photo of a sketch is enough.", "de": "Ein PDF oder ein Foto einer Skizze reicht." },
+              "settings": { "types": ["pdf", "images"] }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000410",
+              "type": "signature",
+              "alias": "signature",
+              "label": { "": "Your signature", "de": "Ihre Unterschrift" },
+              "required": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

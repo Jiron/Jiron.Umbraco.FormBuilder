@@ -31,7 +31,7 @@ describe('what the pages must show', () => {
     assert.deepEqual(Object.keys(want), ['en', 'de']);
     assert.equal(want.en.heading, content.home.en.heading);
     assert.equal(want.de.path, '/de/');
-    assert.deepEqual(want.en.menu, ['Events', 'Careers', 'Feedback', 'Contact', 'Members']);
+    assert.deepEqual(want.en.menu, ['Events', 'Careers', 'Feedback', 'Room hire', 'Contact', 'Members']);
     assert.deepEqual(want.en.legal, ['Privacy', 'Imprint']);
     assert.equal(want.en.blocks.length, content.home.blocks.length);
     assert.equal(want.de.text('Demo.Login.Failed'), content.dictionary['Demo.Login.Failed'].de);

@@ -65,9 +65,12 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
   contact form, which the contact page shows through its `form` property, and the workshop booking on the events
   page, which is for members: a visitor sees a notice that asks them to sign in, a member the form, where the
   workshop is chosen from cards and a help text recalls its name
-  ([ADR-0095](../docs/decisions/0095-visitor-texts-members-only-forms-and-the-pending-note.md)); and the feedback
+  ([ADR-0095](../docs/decisions/0095-visitor-texts-members-only-forms-and-the-pending-note.md)); the feedback
   form on the feedback page, with radio buttons side by side, checkboxes with "Other", a dropdown, a rating, a grid,
-  a ranking, yes or no and a scale ([ADR-0096](../docs/decisions/0096-the-choice-controls.md)).
+  a ranking, yes or no and a scale ([ADR-0096](../docs/decisions/0096-the-choice-controls.md)); and the room hire
+  form on its page, with a day from tomorrow to three months ahead, a start time, the hours on a slider and the cost
+  worked out from them, the key's pick-up, a name, an address, a file and a signature
+  ([ADR-0097](../docs/decisions/0097-the-part-date-and-output-controls.md)).
 
 To add a page, add it to `DemoContent.json` with a new fixed key. Texts the views show belong in its `dictionary`.
 To add a form, add its definition to `Seeding/Forms/` and its alias to `DemoFormSeeder`, and name it in a page's

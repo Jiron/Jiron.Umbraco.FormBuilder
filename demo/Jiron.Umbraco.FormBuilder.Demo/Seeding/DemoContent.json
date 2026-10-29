@@ -197,6 +197,24 @@
       "form": "feedback"
     },
     {
+      "key": "3e694744-b928-4d9b-be7e-74d772ed8c67",
+      "type": "demoPage",
+      "en": {
+        "name": "Room hire",
+        "heading": "Hire the reading room",
+        "lede": "The reading room seats 40 and has a projector, a sound system and a small kitchen.",
+        "body": "<p>Tell us the day, the hours and who to invoice. We confirm by email within two working days.</p>"
+      },
+      "de": {
+        "name": "Raum mieten",
+        "heading": "Den Lesesaal mieten",
+        "lede": "Der Lesesaal bietet 40 Plätze, einen Beamer, eine Tonanlage und eine kleine Küche.",
+        "body": "<p>Nennen Sie uns den Tag, die Stunden und die Rechnungsadresse. Wir bestätigen innerhalb von zwei Werktagen per E-Mail.</p>"
+      },
+      "blocks": [],
+      "form": "roomHire"
+    },
+    {
       "key": "f1fa2112-fba3-49d8-ba32-fb1312d6c172",
       "type": "demoPage",
       "en": {
