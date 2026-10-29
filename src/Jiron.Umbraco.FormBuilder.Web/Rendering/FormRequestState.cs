@@ -40,15 +40,22 @@ internal sealed record FormPostOutcome(string Html, string? Reference, bool IsPe
 
 /// <summary>
 /// What a post without JavaScript leaves for the form it renders again (ADR-0004, ADR-0093): the answers, the errors by
-/// field, the page to show, a notice above the form, or the outcome. The surface action of 6.2g fills it.
+/// field, each repeatable group's rows, the page to show, a notice above the form, or the outcome. The surface action
+/// of 6.2g fills it.
 /// </summary>
 internal sealed record FormPostState
 {
     /// <summary>The visitor's answers by the field's key.</summary>
     public IReadOnlyDictionary<Guid, FieldAnswers> Answers { get; init; } = new Dictionary<Guid, FieldAnswers>();
 
-    /// <summary>The errors by the field's key.</summary>
+    /// <summary>The errors by the field's key; a repeatable group's own error, such as too few rows, among them.</summary>
     public IReadOnlyDictionary<Guid, string> Errors { get; init; } = new Dictionary<Guid, string>();
+
+    /// <summary>
+    /// Each repeatable group's rows by the group's key, in the order the visitor saw them, each with its child fields'
+    /// answers and errors (ADR-0098); a group without rows has none.
+    /// </summary>
+    public IReadOnlyDictionary<Guid, IReadOnlyList<FormPostRow>> Rows { get; init; } = new Dictionary<Guid, IReadOnlyList<FormPostRow>>();
 
     /// <summary>The page to show; null for the first page the rules show.</summary>
     public Guid? Page { get; init; }
@@ -58,6 +65,16 @@ internal sealed record FormPostState
 
     /// <summary>The outcome, in place of the form; null while the form shows.</summary>
     public FormPostOutcome? Outcome { get; init; }
+}
+
+/// <summary>One row of a repeatable group that a post left: its child fields' answers and errors by their keys (ADR-0098).</summary>
+internal sealed record FormPostRow
+{
+    /// <summary>The visitor's answers by the child field's key.</summary>
+    public IReadOnlyDictionary<Guid, FieldAnswers> Answers { get; init; } = new Dictionary<Guid, FieldAnswers>();
+
+    /// <summary>The errors by the child field's key, each the error of its field in this row.</summary>
+    public IReadOnlyDictionary<Guid, string> Errors { get; init; } = new Dictionary<Guid, string>();
 }
 
 /// <summary>Where a post's state waits for the form it renders again: the request's items, by the form's key and the instance.</summary>

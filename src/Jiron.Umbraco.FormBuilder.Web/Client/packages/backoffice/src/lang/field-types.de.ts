@@ -153,6 +153,7 @@ export default {
     signatureHeight: 'Höhe der Fläche',
     repeaterMinRows: 'Mindestanzahl Zeilen',
     repeaterMaxRows: 'Höchstanzahl Zeilen',
+    repeaterRowLabel: 'Beschriftung einer Zeile',
     repeaterAddLabel: 'Beschriftung von „Hinzufügen“',
     repeaterRemoveLabel: 'Beschriftung von „Entfernen“',
     headingText: 'Überschrift',

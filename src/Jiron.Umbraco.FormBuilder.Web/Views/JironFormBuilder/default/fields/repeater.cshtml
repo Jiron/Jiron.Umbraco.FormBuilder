@@ -1,0 +1,44 @@
+@* jfb-view: fields/repeater 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@*
+    The rows in the field's fieldset, each a fieldset with its legend and its fields; the container carries the field's
+    id, so the error summary's link to the group's own error moves the focus to its rows. Add and Remove are submit
+    buttons, so a page without JavaScript adds or removes a row by rendering the page again.
+*@
+@{
+    var control = (RepeaterControlModel)Model.Control!;
+    void Remove(RowButtonModel remove)
+    {
+        if (remove.Context is { } context)
+        {
+            <button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="@remove.Value" disabled="@Model.IsDisabled">@remove.Text<span class="jfb-visually-hidden"> @context</span></button>
+        }
+        else
+        {
+            <button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="@remove.Value" disabled="@Model.IsDisabled">@remove.Text</button>
+        }
+    }
+}
+<div class="jfb-repeater" id="@Model.Id" tabindex="-1">
+    @foreach (var row in control.Rows)
+    {
+        <fieldset class="jfb-row" id="@row.Id" data-jfb-row="@row.Index">
+            <legend>@row.Legend</legend>
+            @if (row.Remove is { } remove)
+            {
+                Remove(remove);
+            }
+            <div class="@control.FieldsCssClass">
+                @foreach (var field in row.Fields)
+                {
+                    @await Html.PartialAsync(control.FieldView, field)
+                }
+            </div>
+        </fieldset>
+    }
+    @if (control.Add is { } add)
+    {
+        <button type="submit" class="jfb-button" name="jfb-nav" value="@add.Value" disabled="@Model.IsDisabled"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>@add.Text</button>
+    }
+</div>

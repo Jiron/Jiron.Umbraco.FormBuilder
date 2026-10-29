@@ -17,7 +17,8 @@
   resolved into it, amended by [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) in 6.1b; how
   a submission from an older revision is read, through the newest version published with it, extended by
   [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) in 6.1e; which types may have a
-  `uniquePerForm` check, and how it compares answers, amended by [ADR-0091](0091-unique-answers.md) in 6.1h
+  `uniquePerForm` check, and how it compares answers, amended by [ADR-0091](0091-unique-answers.md) in 6.1h; a
+  repeatable group's `rowLabel` added by [ADR-0098](0098-the-repeaters-rows.md) in 6.2f
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2a (the model, the schema, upgraders), 4.2b (structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
@@ -290,7 +291,7 @@ strings (ADR-0005); counts are JSON integers; relative dates use the operand for
 | `address` | `parts` (`street2`, `region`, `country`), `requiredParts` (none: the street, the postcode and the city) |
 | `file` | `types` (`images`, `pdf`, `office`, `text`, `archives`; with none and no extensions, images and PDFs), `extensions`, `maxBytes`, `maxFiles` (1), `dropZone` (true), `thumbnails` (true), `camera` (false) |
 | `signature` | `width`, `height` |
-| `repeater` | `minRows` (0), `maxRows` (10), `addLabel`, `removeLabel` |
+| `repeater` | `minRows` (0), `maxRows` (10), `rowLabel` (each row's legend before its number, ADR-0098), `addLabel`, `removeLabel` |
 | `hidden` | none: its value is `defaultValue` or `prefill.query` |
 | `heading` | `text` (LocalizedText), `level` (2 to 4) |
 | `paragraph` | `html` (LocalizedHtml) |

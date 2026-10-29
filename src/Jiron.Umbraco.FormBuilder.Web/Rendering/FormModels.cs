@@ -47,10 +47,10 @@ internal sealed record FormRender(
 /// instance, and every page, group and field in the state its rules give for what its controls start with (or a post's
 /// answers), read as the submission pipeline reads them, with the site's clock and time zone, no member and no query
 /// value, so the markup is the same for every visitor but where a form for members does not admit them; a calculation
-/// shows the value the rules work out (ADR-0097). A hidden field renders nothing, nor does a field whose type the site
-/// lacks, a calculation visitors do not see, or the captcha's place on a form without a captcha. Options from a list or
-/// another source, and options a parent field filters, are those the options endpoint answers for the page's answers
-/// (ADR-0096).
+/// shows the value the rules work out (ADR-0097), and a repeatable group's rows each follow their own state (ADR-0098).
+/// A hidden field renders nothing, nor does a field whose type the site lacks, a calculation visitors do not see, or
+/// the captcha's place on a form without a captcha. Options from a list or another source, and options a parent field
+/// filters, are those the options endpoint answers for the page's answers (ADR-0096).
 /// </summary>
 /// <param name="types">The field types.</param>
 /// <param name="mergeTags">The merge-tag service, which renders the visitor texts that hold tags.</param>
@@ -87,9 +87,6 @@ internal sealed partial class FormModels(
     public const string ConsentPrefix = "jfb-consent-";
 
     private static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> NoQuery = FrozenDictionary<string, IReadOnlyList<string>>.Empty;
-
-    private static readonly IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>>> NoRows =
-        FrozenDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>>>.Empty;
 
     // The context values not taken in this process, by form and name, so each is logged once.
     private readonly ConcurrentDictionary<string, bool> _contextLogged = new(StringComparer.Ordinal);
@@ -179,14 +176,14 @@ internal sealed partial class FormModels(
         var read = Read(definition, answers);
         var state = FormRules.Evaluate(
             DefinitionLogic.From(definition, types),
-            RuleAnswers(definition, read),
+            RuleAnswers(read),
             new EvaluationContext(now, render.Shown.TimeZone.Id, render.Culture, new Member(false, []), NoQuery, []));
         var hidden = state.Hidden.ToHashSet(StringComparer.Ordinal);
         var required = state.Required.ToHashSet(StringComparer.Ordinal);
         var shownPages = shown.Pages.Where(page => !hidden.Contains(Id(page.Key))).ToList();
         var current = shownPages.FirstOrDefault(page => page.Key == post?.Page) ?? shownPages.FirstOrDefault();
-        var recalled = await RecalledAsync(render, read, hidden, cancellationToken);
-        var facts = new PageFacts(DateOnly.FromDayNumber(CalendarValues.Today(now, render.Shown.TimeZone.Id)), state.Calculations, cultures.For(render.Culture));
+        var recalled = await RecalledAsync(render, read, hidden, state, cancellationToken);
+        var facts = new PageFacts(DateOnly.FromDayNumber(CalendarValues.Today(now, render.Shown.TimeZone.Id)), state.Calculations, state.Rows, cultures.For(render.Culture));
         var build = new Build(render, root, post, words, culture, answers, hidden, required, MarkerOf(settings.RequiredMarker), recalled, settings.ChoiceLayout, facts);
         var pages = new List<PageViewModel>();
         foreach (var page in shown.Pages)
@@ -233,7 +230,7 @@ internal sealed partial class FormModels(
         var navigation = Navigation(settings, shownPages, current, words);
         return root.Model(
             pages: pages,
-            defaultButton: pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Control is RankingControlModel)
+            defaultButton: pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Control is RankingControlModel or RepeaterControlModel)
                 ? navigation.Next ?? navigation.Submit
                 : null,
             progress: Progress(settings, shownPages, current, build),
@@ -250,7 +247,7 @@ internal sealed partial class FormModels(
 
     // The visitor texts that hold tags, each rendered as the server renders it in its place for the answers the page
     // holds (ADR-0068, ADR-0095), by its owner and name.
-    private async Task<Dictionary<(Guid Owner, string Name), string>> RecalledAsync(FormRender render, Dictionary<Guid, ImmutableArray<FieldValue>> read, HashSet<string> hidden, CancellationToken cancellationToken)
+    private async Task<Dictionary<(Guid Owner, string Name), string>> RecalledAsync(FormRender render, PageRead read, HashSet<string> hidden, FormState state, CancellationToken cancellationToken)
     {
         var recalled = new Dictionary<(Guid Owner, string Name), string>();
         if (render.Shown.Tagged.Count == 0)
@@ -258,7 +255,7 @@ internal sealed partial class FormModels(
             return recalled;
         }
 
-        var scope = render.Shown.Scope with { Answers = RecallAnswers(render.Form.Published.Definition, read, hidden) };
+        var scope = render.Shown.Scope with { Answers = RecallAnswers(render.Form.Published.Definition, read, hidden, state) };
         foreach (var text in render.Shown.Tagged)
         {
             var context = text.IsHtml ? MergeTagContext.Html : MergeTagContext.Text;
@@ -268,84 +265,134 @@ internal sealed partial class FormModels(
         return recalled;
     }
 
-    // The page's answers as their fields' types read them (ADR-0058), which is how both runtimes recall them, and the
-    // fields the rules hid.
-    private static MergeTagAnswers RecallAnswers(FormDefinition definition, Dictionary<Guid, ImmutableArray<FieldValue>> read, HashSet<string> hidden) =>
-        new([.. read.Select(pair => new MergeTagAnswer(pair.Key, pair.Value))], AllFields(definition).Where(field => hidden.Contains(Id(field.Key))).Select(field => field.Key));
+    // The page's answers as their fields' types read them (ADR-0058), which is how both runtimes recall them, a
+    // repeatable group's child in each row that shows it, and the fields the rules hid.
+    private static MergeTagAnswers RecallAnswers(FormDefinition definition, PageRead read, HashSet<string> hidden, FormState state) =>
+        new(
+            [
+                .. read.Fields.Select(pair => new MergeTagAnswer(pair.Key, pair.Value)),
+                .. read.Rows.SelectMany(group => group.Value.SelectMany((row, at) => row
+                    .Where(pair => !(state.Rows.GetValueOrDefault(Id(group.Key)) is { } states && at < states.Count && states[at].Hidden.Contains(Id(pair.Key))))
+                    .Select(pair => new MergeTagAnswer(pair.Key, pair.Value, row: at)))),
+            ],
+            AllFields(definition).Where(field => hidden.Contains(Id(field.Key))).Select(field => field.Key));
 
     // Each answer as the submission pipeline reads it before its rules (SubmissionReader): cleaned, held to its type's
-    // limits and read by its type. An answer past its limits or one its type cannot read is none. A hidden field's answer
+    // limits and read by its type, and a repeatable group's rows only while their number keeps the group's limits, each
+    // row's answers read so. An answer past its limits or one its type cannot read is none. A hidden field's answer
     // shows nowhere on the page: publishing keeps rules and formulas off it, and a visitor text shows nothing of it
     // (ADR-0068).
-    private Dictionary<Guid, ImmutableArray<FieldValue>> Read(FormDefinition definition, Dictionary<Guid, FieldAnswers> answers)
+    private PageRead Read(FormDefinition definition, PageAnswers answers)
     {
-        var read = new Dictionary<Guid, ImmutableArray<FieldValue>>();
-        foreach (var field in AllFields(definition))
+        var read = new PageRead([], []);
+        foreach (var field in definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields))
         {
-            if (!answers.TryGetValue(field.Key, out var given) || types.FindType(field.Type) is not { } type)
+            if (types.FindType(field.Type) is not { } type)
             {
                 continue;
             }
 
-            var cleaned = SubmissionReader.Clean(new PostedAnswer(
-                [.. given.Values],
-                given.Parts.ToDictionary(part => part.Key, part => (IReadOnlyList<string?>)[.. part.Value], StringComparer.Ordinal)));
-            if (FieldValues.CheckLimits(type, field, cleaned) is null && FieldValues.Read(type, field, cleaned) is { IsUnreadable: false, Values: { Length: > 0 } values })
+            if (!type.Declaration.Features.HasFlag(FieldFeatures.ChildFields))
             {
-                read[field.Key] = values;
+                ReadInto(read.Fields, field, type, answers.Fields);
+                continue;
+            }
+
+            var rows = answers.Rows.GetValueOrDefault(field.Key) ?? [];
+            if (FieldValues.CheckRows(type, field, rows.Count).IsEmpty)
+            {
+                read.Rows[field.Key] = [.. rows.Select(row =>
+                {
+                    var inRow = new Dictionary<Guid, ImmutableArray<FieldValue>>();
+                    foreach (var child in field.Fields)
+                    {
+                        if (types.FindType(child.Type) is { } childType)
+                        {
+                            ReadInto(inRow, child, childType, row);
+                        }
+                    }
+
+                    return inRow;
+                })];
             }
         }
 
         return read;
     }
 
-    // The answers as the rules see them, as the pipeline hands them over: each field's values by its id and a grid's by
-    // its rows' ids. A repeatable group's rows join with its rows (6.2f).
-    private static FormAnswers RuleAnswers(FormDefinition definition, Dictionary<Guid, ImmutableArray<FieldValue>> read)
+    // One field's answer read as the pipeline reads it, when it has one its limits and its type take.
+    private static void ReadInto(Dictionary<Guid, ImmutableArray<FieldValue>> read, FormField field, IFormBuilderFieldType type, Dictionary<Guid, FieldAnswers> answers)
     {
-        var values = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
-        foreach (var field in definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields))
+        if (!answers.TryGetValue(field.Key, out var given))
         {
-            foreach (var answered in read.GetValueOrDefault(field.Key, []).GroupBy(value => value.Row))
-            {
-                values[Id(answered.Key ?? field.Key)] = [.. answered.Select(value => value.Text)];
-            }
+            return;
         }
 
-        return new FormAnswers(values, NoRows);
+        var cleaned = SubmissionReader.Clean(new PostedAnswer(
+            [.. given.Values],
+            given.Parts.ToDictionary(part => part.Key, part => (IReadOnlyList<string?>)[.. part.Value], StringComparer.Ordinal)));
+        if (FieldValues.CheckLimits(type, field, cleaned) is null && FieldValues.Read(type, field, cleaned) is { IsUnreadable: false, Values: { Length: > 0 } values })
+        {
+            read[field.Key] = values;
+        }
     }
 
-    // Each field's answers, its child fields' among them: a post's; else what its control starts with (ADR-0097), its
-    // default value when that holds no merge tag (a default with tags is the browser's to fill, ADR-0014), or without a
-    // default a date's today, a date and time's now and a slider's middle (Start).
-    private Dictionary<Guid, FieldAnswers> Answers(PublicForm form, FormDefinition definition, FormPostState? post, DateTime local)
+    // The answers as the rules see them, as the pipeline hands them over: each field's values by its id, a grid's by its
+    // rows' ids, and each repeatable group's rows so.
+    private static FormAnswers RuleAnswers(PageRead read)
+    {
+        static IReadOnlyDictionary<string, IReadOnlyList<string>> Texts(Dictionary<Guid, ImmutableArray<FieldValue>> answers)
+        {
+            var texts = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+            foreach (var (key, values) in answers)
+            {
+                foreach (var answered in values.GroupBy(value => value.Row))
+                {
+                    texts[Id(answered.Key ?? key)] = [.. answered.Select(value => value.Text)];
+                }
+            }
+
+            return texts;
+        }
+
+        return new FormAnswers(
+            Texts(read.Fields),
+            read.Rows.ToDictionary(group => Id(group.Key), group => (IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>>)[.. group.Value.Select(Texts)], StringComparer.Ordinal));
+    }
+
+    // Each field's answers and each repeatable group's rows (RowsOf): a post's; else what the controls start with
+    // (ADR-0097): a field's default value when that holds no merge tag (a default with tags is the browser's to fill,
+    // ADR-0014), or without a default a date's today, a date and time's now and a slider's middle (Start).
+    private PageAnswers Answers(PublicForm form, FormDefinition definition, FormPostState? post, DateTime local)
     {
         var defined = AllFields(definition).GroupBy(field => field.Key).ToDictionary(group => group.Key, group => group.First());
-        var answers = new Dictionary<Guid, FieldAnswers>();
-        foreach (var field in form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)))
+        var answers = new PageAnswers([], []);
+        foreach (var field in form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields))
         {
-            if (post is not null)
+            if (types.FindType(field.Type)?.Declaration.Features.HasFlag(FieldFeatures.ChildFields) == true)
             {
-                if (post.Answers.TryGetValue(field.Key, out var posted))
-                {
-                    answers[field.Key] = posted;
-                }
-
-                continue;
+                answers.Rows[field.Key] = RowsOf(field, post, defined, local);
             }
-
-            var texts = field.DefaultValue is { } defaults ? Untagged(defaults.Values) : [];
-            if (texts is { Count: > 0 })
+            else if ((post is null ? StartOf(field, defined[field.Key], local) : post.Answers.GetValueOrDefault(field.Key)) is { } given)
             {
-                answers[field.Key] = new FieldAnswers(texts);
-            }
-            else if (texts is not null && Start(defined[field.Key], local) is { } start)
-            {
-                answers[field.Key] = new FieldAnswers([start]);
+                answers.Fields[field.Key] = given;
             }
         }
 
         return answers;
+    }
+
+    // What a field's control starts with: its default value when that holds no merge tag, or without a default its
+    // type's start; none for a default with a tag.
+    private FieldAnswers? StartOf(PublicField field, FormField defined, DateTime local)
+    {
+        var texts = field.DefaultValue is { } defaults ? Untagged(defaults.Values) : [];
+        if (texts is { Count: > 0 })
+        {
+            return new FieldAnswers(texts);
+        }
+
+        return texts is not null && Start(defined, local) is { } start ? new FieldAnswers([start]) : null;
     }
 
     // What a control without a default starts with: a date that starts at today the site's today; a date and time that
@@ -391,6 +438,7 @@ internal sealed partial class FormModels(
         return texts;
     }
 
+    // A field's view model, built where the build stands: the page, or a repeatable group's row (Build.Row).
     private async Task<FieldViewModel?> FieldAsync(Build build, PublicField field, CancellationToken cancellationToken)
     {
         if (types.Find(field.Type) is not { } traits
@@ -401,23 +449,23 @@ internal sealed partial class FormModels(
             return null;
         }
 
-        var root = build.Root;
         var id = Id(field.Key);
-        var control = root.Id + "-" + (field.Alias ?? field.Key.ToString("N"));
+        var control = build.Prefix + "-" + (field.Alias ?? field.Key.ToString("N"));
         var isRequired = build.Required.Contains(id);
         var isHidden = build.Hidden.Contains(id);
         var shownSettings = new ShownSettings(field.Settings, build.Settings(field.Key));
         var element = traits.HoldsValue ? LabelElementOf(traits.Type, shownSettings) : FieldLabelElement.None;
         var mark = MarkOf(build, field, traits.Type, element, isRequired);
         build.MarksRequired |= mark == FieldMark.Required;
-        var error = build.Post?.Errors.GetValueOrDefault(field.Key);
+        var error = build.Error(field.Key);
+        var answers = build.Answers.GetValueOrDefault(field.Key) ?? FieldAnswers.None;
+        var (model, described) = await ControlAsync(build, field, traits, shownSettings, control, answers, cancellationToken);
         if (error is not null)
         {
+            // After the control's, so a repeatable group's own error follows its rows' in the summary, as on the page.
             build.Errors.Add(new ErrorLinkModel(error, control));
         }
 
-        var answers = build.Answers.GetValueOrDefault(field.Key) ?? FieldAnswers.None;
-        var (model, described) = await ControlAsync(build, field, traits, shownSettings, control, answers, cancellationToken);
         var help = build.Text(field.Key, "help", field.Help);
         var describedBy = new List<string>();
         if (help is not null)
@@ -435,9 +483,9 @@ internal sealed partial class FormModels(
         {
             Key = field.Key,
             Type = field.Type,
-            Alias = field.Alias,
+            Alias = field.Alias is null ? null : build.Name(field),
             Id = control,
-            Name = field.Alias ?? string.Empty,
+            Name = build.Name(field),
             CssClass = Classes("jfb-field", "jfb-field-" + field.Type, field.Span > 1 ? "jfb-span-" + field.Span.ToString(CultureInfo.InvariantCulture) : null, field.CssClass),
             LabelElement = element,
             Label = traits.HoldsValue ? build.Text(field.Key, "label", field.Label) : null,
@@ -508,7 +556,7 @@ internal sealed partial class FormModels(
                             ? new ConfirmInputModel(
                                 settings.Text("confirmLabel") ?? build.Words.ConfirmEmail,
                                 id + "-" + EmailFieldType.ConfirmPart,
-                                (field.Alias ?? string.Empty) + "." + EmailFieldType.ConfirmPart,
+                                build.Name(field) + "." + EmailFieldType.ConfirmPart,
                                 answers.Part(EmailFieldType.ConfirmPart) is [var again, ..] ? again : string.Empty)
                             : null,
                     };
@@ -549,6 +597,9 @@ internal sealed partial class FormModels(
 
             case ImageFieldType:
                 return (await ImageAsync(settings), []);
+
+            case RepeaterFieldType repeater:
+                return (await RowsAsync(build, field, repeater, settings, cancellationToken), []);
 
             default:
                 // A site's own type; a built-in one here, such as a divider, adds nothing.
@@ -759,7 +810,16 @@ internal sealed partial class FormModels(
 
     // What the controls of a page read besides its answers: the site's today, the calculations' values as the rules work
     // them out, and the culture's formats.
-    private sealed record PageFacts(DateOnly Today, IReadOnlyDictionary<string, string?> Calculations, CultureFormats Formats);
+    private sealed record PageFacts(DateOnly Today, IReadOnlyDictionary<string, string?> Calculations, IReadOnlyDictionary<string, IReadOnlyList<RowState>> Rows, CultureFormats Formats);
+
+    // The page's answers: each field's outside repeatable groups, and each group's rows of its child fields' answers.
+    private sealed record PageAnswers(Dictionary<Guid, FieldAnswers> Fields, Dictionary<Guid, List<Dictionary<Guid, FieldAnswers>>> Rows);
+
+    // The page's answers as their types read them: each field's, and each repeatable group's rows within its limits.
+    private sealed record PageRead(Dictionary<Guid, ImmutableArray<FieldValue>> Fields, Dictionary<Guid, List<Dictionary<Guid, ImmutableArray<FieldValue>>>> Rows);
+
+    // Where a repeatable group's row stands: the group's alias, the row from 0 and the errors a post left in it.
+    private sealed record RowPlace(string Alias, int Row, IReadOnlyDictionary<Guid, string> Errors);
 
     // What building one form's fields shares, and what it collects.
     private sealed class Build(
@@ -768,7 +828,7 @@ internal sealed partial class FormModels(
         FormPostState? post,
         RenderingWords words,
         CultureInfo culture,
-        Dictionary<Guid, FieldAnswers> answers,
+        PageAnswers answers,
         HashSet<string> hidden,
         HashSet<string> required,
         RequiredMarker marker,
@@ -779,9 +839,15 @@ internal sealed partial class FormModels(
         // The prefix of a visitor text that is a field's setting, such as settings.text.
         private const string SettingPrefix = "settings.";
 
+        private static readonly IReadOnlyDictionary<Guid, string> NoErrors = FrozenDictionary<Guid, string>.Empty;
+
         private readonly Dictionary<string, string> _controls = new(StringComparer.Ordinal);
 
+        private readonly List<ErrorLinkModel> _errors = [];
+
         private Dictionary<Guid, FormField>? _fields;
+
+        private bool _marksRequired;
 
         public FormRender Render => render;
 
@@ -793,7 +859,20 @@ internal sealed partial class FormModels(
 
         public CultureInfo Culture => culture;
 
-        public Dictionary<Guid, FieldAnswers> Answers => answers;
+        // Each field's answers where the build stands: the page's, and in a row the row's over them.
+        public Dictionary<Guid, FieldAnswers> Answers => answers.Fields;
+
+        // Each repeatable group's rows of answers.
+        public Dictionary<Guid, List<Dictionary<Guid, FieldAnswers>>> RowAnswers => answers.Rows;
+
+        // The page's build a row's build stands in; null for the page's.
+        public Build? Outer { get; init; }
+
+        // The row a row's build stands in; null for the page's.
+        public RowPlace? Place { get; init; }
+
+        // The start of the ids of the fields where the build stands: the instance's, or the row's below it (ADR-0098).
+        public string Prefix => Place is { } place ? root.Id + "-" + place.Alias + "-" + place.Row.ToString(CultureInfo.InvariantCulture) : root.Id;
 
         public HashSet<string> Hidden => hidden;
 
@@ -812,9 +891,70 @@ internal sealed partial class FormModels(
 
         public CultureFormats Formats => facts.Formats;
 
-        public List<ErrorLinkModel> Errors { get; } = [];
+        // The error summary's links, which a row's fields add to the page's.
+        public List<ErrorLinkModel> Errors => Outer?.Errors ?? _errors;
 
-        public bool MarksRequired { get; set; }
+        public bool MarksRequired
+        {
+            get => Outer?.MarksRequired ?? _marksRequired;
+            set
+            {
+                if (Outer is { } outer)
+                {
+                    outer.MarksRequired = value;
+                }
+                else
+                {
+                    _marksRequired = value;
+                }
+            }
+        }
+
+        // A field's name where the build stands: its alias, or in a row its path (guests[0].name); none without an alias.
+        public string Name(PublicField field) => field.Alias is not { } alias
+            ? string.Empty
+            : Place is { } place ? place.Alias + "[" + place.Row.ToString(CultureInfo.InvariantCulture) + "]." + alias : alias;
+
+        // The error a post left for a field where the build stands; null for none.
+        public string? Error(Guid key) => (Place?.Errors ?? post?.Errors)?.GetValueOrDefault(key);
+
+        // The columns of the group a field is in, which a repeatable group's rows take (ADR-0034).
+        public int ColumnsOf(Guid key) => Math.Clamp(
+            render.Shown.Form.Pages.SelectMany(page => page.Groups).First(group => group.Fields.Any(field => field.Key == key)).Columns, 1, 4);
+
+        // The build of a repeatable group's row (ADR-0098): the row's answers over the page's, its state over the form's
+        // (a hidden group hides every row's fields), its calculations' values, its errors, and its ids and names.
+        public Build Row(PublicField group, int row)
+        {
+            var inRow = new Dictionary<Guid, FieldAnswers>(Answers);
+            foreach (var (key, given) in RowAnswers[group.Key][row])
+            {
+                inRow[key] = given;
+            }
+
+            var state = facts.Rows.GetValueOrDefault(Id(group.Key)) is { } states && row < states.Count ? states[row] : null;
+            var rowHidden = new HashSet<string>(hidden, StringComparer.Ordinal);
+            rowHidden.UnionWith(state?.Hidden ?? []);
+            if (hidden.Contains(Id(group.Key)))
+            {
+                rowHidden.UnionWith(group.Fields.Select(child => Id(child.Key)));
+            }
+
+            var rowRequired = new HashSet<string>(required, StringComparer.Ordinal);
+            rowRequired.UnionWith(state?.Required ?? []);
+            var calculations = new Dictionary<string, string?>(facts.Calculations, StringComparer.Ordinal);
+            foreach (var (id, value) in state?.Calculations ?? new Dictionary<string, string?>())
+            {
+                calculations[id] = value;
+            }
+
+            var errors = post?.Rows.GetValueOrDefault(group.Key) is { } posted && row < posted.Count ? posted[row].Errors : NoErrors;
+            return new Build(render, root, post, words, culture, answers with { Fields = inRow }, rowHidden, rowRequired, marker, recalled, layout, facts with { Calculations = calculations })
+            {
+                Outer = this,
+                Place = new RowPlace(group.Alias ?? string.Empty, row, errors),
+            };
+        }
 
         // A visitor text as the page shows it: rendered for the page's answers when it holds tags, otherwise as the form
         // endpoint shows it; an empty text is none.
@@ -831,12 +971,17 @@ internal sealed partial class FormModels(
 
         // A field's answers as rules see them: none for a field a rule hides (FormRules).
         public ImmutableArray<string> ShownAnswers(Guid key) =>
-            hidden.Contains(Id(key)) ? [] : answers.TryGetValue(key, out var given) ? given.Values : [];
+            hidden.Contains(Id(key)) ? [] : Answers.TryGetValue(key, out var given) ? given.Values : [];
 
         // A field of the published version by its key, a repeatable group's child among them; the page shows that
         // version's fields, so each one it asks for is there.
         public FormField Definition(Guid key)
         {
+            if (Outer is { } outer)
+            {
+                return outer.Definition(key);
+            }
+
             _fields ??= render.Form.Published.Definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields)
                 .SelectMany(field => field.Fields.Prepend(field))
                 .GroupBy(field => field.Key)
@@ -846,6 +991,11 @@ internal sealed partial class FormModels(
 
         public async Task<string> ControlViewAsync(FormViews views, string type, CancellationToken cancellationToken)
         {
+            if (Outer is { } outer)
+            {
+                return await outer.ControlViewAsync(views, type, cancellationToken);
+            }
+
             if (!_controls.TryGetValue(type, out var path))
             {
                 path = await views.ControlAsync(render.Form.Published.Form.Alias, type, cancellationToken);

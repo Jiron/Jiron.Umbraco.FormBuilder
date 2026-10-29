@@ -1,0 +1,52 @@
+namespace Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
+
+/// <summary>
+/// The control of a repeatable group (<c>repeater</c>, <c>jfb-repeater</c>, ADR-0098): its rows, each a fieldset with
+/// its legend and its fields, and the submit buttons that add and remove a row, which a page without JavaScript posts.
+/// </summary>
+public sealed class RepeaterControlModel
+{
+    /// <summary>The rows, in order.</summary>
+    public required IReadOnlyList<RepeaterRowModel> Rows { get; init; }
+
+    /// <summary>The button that adds a row; null once the group has its most rows.</summary>
+    public RowButtonModel? Add { get; init; }
+
+    /// <summary>The classes of each row's fields: <c>jfb-fields</c> with the columns of the group the field is in.</summary>
+    public required string FieldsCssClass { get; init; }
+
+    /// <summary>The view that writes each of a row's fields, as it writes a group's.</summary>
+    public required string FieldView { get; init; }
+}
+
+/// <summary>One row of a repeatable group (<c>jfb-row</c>): its number, its id, its legend, its Remove button and its fields.</summary>
+public sealed class RepeaterRowModel
+{
+    /// <summary>The row's number from 0 (<c>data-jfb-row</c>), as its fields' names hold it.</summary>
+    public required int Index { get; init; }
+
+    /// <summary>The row's id, which its fields' ids start with.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>The row's legend: the row label and the row's number from 1, such as Guest 1.</summary>
+    public required string Legend { get; init; }
+
+    /// <summary>The button that removes the row; null while the group has no more than its least rows.</summary>
+    public RowButtonModel? Remove { get; init; }
+
+    /// <summary>The row's fields, each named by its path, such as <c>guests[0].name</c>.</summary>
+    public required IReadOnlyList<FieldViewModel> Fields { get; init; }
+}
+
+/// <summary>A submit button that adds or removes a row of a repeatable group, named <c>jfb-nav</c> as navigation's are.</summary>
+public sealed class RowButtonModel
+{
+    /// <summary>What it posts as <c>jfb-nav</c>: <c>add:&lt;alias&gt;</c>, or <c>remove:&lt;alias&gt;:&lt;row&gt;</c> with the row from 0.</summary>
+    public required string Value { get; init; }
+
+    /// <summary>Its visible words.</summary>
+    public required string Text { get; init; }
+
+    /// <summary>What its accessible name adds after its words, visually hidden: the row's legend for Remove; null for none.</summary>
+    public string? Context { get; init; }
+}

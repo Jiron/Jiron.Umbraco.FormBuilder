@@ -21,7 +21,7 @@ internal sealed partial class FormModels
     private static FieldLabelElement LabelElementOf(IFormBuilderFieldType type, ShownSettings settings) => type switch
     {
         RadioFieldType or CheckboxesFieldType or GridFieldType or RankingFieldType or ScaleFieldType or RatingFieldType => FieldLabelElement.Legend,
-        NameFieldType or AddressFieldType or SignatureFieldType => FieldLabelElement.Legend,
+        NameFieldType or AddressFieldType or SignatureFieldType or RepeaterFieldType => FieldLabelElement.Legend,
         YesNoFieldType => IsSwitch(settings) ? FieldLabelElement.Choice : FieldLabelElement.Legend,
         CheckboxFieldType or ConsentFieldType => FieldLabelElement.Choice,
         _ => FieldLabelElement.Label,
@@ -29,10 +29,14 @@ internal sealed partial class FormModels
 
     // How a field's label is marked by the form's style. One box marks only a required tick, as it may otherwise stay
     // unticked by nature, and a switch never, as off is an answer; a grid with a required row is not "optional"; a
-    // calculation never, as the visitor gives it no answer, and a slider never, as it always holds one.
+    // calculation never, as the visitor gives it no answer, and a slider never, as it always holds one; a repeatable
+    // group only as optional while it needs no row, as its least rows are there and their fields say what each needs.
     private static FieldMark MarkOf(Build build, PublicField field, IFormBuilderFieldType type, FieldLabelElement element, bool isRequired)
     {
-        if (element == FieldLabelElement.None || (type is YesNoFieldType && element == FieldLabelElement.Choice) || type is CalculationFieldType or SliderFieldType)
+        if (element == FieldLabelElement.None
+            || (type is YesNoFieldType && element == FieldLabelElement.Choice)
+            || type is CalculationFieldType or SliderFieldType
+            || (type is RepeaterFieldType repeater && repeater.ReadSettings(build.Definition(field.Key).Settings).MinRows > 0))
         {
             return FieldMark.None;
         }
@@ -83,7 +87,7 @@ internal sealed partial class FormModels
                 return (Box(build, field, settings, answers, wording: null), []);
 
             case ConsentFieldType:
-                return (Box(build, field, settings, answers, build.Render.Shown.Consents.GetValueOrDefault(field.Key) is { } hash ? new HiddenInputModel(ConsentPrefix + (field.Alias ?? string.Empty), hash) : null), []);
+                return (Box(build, field, settings, answers, build.Render.Shown.Consents.GetValueOrDefault(field.Key) is { } hash ? new HiddenInputModel(ConsentPrefix + build.Name(field), hash) : null), []);
 
             case ScaleFieldType:
                 {
@@ -148,7 +152,7 @@ internal sealed partial class FormModels
                 Label = settings.Text("otherLabel") is { Length: > 0 } label ? label : build.Words.Other,
                 IsChecked = text.Length > 0 && (several || answers.Values.IsEmpty),
             };
-            other = new OtherChoiceModel(choice, build.Words.OtherText, id + "-" + BuiltInAnswers.OtherPart, (field.Alias ?? string.Empty) + "." + BuiltInAnswers.OtherPart, text);
+            other = new OtherChoiceModel(choice, build.Words.OtherText, id + "-" + BuiltInAnswers.OtherPart, build.Name(field) + "." + BuiltInAnswers.OtherPart, text);
         }
 
         return new ChoicesControlModel
@@ -306,7 +310,7 @@ internal sealed partial class FormModels
                 {
                     Key = row.Key,
                     Label = Text(row.Label) ?? string.Format(build.Culture, build.Words.Row, index + 1),
-                    Name = (field.Alias ?? string.Empty) + "." + part,
+                    Name = build.Name(field) + "." + part,
                     IsRequired = gridRequired || row.Required,
                     Mark = marked ? FieldMark.Required : FieldMark.None,
                     MarkText = marked ? "*" : string.Empty,
@@ -339,7 +343,7 @@ internal sealed partial class FormModels
     private async Task<RankingControlModel> RankingAsync(Build build, PublicField field, ShownSettings settings, string id, FieldAnswers answers, CancellationToken cancellationToken)
     {
         var (options, available) = await OptionsAsync(build, field, cancellationToken);
-        var alias = field.Alias ?? string.Empty;
+        var alias = build.Name(field);
         var top = settings.Int("top", 0);
         var ranked = top > 0 ? Math.Min(top, options.Count) : options.Count;
         var given = answers.Parts.IsEmpty

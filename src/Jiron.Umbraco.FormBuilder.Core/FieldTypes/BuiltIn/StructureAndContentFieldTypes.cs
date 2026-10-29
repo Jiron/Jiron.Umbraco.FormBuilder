@@ -48,14 +48,22 @@ public sealed class RepeaterFieldSettings
     [FormBuilderSetting("#jfbFieldSettings_repeaterMaxRows", Group = FieldSettingGroup.Validation, Order = 1, Public = true)]
     public int MaxRows { get; init; } = 10;
 
+    /// <summary>
+    /// The label of one row, which each row's legend follows with its number ("Guest 1"); the type's own word by
+    /// default (ADR-0098).
+    /// </summary>
+    [StringLength(100)]
+    [FormBuilderSetting("#jfbFieldSettings_repeaterRowLabel", Group = FieldSettingGroup.Appearance, Public = true)]
+    public LocalizedText? RowLabel { get; init; }
+
     /// <summary>The label of the button that adds a row; the type's own text by default.</summary>
     [StringLength(100)]
-    [FormBuilderSetting("#jfbFieldSettings_repeaterAddLabel", Group = FieldSettingGroup.Appearance, Public = true)]
+    [FormBuilderSetting("#jfbFieldSettings_repeaterAddLabel", Group = FieldSettingGroup.Appearance, Order = 1, Public = true)]
     public LocalizedText? AddLabel { get; init; }
 
     /// <summary>The label of the button that removes a row; the type's own text by default.</summary>
     [StringLength(100)]
-    [FormBuilderSetting("#jfbFieldSettings_repeaterRemoveLabel", Group = FieldSettingGroup.Appearance, Order = 1, Public = true)]
+    [FormBuilderSetting("#jfbFieldSettings_repeaterRemoveLabel", Group = FieldSettingGroup.Appearance, Order = 2, Public = true)]
     public LocalizedText? RemoveLabel { get; init; }
 }
 

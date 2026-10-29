@@ -7,11 +7,12 @@
   decided in 6.2c by [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md); the choice types'
   controls and their options in 6.2d by [ADR-0096](0096-the-choice-controls.md); the controls with parts, dates and
   outputs, and the page's answers read as the pipeline reads them, in 6.2e by
-  [ADR-0097](0097-the-part-date-and-output-controls.md)
+  [ADR-0097](0097-the-part-date-and-output-controls.md); a repeatable group's rows, their rules and the post state's
+  rows in 6.2f by [ADR-0098](0098-the-repeaters-rows.md)
 - Date: 2026-10-28
 - Roadmap step: 6.2b (decided and built); 6.2c the visitor texts with merge tags, members-only forms and the note
   while the migrations are pending (ADR-0095), 6.2d the choice controls (ADR-0096), 6.2e the part, date and output
-  controls (ADR-0097), 6.2f the repeater,
+  controls (ADR-0097), 6.2f the repeater's rows (ADR-0098),
   6.2g the no-JS post, 6.3 the themes, 6.7 the form picker
 
 ## Context

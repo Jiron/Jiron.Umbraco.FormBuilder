@@ -89,7 +89,7 @@ public sealed class FieldTypeSupportTests
         ["address"] = ("People", "Json", null, "", "parts requiredParts", ""),
         ["file"] = ("Files", "File", "Files", "", "types extensions maxBytes maxFiles dropZone thumbnails camera", ""),
         ["signature"] = ("Files", "File", "Files", "", "width height", ""),
-        ["repeater"] = ("Structure", "None", null, "", "minRows maxRows addLabel removeLabel", ""),
+        ["repeater"] = ("Structure", "None", null, "", "minRows maxRows rowLabel addLabel removeLabel", ""),
         ["hidden"] = ("Structure", "Text", "Text", "serverOnlyDefault", "", ""),
         ["heading"] = ("Content", "None", null, "", "text level", ""),
         ["paragraph"] = ("Content", "None", null, "", "html", ""),

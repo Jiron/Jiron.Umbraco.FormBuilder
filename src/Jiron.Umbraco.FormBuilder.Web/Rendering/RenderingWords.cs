@@ -55,6 +55,9 @@ internal sealed record RenderingWords
             MoveUp = "Move {0} up",
             MoveDown = "Move {0} down",
             Row = "Row {0}",
+            RepeaterRow = "Row {0}",
+            AddRow = "Add a row",
+            RemoveRow = "Remove",
             NameTitle = "Title",
             NameFirst = "First name",
             NameMiddle = "Middle name",
@@ -105,6 +108,9 @@ internal sealed record RenderingWords
             MoveUp = "{0} nach oben verschieben",
             MoveDown = "{0} nach unten verschieben",
             Row = "Zeile {0}",
+            RepeaterRow = "Zeile {0}",
+            AddRow = "Zeile hinzuf" + UUmlaut + "gen",
+            RemoveRow = "Entfernen",
             NameTitle = "Titel",
             NameFirst = "Vorname",
             NameMiddle = "Zweiter Vorname",
@@ -227,6 +233,15 @@ internal sealed record RenderingWords
 
     /// <summary>The statement of a grid's row without one; <c>{0}</c> is its number.</summary>
     public required string Row { get; init; }
+
+    /// <summary>The legend of a repeatable group's row without a row label; <c>{0}</c> is its number from 1.</summary>
+    public required string RepeaterRow { get; init; }
+
+    /// <summary>The words of the button that adds a row to a repeatable group without an add label.</summary>
+    public required string AddRow { get; init; }
+
+    /// <summary>The words of the button that removes a row without a remove label; the row's legend follows, unseen.</summary>
+    public required string RemoveRow { get; init; }
 
     /// <summary>The label of a name's title, such as Dr.</summary>
     public required string NameTitle { get; init; }

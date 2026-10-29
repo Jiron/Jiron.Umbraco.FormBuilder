@@ -42,7 +42,7 @@ public sealed class BuiltInSettingsTests
         ["consent"] = "text required chars<=20000",
         ["file"] = "extensions chars<=10; maxBytes 1..999999999999999; maxFiles 1..20",
         ["signature"] = "width 200..1200; height 100..600",
-        ["repeater"] = "minRows 0..100; maxRows 1..100; addLabel chars<=100; removeLabel chars<=100",
+        ["repeater"] = "minRows 0..100; maxRows 1..100; rowLabel chars<=100; addLabel chars<=100; removeLabel chars<=100",
         ["heading"] = "text required chars<=300; level 2..4",
         ["paragraph"] = "html required",
         ["image"] = "media required; alt required chars<=300",

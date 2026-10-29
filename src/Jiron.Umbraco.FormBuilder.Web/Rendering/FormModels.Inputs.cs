@@ -102,7 +102,7 @@ internal sealed partial class FormModels
                 return (new SignatureControlModel
                 {
                     Label = build.Words.SignatureName,
-                    Name = (field.Alias ?? string.Empty) + "." + SignatureFieldType.TypedPart,
+                    Name = build.Name(field) + "." + SignatureFieldType.TypedPart,
                     Value = answers.Part(SignatureFieldType.TypedPart) is [var written, ..] ? written : string.Empty,
                     Help = build.Words.SignatureTyped,
                     HelpId = id + "-typed-help",
@@ -218,7 +218,7 @@ internal sealed partial class FormModels
         var needed = (listed.Length > 0 ? listed : required ? unlisted : []).Where(part => asked.Any(spec => spec.Name == part)).ToHashSet(StringComparer.Ordinal);
         var some = required && needed.Count < asked.Count;
         var empty = needed.Where(part => answers.Part(part).IsEmpty).ToHashSet(StringComparer.Ordinal);
-        var failed = build.Post?.Errors.ContainsKey(field.Key) == true;
+        var failed = build.Error(field.Key) is not null;
         return new PartsControlModel
         {
             Parts = [.. asked.Select((spec, at) =>
@@ -236,7 +236,7 @@ internal sealed partial class FormModels
                     Part = spec.Name,
                     Label = spec.Label,
                     Id = at == 0 ? id : id + "-" + spec.Name,
-                    Name = (field.Alias ?? string.Empty) + "." + spec.Name,
+                    Name = build.Name(field) + "." + spec.Name,
                     Value = value,
                     Autocomplete = spec.Token,
                     IsWide = spec.Wide,

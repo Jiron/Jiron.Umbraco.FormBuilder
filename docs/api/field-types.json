@@ -3773,6 +3773,33 @@
           "lock": null
         },
         {
+          "name": "rowLabel",
+          "kind": "localizedText",
+          "itemKind": null,
+          "choices": [],
+          "settings": [],
+          "default": null,
+          "label": "#jfbFieldSettings_repeaterRowLabel",
+          "description": null,
+          "editor": "localizedText",
+          "group": "appearance",
+          "supportsMergeTags": false,
+          "isPublic": true,
+          "rules": {
+            "required": false,
+            "minimum": null,
+            "minimumIsExclusive": false,
+            "maximum": null,
+            "maximumIsExclusive": false,
+            "minimumLength": null,
+            "maximumLength": 100,
+            "minimumCount": null,
+            "maximumCount": null,
+            "allowedValues": []
+          },
+          "lock": null
+        },
+        {
           "name": "addLabel",
           "kind": "localizedText",
           "itemKind": null,

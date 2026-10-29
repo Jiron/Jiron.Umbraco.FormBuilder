@@ -153,6 +153,7 @@ export default {
     signatureHeight: 'Pad height',
     repeaterMinRows: 'Minimum rows',
     repeaterMaxRows: 'Maximum rows',
+    repeaterRowLabel: 'Label of a row',
     repeaterAddLabel: 'Label of "Add"',
     repeaterRemoveLabel: 'Label of "Remove"',
     headingText: 'Heading',
