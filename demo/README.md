@@ -62,7 +62,9 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
 - the member group "Library members", the two members, and public access on the members page;
 - the demo forms, from `Seeding/Forms/<alias>.json` in the package's definition format, created and published
   through the form service when their alias is missing ([ADR-0094](../docs/decisions/0094-demo-forms.md)): the
-  contact form, which the contact page shows through its `form` property.
+  contact form, which the contact page shows through its `form` property, and the workshop booking on the events
+  page, which is for members: a visitor sees a notice that asks them to sign in, a member the form, whose help text
+  recalls the workshop's name ([ADR-0095](../docs/decisions/0095-visitor-texts-members-only-forms-and-the-pending-note.md)).
 
 To add a page, add it to `DemoContent.json` with a new fixed key. Texts the views show belong in its `dictionary`.
 To add a form, add its definition to `Seeding/Forms/` and its alias to `DemoFormSeeder`, and name it in a page's

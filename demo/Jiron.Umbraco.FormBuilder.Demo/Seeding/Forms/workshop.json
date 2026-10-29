@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "key": "d0000000-0000-4000-8000-000000000002",
+  "settings": {
+    "submission": {
+      "submitLabel": { "": "Book my place", "de": "Platz buchen" }
+    },
+    "availability": {
+      "members": "members"
+    }
+  },
+  "pages": [
+    {
+      "key": "d0000000-0000-4000-8000-000000000020",
+      "groups": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000021",
+          "columns": 2,
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000201",
+              "type": "text",
+              "alias": "workshop",
+              "span": 2,
+              "label": { "": "Workshop", "de": "Workshop" },
+              "help": { "": "Its title as the list above shows it.", "de": "Sein Titel, wie ihn die Liste oben zeigt." },
+              "required": true
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000202",
+              "type": "text",
+              "alias": "name",
+              "label": { "": "Your name", "de": "Ihr Name" },
+              "required": true,
+              "autocomplete": "name"
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000203",
+              "type": "number",
+              "alias": "places",
+              "label": { "": "Places", "de": "Plätze" },
+              "help": { "": "Up to four per booking.", "de": "Bis zu vier pro Buchung." },
+              "required": true,
+              "settings": { "min": "1", "max": "4", "step": "1" }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000204",
+              "type": "textarea",
+              "alias": "notes",
+              "span": 2,
+              "label": { "": "Anything the leader should know?", "de": "Sollte die Leitung etwas wissen?" },
+              "help": {
+                "": "For {{ field.workshop | default: \"the workshop\" }}: access needs, allergies or a question.",
+                "de": "Für {{ field.workshop | default: \"den Workshop\" }}: Barrierefreiheit, Allergien oder eine Frage."
+              },
+              "settings": { "rows": 4, "counter": true, "maxLength": 1000 }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

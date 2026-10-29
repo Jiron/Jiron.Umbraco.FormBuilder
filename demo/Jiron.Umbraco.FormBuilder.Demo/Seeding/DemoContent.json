@@ -123,8 +123,20 @@
             "heading": "Kleidung flicken",
             "text": "<p>Samstag, 14 bis 16 Uhr. Knöpfe annähen, Löcher flicken und Reißverschlüsse reparieren, mit unseren Ehrenamtlichen.</p>"
           }
+        },
+        {
+          "type": "demoTextBlock",
+          "en": {
+            "heading": "Book a place",
+            "text": "<p>Library members can book one workshop a month, for up to four people.</p>"
+          },
+          "de": {
+            "heading": "Einen Platz buchen",
+            "text": "<p>Mitglieder der Bibliothek können einen Workshop pro Monat buchen, für bis zu vier Personen.</p>"
+          }
         }
-      ]
+      ],
+      "form": "workshop"
     },
     {
       "key": "3aa33187-0516-4e6e-87cb-360f47e7e739",

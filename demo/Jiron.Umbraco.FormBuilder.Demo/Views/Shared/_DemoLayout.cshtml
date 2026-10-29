@@ -25,6 +25,8 @@
     <title>@title</title>
     <link rel="alternate" hreflang="@(german ? "en" : "de")" href="@Model.Url(otherCulture)" />
     <link rel="stylesheet" href="/demo/site.css" />
+    @* The library has no icon; an empty one keeps browsers from asking for /favicon.ico. *@
+    <link rel="icon" href="data:," />
 </head>
 <body>
     <a class="site-skip" href="#main">@Umbraco.GetDictionaryValue("Demo.SkipToContent")</a>

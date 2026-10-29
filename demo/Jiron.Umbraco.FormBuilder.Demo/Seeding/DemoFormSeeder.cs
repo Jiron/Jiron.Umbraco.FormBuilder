@@ -28,6 +28,7 @@ internal sealed class DemoFormSeeder(
     private static readonly (string Alias, string Name)[] Forms =
     [
         ("contact", "Contact"),
+        ("workshop", "Workshop booking"),
     ];
 
     /// <summary>Creates and publishes each missing form; true when one was created.</summary>
