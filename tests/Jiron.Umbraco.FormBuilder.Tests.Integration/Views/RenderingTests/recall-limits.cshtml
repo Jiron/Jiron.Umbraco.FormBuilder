@@ -1,0 +1,17 @@
+@* A form rendered again on its second page after a post that gave its name field a longer answer than a text takes. *@
+@using Jiron.Umbraco.FormBuilder.Core.FieldTypes
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var key = (await Requests.KeyOfAsync("renderingRecall", Context.RequestAborted))!.Value;
+    FormPosts.Set(Context, key, "jfb-1", new FormPostState
+    {
+        Page = Guid.Parse("30000000-0000-4000-8000-000000006202"),
+        Answers = new Dictionary<Guid, FieldAnswers>
+        {
+            [Guid.Parse("30000000-0000-4000-8000-000000006210")] = new FieldAnswers([new string('A', Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn.TextFieldType.LongestAnswer + 1)]),
+        },
+    });
+}
+<jfb-render form="renderingRecall" />
