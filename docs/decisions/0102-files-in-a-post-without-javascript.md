@@ -3,7 +3,8 @@
 - Status: accepted; builds [ADR-0006](0006-file-storage-and-uploads.md)'s no-JS posts with files and changes how the
   post is read (part by part, so a file that is too large keeps every other answer); extends
   [ADR-0100](0100-the-post-without-javascript.md) (the post's files, kept across a re-render) and
-  [ADR-0087](0087-the-upload-endpoint.md) (its token, posted back as the field's answer)
+  [ADR-0087](0087-the-upload-endpoint.md) (its token, posted back as the field's answer); a signature typed without
+  JavaScript stored as a file is, by [ADR-0103](0103-a-signature-typed-without-javascript.md) in 6.2k
 - Date: 2026-10-29
 - Roadmap step: 6.2j (decided and built); 6.4's runtime uploads before sending, 7.1 verifies the challenge, 7.3
   hardens the rules over HTTP/2

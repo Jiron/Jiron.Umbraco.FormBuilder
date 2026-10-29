@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Jiron.Umbraco.FormBuilder.Core.Signatures;
 
 namespace Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 
@@ -19,8 +20,7 @@ internal static class PngHeader
     /// <param name="head">A file's first bytes.</param>
     public static (int Width, int Height)? Read(ReadOnlySpan<byte> head)
     {
-        ReadOnlySpan<byte> signature = [137, 80, 78, 71, 13, 10, 26, 10];
-        if (head.Length < Length || !head[..8].SequenceEqual(signature) || BinaryPrimitives.ReadUInt32BigEndian(head[8..]) != 13 || !head[12..16].SequenceEqual("IHDR"u8))
+        if (head.Length < Length || !head.StartsWith(Png.Signature) || BinaryPrimitives.ReadUInt32BigEndian(head[8..]) != 13 || !head[12..16].SequenceEqual("IHDR"u8))
         {
             return null;
         }
@@ -33,7 +33,7 @@ internal static class PngHeader
             && head[26] == 0
             && head[27] == 0
             && head[28] <= 1
-            && Crc32(head[12..29]) == BinaryPrimitives.ReadUInt32BigEndian(head[29..]);
+            && Png.Crc32(head[12..29]) == BinaryPrimitives.ReadUInt32BigEndian(head[29..]);
         return takes ? ((int)width, (int)height) : null;
     }
 
@@ -45,21 +45,4 @@ internal static class PngHeader
         3 => bitDepth is 1 or 2 or 4 or 8,
         _ => false,
     };
-
-    // The CRC-32 a PNG chunk carries over its type and data: reflected, with the polynomial 0xEDB88320, starting from all
-    // ones and inverted at the end.
-    private static uint Crc32(ReadOnlySpan<byte> bytes)
-    {
-        var crc = uint.MaxValue;
-        foreach (var value in bytes)
-        {
-            crc ^= value;
-            for (var bit = 0; bit < 8; bit++)
-            {
-                crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320u : crc >> 1;
-            }
-        }
-
-        return ~crc;
-    }
 }

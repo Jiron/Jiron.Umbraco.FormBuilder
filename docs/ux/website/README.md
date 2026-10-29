@@ -74,7 +74,8 @@ should adopt:
   means Next or Send.
 - **Single choices with help:** a single checkbox or switch puts its help after the choice, aligned with the label.
 - **The typed signature:** the field's legend is the only visible label; the name input's own label is visually
-  hidden, and the help says that typing counts as signing.
+  hidden, and the help says that typing counts as signing. The input takes up to 100 characters; without JavaScript
+  the server draws the name as the signature (ADR-0103).
 - **The outcome:** `jfb-outcome` takes the focus. The entry's reference is rendered by the view on its own line
   (`jfb-reference`, the value in `strong`), so an editor's message need not repeat it; the copy of the answers reuses
   `jfb-summary` without Change.

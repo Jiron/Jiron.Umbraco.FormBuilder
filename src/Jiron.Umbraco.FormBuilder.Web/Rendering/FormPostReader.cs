@@ -73,7 +73,8 @@ internal sealed class FormPostReader
 
     /// <summary>
     /// The answers as the pipeline takes them (ADR-0088), by the names the post gave them: each field's outside
-    /// repeatable groups, and each group's rows of its children's.
+    /// repeatable groups, and each group's rows of its children's. A signature's typed name is the page's, which the
+    /// surface action draws (ADR-0103), and is left out.
     /// </summary>
     public (IReadOnlyDictionary<string, PostedAnswer> Fields, IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, PostedAnswer>>> Rows) Posted()
     {
@@ -85,16 +86,52 @@ internal sealed class FormPostReader
             {
                 if (RowsOf(field.Key) is { Count: > 0 } posted)
                 {
-                    rows[_aliases[field.Key]] = [.. posted.Select(row => (IReadOnlyDictionary<string, PostedAnswer>)row.Where(pair => !pair.Value.IsBlank).ToDictionary(pair => _aliases[pair.Key], pair => pair.Value.Posted(), StringComparer.Ordinal))];
+                    var signed = field.Fields.Where(IsSignature).Select(child => child.Key).ToHashSet();
+                    rows[_aliases[field.Key]] = [.. posted.Select(row => (IReadOnlyDictionary<string, PostedAnswer>)row
+                        .Select(pair => (pair.Key, Posted: pair.Value.Posted(signed.Contains(pair.Key))))
+                        .Where(pair => pair.Posted is not null)
+                        .ToDictionary(pair => _aliases[pair.Key], pair => pair.Posted!, StringComparer.Ordinal))];
                 }
             }
-            else if (_fields.TryGetValue(field.Key, out var answer) && !answer.IsBlank)
+            else if (_fields.TryGetValue(field.Key, out var answer) && answer.Posted(IsSignature(field)) is { } given)
             {
-                fields[_aliases[field.Key]] = answer.Posted();
+                fields[_aliases[field.Key]] = given;
             }
         }
 
         return (fields, rows);
+    }
+
+    /// <summary>
+    /// The names typed instead of signatures (ADR-0103): each signature's typed part as posted, with its repeatable group
+    /// and row (null outside groups); a signature without one is left out.
+    /// </summary>
+    public IEnumerable<(FormField Field, FormField? Group, int? Row, string Typed)> Typed()
+    {
+        foreach (var field in _order)
+        {
+            if (IsSignature(field) && _fields.GetValueOrDefault(field.Key)?.TypedName is { } typed)
+            {
+                yield return (field, null, null, typed);
+            }
+
+            if (!IsGroup(field))
+            {
+                continue;
+            }
+
+            var rows = RowsOf(field.Key);
+            for (var row = 0; row < rows.Count; row++)
+            {
+                foreach (var child in field.Fields.Where(IsSignature))
+                {
+                    if (rows[row].GetValueOrDefault(child.Key)?.TypedName is { } inRow)
+                    {
+                        yield return (child, field, row, inRow);
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -505,6 +542,8 @@ internal sealed class FormPostReader
 
     private bool IsConsent(FormField field) => _types.FindType(field.Type) is ConsentFieldType;
 
+    private bool IsSignature(FormField field) => _types.FindType(field.Type) is SignatureFieldType;
+
     private bool IsSwitch(FormField field) =>
         field.Alias is not null && _types.FindType(field.Type) is YesNoFieldType yesNo && yesNo.ReadSettings(field.Settings).Style == YesNoStyle.Switch;
 
@@ -554,10 +593,10 @@ internal sealed class FormPostReader
 
         public string? Hash => _parts.GetValueOrDefault(ConsentFieldType.WordingPart)?.FirstOrDefault(text => !string.IsNullOrEmpty(text));
 
+        public string? TypedName => _parts.GetValueOrDefault(SignatureFieldType.TypedPart)?.FirstOrDefault(text => !string.IsNullOrEmpty(text));
+
         // A ranking's order as the page showed it, which is no answer: an answer of nothing else is none for the pipeline.
         public List<string> Order => _order;
-
-        public bool IsBlank => _values.Count == 0 && _parts.Count == 0;
 
         public void Take(string? part, List<string?> texts)
         {
@@ -610,9 +649,14 @@ internal sealed class FormPostReader
             }
         }
 
-        public PostedAnswer Posted() => new(
-            [.. _values],
-            _parts.Count == 0 ? null : _parts.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<string?>)[.. pair.Value], StringComparer.Ordinal));
+        // The answer as the pipeline takes it, a signature's without its typed name; null when nothing is left.
+        public PostedAnswer? Posted(bool signature)
+        {
+            var parts = _parts.Where(pair => !signature || pair.Key != SignatureFieldType.TypedPart).ToList();
+            return _values.Count == 0 && parts.Count == 0
+                ? null
+                : new([.. _values], parts.Count == 0 ? null : parts.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<string?>)[.. pair.Value], StringComparer.Ordinal));
+        }
 
         public FieldAnswers? Shown()
         {

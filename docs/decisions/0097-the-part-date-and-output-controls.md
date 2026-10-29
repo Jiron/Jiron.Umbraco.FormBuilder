@@ -5,10 +5,11 @@
   [ADR-0093](0093-the-razor-rendering.md) (their view models; the page's rules read the answers as the pipeline
   does), [ADR-0058](0058-field-answers-and-values.md) (the parts a page asks for, and a signature's typed part),
   [ADR-0062](0062-the-built-in-types-checks.md) (a date's window on the page) and
-  [ADR-0063](0063-the-calculation-language.md) (a calculation's value on the server's page)
+  [ADR-0063](0063-the-calculation-language.md) (a calculation's value on the server's page); the typed name stored as
+  the signature, its input given a `maxlength`, by [ADR-0103](0103-a-signature-typed-without-javascript.md) in 6.2k
 - Date: 2026-10-29
 - Roadmap step: 6.2e (decided and built); 6.2f renders the repeater, 6.2k stores a signature typed without
-  JavaScript, 6.3 styles the classes, 6.4 enhances the controls (the pad, the drop zone, the live calculation), 7.2
+  JavaScript (ADR-0103), 6.3 styles the classes, 6.4 enhances the controls (the pad, the drop zone, the live calculation), 7.2
   fills the captcha's place
 
 ## Context

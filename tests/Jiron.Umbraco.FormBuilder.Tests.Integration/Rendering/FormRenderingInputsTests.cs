@@ -238,7 +238,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
             var signature = Field(empty, "signature");
             Assert.That(Text(signature, "legend.jfb-label"), Is.EqualTo("Signature"));
             Assert.That(Compact(signature.QuerySelector(".jfb-signature")!.InnerHtml), Is.EqualTo(
-                """<p class="jfb-help" id="jfb-1-signature-typed-help">Type your full name. It counts as your signature.</p><label class="jfb-visually-hidden" for="jfb-1-signature">Your full name</label><input class="jfb-control" id="jfb-1-signature" name="signature.typed" autocomplete="name" autocapitalize="words" spellcheck="false" required="required" aria-describedby="jfb-1-signature-typed-help">"""),
+                """<p class="jfb-help" id="jfb-1-signature-typed-help">Type your full name. It counts as your signature.</p><label class="jfb-visually-hidden" for="jfb-1-signature">Your full name</label><input class="jfb-control" id="jfb-1-signature" name="signature.typed" maxlength="100" autocomplete="name" autocapitalize="words" spellcheck="false" required="required" aria-describedby="jfb-1-signature-typed-help">"""),
                 "without JavaScript, the name typed instead; the legend is the only label that shows");
 
             Assert.That(Captchas(empty).OuterHtml, Is.EqualTo($"""<div class="jfb-captcha" id="jfb-1-{Captcha:N}" data-jfb-captcha="hcaptcha"></div>"""), "the form's captcha's place, which its provider fills");

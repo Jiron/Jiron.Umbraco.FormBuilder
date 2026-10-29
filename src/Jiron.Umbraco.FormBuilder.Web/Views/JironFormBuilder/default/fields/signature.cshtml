@@ -8,5 +8,5 @@
 <div class="jfb-signature">
     <p class="jfb-help" id="@control.HelpId">@control.Help</p>
     <label class="jfb-visually-hidden" for="@Model.Id">@control.Label</label>
-    <input class="jfb-control" id="@Model.Id" name="@control.Name" value="@(control.Value.Length == 0 ? null : control.Value)" autocomplete="name" autocapitalize="words" spellcheck="false" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@control.HelpId">
+    <input class="jfb-control" id="@Model.Id" name="@control.Name" value="@(control.Value.Length == 0 ? null : control.Value)" maxlength="@control.MaxLength" autocomplete="name" autocapitalize="words" spellcheck="false" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@control.HelpId">
 </div>

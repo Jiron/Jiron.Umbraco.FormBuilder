@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
+using Jiron.Umbraco.FormBuilder.Core.Signatures;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
 
@@ -110,6 +111,7 @@ internal sealed partial class FormModels
                     Label = build.Words.SignatureName,
                     Name = build.Name(field) + "." + SignatureFieldType.TypedPart,
                     Value = answers.Part(SignatureFieldType.TypedPart) is [var written, ..] ? written : string.Empty,
+                    MaxLength = TypedSignature.LongestName,
                     Help = build.Words.SignatureTyped,
                     HelpId = id + "-typed-help",
                 }, []);

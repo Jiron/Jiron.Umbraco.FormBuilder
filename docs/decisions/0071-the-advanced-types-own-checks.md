@@ -4,7 +4,8 @@
   rows), [ADR-0006](0006-file-storage-and-uploads.md) (the field's limit and the type's check of a file's first
   bytes) and [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the message kind `rowCount`);
   the host's limits in a type's settings check (`FieldSettingsCheck.Host`) and the kind of a refusal outside the type
-  (`FieldUploads.Declared`) added by [ADR-0087](0087-the-upload-endpoint.md) in 6.1d
+  (`FieldUploads.Declared`) added by [ADR-0087](0087-the-upload-endpoint.md) in 6.1d; a signature's PNG drawn by the
+  server from a typed name, the name kept in a text chunk, extended by [ADR-0103](0103-a-signature-typed-without-javascript.md) in 6.2k
 - Date: 2026-10-27
 - Roadmap step: 5.4c (decided and built); 5.4d counts a repeatable group's rows, 6.1's `uploads` endpoint and 6.2's
   posts without JavaScript run the upload checks, 6.4's runtime keeps rows and signatures within these limits, 7.3

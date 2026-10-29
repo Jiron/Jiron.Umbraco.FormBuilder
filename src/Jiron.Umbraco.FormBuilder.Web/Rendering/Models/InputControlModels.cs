@@ -169,6 +169,9 @@ public sealed class SignatureControlModel
     /// <summary>The name typed after a post, or empty.</summary>
     public string Value { get; init; } = string.Empty;
 
+    /// <summary>The most characters the name may have (<c>maxlength</c>, ADR-0103).</summary>
+    public int MaxLength { get; init; }
+
     /// <summary>The line that says typing counts as signing.</summary>
     public required string Help { get; init; }
 

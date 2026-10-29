@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Signatures;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Microsoft.AspNetCore.Http;
@@ -121,6 +122,12 @@ internal sealed class FormPostHandler(
         var listed = definition.Settings.Developer.QueryValues;
         var query = Held(reader.Query.Count > 0 ? reader.Query : Referred(http.Request), listed);
         var noted = await FilesAsync(http, posted.Files, reader, formKey, instance, cancellationToken);
+        var nav = posted[FormPostFields.Nav].LastOrDefault();
+        if (nav is FormPostFields.Back or FormPostFields.Next or FormPostFields.Submit or null)
+        {
+            noted.AddRange(await SignaturesAsync(reader, formKey, cancellationToken));
+        }
+
         var (fields, rows) = reader.Posted();
         var request = new SubmissionRequest
         {
@@ -136,7 +143,6 @@ internal sealed class FormPostHandler(
         };
         var page = Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var pageKey) ? pageKey : (Guid?)null;
         var state = new Step(reader, definition, page, query);
-        var nav = posted[FormPostFields.Nav].LastOrDefault();
         switch (nav)
         {
             // A file the post could not take: nothing is sent and no page is left (ADR-0102).
@@ -244,6 +250,41 @@ internal sealed class FormPostHandler(
         return problems;
     }
 
+    // The names typed instead of signatures (ADR-0103), when a page button may check or send the post: each drawn on its
+    // pad as the signature's PNG and stored as an upload is, its token the field's answer in place of any other; a name
+    // too long, or one the upload's rules refuse, is a problem at its field.
+    private async Task<List<SubmissionProblem>> SignaturesAsync(FormPostReader reader, Guid formKey, CancellationToken cancellationToken)
+    {
+        var problems = new List<SubmissionProblem>();
+        foreach (var (field, group, row, typed) in reader.Typed().ToList())
+        {
+            if (TypedSignature.Clean(typed) is not { } name || types.FindType(field.Type) is not SignatureFieldType signature)
+            {
+                continue;
+            }
+
+            if (name.Length > TypedSignature.LongestName)
+            {
+                problems.Add(Problem((field, group, row), FieldMessageKinds.Invalid));
+                continue;
+            }
+
+            var pad = signature.ReadSettings(field.Settings);
+            await using var drawn = new MemoryStream(TypedSignature.Draw(name, pad.Width ?? TypedSignature.DefaultWidth, pad.Height ?? TypedSignature.DefaultHeight));
+            var stored = await uploads.StoreAsync(formKey, signature, field, TypedSignature.FileName, drawn, _ => Task.FromResult(true), cancellationToken);
+            if (stored is { Status: FileUploadStatus.Stored, File: { } kept })
+            {
+                reader.AddFile(field, group, row, tokens.Issue(formKey, field.Key, kept.Key), replace: true);
+            }
+            else
+            {
+                problems.Add(Problem((field, group, row), stored.Error ?? FieldMessageKinds.Invalid));
+            }
+        }
+
+        return problems;
+    }
+
     // A file's problem at its field, by the live version's names as the pipeline names them (ADR-0088).
     private static SubmissionProblem Problem((FormField Field, FormField? Group, int? Row) at, FieldMessageKinds kind) =>
         new(
@@ -258,7 +299,7 @@ internal sealed class FormPostHandler(
         var kept = new KeptFiles();
         foreach (var field in definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields))
         {
-            if (uploads.TypeOf(field) is not null && fields.GetValueOrDefault(field.Key) is { } answers)
+            if (uploads.TypeOf(field) is FileFieldType && fields.GetValueOrDefault(field.Key) is { } answers)
             {
                 kept.Fields[field.Key] = await StoredAsync(formKey, field.Key, answers, cancellationToken);
             }
@@ -268,7 +309,7 @@ internal sealed class FormPostHandler(
             foreach (var row in given)
             {
                 var inRow = new Dictionary<Guid, IReadOnlyList<FormPostFile>>();
-                foreach (var child in field.Fields.Where(child => uploads.TypeOf(child) is not null))
+                foreach (var child in field.Fields.Where(child => uploads.TypeOf(child) is FileFieldType))
                 {
                     if (row.GetValueOrDefault(child.Key) is { } childAnswers)
                     {
