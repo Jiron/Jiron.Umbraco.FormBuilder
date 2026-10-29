@@ -178,9 +178,9 @@ jobs:
           npm run check
           npx playwright install --with-deps chromium
       # The global set-up builds the client and the demo, and starts a fresh host on port 5520 (ADR-0031).
-      - name: Smoke tests (Chromium)
+      - name: Smoke and website tests (Chromium)
         working-directory: tests/e2e
-        run: npx playwright test --project=smoke
+        run: npx playwright test --project=smoke --project=website
       - name: Upload the report, the traces and the host's log
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7

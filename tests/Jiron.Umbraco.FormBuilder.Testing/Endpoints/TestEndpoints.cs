@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Access;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Testing.Stub;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Microsoft.AspNetCore.Builder;
@@ -70,13 +71,17 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// <item><description><c>GET /jfb-testing/access</c>: each backoffice user's effective Jiron Form Builder permissions,
 /// globally, at the root and on each root folder outside the trash in the library's order (ADR-0049), so the browser
 /// tests can see that the personas have their grants.</description></item>
+/// <item><description><c>GET /jfb-testing/entries?form=&lt;alias&gt;</c>: the form's entries, oldest first, each with its
+/// stored values by the field's key, row and item (ADR-0100), so the browser tests can compare what two paths stored
+/// for the same answers; <c>404</c> for a form the host does not have.</description></item>
 /// </list>
 /// Requests from another machine, and paths outside <c>/jfb-testing/</c>, go on to the site as if this did not exist.
 /// </summary>
 internal sealed class TestEndpointsMiddleware(RequestDelegate next)
 {
-    // A test host has a handful of users.
+    // A test host has a handful of users, and a form there a handful of entries.
     private const int MaxUsers = 200;
+    private const int MaxEntries = 500;
 
     private static readonly JsonSerializerOptions Json = JsonSerializerOptions.Web;
 
@@ -100,6 +105,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "access" when HttpMethods.IsGet(context.Request.Method):
                 await AccessAsync(context);
+                return;
+            case "entries" when HttpMethods.IsGet(context.Request.Method):
+                await EntriesAsync(context);
                 return;
             default:
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -192,6 +200,32 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
         }
 
         await context.Response.WriteAsJsonAsync(new { users = answer }, Json, context.RequestAborted);
+    }
+
+    // A form's entries with their stored values, as the store holds them.
+    private static async Task EntriesAsync(HttpContext context)
+    {
+        var services = context.RequestServices;
+        var forms = services.GetRequiredService<IFormRepository>();
+        if (await forms.GetByAliasAsync(context.Request.Query["form"].ToString(), context.RequestAborted) is not { } form)
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        var entries = services.GetRequiredService<IEntryRepository>();
+        var fields = (await forms.ListFieldsAsync(form.Id, context.RequestAborted)).ToDictionary(field => field.Id, field => field.Values.FieldKey);
+        var ids = await entries.ListIdsAsync(form.Id, MaxEntries, context.RequestAborted);
+        var values = ids.Count == 0 ? [] : await entries.ListValuesAsync(ids, context.RequestAborted);
+        var answer = ids.Order().Select(id => new
+        {
+            id,
+            values = values
+                .Where(value => value.EntryId == id)
+                .OrderBy(value => value.FieldId).ThenBy(value => value.RowIndex).ThenBy(value => value.ValueIndex)
+                .Select(value => new { field = fields[value.FieldId], row = value.RowIndex, index = value.ValueIndex, value.Text, value.TextKey, value.Number, value.Date, value.Bool }),
+        });
+        await context.Response.WriteAsJsonAsync(new { entries = answer }, Json, context.RequestAborted);
     }
 
     private sealed record ClockRequest(DateTimeOffset? Utc = null, double? AdvanceSeconds = null);

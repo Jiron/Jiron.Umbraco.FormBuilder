@@ -33,6 +33,12 @@ export default defineConfig({
       use: browser,
     },
     {
+      // A visitor's pages on the demo site: its forms without JavaScript, posted back to their page (ADR-0100).
+      name: 'website',
+      testDir: './specs/website',
+      use: browser,
+    },
+    {
       // Sites that must not start: each test runs the built demo in a process of its own and reads its log; no browser.
       name: 'startup',
       testDir: './specs/startup',

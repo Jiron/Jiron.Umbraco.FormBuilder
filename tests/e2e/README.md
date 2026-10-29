@@ -73,6 +73,7 @@ config with its first spec.
 | Project   | What it checks                                                                                                                                                                                                                                                                 |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `smoke`   | the site in both languages, every persona's sign-in, groups and grants, the members area, the mail pickup, the test host (status, stub, Delivery API switch) and the form helpers                                                                                              |
+| `website` | the demo's forms as a visitor without JavaScript posts them (ADR-0100): errors with the answers kept, the pages of a form, two forms on one page, a consent whose wording changed, and the same stored values as the runtime's post, read from `/jfb-testing/entries`          |
 | `startup` | sites that must not start: an invalid host configuration and invariant globalization each stop the demo with a message that says what to change (ADR-0042). No browser: each test runs the demo in a process of its own on 5521 or 5522, without a database, and reads its log |
 
 ## Checks and output
