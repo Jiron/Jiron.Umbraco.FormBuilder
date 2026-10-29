@@ -298,7 +298,7 @@ Ligata.Forms is at `C:\Code\Ligata.Forms`, version 0.3.2, commit `8f4b0c5`. It i
 - **Test static assets under `dotnet run` *and* after `dotnet publish`**; a 0.3.x release broke only in one of them.
 - **Localise every message**, server validation included. Ligata's server messages were English only, even on German sites.
 - **Give sites layout controls** (column spans, widths, choice styles), so they never need CSS that targets a field by alias, as ligata.ch had to.
-- **Good form UX ideas** from the ligata.ch redesign mock (`C:\Code\ligata\redesign`): an error summary with links plus inline errors, a character counter, well-styled native checkboxes and radios. Adopt them in the default theme (6.3).
+- **Good form UX ideas** from the ligata.ch redesign mock (`C:\Code\ligata\redesign`): an error summary with links plus inline errors, a character counter, well-styled native checkboxes and radios. Adopt them in the default theme (6.3b).
 - **Field and action types must be registries, not `switch` statements.**
 
 ### 3.3 Tandem: what to reuse, and its lessons
@@ -1987,12 +1987,12 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - `X-Content-Type-Options: nosniff`.
 
     Umbraco's static files send no compression and no caching headers (§3.4).
-  - **`<jfb-assets>`:** the tag helper that writes the module script (and, from 6.3, the stylesheets) once per page under the fingerprint, with the nonce option (`<jfb-assets nonce>` and `IFormBuilderCspNonceProvider`, ADR-0004). 6.2b includes it automatically.
+  - **`<jfb-assets>`:** the tag helper that writes the module script (and, from 6.3a, the stylesheets) once per page under the fingerprint, with the nonce option (`<jfb-assets nonce>` and `IFormBuilderCspNonceProvider`, ADR-0004). 6.2b includes it automatically.
   - Done when: TestServer tests pass, including the compressed and cacheable asset responses, every built website asset found in the assembly with both its copies, and `404` for an unknown, differently cased or traversing asset path; `<jfb-assets>` named twice on a page writes its tags once, with the nonce of its attribute or of a registered `IFormBuilderCspNonceProvider`, and without a nonce when there is neither.
 - [x] **6.2b The view component and the markup contract** (6.2 split in six, WORKLOG 2026-10-28; then 6.2b in two, WORKLOG 2026-10-28) (2026-10-28, 89549d8)
   - **Rendering:**
     - the view component and the `<jfb-render>` tag helper, which includes the assets once per page automatically unless turned off (6.2a), with its `context-…` values (§4.9) for the context values the form lists;
-    - the views of ADR-0015 in the default view folder, each with its contract header, and a form's own overrides: Form, Page, Group, Field, Navigation, Progress, ErrorSummary, Outcome and Notice, with the controls of the text, number and content types and of the hidden field (6.2d, 6.2e and 6.2f add the others; the themes and their resolution order come in 6.3);
+    - the views of ADR-0015 in the default view folder, each with its contract header, and a form's own overrides: Form, Page, Group, Field, Navigation, Progress, ErrorSummary, Outcome and Notice, with the controls of the text, number and content types and of the hidden field (6.2d, 6.2e and 6.2f add the others; the themes and their resolution order come in 6.3a);
     - the form picker model `FormBuilderFormReference`;
     - the markup contract (`data-jfb-*` attributes, deterministic per-request instance ids), with the model data the runtime reads, taken from the form endpoint's answer (6.1a, 6.1b) so the Razor and the headless paths read one model, and every element in the state its rules give for the default answers (ADR-0015);
     - the page's culture.
@@ -2041,22 +2041,31 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The output cache rules of ADR-0004:** `no-store` on every response of the surface action and on every render that is per visitor (a members-only form's notice or form, and the note while the migrations are pending, ADR-0095), not a `GET`, or carries `jfb-sent`; the `IWebsiteOutputCacheVaryByProvider` for `jfb-sent`; never an `IWebsiteOutputCacheRequestFilter`.
   - **The `render` endpoint** of §4.6 (for `form_changed`), through the same view component.
   - Done when: with Umbraco's output cache on, tests show a cached page byte-identical for two visitors and holding nothing per visitor; a page with a members-only form, for a visitor and for a member, and a page with a form while the migrations are pending, for a visitor and for a signed-in backoffice user, never stored; `?jfb-sent` showing the outcome and never stored, for any value; no response to a post stored; the surface auto-route answering `400`; and `render` returning the published form with the given instance id. The `jfb-public` snapshot and declarations tests cover `render`.
-- [ ] **6.3 Themes**
+- [ ] **6.3a The theme registry, view resolution and the base rules** (6.3 split in three, WORKLOG 2026-10-29)
+  - **Mechanics:**
+    - a theme registry (`IFormBuilderTheme`): the three built-in themes with their alias, name, stylesheet, class map, token defaults, dark scheme and view folder (ADR-0015, added in this split);
+    - a form's theme: its `appearance.theme`, else the default theme of the General section for its site, a setting that comes with this feature (code default `default`), else `default`; a theme that is gone renders with `default` (ADR-0015, added in this split);
+    - view resolution in the order per form → theme → default, in the layout of ADR-0015;
+    - versioned view-contract headers;
+    - the class map: a theme's classes added to the slots of ADR-0015 through the view models, never in place of ours (ADR-0015, added in this split).
+  - **The functional base rules** that every theme ships, `unstyled` included, in a stylesheet no theme can leave out (ADR-0015): the honeypot out of view, visually hidden text, `[hidden]` honoured, and the two below. `<jfb-assets>` and a form's automatic assets write it and the form's theme's stylesheet once per page (added in this split).
+  - **Where a press without JavaScript lands** (added in 6.2i, ADR-0101): a row's Add or Remove and a ranking's move open the page at the row added, the group or the option's new place. Every theme, `unstyled` included, gives those targets (`.jfb-row`, `.jfb-repeater`, `.jfb-ranking > li`) a block-start scroll margin, so the line above stays in view and a site's sticky header does not cover them.
+  - **A phone's width** (added in 6.2k): every theme, `unstyled` included, lets a group's fieldset shrink below its widest control and keeps a select within its field, so no control widens the page. Without a theme, the German room hire form's group of name, email and address was 10 px wider than a 375 px window.
+  - Done when (added in this split): a contract test renders a kitchen-sink form (every field type) in every built-in theme and checks ADR-0015's hooks, with each theme's classes beside ours; TestServer tests show a form's theme taken from the form, from the General setting and from the code default, a theme that is gone rendering `default`, each view found in the order form → theme → default, and the stylesheets written once per page; in Edge without JavaScript at 375 px, in every built-in theme, the honeypot is out of view and out of the accessibility tree, a ranking's move opens the page with the option before the moved one in view, and no demo form scrolls sideways in English or German.
+- [ ] **6.3b The default theme** (6.3 split in three, WORKLOG 2026-10-29)
   - **`default`:**
     - CSS custom properties and an opt-in dark scheme;
     - the error summary plus inline errors, character counters;
     - styled native controls and choice cards;
     - the design from 2.3.
+  - **Right to left** (added in 1.1): the themes use logical CSS properties only, take `dir` from the culture, and mirror directional icons. Building it into the first themes costs little; adding it later would mean touching every rule.
+  - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before styling the themes (ADR-0019, ADR-0020).
+  - Done when (added in this split, each also part of 6.3c's check): Playwright screenshots of the kitchen-sink form in `default` at 375 and 1440 px, light and dark, and once with `dir="rtl"`, are reviewed in `docs/ux/review-6.3.md`, which has a section per skill with its output and findings; axe is clean; the CSS is within budget; a lint check refuses physical `left`/`right` properties in the theme CSS; no demo form scrolls sideways at 375 px in English or German without JavaScript.
+- [ ] **6.3c The unstyled and bootstrap5 themes, and the review of the themes** (6.3 split in three, WORKLOG 2026-10-29)
   - **`unstyled`:** semantic markup and classes only, plus the functional base rules every theme ships (the honeypot out of view, visually hidden text, ADR-0015).
   - **`bootstrap5`:** Bootstrap 5 classes. Bootstrap itself is not shipped; the demo and tests load it (MIT, dev-only) to check the theme.
-  - **Mechanics:**
-    - a theme registry (`IFormBuilderTheme`);
-    - view resolution in the order per form → theme → default, in the layout of ADR-0015;
-    - versioned view-contract headers.
-  - **Right to left** (added in 1.1): the themes use logical CSS properties only, take `dir` from the culture, and mirror directional icons. Building it into the first themes costs little; adding it later would mean touching every rule.
-  - **Where a press without JavaScript lands** (added in 6.2i, ADR-0101): a row's Add or Remove and a ranking's move open the page at the row added, the group or the option's new place. Every theme, `unstyled` included, gives those targets (`.jfb-row`, `.jfb-repeater`, `.jfb-ranking > li`) a block-start scroll margin, so the line above stays in view and a site's sticky header does not cover them.
-  - **A phone's width** (added in 6.2k): every theme, `unstyled` included, lets a group's fieldset shrink below its widest control and keeps a select within its field, so no control widens the page. Without a theme, the German room hire form's group of name, email and address was 10 px wider than a 375 px window.
-  - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before styling the themes (ADR-0019, ADR-0020).
+  - **Right to left** in both, as in 6.3b (added in this split).
+  - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` again before styling these themes and reviewing all three (ADR-0019, ADR-0020, added in this split).
   - Done when: Playwright screenshots of a kitchen-sink form (every field type) per theme at 375 and 1440 px, and once with `dir="rtl"`, are reviewed in `docs/ux/review-6.3.md`, which has a section per skill with its output and findings; axe is clean; in every theme, `unstyled` included, the honeypot is out of view and out of the accessibility tree; the CSS is within budget; a lint check refuses physical `left`/`right` properties in the theme CSS. In every theme at 375 px without JavaScript, a ranking's move opens the page with the option before the moved one in view (added in 6.2i). No demo form scrolls sideways at 375 px in English or German, with or without JavaScript, in any theme (added in 6.2k).
 - [ ] **6.4 The website runtime**
   - **Validation and rules:** progressive enhancement, plus client validation and rules from `packages/logic`. Values are cleaned with the same functions before they are sent, and numbers sent in the wire form (ADR-0005).
