@@ -104,13 +104,13 @@
               <label class="jfb-label" for="jfb-3-hours">How many hours?</label>
               <div class="jfb-range">
                 <input type="range" id="jfb-3-hours" name="hours" min="1" max="8" step="1" value="3" aria-valuetext="3 hours">
-                <output for="jfb-3-hours">3 hours</output>
+                <output for="jfb-3-hours" aria-hidden="true">3 hours</output>
               </div>
             </div>
             <div class="jfb-field jfb-field-calculation jfb-span-2" data-jfb-field="f11" data-jfb-alias="cost" data-jfb-type="calculation">
               <label class="jfb-label" for="jfb-3-cost">Room hire</label>
               <p class="jfb-help" id="jfb-3-cost-help">15 euros an hour, free for groups of library members.</p>
-              <output class="jfb-output" id="jfb-3-cost" name="cost" for="jfb-3-hours" aria-describedby="jfb-3-cost-help">&euro; 45.00</output>
+              <output class="jfb-output" id="jfb-3-cost" name="cost" aria-describedby="jfb-3-cost-help">&euro; 45.00</output>
             </div>
           </div>
         </fieldset>
@@ -317,8 +317,8 @@
               <fieldset>
                 <legend class="jfb-label">Who is the contact on the day?</legend>
                 <div class="jfb-parts">
-                  <div class="jfb-part"><label for="jfb-3-contact-given">First name</label><input class="jfb-control" id="jfb-3-contact-given" name="contact.given" autocomplete="given-name" value="Ines"></div>
-                  <div class="jfb-part"><label for="jfb-3-contact-family">Last name</label><input class="jfb-control" id="jfb-3-contact-family" name="contact.family" autocomplete="family-name" value="Hartmann"></div>
+                  <div class="jfb-part"><label for="jfb-3-contact">First name</label><input class="jfb-control" id="jfb-3-contact" name="contact.first" autocomplete="given-name" autocapitalize="words" spellcheck="false" value="Ines"></div>
+                  <div class="jfb-part"><label for="jfb-3-contact-last">Last name</label><input class="jfb-control" id="jfb-3-contact-last" name="contact.last" autocomplete="family-name" autocapitalize="words" spellcheck="false" value="Hartmann"></div>
                 </div>
               </fieldset>
             </div>
@@ -326,9 +326,9 @@
               <fieldset>
                 <legend class="jfb-label">Address for the invoice</legend>
                 <div class="jfb-parts">
-                  <div class="jfb-part jfb-part-wide"><label for="jfb-3-billing-street">Street and number</label><input class="jfb-control" id="jfb-3-billing-street" name="billing.street" autocomplete="address-line1"></div>
-                  <div class="jfb-part"><label for="jfb-3-billing-postcode">Postcode</label><input class="jfb-control" id="jfb-3-billing-postcode" name="billing.postcode" autocomplete="postal-code"></div>
-                  <div class="jfb-part"><label for="jfb-3-billing-town">Town</label><input class="jfb-control" id="jfb-3-billing-town" name="billing.town" autocomplete="address-level2"></div>
+                  <div class="jfb-part jfb-part-wide"><label for="jfb-3-billing">Street and number</label><input class="jfb-control" id="jfb-3-billing" name="billing.street" autocomplete="address-line1" autocapitalize="words" spellcheck="false"></div>
+                  <div class="jfb-part"><label for="jfb-3-billing-postcode">Postcode</label><input class="jfb-control" id="jfb-3-billing-postcode" name="billing.postcode" autocomplete="postal-code" spellcheck="false"></div>
+                  <div class="jfb-part"><label for="jfb-3-billing-city">Town</label><input class="jfb-control" id="jfb-3-billing-city" name="billing.city" autocomplete="address-level2" autocapitalize="words" spellcheck="false"></div>
                   <div class="jfb-part jfb-part-wide">
                     <label for="jfb-3-billing-country">Country</label>
                     <div class="jfb-select">

@@ -1885,6 +1885,11 @@
   border-radius: var(--_r-panel);
 }
 
+/* The captcha's place is empty until its provider's notice or check fills it, and an empty panel says nothing */
+.jfb-form .jfb-captcha:empty {
+  display: none;
+}
+
 .jfb-form .jfb-notice > :is(h1, h2) {
   font-size: var(--_large);
 }

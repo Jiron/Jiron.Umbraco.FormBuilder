@@ -107,7 +107,8 @@ should adopt:
 - **The signature:** "Clear" turns into "Undo clear" until the next stroke, so a slip of the finger loses nothing.
 - **Other parts:** `jfb-other` holds the text an "Other" choice asks for, lined up with the choice labels;
   `jfb-captcha` holds the notice and "Load the check" button of a third-party captcha in the `explicit` consent
-  mode (ROADMAP 4.10), and its error after `captcha_failed`; `jfb-skeleton` is the headless element's placeholder
+  mode (ROADMAP 4.10), and its error after `captcha_failed`; the server renders the place empty and the theme hides
+  it until something fills it (added in 6.2e); `jfb-skeleton` is the headless element's placeholder
   while the definition loads (`aria-busy` on the form and a `role="status"` text), pulsing unless motion is reduced.
   A move button at the end of a ranking is `aria-disabled`, so it stays in the tab order.
 - **Colour scheme:** a form with no `jfb-scheme-*` class takes the light tokens. When the ground behind such a form is
