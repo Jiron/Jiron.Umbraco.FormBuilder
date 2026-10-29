@@ -5,11 +5,11 @@ import { expect, test } from '../../fixtures.ts';
 import type { SubmitResult } from '../../support/form.ts';
 import { demoProject } from '../../support/paths.ts';
 
-// A visitor without JavaScript (ROADMAP 6.2h and 6.2i, ADR-0100, ADR-0101): the demo's forms post back to their page,
+// A visitor without JavaScript (ROADMAP 6.2h to 6.2j, ADR-0100 to ADR-0102): the demo's forms post back to their page,
 // which renders again with the answers and the errors, moves through the pages with Next and Back, adds and removes
-// rows, moves a ranking's options, or redirects to the outcome. Every page holds the newsletter form in its footer
-// beside its own form. What a post stores is compared with what the runtime's post to `entries` stores for the same
-// answers, through the test host's entries endpoint.
+// rows, moves a ranking's options, takes files, or redirects to the outcome. Every page holds the newsletter form in
+// its footer beside its own form. What a post stores is compared with what the runtime's post to `entries` stores for
+// the same answers, through the test host's entries endpoint.
 
 test.use({ javaScriptEnabled: false });
 // The specs change the newsletter's consent and count its entries, so they run one after another.
@@ -28,6 +28,12 @@ interface StoredValue {
   number: number | null;
   date: string | null;
   bool: boolean | null;
+}
+
+interface StoredFile {
+  field: string;
+  name: string;
+  size: number;
 }
 
 interface DefinitionField {
@@ -104,6 +110,20 @@ async function entriesOf(request: APIRequestContext, alias: string): Promise<Sto
   const response = await request.get('/jfb-testing/entries', { params: { form: alias } });
   expect(response.status()).toBe(200);
   return ((await response.json()) as { entries: { values: StoredValue[] }[] }).entries.map((entry) => entry.values);
+}
+
+/** Each entry of a demo form, oldest first, with its stored files. */
+async function filesOf(request: APIRequestContext, alias: string): Promise<StoredFile[][]> {
+  const response = await request.get('/jfb-testing/entries', { params: { form: alias } });
+  expect(response.status()).toBe(200);
+  return ((await response.json()) as { entries: { files: StoredFile[] }[] }).entries.map((entry) => entry.files);
+}
+
+/** A file of a length whose first bytes are a PDF's, or a program's. */
+function bytesOf(head: string | number[], length: number): Buffer {
+  const bytes = Buffer.alloc(length, 'x');
+  (typeof head === 'string' ? Buffer.from(head, 'ascii') : Buffer.from(head)).copy(bytes);
+  return bytes;
 }
 
 /** Posts the answers to the form's entries endpoint as the runtime does, with the revision and the consents' hashes the page shows. */
@@ -373,6 +393,65 @@ test('the feedback ranking moves options up and down and into its top three with
   expect(entries).toHaveLength(1);
   const improve = entries[0]!.filter((value) => value.field === keys.improve).sort((a, b) => a.index - b.index);
   expect(improve.map((value) => value.text)).toEqual(['seats', 'hours', 'wifi']);
+});
+
+test('the job application takes a CV without JavaScript: one too large and a program are refused at its field, a valid one is kept while another field fails, then stored', async ({
+  page,
+  request,
+  fillForm,
+  submitForm,
+}) => {
+  const keys = keysOf('application');
+  const before = (await filesOf(request, 'application')).length;
+  await page.goto('/en/careers/');
+  await pageFormOn(page).locator('[name="fullName.first"]').fill('Ada');
+  await pageFormOn(page).locator('[name="fullName.last"]').fill('Lovelace');
+  await fillForm({ email: 'ada@visitor.jfb.test', post: 'assistant' }, pageFormOn(page));
+  await pageFormOn(page).locator('button[data-jfb-nav="next"]').click();
+  await fillForm(
+    {
+      'referees[0].refName': 'Grace Hopper',
+      'referees[0].refContact': 'grace@visitor.jfb.test',
+      'referees[1].refName': 'Mary Somerville',
+      'referees[1].refContact': '+44 20 7946 0000',
+    },
+    pageFormOn(page),
+  );
+  await pageFormOn(page).locator('button[data-jfb-nav="next"]').click();
+  await expect(shownPage(pageFormOn(page))).toHaveText('Your letter');
+  await fillForm({ letter: 'I would love to work in a library.' }, pageFormOn(page));
+  const cv = (): Locator => pageFormOn(page).locator('input[type="file"][name="cv"]');
+  const pdf = '%PDF-1.7' + LF;
+
+  await cv().setInputFiles({ name: 'cv.pdf', mimeType: 'application/pdf', buffer: bytesOf(pdf, 2_200_000) });
+  const tooLarge = await submitForm(pageFormOn(page));
+  expect(tooLarge.state, 'the page, not a reset connection').toBe('errors');
+  await expect(pageFormOn(page).locator('#jfb-1-cv-error')).toBeVisible();
+  await expect(shownPage(pageFormOn(page))).toHaveText('Your letter');
+  await expect(pageFormOn(page).locator('[name="letter"]')).toHaveValue('I would love to work in a library.');
+
+  await cv().setInputFiles({
+    name: 'cv.pdf',
+    mimeType: 'application/pdf',
+    buffer: bytesOf([0x4d, 0x5a, 0x90, 0x00], 600),
+  });
+  const program = await submitForm(pageFormOn(page));
+  expect(program.state).toBe('errors');
+  await expect(pageFormOn(page).locator('#jfb-1-cv-error')).toBeVisible();
+
+  await cv().setInputFiles({ name: 'cv.pdf', mimeType: 'application/pdf', buffer: bytesOf(pdf, 100_000) });
+  const consent = await submitForm(pageFormOn(page));
+  expect(consent.state).toBe('errors');
+  await expect(pageFormOn(page).locator('#jfb-1-cv-error')).toHaveCount(0);
+  await expect(
+    pageFormOn(page).getByRole('checkbox', { name: 'Keep cv.pdf (97.7 KB)' }),
+    'kept while the consent fails',
+  ).toBeChecked();
+
+  await fillForm({ privacy: true }, pageFormOn(page));
+  expect(outcomeOf(await submitForm(pageFormOn(page))).message).toBe('Thank you, Ada. We reply within two weeks.');
+  const entries = (await filesOf(request, 'application')).slice(before);
+  expect(entries).toEqual([[{ field: keys.cv, name: 'cv.pdf', size: 100_000 }]]);
 });
 
 test('a consent whose wording changed after the page was rendered comes back unticked with a notice, and is sent once ticked again', async ({

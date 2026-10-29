@@ -72,8 +72,9 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// globally, at the root and on each root folder outside the trash in the library's order (ADR-0049), so the browser
 /// tests can see that the personas have their grants.</description></item>
 /// <item><description><c>GET /jfb-testing/entries?form=&lt;alias&gt;</c>: the form's entries, oldest first, each with its
-/// stored values by the field's key, row and item (ADR-0100), so the browser tests can compare what two paths stored
-/// for the same answers; <c>404</c> for a form the host does not have.</description></item>
+/// stored values by the field's key, row and item (ADR-0100) and its files by the field's key, name and size (ADR-0102),
+/// so the browser tests can compare what two paths stored for the same answers; <c>404</c> for a form the host does not
+/// have.</description></item>
 /// </list>
 /// Requests from another machine, and paths outside <c>/jfb-testing/</c>, go on to the site as if this did not exist.
 /// </summary>
@@ -217,6 +218,7 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
         var fields = (await forms.ListFieldsAsync(form.Id, context.RequestAborted)).ToDictionary(field => field.Id, field => field.Values.FieldKey);
         var ids = await entries.ListIdsAsync(form.Id, MaxEntries, context.RequestAborted);
         var values = ids.Count == 0 ? [] : await entries.ListValuesAsync(ids, context.RequestAborted);
+        var files = ids.Count == 0 ? [] : await entries.ListFilesAsync(ids, context.RequestAborted);
         var answer = ids.Order().Select(id => new
         {
             id,
@@ -224,6 +226,10 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 .Where(value => value.EntryId == id)
                 .OrderBy(value => value.FieldId).ThenBy(value => value.RowIndex).ThenBy(value => value.ValueIndex)
                 .Select(value => new { field = fields[value.FieldId], row = value.RowIndex, index = value.ValueIndex, value.Text, value.TextKey, value.Number, value.Date, value.Bool }),
+            files = files
+                .Where(file => file.EntryId == id)
+                .OrderBy(file => file.Id)
+                .Select(file => new { field = file.FieldKey, name = file.OriginalName, size = file.SizeBytes }),
         });
         await context.Response.WriteAsJsonAsync(new { entries = answer }, Json, context.RequestAborted);
     }

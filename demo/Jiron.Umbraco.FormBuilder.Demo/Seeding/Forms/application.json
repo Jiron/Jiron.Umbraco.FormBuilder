@@ -102,6 +102,14 @@
               "settings": { "rows": 6, "counter": true, "maxLength": 4000 }
             },
             {
+              "key": "d0000000-0000-4000-8000-00000000060b",
+              "type": "file",
+              "alias": "cv",
+              "label": { "": "Your CV", "de": "Ihr Lebenslauf" },
+              "help": { "": "A PDF or an office document, up to 2 MB.", "de": "Ein PDF oder ein Office-Dokument, bis 2 MB." },
+              "settings": { "types": ["pdf", "office"], "maxBytes": 2097152 }
+            },
+            {
               "key": "d0000000-0000-4000-8000-000000000608",
               "type": "yesno",
               "alias": "startEarly",
