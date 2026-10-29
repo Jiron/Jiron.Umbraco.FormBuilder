@@ -64,8 +64,9 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
   through the form service when their alias is missing ([ADR-0094](../docs/decisions/0094-demo-forms.md)): the
   contact form, which the contact page shows through its `form` property, and the workshop booking on the events
   page, which is for members: a visitor sees a notice that asks them to sign in, a member the form, where the
-  workshop is chosen from cards and a help text recalls its name
-  ([ADR-0095](../docs/decisions/0095-visitor-texts-members-only-forms-and-the-pending-note.md)); the feedback
+  workshop is chosen from cards, a help text recalls its name
+  ([ADR-0095](../docs/decisions/0095-visitor-texts-members-only-forms-and-the-pending-note.md)) and the guests who
+  come along are the rows of a repeatable group ([ADR-0098](../docs/decisions/0098-the-repeaters-rows.md)); the feedback
   form on the feedback page, with radio buttons side by side, checkboxes with "Other", a dropdown, a rating, a grid,
   a ranking, yes or no and a scale ([ADR-0096](../docs/decisions/0096-the-choice-controls.md)); and the room hire
   form on its page, with a day from tomorrow to three months ahead, a start time, the hours on a slider and the cost
