@@ -24,7 +24,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
-public sealed class FormPostTests : RenderingTestBase
+public sealed partial class FormPostTests : RenderingTestBase
 {
     private static readonly string Crlf = new([(char)13, (char)10]);
     private static readonly string Lf = ((char)10).ToString();

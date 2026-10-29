@@ -12,7 +12,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Rendering;
 /// The answers of a post without JavaScript (ADR-0100), read by the names the form's controls carry: a field's texts and
 /// parts, a repeatable group's rows as many as the page showed, a consent's wording, the context and query values, a
 /// switch left off as <c>no</c>, every CRLF as LF; names of no field, rows past the count and malformed names are left
-/// out, and a field named by an alias it had is read by that name.
+/// out, and a field named by an alias it had is read by that name. A row's Add and Remove and a ranking's move change
+/// the answers as the buttons ask, within the group's limits; a ranking's order is read but is no answer.
 /// </summary>
 public sealed class FormPostReaderTests
 {
@@ -27,8 +28,10 @@ public sealed class FormPostReaderTests
     private static readonly FormField Guest = Field(K(7), "guest", "text");
     private static readonly FormField Vegan = Field(K(8), "vegan", "yesno", """{"style":"switch"}""");
     private static readonly FormField Agree = Field(K(9), "agree", "consent", """{"text":{"":"<p>Me too.</p>"}}""");
-    private static readonly FormField Guests = Field(K(6), "guests", "repeater") with { Fields = [Guest, Vegan, Agree] };
+    private static readonly FormField Pick = Field(K(12), "pick", "ranking");
+    private static readonly FormField Guests = Field(K(6), "guests", "repeater") with { Fields = [Guest, Vegan, Agree, Pick] };
     private static readonly FormField Topic = Field(K(10), "topic", "text") with { FormerAliases = ["subject", "story"] };
+    private static readonly FormField Rank = Field(K(11), "rank", "ranking");
 
     private static readonly FormDefinition Definition = new()
     {
@@ -36,7 +39,7 @@ public sealed class FormPostReaderTests
         Pages =
         [
             new FormPage { Key = K(20), Groups = [new FormGroup { Key = K(21), Fields = [FullName, Story, Updates, Answer, Terms] }] },
-            new FormPage { Key = K(22), Groups = [new FormGroup { Key = K(23), Fields = [Guests, Topic] }] },
+            new FormPage { Key = K(22), Groups = [new FormGroup { Key = K(23), Fields = [Guests, Topic, Rank] }] },
         ],
     };
 
@@ -229,6 +232,106 @@ public sealed class FormPostReaderTests
     }
 
     [Test]
+    public void AGroupOrAFieldAButtonNames_IsFoundByItsAliasOrItsRowsPath_AndAnyOtherNameIsNone()
+    {
+        var reader = Read(("jfb-rows-guests", ["2"]), ("guests[1].guest", ["Sam"]), ("story", ["Told"]));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(reader.GroupOf("guests"), Is.SameAs(Guests));
+            Assert.That(new[] { "guest", "fullName", "nothing", string.Empty }.Select(reader.GroupOf), Is.All.Null, "a child, a field that is no group, no field");
+            Assert.That(reader.FieldOf("story"), Is.EqualTo((Story, (FormField?)null, (int?)null)));
+            Assert.That(reader.FieldOf("subject"), Is.EqualTo((Topic, (FormField?)null, (int?)null)), "by an alias it had");
+            Assert.That(reader.FieldOf("guests[1].guest"), Is.EqualTo((Guest, (FormField?)Guests, (int?)1)));
+            Assert.That(reader.FieldOf("guests[0].pick"), Is.EqualTo((Pick, (FormField?)Guests, (int?)0)), "a row the post holds nothing of");
+            Assert.That(
+                new[] { "guests[2].guest", "guests", "fullName.first", "guests[0].nothing", "guests[0].guest.part", "topic[0].guest", "story[0].guest", "nothing", "guests[x].guest", "[0].guest" }.Select(reader.FieldOf),
+                Is.All.Null,
+                "a row past those shown, a group, a part, no child, no group, no field, no row");
+            Assert.That(reader.AnswersOf(Guest, 1).Values, Is.EqualTo(new[] { "Sam" }));
+            Assert.That(reader.AnswersOf(Story, null).Values, Is.EqualTo(new[] { "Told" }));
+            Assert.That(new[] { reader.AnswersOf(Guest, 0), reader.AnswersOf(Guest, 5), reader.AnswersOf(Story, 0), reader.AnswersOf(Topic, null) }, Is.All.SameAs(FieldAnswers.None), "nothing posted, a row past those shown, a field outside the rows");
+        });
+    }
+
+    [Test]
+    public void ARowAdded_StartsEmptyAndNew_UpToTheMost_AndARowRemoved_MovesTheRowsBelowItUp_DownToTheLeast()
+    {
+        var reader = Read(("jfb-rows-guests", ["2"]), ("guests[0].guest", ["Ada"]), ("guests[1].guest", ["Sam"]));
+        var none = Read();
+        var full = Read(("jfb-rows-guests", [RepeaterFieldType.MostRows.ToString(System.Globalization.CultureInfo.InvariantCulture)]));
+
+        var added = reader.AddRow(Guests, 3);
+        var most = reader.AddRow(Guests, 3);
+        var afterAdding = Texts(reader);
+        var news = Enumerable.Range(0, 3).Select(row => reader.IsNew(Guests.Key, row)).ToList();
+        var removed = reader.RemoveRow(Guests, 0, 1);
+        var afterRemoving = Texts(reader);
+        var moved = Enumerable.Range(0, 3).Select(row => reader.IsNew(Guests.Key, row)).ToList();
+        var refused = new[] { reader.RemoveRow(Guests, 2, 0), reader.RemoveRow(Guests, 5, 0), reader.RemoveRow(Guests, -1, 0), reader.RemoveRow(Guests, 1, 2) };
+        var kept = reader.RemoveRow(Guests, 1, 1);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((added, most), Is.EqualTo((true, false)), "up to the most");
+            Assert.That(afterAdding, Is.EqualTo(new[] { "Ada", "Sam", null }), "the row added is empty");
+            Assert.That(news, Is.EqualTo(new[] { false, false, true }), "and new");
+            Assert.That(removed, Is.True);
+            Assert.That(afterRemoving, Is.EqualTo(new[] { "Sam", null }), "the rows below move up");
+            Assert.That(moved, Is.EqualTo(new[] { false, true, false }), "the new row with them");
+            Assert.That(refused, Is.All.False, "the row after the last, one further, none, and the least");
+            Assert.That(kept, Is.True, "the new row removed");
+            Assert.That((Texts(reader), reader.IsNew(Guests.Key, 0)), Is.EqualTo((new string?[] { "Sam" }, false)));
+            Assert.That(reader.Shown().Rows[Guests.Key][0][Vegan.Key].Values, Is.EqualTo(new[] { "no" }), "a row moved up keeps every answer");
+            Assert.That(none.AddRow(Guests, 3), Is.True, "a group without rows takes one");
+            Assert.That(none.Posted().Rows["guests"], Has.Count.EqualTo(1), "named by its alias");
+            Assert.That(full.AddRow(Guests, int.MaxValue), Is.False, "never past the most any group may have");
+            Assert.That(() => reader.AddRow(null!, 1), Throws.ArgumentNullException);
+            Assert.That(() => reader.RemoveRow(null!, 0, 0), Throws.ArgumentNullException);
+        });
+    }
+
+    [Test]
+    public void ARankingsOrder_IsReadByItsName_IsNoAnswerForThePipeline_AndARankingRankedAgainHoldsItsNewOrderAndPositions()
+    {
+        var reader = Read(
+            ("jfb-order-rank", ["b", "a", string.Empty, "c"]),
+            ("rank.b", ["1"]),
+            ("rank.c", ["3"]),
+            ("jfb-rows-guests", ["2"]),
+            ("jfb-order-guests[0].pick", ["y", "x"]),
+            ("jfb-order-pick", ["outside its group"]),
+            ("jfb-order-rank.part", ["no part"]),
+            ("jfb-order-nothing", ["no field"]));
+
+        var before = (Orders: reader.Orders(), Posted: reader.Posted(), Shown: reader.Shown());
+        reader.Rank(Rank, null, null, ["a", "b", "c"], new Dictionary<string, string> { ["a"] = "1", ["b"] = "2" });
+        reader.Rank(Pick, Guests, 1, ["x", "y"], new Dictionary<string, string> { ["x"] = "1", ["y"] = "2" });
+        var after = (Orders: reader.Orders(), Posted: reader.Posted(), Shown: reader.Shown());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(reader.OrderOf(Pick, 0), Is.EqualTo(new[] { "y", "x" }), "in its row");
+            Assert.That(before.Orders.Fields, Is.EqualTo(new Dictionary<Guid, IReadOnlyList<string>> { [Rank.Key] = ["b", "a", "c"] }), "an empty value left out");
+            Assert.That(before.Orders.Rows[Guests.Key][0], Is.EqualTo(new Dictionary<Guid, IReadOnlyList<string>> { [Pick.Key] = ["y", "x"] }));
+            Assert.That(before.Orders.Rows[Guests.Key][1], Is.Empty);
+            Assert.That(before.Posted.Fields["rank"].Parts, Is.EqualTo(new Dictionary<string, IReadOnlyList<string?>> { ["b"] = ["1"], ["c"] = ["3"] }), "the positions alone");
+            Assert.That(before.Posted.Rows["guests"][0].ContainsKey("pick"), Is.False, "an order alone is no answer");
+            Assert.That(before.Shown.Rows[Guests.Key][0].ContainsKey(Pick.Key), Is.False);
+            Assert.That(after.Orders.Fields[Rank.Key], Is.EqualTo(new[] { "a", "b", "c" }), "ranked again: the new order");
+            Assert.That(after.Shown.Fields[Rank.Key].Parts.ToDictionary(part => part.Key, part => part.Value.ToArray()), Is.EqualTo(new Dictionary<string, string[]> { ["a"] = ["1"], ["b"] = ["2"] }), "and the new positions alone, c's gone");
+            Assert.That(Read(("jfb-order-rank", ["a", "b"])).Posted().Fields.ContainsKey("rank"), Is.False, "an order alone is no answer outside rows either");
+            Assert.That(after.Orders.Rows[Guests.Key][1], Is.EqualTo(new Dictionary<Guid, IReadOnlyList<string>> { [Pick.Key] = ["x", "y"] }), "in its row");
+            Assert.That(after.Posted.Rows["guests"][1]["pick"].Parts, Is.EqualTo(new Dictionary<string, IReadOnlyList<string?>> { ["x"] = ["1"], ["y"] = ["2"] }));
+            Assert.That(after.Orders.Rows[Guests.Key][0][Pick.Key], Is.EqualTo(new[] { "y", "x" }), "the other row as it was");
+            Assert.That(Read().OrderOf(Rank, null), Is.Empty);
+            Assert.That(() => reader.Rank(null!, null, null, [], new Dictionary<string, string>()), Throws.ArgumentNullException);
+            Assert.That(() => reader.Rank(Rank, null, null, null!, new Dictionary<string, string>()), Throws.ArgumentNullException);
+            Assert.That(() => reader.Rank(Rank, null, null, [], null!), Throws.ArgumentNullException);
+        });
+    }
+
+    [Test]
     public void ReadingWithoutAPostAFormOrTypes_Throws()
     {
         Assert.Multiple(() =>
@@ -241,6 +344,10 @@ public sealed class FormPostReaderTests
 
     private static FormPostReader Read(params (string Name, string[] Values)[] posted) =>
         FormPostReader.Read(new FormCollection(posted.ToDictionary(pair => pair.Name, pair => new StringValues(pair.Values), StringComparer.Ordinal)), Definition, TestFieldTypes.Registry);
+
+    // The guests' texts, row by row; null for a row without one.
+    private static string?[] Texts(FormPostReader reader) =>
+        [.. reader.Shown().Rows[Guests.Key].Select(row => row.TryGetValue(Guest.Key, out var guest) ? guest.Values.Single() : null)];
 
     private static FormField Field(Guid key, string alias, string type, string settings = "{}") => new()
     {
