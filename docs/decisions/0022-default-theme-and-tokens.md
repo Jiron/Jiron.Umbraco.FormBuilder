@@ -1,6 +1,7 @@
 # 0022. The default theme and its tokens
 
-- Status: accepted
+- Status: accepted; the error summary's heading for one answer or several, and its links to a default message naming
+  their field, amended by [ADR-0099](0099-visitor-error-messages.md) in 6.2g
 - Date: 2026-10-23
 - Roadmap step: 2.3 (decided); built in 6.2 (the views' markup), 6.3 (the theme) and 6.4 (the runtime's states)
 
@@ -66,7 +67,8 @@ seven type, two size, one focus and three motion tokens). The site's font and si
 - **Field anatomy:** label, help, control, error, in that order; "(optional)" marks optional questions by default,
   and an editor can switch to asterisks on required ones, with a one-line note above the first question.
 - **Errors:** an error summary at the top that names each problem as its fix and links to the field, plus the same
-  words under the field, with an icon, in bold error red; the control gets an error-coloured double border.
+  words under the field, with an icon, in bold error red; the control gets an error-coloured double border. (A link
+  to one of the package's default messages puts the field's label before the words, ADR-0099.)
 - **The default button:** a page with other submit buttons before Next or Send (Remove, Change) starts with a
   visually hidden copy of its Next or Send button, so Enter in a field moves on instead of removing a row.
 - **Uploads:** the native file input works without JavaScript; the runtime enhances it to "Choose files" and, on

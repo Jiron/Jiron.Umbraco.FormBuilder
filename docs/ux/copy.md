@@ -398,6 +398,110 @@ it is the example form's own wording, and the default follows the same pattern w
 | the signature's Clear, until the next stroke | Undo clear | Löschen zurücknehmen |
 | an upload that stopped (in the file's row) | The upload stopped before it finished. [Try again] | Das Hochladen wurde vor dem Ende abgebrochen. [Erneut versuchen] |
 
+### The default error messages
+
+What a visitor sees for an error the editor wrote no message for (ADR-0099): a field's own message for the kind, a
+check's or a validation rule's comes first. Both runtimes use these words, held to one text by
+`tests/vectors/messages.json`; the other five languages come with 14.2. A value in braces prints in the culture's
+format; where a count changes the words, the singular comes first, then the plural, after a ·. Under the field a
+message stands alone, but for a grid's row, which it names first ("Morning: Choose an answer in this row"); in the
+summary a default follows the field's label, and a row's legend or a grid's row after it in brackets.
+
+| Case | English | German |
+| --- | --- | --- |
+| the word before the last of a list | or | oder |
+| a size below a megabyte, 1,024 based, one place at most | {size} KB | {size} KB |
+| a size from a megabyte | {size} MB | {size} MB |
+| `required`: a text or a text area | Enter an answer | Geben Sie eine Antwort ein |
+| `required`: an email address | Enter an email address | Geben Sie eine E-Mail-Adresse ein |
+| `required`: a phone number | Enter a phone number | Geben Sie eine Telefonnummer ein |
+| `required`: a web address | Enter a web address | Geben Sie eine Webadresse ein |
+| `required`: a number | Enter a number | Geben Sie eine Zahl ein |
+| `required`: a date | Enter a date | Geben Sie ein Datum ein |
+| `required`: a time | Enter a time | Geben Sie eine Uhrzeit ein |
+| `required`: a date and a time | Enter a date and a time | Geben Sie ein Datum und eine Uhrzeit ein |
+| `required`: a rating | Choose a rating | Wählen Sie eine Bewertung |
+| `required`: a scale | Choose a point on the scale | Wählen Sie einen Wert auf der Skala |
+| `required`: a slider | Choose a value | Wählen Sie einen Wert |
+| `required`: radio buttons, a dropdown of one | Choose an answer | Wählen Sie eine Antwort |
+| `required`: checkboxes, a dropdown of several | Choose at least one answer | Wählen Sie mindestens eine Antwort |
+| `required`: a grid | Choose an answer in each row | Wählen Sie in jeder Zeile eine Antwort |
+| `required`: one of a grid's rows | Choose an answer in this row | Wählen Sie in dieser Zeile eine Antwort |
+| `required`: a ranking | Put the options in order | Bringen Sie die Optionen in eine Reihenfolge |
+| `required`: a checkbox | Tick the box | Kreuzen Sie das Kästchen an |
+| `required`: yes or no, in the field's own words for them | Choose {yes} or {no} | Wählen Sie {yes} oder {no} |
+| `required`: a consent | Tick the box to agree | Kreuzen Sie das Kästchen an, um zuzustimmen |
+| `required`: a country | Choose a country | Wählen Sie ein Land |
+| `required`: a name | Enter the name in full | Geben Sie den vollständigen Namen ein |
+| `required`: an address | Enter the address in full | Geben Sie die vollständige Adresse ein |
+| `required`: a file upload | Choose a file | Wählen Sie eine Datei |
+| `required`: a signature | Add your signature, or type your name instead | Unterschreiben Sie, oder geben Sie stattdessen Ihren Namen ein |
+| `required`: a site's own type | Answer this question | Beantworten Sie diese Frage |
+| `invalid`: an email address | Enter a complete email address, for example name@example.com | Geben Sie eine vollständige E-Mail-Adresse ein, zum Beispiel name@example.com |
+| `invalid`: a well-formed email address at a domain the field does not take | Use an email address at another domain | Verwenden Sie eine E-Mail-Adresse bei einer anderen Domain |
+| `invalid`: a phone number | Enter a phone number with digits, and a + for the country code | Geben Sie eine Telefonnummer mit Ziffern ein, mit einem + für die Landesvorwahl |
+| `invalid`: a web address | Enter a complete web address, for example https://example.com | Geben Sie eine vollständige Webadresse ein, zum Beispiel https://example.com |
+| `invalid`: a number; the example is 12, or 12.5 with decimals, in the culture's format | Enter a number, for example {example} | Geben Sie eine Zahl ein, zum Beispiel {example} |
+| `invalid`: a date | Enter a valid date | Geben Sie ein gültiges Datum ein |
+| `invalid`: a time | Enter a valid time | Geben Sie eine gültige Uhrzeit ein |
+| `invalid`: a date and a time | Enter a valid date and time | Geben Sie ein gültiges Datum und eine gültige Uhrzeit ein |
+| `invalid`: a rating | Choose a rating from 1 to {count} | Wählen Sie eine Bewertung von 1 bis {count} |
+| `invalid`: a scale | Choose a point from {from} to {to} | Wählen Sie einen Wert von {from} bis {to} |
+| `invalid`, `min`, `max`: a slider | Choose a value from {min} to {max} | Wählen Sie einen Wert von {min} bis {max} |
+| `invalid`: a choice, a grid or a ranking | Choose one of the options given | Wählen Sie eine der angebotenen Optionen |
+| `invalid`: a country | Choose a country from the list | Wählen Sie ein Land aus der Liste |
+| `invalid`: a name | Check the name | Prüfen Sie den Namen |
+| `invalid`: an address | Check the address | Prüfen Sie die Adresse |
+| `invalid`: a signature | Sign again, or type your name instead | Unterschreiben Sie erneut, oder geben Sie stattdessen Ihren Namen ein |
+| `invalid` of a site's own type, a validation rule without a message, a kind without words of its own | Check this answer | Prüfen Sie diese Antwort |
+| `minLength` | Enter at least {min} character · Enter at least {min} characters | Geben Sie mindestens {min} Zeichen ein |
+| `maxLength` | Enter at most {max} character · Enter at most {max} characters | Geben Sie höchstens {max} Zeichen ein |
+| `minWords` | Enter at least {min} word · Enter at least {min} words | Geben Sie mindestens {min} Wort ein · Geben Sie mindestens {min} Wörter ein |
+| `maxWords` | Enter at most {max} word · Enter at most {max} words | Geben Sie höchstens {max} Wort ein · Geben Sie höchstens {max} Wörter ein |
+| `min`, `max`: a number with both limits | Enter a number from {min} to {max} | Geben Sie eine Zahl von {min} bis {max} ein |
+| `min`, `max`: a number with a least only | Enter a number of {min} or more | Geben Sie eine Zahl ab {min} ein |
+| `min`, `max`: a number with a most only | Enter a number of {max} or less | Geben Sie eine Zahl bis {max} ein |
+| `min`, `max`: a time with both limits | Enter a time from {min} to {max} | Geben Sie eine Uhrzeit von {min} bis {max} ein |
+| `min`, `max`: a time with an earliest only | Enter a time of {min} or later | Geben Sie eine Uhrzeit ab {min} ein |
+| `min`, `max`: a time with a latest only | Enter a time of {max} or earlier | Geben Sie eine Uhrzeit bis {max} ein |
+| `step`: a number's step | Enter a number in steps of {step} | Geben Sie eine Zahl in Schritten von {step} ein |
+| `step`: a number's step from its least | Enter a number in steps of {step}, starting at {min} | Geben Sie eine Zahl in Schritten von {step} ab {min} ein |
+| `step`: a number without decimals | Enter a whole number | Geben Sie eine ganze Zahl ein |
+| `step`: a number's decimal places | Enter a number with at most {places} decimal place · Enter a number with at most {places} decimal places | Geben Sie eine Zahl mit höchstens {places} Nachkommastelle ein · Geben Sie eine Zahl mit höchstens {places} Nachkommastellen ein |
+| `step`: a slider | Choose a value in steps of {step} | Wählen Sie einen Wert in Schritten von {step} |
+| `step`: the minutes of a time or a date and time | Choose a time in steps of {minutes} minute · Choose a time in steps of {minutes} minutes | Wählen Sie eine Uhrzeit im Abstand von {minutes} Minute · Wählen Sie eine Uhrzeit im Abstand von {minutes} Minuten |
+| `step`: the minutes of a time from its earliest | Choose a time in steps of {minutes} minute from {min} · Choose a time in steps of {minutes} minutes from {min} | Wählen Sie eine Uhrzeit im Abstand von {minutes} Minute ab {min} · Wählen Sie eine Uhrzeit im Abstand von {minutes} Minuten ab {min} |
+| `dateWindow`: a window with both ends | Choose a date from {min} to {max} | Wählen Sie ein Datum vom {min} bis zum {max} |
+| `dateWindow`: a window with a start only | Choose a date on or after {min} | Wählen Sie ein Datum ab dem {min} |
+| `dateWindow`: a window with an end only | Choose a date on or before {max} | Wählen Sie ein Datum bis zum {max} |
+| `dateWindow`: weekdays only, with both ends | Choose a date from {min} to {max}, {monday} to {friday} | Wählen Sie ein Datum vom {min} bis zum {max}, {monday} bis {friday} |
+| `dateWindow`: weekdays only, with a start only | Choose a date on or after {min}, {monday} to {friday} | Wählen Sie ein Datum ab dem {min}, {monday} bis {friday} |
+| `dateWindow`: weekdays only, with an end only | Choose a date on or before {max}, {monday} to {friday} | Wählen Sie ein Datum bis zum {max}, {monday} bis {friday} |
+| `dateWindow`: weekdays only, without ends | Choose a day from {monday} to {friday} | Wählen Sie einen Tag von {monday} bis {friday} |
+| `dateWindow`: a date the window takes that the field excludes | This date is not available. Choose another one. | Dieses Datum ist nicht verfügbar. Wählen Sie ein anderes. |
+| `selections`: as many as the fewest and the most | Choose {count} answer · Choose {count} answers | Wählen Sie {count} Antwort · Wählen Sie {count} Antworten |
+| `selections`: the fewest and the most | Choose from {min} to {max} answers | Wählen Sie {min} bis {max} Antworten |
+| `selections`: the fewest only | Choose at least {min} answer · Choose at least {min} answers | Wählen Sie mindestens {min} Antwort · Wählen Sie mindestens {min} Antworten |
+| `selections`: the most only | Choose at most {max} answer · Choose at most {max} answers | Wählen Sie höchstens {max} Antwort · Wählen Sie höchstens {max} Antworten |
+| `fileType`: the formats, joined with commas and "or" | Choose a file in the format {formats} | Wählen Sie eine Datei im Format {formats} |
+| `fileSize`: a field without a limit of its own | This file is too large. Choose a smaller one. | Diese Datei ist zu groß. Wählen Sie eine kleinere. |
+| `fileSize`: one file | This file is larger than {size}. Choose a smaller one. | Diese Datei ist größer als {size}. Wählen Sie eine kleinere. |
+| `fileSize`: several files | One of the files is larger than {size}. Choose a smaller one. | Eine der Dateien ist größer als {size}. Wählen Sie eine kleinere. |
+| `fileCount` | Choose only {max} file · Choose at most {max} files | Wählen Sie nur {max} Datei · Wählen Sie höchstens {max} Dateien |
+| `full`: one option, by its label | {option} is now full. Choose another option. | {option} ist jetzt ausgebucht. Wählen Sie eine andere Option. |
+| `full`: several options | One of your choices is now full. Choose another option. | Eine Ihrer gewählten Optionen ist jetzt ausgebucht. Wählen Sie eine andere Option. |
+| `confirmation` | Enter the same email address twice | Geben Sie zweimal dieselbe E-Mail-Adresse ein |
+| `digits` | Enter a number with fewer digits | Geben Sie eine Zahl mit weniger Ziffern ein |
+| `rowCount`: too few rows | Add at least {min} row · Add at least {min} rows | Fügen Sie mindestens {min} Zeile hinzu · Fügen Sie mindestens {min} Zeilen hinzu |
+| `rowCount`: too many rows | Remove rows to keep at most {max} | Entfernen Sie Zeilen, sodass höchstens {max} bleibt · Entfernen Sie Zeilen, sodass höchstens {max} bleiben |
+| `check`: a pattern without a message | Enter the answer in the format asked for | Geben Sie die Antwort im verlangten Format ein |
+| `check`: the same as another field, named by its label | Enter the same as for {field} | Geben Sie dasselbe ein wie bei {field} |
+| `check`: unique per form | This answer has already been given. Enter another one. | Diese Antwort wurde bereits gegeben. Geben Sie eine andere ein. |
+| a submission without an answer, in the summary | Answer at least one question before you send the form | Beantworten Sie mindestens eine Frage, bevor Sie das Formular senden |
+| the error summary's heading, by the number of its links | This answer needs a change · These answers need a change | Diese Antwort muss noch geändert werden · Diese Antworten müssen noch geändert werden |
+| a summary link to a default | {label}: {message} | {label}: {message} |
+| a summary link to a default in a repeatable group's row | {label} ({row}): {message} | {label} ({row}): {message} |
+
 ## Checklist for every new string
 
 - [ ] It uses the glossary's word, in sentence case.
