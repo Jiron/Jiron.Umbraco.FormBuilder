@@ -1,0 +1,5 @@
+@* jfb-view: fields/yesno 1 *@
+@* The form renderingRare's own yes or no control, which shows the mark the model gives a view of its own. *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+<input type="checkbox" role="switch" id="@Model.Id" name="@Model.Name" value="yes" data-test-mark="@Model.Mark">
+<label for="@Model.Id">@Model.Label</label>

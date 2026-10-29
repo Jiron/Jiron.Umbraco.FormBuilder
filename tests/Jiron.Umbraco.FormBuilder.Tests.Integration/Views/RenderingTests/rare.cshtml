@@ -1,0 +1,13 @@
+@* The rarer choices under the asterisk style (Rendering/FormRenderingChoicesTests.cs): the first render, or ?state=posted, a post that chose an option and gave the "Other" text. *@
+@using Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var key = (await Requests.KeyOfAsync("renderingRare", Context.RequestAborted))!.Value;
+    if (FormRenderingChoicesTests.RareState(Context.Request.Query["state"].ToString()) is { } state)
+    {
+        FormPosts.Set(Context, key, "jfb-1", state);
+    }
+}
+<jfb-render form="renderingRare" />

@@ -1,0 +1,14 @@
+@* Options from a list and from sources (Rendering/FormRenderingChoicesTests.cs): the first render, or a post that answered the country ?country= names. *@
+@using Jiron.Umbraco.FormBuilder.Core.FieldTypes
+@using Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var key = (await Requests.KeyOfAsync("renderingOptions", Context.RequestAborted))!.Value;
+    if (Context.Request.Query["country"].ToString() is { Length: > 0 } country)
+    {
+        FormPosts.Set(Context, key, "jfb-1", new FormPostState { Answers = new Dictionary<Guid, FieldAnswers> { [FormRenderingChoicesTests.Country] = new FieldAnswers([country]) } });
+    }
+}
+<jfb-render form="renderingOptions" />
