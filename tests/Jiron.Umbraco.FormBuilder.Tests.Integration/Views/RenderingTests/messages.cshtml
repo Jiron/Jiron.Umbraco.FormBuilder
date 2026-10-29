@@ -1,0 +1,14 @@
+@* A post's error messages (Rendering/FormRenderingMessagesTests.cs): the first render, or ?state=errors, one or empty, on the form with the summary or, with ?form=quiet, the one without it. *@
+@using Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var alias = Context.Request.Query["form"].ToString() == "quiet" ? "renderingMessagesQuiet" : "renderingMessages";
+    var key = (await Requests.KeyOfAsync(alias, Context.RequestAborted))!.Value;
+    if (FormRenderingMessagesTests.State(Context.Request.Query["state"].ToString()) is { } state)
+    {
+        FormPosts.Set(Context, key, "jfb-1", state);
+    }
+}
+<jfb-render form="@alias" />
