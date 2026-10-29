@@ -5,10 +5,11 @@ import { expect, test } from '../../fixtures.ts';
 import type { SubmitResult } from '../../support/form.ts';
 import { demoProject } from '../../support/paths.ts';
 
-// A visitor without JavaScript (ROADMAP 6.2h, ADR-0100): the demo's forms post back to their page, which renders again
-// with the answers and the errors, moves through the pages with Next and Back, or redirects to the outcome. Every page
-// holds the newsletter form in its footer beside its own form. What a post stores is compared with what the runtime's
-// post to `entries` stores for the same answers, through the test host's entries endpoint.
+// A visitor without JavaScript (ROADMAP 6.2h and 6.2i, ADR-0100, ADR-0101): the demo's forms post back to their page,
+// which renders again with the answers and the errors, moves through the pages with Next and Back, adds and removes
+// rows, moves a ranking's options, or redirects to the outcome. Every page holds the newsletter form in its footer
+// beside its own form. What a post stores is compared with what the runtime's post to `entries` stores for the same
+// answers, through the test host's entries endpoint.
 
 test.use({ javaScriptEnabled: false });
 // The specs change the newsletter's consent and count its entries, so they run one after another.
@@ -73,6 +74,30 @@ const pageFormOn = (page: Page): Locator => page.locator('main form.jfb-form');
 
 /** The title of the page a form shows. */
 const shownPage = (form: Locator): Locator => form.locator('[data-jfb-page]:not([hidden]) .jfb-title');
+
+/**
+ * Presses one of the page form's buttons by its accessible name, as a visitor without JavaScript does, and waits for
+ * the page it posts back to. A move at an end is aria-disabled but still a submit button, so a click still posts it.
+ */
+async function press(page: Page, name: string): Promise<void> {
+  const loaded = page.waitForEvent('load');
+  await pageFormOn(page).getByRole('button', { name, exact: true }).click({ force: true });
+  await loaded;
+}
+
+/** A ranking's options as shown: each one's position, if it has one, and its label. */
+async function rankedOn(page: Page, alias: string): Promise<string[]> {
+  const items = pageFormOn(page).locator(`[data-jfb-alias="${alias}"] ol.jfb-ranking > li`);
+  return (await items.evaluateAll((elements) =>
+    elements.map((item) =>
+      [...item.children]
+        .slice(0, 2)
+        .map((part) => part.textContent?.trim() ?? '')
+        .join(' ')
+        .trim(),
+    ),
+  )) as string[];
+}
 
 /** Each entry of a demo form, oldest first, with its stored values. */
 async function entriesOf(request: APIRequestContext, alias: string): Promise<StoredValue[][]> {
@@ -259,6 +284,95 @@ test('the job application moves through its three pages with Next and Back, keep
     [1, 'Mary Somerville'],
   ]);
   expect(stored.filter((value) => value.field === keys.startEarly)).toHaveLength(1);
+});
+
+test('the job application adds and removes a reference without JavaScript, keeping every answer and checking nothing', async ({
+  page,
+  fillForm,
+}) => {
+  await page.goto('/en/careers/');
+  await pageFormOn(page).locator('[name="fullName.first"]').fill('Ada');
+  await pageFormOn(page).locator('[name="fullName.last"]').fill('Lovelace');
+  await fillForm({ email: 'ada@visitor.jfb.test', post: 'assistant' }, pageFormOn(page));
+  await pageFormOn(page).locator('button[data-jfb-nav="next"]').click();
+  await expect(shownPage(pageFormOn(page))).toHaveText('Your references');
+  const rows = pageFormOn(page).locator('.jfb-row');
+  await expect(rows).toHaveCount(2);
+  await expect(pageFormOn(page).getByRole('button', { name: /^Remove/ })).toHaveCount(0);
+  await fillForm({ 'referees[0].refName': 'Grace Hopper', 'referees[1].refName': 'Mary Somerville' }, pageFormOn(page));
+
+  await press(page, 'Add a reference');
+  expect(new URL(page.url()).hash, 'the page opens at the row added').toBe('#jfb-1-referees-2');
+  await expect(rows).toHaveCount(3);
+  await expect(shownPage(pageFormOn(page))).toHaveText('Your references');
+  await expect(pageFormOn(page).locator('[name="referees[0].refName"]')).toHaveValue('Grace Hopper');
+  await expect(pageFormOn(page).locator('[name="referees[1].refName"]')).toHaveValue('Mary Somerville');
+  await expect(pageFormOn(page).locator('[name="referees[2].refName"]')).toHaveValue('');
+  await expect(pageFormOn(page).locator('[data-jfb-summary]'), 'nothing is checked: the new row is empty').toHaveCount(
+    0,
+  );
+  await expect(pageFormOn(page).getByRole('button', { name: 'Add a reference' }), 'none past the most').toHaveCount(0);
+  await expect(pageFormOn(page).locator('[name="email"]')).toHaveValue('ada@visitor.jfb.test');
+  await fillForm({ 'referees[2].refName': 'Ada Byron' }, pageFormOn(page));
+
+  await press(page, 'Remove Reference 1');
+  expect(new URL(page.url()).hash, 'the page opens at the group').toBe('#jfb-1-referees');
+  await expect(rows).toHaveCount(2);
+  await expect(pageFormOn(page).locator('[name="referees[0].refName"]')).toHaveValue('Mary Somerville');
+  await expect(pageFormOn(page).locator('[name="referees[1].refName"]')).toHaveValue('Ada Byron');
+  await expect(pageFormOn(page).getByRole('button', { name: /^Remove/ }), 'none below the least').toHaveCount(0);
+  await expect(pageFormOn(page).getByRole('button', { name: 'Add a reference' })).toHaveCount(1);
+  await expect(pageFormOn(page).locator('[name="fullName.first"]')).toHaveValue('Ada');
+  await expect(newsletterOn(page).locator('[data-jfb-summary]')).toHaveCount(0);
+});
+
+test('the feedback ranking moves options up and down and into its top three without JavaScript, keeping every answer', async ({
+  page,
+  request,
+  fillForm,
+  submitForm,
+}) => {
+  const keys = keysOf('feedback');
+  const before = (await entriesOf(request, 'feedback')).length;
+  await page.goto('/en/feedback/');
+  await fillForm({ visits: 'weekly', lastVisit: '4', comments: 'More quiet, please.' }, pageFormOn(page));
+  expect(await rankedOn(page, 'improve')).toEqual([
+    '1 Longer opening hours',
+    '2 More quiet seats',
+    '3 More events for children',
+    'A caf' + String.fromCharCode(0xe9),
+    'Faster Wi-Fi',
+  ]);
+
+  await press(page, 'Move Longer opening hours up');
+  expect(await rankedOn(page, 'improve'), 'a move past the first changes nothing').toEqual([
+    '1 Longer opening hours',
+    '2 More quiet seats',
+    '3 More events for children',
+    'A caf' + String.fromCharCode(0xe9),
+    'Faster Wi-Fi',
+  ]);
+  await press(page, 'Move Faster Wi-Fi up');
+  expect(new URL(page.url()).hash, "the page opens at the option's new place").toBe('#jfb-1-improve-place-4');
+  await press(page, 'Move Faster Wi-Fi up');
+  await press(page, 'Move Longer opening hours down');
+  expect(await rankedOn(page, 'improve'), 'Wi-Fi in the top three, the rest in the order shown').toEqual([
+    '1 More quiet seats',
+    '2 Longer opening hours',
+    '3 Faster Wi-Fi',
+    'More events for children',
+    'A caf' + String.fromCharCode(0xe9),
+  ]);
+  await expect(pageFormOn(page).locator('[name="comments"]')).toHaveValue('More quiet, please.');
+  await expect(pageFormOn(page).locator('[name="visits"][value="weekly"]')).toBeChecked();
+  await expect(pageFormOn(page).locator('[data-jfb-summary]')).toHaveCount(0);
+
+  const sent = await submitForm(pageFormOn(page));
+  expect(outcomeOf(sent).message.length).toBeGreaterThan(0);
+  const entries = (await entriesOf(request, 'feedback')).slice(before);
+  expect(entries).toHaveLength(1);
+  const improve = entries[0]!.filter((value) => value.field === keys.improve).sort((a, b) => a.index - b.index);
+  expect(improve.map((value) => value.text)).toEqual(['seats', 'hours', 'wifi']);
 });
 
 test('a consent whose wording changed after the page was rendered comes back unticked with a notice, and is sent once ticked again', async ({
