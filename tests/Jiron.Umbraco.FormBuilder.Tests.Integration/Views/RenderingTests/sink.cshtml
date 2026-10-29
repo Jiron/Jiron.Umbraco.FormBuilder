@@ -1,0 +1,13 @@
+@* The kitchen sink, a field of every type (Rendering/FormRenderingKitchenTests.cs): the first render, or ?state=answered, errors or hidden. *@
+@using Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var key = (await Requests.KeyOfAsync("renderingSink", Context.RequestAborted))!.Value;
+    if (FormRenderingKitchenTests.State(Context.Request.Query["state"].ToString()) is { } state)
+    {
+        FormPosts.Set(Context, key, "jfb-1", state);
+    }
+}
+<jfb-render form="renderingSink" />

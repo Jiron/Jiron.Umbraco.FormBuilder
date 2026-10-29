@@ -7,7 +7,7 @@
     var settings = control.Settings!.Value;
 }
 <p class="acme-prompt">@settings.GetProperty("prompt").GetString()</p>
-<select id="@Model.Id" name="@Model.Name" aria-describedby="@Model.DescribedBy" data-test-custom="mood">
+<select id="@Model.Id" name="@Model.Name" disabled="@Model.IsDisabled" aria-describedby="@Model.DescribedBy" aria-invalid="@(Model.Error is null ? null : "true")" data-test-custom="mood">
     @foreach (var mood in settings.GetProperty("moods").EnumerateArray())
     {
         var value = mood.GetString()!;
