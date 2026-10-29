@@ -3,12 +3,7 @@ using System.Text.Json.Nodes;
 using AngleSharp.Dom;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Cache;
-using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.Models.ContentEditing;
-using Umbraco.Cms.Core.PublishedCache;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
@@ -366,19 +361,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
     };
 
     // A site in one culture, whose pages are the test pages, and the key of its page "culture".
-    private async Task<Guid> CultureSiteAsync(string culture, string name)
-    {
-        Assert.That((await GetRequiredService<ILanguageService>().CreateAsync(new Language(culture, name), Constants.Security.SuperUserKey)).Success, Is.True);
-        var pages = await PagesAsync("culture");
-        var home = Contents.GetById(pages["culture"])!.ParentId;
-        var domains = await GetRequiredService<IDomainService>().UpdateDomainsAsync(Contents.GetById(home)!.Key, new DomainsUpdateModel { DefaultIsoCode = culture, Domains = [] });
-        Assert.That(domains.Success, Is.True, domains.Status.ToString());
-
-        // The test server sends no cache messages, so the domain cache learns of the culture here.
-        GetRequiredService<IDomainCacheService>().Refresh([new DomainCacheRefresher.JsonPayload(0, DomainChangeTypes.RefreshAll)]);
-        Assert.That(GetRequiredService<IDomainCacheService>().GetAll(true).Select(domain => domain.Culture), Does.Contain(culture));
-        return pages["culture"];
-    }
+    private async Task<Guid> CultureSiteAsync(string culture, string name) => (await CulturePagesAsync(culture, name, "culture"))["culture"];
 
     // An image in the media library: its file, its width and its height, each if any.
     private Guid Image(string name, string? file, int width, int? height)

@@ -10,7 +10,8 @@
   [ADR-0086](0086-the-options-endpoint.md) in 6.1c; the largest upload as a body limit read from the host's limits,
   and the server's own limit set to each endpoint's, added by [ADR-0087](0087-the-upload-endpoint.md) in 6.1d; `open`
   false at the entry limit too, and an endpoint's own declaration of a status keeping the frame's reason in the
-  document, added by [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) in 6.1e
+  document, added by [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) in 6.1e; the visitor's
+  form with the site's required-marker style and button labels, added by [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md) in 6.2c
 - Date: 2026-10-28
 - Roadmap step: 6.1a (decided and built); 6.1b gives the consent wordings' hashes, 6.1d and 6.1e count a body without
   a declared length, 6.1e adds the entry limit to `open`, 7.1 enforces the rate-limit policies
@@ -146,8 +147,9 @@ path only, in any letter case:
 `general.timeZone` of the request's site through the settings service. A stored zone this server cannot resolve counts
 as UTC, and the site logs a warning that names the setting, the site and the zone, at most once an hour per site and
 zone on each server, in a list it empties before it holds more than 256 (amends ADR-0043). The allowlist test of
-ADR-0008 fills every field of every settings section and shows that only the time zone reaches the answer, and a guard
-fails when a section or field appears that the test does not fill.
+ADR-0008 fills every field of every settings section and shows that only the time zone reaches the answer (since
+6.2c also the required-marker style and the button labels, in the visitor's form, ADR-0095), and a guard fails when a
+section or field appears that the test does not fill.
 
 ## Options considered
 

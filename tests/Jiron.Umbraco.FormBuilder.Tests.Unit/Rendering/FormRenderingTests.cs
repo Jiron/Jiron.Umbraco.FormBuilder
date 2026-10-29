@@ -1,17 +1,21 @@
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Web;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Rendering;
 
 /// <summary>
 /// What a page renders before it looks for a form (ADR-0093): nothing without a reference, nothing for a value of
-/// another type (logged once per type), and nothing while the migrations are pending, with no form read. The forms,
-/// the requests, the pages and the models are left out, so a read of any of them would fail the test.
+/// another type (logged once per type), and nothing for a visitor while the migrations are pending, with no form read
+/// (ADR-0033). The forms, the requests, the pages and the models are left out, so a read of any of them would fail the
+/// test.
 /// </summary>
 [TestFixture]
 public sealed class FormRenderingTests
@@ -58,17 +62,18 @@ public sealed class FormRenderingTests
     }
 
     [Test]
-    public async Task WhileTheMigrationsArePending_NothingRenders_AndNoFormIsRead()
+    public async Task WhileTheMigrationsArePending_NothingRendersForAVisitor_AndNoFormIsRead()
     {
         var migrations = new Migrations { Pending = true };
         var logger = new RecordingLogger<FormRendering>();
         var rendering = Rendering(migrations, logger);
+        static DefaultHttpContext Visitor() => new();
 
         Assert.Multiple(async () =>
         {
-            Assert.That(await rendering.RenderAsync(new DefaultHttpContext(), "contact", null, CancellationToken.None), Is.Null);
-            Assert.That(await rendering.RenderAsync(new DefaultHttpContext(), Guid.NewGuid(), null, CancellationToken.None), Is.Null);
-            Assert.That(await rendering.RenderAsync(new DefaultHttpContext(), new FormBuilderFormReference(Guid.NewGuid()), null, CancellationToken.None), Is.Null);
+            Assert.That(await rendering.RenderAsync(Visitor(), "contact", null, CancellationToken.None), Is.Null);
+            Assert.That(await rendering.RenderAsync(Visitor(), Guid.NewGuid(), null, CancellationToken.None), Is.Null);
+            Assert.That(await rendering.RenderAsync(Visitor(), new FormBuilderFormReference(Guid.NewGuid()), null, CancellationToken.None), Is.Null);
             Assert.That(logger.Entries, Is.Empty, "a pending migration is no missing form");
             Assert.That(migrations.Asked, Is.EqualTo(3));
         });
@@ -79,7 +84,15 @@ public sealed class FormRenderingTests
         Assert.ThrowsAsync<ArgumentNullException>(() => Rendering(new Migrations(), new RecordingLogger<FormRendering>()).RenderAsync(null!, "contact", null, CancellationToken.None));
 
     private static FormRendering Rendering(IFormBuilderMigrationState migrations, RecordingLogger<FormRendering> logger) =>
-        new(forms: null!, requests: null!, pages: null!, migrations, Substitute.For<IUmbracoContextAccessor>(), models: null!, logger);
+        new(forms: null!, requests: null!, pages: null!, migrations, Substitute.For<IUmbracoContextAccessor>(), models: null!, views: null!, BackOffice(), logger);
+
+    // The backoffice's cookie options, which a visitor's request carries no cookie of.
+    private static BackOfficeVisitors BackOffice()
+    {
+        var options = Substitute.For<IOptionsMonitor<CookieAuthenticationOptions>>();
+        options.Get(Constants.Security.BackOfficeAuthenticationType).Returns(new CookieAuthenticationOptions { Cookie = { Name = "UMB_UCONTEXT" } });
+        return new BackOfficeVisitors(options, TimeProvider.System);
+    }
 
     private sealed class Migrations : IFormBuilderMigrationState
     {

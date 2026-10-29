@@ -1,8 +1,11 @@
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
+
 namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 
 /// <summary>
 /// The general settings (section 4.8, ADR-0008), set per site unless a field says otherwise. It holds the time zone, the
-/// new-form defaults and how long draft saves stay so far; the other fields come with what they configure (ADR-0043).
+/// base URL, the required-marker style and the buttons' default labels, the new-form defaults and how long draft saves
+/// stay so far; the other fields come with what they configure (ADR-0043).
 /// </summary>
 internal sealed record GeneralSettings : ISettingsSection
 {
@@ -30,6 +33,26 @@ internal sealed record GeneralSettings : ISettingsSection
     /// default: the site's first <c>https</c> domain in Umbraco, otherwise Umbraco's application URL.
     /// </summary>
     public string? BaseUrl { get; init; }
+
+    /// <summary>
+    /// How the site's forms whose marker is <c>inherit</c> mark their fields (ADR-0093, ADR-0095): <c>optional</c> (the
+    /// default) adds "(optional)" to each field that needs no answer, <c>required</c> an asterisk to each that needs one,
+    /// <c>none</c> nothing. A site's style is never <c>inherit</c>, which is how a form takes this one.
+    /// </summary>
+    public RequiredMarker RequiredMarker { get; init; } = RequiredMarker.Optional;
+
+    /// <summary>
+    /// The label of the button that sends a form without a label of its own, as texts per culture, the culture <c>""</c>
+    /// holding the default (ADR-0002), each on one line and a text may name a dictionary item (<c>#key</c>); null for the
+    /// package's word in the page's language (ADR-0095).
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? SubmitLabel { get; init; }
+
+    /// <summary>The label of the button to the next page of a form without one of its own, as <see cref="SubmitLabel"/>.</summary>
+    public IReadOnlyDictionary<string, string>? NextLabel { get; init; }
+
+    /// <summary>The label of the button to the page before of a form without one of its own, as <see cref="SubmitLabel"/>.</summary>
+    public IReadOnlyDictionary<string, string>? BackLabel { get; init; }
 
     /// <summary>What a form created from blank starts with; every site shares it, since a new form belongs to no site (ADR-0044).</summary>
     [GlobalOnly]
@@ -91,22 +114,33 @@ internal sealed record NewFormConsent
 
 /// <summary>
 /// Checks the general settings: the time zone is one the server resolves, spelled as the server spells it, the base URL
-/// is an origin, the consent default's texts are texts a definition takes, and the History keeps draft saves within its
-/// ranges.
+/// is an origin, the required-marker style is a site's, the labels and the consent default's texts are texts a
+/// definition takes, and the History keeps draft saves within its ranges.
 /// </summary>
 internal sealed class GeneralSettingsValidator : ISettingsValidator<GeneralSettings>
 {
     /// <inheritdoc />
-    /// <remarks>A base URL of white space is the default; one that is an origin is written as its origin (<c>HTTPS://Example.com/</c> as <c>https://example.com</c>).</remarks>
+    /// <remarks>
+    /// A base URL of white space is the default; one that is an origin is written as its origin (<c>HTTPS://Example.com/</c>
+    /// as <c>https://example.com</c>). A label without texts is the default, the package's word.
+    /// </remarks>
     public GeneralSettings Normalize(GeneralSettings section)
     {
         ArgumentNullException.ThrowIfNull(section);
-        if (string.IsNullOrWhiteSpace(section.BaseUrl))
+        var labelled = section.SubmitLabel is { Count: 0 } || section.NextLabel is { Count: 0 } || section.BackLabel is { Count: 0 }
+            ? section with
+            {
+                SubmitLabel = section.SubmitLabel is { Count: 0 } ? null : section.SubmitLabel,
+                NextLabel = section.NextLabel is { Count: 0 } ? null : section.NextLabel,
+                BackLabel = section.BackLabel is { Count: 0 } ? null : section.BackLabel,
+            }
+            : section;
+        if (string.IsNullOrWhiteSpace(labelled.BaseUrl))
         {
-            return section.BaseUrl is null ? section : section with { BaseUrl = null };
+            return labelled.BaseUrl is null ? labelled : labelled with { BaseUrl = null };
         }
 
-        return section with { BaseUrl = BaseUrls.Normalize(section.BaseUrl) ?? section.BaseUrl };
+        return labelled with { BaseUrl = BaseUrls.Normalize(labelled.BaseUrl) ?? labelled.BaseUrl };
     }
 
     /// <inheritdoc />
@@ -120,6 +154,14 @@ internal sealed class GeneralSettingsValidator : ISettingsValidator<GeneralSetti
             errors.Add("baseUrl", SettingsErrors.BaseUrlCode, "Must be the address the site is reached at, such as https://www.example.com: https or http, the host and a port, and nothing after them.");
         }
 
+        if (section.RequiredMarker is not (RequiredMarker.Optional or RequiredMarker.Required or RequiredMarker.None))
+        {
+            errors.Add("requiredMarker", SettingsErrors.RequiredMarkerCode, "Must be optional, required or none: inherit is how a form takes the site's style.");
+        }
+
+        Label(errors, "submitLabel", section.SubmitLabel);
+        Label(errors, "nextLabel", section.NextLabel);
+        Label(errors, "backLabel", section.BackLabel);
         if (section.NewForms?.Consent is { } consent)
         {
             errors.Text("newForms.consent.label", consent.Label, html: false);
@@ -130,6 +172,15 @@ internal sealed class GeneralSettingsValidator : ISettingsValidator<GeneralSetti
         {
             errors.Between("history.draftDays", history.DraftDays, HistorySettings.MinDraftDays, HistorySettings.MaxDraftDays);
             errors.Between("history.draftCount", history.DraftCount, 0, HistorySettings.MaxDraftCount);
+        }
+    }
+
+    // A label is the package's word when it is not given, and otherwise texts a form's own button label takes.
+    private static void Label(SettingsErrors errors, string field, IReadOnlyDictionary<string, string>? texts)
+    {
+        if (texts is not null)
+        {
+            errors.Text(field, texts, html: false);
         }
     }
 }

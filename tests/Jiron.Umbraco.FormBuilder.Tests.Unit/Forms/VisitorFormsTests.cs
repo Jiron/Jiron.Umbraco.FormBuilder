@@ -5,25 +5,29 @@ using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
+using NSubstitute;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Forms;
 
 /// <summary>
-/// A published form as a visitor's page gets it in one culture (ADR-0084, ADR-0085): its texts in the culture with the
-/// usual fallback, the dictionary's items read once for all the texts that name one, rich text sanitised wherever it
+/// A published form as a visitor's page gets it in one culture (ADR-0084, ADR-0085): the site's required-marker style
+/// and button labels where the form has none of its own (ADR-0095), its texts in the culture with the usual fallback, the dictionary's items read once for all the texts that name one, rich text sanitised wherever it
 /// comes from, plain text left for the page to escape, and a lone surrogate replaced, so the form always writes; each
 /// consent's text as the wording it shows, with its hash; and what the browser renders the visitor texts that render
-/// with, or null when none does.
+/// with, or null when none does, and those texts for the page that renders them itself.
 /// </summary>
 [TestFixture]
 public sealed class VisitorFormsTests
 {
     private TestUmbraco _umbraco = null!;
     private VisitorForms _forms = null!;
+    private GeneralSettings _general = null!;
+    private IFormBuilderSettingsService _settings = null!;
 
     [SetUp]
     public void CreateTheSite()
@@ -33,6 +37,10 @@ public sealed class VisitorFormsTests
         _umbraco.Language("de-DE", fallback: "en-US");
         var dictionary = new MergeTagDictionary(_umbraco.Dictionary, _umbraco.Languages);
         var site = MergeTagTestSite.Create(umbraco: _umbraco);
+        _general = new GeneralSettings();
+        _settings = Substitute.For<IFormBuilderSettingsService>();
+        _settings.GetAsync<GeneralSettings>(Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromResult(new SettingsSnapshot<GeneralSettings>(_general, 1, new HashSet<string>(), new Dictionary<string, SettingsLock>())));
         _forms = new VisitorForms(
             dictionary,
             new EditorHtml(),
@@ -40,7 +48,51 @@ public sealed class VisitorFormsTests
             site.Service,
             new MergeTagRecallForms(TestFieldTypes.Registry, new OptionListTestSite().Options()),
             new MergeTagCultures(),
-            new ConsentWordings(site.Service, dictionary, new EditorHtml(), TestFieldTypes.Registry));
+            new ConsentWordings(site.Service, dictionary, new EditorHtml(), TestFieldTypes.Registry),
+            _settings);
+    }
+
+    [Test]
+    public async Task TheSitesStyle_StandsInForInherit_AndItsLabels_ForTheButtonsTheFormLabelsNotItself()
+    {
+        _umbraco.Item("Forms.Back", new Dictionary<string, string> { ["en-US"] = "Go back", ["de-DE"] = "Zur" + (char)0xFC + "ck bitte" });
+        _general = new GeneralSettings
+        {
+            RequiredMarker = RequiredMarker.Required,
+            SubmitLabel = new Dictionary<string, string> { [""] = "Send it" },
+            NextLabel = new Dictionary<string, string> { [""] = "Onward", ["de"] = "Weiter so" },
+            BackLabel = new Dictionary<string, string> { [""] = "#Forms.Back" },
+        };
+        var projection = Projection(page => page);
+        var inheriting = projection with { Settings = projection.Settings with { RequiredMarker = RequiredMarker.Inherit, NextLabel = null, BackLabel = null } };
+
+        var german = JsonNode.Parse(await FormAsync(inheriting, "de-DE"))!["settings"]!;
+        var english = JsonNode.Parse(await FormAsync(inheriting, "en-US"))!["settings"]!;
+        var own = JsonNode.Parse(await FormAsync(projection, "en-US"))!["settings"]!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(german["requiredMarker"]!.GetValue<string>(), Is.EqualTo("required"), "the site's style for inherit");
+            Assert.That(german["submitLabel"]!.GetValue<string>(), Is.EqualTo("Anmeldung senden"), "the form's own label wins");
+            Assert.That(german["nextLabel"]!.GetValue<string>(), Is.EqualTo("Weiter so"), "de-DE falls back to de");
+            Assert.That(english["nextLabel"]!.GetValue<string>(), Is.EqualTo("Onward"));
+            Assert.That(german["backLabel"]!.GetValue<string>(), Is.EqualTo("Zur" + (char)0xFC + "ck bitte"), "a label may name a dictionary item");
+            Assert.That(english["backLabel"]!.GetValue<string>(), Is.EqualTo("Go back"));
+            Assert.That(own["requiredMarker"]!.GetValue<string>(), Is.EqualTo("optional"), "a form's own style stands");
+            Assert.That((own["nextLabel"]!.GetValue<string>(), own["backLabel"]!.GetValue<string>()), Is.EqualTo(("Next", "Back")), "and its own labels");
+        });
+        await _settings.Received(3).GetAsync<GeneralSettings>(MergeTagTestSite.SiteKey, Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task ASitesLabelThatIsNoLocalisedText_IsNone_SoThePageShowsThePackagesWord()
+    {
+        _general = new GeneralSettings { NextLabel = new Dictionary<string, string> { ["de"] = "Weiter so" } };
+        var projection = Projection(page => page);
+
+        var form = JsonNode.Parse(await FormAsync(projection with { Settings = projection.Settings with { NextLabel = null } }, "de-DE"))!;
+
+        Assert.That(form["settings"]!.AsObject().ContainsKey("nextLabel"), Is.False, "texts without a default are no localised text");
     }
 
     [Test]
@@ -131,13 +183,15 @@ public sealed class VisitorFormsTests
         var definition = DefinitionFixtures.Read(DefinitionFixtures.Full);
         definition = definition with { Pages = [definition.Pages[0] with { Title = new LocalizedText("Hello from {{ form.name }}") }, .. definition.Pages.Skip(1)] };
 
-        var answer = await _forms.WriteAsync(PublicProjection.Create(definition, TestFieldTypes.Registry), MergeTagTestSite.Scope(definition, culture: "de-DE"));
+        var shown = await _forms.ShowAsync(PublicProjection.Create(definition, TestFieldTypes.Registry), MergeTagTestSite.Scope(definition, culture: "de-DE"));
+        var answer = shown.Answer;
 
         var mergeTags = JsonNode.Parse(answer.MergeTags)!;
         var page = definition.Pages[0].Key.ToString();
         Assert.Multiple(() =>
         {
             Assert.That(mergeTags["texts"]!.ToJsonString(), Is.EqualTo($$"""[{"owner":"{{page}}","text":"title","context":"text"}]"""));
+            Assert.That(shown.Tagged, Is.EqualTo(new[] { new VisitorText(definition.Pages[0].Key, "title", false, "Hello from {{ form.name }}") }), "the page gets the same texts to render");
             Assert.That(mergeTags["values"]!["html"]!.AsObject(), Is.Empty);
             Assert.That(mergeTags["values"]!["text"]!.AsObject().Select(pair => (pair.Key, pair.Value!.GetValue<string>())), Is.EqualTo(new[] { ("form.name", "Contact <us>") }), "the context encodes it when it renders");
             Assert.That(mergeTags["recall"]!.ToJsonString(), Is.EqualTo($$"""{"pages":[{"id":"{{page}}","groups":[]}]}"""), "the owner's place alone");
@@ -182,7 +236,8 @@ public sealed class VisitorFormsTests
             site.Service,
             new MergeTagRecallForms(TestFieldTypes.Registry, new OptionListTestSite().Options()),
             new MergeTagCultures(),
-            new ConsentWordings(site.Service, new MergeTagDictionary(_umbraco.Dictionary, _umbraco.Languages), new EditorHtml(), TestFieldTypes.Registry));
+            new ConsentWordings(site.Service, new MergeTagDictionary(_umbraco.Dictionary, _umbraco.Languages), new EditorHtml(), TestFieldTypes.Registry),
+            _settings);
         var definition = DefinitionFixtures.Read(DefinitionFixtures.Full);
         definition = definition with { Pages = [definition.Pages[0] with { Title = new LocalizedText("{{ shop.list }} {{ shop.price }} {{ shop.opened }} {{ shop.plain }} {{ shop.none }}") }, .. definition.Pages.Skip(1)] };
         var consent = Guid.Parse("30000000-0000-4000-8000-00000000000f");

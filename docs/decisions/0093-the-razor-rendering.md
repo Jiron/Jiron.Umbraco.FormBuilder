@@ -2,10 +2,12 @@
 
 - Status: accepted; builds the rendering of [ADR-0004](0004-rendering-and-submission-paths.md) and the views and the
   markup contract of [ADR-0015](0015-themes-and-the-markup-contract.md) for the default view folder, and amends how
-  the automatic inclusion of [ADR-0092](0092-serving-the-website-assets.md) counts "once"
+  the automatic inclusion of [ADR-0092](0092-serving-the-website-assets.md) counts "once"; the visitor texts with
+  tags, the site's required-marker style and labels, members-only forms and the note while the migrations are pending
+  decided in 6.2c by [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md)
 - Date: 2026-10-28
-- Roadmap step: 6.2b (decided and built); 6.2c adds the visitor texts with merge tags, members-only forms and the
-  note while the migrations are pending, 6.2d the other controls, 6.2e the no-JS post, 6.3 the themes, 6.7 the form
+- Roadmap step: 6.2b (decided and built); 6.2c the visitor texts with merge tags, members-only forms and the
+  note while the migrations are pending (ADR-0095), 6.2d the other controls, 6.2e the no-JS post, 6.3 the themes, 6.7 the form
   picker
 
 ## Context
@@ -60,7 +62,7 @@ layout; and what a hidden field and the `context-…` values put into the page.
     form closed or full shows its closed message as the whole notice, else the package's heading and text;
   - nothing, never a broken page, for a reference that names no published form (missing, unpublished, trashed),
     logged once per reference and process; for a value of another type, logged once per type; for an empty
-    reference; and while the migrations are pending (6.2c adds the note for a backoffice user).
+    reference; and while the migrations are pending, where a signed-in backoffice user sees a note (ADR-0095).
 - **Instance ids** are `jfb-1`, `jfb-2`, … in the order the forms render in a request. A field's control is
   `<instance>-<alias>` (a field without an alias takes its key), and the parts that refer to it add `-help`, `-error`,
   `-prefix`, `-suffix`, `-count` or `-confirm`; a group's description is `<instance>-<group key>-help`, the progress
@@ -119,11 +121,11 @@ layout; and what a hidden field and the `context-…` values put into the page.
   `aria-describedby`, and, while the form's validation summary is on, in the error summary with a link per error.
 - **The package's words** (Back, Next, Send, "(optional)", the summary's heading, "Step 1 of 3", the notices, the
   repeated email's label) come in English and German, by the culture and then its parent, else English; section 14.2
-  adds five languages. A form's own labels and messages win.
+  adds five languages. A form's own labels and messages win, then the site's labels (ADR-0095).
 - **The required marker:** `optional` adds "(optional)" to each field that holds a value and is not required;
   `required` marks required fields with an asterisk hidden from assistive technology (the `required` attribute says
   it), and says once, above the first page, what the asterisk means; `none` marks nothing. `inherit` takes the General
-  section's style, which 6.2c adds with its default, `optional`.
+  section's style, by default `optional` (ADR-0095).
 - **The automatic assets** (amends ADR-0092): the form's inclusion is content that decides when the page is written,
   not when the form renders. `<jfb-assets>` writes its tags as it runs and marks the request; the form's inclusion,
   when the page is written, writes the tags only if nothing wrote them yet. Razor runs a view, then its layout, and

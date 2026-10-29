@@ -27,21 +27,26 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// <param name="Culture">The culture, one of the site's languages.</param>
 /// <param name="Instance">The instance id.</param>
 /// <param name="Context">The context values the page gives, by name; empty for none.</param>
+/// <param name="Gate">Why a form for members shows its notice to the visitor; null when the form shows.</param>
 internal sealed record FormRender(
     HttpContext HttpContext,
     CachedForm Form,
     FormShown Shown,
     string Culture,
     string Instance,
-    IReadOnlyDictionary<string, string?> Context);
+    IReadOnlyDictionary<string, string?> Context,
+    MemberGate? Gate = null);
 
 /// <summary>
-/// The view models of a form (ADR-0015, ADR-0093): its texts as the form endpoint shows them in the culture, its ids
-/// below its instance, and every page, group and field in the state its rules give for the default values that hold no
-/// merge tag (or a post's answers), with the site's clock and time zone, no member and no query value, so the markup is
-/// the same for every visitor. A hidden field renders nothing, nor does a field whose type the site lacks.
+/// The view models of a form (ADR-0015, ADR-0093): its texts as the form endpoint shows them in the culture, a visitor
+/// text that holds tags rendered by the merge-tag service for the answers the page holds (ADR-0095), its ids below its
+/// instance, and every page, group and field in the state its rules give for the default values that hold no merge tag
+/// (or a post's answers), with the site's clock and time zone, no member and no query value, so the markup is the same
+/// for every visitor but where a form for members does not admit them. A hidden field renders nothing, nor does a field
+/// whose type the site lacks.
 /// </summary>
 /// <param name="types">The field types.</param>
+/// <param name="mergeTags">The merge-tag service, which renders the visitor texts that hold tags.</param>
 /// <param name="views">Which view writes each part.</param>
 /// <param name="paths">The public API's paths.</param>
 /// <param name="media">The published media, which an image field shows.</param>
@@ -50,6 +55,7 @@ internal sealed record FormRender(
 /// <param name="logger">Where context values that are not taken are logged.</param>
 internal sealed partial class FormModels(
     FieldTypeRegistry types,
+    IFormBuilderMergeTagService mergeTags,
     FormViews views,
     FormBuilderPublicApiPaths paths,
     IPublishedMediaCache media,
@@ -88,7 +94,7 @@ internal sealed partial class FormModels(
         var culture = CultureInfo.GetCultureInfo(render.Culture);
         var request = render.HttpContext.Request;
         var path = (request.PathBase + request.Path).ToUriComponent();
-        var display = post?.Outcome is not null ? FormDisplay.Outcome : render.Shown.Unavailable is not null ? FormDisplay.Notice : FormDisplay.Form;
+        var display = post?.Outcome is not null ? FormDisplay.Outcome : render.Shown.Unavailable is not null || render.Gate is not null ? FormDisplay.Notice : FormDisplay.Form;
         var root = new Root(
             form.Form.Key,
             form.Form.Alias,
@@ -106,11 +112,17 @@ internal sealed partial class FormModels(
         var model = display switch
         {
             FormDisplay.Outcome => root.Model(outcome: Outcome(post!.Outcome!, words)),
-            FormDisplay.Notice => root.Model(notice: Unavailable(render, words, culture)),
+            FormDisplay.Notice => root.Model(notice: render.Shown.Unavailable is not null ? Unavailable(render, words, culture) : Gated(render.Gate!.Value, words)),
             _ => await FormAsync(render, root, post, words, culture, cancellationToken),
         };
         return (formView, model);
     }
+
+    // The notice of a form for members to a visitor it does not admit, in the culture (ADR-0095); a form that takes no
+    // entry now says so first, since signing in would not help.
+    private static NoticeViewModel Gated(MemberGate gate, RenderingWords words) => gate == MemberGate.SignIn
+        ? new NoticeViewModel { Kind = NoticeKind.SignIn, Heading = words.SignInHeading, Text = Paragraph(words.SignInText) }
+        : new NoticeViewModel { Kind = NoticeKind.MemberGroups, Heading = words.GroupsHeading, Text = Paragraph(words.GroupsText) };
 
     // The notice of a form that takes no entry now: the form's closed message when it is closed or full, otherwise the
     // package's heading and sentence; a form that opens later says when, in the site's time zone and the culture.
@@ -156,7 +168,8 @@ internal sealed partial class FormModels(
         var required = state.Required.ToHashSet(StringComparer.Ordinal);
         var shownPages = shown.Pages.Where(page => !hidden.Contains(Id(page.Key))).ToList();
         var current = shownPages.FirstOrDefault(page => page.Key == post?.Page) ?? shownPages.FirstOrDefault();
-        var build = new Build(render, root, post, words, culture, answers, hidden, required, MarkerOf(settings.RequiredMarker));
+        var recalled = await RecalledAsync(render, answers, hidden, cancellationToken);
+        var build = new Build(render, root, post, words, culture, answers, hidden, required, MarkerOf(settings.RequiredMarker), recalled);
         var pages = new List<PageViewModel>();
         foreach (var page in shown.Pages)
         {
@@ -177,8 +190,8 @@ internal sealed partial class FormModels(
                 groups.Add(new GroupViewModel
                 {
                     Key = group.Key,
-                    Title = Text(group.Title),
-                    Description = Html(group.Description),
+                    Title = build.Text(group.Key, "title", group.Title),
+                    Description = build.Html(group.Key, "description", group.Description),
                     DescriptionId = root.Id + "-" + group.Key.ToString("N") + "-help",
                     CssClass = Classes("jfb-group", "jfb-columns-" + Math.Clamp(group.Columns, 1, 4).ToString(CultureInfo.InvariantCulture), group.Style == GroupStyle.Card ? "jfb-group-card" : null),
                     IsHidden = groupHidden,
@@ -190,8 +203,8 @@ internal sealed partial class FormModels(
             pages.Add(new PageViewModel
             {
                 Key = page.Key,
-                Title = Text(page.Title),
-                Description = Html(page.Description),
+                Title = build.Text(page.Key, "title", page.Title),
+                Description = build.Html(page.Key, "description", page.Description),
                 IsCurrent = page == current,
                 IsHidden = pageHidden,
                 Groups = groups,
@@ -201,7 +214,7 @@ internal sealed partial class FormModels(
 
         return root.Model(
             pages: pages,
-            progress: Progress(settings, shownPages, current, root, words, culture),
+            progress: Progress(settings, shownPages, current, build),
             errors: build.Errors.Count > 0 && settings.ValidationSummary
                 ? new ErrorSummaryViewModel { Heading = words.ErrorSummary, HeadingId = root.Id + "-summary", Errors = build.Errors }
                 : null,
@@ -211,6 +224,52 @@ internal sealed partial class FormModels(
                 : null,
             notice: post?.Notice is { } notice ? new NoticeViewModel { Kind = NoticeKind.Message, Heading = notice.Heading, Text = Paragraph(notice.Text) } : null,
             context: Context(render));
+    }
+
+    // The visitor texts that hold tags, each rendered as the server renders it in its place for the answers the page
+    // holds (ADR-0068, ADR-0095), by its owner and name.
+    private async Task<Dictionary<(Guid Owner, string Name), string>> RecalledAsync(FormRender render, Dictionary<Guid, FieldAnswers> answers, HashSet<string> hidden, CancellationToken cancellationToken)
+    {
+        var recalled = new Dictionary<(Guid Owner, string Name), string>();
+        if (render.Shown.Tagged.Count == 0)
+        {
+            return recalled;
+        }
+
+        var scope = render.Shown.Scope with { Answers = RecallAnswers(render.Form.Published.Definition, answers, hidden) };
+        foreach (var text in render.Shown.Tagged)
+        {
+            var context = text.IsHtml ? MergeTagContext.Html : MergeTagContext.Text;
+            recalled[(text.Owner, text.Name)] = (await mergeTags.RenderAsync(text.Text, MergeTagPlace.VisitorText, context, scope with { TextOwner = text.Owner }, cancellationToken)).Text;
+        }
+
+        return recalled;
+    }
+
+    // The page's answers as their fields' types read them (ADR-0058), which is how both runtimes recall them, and the
+    // fields the rules hid; a field whose value stays on the server, or an answer past what its field's type takes or one
+    // its type cannot read, is none.
+    private MergeTagAnswers RecallAnswers(FormDefinition definition, Dictionary<Guid, FieldAnswers> answers, HashSet<string> hidden)
+    {
+        var fields = definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)).ToList();
+        var read = new List<MergeTagAnswer>();
+        foreach (var field in fields)
+        {
+            if (!answers.TryGetValue(field.Key, out var given)
+                || types.FindType(field.Type) is not { } type
+                || type.Declaration.ServerOnlyDefault
+                || FieldValues.CheckLimits(type, field, given) is not null)
+            {
+                continue;
+            }
+
+            if (FieldValues.Read(type, field, given) is { IsUnreadable: false, Values: { Length: > 0 } values })
+            {
+                read.Add(new MergeTagAnswer(field.Key, values));
+            }
+        }
+
+        return new MergeTagAnswers(read, fields.Where(field => hidden.Contains(Id(field.Key))).Select(field => field.Key));
     }
 
     // Each field's answers, its child fields' among them: a post's, else its default value, when that holds no merge tag;
@@ -287,9 +346,8 @@ internal sealed partial class FormModels(
         }
 
         var answers = build.Answers.GetValueOrDefault(field.Key) ?? FieldAnswers.None;
-        var settings = new ShownSettings(field.Settings);
-        var (model, described) = await ControlAsync(build, field, traits, settings, control, answers);
-        var help = Text(field.Help);
+        var (model, described) = await ControlAsync(build, field, traits, new ShownSettings(field.Settings, build.Settings(field.Key)), control, answers);
+        var help = build.Text(field.Key, "help", field.Help);
         var describedBy = new List<string>();
         if (help is not null)
         {
@@ -311,7 +369,7 @@ internal sealed partial class FormModels(
             Name = field.Alias ?? string.Empty,
             CssClass = Classes("jfb-field", "jfb-field-" + field.Type, field.Span > 1 ? "jfb-span-" + field.Span.ToString(CultureInfo.InvariantCulture) : null, field.CssClass),
             LabelElement = labelled ? FieldLabelElement.Label : FieldLabelElement.None,
-            Label = labelled ? Text(field.Label) : null,
+            Label = labelled ? build.Text(field.Key, "label", field.Label) : null,
             HideLabel = field.HideLabel,
             Mark = mark,
             MarkText = mark switch
@@ -328,7 +386,7 @@ internal sealed partial class FormModels(
             IsRequired = isRequired,
             IsHidden = isHidden,
             IsDisabled = isHidden,
-            Placeholder = Text(field.Placeholder),
+            Placeholder = build.Text(field.Key, "placeholder", field.Placeholder),
             Autocomplete = field.Autocomplete ?? DefaultAutocomplete(field.Type),
             Values = answers.Values,
             ControlView = await build.ControlViewAsync(views, field.Type, cancellationToken),
@@ -439,8 +497,9 @@ internal sealed partial class FormModels(
     // Umbraco's image media type holds its width and height as integer labels; none, or zero, is no size.
     private static int? Pixels(object? value) => value is int pixels && pixels > 0 ? pixels : null;
 
-    private static ProgressViewModel? Progress(PublicFormSettings settings, List<PublicPage> shownPages, PublicPage? current, Root root, RenderingWords words, CultureInfo culture)
+    private static ProgressViewModel? Progress(PublicFormSettings settings, List<PublicPage> shownPages, PublicPage? current, Build build)
     {
+        var (root, words, culture) = (build.Root, build.Words, build.Culture);
         if (shownPages.Count < 2 || current is null || settings.Progress == ProgressIndicator.None)
         {
             return null;
@@ -455,7 +514,7 @@ internal sealed partial class FormModels(
             Text = string.Format(culture, words.Step, at + 1, shownPages.Count),
             TextId = root.Id + "-progress",
             Label = words.Progress,
-            Steps = [.. shownPages.Select((page, index) => new ProgressStepModel(Text(page.Title) ?? string.Format(culture, words.Page, index + 1), index == at, index < at))],
+            Steps = [.. shownPages.Select((page, index) => new ProgressStepModel(build.Text(page.Key, "title", page.Title) ?? string.Format(culture, words.Page, index + 1), index == at, index < at))],
         };
     }
 
@@ -620,8 +679,12 @@ internal sealed partial class FormModels(
         Dictionary<Guid, FieldAnswers> answers,
         HashSet<string> hidden,
         HashSet<string> required,
-        RequiredMarker marker)
+        RequiredMarker marker,
+        Dictionary<(Guid Owner, string Name), string> recalled)
     {
+        // The prefix of a visitor text that is a field's setting, such as settings.text.
+        private const string SettingPrefix = "settings.";
+
         private readonly Dictionary<string, string> _controls = new(StringComparer.Ordinal);
 
         public Root Root => root;
@@ -644,6 +707,19 @@ internal sealed partial class FormModels(
 
         public bool MarksRequired { get; set; }
 
+        // A visitor text as the page shows it: rendered for the page's answers when it holds tags, otherwise as the form
+        // endpoint shows it; an empty text is none.
+        public string? Text(Guid owner, string name, LocalizedText? text) =>
+            recalled.TryGetValue((owner, name), out var shown) ? (shown.Length > 0 ? shown : null) : FormModels.Text(text);
+
+        public HtmlString? Html(Guid owner, string name, LocalizedHtml? html) =>
+            recalled.TryGetValue((owner, name), out var shown) ? (shown.Length > 0 ? new HtmlString(shown) : null) : FormModels.Html(html);
+
+        // A field's settings that are visitor texts holding tags, rendered for the page's answers, by the setting's name.
+        public Dictionary<string, string> Settings(Guid owner) =>
+            recalled.Where(pair => pair.Key.Owner == owner && pair.Key.Name.StartsWith(SettingPrefix, StringComparison.Ordinal))
+                .ToDictionary(pair => pair.Key.Name[SettingPrefix.Length..], pair => pair.Value, StringComparer.Ordinal);
+
         public async Task<string> ControlViewAsync(FormViews views, string type, CancellationToken cancellationToken)
         {
             if (!_controls.TryGetValue(type, out var path))
@@ -657,11 +733,12 @@ internal sealed partial class FormModels(
     }
 
     // The public settings as the form endpoint shows them: each text as the string the culture shows (a number's limits
-    // are exact decimals in text), everything else as the projection holds it; a setting left out takes its type's
-    // default.
-    private readonly struct ShownSettings(SettingsObject? settings)
+    // are exact decimals in text), a text that holds tags as rendered for the page's answers, everything else as the
+    // projection holds it; a setting left out takes its type's default.
+    private readonly struct ShownSettings(SettingsObject? settings, IReadOnlyDictionary<string, string> recalled)
     {
-        public string? Text(string name) => Find(name) is { ValueKind: JsonValueKind.String } value ? value.GetString() : null;
+        public string? Text(string name) =>
+            recalled.TryGetValue(name, out var shown) ? shown : Find(name) is { ValueKind: JsonValueKind.String } value ? value.GetString() : null;
 
         public int Int(string name, int fallback) => Find(name) is { ValueKind: JsonValueKind.Number } value && value.TryGetInt32(out var number) ? number : fallback;
 

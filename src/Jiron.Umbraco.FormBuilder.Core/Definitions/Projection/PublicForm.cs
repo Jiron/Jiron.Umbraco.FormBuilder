@@ -30,13 +30,16 @@ public sealed record PublicForm
 /// <summary>The form settings a visitor's page needs.</summary>
 public sealed record PublicFormSettings
 {
-    /// <summary>The submit button's label; absent means the default label.</summary>
+    /// <summary>
+    /// The submit button's label; absent means the site's label, else the package's word. The visitor's form (ADR-0095)
+    /// carries the site's label in its place.
+    /// </summary>
     public LocalizedText? SubmitLabel { get; init; }
 
-    /// <summary>The "next page" button's label.</summary>
+    /// <summary>The "next page" button's label; absent as for <see cref="SubmitLabel"/>.</summary>
     public LocalizedText? NextLabel { get; init; }
 
-    /// <summary>The "previous page" button's label.</summary>
+    /// <summary>The "previous page" button's label; absent as for <see cref="SubmitLabel"/>.</summary>
     public LocalizedText? BackLabel { get; init; }
 
     /// <summary>Whether a "check your answers" page comes before sending.</summary>
@@ -63,7 +66,10 @@ public sealed record PublicFormSettings
     /// <summary>The alias of the form's theme; absent means the site's default theme.</summary>
     public string? Theme { get; init; }
 
-    /// <summary>How required and optional fields are marked.</summary>
+    /// <summary>
+    /// How required and optional fields are marked; <see cref="RequiredMarker.Inherit"/> takes the site's style, which
+    /// the visitor's form (ADR-0095) carries in its place.
+    /// </summary>
     public RequiredMarker RequiredMarker { get; init; } = RequiredMarker.Inherit;
 
     /// <summary>Whether a summary of the errors shows above the form.</summary>

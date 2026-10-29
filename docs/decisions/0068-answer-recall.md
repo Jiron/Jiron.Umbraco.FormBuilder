@@ -9,7 +9,7 @@
   `field` source without an alias and the website's reading of a value with parts amended by [ADR-0083](0083-merge-tags-and-the-two-runtimes-after-the-phase-5-review.md) in 5.5h;
   the cut-down recall form the browser gets, with the fields a text names whether refused or not, and the text blocks'
   texts taking merge tags, amended by [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) in
-  6.1b
+  6.1b; recall rendered on the server for a page's answers by [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md) in 6.2c
 - Date: 2026-10-26
 - Roadmap step: 5.3f (decided and built in both runtimes); 6.1 gives the browser what recall needs, 6.2 renders
   visitor texts on the server, 6.4 updates them as the visitor types, 10.x reports the problem in the form check

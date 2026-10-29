@@ -48,7 +48,8 @@ internal sealed class FormRequests(
 
     /// <summary>
     /// The form as a visitor's page shows it (ADR-0093): the form endpoint's answer, made by the same code, the visitor's
-    /// form it holds, why the form takes no entry now, and the site's time zone.
+    /// form it holds, why the form takes no entry now, the site's time zone, and what the page renders the visitor texts
+    /// that hold tags for (ADR-0095).
     /// </summary>
     /// <param name="form">The published form.</param>
     /// <param name="culture">The culture, one of the site's languages.</param>
@@ -89,7 +90,7 @@ internal sealed class FormRequests(
             writer.WriteEndObject();
         }
 
-        return new FormShown(Answer(buffer), shown.Form, unavailable, zone);
+        return new FormShown(Answer(buffer), shown.Form, unavailable, zone, scope, shown.Tagged);
     }
 
     /// <summary>
@@ -159,7 +160,9 @@ internal sealed class FormRequests(
 /// <param name="Form">The visitor's form the answer holds, each text as the culture shows it.</param>
 /// <param name="Unavailable">Why the form takes no entry now; null when it takes one.</param>
 /// <param name="TimeZone">The site's time zone.</param>
-internal sealed record FormShown(FormAnswer Answer, PublicForm Form, FormUnavailable? Unavailable, TimeZoneInfo TimeZone);
+/// <param name="Scope">What the form's merge tags are rendered for: the form, the culture, the site and the page.</param>
+/// <param name="Tagged">The visitor texts that hold tags, in the form's order.</param>
+internal sealed record FormShown(FormAnswer Answer, PublicForm Form, FormUnavailable? Unavailable, TimeZoneInfo TimeZone, MergeTagScope Scope, IReadOnlyList<VisitorText> Tagged);
 
 /// <summary>An answer of the form or the options endpoint.</summary>
 /// <param name="Body">The answer as UTF-8 JSON.</param>

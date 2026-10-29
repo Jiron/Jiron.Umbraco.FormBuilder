@@ -9,7 +9,7 @@
         "resume": false,
         "membersOnly": false,
         "protection": "inherit",
-        "requiredMarker": "inherit",
+        "requiredMarker": "optional",
         "validationSummary": true,
         "choiceLayout": "vertical",
         "queryValues": []

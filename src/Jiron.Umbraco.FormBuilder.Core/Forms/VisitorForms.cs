@@ -7,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
+using Jiron.Umbraco.FormBuilder.Core.Settings;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
@@ -19,14 +20,17 @@ internal sealed record VisitorAnswer(byte[] Form, byte[] MergeTags, byte[] Conse
 /// <summary>A published form as a visitor's page shows it (ADR-0093): the visitor's form, and its parts as JSON.</summary>
 /// <param name="Form">The projection with each text as the culture shows it, a consent's text as the wording it shows.</param>
 /// <param name="Answer">Its parts as the form endpoint writes them.</param>
-internal sealed record VisitorPage(PublicForm Form, VisitorAnswer Answer);
+/// <param name="Tagged">The visitor texts that hold tags, in the form's order, which the page renders with its answers (ADR-0095).</param>
+internal sealed record VisitorPage(PublicForm Form, VisitorAnswer Answer, IReadOnlyList<VisitorText> Tagged);
 
 /// <summary>
-/// A published form as a visitor's page gets it in one culture (ADR-0084, ADR-0085): each text of its projection in the
-/// culture with the usual fallback (ADR-0002), a text that names a dictionary item (<c>#key</c>) as the item's text in
-/// the culture through Umbraco's dictionary, every rich text through the one sanitiser (section 4.10), and a lone
-/// surrogate a text may hold replaced, so the form always writes; each consent's text as the wording it shows, with
-/// its hash; and for the visitor texts that hold tags, what the browser renders them with.
+/// A published form as a visitor's page gets it in one culture (ADR-0084, ADR-0085): the site's required-marker style
+/// for a form whose marker is <c>inherit</c>, and the site's labels for the buttons the form labels not itself
+/// (ADR-0095); each text of its projection in the culture with the usual fallback (ADR-0002), a text that names a
+/// dictionary item (<c>#key</c>) as the item's text in the culture through Umbraco's dictionary, every rich text through
+/// the one sanitiser (section 4.10), and a lone surrogate a text may hold replaced, so the form always writes; each
+/// consent's text as the wording it shows, with its hash; and for the visitor texts that hold tags, what the browser
+/// renders them with.
 /// </summary>
 internal sealed class VisitorForms(
     MergeTagDictionary dictionary,
@@ -35,7 +39,8 @@ internal sealed class VisitorForms(
     IFormBuilderMergeTagService mergeTags,
     MergeTagRecallForms recall,
     MergeTagCultures cultures,
-    ConsentWordings consents)
+    ConsentWordings consents,
+    IFormBuilderSettingsService settings)
 {
     // The consent type's setting that holds its wording.
     private const string ConsentText = "text";
@@ -59,11 +64,12 @@ internal sealed class VisitorForms(
         ArgumentNullException.ThrowIfNull(projection);
         ArgumentNullException.ThrowIfNull(scope);
         var culture = scope.Culture;
+        var site = WithSite(projection, (await settings.GetAsync<GeneralSettings>(scope.Site, cancellationToken)).Value);
 
         // The dictionary items the texts name in this culture, read at once.
         var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         VisitorForm.Map(
-            projection,
+            site,
             text =>
             {
                 if (LocalizedString.TryGetDictionaryKey(text.Resolve(culture), out var key))
@@ -75,8 +81,43 @@ internal sealed class VisitorForms(
             },
             types);
         var items = keys.Count == 0 ? DictionaryTexts.None : await dictionary.TextsAsync(keys, culture);
-        var (shown, hashes) = await WithWordingsAsync(VisitorForm.Map(projection, text => Show(text, culture, items), types), scope, cancellationToken);
-        return new VisitorPage(shown, new VisitorAnswer(VisitorForm.Write(shown), await MergeTagsAsync(shown, scope, cancellationToken), Consents(hashes)));
+        var (shown, hashes) = await WithWordingsAsync(VisitorForm.Map(site, text => Show(text, culture, items), types), scope, cancellationToken);
+        var (tags, tagged) = await MergeTagsAsync(shown, scope, cancellationToken);
+        return new VisitorPage(shown, new VisitorAnswer(VisitorForm.Write(shown), tags, Consents(hashes)), tagged);
+    }
+
+    // The site's style for a form whose marker is inherit, and the site's label for each button the form labels not
+    // itself (ADR-0095); a site's label that is no localised text is none, so the page shows the package's word.
+    private static PublicForm WithSite(PublicForm projection, GeneralSettings general)
+    {
+        var own = projection.Settings;
+        return projection with
+        {
+            Settings = own with
+            {
+                RequiredMarker = own.RequiredMarker == RequiredMarker.Inherit ? general.RequiredMarker : own.RequiredMarker,
+                SubmitLabel = own.SubmitLabel ?? Label(general.SubmitLabel),
+                NextLabel = own.NextLabel ?? Label(general.NextLabel),
+                BackLabel = own.BackLabel ?? Label(general.BackLabel),
+            },
+        };
+    }
+
+    private static LocalizedText? Label(IReadOnlyDictionary<string, string>? texts)
+    {
+        if (texts is not { Count: > 0 })
+        {
+            return null;
+        }
+
+        try
+        {
+            return new LocalizedText(texts);
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
     }
 
     private string Show(LocalizedString text, string culture, DictionaryTexts items)
@@ -145,8 +186,9 @@ internal sealed class VisitorForms(
         return SettingsObject.From(document.RootElement);
     }
 
-    // The visitor texts that hold tags, the values of their tags but recall's for this page, and what recall needs.
-    private async Task<byte[]> MergeTagsAsync(PublicForm shown, MergeTagScope scope, CancellationToken cancellationToken)
+    // The visitor texts that hold tags, the values of their tags but recall's for this page, and what recall needs; and
+    // those texts, for the page that renders them itself.
+    private async Task<(byte[] Json, IReadOnlyList<VisitorText> Tagged)> MergeTagsAsync(PublicForm shown, MergeTagScope scope, CancellationToken cancellationToken)
     {
         var texts = new List<(VisitorText Text, MergeTagContext Context)>();
         var values = new Dictionary<MergeTagContext, Dictionary<string, MergeTagValue>>
@@ -210,7 +252,7 @@ internal sealed class VisitorForms(
             }
         }
 
-        return buffer.WrittenSpan.ToArray();
+        return (buffer.WrittenSpan.ToArray(), [.. texts.Select(each => each.Text)]);
     }
 
     // A source's value as the vectors write one: a string, an object with its text and the number or date behind it, or

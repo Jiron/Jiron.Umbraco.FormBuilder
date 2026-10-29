@@ -63,7 +63,7 @@ public sealed class SettingsServiceTests : RepositoryTestBase
             Assert.That(saved.Value.TimeZone, Is.EqualTo("Europe/Berlin"));
             Assert.That(saved.Version, Is.EqualTo(2));
             Assert.That(read, Is.EqualTo(saved).Using<SettingsSnapshot<GeneralSettings>>(SameSnapshot));
-            Assert.That(row, Is.EqualTo(new StoredSettings(SettingsScopes.Global, "general", 1, 2, """{"timeZone":"Europe/Berlin","newForms":{},"history":{"draftDays":90,"draftCount":50}}""", Now, Editor)));
+            Assert.That(row, Is.EqualTo(new StoredSettings(SettingsScopes.Global, "general", 1, 2, """{"timeZone":"Europe/Berlin","requiredMarker":"optional","newForms":{},"history":{"draftDays":90,"draftCount":50}}""", Now, Editor)));
         });
     }
 
@@ -94,7 +94,7 @@ public sealed class SettingsServiceTests : RepositoryTestBase
         Assert.Multiple(async () =>
         {
             Assert.That(() => Service.SaveAsync(saved.Value with { TimeZone = "europe/berlin" }, saved.Version, Editor), Throws.InstanceOf<FormBuilderSettingsValidationException>());
-            Assert.That((await Settings.GetAsync(SettingsScopes.Global, GeneralSettings.Alias))!.Json, Is.EqualTo("""{"timeZone":"Europe/Berlin","newForms":{},"history":{"draftDays":90,"draftCount":50}}"""));
+            Assert.That((await Settings.GetAsync(SettingsScopes.Global, GeneralSettings.Alias))!.Json, Is.EqualTo("""{"timeZone":"Europe/Berlin","requiredMarker":"optional","newForms":{},"history":{"draftDays":90,"draftCount":50}}"""));
         });
     }
 

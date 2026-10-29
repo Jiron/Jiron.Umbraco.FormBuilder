@@ -93,6 +93,18 @@ public enum NoticeKind
 
     /// <summary>A notice above the form after a post, such as "the form has changed".</summary>
     Message,
+
+    /// <summary>The form is for members, and the visitor is not signed in.</summary>
+    SignIn,
+
+    /// <summary>The form is for members of groups the signed-in member is in none of.</summary>
+    MemberGroups,
+
+    /// <summary>
+    /// The note a signed-in backoffice user sees in a form's place while the migrations are pending (ADR-0033): it stands
+    /// alone, without the form's element around it.
+    /// </summary>
+    MigrationsPending,
 }
 
 /// <summary>The model of <c>Notice.cshtml</c>: a notice in place of the form or above it (ADR-0015).</summary>

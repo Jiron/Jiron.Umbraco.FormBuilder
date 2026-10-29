@@ -8,7 +8,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Settings;
 
 /// <summary>
 /// The general section (section 4.8, ADR-0043): its defaults, its scope and its validator. A time zone the server cannot
-/// resolve as an IANA zone cannot be saved, and a zone is stored as the server spells it (ADR-0005, ADR-0030). The
+/// resolve as an IANA zone cannot be saved, and a zone is stored as the server spells it (ADR-0005, ADR-0030). A site's
+/// required-marker style is never inherit, and its button labels are texts a form's own labels take (ADR-0095). The
 /// consent field a new form starts with has texts a definition takes (ADR-0044).
 /// </summary>
 [TestFixture]
@@ -81,6 +82,83 @@ public sealed class GeneralSettingsTests
     }
 
     [Test]
+    public void TheMarker_IsOptional_AndTheLabels_ThePackagesWords_EachSetPerSite()
+    {
+        var section = new GeneralSettings();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(section.RequiredMarker, Is.EqualTo(RequiredMarker.Optional));
+            Assert.That(new[] { section.SubmitLabel, section.NextLabel, section.BackLabel }, Is.All.Null);
+            Assert.That(SettingsSectionJson.SiteFieldNames<GeneralSettings>(), Is.SupersetOf(new[] { "requiredMarker", "submitLabel", "nextLabel", "backLabel" }), "a site sets each on its own");
+        });
+    }
+
+    [TestCase(RequiredMarker.Optional)]
+    [TestCase(RequiredMarker.Required)]
+    [TestCase(RequiredMarker.None)]
+    public void ASitesStyle_Passes(RequiredMarker marker) =>
+        Assert.That(Errors(new GeneralSettings { RequiredMarker = marker }), Is.Empty);
+
+    [TestCase(RequiredMarker.Inherit, Description = "a form's way to take the site's")]
+    [TestCase((RequiredMarker)9, Description = "no style")]
+    public void InheritOrNoStyle_CannotBeSaved(RequiredMarker marker) =>
+        Assert.That(Errors(new GeneralSettings { RequiredMarker = marker }), Is.EqualTo(new[] { new SettingsError("general.requiredMarker", "requiredMarker", "Must be optional, required or none: inherit is how a form takes the site's style.") }));
+
+    [Test]
+    public void EachLabelWithoutTexts_IsStoredAsNone()
+    {
+        var empty = new Dictionary<string, string>();
+
+        var normalized = ((ISettingsValidator<GeneralSettings>)Validator).Normalize(new GeneralSettings { SubmitLabel = empty, NextLabel = empty, BackLabel = empty });
+
+        Assert.That(new[] { normalized.SubmitLabel, normalized.NextLabel, normalized.BackLabel }, Is.All.Null);
+    }
+
+    [Test]
+    public void TheLabels_AreStoredByCulture_AndReadBack_AndOneWithoutTexts_IsThePackagesWord()
+    {
+        var section = new GeneralSettings { SubmitLabel = Texts("Send", "de", "Senden"), NextLabel = new Dictionary<string, string>(), BackLabel = Texts("#Forms.Back") };
+
+        var normalized = ((ISettingsValidator<GeneralSettings>)Validator).Normalize(section);
+        var json = SettingsJson.Global(normalized);
+        var read = SettingsSectionJson.Read<GeneralSettings>(JsonNode.Parse(json)!.AsObject());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(normalized.NextLabel, Is.Null, "a label without texts is the default");
+            Assert.That(Errors(normalized), Is.Empty, "a label may name a dictionary item");
+            Assert.That(JsonNode.Parse(json)!["submitLabel"]!.ToJsonString(), Is.EqualTo("""{"":"Send","de":"Senden"}"""));
+            Assert.That(read.SubmitLabel, Is.EqualTo(section.SubmitLabel));
+            Assert.That(read.BackLabel, Is.EqualTo(section.BackLabel));
+            Assert.That(read.NextLabel, Is.Null);
+        });
+    }
+
+    public static IEnumerable<TestCaseData> BadLabels()
+    {
+        yield return BadLabel("submitLabel", new Dictionary<string, string> { ["de"] = "Senden" }, "required", "no default label");
+        yield return BadLabel("nextLabel", Texts("  "), "required", "a blank default label");
+        yield return BadLabel("backLabel", Texts("Back" + (char)10 + "now"), "invalid_value", "a label on two lines");
+        yield return BadLabel("submitLabel", Texts(new string('a', 501)), "limit_exceeded", "a label of 501 characters");
+        yield return BadLabel("nextLabel", Texts("Next", "not a culture", "x"), "text", "a culture name that is none");
+    }
+
+    [TestCaseSource(nameof(BadLabels))]
+    public void ALabel_AFormsOwnLabelWouldRefuse_CannotBeSaved(string field, object texts, string code)
+    {
+        var labels = (IReadOnlyDictionary<string, string>)texts;
+        var section = field switch
+        {
+            "submitLabel" => new GeneralSettings { SubmitLabel = labels },
+            "nextLabel" => new GeneralSettings { NextLabel = labels },
+            _ => new GeneralSettings { BackLabel = labels },
+        };
+
+        Assert.That(Errors(section).Select(error => (error.Field, error.Code)), Is.EqualTo(new[] { ("general." + field, code) }));
+    }
+
+    [Test]
     public void ANewForm_StartsWithoutAConsentField_UnlessTheSettingsGiveOne()
     {
         Assert.Multiple(() =>
@@ -110,7 +188,7 @@ public sealed class GeneralSettingsTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(JsonNode.DeepEquals(JsonNode.Parse(json), JsonNode.Parse("""{"timeZone":"UTC","newForms":{"consent":{"label":{"":"I agree","de":"Ich stimme zu"},"text":{"":"<p>Yes.</p>"}}},"history":{"draftDays":90,"draftCount":50}}""")), Is.True, json);
+            Assert.That(JsonNode.DeepEquals(JsonNode.Parse(json), JsonNode.Parse("""{"timeZone":"UTC","requiredMarker":"optional","newForms":{"consent":{"label":{"":"I agree","de":"Ich stimme zu"},"text":{"":"<p>Yes.</p>"}}},"history":{"draftDays":90,"draftCount":50}}""")), Is.True, json);
             Assert.That(read.NewForms.Consent!.Label, Is.EqualTo(section.NewForms.Consent!.Label));
             Assert.That(read.NewForms.Consent.Text, Is.EqualTo(section.NewForms.Consent.Text));
         });
@@ -196,6 +274,9 @@ public sealed class GeneralSettingsTests
 
     private static TestCaseData Bad(NewFormConsent consent, string field, string code, string why) =>
         new TestCaseData(consent, field, code).SetArgDisplayNames(why);
+
+    private static TestCaseData BadLabel(string field, IReadOnlyDictionary<string, string> texts, string code, string why) =>
+        new TestCaseData(field, texts, code).SetArgDisplayNames(why);
 
     private static IReadOnlyList<SettingsError> Errors(GeneralSettings section)
     {

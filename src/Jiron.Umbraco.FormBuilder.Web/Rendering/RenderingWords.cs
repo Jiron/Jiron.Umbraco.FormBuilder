@@ -37,6 +37,12 @@ internal sealed record RenderingWords
             ClosedText = "It no longer takes answers.",
             FullHeading = "This form is full",
             FullText = "It has all the answers it can take.",
+            SignInHeading = "This form is for members",
+            SignInText = "Sign in to fill it in.",
+            GroupsHeading = "This form is not open to your account",
+            GroupsText = "It is for members of certain groups.",
+            PendingHeading = "This form waits for an update",
+            PendingText = "Visitors see nothing here until Jiron Form Builder's database update has run. Only signed-in backoffice users see this note.",
         },
         ["de"] = new RenderingWords
         {
@@ -59,6 +65,12 @@ internal sealed record RenderingWords
             ClosedText = "Es nimmt keine Antworten mehr an.",
             FullHeading = "Dieses Formular ist voll",
             FullText = "Es hat alle Antworten, die es annehmen kann.",
+            SignInHeading = "Dieses Formular ist f" + UUmlaut + "r Mitglieder",
+            SignInText = "Melden Sie sich an, um es auszuf" + UUmlaut + "llen.",
+            GroupsHeading = "Dieses Formular steht Ihrem Konto nicht offen",
+            GroupsText = "Es ist nur f" + UUmlaut + "r Mitglieder bestimmter Gruppen.",
+            PendingHeading = "Dieses Formular wartet auf ein Update",
+            PendingText = "Besucher sehen hier nichts, bis das Datenbank-Update von Jiron Form Builder gelaufen ist. Diesen Hinweis sehen nur angemeldete Backoffice-Benutzer.",
         },
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
@@ -121,6 +133,24 @@ internal sealed record RenderingWords
 
     /// <summary>The text of the notice of a form that holds as many entries as it takes.</summary>
     public required string FullText { get; init; }
+
+    /// <summary>The heading of the notice of a members-only form to a visitor who is not signed in.</summary>
+    public required string SignInHeading { get; init; }
+
+    /// <summary>The text of the notice of a members-only form to a visitor who is not signed in.</summary>
+    public required string SignInText { get; init; }
+
+    /// <summary>The heading of the notice of a form for member groups to a member of none of them.</summary>
+    public required string GroupsHeading { get; init; }
+
+    /// <summary>The text of the notice of a form for member groups to a member of none of them.</summary>
+    public required string GroupsText { get; init; }
+
+    /// <summary>The heading of the note a signed-in backoffice user sees in a form's place while the migrations are pending.</summary>
+    public required string PendingHeading { get; init; }
+
+    /// <summary>The text of the note a signed-in backoffice user sees in a form's place while the migrations are pending.</summary>
+    public required string PendingText { get; init; }
 
     /// <summary>The words of a culture, of its more general culture, or English.</summary>
     /// <param name="culture">The culture, such as <c>de-CH</c>.</param>

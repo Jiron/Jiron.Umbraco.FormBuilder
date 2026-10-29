@@ -1,21 +1,33 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.Net;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
+using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Web;
 
 namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
+/// <summary>What a page renders for a form: a view and its model.</summary>
+/// <param name="View">The view's path.</param>
+/// <param name="Model">Its model: a <see cref="FormViewModel"/>, or for the note while the migrations are pending a <see cref="NoticeViewModel"/>.</param>
+/// <param name="IsForm">Whether it is the form, which brings the form's assets; the note brings none.</param>
+internal sealed record RenderedForm(string View, object Model, bool IsForm);
+
 /// <summary>
-/// What a page renders for a form it names (ADR-0004, ADR-0093): the form's view and its model, or nothing for a
-/// reference that names no published form (missing, unpublished or trashed, logged once per reference and process), for
-/// a value of another type (logged once per type), and while the migrations are pending (ADR-0033), so a page never
-/// breaks for its form. The page and the culture come from Umbraco's published request, held to the site's languages
-/// as the public API holds them (ADR-0084); outside an Umbraco page there is no page, and the culture is the request's.
+/// What a page renders for a form it names (ADR-0004, ADR-0093, ADR-0095): the form's view and its model, with its
+/// notice for a visitor a form for members does not admit, or nothing for a reference that names no published form
+/// (missing, unpublished or trashed, logged once per reference and process) and for a value of another type (logged once
+/// per type), so a page never breaks for its form. While the migrations are pending (ADR-0033) it renders nothing for
+/// visitors and a short note for a signed-in backoffice user. The page and the culture come from Umbraco's published
+/// request, held to the site's languages as the public API holds them (ADR-0084); outside an Umbraco page there is no
+/// page, and the culture is the request's.
 /// </summary>
 /// <param name="forms">The published forms.</param>
 /// <param name="requests">What the form endpoint answers, which the model data is.</param>
@@ -23,6 +35,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// <param name="migrations">Whether the migrations are pending.</param>
 /// <param name="umbraco">Umbraco's request, with its published content and culture.</param>
 /// <param name="models">The view models.</param>
+/// <param name="views">The views, of which the note while the migrations are pending takes the default notice.</param>
+/// <param name="backOffice">Whether the request comes from a signed-in backoffice user, who sees that note.</param>
 /// <param name="logger">Where a reference that names no form is logged.</param>
 internal sealed partial class FormRendering(
     PublishedFormCache forms,
@@ -31,17 +45,19 @@ internal sealed partial class FormRendering(
     IFormBuilderMigrationState migrations,
     IUmbracoContextAccessor umbraco,
     FormModels models,
+    FormViews views,
+    BackOfficeVisitors backOffice,
     ILogger<FormRendering> logger)
 {
     // The references that named no form in this process, so each is logged once.
     private readonly ConcurrentDictionary<string, bool> _missing = new(StringComparer.Ordinal);
 
-    /// <summary>The form's view and its model, or null when nothing renders.</summary>
+    /// <summary>The form's view and its model, the note while the migrations are pending, or null when nothing renders.</summary>
     /// <param name="httpContext">The request.</param>
     /// <param name="form">A key (a <see cref="Guid"/> or its text with hyphens), an alias, or a <see cref="FormBuilderFormReference"/>.</param>
     /// <param name="context">The context values the page gives, by name, or null.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
-    public async Task<(string View, FormViewModel Model)?> RenderAsync(HttpContext httpContext, object? form, IReadOnlyDictionary<string, string?>? context, CancellationToken cancellationToken)
+    public async Task<RenderedForm?> RenderAsync(HttpContext httpContext, object? form, IReadOnlyDictionary<string, string?>? context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         var reference = form switch
@@ -52,9 +68,14 @@ internal sealed partial class FormRendering(
             string text => text.Trim(),
             _ => Unsupported(form.GetType()),
         };
-        if (string.IsNullOrEmpty(reference) || await migrations.IsPendingAsync(cancellationToken))
+        if (string.IsNullOrEmpty(reference))
         {
             return null;
+        }
+
+        if (await migrations.IsPendingAsync(cancellationToken))
+        {
+            return await PendingAsync(httpContext, cancellationToken);
         }
 
         if (await requests.KeyOfAsync(reference, cancellationToken) is not { } formKey || await forms.GetAsync(formKey, cancellationToken) is not { } cached)
@@ -67,14 +88,42 @@ internal sealed partial class FormRendering(
             return null;
         }
 
-        var (content, requested) = umbraco.TryGetUmbracoContext(out var current) && current.PublishedRequest is { } published
+        var (content, requested) = Request();
+        var culture = await CultureAsync(requested);
+        var shown = await requests.ShowAsync(cached, culture, await pages.PageAsync(content), cancellationToken);
+        var availability = cached.Published.Definition.Settings.Availability;
+        var gate = availability.Access == MemberAccess.Anyone ? null : await httpContext.RequestServices.GetRequiredService<FormMembers>().GateAsync(availability);
+        var instance = FormInstances.Next(httpContext);
+        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), gate), cancellationToken);
+        return new RenderedForm(view, model, IsForm: true);
+    }
+
+    // The note in a form's place while the migrations are pending, for a signed-in backoffice user only: the page's
+    // visitors see nothing there (ADR-0033). It is the default notice, in the page's culture.
+    private async Task<RenderedForm?> PendingAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    {
+        if (!backOffice.IsSignedIn(httpContext))
+        {
+            return null;
+        }
+
+        var words = RenderingWords.Of(await CultureAsync(Request().Culture));
+        var note = new NoticeViewModel
+        {
+            Kind = NoticeKind.MigrationsPending,
+            Heading = words.PendingHeading,
+            Text = new HtmlString("<p>" + WebUtility.HtmlEncode(words.PendingText) + "</p>"),
+        };
+        return new RenderedForm(await views.DefaultAsync("Notice", cancellationToken), note, IsForm: false);
+    }
+
+    // The page's content and culture from Umbraco's published request; outside an Umbraco page, none and the request's.
+    private (Guid? Content, string? Culture) Request() =>
+        umbraco.TryGetUmbracoContext(out var current) && current.PublishedRequest is { } published
             ? (published.PublishedContent?.Key, published.Culture)
             : (null, CultureInfo.CurrentUICulture.Name);
-        var culture = await pages.CultureAsync(FormPages.IsCulture(requested) ? requested : null);
-        var shown = await requests.ShowAsync(cached, culture, await pages.PageAsync(content), cancellationToken);
-        var instance = FormInstances.Next(httpContext);
-        return await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>()), cancellationToken);
-    }
+
+    private Task<string> CultureAsync(string? requested) => pages.CultureAsync(FormPages.IsCulture(requested) ? requested : null);
 
     // A value of another type names no form; each type is logged once.
     private string? Unsupported(Type type)

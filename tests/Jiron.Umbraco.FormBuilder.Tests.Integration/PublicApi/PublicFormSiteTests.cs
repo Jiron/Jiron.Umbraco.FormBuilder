@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
@@ -15,9 +16,9 @@ using Umbraco.Cms.Tests.Common.Testing;
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.PublicApi;
 
 /// <summary>
-/// What the form endpoint takes from the site (ADR-0008, ADR-0084): the time zone of the site the page belongs to, or the
-/// global one; UTC with a warning for a stored zone this server cannot resolve; and of every settings section, only what
-/// the allowlist names.
+/// What the form endpoint takes from the site (ADR-0008, ADR-0084, ADR-0095): the time zone of the site the page belongs
+/// to, or the global one; UTC with a warning for a stored zone this server cannot resolve; and of every settings section,
+/// only what the allowlist names: the time zone, the required-marker style and the buttons' labels.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -103,6 +104,10 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         {
             TimeZone = "Pacific/Chatham",
             BaseUrl = "https://jfb-allowlist.example",
+            RequiredMarker = RequiredMarker.None,
+            SubmitLabel = new Dictionary<string, string> { [""] = "Send for the allowlist" },
+            NextLabel = new Dictionary<string, string> { [""] = "Next for the allowlist" },
+            BackLabel = new Dictionary<string, string> { [""] = "Back for the allowlist" },
             NewForms = new NewFormDefaults { Consent = new NewFormConsent { Label = new Dictionary<string, string> { [""] = "JFB_TEST consent label" }, Text = new Dictionary<string, string> { [""] = "<p>JFB_TEST consent text</p>" } } },
             History = new HistorySettings { DraftDays = 7, DraftCount = 3 },
         };
@@ -112,6 +117,16 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         var set = await JsonAsync(after);
         var allowed = set.DeepClone();
         allowed["timeZone"] = unset["timeZone"]!.DeepClone();
+        var settings = allowed["form"]!["settings"]!.AsObject();
+        var defaults = unset["form"]!["settings"]!.AsObject();
+        foreach (var name in new[] { "requiredMarker", "submitLabel", "nextLabel", "backLabel" })
+        {
+            settings.Remove(name);
+            if (defaults[name] is { } shown)
+            {
+                settings[name] = shown.DeepClone();
+            }
+        }
 
         var sections = typeof(GeneralSettings).Assembly.GetTypes().Where(type => typeof(ISettingsSection).IsAssignableFrom(type) && !type.IsInterface).ToList();
         var unchanged = Leaves(filled, new GeneralSettings(), nameof(GeneralSettings)).Where(leaf => leaf.Filled == leaf.Default).Select(leaf => leaf.Path).ToList();
@@ -119,7 +134,9 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         {
             Assert.That(sections, Is.EquivalentTo(new[] { typeof(GeneralSettings) }), "a new section is filled here too");
             Assert.That(unchanged, Is.Empty, "a new field is filled here too");
-            Assert.That(set["timeZone"]!.GetValue<string>(), Is.EqualTo("Pacific/Chatham"), "the time zone is the one setting visitors get");
+            Assert.That(set["timeZone"]!.GetValue<string>(), Is.EqualTo("Pacific/Chatham"), "visitors get the time zone");
+            Assert.That(set["form"]!["settings"]!["requiredMarker"]!.GetValue<string>(), Is.EqualTo("none"), "the style of a form that inherits it");
+            Assert.That(set["form"]!["settings"]!["submitLabel"]!.GetValue<string>(), Is.EqualTo(defaults["submitLabel"]?.GetValue<string>() ?? "Send for the allowlist"), "and a label the form has not");
             Assert.That(JsonNode.DeepEquals(allowed, unset), Is.True, $"nothing else of the settings shows:\n{unset.ToJsonString()}\n{set.ToJsonString()}");
             Assert.That(set.ToJsonString(), Does.Not.Contain("JFB_TEST").And.Not.Contain("jfb-allowlist"));
         });

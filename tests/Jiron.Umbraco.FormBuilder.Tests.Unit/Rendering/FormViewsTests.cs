@@ -13,7 +13,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Rendering;
 
 /// <summary>
 /// Which view writes each part of a form (ADR-0015, ADR-0093), over a view engine that knows the paths the test gives:
-/// the form's override first, else the default view; a part without a view names the paths looked at; and in
+/// the form's override first, else the default view; a part without a view names the paths looked at; what renders
+/// without a form, the default folder's view only (ADR-0095); and in
 /// Development, a site's own view whose header names an older contract version, or none, is logged once.
 /// </summary>
 [TestFixture]
@@ -73,6 +74,21 @@ public sealed class FormViewsTests
         var failure = Assert.ThrowsAsync<InvalidOperationException>(() => views.ControlAsync("contact", "rating", CancellationToken.None));
 
         Assert.That(failure!.Message, Does.Contain("'fields/rating'").And.Contain("'contact'").And.Contain(Folder + "_forms/contact/fields/rating.cshtml").And.Contain(Folder + "fields/rating.cshtml"));
+    }
+
+    [Test]
+    public async Task WithoutAForm_AViewIsTheDefaultFolders_AndOneItLacks_NamesThePathLookedAt()
+    {
+        var views = Views(Defaults().Append(Folder + "_forms/contact/Notice.cshtml"));
+
+        var notice = await views.DefaultAsync("Notice", CancellationToken.None);
+        var failure = Assert.ThrowsAsync<InvalidOperationException>(() => views.DefaultAsync("Note", CancellationToken.None));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(notice, Is.EqualTo(Folder + "Notice.cshtml"), "no form's override");
+            Assert.That(failure!.Message, Does.Contain("'Note'").And.Contain(Folder + "Note.cshtml"));
+        });
     }
 
     [TestCase("@* jfb-view: Field 0 *@", "0")]

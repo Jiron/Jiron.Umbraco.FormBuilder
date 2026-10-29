@@ -4,7 +4,9 @@
   values come beside its template, not in it), [ADR-0068](0068-answer-recall.md) (what the browser is given for
   recall, and the text blocks' texts take merge tags) and [ADR-0070](0070-storing-answers-and-reading-them-back.md)
   (the consent wording is sanitised before it is hashed and stored); extends
-  [ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md) (the form endpoint's answer)
+  [ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md) (the form endpoint's answer); the same texts
+  rendered on the server, and the site's required-marker style and labels in the visitor's form, added by
+  [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md) in 6.2c
 - Date: 2026-10-28
 - Roadmap step: 6.1b (decided and built); 6.1c's `options` endpoint gives a cascading field's options, 6.2 renders
   the same texts on the server, 6.4 renders them in the browser as the visitor types, 6.1e compares a posted

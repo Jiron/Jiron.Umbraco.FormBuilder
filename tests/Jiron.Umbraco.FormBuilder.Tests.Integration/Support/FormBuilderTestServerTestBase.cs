@@ -34,9 +34,17 @@ public abstract class ConfiguredTestServerTestBase : UmbracoTestServerTestBase
 public abstract class FormBuilderTestServerTestBase : ConfiguredTestServerTestBase
 {
     /// <summary>Runs Jiron Form Builder's plan.</summary>
+    /// <summary>Whether each test starts with the migration plan run; a test of what happens while it is pending says no.</summary>
+    protected virtual bool RunsTheMigrations => true;
+
     [SetUp]
     public async Task MigrateAsync()
     {
+        if (!RunsTheMigrations)
+        {
+            return;
+        }
+
         var results = await GetRequiredService<PackageMigrationRunner>().RunPackagePlansAsync([FormBuilderConstants.MigrationPlanName]);
         Assert.That(results.Single().Successful, Is.True, results.Single().Exception?.ToString());
     }

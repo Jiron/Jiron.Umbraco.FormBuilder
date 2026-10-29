@@ -63,6 +63,22 @@ internal sealed partial class FormViews(ICompositeViewEngine engine, IWebHostEnv
         });
     }
 
+    /// <summary>A view of the default folder, for what renders without a form, such as the note while the migrations are pending.</summary>
+    /// <param name="view">The view's name below the folder, such as <c>Notice</c>.</param>
+    /// <param name="cancellationToken">Cancels reading the view's header.</param>
+    /// <exception cref="InvalidOperationException">The default folder has no such view.</exception>
+    public async Task<string> DefaultAsync(string view, CancellationToken cancellationToken)
+    {
+        var path = $"~{Root}{DefaultFolder}/{view}.cshtml";
+        if (!engine.GetView(executingFilePath: null, path, isMainPage: false).Success)
+        {
+            throw new InvalidOperationException($"No view writes '{view}'. The path looked at: {path}.");
+        }
+
+        await CheckAsync(path, cancellationToken);
+        return path;
+    }
+
     /// <summary>The view that writes the control of a field type, <c>fields/&lt;type&gt;.cshtml</c>.</summary>
     /// <param name="alias">The form's alias.</param>
     /// <param name="type">The field type's alias.</param>

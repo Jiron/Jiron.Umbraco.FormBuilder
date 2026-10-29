@@ -25,6 +25,8 @@ internal static class FormBuilderRenderingServices
         builder.Services.TryAddSingleton<FormViews>();
         builder.Services.TryAddSingleton<FormModels>();
         builder.Services.TryAddSingleton<FormRendering>();
+        builder.Services.TryAddSingleton<BackOfficeVisitors>();
+        builder.Services.TryAddScoped<FormMembers>();
         builder.Services.Configure<UmbracoPipelineOptions>(options =>
         {
             if (!options.PipelineFilters.Any(filter => filter.Name == AssetsFilterName))

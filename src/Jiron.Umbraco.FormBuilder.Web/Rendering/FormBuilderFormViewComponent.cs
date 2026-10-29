@@ -39,7 +39,7 @@ public sealed class FormBuilderFormViewComponent : ViewComponent
         }
 
         var view = View(found.View, found.Model);
-        return assets ? new AssetsFirst(HttpContext.RequestServices.GetRequiredService<PageAssets>().Automatic(HttpContext), view) : view;
+        return assets && found.IsForm ? new AssetsFirst(HttpContext.RequestServices.GetRequiredService<PageAssets>().Automatic(HttpContext), view) : view;
     }
 
     /// <summary>

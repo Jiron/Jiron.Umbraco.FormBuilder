@@ -35,6 +35,9 @@ internal sealed class SettingsErrors(string section)
     /// <summary>The code of a base URL that is not an <c>https</c> or <c>http</c> origin (ADR-0067).</summary>
     public const string BaseUrlCode = "baseUrl";
 
+    /// <summary>The code of a required-marker style a site cannot have: <c>inherit</c> is a form's (ADR-0095).</summary>
+    public const string RequiredMarkerCode = "requiredMarker";
+
     /// <summary>The code of a field a site cannot override.</summary>
     public const string Scope = "scope";
 
