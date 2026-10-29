@@ -208,10 +208,11 @@ public sealed class FormRenderingRowsTests : RenderingTestBase
             Assert.That(guests.QuerySelectorAll(".jfb-row"), Has.Length.EqualTo(2));
             Assert.That(guests.QuerySelectorAll("input, select, button").Select(control => control.GetAttribute("name")), Is.EqualTo(new[]
             {
+                "jfb-rows-guests",
                 "jfb-nav", "guests[0].name", "guests[0].age", "guests[0].nights", "guests[0].diet", "guests[0].meal", "guests[0].room",
                 "jfb-nav", "guests[1].name", "guests[1].age", "guests[1].nights", "guests[1].diet", "guests[1].meal", "guests[1].room",
                 "jfb-nav",
-            }), "each row's Remove and fields, and Add");
+            }), "the row count, each row's Remove and fields, and Add");
             Assert.That(guests.QuerySelectorAll("input, select, button").Select(control => control.HasAttribute("disabled")), Is.All.True, "so none is posted or pressed");
             Assert.That(guests.QuerySelectorAll(".jfb-row [data-jfb-field]").Select(child => child.HasAttribute("hidden")), Is.All.True, "the rules hide what a hidden group holds");
             Assert.That(over.QuerySelectorAll(".jfb-row"), Has.Length.EqualTo(4));

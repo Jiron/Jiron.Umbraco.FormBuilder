@@ -84,7 +84,7 @@ public sealed class FormRenderingTests
         Assert.ThrowsAsync<ArgumentNullException>(() => Rendering(new Migrations(), new RecordingLogger<FormRendering>()).RenderAsync(null!, "contact", null, CancellationToken.None));
 
     private static FormRendering Rendering(IFormBuilderMigrationState migrations, RecordingLogger<FormRendering> logger) =>
-        new(forms: null!, requests: null!, pages: null!, migrations, Substitute.For<IUmbracoContextAccessor>(), models: null!, views: null!, BackOffice(), logger);
+        new(forms: null!, requests: null!, pages: null!, migrations, Substitute.For<IUmbracoContextAccessor>(), models: null!, views: null!, BackOffice(), submissions: null!, sent: null!, logger);
 
     // The backoffice's cookie options, which a visitor's request carries no cookie of.
     private static BackOfficeVisitors BackOffice()

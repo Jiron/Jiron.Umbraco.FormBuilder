@@ -4,6 +4,7 @@ using System.Net;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
 using Microsoft.AspNetCore.Html;
@@ -24,7 +25,9 @@ internal sealed record RenderedForm(string View, object Model, bool IsForm);
 /// What a page renders for a form it names (ADR-0004, ADR-0093, ADR-0095): the form's view and its model, with its
 /// notice for a visitor a form for members does not admit, or nothing for a reference that names no published form
 /// (missing, unpublished or trashed, logged once per reference and process) and for a value of another type (logged once
-/// per type), so a page never breaks for its form. While the migrations are pending (ADR-0033) it renders nothing for
+/// per type), so a page never breaks for its form. After a post without JavaScript sent the form, the page the post
+/// redirects to shows the outcome its <c>jfb-sent</c> token names, for that form and instance only (ADR-0100), as the
+/// receipt endpoint answers it, and is <c>no-store</c>. While the migrations are pending (ADR-0033) it renders nothing for
 /// visitors and a short note for a signed-in backoffice user. The page and the culture come from Umbraco's published
 /// request, held to the site's languages as the public API holds them (ADR-0084); outside an Umbraco page there is no
 /// page, and the culture is the request's.
@@ -37,6 +40,8 @@ internal sealed record RenderedForm(string View, object Model, bool IsForm);
 /// <param name="models">The view models.</param>
 /// <param name="views">The views, of which the note while the migrations are pending takes the default notice.</param>
 /// <param name="backOffice">Whether the request comes from a signed-in backoffice user, who sees that note.</param>
+/// <param name="submissions">The submission pipeline, whose receipt the page after a sent post shows.</param>
+/// <param name="sent">The tokens of the redirect after a sent post.</param>
 /// <param name="logger">Where a reference that names no form is logged.</param>
 internal sealed partial class FormRendering(
     PublishedFormCache forms,
@@ -47,6 +52,8 @@ internal sealed partial class FormRendering(
     FormModels models,
     FormViews views,
     BackOfficeVisitors backOffice,
+    FormSubmissions submissions,
+    SentTokens sent,
     ILogger<FormRendering> logger)
 {
     // The references that named no form in this process, so each is logged once.
@@ -94,8 +101,35 @@ internal sealed partial class FormRendering(
         var availability = cached.Published.Definition.Settings.Availability;
         var gate = availability.Access == MemberAccess.Anyone ? null : await httpContext.RequestServices.GetRequiredService<FormMembers>().GateAsync(availability);
         var instance = FormInstances.Next(httpContext);
+        await SentAsync(httpContext, formKey, instance, culture, cancellationToken);
         var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), gate), cancellationToken);
         return new RenderedForm(view, model, IsForm: true);
+    }
+
+    // The outcome of the entry a post without JavaScript sent, on the page it redirected to (ADR-0100): the token in
+    // jfb-sent names the form, the instance and the submission id, and the outcome is the receipt's; a token that names
+    // nothing for this form and instance leaves the form as it is. A page that shows an outcome is no-store.
+    private async Task SentAsync(HttpContext httpContext, Guid form, string instance, string culture, CancellationToken cancellationToken)
+    {
+        if (FormPosts.Get(httpContext, form, instance) is not null
+            || !httpContext.Request.Query.TryGetValue(SentTokens.QueryName, out var values)
+            || values.Count != 1
+            || sent.Read(values[0], form, instance) is not { } submissionId
+            || await submissions.ReceiptAsync(form, submissionId, cancellationToken) is not { Receipt: { } receipt, Outcome: { } outcome })
+        {
+            return;
+        }
+
+        httpContext.Response.Headers.CacheControl = "no-store";
+        var words = RenderingWords.Of(culture);
+        FormPosts.Set(httpContext, form, instance, new FormPostState
+        {
+            Outcome = new FormPostOutcome(
+                outcome.Html ?? "<p>" + WebUtility.HtmlEncode(words.ThankYou) + "</p>",
+                receipt.Reference,
+                IsPending: false,
+                outcome is { Kind: OutcomeKind.Message, Url: { } url } ? url : null),
+        });
     }
 
     // The note in a form's place while the migrations are pending, for a signed-in backoffice user only: the page's

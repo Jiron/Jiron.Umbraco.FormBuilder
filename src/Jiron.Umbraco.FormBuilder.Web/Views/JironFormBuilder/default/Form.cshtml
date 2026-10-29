@@ -37,6 +37,10 @@
         {
             <input type="hidden" name="@input.Name" value="@input.Value">
         }
+        @foreach (var input in Model.PostValues)
+        {
+            <input type="hidden" name="@input.Name" value="@input.Value">
+        }
         <div data-jfb-live aria-live="polite"></div>
     </form>
 }

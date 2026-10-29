@@ -68,6 +68,14 @@ internal sealed record RenderingWords
             Country = "Country",
             SignatureName = "Your full name",
             SignatureTyped = "Type your full name. It counts as your signature.",
+            ThankYou = "Thank you. We have received your message.",
+            Continue = "Continue",
+            ChangedHeading = "This form was updated while you filled it in",
+            ChangedText = "Your answers are kept.",
+            ChangedConsent = "An agreement has new wording, so it is no longer ticked: read it again before you send.",
+            ChangedConsents = "Some agreements have new wording, so they are no longer ticked: read them again before you send.",
+            NotSentHeading = "Your answers weren't sent",
+            NotSentText = "Check your answers, then send again. Your answers are kept.",
         },
         ["de"] = new RenderingWords
         {
@@ -120,6 +128,14 @@ internal sealed record RenderingWords
             Country = "Land",
             SignatureName = "Ihr vollst" + AUmlaut + "ndiger Name",
             SignatureTyped = "Geben Sie Ihren vollst" + AUmlaut + "ndigen Namen ein. Er gilt als Ihre Unterschrift.",
+            ThankYou = "Vielen Dank. Wir haben Ihre Nachricht erhalten.",
+            Continue = "Weiter",
+            ChangedHeading = "Dieses Formular wurde ge" + AUmlaut + "ndert, w" + AUmlaut + "hrend Sie es ausgef" + UUmlaut + "llt haben",
+            ChangedText = "Ihre Antworten bleiben erhalten.",
+            ChangedConsent = "Eine Einwilligung hat einen neuen Wortlaut und ist deshalb nicht mehr angehakt: Lesen Sie sie vor dem Senden noch einmal.",
+            ChangedConsents = "Einige Einwilligungen haben einen neuen Wortlaut und sind deshalb nicht mehr angehakt: Lesen Sie sie vor dem Senden noch einmal.",
+            NotSentHeading = "Ihre Antworten wurden nicht gesendet",
+            NotSentText = "Pr" + UUmlaut + "fen Sie Ihre Antworten und senden Sie erneut. Ihre Antworten bleiben erhalten.",
         },
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
@@ -272,6 +288,30 @@ internal sealed record RenderingWords
 
     /// <summary>The line above that name, which says typing it counts as signing.</summary>
     public required string SignatureTyped { get; init; }
+
+    /// <summary>The outcome of a form sent without an outcome of its own, or whose outcome could not be followed.</summary>
+    public required string ThankYou { get; init; }
+
+    /// <summary>The link after an outcome's message to the redirect that a page without JavaScript does not count down to.</summary>
+    public required string Continue { get; init; }
+
+    /// <summary>The heading of the notice after a post that met a form published again meanwhile (ADR-0100).</summary>
+    public required string ChangedHeading { get; init; }
+
+    /// <summary>That notice's sentence that the answers are kept.</summary>
+    public required string ChangedText { get; init; }
+
+    /// <summary>That notice's sentence when one consent's wording changed, so it is no longer ticked.</summary>
+    public required string ChangedConsent { get; init; }
+
+    /// <summary>That notice's sentence when several consents' wordings changed.</summary>
+    public required string ChangedConsents { get; init; }
+
+    /// <summary>The heading of the notice after a post the form could not take, whose answers are kept.</summary>
+    public required string NotSentHeading { get; init; }
+
+    /// <summary>That notice's text.</summary>
+    public required string NotSentText { get; init; }
 
     /// <summary>The words of a culture, of its more general culture, or English.</summary>
     /// <param name="culture">The culture, such as <c>de-CH</c>.</param>

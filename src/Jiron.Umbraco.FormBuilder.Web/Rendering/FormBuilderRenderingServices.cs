@@ -25,6 +25,8 @@ internal static class FormBuilderRenderingServices
         builder.Services.TryAddSingleton<FormViews>();
         builder.Services.TryAddSingleton<FormModels>();
         builder.Services.TryAddSingleton<FormRendering>();
+        builder.Services.TryAddSingleton<FormPostHandler>();
+        builder.Services.TryAddSingleton<SentTokens>();
         builder.Services.TryAddSingleton<BackOfficeVisitors>();
         builder.Services.TryAddScoped<FormMembers>();
         builder.Services.Configure<UmbracoPipelineOptions>(options =>

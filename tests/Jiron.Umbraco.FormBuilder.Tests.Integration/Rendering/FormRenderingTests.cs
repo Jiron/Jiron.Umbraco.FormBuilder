@@ -165,7 +165,7 @@ public sealed class FormRenderingTests : RenderingTestBase
         var (html, document) = await PageAsync("context");
         _ = await PageAsync("context");
 
-        var inputs = document.QuerySelectorAll("form.jfb-form input[type=hidden]");
+        var inputs = document.QuerySelectorAll("form.jfb-form input[type=hidden][name^='jfb-context-']");
         var warnings = GetRequiredService<LogCapture>().Entries.Where(entry => entry.Level == LogLevel.Warning && entry.Message.Contains("context value", StringComparison.Ordinal)).Select(entry => entry.Message).ToList();
         Assert.Multiple(() =>
         {

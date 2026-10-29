@@ -92,6 +92,13 @@ public sealed class FormViewModel
     /// <summary>The context values the page gives that the form lists, as the hidden inputs that carry them.</summary>
     public IReadOnlyList<HiddenInputModel> ContextValues { get; init; } = [];
 
+    /// <summary>
+    /// The hidden inputs a post without JavaScript carries (ADR-0100): Umbraco's route token (<c>ufprt</c>), the form's
+    /// key, its instance, its revision and the page shown, and after a post the query values it carried; none is per
+    /// visitor on a first render.
+    /// </summary>
+    public IReadOnlyList<HiddenInputModel> PostValues { get; init; } = [];
+
     /// <summary>The views that write the form's parts.</summary>
     public required FormViewPaths Views { get; init; }
 }

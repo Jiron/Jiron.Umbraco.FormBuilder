@@ -21,6 +21,7 @@
     }
 }
 <div class="jfb-repeater" id="@Model.Id" tabindex="-1">
+    <input type="hidden" name="@control.RowCount.Name" value="@control.RowCount.Value" disabled="@Model.IsDisabled">
     @foreach (var row in control.Rows)
     {
         <fieldset class="jfb-row" id="@row.Id" data-jfb-row="@row.Index">

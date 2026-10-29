@@ -16,11 +16,13 @@ using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.PublishedCache;
 using Umbraco.Cms.Core.Routing;
+using Umbraco.Cms.Web.Common.Security;
 
 namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
@@ -61,6 +63,7 @@ internal sealed record FormRender(
 /// <param name="urls">The addresses of media.</param>
 /// <param name="time">The site's clock.</param>
 /// <param name="cultures">The culture formats a calculation's and a slider's numbers are written with.</param>
+/// <param name="protection">The site's Data Protection, which Umbraco's route token for a post without JavaScript takes.</param>
 /// <param name="logger">Where context values that are not taken are logged.</param>
 internal sealed partial class FormModels(
     FieldTypeRegistry types,
@@ -72,6 +75,7 @@ internal sealed partial class FormModels(
     IPublishedUrlProvider urls,
     TimeProvider time,
     MergeTagCultures cultures,
+    IDataProtectionProvider protection,
     ILogger<FormModels> logger)
 {
     /// <summary>The longest context value a page may give (ADR-0088).</summary>
@@ -163,7 +167,47 @@ internal sealed partial class FormModels(
         Message = new HtmlString(outcome.Html),
         Reference = outcome.Reference is { Length: > 0 } reference ? WithMarkup(words.Reference, "<strong>" + WebUtility.HtmlEncode(reference) + "</strong>") : null,
         IsPending = outcome.IsPending,
+        Continue = outcome.ContinueUrl is { } url ? new OutcomeLinkModel(url, words.Continue) : null,
     };
+
+    // The page a post moves to (ADR-0100): from the posted page, the next one or the last one before it that the rules
+    // show, else the posted page again; a page the rules hide, or a first render, shows the first page they show.
+    private static PublicPage? CurrentOf(IReadOnlyList<PublicPage> pages, List<PublicPage> shownPages, FormPostState? post)
+    {
+        var at = post?.Page is { } posted ? pages.ToList().FindIndex(page => page.Key == posted) : -1;
+        var moved = at < 0 ? null : post!.Move switch
+        {
+            FormPostMove.Next => pages.Skip(at + 1).FirstOrDefault(shownPages.Contains),
+            FormPostMove.Back => pages.Take(at).LastOrDefault(shownPages.Contains),
+            _ => null,
+        };
+        return moved ?? shownPages.FirstOrDefault(page => page.Key == post?.Page) ?? shownPages.FirstOrDefault();
+    }
+
+    // What a post without JavaScript carries besides the answers (ADR-0100): Umbraco's route token for the surface
+    // action, the form, its instance, its revision and the page shown, and the query values a post carried; none is per
+    // visitor on a first render.
+    private List<HiddenInputModel> PostValues(Root root, PublicPage? current, FormPostState? post)
+    {
+        var values = new List<HiddenInputModel>
+        {
+            new(FormPostFields.RouteToken, EncryptionHelper.CreateEncryptedRouteString(protection, FormBuilderSurfaceController.ControllerName, FormBuilderSurfaceController.ActionName, string.Empty)),
+            new(FormPostFields.Form, root.Key.ToString("D")),
+            new(FormPostFields.Instance, root.Id),
+            new(FormPostFields.Revision, root.Revision.ToString(CultureInfo.InvariantCulture)),
+        };
+        if (current is not null)
+        {
+            values.Add(new(FormPostFields.Page, current.Key.ToString("D")));
+        }
+
+        foreach (var (name, texts) in post?.Query ?? NoQuery)
+        {
+            values.AddRange(texts.Select(text => new HiddenInputModel(FormPostFields.QueryPrefix + name, text)));
+        }
+
+        return values;
+    }
 
     private async Task<FormViewModel> FormAsync(FormRender render, Root root, FormPostState? post, RenderingWords words, CultureInfo culture, CancellationToken cancellationToken)
     {
@@ -177,11 +221,11 @@ internal sealed partial class FormModels(
         var state = FormRules.Evaluate(
             DefinitionLogic.From(definition, types),
             RuleAnswers(read),
-            new EvaluationContext(now, render.Shown.TimeZone.Id, render.Culture, new Member(false, []), NoQuery, []));
+            new EvaluationContext(now, render.Shown.TimeZone.Id, render.Culture, new Member(false, []), post?.Query ?? NoQuery, []));
         var hidden = state.Hidden.ToHashSet(StringComparer.Ordinal);
         var required = state.Required.ToHashSet(StringComparer.Ordinal);
         var shownPages = shown.Pages.Where(page => !hidden.Contains(Id(page.Key))).ToList();
-        var current = shownPages.FirstOrDefault(page => page.Key == post?.Page) ?? shownPages.FirstOrDefault();
+        var current = CurrentOf(shown.Pages, shownPages, post);
         var recalled = await RecalledAsync(render, read, hidden, state, cancellationToken);
         var facts = new PageFacts(DateOnly.FromDayNumber(CalendarValues.Today(now, render.Shown.TimeZone.Id)), state.Calculations, state.Rows, cultures.For(render.Culture));
         var build = new Build(render, root, post, words, culture, answers, hidden, required, MarkerOf(settings.RequiredMarker), recalled, settings.ChoiceLayout, facts);
@@ -242,8 +286,11 @@ internal sealed partial class FormModels(
             requiredNote: build.MarksRequired
                 ? WithMarkup(words.RequiredNote, "<span aria-hidden=\"true\">*</span><span class=\"jfb-visually-hidden\">" + WebUtility.HtmlEncode(words.Asterisk) + "</span>")
                 : null,
-            notice: post?.Notice is { } notice ? new NoticeViewModel { Kind = NoticeKind.Message, Heading = notice.Heading, Text = Paragraph(notice.Text) } : null,
-            context: Context(render));
+            notice: post?.Notice is { } notice
+                ? new NoticeViewModel { Kind = NoticeKind.Message, Heading = notice.Heading, Text = Paragraph(notice.Text), Code = notice.Code, HeadingId = notice.Code is null ? null : root.Id + "-notice", CssClass = notice.Code == FormPostHandler.NotSentCode ? "jfb-notice jfb-notice-error" : "jfb-notice" }
+                : null,
+            context: Context(render),
+            postValues: PostValues(root, current, post));
     }
 
     // The visitor texts that hold tags, each rendered as the server renders it in its place for the answers the page
@@ -664,9 +711,9 @@ internal sealed partial class FormModels(
         var last = at == shownPages.Count - 1 || at < 0;
         return new NavigationViewModel
         {
-            Back = at > 0 ? new NavigationButtonModel(Text(settings.BackLabel) ?? words.Back, "back") : null,
-            Next = last ? null : new NavigationButtonModel(Text(settings.NextLabel) ?? words.Next, "next"),
-            Submit = last ? new NavigationButtonModel(Text(settings.SubmitLabel) ?? words.Send, "submit") : null,
+            Back = at > 0 ? new NavigationButtonModel(Text(settings.BackLabel) ?? words.Back, FormPostFields.Back) : null,
+            Next = last ? null : new NavigationButtonModel(Text(settings.NextLabel) ?? words.Next, FormPostFields.Next),
+            Submit = last ? new NavigationButtonModel(Text(settings.SubmitLabel) ?? words.Send, FormPostFields.Submit) : null,
         };
     }
 
@@ -783,7 +830,8 @@ internal sealed partial class FormModels(
             IHtmlContent? requiredNote = null,
             NoticeViewModel? notice = null,
             OutcomeViewModel? outcome = null,
-            IReadOnlyList<HiddenInputModel>? context = null) => new()
+            IReadOnlyList<HiddenInputModel>? context = null,
+            IReadOnlyList<HiddenInputModel>? postValues = null) => new()
             {
                 Key = Key,
                 Alias = Alias,
@@ -807,6 +855,7 @@ internal sealed partial class FormModels(
                 Notice = notice,
                 Outcome = outcome,
                 ContextValues = context ?? [],
+                PostValues = postValues ?? [],
             };
     }
 

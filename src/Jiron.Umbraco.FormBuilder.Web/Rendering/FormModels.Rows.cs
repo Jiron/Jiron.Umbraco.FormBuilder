@@ -54,6 +54,7 @@ internal sealed partial class FormModels
             Add = count < limits.MaxRows
                 ? new RowButtonModel { Value = "add:" + alias, Text = settings.Text("addLabel") is { Length: > 0 } adding ? adding : build.Words.AddRow }
                 : null,
+            RowCount = new HiddenInputModel(FormPostFields.RowsPrefix + alias, count.ToString(CultureInfo.InvariantCulture)),
             FieldsCssClass = "jfb-fields jfb-columns-" + build.ColumnsOf(field.Key).ToString(CultureInfo.InvariantCulture),
             FieldView = build.Root.Views.Field,
         };

@@ -30,13 +30,31 @@ internal static class FormInstances
 /// <summary>A notice above the form after a post, such as "the form has changed".</summary>
 /// <param name="Heading">Its heading, or null.</param>
 /// <param name="Text">Its text.</param>
-internal sealed record FormPostNotice(string? Heading, string Text);
+/// <param name="Code">
+/// What happened (<c>form_changed</c>, <c>not_sent</c>), which makes the notice an alert in the error summary's place
+/// (ADR-0100); null for a notice that is none.
+/// </param>
+internal sealed record FormPostNotice(string? Heading, string Text, string? Code = null);
 
 /// <summary>The outcome of a post that sent the form.</summary>
 /// <param name="Html">The message, sanitised.</param>
 /// <param name="Reference">The entry's reference, or null.</param>
 /// <param name="IsPending">Whether the visitor must still confirm their email address.</param>
-internal sealed record FormPostOutcome(string Html, string? Reference, bool IsPending);
+/// <param name="ContinueUrl">The redirect after the message, which the visitor follows by a link (ADR-0100); null for none.</param>
+internal sealed record FormPostOutcome(string Html, string? Reference, bool IsPending, string? ContinueUrl = null);
+
+/// <summary>Where a post moves from its page (ADR-0100); the form's render works out the page with the rules.</summary>
+internal enum FormPostMove
+{
+    /// <summary>The posted page again, or the first page the rules show when they hide it.</summary>
+    Stay,
+
+    /// <summary>The next page after the posted one that the rules show.</summary>
+    Next,
+
+    /// <summary>The last page before the posted one that the rules show.</summary>
+    Back,
+}
 
 /// <summary>
 /// An error a post left for a field (ADR-0099), as the pipeline reports it; the page shows the editor's message for it,
@@ -52,9 +70,10 @@ internal sealed record FormPostOutcome(string Html, string? Reference, bool IsPe
 internal sealed record FormPostError(string Code, int? Check = null, Guid? Rule = null, Guid? GridRow = null);
 
 /// <summary>
-/// What a post without JavaScript leaves for the form it renders again (ADR-0004, ADR-0093): the answers, the errors by
-/// field, each repeatable group's rows, the page to show, a notice above the form, or the outcome. The surface action
-/// of 6.2h fills it.
+/// What a post without JavaScript leaves for the form it renders again (ADR-0004, ADR-0093, ADR-0100): the answers, the
+/// errors by field, each repeatable group's rows, the page it came from and where it moves, the query values it carried,
+/// a notice above the form, or the outcome. The surface action fills it, and so does a page after the redirect to an
+/// outcome.
 /// </summary>
 internal sealed record FormPostState
 {
@@ -73,8 +92,14 @@ internal sealed record FormPostState
     /// </summary>
     public IReadOnlyDictionary<Guid, IReadOnlyList<FormPostRow>> Rows { get; init; } = new Dictionary<Guid, IReadOnlyList<FormPostRow>>();
 
-    /// <summary>The page to show; null for the first page the rules show.</summary>
+    /// <summary>The page the post came from, which <see cref="Move"/> moves from; null for the first page the rules show.</summary>
     public Guid? Page { get; init; }
+
+    /// <summary>Where the page to show is from <see cref="Page"/>.</summary>
+    public FormPostMove Move { get; init; }
+
+    /// <summary>The query values the post carried, of the names the form lists, which the page carries on (ADR-0100).</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<string>> Query { get; init; } = new Dictionary<string, IReadOnlyList<string>>();
 
     /// <summary>A notice above the form, or null.</summary>
     public FormPostNotice? Notice { get; init; }

@@ -12,6 +12,12 @@ public sealed class RepeaterControlModel
     /// <summary>The button that adds a row; null once the group has its most rows.</summary>
     public RowButtonModel? Add { get; init; }
 
+    /// <summary>
+    /// The hidden input that says how many rows the page shows (<c>jfb-rows-&lt;alias&gt;</c>), so a post without
+    /// JavaScript keeps a row whose controls post nothing (ADR-0100); disabled with the group.
+    /// </summary>
+    public required HiddenInputModel RowCount { get; init; }
+
     /// <summary>The classes of each row's fields: <c>jfb-fields</c> with the columns of the group the field is in.</summary>
     public required string FieldsCssClass { get; init; }
 

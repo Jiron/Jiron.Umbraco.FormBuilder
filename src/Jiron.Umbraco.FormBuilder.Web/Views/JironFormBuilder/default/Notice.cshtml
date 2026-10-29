@@ -1,9 +1,20 @@
 @* jfb-view: Notice 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.NoticeViewModel
-<div class="jfb-notice">
-    @if (Model.Heading is not null)
-    {
-        <h2>@Model.Heading</h2>
-    }
-    @Model.Text
-</div>
+@* A notice after a post is an alert in the error summary's place, named by its heading, as the summary is. *@
+@if (Model.Code is { } code)
+{
+    <div class="@Model.CssClass" data-jfb-notice="@code" role="alert" tabindex="-1" aria-labelledby="@Model.HeadingId">
+        <h2 id="@Model.HeadingId">@Model.Heading</h2>
+        @Model.Text
+    </div>
+}
+else
+{
+    <div class="@Model.CssClass">
+        @if (Model.Heading is not null)
+        {
+            <h2>@Model.Heading</h2>
+        }
+        @Model.Text
+    </div>
+}

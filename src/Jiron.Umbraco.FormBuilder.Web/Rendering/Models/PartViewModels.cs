@@ -118,6 +118,18 @@ public sealed class NoticeViewModel
 
     /// <summary>The notice's text as HTML: the package's sentence in a paragraph, or the form's own message, sanitised.</summary>
     public required IHtmlContent Text { get; init; }
+
+    /// <summary>
+    /// For a notice above the form after a post, what happened (<c>data-jfb-notice</c>): <c>form_changed</c> or
+    /// <c>not_sent</c> (ADR-0100); such a notice is an alert, as the error summary is. Null for any other notice.
+    /// </summary>
+    public string? Code { get; init; }
+
+    /// <summary>The id of the heading of a notice after a post, which names the alert; null for any other notice.</summary>
+    public string? HeadingId { get; init; }
+
+    /// <summary>The notice's classes: <c>jfb-notice</c>, with <c>jfb-notice-error</c> for a send that did not go through.</summary>
+    public string CssClass { get; init; } = "jfb-notice";
 }
 
 /// <summary>The model of <c>Outcome.cshtml</c>: the message after the visitor sent the form (ADR-0015).</summary>
@@ -131,4 +143,15 @@ public sealed class OutcomeViewModel
 
     /// <summary>Whether the visitor must still confirm their email address (<c>data-jfb-pending</c>).</summary>
     public bool IsPending { get; init; }
+
+    /// <summary>
+    /// The link to the outcome's redirect after its message, which a page without JavaScript follows when the visitor
+    /// chooses (ADR-0100); null for a message without a redirect.
+    /// </summary>
+    public OutcomeLinkModel? Continue { get; init; }
 }
+
+/// <summary>A link of the outcome: where it goes and its text.</summary>
+/// <param name="Url">The address, checked by the publish rule.</param>
+/// <param name="Text">The link's text.</param>
+public sealed record OutcomeLinkModel(string Url, string Text);

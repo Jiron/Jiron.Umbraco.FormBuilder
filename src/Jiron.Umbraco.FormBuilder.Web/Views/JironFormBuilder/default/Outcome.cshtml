@@ -1,10 +1,17 @@
 @* jfb-view: Outcome 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.OutcomeViewModel
 @using Jiron.Umbraco.FormBuilder.Web.Rendering
+@* A message with a redirect gives its link here; the runtime counts down to it, a page without JavaScript waits for the visitor. *@
 <div class="jfb-outcome" data-jfb-outcome @FormBuilderHtml.Flag("data-jfb-pending", Model.IsPending) tabindex="-1">
     @Model.Message
     @if (Model.Reference is not null)
     {
         <p class="jfb-reference">@Model.Reference</p>
+    }
+    @if (Model.Continue is { } next)
+    {
+        <div class="jfb-navigation">
+            <a class="jfb-button" href="@next.Url" data-jfb-continue>@next.Text</a>
+        </div>
     }
 </div>
