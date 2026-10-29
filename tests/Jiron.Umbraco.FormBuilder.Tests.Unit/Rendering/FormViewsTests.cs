@@ -112,6 +112,7 @@ public sealed class FormViewsTests
 
     [TestCase("@* jfb-view: Field 1 *@")]
     [TestCase("  @*jfb-view: fields/text 12 *@ <div>")]
+    [TestCase("@* jfb-view: fields/acme.mood-2_b 1 *@")]
     public async Task InDevelopment_ASitesViewWithTheCurrentHeaderOrNewer_IsNotLogged(string firstLine)
     {
         var path = Folder + "_forms/contact/Field.cshtml";

@@ -1,0 +1,12 @@
+@* jfb-view: fields/signature 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@* The name typed instead of a drawing, which counts as the signature; the runtime adds the pad and the way between them. *@
+@{
+    var control = (SignatureControlModel)Model.Control!;
+}
+<div class="jfb-signature">
+    <p class="jfb-help" id="@control.HelpId">@control.Help</p>
+    <label class="jfb-visually-hidden" for="@Model.Id">@control.Label</label>
+    <input class="jfb-control" id="@Model.Id" name="@control.Name" value="@(control.Value.Length == 0 ? null : control.Value)" autocomplete="name" autocapitalize="words" spellcheck="false" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@control.HelpId">
+</div>

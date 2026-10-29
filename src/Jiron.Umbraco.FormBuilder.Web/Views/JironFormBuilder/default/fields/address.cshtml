@@ -1,0 +1,38 @@
+@* jfb-view: fields/address 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@using Microsoft.AspNetCore.Html
+@* The parts in the field's fieldset, which names its help and its error; each part has its own label and input. *@
+@{
+    var control = (PartsControlModel)Model.Control!;
+    IHtmlContent? Mark(PartModel part) => part.Mark switch
+    {
+        FieldMark.Optional => new HtmlContentBuilder().AppendHtml(" <span class=\"jfb-mark\">").Append(part.MarkText).AppendHtml("</span>"),
+        FieldMark.Required => new HtmlContentBuilder().AppendHtml(" <span class=\"jfb-mark\" aria-hidden=\"true\">").Append(part.MarkText).AppendHtml("</span>"),
+        _ => null,
+    };
+}
+<div class="jfb-parts">
+    @foreach (var part in control.Parts)
+    {
+        <div class="@(part.IsWide ? "jfb-part jfb-part-wide" : "jfb-part")">
+            <label for="@part.Id">@part.Label@Mark(part)</label>
+            @if (part.Countries is { } countries)
+            {
+                <div class="jfb-select">
+                    <select class="jfb-control" id="@part.Id" name="@part.Name" autocomplete="@part.Autocomplete" required="@part.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(part.IsInvalid ? "true" : null)">
+                        <option value="">@countries.Prompt</option>
+                        @foreach (var option in countries.Options)
+                        {
+                            <option value="@option.Value" selected="@option.IsSelected">@option.Label</option>
+                        }
+                    </select>
+                </div>
+            }
+            else
+            {
+                <input class="jfb-control" id="@part.Id" name="@part.Name" value="@(part.Value.Length == 0 ? null : part.Value)" autocomplete="@part.Autocomplete" autocapitalize="@(part.Part == "postcode" ? null : "words")" spellcheck="false" required="@part.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(part.IsInvalid ? "true" : null)">
+            }
+        </div>
+    }
+</div>

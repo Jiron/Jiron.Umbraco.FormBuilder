@@ -1,0 +1,8 @@
+@* jfb-view: fields/captcha 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@* The place of the form's captcha, which its provider fills (7.2). *@
+@{
+    var control = (CaptchaControlModel)Model.Control!;
+}
+<div class="jfb-captcha" id="@Model.Id" data-jfb-captcha="@control.Provider"></div>

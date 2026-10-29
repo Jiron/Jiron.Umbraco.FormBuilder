@@ -4,8 +4,10 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
+using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
@@ -42,11 +44,13 @@ internal sealed record FormRender(
 /// <summary>
 /// The view models of a form (ADR-0015, ADR-0093): its texts as the form endpoint shows them in the culture, a visitor
 /// text that holds tags rendered by the merge-tag service for the answers the page holds (ADR-0095), its ids below its
-/// instance, and every page, group and field in the state its rules give for the default values that hold no merge tag
-/// (or a post's answers), with the site's clock and time zone, no member and no query value, so the markup is the same
-/// for every visitor but where a form for members does not admit them. A hidden field renders nothing, nor does a field
-/// whose type the site lacks. Options from a list or another source, and options a parent field filters, are those the
-/// options endpoint answers for the page's answers (ADR-0096).
+/// instance, and every page, group and field in the state its rules give for what its controls start with (or a post's
+/// answers), read as the submission pipeline reads them, with the site's clock and time zone, no member and no query
+/// value, so the markup is the same for every visitor but where a form for members does not admit them; a calculation
+/// shows the value the rules work out (ADR-0097). A hidden field renders nothing, nor does a field whose type the site
+/// lacks, a calculation visitors do not see, or the captcha's place on a form without a captcha. Options from a list or
+/// another source, and options a parent field filters, are those the options endpoint answers for the page's answers
+/// (ADR-0096).
 /// </summary>
 /// <param name="types">The field types.</param>
 /// <param name="mergeTags">The merge-tag service, which renders the visitor texts that hold tags.</param>
@@ -56,6 +60,7 @@ internal sealed record FormRender(
 /// <param name="media">The published media, which an image field shows.</param>
 /// <param name="urls">The addresses of media.</param>
 /// <param name="time">The site's clock.</param>
+/// <param name="cultures">The culture formats a calculation's and a slider's numbers are written with.</param>
 /// <param name="logger">Where context values that are not taken are logged.</param>
 internal sealed partial class FormModels(
     FieldTypeRegistry types,
@@ -66,6 +71,7 @@ internal sealed partial class FormModels(
     IPublishedMediaCache media,
     IPublishedUrlProvider urls,
     TimeProvider time,
+    MergeTagCultures cultures,
     ILogger<FormModels> logger)
 {
     /// <summary>The longest context value a page may give (ADR-0088).</summary>
@@ -166,18 +172,22 @@ internal sealed partial class FormModels(
     {
         var shown = render.Shown.Form;
         var settings = shown.Settings;
-        var answers = Answers(shown, post);
-        var now = time.GetUtcNow().UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+        var definition = render.Form.Published.Definition;
+        var utc = DateTimeOffset.FromUnixTimeSeconds(time.GetUtcNow().ToUnixTimeSeconds());
+        var now = utc.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+        var answers = Answers(shown, definition, post, TimeZoneInfo.ConvertTime(utc, render.Shown.TimeZone).DateTime);
+        var read = Read(definition, answers);
         var state = FormRules.Evaluate(
-            DefinitionLogic.From(render.Form.Published.Definition, types),
-            new FormAnswers(answers.ToDictionary(pair => Id(pair.Key), pair => (IReadOnlyList<string>)pair.Value.Values, StringComparer.Ordinal), NoRows),
+            DefinitionLogic.From(definition, types),
+            RuleAnswers(definition, read),
             new EvaluationContext(now, render.Shown.TimeZone.Id, render.Culture, new Member(false, []), NoQuery, []));
         var hidden = state.Hidden.ToHashSet(StringComparer.Ordinal);
         var required = state.Required.ToHashSet(StringComparer.Ordinal);
         var shownPages = shown.Pages.Where(page => !hidden.Contains(Id(page.Key))).ToList();
         var current = shownPages.FirstOrDefault(page => page.Key == post?.Page) ?? shownPages.FirstOrDefault();
-        var recalled = await RecalledAsync(render, answers, hidden, cancellationToken);
-        var build = new Build(render, root, post, words, culture, answers, hidden, required, MarkerOf(settings.RequiredMarker), recalled, settings.ChoiceLayout);
+        var recalled = await RecalledAsync(render, read, hidden, cancellationToken);
+        var facts = new PageFacts(DateOnly.FromDayNumber(CalendarValues.Today(now, render.Shown.TimeZone.Id)), state.Calculations, cultures.For(render.Culture));
+        var build = new Build(render, root, post, words, culture, answers, hidden, required, MarkerOf(settings.RequiredMarker), recalled, settings.ChoiceLayout, facts);
         var pages = new List<PageViewModel>();
         foreach (var page in shown.Pages)
         {
@@ -240,7 +250,7 @@ internal sealed partial class FormModels(
 
     // The visitor texts that hold tags, each rendered as the server renders it in its place for the answers the page
     // holds (ADR-0068, ADR-0095), by its owner and name.
-    private async Task<Dictionary<(Guid Owner, string Name), string>> RecalledAsync(FormRender render, Dictionary<Guid, FieldAnswers> answers, HashSet<string> hidden, CancellationToken cancellationToken)
+    private async Task<Dictionary<(Guid Owner, string Name), string>> RecalledAsync(FormRender render, Dictionary<Guid, ImmutableArray<FieldValue>> read, HashSet<string> hidden, CancellationToken cancellationToken)
     {
         var recalled = new Dictionary<(Guid Owner, string Name), string>();
         if (render.Shown.Tagged.Count == 0)
@@ -248,7 +258,7 @@ internal sealed partial class FormModels(
             return recalled;
         }
 
-        var scope = render.Shown.Scope with { Answers = RecallAnswers(render.Form.Published.Definition, answers, hidden) };
+        var scope = render.Shown.Scope with { Answers = RecallAnswers(render.Form.Published.Definition, read, hidden) };
         foreach (var text in render.Shown.Tagged)
         {
             var context = text.IsHtml ? MergeTagContext.Html : MergeTagContext.Text;
@@ -259,35 +269,58 @@ internal sealed partial class FormModels(
     }
 
     // The page's answers as their fields' types read them (ADR-0058), which is how both runtimes recall them, and the
-    // fields the rules hid; a field whose value stays on the server, or an answer past what its field's type takes or one
-    // its type cannot read, is none.
-    private MergeTagAnswers RecallAnswers(FormDefinition definition, Dictionary<Guid, FieldAnswers> answers, HashSet<string> hidden)
+    // fields the rules hid.
+    private static MergeTagAnswers RecallAnswers(FormDefinition definition, Dictionary<Guid, ImmutableArray<FieldValue>> read, HashSet<string> hidden) =>
+        new([.. read.Select(pair => new MergeTagAnswer(pair.Key, pair.Value))], AllFields(definition).Where(field => hidden.Contains(Id(field.Key))).Select(field => field.Key));
+
+    // Each answer as the submission pipeline reads it before its rules (SubmissionReader): cleaned, held to its type's
+    // limits and read by its type. An answer past its limits or one its type cannot read is none. A hidden field's answer
+    // shows nowhere on the page: publishing keeps rules and formulas off it, and a visitor text shows nothing of it
+    // (ADR-0068).
+    private Dictionary<Guid, ImmutableArray<FieldValue>> Read(FormDefinition definition, Dictionary<Guid, FieldAnswers> answers)
     {
-        var fields = definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)).ToList();
-        var read = new List<MergeTagAnswer>();
-        foreach (var field in fields)
+        var read = new Dictionary<Guid, ImmutableArray<FieldValue>>();
+        foreach (var field in AllFields(definition))
         {
-            if (!answers.TryGetValue(field.Key, out var given)
-                || types.FindType(field.Type) is not { } type
-                || type.Declaration.ServerOnlyDefault
-                || FieldValues.CheckLimits(type, field, given) is not null)
+            if (!answers.TryGetValue(field.Key, out var given) || types.FindType(field.Type) is not { } type)
             {
                 continue;
             }
 
-            if (FieldValues.Read(type, field, given) is { IsUnreadable: false, Values: { Length: > 0 } values })
+            var cleaned = SubmissionReader.Clean(new PostedAnswer(
+                [.. given.Values],
+                given.Parts.ToDictionary(part => part.Key, part => (IReadOnlyList<string?>)[.. part.Value], StringComparer.Ordinal)));
+            if (FieldValues.CheckLimits(type, field, cleaned) is null && FieldValues.Read(type, field, cleaned) is { IsUnreadable: false, Values: { Length: > 0 } values })
             {
-                read.Add(new MergeTagAnswer(field.Key, values));
+                read[field.Key] = values;
             }
         }
 
-        return new MergeTagAnswers(read, fields.Where(field => hidden.Contains(Id(field.Key))).Select(field => field.Key));
+        return read;
     }
 
-    // Each field's answers, its child fields' among them: a post's, else its default value, when that holds no merge tag;
-    // a default with tags is the browser's to fill (ADR-0014).
-    private static Dictionary<Guid, FieldAnswers> Answers(PublicForm form, FormPostState? post)
+    // The answers as the rules see them, as the pipeline hands them over: each field's values by its id and a grid's by
+    // its rows' ids. A repeatable group's rows join with its rows (6.2f).
+    private static FormAnswers RuleAnswers(FormDefinition definition, Dictionary<Guid, ImmutableArray<FieldValue>> read)
     {
+        var values = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        foreach (var field in definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields))
+        {
+            foreach (var answered in read.GetValueOrDefault(field.Key, []).GroupBy(value => value.Row))
+            {
+                values[Id(answered.Key ?? field.Key)] = [.. answered.Select(value => value.Text)];
+            }
+        }
+
+        return new FormAnswers(values, NoRows);
+    }
+
+    // Each field's answers, its child fields' among them: a post's; else what its control starts with (ADR-0097), its
+    // default value when that holds no merge tag (a default with tags is the browser's to fill, ADR-0014), or without a
+    // default a date's today, a date and time's now and a slider's middle (Start).
+    private Dictionary<Guid, FieldAnswers> Answers(PublicForm form, FormDefinition definition, FormPostState? post, DateTime local)
+    {
+        var defined = AllFields(definition).GroupBy(field => field.Key).ToDictionary(group => group.Key, group => group.First());
         var answers = new Dictionary<Guid, FieldAnswers>();
         foreach (var field in form.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)))
         {
@@ -301,14 +334,41 @@ internal sealed partial class FormModels(
                 continue;
             }
 
-            if (field.DefaultValue is { } defaults && Untagged(defaults.Values) is { Count: > 0 } texts)
+            var texts = field.DefaultValue is { } defaults ? Untagged(defaults.Values) : [];
+            if (texts is { Count: > 0 })
             {
                 answers[field.Key] = new FieldAnswers(texts);
+            }
+            else if (texts is not null && Start(defined[field.Key], local) is { } start)
+            {
+                answers[field.Key] = new FieldAnswers([start]);
             }
         }
 
         return answers;
     }
+
+    // What a control without a default starts with: a date that starts at today the site's today; a date and time that
+    // does the site's time now, to the minute and back to its step from midnight; a slider its middle (SliderStart).
+    private string? Start(FormField field, DateTime local) => types.Find(field.Type)?.Type switch
+    {
+        DateFieldType date when date.ReadSettings(field.Settings).DefaultToday => local.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        DateTimeFieldType dateTime when dateTime.ReadSettings(field.Settings) is { DefaultToday: true } typed => Now(local, typed.StepMinutes ?? 1),
+        SliderFieldType slider => SliderStart(slider.ReadSettings(field.Settings)),
+        _ => null,
+    };
+
+    // A date and time at a local time, to the minute and back to a step of minutes from midnight.
+    private static string Now(DateTime local, int step)
+    {
+        var minutes = (local.Hour * 60) + local.Minute;
+        minutes -= minutes % step;
+        return local.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + "T" + (minutes / 60).ToString("00", CultureInfo.InvariantCulture) + ":" + (minutes % 60).ToString("00", CultureInfo.InvariantCulture);
+    }
+
+    // Every field of a version, a repeatable group's children after it.
+    private static IEnumerable<FormField> AllFields(FormDefinition definition) =>
+        definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field));
 
     // The default's texts when none holds a merge tag, the empty ones left out; null when one holds a tag.
     private static List<string>? Untagged(IEnumerable<string> defaults)
@@ -333,7 +393,10 @@ internal sealed partial class FormModels(
 
     private async Task<FieldViewModel?> FieldAsync(Build build, PublicField field, CancellationToken cancellationToken)
     {
-        if (types.Find(field.Type) is not { } traits || traits.Type is HiddenFieldType)
+        if (types.Find(field.Type) is not { } traits
+            || traits.Type is HiddenFieldType
+            || (traits.Type is CalculationFieldType calculation && !calculation.ReadSettings(build.Definition(field.Key).Settings).Visible)
+            || (traits.Type is CaptchaFieldType && build.Render.Shown.Form.Settings.CaptchaProvider is null))
         {
             return null;
         }
@@ -411,6 +474,11 @@ internal sealed partial class FormModels(
             return choice;
         }
 
+        if (InputControl(build, field, traits.Type, settings, id, answers) is { } input)
+        {
+            return input;
+        }
+
         switch (traits.Type)
         {
             case TextFieldType:
@@ -483,7 +551,8 @@ internal sealed partial class FormModels(
                 return (await ImageAsync(settings), []);
 
             default:
-                return (null, []);
+                // A site's own type; a built-in one here, such as a divider, adds nothing.
+                return (BuiltInFieldTypes.All.Contains(traits.Type.GetType()) ? null : Custom(settings, answers), []);
         }
     }
 
@@ -688,6 +757,10 @@ internal sealed partial class FormModels(
             };
     }
 
+    // What the controls of a page read besides its answers: the site's today, the calculations' values as the rules work
+    // them out, and the culture's formats.
+    private sealed record PageFacts(DateOnly Today, IReadOnlyDictionary<string, string?> Calculations, CultureFormats Formats);
+
     // What building one form's fields shares, and what it collects.
     private sealed class Build(
         FormRender render,
@@ -700,7 +773,8 @@ internal sealed partial class FormModels(
         HashSet<string> required,
         RequiredMarker marker,
         Dictionary<(Guid Owner, string Name), string> recalled,
-        ChoiceLayout layout)
+        ChoiceLayout layout,
+        PageFacts facts)
     {
         // The prefix of a visitor text that is a field's setting, such as settings.text.
         private const string SettingPrefix = "settings.";
@@ -729,6 +803,14 @@ internal sealed partial class FormModels(
 
         // How the form lays out choices whose field says inherit.
         public ChoiceLayout Layout => layout;
+
+        // The site's today, from which a date's limits relative to today count.
+        public DateOnly Today => facts.Today;
+
+        // Each shown calculation's value by its id, as the rules work it out; null without one.
+        public IReadOnlyDictionary<string, string?> Calculations => facts.Calculations;
+
+        public CultureFormats Formats => facts.Formats;
 
         public List<ErrorLinkModel> Errors { get; } = [];
 
@@ -800,6 +882,26 @@ internal sealed partial class FormModels(
         // The settings of an object setting, such as a grid's scale; null for a setting that is no object.
         public ShownSettings? Child(string name) =>
             Find(name) is { ValueKind: JsonValueKind.Object } value ? new ShownSettings(value, FrozenDictionary<string, string>.Empty) : null;
+
+        // The settings as JSON, each text that holds tags as rendered for the page's answers at its path (format.prefix);
+        // null for none. A text with tags is a setting the field has.
+        public JsonElement? Json()
+        {
+            if (recalled.Count == 0)
+            {
+                return settings;
+            }
+
+            var json = JsonNode.Parse(settings!.Value.GetRawText())!.AsObject();
+            foreach (var (path, text) in recalled)
+            {
+                var names = path.Split('.');
+                var owner = names[..^1].Aggregate(json, (node, name) => node[name]!.AsObject());
+                owner[names[^1]] = text;
+            }
+
+            return JsonSerializer.SerializeToElement(json);
+        }
 
         private JsonElement? Find(string name) =>
             settings is { ValueKind: JsonValueKind.Object } given && given.TryGetProperty(name, out var value) ? value : null;

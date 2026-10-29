@@ -5,11 +5,14 @@
   the automatic inclusion of [ADR-0092](0092-serving-the-website-assets.md) counts "once"; the visitor texts with
   tags, the site's required-marker style and labels, members-only forms and the note while the migrations are pending
   decided in 6.2c by [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md); the choice types'
-  controls and their options in 6.2d by [ADR-0096](0096-the-choice-controls.md)
+  controls and their options in 6.2d by [ADR-0096](0096-the-choice-controls.md); the controls with parts, dates and
+  outputs, and the page's answers read as the pipeline reads them, in 6.2e by
+  [ADR-0097](0097-the-part-date-and-output-controls.md)
 - Date: 2026-10-28
 - Roadmap step: 6.2b (decided and built); 6.2c the visitor texts with merge tags, members-only forms and the note
-  while the migrations are pending (ADR-0095), 6.2d the choice controls (ADR-0096) and 6.2e the other controls, 6.2f
-  the no-JS post, 6.3 the themes, 6.7 the form picker
+  while the migrations are pending (ADR-0095), 6.2d the choice controls (ADR-0096), 6.2e the part, date and output
+  controls (ADR-0097), 6.2f the repeater,
+  6.2g the no-JS post, 6.3 the themes, 6.7 the form picker
 
 ## Context
 
@@ -73,7 +76,7 @@ layout; and what a hidden field and the `context-…` values put into the page.
   to the site's languages as the public API holds it (ADR-0084), so the form, its model data and `lang` agree; `dir` is
   `rtl` for a right-to-left culture.
 - **The form element** follows ADR-0015 with `action="<path base><path>#<instance>"` (no query string; the no-JS post
-  of 6.2f decides what travels with it), `enctype="multipart/form-data"` only for a form with a field whose type
+  of 6.2g decides what travels with it), `enctype="multipart/form-data"` only for a form with a field whose type
   stores files, `data-jfb-api` the public API's base below the path base, and `data-jfb-contract="1"`.
 - **The model data** is the form endpoint's answer for the same culture and page, made by the same code, inside
   `<script type="application/json" data-jfb-model>`. Every `<`, `>`, `&`, U+2028 and U+2029 is written as a `\u`
@@ -110,7 +113,8 @@ layout; and what a hidden field and the `context-…` values put into the page.
   - an image renders only for a media item with a URL, with its width and height, `loading="lazy"` and
     `decoding="async"`;
   - every label is a `<label>`; the types that group options take `<fieldset>` and `<legend>`, and one box its own
-    label (ADR-0096).
+    label (ADR-0096); a name, an address and a signature take `<fieldset>` and `<legend>` with a label per part
+    (ADR-0097).
 - **The first render's state:** the rules (ADR-0061) run over the default values that hold no merge tag, with the
   site's clock and time zone, no member and no query value, so the markup is the same for every visitor. A default
   with tags is left for the browser to fill (`MergeTagPlace.DefaultValue`). What the rules hide carries `hidden` and
@@ -118,7 +122,7 @@ layout; and what a hidden field and the `context-…` values put into the page.
   What a rule requires carries `required`. The current page is the first page the rules show; the others carry
   `hidden`, and a page the rules hide is no step of the progress.
 - **Answers, errors, notices and outcomes after a post** reach the component through `HttpContext.Items`, keyed by the
-  form's key and the instance, as ADR-0004 decides; 6.2f's surface action fills them. The post's page shows when the
+  form's key and the instance, as ADR-0004 decides; 6.2g's surface action fills them. The post's page shows when the
   rules show it, else the first page they show. Errors render inline, each with `aria-invalid` and its message in
   `aria-describedby`, and, while the form's validation summary is on, in the error summary with a link per error.
 - **The package's words** (Back, Next, Send, "(optional)", the summary's heading, "Step 1 of 3", the notices, the
@@ -138,11 +142,11 @@ layout; and what a hidden field and the `context-…` values put into the page.
   (ADR-0088). So no member value can reach a cached page.
 - **Context values:** `context-<name>` for a name the form lists (`developer.contextValues`) renders
   `<input type="hidden" name="jfb-context-<name>" value="…">` in the form, for the runtime (6.4) and the no-JS post
-  (6.2f) to send. A name the form does not list, or a value longer than 2,000 characters (ADR-0088), renders nothing
+  (6.2g) to send. A name the form does not list, or a value longer than 2,000 characters (ADR-0088), renders nothing
   and is logged. The values are part of the page's markup and the same for every visitor of the page; the docs say
   that per-visitor values belong elsewhere.
-- **Left to their steps:** the honeypot and the member-bound challenge (7.1), the route token (6.2f), a theme's
-  classes and stylesheet (6.3), and the controls of the other types (6.2d, 6.2e).
+- **Left to their steps:** the honeypot and the member-bound challenge (7.1), the route token (6.2g), a theme's
+  classes and stylesheet (6.3), and the controls of the other types (6.2d, 6.2e, 6.2f).
 
 ## Consequences
 

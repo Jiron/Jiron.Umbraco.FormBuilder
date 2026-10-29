@@ -119,7 +119,9 @@ public sealed class RenderingPartsTests
                 words.Back, words.Next, words.Send, words.Optional, words.Asterisk, words.ErrorSummary, words.Progress,
                 words.ConfirmEmail, words.OpensText, words.ClosedHeading, words.ClosedText, words.FullHeading, words.FullText,
                 words.Other, words.OtherText, words.Choose, words.ChooseCountry, words.SeveralHint, words.NoChoices,
-                words.ChoicesUnavailable,
+                words.ChoicesUnavailable, words.NameTitle, words.NameFirst, words.NameMiddle, words.NameLast, words.Street,
+                words.Street2, words.Postcode, words.City, words.Region, words.Country, words.SignatureName,
+                words.SignatureTyped,
             };
             Assert.Multiple(() =>
             {
@@ -149,6 +151,8 @@ public sealed class RenderingPartsTests
             Assert.That(words.OpensHeading, Is.EqualTo("Dieses Formular " + (char)0xF6 + "ffnet am {0}"));
             Assert.That(words.Choose, Is.EqualTo("Bitte w" + (char)0xE4 + "hlen"));
             Assert.That(words.SeveralHint, Does.Contain("gedr" + (char)0xFC + "ckt"));
+            Assert.That(words.Street, Is.EqualTo("Stra" + (char)0xDF + "e und Hausnummer"));
+            Assert.That(words.SignatureName, Is.EqualTo("Ihr vollst" + (char)0xE4 + "ndiger Name"));
         });
     }
 

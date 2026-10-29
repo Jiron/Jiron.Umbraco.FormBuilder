@@ -135,9 +135,15 @@ internal static class BuiltInValidation
         }
     });
 
-    // The day number of a limit, a date or a date relative to today: null for none, and false for one that falls
-    // outside the calendar or is no limit at all (publishing refuses those, a draft may hold them).
-    private static bool TryBound(JsonElement? limit, int today, out int? day)
+    /// <summary>
+    /// The day number of a date's limit, a date or a date relative to today (ADR-0062): null for none, and false for one
+    /// that falls outside the calendar or is no limit at all (publishing refuses those, a draft may hold them). The page
+    /// gives the browser the same limits (ADR-0097).
+    /// </summary>
+    /// <param name="limit">The limit as the settings hold it, or null for none.</param>
+    /// <param name="today">The site's today as a day number.</param>
+    /// <param name="day">The limit's day number, or null.</param>
+    public static bool TryBound(JsonElement? limit, int today, out int? day)
     {
         day = null;
         if (limit is not { } bound)

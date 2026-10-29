@@ -3,7 +3,8 @@
 - Status: accepted; amends [ADR-0005](0005-shared-logic-and-test-vectors.md) (the `formula` case of the vectors and
   the position of a formula's error), [ADR-0035](0035-structural-validation-and-public-projection.md) (calculations at
   publish), [ADR-0056](0056-field-settings-checks.md) (the formula's length) and
-  [ADR-0061](0061-the-form-rules-engine.md) (calculations in the form engine)
+  [ADR-0061](0061-the-form-rules-engine.md) (calculations in the form engine); a calculation's value on the page the
+  server renders added by [ADR-0097](0097-the-part-date-and-output-controls.md) in 6.2e
 - Date: 2026-10-26
 - Roadmap step: 5.3a (decided and built); 5.4b stores the result, 5.4d recomputes it in a submission's answers, which
   6.1's pipeline runs, 6.4 shows it in the visitor's browser as they type, 9.x edits the formula and points at its

@@ -1,0 +1,14 @@
+@* jfb-view: fields/slider 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@* The range input says its value with the unit to screen readers; the value beside it is for sight. *@
+@{
+    var control = (SliderControlModel)Model.Control!;
+}
+<div class="jfb-range">
+    <input type="range" id="@Model.Id" name="@Model.Name" min="@control.Min" max="@control.Max" step="@control.Step" value="@control.Value" aria-valuetext="@control.ValueText" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+    @if (control.Shown is { } shown)
+    {
+        <output for="@Model.Id" aria-hidden="true">@shown</output>
+    }
+</div>

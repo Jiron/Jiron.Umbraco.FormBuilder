@@ -9,7 +9,8 @@
   [ADR-0069](0069-the-checks-from-text-to-country.md) in 5.4a; a type's limit and check of its uploads and its check
   of a field's rows added by [ADR-0071](0071-the-advanced-types-own-checks.md) in 5.4c; a checkbox's longest answer
   (5, for `false`) and part names held to the longest text amended by
-  [ADR-0080](0080-reading-a-submission-after-the-phase-5-review.md) in 5.5f
+  [ADR-0080](0080-reading-a-submission-after-the-phase-5-review.md) in 5.5f; the parts a page asks for and a
+  signature's typed part (`<alias>.typed`) added by [ADR-0097](0097-the-part-date-and-output-controls.md) in 6.2e
 - Date: 2026-10-25
 - Roadmap step: 5.1d (decided and built); 5.2 gives the built-in types their checks, 6.1 runs the pipeline on them,
   6.2 posts the answers without JavaScript

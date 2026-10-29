@@ -1,0 +1,8 @@
+@* jfb-view: fields/datetime 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@* The browser's own date and time input, with the window the server checks for the site's today. *@
+@{
+    var control = (DateControlModel)Model.Control!;
+}
+<input class="jfb-control" type="@control.InputType" id="@Model.Id" name="@Model.Name" value="@(Model.Value.Length == 0 ? null : Model.Value)" min="@control.Min" max="@control.Max" step="@control.Step" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">

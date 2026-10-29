@@ -14,6 +14,7 @@ internal sealed record RenderingWords
     private const char CapitalAUmlaut = (char)0xC4;
     private const char OUmlaut = (char)0xF6;
     private const char UUmlaut = (char)0xFC;
+    private const char SharpS = (char)0xDF;
 
     private static readonly FrozenDictionary<string, RenderingWords> Words = new Dictionary<string, RenderingWords>(StringComparer.OrdinalIgnoreCase)
     {
@@ -54,6 +55,18 @@ internal sealed record RenderingWords
             MoveUp = "Move {0} up",
             MoveDown = "Move {0} down",
             Row = "Row {0}",
+            NameTitle = "Title",
+            NameFirst = "First name",
+            NameMiddle = "Middle name",
+            NameLast = "Last name",
+            Street = "Street and number",
+            Street2 = "Address line 2",
+            Postcode = "Postcode",
+            City = "Town",
+            Region = "State or region",
+            Country = "Country",
+            SignatureName = "Your full name",
+            SignatureTyped = "Type your full name. It counts as your signature.",
         },
         ["de"] = new RenderingWords
         {
@@ -92,6 +105,18 @@ internal sealed record RenderingWords
             MoveUp = "{0} nach oben verschieben",
             MoveDown = "{0} nach unten verschieben",
             Row = "Zeile {0}",
+            NameTitle = "Titel",
+            NameFirst = "Vorname",
+            NameMiddle = "Zweiter Vorname",
+            NameLast = "Nachname",
+            Street = "Stra" + SharpS + "e und Hausnummer",
+            Street2 = "Adresszusatz",
+            Postcode = "Postleitzahl",
+            City = "Ort",
+            Region = "Bundesland oder Region",
+            Country = "Land",
+            SignatureName = "Ihr vollst" + AUmlaut + "ndiger Name",
+            SignatureTyped = "Geben Sie Ihren vollst" + AUmlaut + "ndigen Namen ein. Er gilt als Ihre Unterschrift.",
         },
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
@@ -202,6 +227,42 @@ internal sealed record RenderingWords
 
     /// <summary>The statement of a grid's row without one; <c>{0}</c> is its number.</summary>
     public required string Row { get; init; }
+
+    /// <summary>The label of a name's title, such as Dr.</summary>
+    public required string NameTitle { get; init; }
+
+    /// <summary>The label of a name's first name.</summary>
+    public required string NameFirst { get; init; }
+
+    /// <summary>The label of a name's middle name.</summary>
+    public required string NameMiddle { get; init; }
+
+    /// <summary>The label of a name's last name.</summary>
+    public required string NameLast { get; init; }
+
+    /// <summary>The label of an address's street and number.</summary>
+    public required string Street { get; init; }
+
+    /// <summary>The label of an address's second street line.</summary>
+    public required string Street2 { get; init; }
+
+    /// <summary>The label of an address's postcode.</summary>
+    public required string Postcode { get; init; }
+
+    /// <summary>The label of an address's town or city.</summary>
+    public required string City { get; init; }
+
+    /// <summary>The label of an address's region, state or canton.</summary>
+    public required string Region { get; init; }
+
+    /// <summary>The label of an address's country.</summary>
+    public required string Country { get; init; }
+
+    /// <summary>The label, for screen readers, of the name a visitor types instead of signing by hand.</summary>
+    public required string SignatureName { get; init; }
+
+    /// <summary>The line above that name, which says typing it counts as signing.</summary>
+    public required string SignatureTyped { get; init; }
 
     /// <summary>The words of a culture, of its more general culture, or English.</summary>
     /// <param name="culture">The culture, such as <c>de-CH</c>.</param>

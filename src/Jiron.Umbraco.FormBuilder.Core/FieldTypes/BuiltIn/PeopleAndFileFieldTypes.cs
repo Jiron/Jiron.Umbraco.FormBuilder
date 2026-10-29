@@ -109,7 +109,8 @@ public sealed class AddressFieldType() : FormBuilderFieldTypeBase<AddressFieldSe
     Messages = BuiltInFieldTypes.Readable,
 })
 {
-    private static readonly ImmutableArray<AddressPart> Always = [AddressPart.Street, AddressPart.Postcode, AddressPart.City];
+    /// <summary>The parts every address asks for, which a required address needs when it lists none.</summary>
+    internal static readonly ImmutableArray<AddressPart> Always = [AddressPart.Street, AddressPart.Postcode, AddressPart.City];
 
     /// <summary>The longest part of an address a field takes.</summary>
     public const int LongestPart = 200;
@@ -343,12 +344,19 @@ public sealed class FileFieldType() : FormBuilderFieldTypeBase<FileFieldSettings
         }
     }
 
-    // The extensions a field takes: those of its type groups and its own, or those of images and PDFs when it lists none.
-    private static HashSet<string> Taken(FileFieldSettings settings)
+    /// <summary>
+    /// The extensions a field takes, each once in the order of its type groups and then its own: those of images and PDFs
+    /// when it lists neither. The page offers the same in the file input's <c>accept</c> (ADR-0097).
+    /// </summary>
+    /// <param name="settings">The field's settings.</param>
+    internal static IReadOnlyList<string> Extensions(FileFieldSettings settings)
     {
         IEnumerable<FileTypeGroup> groups = settings.Types.Count == 0 && settings.Extensions.Count == 0 ? [FileTypeGroup.Images, FileTypeGroup.Pdf] : settings.Types;
-        return groups.SelectMany(group => ExtensionsOf(group)).Concat(settings.Extensions).ToHashSet(StringComparer.Ordinal);
+        return [.. groups.SelectMany(group => ExtensionsOf(group)).Concat(settings.Extensions).Distinct(StringComparer.Ordinal)];
     }
+
+    // The extensions a field takes, to look one up.
+    private static HashSet<string> Taken(FileFieldSettings settings) => Extensions(settings).ToHashSet(StringComparer.Ordinal);
 }
 
 /// <summary>The settings of file uploads (ADR-0002).</summary>
@@ -426,6 +434,12 @@ public sealed class SignatureFieldType() : FormBuilderFieldTypeBase<SignatureFie
 {
     /// <summary>The most bytes a signature's PNG has (ADR-0071), whatever more the host allows.</summary>
     public const long MaxBytes = 1_048_576;
+
+    /// <summary>
+    /// The part that holds the name a visitor typed instead of drawing (<c>&lt;alias&gt;.typed</c>), which a page without
+    /// JavaScript posts (ADR-0097).
+    /// </summary>
+    public const string TypedPart = "typed";
 
     /// <summary>The widest pad, in pixels.</summary>
     public const int WidestPad = 1200;

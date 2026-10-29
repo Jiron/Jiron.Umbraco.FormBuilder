@@ -40,7 +40,7 @@ internal sealed record FormPostOutcome(string Html, string? Reference, bool IsPe
 
 /// <summary>
 /// What a post without JavaScript leaves for the form it renders again (ADR-0004, ADR-0093): the answers, the errors by
-/// field, the page to show, a notice above the form, or the outcome. The surface action of 6.2f fills it.
+/// field, the page to show, a notice above the form, or the outcome. The surface action of 6.2g fills it.
 /// </summary>
 internal sealed record FormPostState
 {

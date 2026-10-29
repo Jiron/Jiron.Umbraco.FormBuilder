@@ -128,9 +128,13 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         return slot;
     }
 
-    // Every text and part name cleaned as rules clean them (ADR-0005), the empty texts and the parts without a name left
-    // out (ADR-0058), and the texts of names that clean to one name kept under it, in their order (ADR-0080).
-    private static FieldAnswers Clean(PostedAnswer? posted)
+    /// <summary>
+    /// Every text and part name cleaned as rules clean them (ADR-0005), the empty texts and the parts without a name left
+    /// out (ADR-0058), and the texts of names that clean to one name kept under it, in their order (ADR-0080). The page
+    /// reads its answers the same way before its rules (ADR-0097).
+    /// </summary>
+    /// <param name="posted">The answer as posted, or null for none.</param>
+    public static FieldAnswers Clean(PostedAnswer? posted)
     {
         if (posted is null)
         {

@@ -6,7 +6,8 @@
   the forms of an email address, a phone number and a web address, a grid's required rows, a ranking's positions and
   a number's stored digits added by [ADR-0069](0069-the-checks-from-text-to-country.md) in 5.4a; the options of a list
   or another source and cascading options held in both runtimes by [ADR-0077](0077-answers-and-labels-from-resolved-options.md)
-  in 5.5d
+  in 5.5d; a date's window and a file field's extensions offered on the page by
+  [ADR-0097](0097-the-part-date-and-output-controls.md) in 6.2e
 - Date: 2026-10-26
 - Roadmap step: 5.2b (decided; builds the contract and the text, number and date types), 5.2c (the choice, people and
   file types, `pattern` and `matchesField`); 5.4a adds the grid's required rows and a ranking's positions, 5.5 the

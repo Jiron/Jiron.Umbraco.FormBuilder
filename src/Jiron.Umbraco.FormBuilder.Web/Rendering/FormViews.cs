@@ -127,8 +127,8 @@ internal sealed partial class FormViews(ICompositeViewEngine engine, IWebHostEnv
         }
     }
 
-    // The contract header, such as @* jfb-view: Field 1 *@.
-    [GeneratedRegex(@"^\s*@\*\s*jfb-view:\s*[A-Za-z/]+\s+(?<version>[0-9]{1,6})\s*\*@", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    // The contract header, such as @* jfb-view: Field 1 *@ or, for a site's own type, @* jfb-view: fields/acme.mood 1 *@.
+    [GeneratedRegex(@"^\s*@\*\s*jfb-view:\s*[A-Za-z0-9/._-]+\s+(?<version>[0-9]{1,6})\s*\*@", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Header();
 
     [LoggerMessage(EventId = 1, Level = LogLevel.Warning, Message = "The view {Path} declares contract version {Version}, and the built-in view is version {Current}: compare it with the built-in view and the upgrade notes, then raise its header.")]

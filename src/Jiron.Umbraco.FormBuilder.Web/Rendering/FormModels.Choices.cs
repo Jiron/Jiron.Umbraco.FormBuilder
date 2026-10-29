@@ -21,16 +21,18 @@ internal sealed partial class FormModels
     private static FieldLabelElement LabelElementOf(IFormBuilderFieldType type, ShownSettings settings) => type switch
     {
         RadioFieldType or CheckboxesFieldType or GridFieldType or RankingFieldType or ScaleFieldType or RatingFieldType => FieldLabelElement.Legend,
+        NameFieldType or AddressFieldType or SignatureFieldType => FieldLabelElement.Legend,
         YesNoFieldType => IsSwitch(settings) ? FieldLabelElement.Choice : FieldLabelElement.Legend,
         CheckboxFieldType or ConsentFieldType => FieldLabelElement.Choice,
         _ => FieldLabelElement.Label,
     };
 
     // How a field's label is marked by the form's style. One box marks only a required tick, as it may otherwise stay
-    // unticked by nature, and a switch never, as off is an answer; a grid with a required row is not "optional".
+    // unticked by nature, and a switch never, as off is an answer; a grid with a required row is not "optional"; a
+    // calculation never, as the visitor gives it no answer, and a slider never, as it always holds one.
     private static FieldMark MarkOf(Build build, PublicField field, IFormBuilderFieldType type, FieldLabelElement element, bool isRequired)
     {
-        if (element == FieldLabelElement.None || (type is YesNoFieldType && element == FieldLabelElement.Choice))
+        if (element == FieldLabelElement.None || (type is YesNoFieldType && element == FieldLabelElement.Choice) || type is CalculationFieldType or SliderFieldType)
         {
             return FieldMark.None;
         }
@@ -237,17 +239,24 @@ internal sealed partial class FormModels
         };
     }
 
-    // A country: the ones shown first, then the others by their names in the culture's order, each named in the
-    // culture's language; the field's default country while nothing is answered on a first render.
+    // A country: the allowed ones, the ones shown first at the top; the field's default country while nothing is answered
+    // on a first render.
     private static SelectControlModel Country(Build build, ShownSettings settings, FieldAnswers answers)
     {
-        var culture = build.Render.Culture;
         var allowed = settings.Texts("allowed").Where(BuiltInChecks.CountryCodes.Contains).ToList();
         var offered = allowed.Count > 0 ? allowed : [.. BuiltInChecks.CountryCodes];
         var top = settings.Texts("top").Where(offered.Contains).Distinct(StringComparer.Ordinal).ToList();
+        IReadOnlyCollection<string> chosen = !answers.Values.IsEmpty || build.Post is not null ? answers.Values : settings.Text("default") is { } country ? [country] : [];
+        return Countries(build, offered, top, chosen);
+    }
+
+    // Countries to choose from, each named in the culture's language: the ones shown first, then the others by their
+    // names in the culture's order, the chosen ones selected.
+    private static SelectControlModel Countries(Build build, IEnumerable<string> offered, IReadOnlyList<string> top, IReadOnlyCollection<string> chosen)
+    {
+        var culture = build.Render.Culture;
         var order = StringComparer.Create(build.Culture, ignoreCase: true);
         var codes = top.Concat(offered.Except(top, StringComparer.Ordinal).OrderBy(code => CountryNames.Name(code, culture), order).ThenBy(code => code, StringComparer.Ordinal));
-        IReadOnlyCollection<string> chosen = !answers.Values.IsEmpty || build.Post is not null ? answers.Values : settings.Text("default") is { } country ? [country] : [];
         return new SelectControlModel
         {
             Prompt = build.Words.ChooseCountry,
@@ -326,7 +335,7 @@ internal sealed partial class FormModels
 
     // A ranking's options in the visitor's order (as positions posted without JavaScript, or in order), then the others
     // in their own order; each of the first few it asks for posts its position, and each moves up or down with a submit
-    // button the no-JS post reads (6.2f).
+    // button the no-JS post reads (6.2g).
     private async Task<RankingControlModel> RankingAsync(Build build, PublicField field, ShownSettings settings, string id, FieldAnswers answers, CancellationToken cancellationToken)
     {
         var (options, available) = await OptionsAsync(build, field, cancellationToken);
