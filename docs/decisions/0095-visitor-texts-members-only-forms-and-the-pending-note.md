@@ -7,7 +7,7 @@
   [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) (the visitor's form carries the site's
   style and labels) and [ADR-0033](0033-schema-v1.md) (how a website page knows a backoffice user)
 - Date: 2026-10-29
-- Roadmap step: 6.2c (decided and built); 6.2h fills the post's answers and rows, 6.2k keeps the renders that are per
+- Roadmap step: 6.2c (decided and built); 6.2h fills the post's answers and rows, 6.2l keeps the renders that are per
   visitor out of the output cache, 7.1 adds the member-bound challenge, 12.4a the settings screens, 14.3 the members'
   submissions
 
@@ -47,7 +47,7 @@
 1. **Render the form for everyone** and let the submission refuse it. A visitor fills in a form only to learn at the end
    that it is not theirs.
 2. **Ask who is signed in when the page renders,** and show a notice in the form's place to a visitor it does not admit.
-   The render is then per visitor. Chosen; 6.2k keeps such a render out of the output cache.
+   The render is then per visitor. Chosen; 6.2l keeps such a render out of the output cache.
 
 **How a website page knows a backoffice user:**
 
@@ -92,7 +92,7 @@
     help.
   - Until 14.3 builds members' submissions, the entries endpoint still refuses a submission to a members-only form
     (`member_required`). The page only stops showing a form its visitor cannot send.
-  - Who is signed in decides what the page shows, so the render is per visitor and 6.2k sends it `no-store`. The first
+  - Who is signed in decides what the page shows, so the render is per visitor and 6.2l sends it `no-store`. The first
     render's rules still run without the member (ADR-0093); member values reach the runtime through the challenge
     (7.1).
 - **While the migrations are pending** a form renders nothing for a visitor, and the rest of the page renders as usual
@@ -115,7 +115,7 @@
 - A label that recalls an answer reads the same with and without JavaScript, from one service.
 - A headless page gets the site's style and labels in the endpoint's answer and needs no settings of its own.
 - A page with a members-only form, and any page with a form while the migrations are pending, renders per visitor;
-  6.2k's cache rules cover both, and its check shows neither stored (ROADMAP 6.2k, strengthened in this step).
+  6.2l's cache rules cover both, and its check shows neither stored (ROADMAP 6.2l, strengthened in this step).
 - The settings screens of 12.4a show the four new fields; until then the settings service sets them.
 - **Revisit if** sites need a sign-in link in the members' notice (a setting that names the login page); Umbraco offers
   a supported way to know the backoffice user on a website page; or a date in a visitor text proves stale on cached

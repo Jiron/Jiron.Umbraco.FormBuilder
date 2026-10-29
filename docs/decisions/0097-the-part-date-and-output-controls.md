@@ -7,7 +7,7 @@
   [ADR-0062](0062-the-built-in-types-checks.md) (a date's window on the page) and
   [ADR-0063](0063-the-calculation-language.md) (a calculation's value on the server's page)
 - Date: 2026-10-29
-- Roadmap step: 6.2e (decided and built); 6.2f renders the repeater, 6.2j stores a signature typed without
+- Roadmap step: 6.2e (decided and built); 6.2f renders the repeater, 6.2k stores a signature typed without
   JavaScript, 6.3 styles the classes, 6.4 enhances the controls (the pad, the drop zone, the live calculation), 7.2
   fills the captcha's place
 
@@ -52,7 +52,7 @@ is handed.
 
 1. **A file input for a picture of a signature.** Few visitors have one, and its checks are a pad's.
 2. **The name typed instead,** which counts as the signature, as the pad's "type your name instead" does with
-   JavaScript (§4.3.2): one text input named `<alias>.typed`, which 6.2j's post turns into the stored signature.
+   JavaScript (§4.3.2): one text input named `<alias>.typed`, which 6.2k's post turns into the stored signature.
 3. **Nothing,** so a required signature cannot be given without JavaScript.
 
 ## Decision
@@ -97,8 +97,8 @@ Option 2 for each.
   hint only narrows the picker.
 - **A signature** is a fieldset with the label as the legend, then in `jfb-signature` a line that says typing the
   name counts as signing and the name's input (`<alias>.typed`, `autocomplete="name"`, a visually hidden label, the
-  line as its description). The runtime adds the pad and the way between the two (6.4); 6.2j stores the typed name
-  as the signature (ROADMAP 6.2j, strengthened in this step).
+  line as its description). The runtime adds the pad and the way between the two (6.4); 6.2k stores the typed name
+  as the signature (ROADMAP 6.2k, strengthened in this step).
 - **The captcha's place** renders only when the form uses a captcha: an empty `jfb-captcha` with the field's id and
   `data-jfb-captcha` naming the provider, which 7.2 fills. The theme hides the place while it is empty, so a page
   without JavaScript shows no empty panel; a post from such a page is scored, not refused (ADR-0012).
@@ -114,7 +114,7 @@ Option 2 for each.
   start and a date's today; the runtime works them out again as the visitor answers.
 - Rendering a form evaluates its rules once per render, over answers read by their types; the page and the stored
   entry agree on a calculation for the same answers, which a test checks against the entries endpoint.
-- A page cached across midnight (6.2k) offers the day before's window until the runtime corrects it, and a slider
+- A page cached across midnight (6.2l) offers the day before's window until the runtime corrects it, and a slider
   or a date's start is the moment the page was stored; the server's checks decide either way.
 - The specimen (`docs/ux/website/fields.html`) follows the decisions: a name's and an address's parts by their
   names (ADR-0058), no `for` on the calculation's output, and the slider's output hidden from screen readers.

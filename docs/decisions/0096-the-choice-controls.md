@@ -120,7 +120,7 @@ Options 2 for each.
   posted, as ADR-0015's rules do; the runtime replaces them as the visitor answers.
 - Rendering a form waits for its sources, each held to 5 seconds as for the endpoint (ADR-0073); a source the page
   needs costs one call per render (the option service caches by its own rules), and a cached page shows a source's
-  options as they were when it was stored (6.2k).
+  options as they were when it was stored (6.2l).
 - An option's description is a hook the specimen did not show: the design's theme (`docs/ux/website`, which 6.3
   ships) now sets it under the option's label with the box beside both, a card's content keeps to its top so the
   labels of a row line up, and the specimen shows one in a list and one on a card.
