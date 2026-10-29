@@ -60,7 +60,8 @@ should adopt:
   `jfb-help` after its label in the `jfb-choice`, which its input names in `aria-describedby` (added in 6.2d).
 - **Other parts:** `jfb-affix` (prefix and suffix); `jfb-select` around a single dropdown for the theme's chevron;
   `jfb-range` (a slider and its `output`); `jfb-output` (a calculated value); `jfb-parts`, `jfb-part` and
-  `jfb-part-wide` (name and address); `jfb-repeater` and `jfb-row`; `jfb-signature`, `jfb-signature-pad` and
+  `jfb-part-wide` (name and address); `jfb-repeater` (the rows and Add, with the field's id) and `jfb-row` (a
+  fieldset per row with `data-jfb-row`, ADR-0098); `jfb-signature`, `jfb-signature-pad` and
   `jfb-signature-tools`; `jfb-heading`, `jfb-text`, `jfb-divider` and `jfb-image` for content.
 - **Files:** `jfb-upload` (`data-jfb-dropzone`; `data-jfb-drop` while a file is dragged over it), and
   `jfb-files` / `jfb-file` with `data-jfb-busy` while uploading and `data-jfb-error` when refused. Without
