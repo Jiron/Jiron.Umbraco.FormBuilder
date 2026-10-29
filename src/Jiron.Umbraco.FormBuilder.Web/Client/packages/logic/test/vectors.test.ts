@@ -7,16 +7,20 @@ import {
   calculate,
   checkField,
   clean,
+  defaultMessage,
   evaluateCondition,
   evaluateForm,
   evaluateFormula,
   evaluateRule,
   formatDecimal,
   LogicError,
+  messageWordsOf,
   parseTemplate,
   recallAnswers,
   renderTemplate,
   storedNumber,
+  summaryEntry,
+  summaryHeading,
   type Calculation,
   type CheckedField,
   type Condition,
@@ -35,8 +39,11 @@ import {
   type Rule,
   type Subject,
   type TemplateContext,
+  type VisitorError,
 } from '../src/index.ts';
 import { today } from '../src/dates.ts';
+import { de } from '../src/lang/messages.de.ts';
+import { en } from '../src/lang/messages.en.ts';
 import { repositoryRoot, vectorsFolder } from '../tools/repository.ts';
 
 interface VectorCase {
@@ -56,6 +63,7 @@ interface VectorCase {
   readonly answers?: FieldAnswers;
   readonly template?: VectorTemplate;
   readonly recall?: VectorRecall;
+  readonly message?: VectorMessage;
   readonly expect: unknown;
 }
 
@@ -91,6 +99,16 @@ interface VectorRecallForm {
     readonly groups?: readonly { readonly id: string; readonly fields?: readonly VectorRecallField[] }[];
   }[];
 }
+
+/** A visitor message (ADR-0099): an error's default message, the summary's heading for a number of errors, or a summary link. */
+interface VectorMessage {
+  readonly error?: VisitorError;
+  readonly heading?: number;
+  readonly entry?: { readonly message: string; readonly label?: string; readonly row?: string };
+}
+
+/** The message tables by language. */
+const MESSAGE_WORDS = { en, de };
 
 /** A built-in type as the reviewed snapshot of the field types endpoint serves it (docs/api/field-types.json). */
 interface ServedType {
@@ -183,7 +201,18 @@ interface VectorFile {
 }
 
 /** The things a case can run; each case has exactly one. */
-const RUNNABLE = ['condition', 'rule', 'number', 'calc', 'formula', 'form', 'field', 'template', 'recall'] as const;
+const RUNNABLE = [
+  'condition',
+  'rule',
+  'number',
+  'calc',
+  'formula',
+  'form',
+  'field',
+  'template',
+  'recall',
+  'message',
+] as const;
 
 const folder = vectorsFolder();
 const names = readdirSync(folder)
@@ -277,6 +306,18 @@ function run(file: VectorFile, vector: VectorCase): unknown {
         throw new Error(`${vector.id}: the file lacks the formats or words of ${name}, the form or the answers`);
       const recall = recallAnswers(recallForm(read), owner, given, hidden, words, culture);
       return renderTemplate(parseTemplate(text, context, recall.pathProblem), recall.values, culture);
+    }
+    if (vector.message !== undefined) {
+      const name = subject.context.culture;
+      const words = messageWordsOf(name, MESSAGE_WORDS);
+      const { error, heading, entry } = vector.message;
+      if (heading !== undefined) return summaryHeading(heading, words);
+      if (entry !== undefined) return summaryEntry(entry.message, entry.label, entry.row, words);
+      const culture = file.defaults.cultures?.[name];
+      const display = file.defaults.words?.[name];
+      if (error === undefined || culture === undefined || display === undefined)
+        throw new Error(`${vector.id}: the file lacks the formats or words of ${name}, or the case its error`);
+      return defaultMessage(error, words, culture, today(subject.context.now, subject.context.timeZone), display);
     }
   } catch (error) {
     if (error instanceof LogicError)

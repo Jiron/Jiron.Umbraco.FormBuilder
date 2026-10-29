@@ -4,7 +4,8 @@
  * The mutation check of the shared logic (ROADMAP 5.2a, ADR-0061), since 5.3a of the calculations (ADR-0063), since
  * 5.3f of answer recall (ADR-0068), since 5.4a of the forms of email addresses, phone numbers and web addresses
  * (ADR-0069), since 5.5d of the options a choice's answers are held to (ADR-0077), since 5.5h of the reader of a
- * value's parts (ADR-0083), and since 6.1e of which fields can be required (ADR-0088).
+ * value's parts (ADR-0083), since 6.1e of which fields can be required (ADR-0088), and since 6.2g of the visitor
+ * messages (ADR-0099).
  * Each mutant changes one piece of code in one runtime; that runtime's vector runner runs, and the file is put back. A
  * mutant that no vector catches survives, and the check fails unless the mutant is written down here as an equivalent
  * change, with the reason. A mutant written down as equivalent that a vector catches fails the check too, so the notes
@@ -54,6 +55,8 @@ const csm = (name, file, from, to, more = {}) => ({ runtime: 'cs', name, file: '
 const TEMPLATES_TS = [...VECTORS_TS, 'test/templates.test.ts'];
 /** The tables check sees every code point's case mapping, of which the vectors hold a few. */
 const TABLES_TS = [...VECTORS_TS, 'test/tables.test.ts'];
+const MESSAGES_TS = [...VECTORS_TS, 'test/messages.test.ts'];
+const MESSAGES_CS = `${VECTORS_CS}|FullyQualifiedName~VisitorMessagesTests`;
 const TABLES_CS = `${VECTORS_CS}|FullyQualifiedName~UnicodeTablesTests`;
 /** The forms of email addresses, phone numbers and web addresses (ROADMAP 5.4a, ADR-0069), in TypeScript and in C#. */
 const frm = (name, from, to, more) => ts(`frm-${name}`, 'forms.ts', from, to, more);
@@ -1140,6 +1143,39 @@ const mutants = [
   rcl('child-not-reached', '        rest = rest.slice(1);' + NL, ''),
   rcl('the-first-part', '  valueParts(text)?.find(([key]) => key === name)?.[1] ?? null;', '  valueParts(text)?.[0]?.[1] ?? null;'),
 
+  // ---- The visitor messages (ROADMAP 6.2g, ADR-0099) ----
+  ts('msg-plural-always-other', 'messages.ts', '(count === 1 ? words.one : words.other)', '(words.other)'),
+  ts('msg-region-falls-to-english', 'messages.ts', "candidate = dash < 0 ? '' : candidate.slice(0, dash);", "candidate = '';"),
+  ts('msg-culture-case-kept', 'messages.ts', 'let candidate = culture.toLowerCase();', 'let candidate = culture;', { tests: MESSAGES_TS }),
+  ts('msg-fill-unknown-name-dropped', 'messages.ts', '(Object.hasOwn(values, name) ? values[name] : template.slice(open, close + 1))', "(Object.hasOwn(values, name) ? values[name] : '')", { tests: MESSAGES_TS }),
+  ts('msg-fill-open-brace-dropped', 'messages.ts', lines('      text += template.slice(at);', '      break;'), '      break;', { tests: MESSAGES_TS }),
+  ts('msg-entry-label-read-as-a-template', 'messages.ts', '? fill(words.summaryEntry, { label, message })', '? fill(fill(words.summaryEntry, { label }), { message })'),
+  ts('msg-entry-blank-label-shown', 'messages.ts', 'if (label === null || label === undefined || label.trim().length === 0) return message;', 'if (label === null || label === undefined) return message;'),
+  ts('msg-entry-row-ignored', 'messages.ts', 'return row === null || row === undefined || row.trim().length === 0', 'return true'),
+  ts('msg-site-type-as-built-in', 'messages.ts', "  if (field.builtIn === false) return error.code === 'required' ? words.answerThis : words.checkThis;", ''),
+  ts('msg-dropdown-of-several-as-one', 'messages.ts', "return settings.bool('multiple') ? words.chooseSeveral : words.choose;", 'return words.choose;'),
+  ts('msg-grid-row-as-the-grid', 'messages.ts', 'return error.gridRow === true ? words.gridRow : words.gridRows;', 'return words.gridRows;'),
+  ts('msg-yes-label-ignored', 'messages.ts', 'yes: yes !== null && yes.length > 0 ? yes : display.yes,', 'yes: display.yes,'),
+  ts('msg-email-domain-as-format', 'messages.ts', 'return address !== undefined && isEmailAddress(clean(address)) ? words.emailDomain : words.emailFormat;', 'return words.emailFormat;'),
+  ts('msg-number-example-without-decimals', 'messages.ts', "said.number((settings.whole('decimals') ?? 0) > 0 ? '12.5' : '12')", "said.number('12')"),
+  ts('msg-upper-limit-as-lower', 'messages.ts', 'if (high !== null) return fill(upTo, { max: print(high) });', 'if (high !== null) return fill(from, { min: print(high) });'),
+  ts('msg-time-limit-as-number', 'messages.ts', "const print = (text: string): string => (field.type === 'number' ? said.number(text) : said.time(text));", 'const print = (text: string): string => said.number(text);'),
+  ts('msg-step-from-least-ignored', 'messages.ts', lines("        const min = settings.text('min');", '        return min !== null'), lines('        const min = null;', '        return min !== null')),
+  ts('msg-places-always-plural', 'messages.ts', 'fill(plural(words.places, places), { places: said.count(places) })', 'fill(words.places.other, { places: said.count(places) })'),
+  ts('msg-window-relative-to-day-zero', 'messages.ts', "const low = bound(settings.json('min'), () => today);", "const low = bound(settings.json('min'), () => 0);"),
+  ts('msg-answer-inside-the-window-ignored', 'messages.ts', lines('  if (', '    day !== null &&'), lines('  if (', '    day === -1 &&')),
+  ts('msg-weekend-inside-as-unavailable', 'messages.ts', '    !(weekdays && (weekday === 0 || weekday === 6))', '    true'),
+  ts('msg-weekday-off-by-one', 'messages.ts', 'const weekday = day === null ? -1 : (((day + 4) % 7) + 7) % 7;', 'const weekday = day === null ? -1 : (((day + 3) % 7) + 7) % 7;'),
+  ts('msg-monday-as-sunday', 'messages.ts', "const monday = said.formats.days[1] ?? '';", "const monday = said.formats.days[0] ?? '';"),
+  ts('msg-selections-exactly-as-between', 'messages.ts', '      ? fill(plural(words.selectionsExactly, min), { count: said.count(min) })', '      ? fill(words.selectionsBetween, { min: said.count(min), max: said.count(max) })'),
+  ts('msg-formats-repeated', 'messages.ts', 'const shown = [...new Set(formats.map((format) => format.toUpperCase()).filter((format) => format.length > 0))];', 'const shown = formats.map((format) => format.toUpperCase()).filter((format) => format.length > 0);'),
+  ts('msg-formats-joined-with-commas-only', 'messages.ts', "`${choices.slice(0, -1).join(', ')} ${this.words.or} ${last}`", "choices.join(', ')"),
+  ts('msg-size-rounded-down', 'messages.ts', 'const tenths = (bytes * 10n + unit / 2n) / unit;', 'const tenths = (bytes * 10n) / unit;'),
+  ts('msg-files-larger-for-one', 'messages.ts', "(settings.whole('maxFiles') ?? 1) > 1", "(settings.whole('maxFiles') ?? 1) > 0"),
+  ts('msg-full-option-by-its-value', 'messages.ts', 'option !== undefined && option.label.length > 0 ? option.label : answer', 'answer'),
+  ts('msg-full-of-several-as-one', 'messages.ts', 'if (answers.length !== 1 || answer === undefined) return words.choiceFull;', 'if (answer === undefined) return words.choiceFull;'),
+  ts('msg-too-many-rows-ignored', 'messages.ts', 'const tooMany = rows !== undefined ? max !== null && rows > max : min === 0;', 'const tooMany = rows !== undefined ? false : min === 0;'),
+  ts('msg-unknown-count-as-too-few', 'messages.ts', 'const tooMany = rows !== undefined ? max !== null && rows > max : min === 0;', 'const tooMany = rows !== undefined ? max !== null && rows > max : false;'),
   // ---- C#: where .NET differs (ROADMAP 5.2a) ----
   // .NET's invariant casing maps neither Turkish i, so Core folds both itself.
   cs('cs-fold-dotted-capital-i', 'TextSemantics.cs', '            if (rune.Value is DottedCapitalI or DotlessSmallI)', '            if (rune.Value is DotlessSmallI)'),
@@ -1245,6 +1281,25 @@ const mutants = [
   csf('last-label-of-other-digits', '!labels[^1].All(char.IsAsciiDigit)', '!labels[^1].All(char.IsDigit)'),
   csf('extension-of-other-digits', 'while (digitsAt > 0 && char.IsAsciiDigit(value[digitsAt - 1]))', 'while (digitsAt > 0 && char.IsDigit(value[digitsAt - 1]))'),
 
+  // ---- The visitor messages in C# (ROADMAP 6.2g, ADR-0099) ----
+  cs('cs-msg-plural-always-other', 'VisitorMessageWords.cs', 'public string For(long count) => count == 1 ? One : Other;', 'public string For(long count) => count == long.MinValue ? One : Other;'),
+  cs('cs-msg-region-falls-to-english', 'VisitorMessageWords.cs', 'candidate = dash < 0 ? string.Empty : candidate[..dash];', 'candidate = dash < -1 ? candidate : string.Empty;', { tests: MESSAGES_CS }),
+  cs('cs-msg-fill-unknown-name-dropped', 'VisitorMessages.cs', 'text.Append(found < 0 ? template[open..(close + 1)] : values[found].Value);', 'text.Append(found < 0 ? string.Empty : values[found].Value);', { tests: MESSAGES_CS }),
+  cs('cs-msg-entry-label-read-as-a-template', 'VisitorMessages.cs', '? Fill(words.SummaryEntry, ("label", label), ("message", message))', '? Fill(Fill(words.SummaryEntry, ("label", label)), ("message", message))'),
+  cs('cs-msg-entry-blank-label-shown', 'VisitorMessages.cs', 'if (string.IsNullOrWhiteSpace(label))', 'if (string.IsNullOrEmpty(label))'),
+  cs('cs-msg-site-type-as-built-in', 'VisitorMessages.cs', 'if (!field.BuiltIn)', 'if (!field.BuiltIn && field.Type.Length == 0)'),
+  cs('cs-msg-dropdown-of-several-as-one', 'VisitorMessages.cs', '"dropdown" => settings.Bool("multiple") ? words.ChooseSeveral : words.Choose,', '"dropdown" => settings.Bool("several") ? words.ChooseSeveral : words.Choose,'),
+  cs('cs-msg-yes-label-ignored', 'VisitorMessages.cs', '("yes", settings.Text("yesLabel") is { Length: > 0 } yes ? yes : FieldDisplayWords.Yes(culture)),', '("yes", settings.Text("yesText") is { Length: > 0 } yes ? yes : FieldDisplayWords.Yes(culture)),'),
+  cs('cs-msg-email-domain-as-format', 'VisitorMessages.cs', 'BuiltInForms.IsEmailAddress(TextSemantics.Clean(address)) ? words.EmailDomain', 'address.Length < 0 ? words.EmailDomain'),
+  cs('cs-msg-number-example-without-decimals', 'VisitorMessages.cs', 'said.Number(settings.Long("decimals") is > 0 ? "12.5" : "12")', 'said.Number(settings.Long("decimals") is > 100 ? "12.5" : "12")'),
+  cs('cs-msg-window-relative-to-day-zero', 'VisitorMessages.cs', 'BuiltInValidation.TryBound(settings.Json("min"), today, out var low)', 'BuiltInValidation.TryBound(settings.Json("min"), 0, out var low)'),
+  cs('cs-msg-answer-inside-the-window-ignored', 'VisitorMessages.cs', 'if (error.Answers is [var answer, ..] && CalendarValues.ParseDate(', 'if (error.Answers is [var answer, ..] && answer.Length < 0 && CalendarValues.ParseDate('),
+  cs('cs-msg-monday-as-sunday', 'VisitorMessages.cs', 'var (monday, friday) = (said.Formats.Days[1], said.Formats.Days[5]);', 'var (monday, friday) = (said.Formats.Days[0], said.Formats.Days[5]);'),
+  cs('cs-msg-selections-exactly-as-between', 'VisitorMessages.cs', '({ } min, { } max) when min == max =>', '({ } min, { } max) when min == max + 1 =>'),
+  cs('cs-msg-formats-repeated', 'VisitorMessages.cs', '.Where(format => format.Length > 0).Distinct(StringComparer.Ordinal).ToList();', '.Where(format => format.Length > 0).ToList();'),
+  cs('cs-msg-size-rounded-down', 'VisitorMessages.cs', 'var tenths = ((bytes * 10m) + (unit / 2m)) / unit;', 'var tenths = (bytes * 10m) / unit;'),
+  cs('cs-msg-full-option-by-its-value', 'VisitorMessages.cs', 'var label = option is { Label.Length: > 0 } ? option.Label : answer;', 'var label = option is { Label.Length: > 1000 } ? option.Label : answer;'),
+  cs('cs-msg-too-many-rows-ignored', 'VisitorMessages.cs', 'var tooMany = error.Rows is { } rows ? max is { } most && rows > most : min == 0;', 'var tooMany = error.Rows is { } rows ? max is { } most && rows > most + 1000 : min == 0;'),
   // ---- The options a choice's answers are held to, in C# (ROADMAP 5.5d, ADR-0077) ----
   csv('resolved-ignored', 'input.Options is { } resolved', 'field.Options is null && input.Options is { } resolved'),
   csv('list-unresolved-as-none', '                _ => null,', '                _ => [],'),

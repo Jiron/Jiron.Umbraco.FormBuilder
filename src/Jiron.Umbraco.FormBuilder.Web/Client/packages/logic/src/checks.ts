@@ -149,7 +149,7 @@ function isWholeNumber(value: string, low: number | undefined, high: number | un
 }
 
 /** The day number of a limit: undefined for none, null for one outside the calendar or no limit at all. */
-function bound(limit: unknown, today: () => number): number | null | undefined {
+export function bound(limit: unknown, today: () => number): number | null | undefined {
   if (limit === undefined || limit === null) return undefined;
   if (typeof limit === 'string') return parseDate(limit);
   if (typeof limit === 'object' && typeof (limit as { today?: unknown }).today === 'string') {
@@ -207,7 +207,7 @@ function requiredParts(v: Validation, asked: readonly string[], unlisted: readon
 const ADDRESS = ['street', 'postcode', 'city'];
 
 /** The extensions of each group of file types (ADR-0062). SVG is no image here, because it can carry script. */
-const FILE_TYPES: ReadonlyMap<string, readonly string[]> = new Map([
+export const FILE_TYPES: ReadonlyMap<string, readonly string[]> = new Map([
   ['images', ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'heic', 'heif']],
   ['pdf', ['pdf']],
   ['office', ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'rtf']],
