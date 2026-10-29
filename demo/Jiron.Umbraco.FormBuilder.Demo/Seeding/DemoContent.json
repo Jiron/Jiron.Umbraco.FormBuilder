@@ -185,15 +185,16 @@
         "name": "Feedback",
         "heading": "Tell us what you think",
         "lede": "What do you like about the library, and what should we change? Your feedback helps us plan the year ahead.",
-        "body": "<p>We read every message. If you would like an answer, leave your email address.</p>"
+        "body": "<p>We read every answer. The form takes about two minutes and asks for nothing that names you.</p>"
       },
       "de": {
         "name": "Feedback",
         "heading": "Ihre Meinung",
         "lede": "Was gefällt Ihnen an der Bibliothek, und was sollten wir ändern? Ihre Rückmeldung hilft uns, das kommende Jahr zu planen.",
-        "body": "<p>Wir lesen jede Nachricht. Wenn Sie eine Antwort möchten, hinterlassen Sie Ihre E-Mail-Adresse.</p>"
+        "body": "<p>Wir lesen jede Antwort. Das Formular dauert etwa zwei Minuten und fragt nach nichts, was Sie erkennbar macht.</p>"
       },
-      "blocks": []
+      "blocks": [],
+      "form": "feedback"
     },
     {
       "key": "f1fa2112-fba3-49d8-ba32-fb1312d6c172",

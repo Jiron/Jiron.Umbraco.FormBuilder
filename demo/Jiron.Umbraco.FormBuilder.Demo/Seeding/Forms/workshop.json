@@ -19,12 +19,26 @@
           "fields": [
             {
               "key": "d0000000-0000-4000-8000-000000000201",
-              "type": "text",
+              "type": "radio",
               "alias": "workshop",
               "span": 2,
               "label": { "": "Workshop", "de": "Workshop" },
-              "help": { "": "Its title as the list above shows it.", "de": "Sein Titel, wie ihn die Liste oben zeigt." },
-              "required": true
+              "required": true,
+              "settings": { "layout": "cards" },
+              "options": {
+                "items": [
+                  {
+                    "value": "bikes",
+                    "label": { "": "Bike repair basics", "de": "Fahrrad-Reparatur für Einsteiger" },
+                    "description": { "": "Saturday, 10:00 to 12:00", "de": "Samstag, 10 bis 12 Uhr" }
+                  },
+                  {
+                    "value": "mending",
+                    "label": { "": "Mending clothes", "de": "Kleidung flicken" },
+                    "description": { "": "Saturday, 14:00 to 16:00", "de": "Samstag, 14 bis 16 Uhr" }
+                  }
+                ]
+              }
             },
             {
               "key": "d0000000-0000-4000-8000-000000000202",

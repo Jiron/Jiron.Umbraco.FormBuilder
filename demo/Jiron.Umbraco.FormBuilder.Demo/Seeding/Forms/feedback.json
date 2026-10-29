@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "key": "d0000000-0000-4000-8000-000000000003",
+  "settings": {
+    "submission": {
+      "submitLabel": { "": "Send feedback", "de": "Feedback senden" }
+    }
+  },
+  "pages": [
+    {
+      "key": "d0000000-0000-4000-8000-000000000030",
+      "groups": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000031",
+          "title": { "": "Your visits", "de": "Ihre Besuche" },
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000301",
+              "type": "radio",
+              "alias": "visits",
+              "label": { "": "How often do you visit us?", "de": "Wie oft besuchen Sie uns?" },
+              "required": true,
+              "settings": { "layout": "horizontal" },
+              "options": {
+                "items": [
+                  { "value": "weekly", "label": { "": "Every week", "de": "Jede Woche" } },
+                  { "value": "monthly", "label": { "": "Every month", "de": "Jeden Monat" } },
+                  { "value": "rarely", "label": { "": "A few times a year", "de": "Ein paar Mal im Jahr" } },
+                  { "value": "first", "label": { "": "This is my first visit", "de": "Dies ist mein erster Besuch" } }
+                ]
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000302",
+              "type": "checkboxes",
+              "alias": "uses",
+              "label": { "": "What do you come for?", "de": "Wofür kommen Sie?" },
+              "settings": { "other": true },
+              "options": {
+                "items": [
+                  { "value": "books", "label": { "": "Borrowing books", "de": "Bücher ausleihen" } },
+                  { "value": "study", "label": { "": "A quiet place to study", "de": "Ein ruhiger Platz zum Lernen" } },
+                  { "value": "events", "label": { "": "Events and workshops", "de": "Veranstaltungen und Workshops" } },
+                  { "value": "children", "label": { "": "The children's corner", "de": "Die Kinderecke" } }
+                ]
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000303",
+              "type": "dropdown",
+              "alias": "branch",
+              "label": { "": "Which branch do you visit most?", "de": "Welche Zweigstelle besuchen Sie am häufigsten?" },
+              "options": {
+                "items": [
+                  { "value": "market", "label": { "": "Market Street", "de": "Marktstraße" } },
+                  { "value": "riverside", "label": { "": "Riverside", "de": "Am Fluss" } }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000032",
+          "title": { "": "What you think", "de": "Was Sie denken" },
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000304",
+              "type": "rating",
+              "alias": "lastVisit",
+              "label": { "": "How was your last visit?", "de": "Wie war Ihr letzter Besuch?" },
+              "required": true,
+              "settings": { "count": 5, "lowLabel": { "": "Poor", "de": "Schlecht" }, "highLabel": { "": "Excellent", "de": "Ausgezeichnet" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000305",
+              "type": "grid",
+              "alias": "happyWith",
+              "label": { "": "How happy are you with these?", "de": "Wie zufrieden sind Sie damit?" },
+              "options": {
+                "items": [
+                  { "value": "1", "label": { "": "Not happy", "de": "Unzufrieden" } },
+                  { "value": "2", "label": { "": "Fine", "de": "In Ordnung" } },
+                  { "value": "3", "label": { "": "Happy", "de": "Zufrieden" } }
+                ]
+              },
+              "rows": [
+                { "key": "d0000000-0000-4000-8000-000000000351", "label": { "": "The opening hours", "de": "Die Öffnungszeiten" } },
+                { "key": "d0000000-0000-4000-8000-000000000352", "label": { "": "The choice of books", "de": "Die Auswahl an Büchern" } },
+                { "key": "d0000000-0000-4000-8000-000000000353", "label": { "": "Help from our team", "de": "Die Hilfe unseres Teams" } }
+              ]
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000306",
+              "type": "ranking",
+              "alias": "improve",
+              "label": { "": "What should we improve first?", "de": "Was sollen wir zuerst verbessern?" },
+              "help": { "": "Put your three most important first.", "de": "Ihre drei wichtigsten zuerst." },
+              "settings": { "top": 3 },
+              "options": {
+                "items": [
+                  { "value": "hours", "label": { "": "Longer opening hours", "de": "Längere Öffnungszeiten" } },
+                  { "value": "seats", "label": { "": "More quiet seats", "de": "Mehr ruhige Plätze" } },
+                  { "value": "children", "label": { "": "More events for children", "de": "Mehr Veranstaltungen für Kinder" } },
+                  { "value": "cafe", "label": { "": "A café", "de": "Ein Café" } },
+                  { "value": "wifi", "label": { "": "Faster Wi-Fi", "de": "Schnelleres WLAN" } }
+                ]
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000307",
+              "type": "yesno",
+              "alias": "evenings",
+              "label": { "": "Would you come on a weekday evening, until 21:00?", "de": "Würden Sie werktags abends bis 21 Uhr kommen?" }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000308",
+              "type": "scale",
+              "alias": "recommend",
+              "label": { "": "How likely are you to recommend the library to a friend?", "de": "Wie wahrscheinlich empfehlen Sie die Bibliothek weiter?" },
+              "settings": { "from": 0, "to": 10, "lowLabel": { "": "Not likely", "de": "Unwahrscheinlich" }, "highLabel": { "": "Very likely", "de": "Sehr wahrscheinlich" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000309",
+              "type": "textarea",
+              "alias": "comments",
+              "label": { "": "Anything else you would like to tell us?", "de": "Möchten Sie uns sonst noch etwas sagen?" },
+              "settings": { "rows": 4, "counter": true, "maxLength": 2000 }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
