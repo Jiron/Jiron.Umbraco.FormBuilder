@@ -1,0 +1,13 @@
+@* A site's own type (Rendering/FormRenderingInputsTests.cs) for the first render, or ?state=answered, an answer with a part. *@
+@using Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var key = (await Requests.KeyOfAsync("renderingCustom", Context.RequestAborted))!.Value;
+    if (FormRenderingInputsTests.CustomState(Context.Request.Query["state"].ToString()) is { } state)
+    {
+        FormPosts.Set(Context, key, "jfb-1", state);
+    }
+}
+<jfb-render form="renderingCustom" />

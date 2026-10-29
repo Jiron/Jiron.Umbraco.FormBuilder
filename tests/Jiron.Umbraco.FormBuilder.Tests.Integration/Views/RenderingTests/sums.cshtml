@@ -1,0 +1,13 @@
+@* Two calculations (Rendering/FormRenderingInputsTests.cs) for the first render, or ?state=posted, the answers the test also posts to the entries endpoint. *@
+@using Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var key = (await Requests.KeyOfAsync("renderingSums", Context.RequestAborted))!.Value;
+    if (FormRenderingInputsTests.SumsState(Context.Request.Query["state"].ToString()) is { } state)
+    {
+        FormPosts.Set(Context, key, "jfb-1", state);
+    }
+}
+<jfb-render form="renderingSums" />

@@ -1,0 +1,13 @@
+@* A grid row a rule reads and two hidden fields a text would recall (Rendering/FormRenderingInputsTests.cs): the first render, or ?state=posted, a post that answers them. *@
+@using Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var key = (await Requests.KeyOfAsync("renderingRules", Context.RequestAborted))!.Value;
+    if (FormRenderingInputsTests.RulesState(Context.Request.Query["state"].ToString()) is { } state)
+    {
+        FormPosts.Set(Context, key, "jfb-1", state);
+    }
+}
+<jfb-render form="renderingRules" />

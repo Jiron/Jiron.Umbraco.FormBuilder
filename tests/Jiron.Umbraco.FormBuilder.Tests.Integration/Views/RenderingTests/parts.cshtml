@@ -1,0 +1,13 @@
+@* The rarer parts, dates and outputs under the asterisk style (Rendering/FormRenderingInputsTests.cs): the first render, or ?state=posted, an address in part with an error and a slider's value that is no number. *@
+@using Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var key = (await Requests.KeyOfAsync("renderingParts", Context.RequestAborted))!.Value;
+    if (FormRenderingInputsTests.PartsState(Context.Request.Query["state"].ToString()) is { } state)
+    {
+        FormPosts.Set(Context, key, "jfb-1", state);
+    }
+}
+<jfb-render form="renderingParts" />

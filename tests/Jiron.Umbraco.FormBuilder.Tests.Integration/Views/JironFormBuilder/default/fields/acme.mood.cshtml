@@ -1,0 +1,20 @@
+@* jfb-view: fields/acme.mood 1 *@
+@* A site's own type's control (Rendering/FormRenderingInputsTests.cs): the moods and the prompt of its settings, and its answer's note. *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@{
+    var control = (CustomControlModel)Model.Control!;
+    var settings = control.Settings!.Value;
+}
+<p class="acme-prompt">@settings.GetProperty("prompt").GetString()</p>
+<select id="@Model.Id" name="@Model.Name" aria-describedby="@Model.DescribedBy" data-test-custom="mood">
+    @foreach (var mood in settings.GetProperty("moods").EnumerateArray())
+    {
+        var value = mood.GetString()!;
+        <option value="@value" selected="@Model.Values.Contains(value)">@value</option>
+    }
+</select>
+@if (control.Parts.TryGetValue("note", out var note))
+{
+    <p class="acme-note">@note[0]</p>
+}

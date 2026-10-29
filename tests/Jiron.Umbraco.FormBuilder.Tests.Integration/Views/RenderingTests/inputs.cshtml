@@ -1,0 +1,13 @@
+@* Every type with parts, dates and outputs (Rendering/FormRenderingInputsTests.cs) in the state ?state= names: none for the first render, or answered, errors or hidden, as a post without JavaScript leaves them (6.2g). *@
+@using Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var key = (await Requests.KeyOfAsync("renderingInputs", Context.RequestAborted))!.Value;
+    if (FormRenderingInputsTests.State(Context.Request.Query["state"].ToString()) is { } state)
+    {
+        FormPosts.Set(Context, key, "jfb-1", state);
+    }
+}
+<jfb-render form="renderingInputs" />
