@@ -245,7 +245,7 @@ public sealed class FormPostReaderTests
             Assert.That(reader.FieldOf("guests[1].guest"), Is.EqualTo((Guest, (FormField?)Guests, (int?)1)));
             Assert.That(reader.FieldOf("guests[0].pick"), Is.EqualTo((Pick, (FormField?)Guests, (int?)0)), "a row the post holds nothing of");
             Assert.That(
-                new[] { "guests[2].guest", "guests", "fullName.first", "guests[0].nothing", "guests[0].guest.part", "topic[0].guest", "story[0].guest", "nothing", "guests[x].guest", "[0].guest" }.Select(reader.FieldOf),
+                new[] { "guests[2].guest", "guests", "fullName.first", "guests[0].nothing", "guests[0].guest.part", "topic[0].guest", "story[0].guest", "nothing", "guests[x].guest", "[0].guest" }.Select(name => reader.FieldOf(name)),
                 Is.All.Null,
                 "a row past those shown, a group, a part, no child, no group, no field, no row");
             Assert.That(reader.AnswersOf(Guest, 1).Values, Is.EqualTo(new[] { "Sam" }));

@@ -3,10 +3,10 @@
 - Status: accepted; extends [ADR-0004](0004-rendering-and-submission-paths.md) (what the form carries, the page after
   the redirect, a message with a redirect) and [ADR-0093](0093-the-razor-rendering.md) (the form's hidden inputs, the
   page shown after a post); extended by [ADR-0101](0101-rows-and-moves-without-javascript.md) in 6.2i (the rows'
-  and the rankings' buttons)
+  and the rankings' buttons) and by [ADR-0102](0102-files-in-a-post-without-javascript.md) in 6.2j (the post's files)
 - Date: 2026-10-29
 - Roadmap step: 6.2h (decided and built); 6.2i gives a row's Add and Remove and a ranking's moves their effect
-  (ADR-0101), 6.2j takes files, 6.2k the typed signature, 6.2l adds the cache rules, 7.1 the honeypot, the challenge and
+  (ADR-0101), 6.2j takes files (ADR-0102), 6.2k the typed signature, 6.2l adds the cache rules, 7.1 the honeypot, the challenge and
   the rate limits, 6.5 the summary page and the copy of the answers
 
 ## Context

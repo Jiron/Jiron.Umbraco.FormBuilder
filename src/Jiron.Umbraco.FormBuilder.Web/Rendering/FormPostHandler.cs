@@ -3,7 +3,9 @@ using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Microsoft.AspNetCore.Http;
@@ -57,13 +59,19 @@ internal sealed record FormPostAnswer(FormPostAnswerKind Kind, string? Url = nul
 /// <param name="submissions">The submission pipeline.</param>
 /// <param name="types">The field types.</param>
 /// <param name="sent">The tokens of the redirect after a sent form.</param>
+/// <param name="uploads">The upload's rules, which the post's files are held to and stored by (ADR-0102).</param>
+/// <param name="tokens">The upload tokens, which a file field's answer holds.</param>
+/// <param name="entries">The entries' files, which a kept file's token names.</param>
 internal sealed class FormPostHandler(
     PublishedFormCache forms,
     FormRequests requests,
     FormPages pages,
     FormSubmissions submissions,
     FieldTypeRegistry types,
-    SentTokens sent)
+    SentTokens sent,
+    FileUploads uploads,
+    UploadTokens tokens,
+    IEntryRepository entries)
 {
     /// <summary>The notice's code after a post that met a form published again meanwhile.</summary>
     public const string FormChangedCode = "form_changed";
@@ -71,8 +79,8 @@ internal sealed class FormPostHandler(
     /// <summary>The notice's code after a post the form could not take, whose answers are kept.</summary>
     public const string NotSentCode = "not_sent";
 
-    // The longest instance id a post names: the prefix and a count no page reaches.
-    private const int MaxInstanceLength = 16;
+    /// <summary>The notice's code after a post too large to read, whose answers are lost (ADR-0102).</summary>
+    public const string TooLargeCode = "too_large";
 
     /// <summary>Reads a post and answers it.</summary>
     /// <param name="http">The request, which Umbraco routed to the surface action.</param>
@@ -89,7 +97,7 @@ internal sealed class FormPostHandler(
         // Umbraco read the form already for its route token, so a post too large or malformed never gets here.
         var posted = await http.Request.ReadFormAsync(cancellationToken);
         if (One(posted, FormPostFields.Form) is not { } formText || !Guid.TryParseExact(formText, "D", out var formKey)
-            || One(posted, FormPostFields.Instance) is not { } instance || !IsInstance(instance)
+            || One(posted, FormPostFields.Instance) is not { } instance || !FormInstances.IsId(instance)
             || !int.TryParse(One(posted, FormPostFields.Revision), NumberStyles.None, CultureInfo.InvariantCulture, out var revision))
         {
             return FormPostAnswer.BadRequest;
@@ -112,6 +120,7 @@ internal sealed class FormPostHandler(
         var reader = FormPostReader.Read(posted, definition, types);
         var listed = definition.Settings.Developer.QueryValues;
         var query = Held(reader.Query.Count > 0 ? reader.Query : Referred(http.Request), listed);
+        var noted = await FilesAsync(http, posted.Files, reader, formKey, instance, cancellationToken);
         var (fields, rows) = reader.Posted();
         var request = new SubmissionRequest
         {
@@ -123,12 +132,18 @@ internal sealed class FormPostHandler(
             Rows = rows,
             Query = query,
             Context = reader.Context,
+            Tokens = tokens,
         };
         var page = Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var pageKey) ? pageKey : (Guid?)null;
         var state = new Step(reader, definition, page, query);
         var nav = posted[FormPostFields.Nav].LastOrDefault();
         switch (nav)
         {
+            // A file the post could not take: nothing is sent and no page is left (ADR-0102).
+            case FormPostFields.Back or FormPostFields.Next or FormPostFields.Submit or null when noted.Count > 0:
+                var shownCheck = page is { } posting ? await submissions.ValidateAsync(request, posting, cancellationToken) : null;
+                state.Problems([.. noted, .. shownCheck is { Refusal: SubmissionRefusal.ValidationFailed } ? shownCheck.Problems : []]);
+                break;
             case FormPostFields.Back:
                 state.Move = FormPostMove.Back;
                 break;
@@ -161,16 +176,17 @@ internal sealed class FormPostHandler(
                 break;
             default:
                 Button(reader, nav);
+                state.Problems(noted);
                 break;
         }
 
-        FormPosts.Set(http, formKey, instance, state.State());
+        FormPosts.Set(http, formKey, instance, state.State(await KeptAsync(reader, definition, formKey, cancellationToken)));
         return FormPostAnswer.Page;
     }
 
     // A row's Add or Remove, or a ranking's move in the order the page showed (ADR-0101): the posted page again with the
-    // change and every answer, without a check. An Add past the group's most, a Remove below its
-    // least, a move past an end and any other button change nothing.
+    // change and every answer, without a check. An Add past the group's most, a Remove below its least, a move past an
+    // end and any other button change nothing.
     private void Button(FormPostReader reader, string? nav)
     {
         switch (nav?.Split(FormPostFields.Separator))
@@ -193,6 +209,97 @@ internal sealed class FormPostHandler(
         }
     }
 
+    // The post's files (ADR-0102): each one the files' reader took goes through the upload's rules and is stored, its
+    // token joining its field's answer; each it could not take, or the rules refused, is a problem at its field.
+    private async Task<List<SubmissionProblem>> FilesAsync(HttpContext http, IFormFileCollection files, FormPostReader reader, Guid formKey, string instance, CancellationToken cancellationToken)
+    {
+        var problems = new List<SubmissionProblem>();
+        foreach (var note in FormPostFileNotes.Get(http, formKey, instance)?.Notes ?? [])
+        {
+            if (reader.FieldOf(note.Name) is { } noted)
+            {
+                problems.Add(Problem(noted, note.Kind));
+            }
+        }
+
+        foreach (var file in files)
+        {
+            if (reader.FieldOf(file.Name) is not { } found || uploads.TypeOf(found.Field) is not { } type)
+            {
+                continue;
+            }
+
+            await using var content = file.OpenReadStream();
+            var stored = await uploads.StoreAsync(formKey, type, found.Field, file.FileName, content, _ => Task.FromResult(true), cancellationToken);
+            if (stored is { Status: FileUploadStatus.Stored, File: { } kept })
+            {
+                reader.AddFile(found.Field, found.Group, found.Row, tokens.Issue(formKey, found.Field.Key, kept.Key), FormPostFilesMiddleware.Most(type, found.Field) == 1);
+            }
+            else
+            {
+                problems.Add(Problem(found, stored.Error ?? FieldMessageKinds.Invalid));
+            }
+        }
+
+        return problems;
+    }
+
+    // A file's problem at its field, by the live version's names as the pipeline names them (ADR-0088).
+    private static SubmissionProblem Problem((FormField Field, FormField? Group, int? Row) at, FieldMessageKinds kind) =>
+        new(
+            (FieldMessageProperties.All.FirstOrDefault(property => property.Kind == kind) ?? FieldMessageProperties.All.First(property => property.Kind == FieldMessageKinds.Invalid)).Name,
+            at is { Group: { } group, Row: { } row } ? group.Alias + "[" + row.ToString(CultureInfo.InvariantCulture) + "]." + at.Field.Alias : at.Field.Alias!);
+
+    // The stored files each file field's answer holds (ADR-0102), for the page to offer to keep: each token that names a
+    // file of this form and field that no entry holds yet, with its name and size; any other token is left out.
+    private async Task<KeptFiles> KeptAsync(FormPostReader reader, FormDefinition definition, Guid formKey, CancellationToken cancellationToken)
+    {
+        var (fields, rows) = reader.Shown();
+        var kept = new KeptFiles();
+        foreach (var field in definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields))
+        {
+            if (uploads.TypeOf(field) is not null && fields.GetValueOrDefault(field.Key) is { } answers)
+            {
+                kept.Fields[field.Key] = await StoredAsync(formKey, field.Key, answers, cancellationToken);
+            }
+
+            var given = rows.GetValueOrDefault(field.Key) ?? [];
+            var rowFiles = new List<Dictionary<Guid, IReadOnlyList<FormPostFile>>>();
+            foreach (var row in given)
+            {
+                var inRow = new Dictionary<Guid, IReadOnlyList<FormPostFile>>();
+                foreach (var child in field.Fields.Where(child => uploads.TypeOf(child) is not null))
+                {
+                    if (row.GetValueOrDefault(child.Key) is { } childAnswers)
+                    {
+                        inRow[child.Key] = await StoredAsync(formKey, child.Key, childAnswers, cancellationToken);
+                    }
+                }
+
+                rowFiles.Add(inRow);
+            }
+
+            kept.Rows[field.Key] = rowFiles;
+        }
+
+        return kept;
+    }
+
+    // The stored files an answer's tokens name.
+    private async Task<IReadOnlyList<FormPostFile>> StoredAsync(Guid formKey, Guid fieldKey, FieldAnswers answers, CancellationToken cancellationToken)
+    {
+        var files = new List<FormPostFile>();
+        foreach (var token in answers.Values.Distinct(StringComparer.Ordinal))
+        {
+            if (tokens.FileOf(token, formKey, fieldKey) is { } key && await entries.GetFileAsync(key, cancellationToken) is { EntryId: null } file && file.FieldKey == fieldKey)
+            {
+                files.Add(new FormPostFile(token, file.OriginalName, file.SizeBytes));
+            }
+        }
+
+        return files;
+    }
+
     // A repeatable group's fewest and most rows, held to the most any group may have.
     private (int Least, int Most) Limits(FormField group) =>
         types.FindType(group.Type) is RepeaterFieldType repeater && repeater.ReadSettings(group.Settings) is { } settings
@@ -202,8 +309,9 @@ internal sealed class FormPostHandler(
     // A whole number from a button, or null.
     private static int? Number(string text) => int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : null;
 
-    // Every answer of the action, set before anything runs and again as the response starts, after anything else set it.
-    private static void NoStore(HttpResponse response)
+    /// <summary>Sends a response <c>no-store</c>, set at once and again as it starts, after anything else set it.</summary>
+    /// <param name="response">The response.</param>
+    public static void NoStore(HttpResponse response)
     {
         response.Headers.CacheControl = "no-store";
         response.OnStarting(() =>
@@ -312,11 +420,6 @@ internal sealed class FormPostHandler(
     // A name's one value; null for none or several.
     private static string? One(IFormCollection posted, string name) => posted.TryGetValue(name, out var values) && values.Count == 1 ? values[0] : null;
 
-    // An instance id as the form's render gives it: the prefix and a number.
-    private static bool IsInstance(string instance) =>
-        instance.Length <= MaxInstanceLength && instance.StartsWith(FormInstances.Prefix, StringComparison.Ordinal) && instance.Length > FormInstances.Prefix.Length
-        && !instance.AsSpan(FormInstances.Prefix.Length).ContainsAnyExceptInRange('0', '9');
-
     // What a post leaves for the form's render: the answers, the errors at their fields and rows, the page and the move.
     private sealed class Step(FormPostReader reader, FormDefinition definition, Guid? page, IReadOnlyDictionary<string, IReadOnlyList<string>> query)
     {
@@ -379,7 +482,7 @@ internal sealed class FormPostHandler(
             }
         }
 
-        public FormPostState State()
+        public FormPostState State(KeptFiles kept)
         {
             var (answers, rows) = Reader.Shown();
             var orders = Reader.Orders();
@@ -388,8 +491,9 @@ internal sealed class FormPostHandler(
                 Answers = answers,
                 Errors = _errors,
                 IsEmpty = _isEmpty,
-                Rows = rows.ToDictionary(pair => pair.Key, pair => Rows(pair.Key, pair.Value, orders.Rows[pair.Key])),
+                Rows = rows.ToDictionary(pair => pair.Key, pair => Rows(pair.Key, pair.Value, orders.Rows[pair.Key], kept.Rows.GetValueOrDefault(pair.Key) ?? [])),
                 Orders = orders.Fields,
+                Files = kept.Fields,
                 Page = _page,
                 Move = Move,
                 Query = query,
@@ -397,8 +501,8 @@ internal sealed class FormPostHandler(
             };
         }
 
-        // A group's rows with their errors and orders; the pipeline names no row past those posted.
-        private IReadOnlyList<FormPostRow> Rows(Guid group, IReadOnlyList<Dictionary<Guid, FieldAnswers>> answers, IReadOnlyList<Dictionary<Guid, IReadOnlyList<string>>> orders)
+        // A group's rows with their errors, orders and files; the pipeline names no row past those posted.
+        private IReadOnlyList<FormPostRow> Rows(Guid group, IReadOnlyList<Dictionary<Guid, FieldAnswers>> answers, IReadOnlyList<Dictionary<Guid, IReadOnlyList<string>>> orders, IReadOnlyList<Dictionary<Guid, IReadOnlyList<FormPostFile>>> files)
         {
             var errors = _rowErrors.GetValueOrDefault(group);
             return [.. answers.Select((row, index) => new FormPostRow
@@ -406,9 +510,18 @@ internal sealed class FormPostHandler(
                 Answers = row,
                 Errors = errors?.GetValueOrDefault(index) ?? new Dictionary<Guid, FormPostError>(),
                 Orders = orders[index],
+                Files = index < files.Count ? files[index] : new Dictionary<Guid, IReadOnlyList<FormPostFile>>(),
                 IsNew = Reader.IsNew(group, index),
             })];
         }
+    }
+
+    // The stored files a post kept: each file field's outside groups, and each repeatable group's rows' by the child's key.
+    private sealed class KeptFiles
+    {
+        public Dictionary<Guid, IReadOnlyList<FormPostFile>> Fields { get; } = [];
+
+        public Dictionary<Guid, IReadOnlyList<Dictionary<Guid, IReadOnlyList<FormPostFile>>>> Rows { get; } = [];
     }
 
     // Where a problem's path is (ADR-0088): "alias", "alias.<row key>" for a grid's row, "group[row].child" and

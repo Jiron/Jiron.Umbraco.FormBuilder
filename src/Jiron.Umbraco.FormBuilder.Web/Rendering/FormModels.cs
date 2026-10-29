@@ -104,8 +104,11 @@ internal sealed partial class FormModels(
         ArgumentNullException.ThrowIfNull(render);
         var form = render.Form.Published;
         var (formView, parts) = await views.PartsAsync(form.Form.Alias, cancellationToken);
-        var post = FormPosts.Get(render.HttpContext, form.Form.Key, render.Instance);
         var words = RenderingWords.Of(render.Culture);
+        var post = FormPosts.Get(render.HttpContext, form.Form.Key, render.Instance)
+            ?? (FormPostFileNotes.Get(render.HttpContext, form.Form.Key, render.Instance) is { IsRefused: true }
+                ? new FormPostState { Notice = new FormPostNotice(words.NotSentHeading, words.TooLargeText, FormPostHandler.TooLargeCode) }
+                : null);
         var culture = CultureInfo.GetCultureInfo(render.Culture);
         var request = render.HttpContext.Request;
         var path = (request.PathBase + request.Path).ToUriComponent();
@@ -119,7 +122,7 @@ internal sealed partial class FormModels(
             culture.TextInfo.IsRightToLeft ? "rtl" : "ltr",
             Classes("jfb-form", "jfb-theme-" + FormViews.DefaultFolder, render.Shown.Form.Settings.CssClass),
             display,
-            (path.Length == 0 ? "/" : path) + "#" + render.Instance,
+            (path.Length == 0 ? "/" : path) + (HoldsFile(form.Definition) ? "?" + FormPostFields.PostMarker + "=" + form.Form.Key.ToString("D") + "." + render.Instance : string.Empty) + "#" + render.Instance,
             HoldsFile(form.Definition) ? Multipart : null,
             (request.PathBase + new PathString(paths.Root)).ToUriComponent(),
             ModelData.Of(render.Shown.Answer.Body),
@@ -287,7 +290,7 @@ internal sealed partial class FormModels(
                 ? WithMarkup(words.RequiredNote, "<span aria-hidden=\"true\">*</span><span class=\"jfb-visually-hidden\">" + WebUtility.HtmlEncode(words.Asterisk) + "</span>")
                 : null,
             notice: post?.Notice is { } notice
-                ? new NoticeViewModel { Kind = NoticeKind.Message, Heading = notice.Heading, Text = Paragraph(notice.Text), Code = notice.Code, HeadingId = notice.Code is null ? null : root.Id + "-notice", CssClass = notice.Code == FormPostHandler.NotSentCode ? "jfb-notice jfb-notice-error" : "jfb-notice" }
+                ? new NoticeViewModel { Kind = NoticeKind.Message, Heading = notice.Heading, Text = Paragraph(notice.Text), Code = notice.Code, HeadingId = notice.Code is null ? null : root.Id + "-notice", CssClass = notice.Code is FormPostHandler.NotSentCode or FormPostHandler.TooLargeCode ? "jfb-notice jfb-notice-error" : "jfb-notice" }
                 : null,
             context: Context(render),
             postValues: PostValues(root, current, post));
@@ -872,9 +875,9 @@ internal sealed partial class FormModels(
     // The page's answers as their types read them: each field's, and each repeatable group's rows within its limits.
     private sealed record PageRead(Dictionary<Guid, ImmutableArray<FieldValue>> Fields, Dictionary<Guid, List<Dictionary<Guid, ImmutableArray<FieldValue>>>> Rows);
 
-    // Where a repeatable group's row stands: the group's alias, the row from 0, its legend, and the errors and the
-    // rankings' orders a post left in it.
-    private sealed record RowPlace(string Alias, int Row, string Legend, IReadOnlyDictionary<Guid, FormPostError> Errors, IReadOnlyDictionary<Guid, IReadOnlyList<string>> Orders);
+    // Where a repeatable group's row stands: the group's alias, the row from 0, its legend, and the errors, the rankings'
+    // orders and the kept files a post left in it.
+    private sealed record RowPlace(string Alias, int Row, string Legend, IReadOnlyDictionary<Guid, FormPostError> Errors, IReadOnlyDictionary<Guid, IReadOnlyList<string>> Orders, IReadOnlyDictionary<Guid, IReadOnlyList<FormPostFile>> Files);
 
     // What building one form's fields shares, and what it collects.
     private sealed class Build(
@@ -897,6 +900,8 @@ internal sealed partial class FormModels(
         private static readonly IReadOnlyDictionary<Guid, FormPostError> NoErrors = FrozenDictionary<Guid, FormPostError>.Empty;
 
         private static readonly IReadOnlyDictionary<Guid, IReadOnlyList<string>> NoOrders = FrozenDictionary<Guid, IReadOnlyList<string>>.Empty;
+
+        private static readonly IReadOnlyDictionary<Guid, IReadOnlyList<FormPostFile>> NoFiles = FrozenDictionary<Guid, IReadOnlyList<FormPostFile>>.Empty;
 
         private readonly Dictionary<string, string> _controls = new(StringComparer.Ordinal);
 
@@ -981,6 +986,9 @@ internal sealed partial class FormModels(
         // A ranking's order as a post left it where the build stands (ADR-0101); none on a first render.
         public IReadOnlyList<string> Order(Guid key) => (Place?.Orders ?? post?.Orders)?.GetValueOrDefault(key) ?? [];
 
+        // The stored files a post kept for a field where the build stands (ADR-0102); none on a first render.
+        public IReadOnlyList<FormPostFile> Files(Guid key) => (Place?.Files ?? post?.Files)?.GetValueOrDefault(key) ?? [];
+
         // The columns of the group a field is in, which a repeatable group's rows take (ADR-0034).
         public int ColumnsOf(Guid key) => Math.Clamp(
             render.Shown.Form.Pages.SelectMany(page => page.Groups).First(group => group.Fields.Any(field => field.Key == key)).Columns, 1, 4);
@@ -1015,7 +1023,7 @@ internal sealed partial class FormModels(
             return new Build(render, root, post, words, culture, answers with { Fields = inRow }, rowHidden, rowRequired, marker, recalled, layout, facts with { Calculations = calculations })
             {
                 Outer = this,
-                Place = new RowPlace(group.Alias ?? string.Empty, row, legend, left?.Errors ?? NoErrors, left?.Orders ?? NoOrders),
+                Place = new RowPlace(group.Alias ?? string.Empty, row, legend, left?.Errors ?? NoErrors, left?.Orders ?? NoOrders, left?.Files ?? NoFiles),
             };
         }
 

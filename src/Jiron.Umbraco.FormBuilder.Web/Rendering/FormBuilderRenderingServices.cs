@@ -12,6 +12,9 @@ internal static class FormBuilderRenderingServices
     /// <summary>The name of the pipeline filter that puts the asset middleware before Umbraco's routing.</summary>
     public const string AssetsFilterName = "Jiron.FormBuilder.WebsiteAssets";
 
+    /// <summary>The name of the pipeline filter that puts the reader of a post's files before Umbraco's routing (ADR-0102).</summary>
+    public const string FilesFilterName = "Jiron.FormBuilder.PostFiles";
+
     /// <summary>
     /// Adds the website assets, their middleware before routing, the page's asset tags and the rendering of forms (the
     /// view component's services). Safe to call more than once.
@@ -26,6 +29,7 @@ internal static class FormBuilderRenderingServices
         builder.Services.TryAddSingleton<FormModels>();
         builder.Services.TryAddSingleton<FormRendering>();
         builder.Services.TryAddSingleton<FormPostHandler>();
+        builder.Services.TryAddSingleton<FormPostFilesMiddleware>();
         builder.Services.TryAddSingleton<SentTokens>();
         builder.Services.TryAddSingleton<BackOfficeVisitors>();
         builder.Services.TryAddScoped<FormMembers>();
@@ -34,6 +38,12 @@ internal static class FormBuilderRenderingServices
             if (!options.PipelineFilters.Any(filter => filter.Name == AssetsFilterName))
             {
                 options.AddFilter(new UmbracoPipelineFilter(AssetsFilterName) { PrePipeline = app => app.UseMiddleware<WebsiteAssetsMiddleware>() });
+            }
+
+            // Before routing, which reads a post's form while it picks the page (ADR-0006, ADR-0102).
+            if (!options.PipelineFilters.Any(filter => filter.Name == FilesFilterName))
+            {
+                options.AddFilter(new UmbracoPipelineFilter(FilesFilterName) { PrePipeline = app => app.UseMiddleware<FormPostFilesMiddleware>() });
             }
         });
         return builder;

@@ -76,6 +76,10 @@ internal sealed record RenderingWords
             ChangedConsents = "Some agreements have new wording, so they are no longer ticked: read them again before you send.",
             NotSentHeading = "Your answers weren't sent",
             NotSentText = "Check your answers, then send again. Your answers are kept.",
+            TooLargeText = "The files were too large to send, so your answers could not be kept. Choose smaller files and fill in the form again.",
+            KeepFile = "Keep {0} ({1})",
+            Kilobytes = "{0} KB",
+            Megabytes = "{0} MB",
         },
         ["de"] = new RenderingWords
         {
@@ -136,6 +140,10 @@ internal sealed record RenderingWords
             ChangedConsents = "Einige Einwilligungen haben einen neuen Wortlaut und sind deshalb nicht mehr angehakt: Lesen Sie sie vor dem Senden noch einmal.",
             NotSentHeading = "Ihre Antworten wurden nicht gesendet",
             NotSentText = "Pr" + UUmlaut + "fen Sie Ihre Antworten und senden Sie erneut. Ihre Antworten bleiben erhalten.",
+            TooLargeText = "Die Dateien waren zu gro" + SharpS + ", um sie zu senden, deshalb konnten Ihre Antworten nicht erhalten bleiben. W" + AUmlaut + "hlen Sie kleinere Dateien und f" + UUmlaut + "llen Sie das Formular erneut aus.",
+            KeepFile = "{0} ({1}) behalten",
+            Kilobytes = "{0} KB",
+            Megabytes = "{0} MB",
         },
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
@@ -312,6 +320,18 @@ internal sealed record RenderingWords
 
     /// <summary>That notice's text.</summary>
     public required string NotSentText { get; init; }
+
+    /// <summary>That notice's text after a post too large to read, whose answers are lost (ADR-0102).</summary>
+    public required string TooLargeText { get; init; }
+
+    /// <summary>The label of a kept file's box: its name and its size (ADR-0102).</summary>
+    public required string KeepFile { get; init; }
+
+    /// <summary>A size in kilobytes, the number first.</summary>
+    public required string Kilobytes { get; init; }
+
+    /// <summary>A size in megabytes, the number first.</summary>
+    public required string Megabytes { get; init; }
 
     /// <summary>The words of a culture, of its more general culture, or English.</summary>
     /// <param name="culture">The culture, such as <c>de-CH</c>.</param>

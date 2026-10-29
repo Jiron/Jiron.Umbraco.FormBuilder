@@ -207,7 +207,11 @@ internal sealed class FormPostReader
     /// null for a name of no field, of a part, or of a row past those the page showed.
     /// </summary>
     /// <param name="name">The control's name, as a ranking's move names it.</param>
-    public (FormField Field, FormField? Group, int? Row)? FieldOf(string name)
+    /// <param name="anyRow">
+    /// Whether a row past those the page showed counts, up to the most any group may have: a file part names its row
+    /// before the post's count is read (ADR-0102).
+    /// </param>
+    public (FormField Field, FormField? Group, int? Row)? FieldOf(string name, bool anyRow = false)
     {
         if (Path(name) is not { Part: null } path)
         {
@@ -219,7 +223,7 @@ internal sealed class FormPostReader
             return _top.TryGetValue(path.Alias, out var field) && !IsGroup(field) ? (field, null, null) : null;
         }
 
-        return GroupOf(path.Group) is { } group && _children[group.Key].TryGetValue(path.Alias, out var child) && path.Row < RowsOf(group.Key).Count
+        return GroupOf(path.Group) is { } group && _children[group.Key].TryGetValue(path.Alias, out var child) && (anyRow || path.Row < RowsOf(group.Key).Count)
             ? (child, group, path.Row)
             : null;
     }
@@ -248,19 +252,20 @@ internal sealed class FormPostReader
         ArgumentNullException.ThrowIfNull(field);
         ArgumentNullException.ThrowIfNull(order);
         ArgumentNullException.ThrowIfNull(positions);
-        Claim(field, _aliases.GetValueOrDefault(field.Key) ?? field.Alias!);
-        Dictionary<Guid, Answer> answers;
-        if (group is null || row is not { } at)
-        {
-            answers = _fields;
-        }
-        else
-        {
-            Claim(group, _aliases.GetValueOrDefault(group.Key) ?? group.Alias!);
-            answers = Row(group.Key, at);
-        }
+        Made(Claimed(field, group, row), field.Key).Ranked(order, positions);
+    }
 
-        Made(answers, field.Key).Ranked(order, positions);
+    /// <summary>Adds a stored file's token to a field's answer (ADR-0102); for a field that takes one file, in place of a kept one.</summary>
+    /// <param name="field">The field.</param>
+    /// <param name="group">Its repeatable group, or null.</param>
+    /// <param name="row">Its row, or null.</param>
+    /// <param name="token">The upload token.</param>
+    /// <param name="replace">Whether it takes the place of the files the answer holds.</param>
+    public void AddFile(FormField field, FormField? group, int? row, string token, bool replace)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        ArgumentNullException.ThrowIfNull(token);
+        Made(Claimed(field, group, row), field.Key).Filed(token, replace);
     }
 
     /// <summary>Adds a row to a repeatable group with fewer rows than its most, as a first render starts one; false otherwise.</summary>
@@ -392,6 +397,19 @@ internal sealed class FormPostReader
         }
 
         return Made(Row(group.Key, path.Row), child.Key);
+    }
+
+    // The answers a field's answer is among, its names claimed: outside groups, or its group's row.
+    private Dictionary<Guid, Answer> Claimed(FormField field, FormField? group, int? row)
+    {
+        Claim(field, _aliases.GetValueOrDefault(field.Key) ?? field.Alias!);
+        if (group is null || row is not { } at)
+        {
+            return _fields;
+        }
+
+        Claim(group, _aliases.GetValueOrDefault(group.Key) ?? group.Alias!);
+        return Row(group.Key, at);
     }
 
     // A field's answer as posted: outside groups, or in its group's row; null when the post holds none.
@@ -567,6 +585,16 @@ internal sealed class FormPostReader
         }
 
         public void Untick() => _values.Clear();
+
+        public void Filed(string token, bool replace)
+        {
+            if (replace)
+            {
+                _values.Clear();
+            }
+
+            _values.Add(token);
+        }
 
         public void Ordered(StringValues values) => _order.AddRange(values.OfType<string>().Where(value => value.Length > 0));
 

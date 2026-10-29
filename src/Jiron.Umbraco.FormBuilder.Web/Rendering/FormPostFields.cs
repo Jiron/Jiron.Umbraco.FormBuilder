@@ -24,6 +24,12 @@ internal static class FormPostFields
     /// <summary>The key of the page shown.</summary>
     public const string Page = "jfb-page";
 
+    /// <summary>
+    /// The query name in the action of a form that stores files, <c>?jfb-post=&lt;key&gt;.&lt;instance&gt;</c>, which tells the
+    /// files' reader before routing which form a post is (ADR-0006, ADR-0102).
+    /// </summary>
+    public const string PostMarker = "jfb-post";
+
     /// <summary>The button the visitor pressed: <c>back</c>, <c>next</c>, <c>submit</c>, or a row's or a ranking's.</summary>
     public const string Nav = "jfb-nav";
 

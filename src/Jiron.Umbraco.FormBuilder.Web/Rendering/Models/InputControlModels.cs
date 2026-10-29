@@ -120,6 +120,22 @@ public sealed class PartsControlModel
 }
 
 /// <summary>
+/// A file an earlier post without JavaScript stored for a file field (ADR-0102): a ticked box named like the field that
+/// posts the file's upload token as its answer; unticked, the file is let go.
+/// </summary>
+public sealed class KeptFileModel
+{
+    /// <summary>The box's id.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>The upload token it posts (ADR-0087).</summary>
+    public required string Token { get; init; }
+
+    /// <summary>Its label: the file's name and size.</summary>
+    public required string Label { get; init; }
+}
+
+/// <summary>
 /// The control of a file upload (<c>file</c>): the browser's own file input in <c>jfb-upload</c>, which the runtime turns
 /// into its drop zone and buttons (<c>data-jfb-enhanced</c>).
 /// </summary>
@@ -133,6 +149,9 @@ public sealed class FileControlModel
 
     /// <summary>Whether files can be dropped on the field once the runtime runs (<c>data-jfb-dropzone</c>).</summary>
     public bool DropZone { get; init; }
+
+    /// <summary>The files an earlier post stored for the field (ADR-0102), each a ticked box above the input; none at first.</summary>
+    public IReadOnlyList<KeptFileModel> Kept { get; init; } = [];
 }
 
 /// <summary>

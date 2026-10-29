@@ -16,6 +16,9 @@ internal static class FormInstances
     /// <summary>The prefix of every instance id.</summary>
     public const string Prefix = "jfb-";
 
+    // The longest instance id a post names: the prefix and a count no page reaches.
+    private const int LongestId = 16;
+
     /// <summary>The next instance id of the request.</summary>
     /// <param name="httpContext">The request.</param>
     public static string Next(HttpContext httpContext)
@@ -25,6 +28,12 @@ internal static class FormInstances
         httpContext.Items[Count] = next;
         return Prefix + next.ToString(CultureInfo.InvariantCulture);
     }
+
+    /// <summary>Whether a text is an instance id as the render gives it: the prefix and a number, no longer than a page reaches.</summary>
+    /// <param name="instance">The text.</param>
+    public static bool IsId(string instance) =>
+        instance.Length <= LongestId && instance.StartsWith(Prefix, StringComparison.Ordinal) && instance.Length > Prefix.Length
+        && !instance.AsSpan(Prefix.Length).ContainsAnyExceptInRange('0', '9');
 }
 
 /// <summary>A notice above the form after a post, such as "the form has changed".</summary>
@@ -104,6 +113,9 @@ internal sealed record FormPostState
     /// </summary>
     public IReadOnlyDictionary<Guid, IReadOnlyList<string>> Orders { get; init; } = new Dictionary<Guid, IReadOnlyList<string>>();
 
+    /// <summary>The stored files each file field's answer holds by the field's key, which the page offers to keep (ADR-0102).</summary>
+    public IReadOnlyDictionary<Guid, IReadOnlyList<FormPostFile>> Files { get; init; } = new Dictionary<Guid, IReadOnlyList<FormPostFile>>();
+
     /// <summary>The query values the post carried, of the names the form lists, which the page carries on (ADR-0100).</summary>
     public IReadOnlyDictionary<string, IReadOnlyList<string>> Query { get; init; } = new Dictionary<string, IReadOnlyList<string>>();
 
@@ -126,9 +138,18 @@ internal sealed record FormPostRow
     /// <summary>Each ranking's order in the row by the child field's key, as <see cref="FormPostState.Orders"/>.</summary>
     public IReadOnlyDictionary<Guid, IReadOnlyList<string>> Orders { get; init; } = new Dictionary<Guid, IReadOnlyList<string>>();
 
+    /// <summary>The stored files of the row's file fields by the child field's key, as <see cref="FormPostState.Files"/>.</summary>
+    public IReadOnlyDictionary<Guid, IReadOnlyList<FormPostFile>> Files { get; init; } = new Dictionary<Guid, IReadOnlyList<FormPostFile>>();
+
     /// <summary>Whether the visitor just added the row (ADR-0100): its fields start as on a first render, defaults and all.</summary>
     public bool IsNew { get; init; }
 }
+
+/// <summary>A stored file a post kept for its field (ADR-0102): the upload token the page posts back, and the file's name and size.</summary>
+/// <param name="Token">The upload token (ADR-0087).</param>
+/// <param name="Name">The visitor's file name.</param>
+/// <param name="Size">Its size in bytes.</param>
+internal sealed record FormPostFile(string Token, string Name, long Size);
 
 /// <summary>Where a post's state waits for the form it renders again: the request's items, by the form's key and the instance.</summary>
 internal static class FormPosts

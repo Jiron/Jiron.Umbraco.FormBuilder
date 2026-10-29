@@ -95,6 +95,12 @@ internal sealed partial class FormModels
                         Accept = string.Join(',', FileFieldType.Extensions(typed).Select(extension => "." + extension)),
                         Multiple = typed.MaxFiles > 1,
                         DropZone = typed.DropZone,
+                        Kept = [.. build.Files(field.Key).Select((file, at) => new KeptFileModel
+                        {
+                            Id = id + "-kept-" + (at + 1).ToString(CultureInfo.InvariantCulture),
+                            Token = file.Token,
+                            Label = string.Format(build.Culture, build.Words.KeepFile, file.Name, SizeOf(file.Size, build.Words, build.Culture)),
+                        })],
                     }, []);
                 }
 
@@ -164,6 +170,25 @@ internal sealed partial class FormModels
         var step = ExactDecimal.Parse(settings.Step)!.Value;
         var half = ExactDecimal.Divide(ExactDecimal.Subtract(ExactDecimal.Parse(settings.Max)!.Value, low), ExactDecimal.Integer(2));
         return ExactDecimal.Add(low, ExactDecimal.Multiply(ExactDecimal.Round(ExactDecimal.Divide(half, step), 0), step)).ToString();
+    }
+
+    /// <summary>
+    /// A file's size as the page shows it: 1,024 based and rounded to one place, shown without it when it is whole; in
+    /// kilobytes until the rounded size reaches a megabyte, and a file of a few bytes as a tenth of a kilobyte, not as
+    /// none.
+    /// </summary>
+    /// <param name="bytes">The file's size.</param>
+    /// <param name="words">The page's words.</param>
+    /// <param name="culture">The page's culture, which writes the number.</param>
+    internal static string SizeOf(long bytes, RenderingWords words, CultureInfo culture)
+    {
+        const decimal Kilobyte = 1024m;
+        const decimal Megabyte = 1024m * 1024m;
+        var kilobytes = Math.Max(Tenths(Kilobyte), bytes > 0 ? 1m : 0m);
+        var (tenths, template) = kilobytes < 10240m ? (kilobytes, words.Kilobytes) : (Tenths(Megabyte), words.Megabytes);
+        return string.Format(culture, template, (tenths / 10m).ToString(tenths % 10m == 0 ? "0" : "0.0", culture));
+
+        decimal Tenths(decimal unit) => decimal.Floor(((bytes * 10m) + (unit / 2m)) / unit);
     }
 
     // A calculation's result as the pipeline works it out for the same answers (the rules' value, rounded to its places,
