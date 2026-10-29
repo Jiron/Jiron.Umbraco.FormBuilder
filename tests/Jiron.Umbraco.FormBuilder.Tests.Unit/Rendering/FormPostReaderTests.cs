@@ -332,6 +332,53 @@ public sealed class FormPostReaderTests
     }
 
     [Test]
+    public void ASignaturesTypedName_IsThePagesAndNeverThePipelines_ListedForDrawingOutsideGroupsAndInRows()
+    {
+        var sign = Field(K(30), "sign", "signature");
+        var note = Field(K(31), "note", "text");
+        var witness = Field(K(32), "witness", "signature");
+        var crew = Field(K(33), "crew", "repeater") with { Fields = [witness, Guest] };
+        var signed = new FormDefinition { Key = K(0), Pages = [new FormPage { Key = K(20), Groups = [new FormGroup { Key = K(21), Fields = [sign, note, crew] }] }] };
+        var reader = FormPostReader.Read(
+            new FormCollection(new Dictionary<string, StringValues>(StringComparer.Ordinal)
+            {
+                ["sign.typed"] = new(["", "Ada Lovelace"]),
+                ["note.typed"] = new("a part of a text"),
+                ["jfb-rows-crew"] = new("3"),
+                ["crew[0].witness.typed"] = new("Grace Hopper"),
+                ["crew[1].witness.typed"] = new(string.Empty),
+                ["crew[1].guest"] = new("Bob"),
+                ["crew[2].witness"] = new("token"),
+                ["crew[2].witness.typed"] = new("Mary Somerville"),
+            }),
+            signed,
+            TestFieldTypes.Registry);
+
+        var typed = reader.Typed().ToList();
+        var (fields, rows) = reader.Posted();
+        var shown = reader.Shown();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(typed.Select(name => (name.Field.Alias, name.Group?.Alias, name.Row, name.Typed)), Is.EqualTo(new (string?, string?, int?, string)[]
+            {
+                ("sign", null, null, "Ada Lovelace"),
+                ("witness", "crew", 0, "Grace Hopper"),
+                ("witness", "crew", 2, "Mary Somerville"),
+            }), "the first name each posted, a blank one none");
+            Assert.That(fields.Keys, Is.EquivalentTo(new[] { "note" }), "a signature with nothing but its typed name is no answer for the pipeline");
+            Assert.That(fields["note"].Parts!.Keys, Is.EquivalentTo(new[] { "typed" }), "another type's part of that name is the pipeline's to judge");
+            Assert.That(rows["crew"].Select(row => row.Keys.Order(StringComparer.Ordinal)), Is.EqualTo(new[] { Array.Empty<string>(), new[] { "guest" }, new[] { "witness" } }));
+            Assert.That((rows["crew"][2]["witness"].Values, rows["crew"][2]["witness"].Parts), Is.EqualTo((new[] { "token" }, (IReadOnlyDictionary<string, IReadOnlyList<string?>>?)null)), "its value alone");
+            Assert.That(shown.Fields[sign.Key].Part("typed"), Is.EqualTo(new[] { "Ada Lovelace" }), "the page shows the name again");
+            Assert.That(shown.Rows[crew.Key][0][witness.Key].Part("typed"), Is.EqualTo(new[] { "Grace Hopper" }));
+        });
+
+        reader.AddFile(sign, null, null, "drawn", replace: true);
+        Assert.That(reader.Posted().Fields["sign"].Values, Is.EqualTo(new[] { "drawn" }), "once drawn, its token is its answer");
+    }
+
+    [Test]
     public void ReadingWithoutAPostAFormOrTypes_Throws()
     {
         Assert.Multiple(() =>
