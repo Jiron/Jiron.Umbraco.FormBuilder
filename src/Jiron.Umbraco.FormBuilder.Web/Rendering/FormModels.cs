@@ -648,7 +648,7 @@ internal sealed partial class FormModels(
                 return (await ImageAsync(settings), []);
 
             case RepeaterFieldType repeater:
-                return (await RowsAsync(build, field, repeater, settings, cancellationToken), []);
+                return (await RowsAsync(build, field, repeater, settings, id, cancellationToken), []);
 
             default:
                 // A site's own type; a built-in one here, such as a divider, adds nothing.
@@ -821,6 +821,9 @@ internal sealed partial class FormModels(
         IHtmlContent ModelData,
         FormViewPaths Views)
     {
+        // The form's address opening at another element of the page than the form (ADR-0101).
+        public string At(string id) => Action[..(Action.LastIndexOf('#') + 1)] + id;
+
         public FormViewModel Model(
             IReadOnlyList<PageViewModel>? pages = null,
             NavigationButtonModel? defaultButton = null,
@@ -869,8 +872,9 @@ internal sealed partial class FormModels(
     // The page's answers as their types read them: each field's, and each repeatable group's rows within its limits.
     private sealed record PageRead(Dictionary<Guid, ImmutableArray<FieldValue>> Fields, Dictionary<Guid, List<Dictionary<Guid, ImmutableArray<FieldValue>>>> Rows);
 
-    // Where a repeatable group's row stands: the group's alias, the row from 0, its legend and the errors a post left in it.
-    private sealed record RowPlace(string Alias, int Row, string Legend, IReadOnlyDictionary<Guid, FormPostError> Errors);
+    // Where a repeatable group's row stands: the group's alias, the row from 0, its legend, and the errors and the
+    // rankings' orders a post left in it.
+    private sealed record RowPlace(string Alias, int Row, string Legend, IReadOnlyDictionary<Guid, FormPostError> Errors, IReadOnlyDictionary<Guid, IReadOnlyList<string>> Orders);
 
     // What building one form's fields shares, and what it collects.
     private sealed class Build(
@@ -891,6 +895,8 @@ internal sealed partial class FormModels(
         private const string SettingPrefix = "settings.";
 
         private static readonly IReadOnlyDictionary<Guid, FormPostError> NoErrors = FrozenDictionary<Guid, FormPostError>.Empty;
+
+        private static readonly IReadOnlyDictionary<Guid, IReadOnlyList<string>> NoOrders = FrozenDictionary<Guid, IReadOnlyList<string>>.Empty;
 
         private readonly Dictionary<string, string> _controls = new(StringComparer.Ordinal);
 
@@ -923,7 +929,10 @@ internal sealed partial class FormModels(
         public RowPlace? Place { get; init; }
 
         // The start of the ids of the fields where the build stands: the instance's, or the row's below it (ADR-0098).
-        public string Prefix => Place is { } place ? root.Id + "-" + place.Alias + "-" + place.Row.ToString(CultureInfo.InvariantCulture) : root.Id;
+        public string Prefix => Place is { } place ? RowPrefix(place.Alias, place.Row) : root.Id;
+
+        // The start of the ids in a repeatable group's row, which is the row's own id.
+        public string RowPrefix(string alias, int row) => root.Id + "-" + alias + "-" + row.ToString(CultureInfo.InvariantCulture);
 
         public HashSet<string> Hidden => hidden;
 
@@ -969,6 +978,9 @@ internal sealed partial class FormModels(
         // The error a post left for a field where the build stands; null for none.
         public FormPostError? Error(Guid key) => (Place?.Errors ?? post?.Errors)?.GetValueOrDefault(key);
 
+        // A ranking's order as a post left it where the build stands (ADR-0101); none on a first render.
+        public IReadOnlyList<string> Order(Guid key) => (Place?.Orders ?? post?.Orders)?.GetValueOrDefault(key) ?? [];
+
         // The columns of the group a field is in, which a repeatable group's rows take (ADR-0034).
         public int ColumnsOf(Guid key) => Math.Clamp(
             render.Shown.Form.Pages.SelectMany(page => page.Groups).First(group => group.Fields.Any(field => field.Key == key)).Columns, 1, 4);
@@ -999,11 +1011,11 @@ internal sealed partial class FormModels(
                 calculations[id] = value;
             }
 
-            var errors = post?.Rows.GetValueOrDefault(group.Key) is { } posted && row < posted.Count ? posted[row].Errors : NoErrors;
+            var left = post?.Rows.GetValueOrDefault(group.Key) is { } posted && row < posted.Count ? posted[row] : null;
             return new Build(render, root, post, words, culture, answers with { Fields = inRow }, rowHidden, rowRequired, marker, recalled, layout, facts with { Calculations = calculations })
             {
                 Outer = this,
-                Place = new RowPlace(group.Alias ?? string.Empty, row, legend, errors),
+                Place = new RowPlace(group.Alias ?? string.Empty, row, legend, left?.Errors ?? NoErrors, left?.Orders ?? NoOrders),
             };
         }
 

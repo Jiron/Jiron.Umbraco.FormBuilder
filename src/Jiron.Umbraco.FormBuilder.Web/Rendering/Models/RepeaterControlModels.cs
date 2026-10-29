@@ -53,6 +53,12 @@ public sealed class RowButtonModel
     /// <summary>Its visible words.</summary>
     public required string Text { get; init; }
 
+    /// <summary>
+    /// The address it posts to (<c>formaction</c>): the form's, with the row added or the group as the fragment, so the
+    /// page opens where the visitor pressed (ADR-0101).
+    /// </summary>
+    public required string Action { get; init; }
+
     /// <summary>What its accessible name adds after its words, visually hidden: the row's legend for Remove; null for none.</summary>
     public string? Context { get; init; }
 }

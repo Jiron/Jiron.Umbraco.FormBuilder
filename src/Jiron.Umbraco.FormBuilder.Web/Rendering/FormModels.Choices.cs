@@ -338,25 +338,16 @@ internal sealed partial class FormModels
     }
 
     // A ranking's options in the visitor's order (as positions posted without JavaScript, or in order), then the others
-    // in their own order; each of the first few it asks for posts its position, and each moves up or down with a submit
-    // button the no-JS post reads (6.2i).
+    // in the order the page showed them, else their own; each posts its place in that order and each of the first few it
+    // asks for its position, and each moves up or down with a submit button the no-JS post reads (ADR-0101).
     private async Task<RankingControlModel> RankingAsync(Build build, PublicField field, ShownSettings settings, string id, FieldAnswers answers, CancellationToken cancellationToken)
     {
         var (options, available) = await OptionsAsync(build, field, cancellationToken);
         var alias = build.Name(field);
         var top = settings.Int("top", 0);
         var ranked = top > 0 ? Math.Min(top, options.Count) : options.Count;
-        var given = answers.Parts.IsEmpty
-            ? answers.Values.ToList()
-            : [.. answers.Parts
-                .Select(part => (Value: part.Key, Position: part.Value is [var text] && int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var position) ? position : int.MaxValue))
-                .OrderBy(part => part.Position)
-                .ThenBy(part => part.Value, StringComparer.Ordinal)
-                .Select(part => part.Value)];
         var byValue = options.GroupBy(option => option.Value, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
-        var order = given.Where(byValue.ContainsKey).Distinct(StringComparer.Ordinal).Select(value => byValue[value]).ToList();
-        var placed = order.Select(option => option.Value).ToHashSet(StringComparer.Ordinal);
-        order.AddRange([.. options.Where(option => placed.Add(option.Value))]);
+        var order = RankingOrder.Of([.. byValue.Keys], answers, build.Order(field.Key)).Select(value => byValue[value]).ToList();
         var items = new List<RankingItemModel>();
         foreach (var option in order)
         {
@@ -364,15 +355,20 @@ internal sealed partial class FormModels
             var n = (at + 1).ToString(CultureInfo.InvariantCulture);
             items.Add(new RankingItemModel
             {
+                Id = Place(id, at),
                 Label = option.Label,
                 Position = at < ranked ? at + 1 : null,
                 Input = at < ranked ? new HiddenInputModel(alias + "." + option.Value, n) : null,
-                Up = new RankingMoveModel(string.Format(build.Culture, build.Words.MoveUp, option.Label), "up:" + alias + ":" + n, at == 0, at == 0 ? id : null),
-                Down = new RankingMoveModel(string.Format(build.Culture, build.Words.MoveDown, option.Label), "down:" + alias + ":" + n, at == order.Count - 1, null),
+                Order = new HiddenInputModel(FormPostFields.OrderPrefix + alias, option.Value),
+                Up = new RankingMoveModel(string.Format(build.Culture, build.Words.MoveUp, option.Label), FormPostFields.Up + FormPostFields.Separator + alias + FormPostFields.Separator + n, at == 0, at == 0 ? id : null, build.Root.At(Place(id, Math.Max(at - 1, 0)))),
+                Down = new RankingMoveModel(string.Format(build.Culture, build.Words.MoveDown, option.Label), FormPostFields.Down + FormPostFields.Separator + alias + FormPostFields.Separator + n, at == order.Count - 1, null, build.Root.At(Place(id, Math.Min(at + 1, order.Count - 1)))),
             });
         }
 
         return new RankingControlModel { Items = items, Empty = items.Count == 0 ? NoOptions(build, available) : null };
+
+        // The id of a ranking's place, counted from 0 here and from 1 in the id.
+        static string Place(string id, int at) => id + "-place-" + (at + 1).ToString(CultureInfo.InvariantCulture);
     }
 
     // A field's options as the page offers them: its own as the form endpoint shows them in the culture; or, for

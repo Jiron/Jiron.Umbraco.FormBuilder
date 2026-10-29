@@ -9,12 +9,12 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
 // A repeatable group's rows (ADR-0098): the rows the page's answers hold, each a fieldset numbered after its row label
 // whose fields are named by their path and follow their row's state, with the Add and Remove buttons the no-JS post
-// reads (6.2i).
+// reads (ADR-0101).
 internal sealed partial class FormModels
 {
     // The rows of a repeatable group, each row's fields built in its row, and the buttons that add and remove one: Add
-    // below the most rows, Remove above the least.
-    private async Task<RepeaterControlModel> RowsAsync(Build build, PublicField field, RepeaterFieldType type, ShownSettings settings, CancellationToken cancellationToken)
+    // below the most rows, opening the page at the row added, and Remove above the least, opening it at the group.
+    private async Task<RepeaterControlModel> RowsAsync(Build build, PublicField field, RepeaterFieldType type, ShownSettings settings, string id, CancellationToken cancellationToken)
     {
         var limits = type.ReadSettings(build.Definition(field.Key).Settings);
         var alias = field.Alias ?? string.Empty;
@@ -42,7 +42,7 @@ internal sealed partial class FormModels
                 Id = inRow.Prefix,
                 Legend = legend,
                 Remove = count > limits.MinRows
-                    ? new RowButtonModel { Value = "remove:" + alias + ":" + row.ToString(CultureInfo.InvariantCulture), Text = remove, Context = legend }
+                    ? new RowButtonModel { Value = FormPostFields.Remove + FormPostFields.Separator + alias + FormPostFields.Separator + row.ToString(CultureInfo.InvariantCulture), Text = remove, Context = legend, Action = build.Root.At(id) }
                     : null,
                 Fields = fields,
             });
@@ -52,7 +52,7 @@ internal sealed partial class FormModels
         {
             Rows = rows,
             Add = count < limits.MaxRows
-                ? new RowButtonModel { Value = "add:" + alias, Text = settings.Text("addLabel") is { Length: > 0 } adding ? adding : build.Words.AddRow }
+                ? new RowButtonModel { Value = FormPostFields.Add + FormPostFields.Separator + alias, Text = settings.Text("addLabel") is { Length: > 0 } adding ? adding : build.Words.AddRow, Action = build.Root.At(build.RowPrefix(alias, count)) }
                 : null,
             RowCount = new HiddenInputModel(FormPostFields.RowsPrefix + alias, count.ToString(CultureInfo.InvariantCulture)),
             FieldsCssClass = "jfb-fields jfb-columns-" + build.ColumnsOf(field.Key).ToString(CultureInfo.InvariantCulture),
@@ -61,16 +61,24 @@ internal sealed partial class FormModels
     }
 
     // A repeatable group's rows (ADR-0098): a post's, at most as many as a group may have, each with its child fields'
-    // answers only; and never fewer than the group's least, each row added starting as on a first render, its fields as
-    // a field outside a group starts. A group a rule hid posts no rows, as its controls are disabled, so once shown it
-    // shows its least as a first render does.
+    // answers only, a row the visitor just added starting as on a first render (ADR-0100); and never fewer than the
+    // group's least, each row added starting so, its fields as a field outside a group starts. A group a rule hid posts
+    // no rows, as its controls are disabled, so once shown it shows its least as a first render does.
     private List<Dictionary<Guid, FieldAnswers>> RowsOf(PublicField group, FormPostState? post, Dictionary<Guid, FormField> defined, DateTime local)
     {
         var children = group.Fields.Select(child => child.Key).ToHashSet();
         List<Dictionary<Guid, FieldAnswers>> rows = [.. (post?.Rows.GetValueOrDefault(group.Key) ?? []).Take(RepeaterFieldType.MostRows)
-            .Select(row => row.Answers.Where(pair => children.Contains(pair.Key)).ToDictionary(pair => pair.Key, pair => pair.Value))];
+            .Select(row => row.IsNew ? Started() : row.Answers.Where(pair => children.Contains(pair.Key)).ToDictionary(pair => pair.Key, pair => pair.Value))];
         var least = types.Find(group.Type)?.Type is RepeaterFieldType repeater ? Math.Min(repeater.ReadSettings(defined[group.Key].Settings).MinRows, RepeaterFieldType.MostRows) : 0;
         while (rows.Count < least)
+        {
+            rows.Add(Started());
+        }
+
+        return rows;
+
+        // A row as a first render starts it.
+        Dictionary<Guid, FieldAnswers> Started()
         {
             var answers = new Dictionary<Guid, FieldAnswers>();
             foreach (var child in group.Fields)
@@ -81,9 +89,7 @@ internal sealed partial class FormModels
                 }
             }
 
-            rows.Add(answers);
+            return answers;
         }
-
-        return rows;
     }
 }

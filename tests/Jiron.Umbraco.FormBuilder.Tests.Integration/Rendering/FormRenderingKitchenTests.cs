@@ -313,6 +313,7 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
     {
         var named = name.StartsWith(FormModels.ConsentPrefix, StringComparison.Ordinal) ? name[FormModels.ConsentPrefix.Length..]
             : name.StartsWith(FormPostFields.RowsPrefix, StringComparison.Ordinal) ? name[FormPostFields.RowsPrefix.Length..]
+            : name.StartsWith(FormPostFields.OrderPrefix, StringComparison.Ordinal) ? name[FormPostFields.OrderPrefix.Length..]
             : name;
         return name == "jfb-nav" || named == alias || named.StartsWith(alias + ".", StringComparison.Ordinal) || named.StartsWith(alias + "[", StringComparison.Ordinal);
     }

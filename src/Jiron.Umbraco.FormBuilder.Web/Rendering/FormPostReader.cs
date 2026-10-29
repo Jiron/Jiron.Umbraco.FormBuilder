@@ -11,8 +11,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// <summary>
 /// The answers of a form's post without JavaScript (ADR-0100), read by the names its controls carry (ADR-0058):
 /// <c>&lt;alias&gt;</c> and <c>&lt;alias&gt;.&lt;part&gt;</c>, a repeatable group's
-/// <c>&lt;group&gt;[&lt;row&gt;].&lt;child&gt;</c> as many rows as the page showed, a consent's wording, the context and
-/// query values, and a yes or no switch that posts nothing as <c>no</c>, every line break as the runtime sends it. A
+/// <c>&lt;group&gt;[&lt;row&gt;].&lt;child&gt;</c> as many rows as the page showed, a consent's wording, a ranking's order,
+/// the context and query values, and a yes or no switch that posts nothing as <c>no</c>, every line break as the runtime sends it. A
 /// name is a field's when the form names it so now or did in a published version, as the pipeline reads a page of an
 /// older revision (ADR-0002); any other name, and a row past the count, is left out, as a site's markup may add inputs
 /// of its own.
@@ -29,6 +29,7 @@ internal sealed class FormPostReader
     private readonly Dictionary<Guid, Answer> _fields = [];
     private readonly Dictionary<Guid, SortedDictionary<int, Dictionary<Guid, Answer>>> _rows = [];
     private readonly Dictionary<Guid, int> _counts = [];
+    private readonly Dictionary<Guid, HashSet<int>> _added = [];
     private readonly Dictionary<string, string> _context = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IReadOnlyList<string>> _query = new(StringComparer.Ordinal);
     private readonly List<FormField> _order;
@@ -84,10 +85,10 @@ internal sealed class FormPostReader
             {
                 if (RowsOf(field.Key) is { Count: > 0 } posted)
                 {
-                    rows[_aliases[field.Key]] = [.. posted.Select(row => (IReadOnlyDictionary<string, PostedAnswer>)row.ToDictionary(pair => _aliases[pair.Key], pair => pair.Value.Posted(), StringComparer.Ordinal))];
+                    rows[_aliases[field.Key]] = [.. posted.Select(row => (IReadOnlyDictionary<string, PostedAnswer>)row.Where(pair => !pair.Value.IsBlank).ToDictionary(pair => _aliases[pair.Key], pair => pair.Value.Posted(), StringComparer.Ordinal))];
                 }
             }
-            else if (_fields.TryGetValue(field.Key, out var answer))
+            else if (_fields.TryGetValue(field.Key, out var answer) && !answer.IsBlank)
             {
                 fields[_aliases[field.Key]] = answer.Posted();
             }
@@ -116,6 +117,29 @@ internal sealed class FormPostReader
             else if (_fields.TryGetValue(field.Key, out var answer) && answer.Shown() is { } shown)
             {
                 fields[field.Key] = shown;
+            }
+        }
+
+        return (fields, rows);
+    }
+
+    /// <summary>
+    /// The rankings' orders as the page showed them, or as a move left them (ADR-0100): each field's by its key, and each
+    /// repeatable group's rows of its children's; a ranking without one has none.
+    /// </summary>
+    public (Dictionary<Guid, IReadOnlyList<string>> Fields, Dictionary<Guid, IReadOnlyList<Dictionary<Guid, IReadOnlyList<string>>>> Rows) Orders()
+    {
+        var fields = new Dictionary<Guid, IReadOnlyList<string>>();
+        var rows = new Dictionary<Guid, IReadOnlyList<Dictionary<Guid, IReadOnlyList<string>>>>();
+        foreach (var field in _order)
+        {
+            if (IsGroup(field))
+            {
+                rows[field.Key] = [.. RowsOf(field.Key).Select(row => row.Where(pair => pair.Value.Order.Count > 0).ToDictionary(pair => pair.Key, pair => (IReadOnlyList<string>)[.. pair.Value.Order]))];
+            }
+            else if (_fields.TryGetValue(field.Key, out var answer) && answer.Order.Count > 0)
+            {
+                fields[field.Key] = [.. answer.Order];
             }
         }
 
@@ -174,6 +198,117 @@ internal sealed class FormPostReader
         }
     }
 
+    /// <summary>The repeatable group a name names, by its alias now or one it had; null for any other name.</summary>
+    /// <param name="alias">The group's alias, as a row's button names it.</param>
+    public FormField? GroupOf(string alias) => _top.TryGetValue(alias, out var group) && IsGroup(group) ? group : null;
+
+    /// <summary>
+    /// The field a control's name names (<c>alias</c> or <c>group[row].child</c>), with its repeatable group and row;
+    /// null for a name of no field, of a part, or of a row past those the page showed.
+    /// </summary>
+    /// <param name="name">The control's name, as a ranking's move names it.</param>
+    public (FormField Field, FormField? Group, int? Row)? FieldOf(string name)
+    {
+        if (Path(name) is not { Part: null } path)
+        {
+            return null;
+        }
+
+        if (path.Group is null)
+        {
+            return _top.TryGetValue(path.Alias, out var field) && !IsGroup(field) ? (field, null, null) : null;
+        }
+
+        return GroupOf(path.Group) is { } group && _children[group.Key].TryGetValue(path.Alias, out var child) && path.Row < RowsOf(group.Key).Count
+            ? (child, group, path.Row)
+            : null;
+    }
+
+    /// <summary>A field's answers as the page shows them, in its row for a repeatable group's child; none without any.</summary>
+    /// <param name="field">The field.</param>
+    /// <param name="row">Its row, or null outside a repeatable group.</param>
+    public FieldAnswers AnswersOf(FormField field, int? row) => AnswerAt(field, row)?.Shown() ?? FieldAnswers.None;
+
+    /// <summary>A ranking's order as the page showed it (ADR-0100), in its row for a repeatable group's child; none without one.</summary>
+    /// <param name="field">The ranking.</param>
+    /// <param name="row">Its row, or null outside a repeatable group.</param>
+    public IReadOnlyList<string> OrderOf(FormField field, int? row) => [.. AnswerAt(field, row)?.Order ?? []];
+
+    /// <summary>
+    /// Ranks a field's options as the page posts them (ADR-0096, ADR-0100): the order the page then shows, and the given
+    /// positions by the options' values.
+    /// </summary>
+    /// <param name="field">The ranking.</param>
+    /// <param name="group">Its repeatable group, or null.</param>
+    /// <param name="row">Its row, or null.</param>
+    /// <param name="order">The options' values in order.</param>
+    /// <param name="positions">The positions by the options' values.</param>
+    public void Rank(FormField field, FormField? group, int? row, IReadOnlyList<string> order, IReadOnlyDictionary<string, string> positions)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        ArgumentNullException.ThrowIfNull(order);
+        ArgumentNullException.ThrowIfNull(positions);
+        Claim(field, _aliases.GetValueOrDefault(field.Key) ?? field.Alias!);
+        Dictionary<Guid, Answer> answers;
+        if (group is null || row is not { } at)
+        {
+            answers = _fields;
+        }
+        else
+        {
+            Claim(group, _aliases.GetValueOrDefault(group.Key) ?? group.Alias!);
+            answers = Row(group.Key, at);
+        }
+
+        Made(answers, field.Key).Ranked(order, positions);
+    }
+
+    /// <summary>Adds a row to a repeatable group with fewer rows than its most, as a first render starts one; false otherwise.</summary>
+    /// <param name="group">The group.</param>
+    /// <param name="most">The most rows it may have.</param>
+    public bool AddRow(FormField group, int most)
+    {
+        ArgumentNullException.ThrowIfNull(group);
+        var count = RowsOf(group.Key).Count;
+        if (count >= Math.Min(most, RepeaterFieldType.MostRows))
+        {
+            return false;
+        }
+
+        Claim(group, _aliases.GetValueOrDefault(group.Key) ?? group.Alias!);
+        _counts[group.Key] = count + 1;
+        Added(group.Key).Add(count);
+        return true;
+    }
+
+    /// <summary>Removes a row of a repeatable group with more rows than its least; false for any other, and for a row past them.</summary>
+    /// <param name="group">The group.</param>
+    /// <param name="row">The row.</param>
+    /// <param name="least">The fewest rows it may have.</param>
+    public bool RemoveRow(FormField group, int row, int least)
+    {
+        ArgumentNullException.ThrowIfNull(group);
+        var rows = RowsOf(group.Key);
+        if (row < 0 || row >= rows.Count || rows.Count <= least)
+        {
+            return false;
+        }
+
+        rows.RemoveAt(row);
+        _rows[group.Key] = new SortedDictionary<int, Dictionary<Guid, Answer>>(rows.Select((answers, at) => (answers, at)).ToDictionary(pair => pair.at, pair => pair.answers));
+        _counts[group.Key] = rows.Count;
+        var added = Added(group.Key);
+        var kept = added.Where(at => at != row).Select(at => at > row ? at - 1 : at).ToList();
+        added.Clear();
+        added.UnionWith(kept);
+        return true;
+    }
+
+    /// <summary>Whether the visitor just added a group's row, whose fields start as on a first render.</summary>
+    /// <param name="group">The group's key.</param>
+    /// <param name="row">The row.</param>
+    public bool IsNew(Guid group, int row) => _added.TryGetValue(group, out var added) && added.Contains(row);
+
     // The names of fields: each one's alias now, then the aliases it had, unless another field has one of them now.
     private static void Names(Dictionary<string, FormField> names, IEnumerable<FormField> fields)
     {
@@ -224,6 +359,13 @@ internal sealed class FormPostReader
                 answer.Take(ConsentFieldType.WordingPart, Texts(values));
             }
         }
+        else if (name.StartsWith(FormPostFields.OrderPrefix, StringComparison.Ordinal))
+        {
+            if (Path(name[FormPostFields.OrderPrefix.Length..]) is { Part: null } path && AnswerOf(path) is { } answer)
+            {
+                answer.Ordered(values);
+            }
+        }
         else if (name.StartsWith(FormModels.ContextPrefix, StringComparison.Ordinal))
         {
             _context[name[FormModels.ContextPrefix.Length..]] = values.LastOrDefault() ?? string.Empty;
@@ -249,17 +391,46 @@ internal sealed class FormPostReader
             return null;
         }
 
-        if (!_rows.TryGetValue(group.Key, out var rows))
+        return Made(Row(group.Key, path.Row), child.Key);
+    }
+
+    // A field's answer as posted: outside groups, or in its group's row; null when the post holds none.
+    private Answer? AnswerAt(FormField field, int? row)
+    {
+        if (row is not { } at)
         {
-            _rows[group.Key] = rows = [];
+            return _fields.GetValueOrDefault(field.Key);
         }
 
-        if (!rows.TryGetValue(path.Row, out var row))
+        var group = _order.FirstOrDefault(top => top.Fields.Any(child => child.Key == field.Key));
+        return group is null ? null : RowsOf(group.Key).ElementAtOrDefault(at)?.GetValueOrDefault(field.Key);
+    }
+
+    // A group's row as posted, made when the post holds none of its controls.
+    private Dictionary<Guid, Answer> Row(Guid group, int at)
+    {
+        if (!_rows.TryGetValue(group, out var rows))
         {
-            rows[path.Row] = row = [];
+            _rows[group] = rows = [];
         }
 
-        return Made(row, child.Key);
+        if (!rows.TryGetValue(at, out var row))
+        {
+            rows[at] = row = [];
+        }
+
+        return row;
+    }
+
+    // The rows of a group the visitor just added.
+    private HashSet<int> Added(Guid group)
+    {
+        if (!_added.TryGetValue(group, out var added))
+        {
+            _added[group] = added = [];
+        }
+
+        return added;
     }
 
     private static Answer Made(Dictionary<Guid, Answer> answers, Guid key)
@@ -306,17 +477,7 @@ internal sealed class FormPostReader
                 Claim(child, _aliases.GetValueOrDefault(child.Key) ?? child.Alias!);
                 for (var row = 0; row < count; row++)
                 {
-                    if (!_rows.TryGetValue(field.Key, out var rows))
-                    {
-                        _rows[field.Key] = rows = [];
-                    }
-
-                    if (!rows.TryGetValue(row, out var answers))
-                    {
-                        rows[row] = answers = [];
-                    }
-
-                    Made(answers, child.Key).SwitchedOff();
+                    Made(Row(field.Key, row), child.Key).SwitchedOff();
                 }
             }
         }
@@ -369,10 +530,16 @@ internal sealed class FormPostReader
     {
         private readonly List<string?> _values = [];
         private readonly Dictionary<string, List<string?>> _parts = new(StringComparer.Ordinal);
+        private readonly List<string> _order = [];
 
         public bool IsTicked => _values.Contains(FieldAnswerDefaults.Ticked, StringComparer.Ordinal);
 
         public string? Hash => _parts.GetValueOrDefault(ConsentFieldType.WordingPart)?.FirstOrDefault(text => !string.IsNullOrEmpty(text));
+
+        // A ranking's order as the page showed it, which is no answer: an answer of nothing else is none for the pipeline.
+        public List<string> Order => _order;
+
+        public bool IsBlank => _values.Count == 0 && _parts.Count == 0;
 
         public void Take(string? part, List<string?> texts)
         {
@@ -400,6 +567,20 @@ internal sealed class FormPostReader
         }
 
         public void Untick() => _values.Clear();
+
+        public void Ordered(StringValues values) => _order.AddRange(values.OfType<string>().Where(value => value.Length > 0));
+
+        public void Ranked(IReadOnlyList<string> order, IReadOnlyDictionary<string, string> positions)
+        {
+            _values.Clear();
+            _parts.Clear();
+            _order.Clear();
+            _order.AddRange(order);
+            foreach (var (value, position) in positions)
+            {
+                _parts[value] = [position];
+            }
+        }
 
         public PostedAnswer Posted() => new(
             [.. _values],

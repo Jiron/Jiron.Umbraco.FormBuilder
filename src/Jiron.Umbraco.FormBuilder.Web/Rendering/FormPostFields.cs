@@ -24,7 +24,7 @@ internal static class FormPostFields
     /// <summary>The key of the page shown.</summary>
     public const string Page = "jfb-page";
 
-    /// <summary>The button the visitor pressed: <c>back</c>, <c>next</c>, <c>submit</c>, or a row's or a ranking's (6.2i).</summary>
+    /// <summary>The button the visitor pressed: <c>back</c>, <c>next</c>, <c>submit</c>, or a row's or a ranking's.</summary>
     public const string Nav = "jfb-nav";
 
     /// <summary>The prefix of a repeatable group's row count, before the group's alias.</summary>
@@ -32,6 +32,12 @@ internal static class FormPostFields
 
     /// <summary>The prefix of a query value the post carries on, before its name.</summary>
     public const string QueryPrefix = "jfb-query-";
+
+    /// <summary>
+    /// The prefix of a ranking's order as the page shows it, before its control's name: one value per option, in that
+    /// order, which a move acts on.
+    /// </summary>
+    public const string OrderPrefix = "jfb-order-";
 
     /// <summary>The button back to the previous page.</summary>
     public const string Back = "back";
@@ -41,4 +47,19 @@ internal static class FormPostFields
 
     /// <summary>The button that sends the form.</summary>
     public const string Submit = "submit";
+
+    /// <summary>A repeatable group's Add, before the group's alias: <c>add:&lt;alias&gt;</c>.</summary>
+    public const string Add = "add";
+
+    /// <summary>A row's Remove, before the group's alias and the row: <c>remove:&lt;alias&gt;:&lt;row&gt;</c>.</summary>
+    public const string Remove = "remove";
+
+    /// <summary>A ranking's move up, before its control's name and the option's place: <c>up:&lt;name&gt;:&lt;n&gt;</c>.</summary>
+    public const string Up = "up";
+
+    /// <summary>A ranking's move down, as <see cref="Up"/>.</summary>
+    public const string Down = "down";
+
+    /// <summary>What separates a button's parts.</summary>
+    public const char Separator = ':';
 }

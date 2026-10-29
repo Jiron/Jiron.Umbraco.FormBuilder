@@ -98,6 +98,12 @@ internal sealed record FormPostState
     /// <summary>Where the page to show is from <see cref="Page"/>.</summary>
     public FormPostMove Move { get; init; }
 
+    /// <summary>
+    /// Each ranking's order by the field's key, as the page showed it or as a move left it (ADR-0100), which places the
+    /// options a ranking of the top few leaves unranked.
+    /// </summary>
+    public IReadOnlyDictionary<Guid, IReadOnlyList<string>> Orders { get; init; } = new Dictionary<Guid, IReadOnlyList<string>>();
+
     /// <summary>The query values the post carried, of the names the form lists, which the page carries on (ADR-0100).</summary>
     public IReadOnlyDictionary<string, IReadOnlyList<string>> Query { get; init; } = new Dictionary<string, IReadOnlyList<string>>();
 
@@ -116,6 +122,12 @@ internal sealed record FormPostRow
 
     /// <summary>The errors by the child field's key, each the error of its field in this row.</summary>
     public IReadOnlyDictionary<Guid, FormPostError> Errors { get; init; } = new Dictionary<Guid, FormPostError>();
+
+    /// <summary>Each ranking's order in the row by the child field's key, as <see cref="FormPostState.Orders"/>.</summary>
+    public IReadOnlyDictionary<Guid, IReadOnlyList<string>> Orders { get; init; } = new Dictionary<Guid, IReadOnlyList<string>>();
+
+    /// <summary>Whether the visitor just added the row (ADR-0100): its fields start as on a first render, defaults and all.</summary>
+    public bool IsNew { get; init; }
 }
 
 /// <summary>Where a post's state waits for the form it renders again: the request's items, by the form's key and the instance.</summary>

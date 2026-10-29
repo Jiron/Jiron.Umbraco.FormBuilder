@@ -2,7 +2,9 @@
 
 - Status: accepted; extends [ADR-0015](0015-themes-and-the-markup-contract.md) (a repeatable group's rows, their names
   and ids, and its buttons), [ADR-0093](0093-the-razor-rendering.md) (the post state's rows; the rows' rules) and
-  [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the `rowLabel` setting)
+  [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the `rowLabel` setting); a row added
+  without JavaScript, starting as a first render starts one, amended by
+  [ADR-0101](0101-rows-and-moves-without-javascript.md) in 6.2i
 - Date: 2026-10-29
 - Roadmap step: 6.2f (decided and built); 6.2h's surface action fills the post state's rows and 6.2i reads the buttons, 6.4
   adds and removes rows in the browser

@@ -2,11 +2,12 @@
 
 - Status: accepted; extends [ADR-0004](0004-rendering-and-submission-paths.md) (what the form carries, the page after
   the redirect, a message with a redirect) and [ADR-0093](0093-the-razor-rendering.md) (the form's hidden inputs, the
-  page shown after a post)
+  page shown after a post); extended by [ADR-0101](0101-rows-and-moves-without-javascript.md) in 6.2i (the rows'
+  and the rankings' buttons)
 - Date: 2026-10-29
-- Roadmap step: 6.2h (decided and built); 6.2i gives a row's Add and Remove and a ranking's moves their effect, 6.2j
-  takes files and the typed signature, 6.2k adds the cache rules, 7.1 the honeypot, the challenge and the rate limits,
-  6.5 the summary page and the copy of the answers
+- Roadmap step: 6.2h (decided and built); 6.2i gives a row's Add and Remove and a ranking's moves their effect
+  (ADR-0101), 6.2j takes files and the typed signature, 6.2k adds the cache rules, 7.1 the honeypot, the challenge and
+  the rate limits, 6.5 the summary page and the copy of the answers
 
 ## Context
 
@@ -102,8 +103,8 @@ Option 3, option 3, option 1 and option 2.
     next page the rules show;
   - `submit`, and a post without `jfb-nav` (a site's own view without the buttons' names): the pipeline; errors after Send show on the first page
     that holds one (an option that filled up meanwhile, an answer another entry took);
-  - any other value (`add:`, `remove:`, `up:`, `down:`): the posted page again with every answer, until 6.2i gives
-    each its effect.
+  - a row's Add or Remove and a ranking's moves (`add:`, `remove:`, `up:`, `down:`): the posted page again with the
+    change and every answer, without a check (ADR-0101); any other value: the posted page again with every answer.
 
   The handler names the posted page and the move; the form's render works out which page the rules show, with the
   posted answers, as it works out every other state (ADR-0093). A page rendered again after a post works out its rules
@@ -145,7 +146,7 @@ Option 3, option 3, option 1 and option 2.
   challenge is fetched by script. The runtime's post is idempotent.
 - The query values reach a post without JavaScript only through the `Referer` on its first post, so a site that sends
   no referrer loses them there; the docs say so.
-- 6.2i reads `add:`, `remove:`, `up:` and `down:` in the same handler; 6.2j adds the `?jfb-post` marker and files; 7.1
+- 6.2i reads `add:`, `remove:`, `up:` and `down:` in the same handler (ADR-0101); 6.2j adds the `?jfb-post` marker and files; 7.1
   adds the honeypot, the fill time and the rate limits, whose refusal keeps every answer and says when to send again
   (ADR-0012); 6.5 adds the summary page and the copy of the answers, whose token is single-use.
 - **Revisit** if Umbraco routes internal surface controllers, or if browsers stop sending `Origin` with posts.

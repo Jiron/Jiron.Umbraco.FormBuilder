@@ -2,6 +2,7 @@ using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
@@ -46,8 +47,9 @@ internal sealed record FormPostAnswer(FormPostAnswerKind Kind, string? Url = nul
 /// <summary>
 /// A form's post without JavaScript (ADR-0004, ADR-0100): read into the request the JSON endpoint reads (ADR-0088), the
 /// step its button asks for run through the pipeline (Back moves without a check, Next checks the page as the validate
-/// endpoint does, Send submits), and the answers, the errors, the page to move from and any notice left for the form's
-/// render through the request's items (ADR-0093); a sent form redirects to its outcome. Every answer is <c>no-store</c>.
+/// endpoint does, Send submits) or a row's Add or Remove or a ranking's move made without one, and the answers, the
+/// errors, the page to move from and any notice left for the form's render through the request's items (ADR-0093); a sent
+/// form redirects to its outcome. Every answer is <c>no-store</c>.
 /// </summary>
 /// <param name="forms">The published forms.</param>
 /// <param name="requests">What the form endpoint answers, whose consent wordings a changed form's post is checked against.</param>
@@ -124,7 +126,8 @@ internal sealed class FormPostHandler(
         };
         var page = Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var pageKey) ? pageKey : (Guid?)null;
         var state = new Step(reader, definition, page, query);
-        switch (posted[FormPostFields.Nav].LastOrDefault())
+        var nav = posted[FormPostFields.Nav].LastOrDefault();
+        switch (nav)
         {
             case FormPostFields.Back:
                 state.Move = FormPostMove.Back;
@@ -156,12 +159,48 @@ internal sealed class FormPostHandler(
                 }
 
                 break;
+            default:
+                Button(reader, nav);
+                break;
         }
 
-        // Any other button (a row's Add or Remove, a ranking's move) shows the posted page again until 6.2i.
         FormPosts.Set(http, formKey, instance, state.State());
         return FormPostAnswer.Page;
     }
+
+    // A row's Add or Remove, or a ranking's move in the order the page showed (ADR-0101): the posted page again with the
+    // change and every answer, without a check. An Add past the group's most, a Remove below its
+    // least, a move past an end and any other button change nothing.
+    private void Button(FormPostReader reader, string? nav)
+    {
+        switch (nav?.Split(FormPostFields.Separator))
+        {
+            case [FormPostFields.Add, var alias] when reader.GroupOf(alias) is { } group:
+                reader.AddRow(group, Limits(group).Most);
+                break;
+            case [FormPostFields.Remove, var alias, var row] when reader.GroupOf(alias) is { } group && Number(row) is { } at:
+                reader.RemoveRow(group, at, Limits(group).Least);
+                break;
+            case [var way and (FormPostFields.Up or FormPostFields.Down), var name, var place] when reader.FieldOf(name) is { } found
+                && types.FindType(found.Field.Type) is RankingFieldType ranking && Number(place) is { } n:
+                // A post without the order shown (a site's own view) moves among the options it ranks.
+                var answers = reader.AnswersOf(found.Field, found.Row);
+                var posted = reader.OrderOf(found.Field, found.Row);
+                var shown = RankingOrder.Of(posted.Count > 0 ? posted : [.. answers.Parts.Keys, .. answers.Values], answers);
+                var order = RankingOrder.Moved(shown, n, way == FormPostFields.Up);
+                reader.Rank(found.Field, found.Group, found.Row, order, RankingOrder.Positions(order, ranking.ReadSettings(found.Field.Settings).Top));
+                break;
+        }
+    }
+
+    // A repeatable group's fewest and most rows, held to the most any group may have.
+    private (int Least, int Most) Limits(FormField group) =>
+        types.FindType(group.Type) is RepeaterFieldType repeater && repeater.ReadSettings(group.Settings) is { } settings
+            ? (Math.Min(settings.MinRows, RepeaterFieldType.MostRows), Math.Min(settings.MaxRows, RepeaterFieldType.MostRows))
+            : (0, RepeaterFieldType.MostRows);
+
+    // A whole number from a button, or null.
+    private static int? Number(string text) => int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : null;
 
     // Every answer of the action, set before anything runs and again as the response starts, after anything else set it.
     private static void NoStore(HttpResponse response)
@@ -343,12 +382,14 @@ internal sealed class FormPostHandler(
         public FormPostState State()
         {
             var (answers, rows) = Reader.Shown();
+            var orders = Reader.Orders();
             return new FormPostState
             {
                 Answers = answers,
                 Errors = _errors,
                 IsEmpty = _isEmpty,
-                Rows = rows.ToDictionary(pair => pair.Key, pair => Rows(pair.Key, pair.Value)),
+                Rows = rows.ToDictionary(pair => pair.Key, pair => Rows(pair.Key, pair.Value, orders.Rows[pair.Key])),
+                Orders = orders.Fields,
                 Page = _page,
                 Move = Move,
                 Query = query,
@@ -356,14 +397,16 @@ internal sealed class FormPostHandler(
             };
         }
 
-        // A group's rows with their errors; the pipeline names no row past those posted.
-        private IReadOnlyList<FormPostRow> Rows(Guid group, IReadOnlyList<Dictionary<Guid, FieldAnswers>> answers)
+        // A group's rows with their errors and orders; the pipeline names no row past those posted.
+        private IReadOnlyList<FormPostRow> Rows(Guid group, IReadOnlyList<Dictionary<Guid, FieldAnswers>> answers, IReadOnlyList<Dictionary<Guid, IReadOnlyList<string>>> orders)
         {
             var errors = _rowErrors.GetValueOrDefault(group);
             return [.. answers.Select((row, index) => new FormPostRow
             {
                 Answers = row,
                 Errors = errors?.GetValueOrDefault(index) ?? new Dictionary<Guid, FormPostError>(),
+                Orders = orders[index],
+                IsNew = Reader.IsNew(group, index),
             })];
         }
     }

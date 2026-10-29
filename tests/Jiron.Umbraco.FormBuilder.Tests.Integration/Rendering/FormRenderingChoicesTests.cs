@@ -218,7 +218,7 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
 
             var rank = Field(empty, "rank");
             Assert.That(rank.QuerySelectorAll("ol.jfb-ranking > li").Select(item => (item.Children[0].TextContent, item.Children[1].TextContent)), Is.EqualTo(new[] { ("1", "X"), ("2", "Y"), (string.Empty, "Z") }), "the top two are ranked");
-            Assert.That(Hidden(rank), Is.EqualTo(new[] { "rank.x=1", "rank.y=2" }));
+            Assert.That(Hidden(rank), Is.EqualTo(new[] { "jfb-order-rank=x", "rank.x=1", "jfb-order-rank=y", "rank.y=2", "jfb-order-rank=z" }), "each option's place in the order shown, and the top two's positions");
             Assert.That(rank.QuerySelectorAll("button").Select(button => (button.GetAttribute("id"), button.GetAttribute("value"), button.GetAttribute("aria-disabled"), button.TextContent)), Is.EqualTo(new (string?, string?, string?, string)[]
             {
                 ("jfb-1-rank", "up:rank:1", "true", "Move X up"), (null, "down:rank:1", null, "Move X down"),
@@ -226,6 +226,13 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
                 (null, "up:rank:3", null, "Move Z up"), (null, "down:rank:3", "true", "Move Z down"),
             }), "the moves are submit buttons; one at an end is aria-disabled and stays in the tab order");
             Assert.That(rank.QuerySelectorAll("button").All(button => button.GetAttribute("type") == "submit" && button.GetAttribute("name") == "jfb-nav"), Is.True);
+            Assert.That(rank.QuerySelectorAll("ol.jfb-ranking > li").Select(item => item.Id), Is.EqualTo(new[] { "jfb-1-rank-place-1", "jfb-1-rank-place-2", "jfb-1-rank-place-3" }));
+            Assert.That(rank.QuerySelectorAll("button").Select(button => button.GetAttribute("formaction")), Is.EqualTo(new[]
+            {
+                "/choices/#jfb-1-rank-place-1", "/choices/#jfb-1-rank-place-2",
+                "/choices/#jfb-1-rank-place-1", "/choices/#jfb-1-rank-place-3",
+                "/choices/#jfb-1-rank-place-2", "/choices/#jfb-1-rank-place-3",
+            }), "each move opens the page at the option's new place, one at an end at its own");
 
             var box = Field(empty, "box");
             Assert.That(Compact(box.InnerHtml), Is.EqualTo("""<div class="jfb-choice"><input type="checkbox" id="jfb-1-box" name="box" value="true"><label for="jfb-1-box">Send me <a href="/news">the newsletter</a></label></div>"""), "one box takes its text as its label, unmarked");
@@ -255,7 +262,7 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
             Assert.That(Checked(Field(answered, "stars")), Is.EqualTo(new[] { "4" }));
             Assert.That(Inputs(Field(answered, "grid")).Where(input => input.IsChecked).Select(input => (input.Name, input.Value)), Is.EqualTo(new[] { ($"grid.{RowA:D}", "2"), ($"grid.{RowB:D}", "1") }));
             Assert.That(Field(answered, "rank").QuerySelectorAll("li").Select(item => item.Children[1].TextContent), Is.EqualTo(new[] { "Z", "X", "Y" }), "the posted positions, then the rest in their order");
-            Assert.That(Hidden(Field(answered, "rank")), Is.EqualTo(new[] { "rank.z=1", "rank.x=2" }));
+            Assert.That(Hidden(Field(answered, "rank")), Is.EqualTo(new[] { "jfb-order-rank=z", "rank.z=1", "jfb-order-rank=x", "rank.x=2", "jfb-order-rank=y" }));
             Assert.That(Checked(Field(answered, "box")), Is.EqualTo(new[] { "true" }));
             Assert.That(Checked(Field(answered, "consent")), Is.EqualTo(new[] { "true" }));
             Assert.That(Selected(Field(answered, "country")), Is.EqualTo(new[] { "CH" }));

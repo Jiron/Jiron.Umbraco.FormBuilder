@@ -127,7 +127,7 @@ public sealed class FormRenderingRowsTests : RenderingTestBase
             Assert.That(form.QuerySelector("#jfb-1-guests-0-age")!.GetAttribute("name"), Is.EqualTo("guests[0].age"));
             Assert.That(form.QuerySelector("#jfb-1-guests-0-cost")!.TextContent, Is.EqualTo("EUR 0.00"), "a row's calculation over its row's answers, an empty number counting as zero");
             Assert.That(form.QuerySelector("#jfb-1-guests-0-diet")!.GetAttribute("value"), Is.EqualTo("Any"), "a least row's field starts with its default");
-            Assert.That(guests.QuerySelector(".jfb-repeater > button")!.OuterHtml, Is.EqualTo("""<button type="submit" class="jfb-button" name="jfb-nav" value="add:guests"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>Add a guest</button>"""));
+            Assert.That(guests.QuerySelector(".jfb-repeater > button")!.OuterHtml, Is.EqualTo("""<button type="submit" class="jfb-button" name="jfb-nav" value="add:guests" formaction="/rows/#jfb-1-guests-1"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>Add a guest</button>"""), "Add opens the page at the row it adds");
             Assert.That(Field(form, "party").QuerySelectorAll(".jfb-row"), Is.Empty, "a group without a least starts with its Add button alone");
             Assert.That(Text(Field(form, "party"), ".jfb-repeater > button"), Is.EqualTo("Add a row"), "the package's words without an add label");
             Assert.That(form.QuerySelector("button[tabindex='-1'][aria-hidden=true]")!.GetAttribute("value"), Is.EqualTo("submit"), "Enter in a field sends the form, not the first Add or Remove");
@@ -147,7 +147,7 @@ public sealed class FormRenderingRowsTests : RenderingTestBase
         {
             Assert.That(rows.Select(row => row.QuerySelector(":scope > legend")!.TextContent), Is.EqualTo(new[] { "Guest 1", "Guest 2", "Guest 3" }));
             Assert.That(rows.Select(row => row.QuerySelector(":scope > button")!.OuterHtml), Is.EqualTo(new[] { 0, 1, 2 }.Select(row =>
-                $"""<button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="remove:guests:{row}">Leave out<span class="jfb-visually-hidden"> Guest {row + 1}</span></button>""")), "Remove names its row");
+                $"""<button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="remove:guests:{row}" formaction="/rows/#jfb-1-guests">Leave out<span class="jfb-visually-hidden"> Guest {row + 1}</span></button>""")), "Remove names its row, and opens the page at the group");
             Assert.That(Field(form, "guests").QuerySelector(".jfb-repeater > button"), Is.Null, "no Add once the group has its most rows");
             Assert.That(form.QuerySelector("#jfb-1-guests-0-name")!.GetAttribute("value"), Is.EqualTo("Ada"));
             Assert.That(form.QuerySelector("#jfb-1-guests-1-name")!.GetAttribute("value"), Is.EqualTo("Sam"));

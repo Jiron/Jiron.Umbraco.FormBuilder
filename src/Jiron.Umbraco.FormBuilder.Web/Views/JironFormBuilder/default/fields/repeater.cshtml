@@ -4,7 +4,8 @@
 @*
     The rows in the field's fieldset, each a fieldset with its legend and its fields; the container carries the field's
     id, so the error summary's link to the group's own error moves the focus to its rows. Add and Remove are submit
-    buttons, so a page without JavaScript adds or removes a row by rendering the page again.
+    buttons, so a page without JavaScript adds or removes a row by rendering the page again, opened at the row added or
+    at the group.
 *@
 @{
     var control = (RepeaterControlModel)Model.Control!;
@@ -12,11 +13,11 @@
     {
         if (remove.Context is { } context)
         {
-            <button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="@remove.Value" disabled="@Model.IsDisabled">@remove.Text<span class="jfb-visually-hidden"> @context</span></button>
+            <button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="@remove.Value" formaction="@remove.Action" disabled="@Model.IsDisabled">@remove.Text<span class="jfb-visually-hidden"> @context</span></button>
         }
         else
         {
-            <button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="@remove.Value" disabled="@Model.IsDisabled">@remove.Text</button>
+            <button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="@remove.Value" formaction="@remove.Action" disabled="@Model.IsDisabled">@remove.Text</button>
         }
     }
 }
@@ -40,6 +41,6 @@
     }
     @if (control.Add is { } add)
     {
-        <button type="submit" class="jfb-button" name="jfb-nav" value="@add.Value" disabled="@Model.IsDisabled"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>@add.Text</button>
+        <button type="submit" class="jfb-button" name="jfb-nav" value="@add.Value" formaction="@add.Action" disabled="@Model.IsDisabled"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>@add.Text</button>
     }
 </div>

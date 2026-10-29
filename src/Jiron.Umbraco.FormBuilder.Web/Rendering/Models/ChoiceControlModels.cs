@@ -169,11 +169,18 @@ public sealed class GridControlModel
 /// </param>
 /// <param name="IsDisabled">Whether the option cannot move this way, at an end of the list (<c>aria-disabled</c>, so it keeps its place in the tab order).</param>
 /// <param name="Id">The field's id on the first button, which the error summary links to; otherwise null.</param>
-public sealed record RankingMoveModel(string Label, string Value, bool IsDisabled, string? Id);
+/// <param name="Action">
+/// The address it posts to (<c>formaction</c>): the form's, with the option's place after the move as the fragment, so
+/// the page opens where the visitor pressed (ADR-0101).
+/// </param>
+public sealed record RankingMoveModel(string Label, string Value, bool IsDisabled, string? Id, string Action);
 
 /// <summary>One option of a ranking, in the order the visitor gave or the options' own.</summary>
 public sealed class RankingItemModel
 {
+    /// <summary>The id of the option's place, <c>&lt;field id&gt;-place-&lt;n&gt;</c>, at which a move opens the page (ADR-0101).</summary>
+    public required string Id { get; init; }
+
     /// <summary>The option's label.</summary>
     public required string Label { get; init; }
 
@@ -182,6 +189,12 @@ public sealed class RankingItemModel
 
     /// <summary>The hidden input that posts the position: the alias, a dot and the option's value (ADR-0058); null without a position.</summary>
     public HiddenInputModel? Input { get; init; }
+
+    /// <summary>
+    /// The hidden input that posts the option's value in the order shown, <c>jfb-order-&lt;alias&gt;</c>, which a move
+    /// without JavaScript acts on (ADR-0100).
+    /// </summary>
+    public required HiddenInputModel Order { get; init; }
 
     /// <summary>The button that moves the option up.</summary>
     public required RankingMoveModel Up { get; init; }

@@ -4,7 +4,8 @@
   grid and a ranking meet the contract, and the copy of the default button) and
   [ADR-0093](0093-the-razor-rendering.md) (the choice types' view models; options from a source rendered on the
   server); amends [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) (the page carries the
-  consents' hashes the answer holds)
+  consents' hashes the answer holds); the order a ranking posts, and the options below its top in the order shown,
+  amended by [ADR-0101](0101-rows-and-moves-without-javascript.md) in 6.2i
 - Date: 2026-10-29
 - Roadmap step: 6.2d (decided and built); 6.2e and 6.2f render the other types, 6.2h reads the switch and 6.2i the moves
   of a post without JavaScript, 6.3 styles the classes, 6.4 enhances the controls, 7.1 shows the places left
