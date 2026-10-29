@@ -1997,7 +1997,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the markup contract (`data-jfb-*` attributes, deterministic per-request instance ids), with the model data the runtime reads, taken from the form endpoint's answer (6.1a, 6.1b) so the Razor and the headless paths read one model, and every element in the state its rules give for the default answers (ADR-0015);
     - the page's culture.
   - Done when: TestServer tests render a form through `<jfb-render>` and through `Component.InvokeAsync`, two forms on one page under their own instance ids, with the hooks of ADR-0015 that these views hold, the assets once and the model data equal to the form endpoint's answer. A TestServer test renders a form whose hidden field takes its value from the signed-in member, and that value never appears in the rendered markup (moved from 5.4). A view in the form's own override folder renders in place of the default one; a `context-…` value the form lists renders, and one it does not list renders nothing. The rendered page is looked at in Edge.
-- [ ] **6.2c Visitor texts, members-only forms and pending migrations** (6.2 split in six, WORKLOG 2026-10-28; then 6.2b in two, WORKLOG 2026-10-28)
+- [x] **6.2c Visitor texts, members-only forms and pending migrations** (6.2 split in six, WORKLOG 2026-10-28; then 6.2b in two, WORKLOG 2026-10-28) (2026-10-29, 707d336)
   - **Rendering:**
     - member gating messages in the page's culture;
     - **visitor texts** (added in 5.3f, ADR-0068) through the merge-tag service in the visitor-text place, each with the page, group or field whose text it is, and on a no-JS post with the posted answers (6.2e), so a label that recalls an earlier answer shows what the runtime shows;
