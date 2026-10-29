@@ -5,10 +5,13 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
+using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Tests.Common.Testing;
 
@@ -532,6 +535,10 @@ public sealed partial class FormPostTests : RenderingTestBase
         _clock = new TestClock();
         builder.Services.AddSingleton(_clock);
         builder.Services.AddUnique<TimeProvider>(_clock);
+        builder.Services.AddSingleton<MemoryFileStore>();
+        builder.Services.AddUnique<IFormBuilderFileStore>(provider => provider.GetRequiredService<MemoryFileStore>());
+        builder.Services.AddSingleton<BodyCap>();
+        builder.Services.AddSingleton<IStartupFilter>(provider => provider.GetRequiredService<BodyCap>());
     }
 
     // The main form: a name, a long text, a switch, a required consent and two guests' rows with a switch each; its

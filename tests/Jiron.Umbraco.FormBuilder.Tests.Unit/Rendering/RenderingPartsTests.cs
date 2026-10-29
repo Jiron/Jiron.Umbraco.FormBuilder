@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
@@ -10,8 +11,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Rendering;
 
 /// <summary>
 /// The small parts of the Razor rendering (ADR-0093): the model data's escapes, the attributes the views write, the
-/// instance ids of a request, the state a post leaves for a form, the package's words by culture, and the form
-/// reference a page holds.
+/// instance ids of a request, the state a post leaves for a form, what reading a post's files found and a kept file's
+/// size (ADR-0102), the package's words by culture, and the form reference a page holds.
 /// </summary>
 [TestFixture]
 public sealed class RenderingPartsTests
@@ -97,6 +98,53 @@ public sealed class RenderingPartsTests
         });
     }
 
+    [TestCase("jfb-1", true)]
+    [TestCase("jfb-42", true)]
+    [TestCase("jfb-123456789012", true)]
+    [TestCase("jfb-1234567890123", false)]
+    [TestCase("jfb-", false)]
+    [TestCase("jfb-one", false)]
+    [TestCase("jfb-1a", false)]
+    [TestCase("jfb--1", false)]
+    [TestCase("form-1", false)]
+    [TestCase("", false)]
+    public void AnInstanceId_IsThePrefixAndANumber_NoLongerThanAPageReaches(string instance, bool isId) =>
+        Assert.That(FormInstances.IsId(instance), Is.EqualTo(isId));
+
+    [Test]
+    public void WhatReadingAPostsFilesFound_WaitsForItsFormAndInstance_Only()
+    {
+        var http = new DefaultHttpContext();
+        var read = new FormPostFileRead([new FormPostFileNote("cv", FieldMessageKinds.FileSize)], IsRefused: false);
+
+        FormPostFileNotes.Set(http, Form, "jfb-2", read);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(FormPostFileNotes.Get(http, Form, "jfb-2"), Is.SameAs(read));
+            Assert.That(FormPostFileNotes.Get(http, Form, "jfb-1"), Is.Null, "another instance of the form");
+            Assert.That(FormPostFileNotes.Get(http, Guid.NewGuid(), "jfb-2"), Is.Null, "another form");
+            Assert.That(FormPostFileNotes.Get(new DefaultHttpContext(), Form, "jfb-2"), Is.Null, "another request");
+            Assert.That(FormPosts.Get(http, Form, "jfb-2"), Is.Null, "apart from the post's state");
+        });
+    }
+
+    [TestCase(0L, "en", "0 KB")]
+    [TestCase(1L, "en", "0.1 KB")]
+    [TestCase(100L, "en", "0.1 KB")]
+    [TestCase(1536L, "en", "1.5 KB")]
+    [TestCase(2048L, "en", "2 KB")]
+    [TestCase(40_000L, "en", "39.1 KB")]
+    [TestCase(40_000L, "de", "39,1 KB")]
+    [TestCase(1_048_524L, "en", "1023.9 KB")]
+    [TestCase(1_048_525L, "en", "1 MB")]
+    [TestCase(1_048_576L, "en", "1 MB")]
+    [TestCase(1_500_000L, "en", "1.4 MB")]
+    [TestCase(1_500_000L, "de", "1,4 MB")]
+    [TestCase(10_485_760L, "en", "10 MB")]
+    public void AKeptFilesSize_IsInKilobytesUntilAMegabyte_WithOnePlaceOnlyWhenItIsNotWhole(long bytes, string culture, string shown) =>
+        Assert.That(FormModels.SizeOf(bytes, RenderingWords.Of(culture), CultureInfo.GetCultureInfo(culture)), Is.EqualTo(shown));
+
     [TestCase("de", "Senden")]
     [TestCase("de-CH", "Senden")]
     [TestCase("de-DE", "Senden")]
@@ -121,7 +169,7 @@ public sealed class RenderingPartsTests
                 words.Other, words.OtherText, words.Choose, words.ChooseCountry, words.SeveralHint, words.NoChoices,
                 words.ChoicesUnavailable, words.NameTitle, words.NameFirst, words.NameMiddle, words.NameLast, words.Street,
                 words.Street2, words.Postcode, words.City, words.Region, words.Country, words.SignatureName,
-                words.SignatureTyped,
+                words.SignatureTyped, words.TooLargeText,
             };
             Assert.Multiple(() =>
             {
@@ -135,6 +183,8 @@ public sealed class RenderingPartsTests
                 Assert.That(Format(words.MoveUp, "Seats"), Does.Contain("Seats"), culture);
                 Assert.That(Format(words.MoveDown, "Seats"), Does.Contain("Seats").And.Not.EqualTo(Format(words.MoveUp, "Seats")), culture);
                 Assert.That(Format(words.Row, 2), Does.Contain("2"), culture);
+                Assert.That(Format(words.KeepFile, "cv.pdf", "2 KB"), Does.Contain("cv.pdf (2 KB)"), culture);
+                Assert.That((Format(words.Kilobytes, 2), Format(words.Megabytes, 2)), Is.EqualTo(("2 KB", "2 MB")), culture);
             });
         }
     }
@@ -152,6 +202,8 @@ public sealed class RenderingPartsTests
             Assert.That(words.SeveralHint, Does.Contain("gedr" + (char)0xFC + "ckt"));
             Assert.That(words.Street, Is.EqualTo("Stra" + (char)0xDF + "e und Hausnummer"));
             Assert.That(words.SignatureName, Is.EqualTo("Ihr vollst" + (char)0xE4 + "ndiger Name"));
+            Assert.That(words.TooLargeText, Does.StartWith("Die Dateien waren zu gro" + (char)0xDF + ",").And.Contain("W" + (char)0xE4 + "hlen").And.Contain("f" + (char)0xFC + "llen"));
+            Assert.That(words.KeepFile, Is.EqualTo("{0} ({1}) behalten"));
         });
     }
 
