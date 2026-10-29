@@ -6,7 +6,7 @@
   server); amends [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) (the page carries the
   consents' hashes the answer holds)
 - Date: 2026-10-29
-- Roadmap step: 6.2d (decided and built); 6.2e and 6.2f render the other types, 6.2g reads the moves and the switch
+- Roadmap step: 6.2d (decided and built); 6.2e and 6.2f render the other types, 6.2h reads the switch and 6.2i the moves
   of a post without JavaScript, 6.3 styles the classes, 6.4 enhances the controls, 7.1 shows the places left
 
 ## Context
@@ -41,7 +41,7 @@ rating's labels say; how countries are ordered; and what shows when there are no
 1. **A number input per option**, the position typed. Easy to get wrong (two options at 1), and the list does not
    show the order the visitor means.
 2. **The order shown, each ranked option posting its position in a hidden input, and move buttons that are submit
-   buttons**: the post renders the page again with the option moved (6.2g), so the list always shows the answer.
+   buttons**: the post renders the page again with the option moved (6.2i), so the list always shows the answer.
    Section 4.3's "a position number per option, checked for unique positions on the server" is what is posted.
 3. **A select of positions per option.** As 1, with more controls on a phone.
 
@@ -108,8 +108,8 @@ Options 2 for each.
   (a disabled select with that line for a dropdown).
 - **Places left** stay out of the server's markup: they change by the moment, and a page is the same for every
   visitor and may be cached; the runtime shows them (7.1).
-- **A switch** that is off posts nothing; the no-JS post of 6.2g reads it as `no` when it was on the posted page and
-  shown, and reads the moves (ROADMAP 6.2g, strengthened in this step).
+- **A switch** that is off posts nothing; the no-JS post of 6.2h reads it as `no` when it was on the posted page and
+  shown, and 6.2i reads the moves (ROADMAP 6.2h and 6.2i, strengthened in this step).
 - The built-in views stay at contract version 1: nothing has shipped yet, so version 1 is what the first release
   holds.
 
@@ -119,7 +119,7 @@ Options 2 for each.
   posted, as ADR-0015's rules do; the runtime replaces them as the visitor answers.
 - Rendering a form waits for its sources, each held to 5 seconds as for the endpoint (ADR-0073); a source the page
   needs costs one call per render (the option service caches by its own rules), and a cached page shows a source's
-  options as they were when it was stored (6.2i).
+  options as they were when it was stored (6.2k).
 - An option's description is a hook the specimen did not show: the design's theme (`docs/ux/website`, which 6.3
   ships) now sets it under the option's label with the box beside both, a card's content keeps to its top so the
   labels of a row line up, and the specimen shows one in a list and one on a card.

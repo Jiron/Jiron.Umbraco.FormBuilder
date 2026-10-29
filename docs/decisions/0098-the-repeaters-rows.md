@@ -4,19 +4,19 @@
   and ids, and its buttons), [ADR-0093](0093-the-razor-rendering.md) (the post state's rows; the rows' rules) and
   [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (the `rowLabel` setting)
 - Date: 2026-10-29
-- Roadmap step: 6.2f (decided and built); 6.2g's surface action fills the post state's rows and reads the buttons, 6.4
+- Roadmap step: 6.2f (decided and built); 6.2h's surface action fills the post state's rows and 6.2i reads the buttons, 6.4
   adds and removes rows in the browser
 
 ## Context
 
 Step 6.2f renders a repeatable group (`repeater`) on a Razor page: rows of child fields, each row named
-`<alias>[<row>].<child>` (ADR-0015), and an Add and a Remove button that a page without JavaScript posts (6.2g). The
+`<alias>[<row>].<child>` (ADR-0015), and an Add and a Remove button that a page without JavaScript posts (6.2i). The
 specimen in `docs/ux/website/book-session.html` shows two rows of guests, each with its legend ("Guest 1") and a
 Remove button, and an Add button that is gone once the group has its most rows.
 
 Open were: what a row's legend says; how many rows a page shows; how a row's fields are named, which ids they carry and
 which rules, errors and marks they follow; what the buttons post and when they show; and what the post state carries
-for 6.2g.
+for 6.2h.
 
 ## Options
 
@@ -64,7 +64,7 @@ Option 3 and option 2.
 - **Marks:** the group's legend says "(optional)" under the optional style when its least is 0, and is never marked
   required: its least rows are there, and their fields say what each needs.
 - **Errors** come in the post state: each repeatable group's rows by its key, each row its answers and its errors by
-  the child's key (`FormPostRow`), which 6.2g fills from the pipeline's problems at their paths. A row's error shows at
+  the child's key (`FormPostRow`), which 6.2h fills from the pipeline's problems at their paths. A row's error shows at
   its field and links from the error summary to its control; the group's own error (`rowCount`) shows below the rows
   and links to the rows' container (`jfb-repeater`), which carries the field's id and takes the focus. The summary
   lists the errors in the page's order, a group's own after its rows'.
@@ -75,7 +75,7 @@ Option 3 and option 2.
 ## Consequences
 
 - The designer shows one more text setting for a repeatable group, the row label, beside the Add and Remove labels.
-- A page without JavaScript shows a group's least rows and adds or removes one per post (6.2g); the runtime does the
+- A page without JavaScript shows a group's least rows and adds or removes one per post (6.2i); the runtime does the
   same in place (6.4), with the same names, ids and legends.
 - **Revisit** if editors need a row's legend with the number elsewhere than at the end, or a row's text with merge tags
   that recalls its own row's answers.
