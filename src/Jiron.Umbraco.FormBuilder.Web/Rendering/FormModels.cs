@@ -228,14 +228,15 @@ internal sealed partial class FormModels(
         }
 
         var navigation = Navigation(settings, shownPages, current, words);
+        var errors = Summary(build, settings.ValidationSummary, pages.FirstOrDefault(page => page.IsCurrent));
         return root.Model(
             pages: pages,
             defaultButton: pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Control is RankingControlModel or RepeaterControlModel)
                 ? navigation.Next ?? navigation.Submit
                 : null,
             progress: Progress(settings, shownPages, current, build),
-            errors: build.Errors.Count > 0 && settings.ValidationSummary
-                ? new ErrorSummaryViewModel { Heading = words.ErrorSummary, HeadingId = root.Id + "-summary", Errors = build.Errors }
+            errors: errors.Count > 0
+                ? new ErrorSummaryViewModel { Heading = VisitorMessages.SummaryHeading(errors.Count, render.Culture), HeadingId = root.Id + "-summary", Errors = errors }
                 : null,
             navigation: navigation,
             requiredNote: build.MarksRequired
@@ -457,13 +458,14 @@ internal sealed partial class FormModels(
         var element = traits.HoldsValue ? LabelElementOf(traits.Type, shownSettings) : FieldLabelElement.None;
         var mark = MarkOf(build, field, traits.Type, element, isRequired);
         build.MarksRequired |= mark == FieldMark.Required;
-        var error = build.Error(field.Key);
+        var label = traits.HoldsValue ? build.Text(field.Key, "label", field.Label) : null;
+        (string Message, string Link)? error = build.Error(field.Key) is { } posted ? ErrorOf(build, field, traits.Type, shownSettings, posted, field.HideLabel ? null : label) : null;
         var answers = build.Answers.GetValueOrDefault(field.Key) ?? FieldAnswers.None;
         var (model, described) = await ControlAsync(build, field, traits, shownSettings, control, answers, cancellationToken);
-        if (error is not null)
+        if (error is { } shown)
         {
             // After the control's, so a repeatable group's own error follows its rows' in the summary, as on the page.
-            build.Errors.Add(new ErrorLinkModel(error, control));
+            build.Errors.Add(new ErrorLinkModel(shown.Link, control));
         }
 
         var help = build.Text(field.Key, "help", field.Help);
@@ -488,7 +490,7 @@ internal sealed partial class FormModels(
             Name = build.Name(field),
             CssClass = Classes("jfb-field", "jfb-field-" + field.Type, field.Span > 1 ? "jfb-span-" + field.Span.ToString(CultureInfo.InvariantCulture) : null, field.CssClass),
             LabelElement = element,
-            Label = traits.HoldsValue ? build.Text(field.Key, "label", field.Label) : null,
+            Label = label,
             HideLabel = field.HideLabel,
             Mark = mark,
             MarkText = mark switch
@@ -499,7 +501,7 @@ internal sealed partial class FormModels(
             },
             Help = help,
             HelpId = control + "-help",
-            Error = error,
+            Error = error?.Message,
             ErrorId = control + "-error",
             DescribedBy = describedBy.Count > 0 ? string.Join(' ', describedBy) : null,
             IsRequired = isRequired,
@@ -818,8 +820,8 @@ internal sealed partial class FormModels(
     // The page's answers as their types read them: each field's, and each repeatable group's rows within its limits.
     private sealed record PageRead(Dictionary<Guid, ImmutableArray<FieldValue>> Fields, Dictionary<Guid, List<Dictionary<Guid, ImmutableArray<FieldValue>>>> Rows);
 
-    // Where a repeatable group's row stands: the group's alias, the row from 0 and the errors a post left in it.
-    private sealed record RowPlace(string Alias, int Row, IReadOnlyDictionary<Guid, string> Errors);
+    // Where a repeatable group's row stands: the group's alias, the row from 0, its legend and the errors a post left in it.
+    private sealed record RowPlace(string Alias, int Row, string Legend, IReadOnlyDictionary<Guid, FormPostError> Errors);
 
     // What building one form's fields shares, and what it collects.
     private sealed class Build(
@@ -839,7 +841,7 @@ internal sealed partial class FormModels(
         // The prefix of a visitor text that is a field's setting, such as settings.text.
         private const string SettingPrefix = "settings.";
 
-        private static readonly IReadOnlyDictionary<Guid, string> NoErrors = FrozenDictionary<Guid, string>.Empty;
+        private static readonly IReadOnlyDictionary<Guid, FormPostError> NoErrors = FrozenDictionary<Guid, FormPostError>.Empty;
 
         private readonly Dictionary<string, string> _controls = new(StringComparer.Ordinal);
 
@@ -916,15 +918,15 @@ internal sealed partial class FormModels(
             : Place is { } place ? place.Alias + "[" + place.Row.ToString(CultureInfo.InvariantCulture) + "]." + alias : alias;
 
         // The error a post left for a field where the build stands; null for none.
-        public string? Error(Guid key) => (Place?.Errors ?? post?.Errors)?.GetValueOrDefault(key);
+        public FormPostError? Error(Guid key) => (Place?.Errors ?? post?.Errors)?.GetValueOrDefault(key);
 
         // The columns of the group a field is in, which a repeatable group's rows take (ADR-0034).
         public int ColumnsOf(Guid key) => Math.Clamp(
             render.Shown.Form.Pages.SelectMany(page => page.Groups).First(group => group.Fields.Any(field => field.Key == key)).Columns, 1, 4);
 
         // The build of a repeatable group's row (ADR-0098): the row's answers over the page's, its state over the form's
-        // (a hidden group hides every row's fields), its calculations' values, its errors, and its ids and names.
-        public Build Row(PublicField group, int row)
+        // (a hidden group hides every row's fields), its calculations' values, its errors, its ids and names, and its legend.
+        public Build Row(PublicField group, int row, string legend)
         {
             var inRow = new Dictionary<Guid, FieldAnswers>(Answers);
             foreach (var (key, given) in RowAnswers[group.Key][row])
@@ -952,7 +954,7 @@ internal sealed partial class FormModels(
             return new Build(render, root, post, words, culture, answers with { Fields = inRow }, rowHidden, rowRequired, marker, recalled, layout, facts with { Calculations = calculations })
             {
                 Outer = this,
-                Place = new RowPlace(group.Alias ?? string.Empty, row, errors),
+                Place = new RowPlace(group.Alias ?? string.Empty, row, legend, errors),
             };
         }
 

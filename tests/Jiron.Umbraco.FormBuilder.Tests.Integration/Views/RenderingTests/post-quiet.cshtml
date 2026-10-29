@@ -8,7 +8,7 @@
     FormPosts.Set(Context, key, "jfb-1", new FormPostState
     {
         Answers = new Dictionary<Guid, FieldAnswers> { [Guid.Parse("30000000-0000-4000-8000-000000000084")] = new FieldAnswers(["B"]) },
-        Errors = new Dictionary<Guid, string> { [Guid.Parse("30000000-0000-4000-8000-000000000084")] = "Enter your whole name" },
+        Errors = new Dictionary<Guid, FormPostError> { [Guid.Parse("30000000-0000-4000-8000-000000000084")] = new FormPostError("required") },
     });
 }
 <jfb-render form="renderingQuiet" />

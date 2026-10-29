@@ -1,4 +1,4 @@
-@* A form rendered again after a post without JavaScript that failed: the state the surface action leaves (6.2g). *@
+@* A form rendered again after a post without JavaScript that failed: the state the surface action leaves (6.2h). *@
 @using Jiron.Umbraco.FormBuilder.Core.FieldTypes
 @using Jiron.Umbraco.FormBuilder.Web.Rendering
 @inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
@@ -9,7 +9,7 @@
     {
         Page = Guid.Parse("30000000-0000-4000-8000-0000000062b2"),
         Answers = new Dictionary<Guid, FieldAnswers> { [Guid.Parse("30000000-0000-4000-8000-000000000084")] = new FieldAnswers(["Bob <b>"]) },
-        Errors = new Dictionary<Guid, string> { [Guid.Parse("30000000-0000-4000-8000-000000000084")] = "Enter your whole name" },
+        Errors = new Dictionary<Guid, FormPostError> { [Guid.Parse("30000000-0000-4000-8000-000000000084")] = new FormPostError("minLength") },
         Notice = new FormPostNotice("The form has changed", "Check your answers, then send them again."),
     });
 }

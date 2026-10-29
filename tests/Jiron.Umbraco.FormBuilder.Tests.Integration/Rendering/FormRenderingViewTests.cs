@@ -149,7 +149,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
             Assert.That(form.QuerySelectorAll("section.jfb-page").Select(page => page.HasAttribute("hidden")), Is.EqualTo(new[] { true, false }), "the post's page");
             Assert.That(Compact(form.QuerySelector(".jfb-progress-bar")!.OuterHtml), Is.EqualTo("""<div class="jfb-progress jfb-progress-bar"><p class="jfb-progress-text" id="jfb-1-progress">Step 2 of 2</p><progress max="2" value="2" aria-labelledby="jfb-1-progress">Step 2 of 2</progress></div>"""));
             Assert.That(Compact(form.QuerySelector(".jfb-notice")!.OuterHtml), Is.EqualTo("""<div class="jfb-notice"><h2>The form has changed</h2><p>Check your answers, then send them again.</p></div>"""));
-            Assert.That(Compact(form.QuerySelector(".jfb-error-summary")!.OuterHtml), Is.EqualTo("""<div class="jfb-error-summary" data-jfb-summary="" role="alert" tabindex="-1" aria-labelledby="jfb-1-summary"><h2 id="jfb-1-summary">These answers need a change</h2><ul><li><a href="#jfb-1-name">Enter your whole name</a></li></ul></div>"""));
+            Assert.That(Compact(form.QuerySelector(".jfb-error-summary")!.OuterHtml), Is.EqualTo("""<div class="jfb-error-summary" data-jfb-summary="" role="alert" tabindex="-1" aria-labelledby="jfb-1-summary"><h2 id="jfb-1-summary">This answer needs a change</h2><ul><li><a href="#jfb-1-name">Enter your whole name</a></li></ul></div>"""), "the field's own message for the kind, as written");
             Assert.That(Control(form, "name").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="text" id="jfb-1-name" name="name" value="Bob <b>" aria-invalid="true" aria-describedby="jfb-1-name-error">"""));
             Assert.That(Field(form, "name").QuerySelector("p.jfb-error")!.OuterHtml, Is.EqualTo("""<p class="jfb-error" id="jfb-1-name-error" data-jfb-error="">Enter your whole name</p>"""));
             Assert.That(Compact(form.QuerySelector(".jfb-navigation")!.InnerHtml), Is.EqualTo(
@@ -173,7 +173,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
         {
             Assert.That(form.QuerySelectorAll(".jfb-error-summary"), Is.Empty);
             Assert.That(form.QuerySelectorAll(".jfb-progress"), Is.Empty, "a form of one page shows no progress");
-            Assert.That(Text(Field(form, "name"), "p.jfb-error"), Is.EqualTo("Enter your whole name"));
+            Assert.That(Text(Field(form, "name"), "p.jfb-error"), Is.EqualTo("Enter an answer"), "the default");
             Assert.That(Control(form, "name").GetAttribute("aria-invalid"), Is.EqualTo("true"));
         });
     }
@@ -355,7 +355,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
         },
         Pages =
         [
-            new FormPage { Key = Key(0x50), Groups = [new FormGroup { Key = Key(0x51), Fields = [NameField] }] },
+            new FormPage { Key = Key(0x50), Groups = [new FormGroup { Key = Key(0x51), Fields = [NameField with { Messages = new FieldMessages { MinLength = new LocalizedText("Enter your whole name") } }] }] },
             new FormPage { Key = PageTwo, Groups = [new FormGroup { Key = Key(0x52), Fields = [Text(Key(0x53), "city", "City")] }] },
         ],
     };

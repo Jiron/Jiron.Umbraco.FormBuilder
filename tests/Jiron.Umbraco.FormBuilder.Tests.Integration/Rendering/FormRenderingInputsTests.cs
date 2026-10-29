@@ -72,6 +72,19 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
         (K(0x18), "signature", "signature", true),
     ];
 
+    // Each input's default message for no answer (ADR-0099), by what its control asks.
+    private static readonly Dictionary<string, string> Required = new(StringComparer.Ordinal)
+    {
+        ["visit"] = "Enter a date",
+        ["start"] = "Enter a time",
+        ["pickup"] = "Enter a date and a time",
+        ["hours"] = "Choose a value",
+        ["contact"] = "Enter the name in full",
+        ["billing"] = "Enter the address in full",
+        ["plan"] = "Choose a file",
+        ["signature"] = "Add your signature, or type your name instead",
+    };
+
     // Half past midnight on 1 November in Auckland, still 31 October in UTC: the site's today is the first.
     private static readonly DateTimeOffset AucklandMidnight = new(2026, 10, 31, 11, 30, 0, TimeSpan.Zero);
 
@@ -94,7 +107,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
         },
         "errors" => new FormPostState
         {
-            Errors = Inputs.Where(input => input.Type != "calculation").ToDictionary(input => input.Key, input => "Answer " + input.Alias).Append(KeyValuePair.Create(Captcha, "Load the check again")).ToDictionary(),
+            Errors = Inputs.Where(input => input.Type != "calculation").ToDictionary(input => input.Key, _ => new FormPostError("required")).Append(KeyValuePair.Create(Captcha, new FormPostError("invalid"))).ToDictionary(),
         },
         "hidden" => new FormPostState { Answers = new Dictionary<Guid, FieldAnswers> { [Trigger] = new FieldAnswers(["yes"]) } },
         _ => null,
@@ -115,7 +128,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
                 [Home] = new FieldAnswers([], Parts(("street", "Quay Street 1"))),
                 [Volume] = new FieldAnswers(["loud"]),
             },
-            Errors = new Dictionary<Guid, string> { [Person] = "Shorten the name", [Home] = "Complete the address" },
+            Errors = new Dictionary<Guid, FormPostError> { [Person] = new("invalid"), [Home] = new("invalid") },
         }
         : null;
 
@@ -256,7 +269,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
             {
                 var field = Field(errors, alias);
                 var error = field.QuerySelector($"p.jfb-error#jfb-1-{alias}-error[data-jfb-error]");
-                Assert.That(error?.TextContent, Is.EqualTo("Answer " + alias), alias);
+                Assert.That(error?.TextContent, Is.EqualTo(Required[alias]), alias);
                 var described = grouped ? field.QuerySelector("fieldset")! : Control(errors, alias);
                 Assert.That(described.GetAttribute("aria-invalid"), Is.EqualTo("true"), alias);
                 Assert.That(described.GetAttribute("aria-describedby")?.Split(' '), Does.Contain($"jfb-1-{alias}-error"), alias);
@@ -266,7 +279,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
             Assert.That(Field(errors, "billing").QuerySelectorAll(".jfb-part [aria-invalid=true]").Select(part => part.GetAttribute("name")), Is.EqualTo(new[] { "billing.street", "billing.city" }), "only the parts it needs");
             Assert.That(Control(errors, "signature").GetAttribute("aria-invalid"), Is.EqualTo("true"), "the typed name too");
             Assert.That(Control(errors, "cost").TextContent, Is.EqualTo("EUR 0.00"), "a post without hours counts them as zero");
-            Assert.That(Text(errors, $"#jfb-1-{Captcha:N}-error"), Is.EqualTo("Load the check again"));
+            Assert.That(Text(errors, $"#jfb-1-{Captcha:N}-error"), Is.EqualTo("Check this answer"), "the general words until the captcha has its own (12.x)");
         });
 
         var hidden = (await DocumentAsync("/inputs/?state=hidden")).QuerySelector("form.jfb-form")!;

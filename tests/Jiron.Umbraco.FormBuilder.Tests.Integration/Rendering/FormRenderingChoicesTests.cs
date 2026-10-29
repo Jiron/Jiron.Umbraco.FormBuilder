@@ -68,6 +68,26 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
         (K(0x1e), "country", "country", false),
     ];
 
+    // Each choice field's default message for no answer (ADR-0099): by what its control asks, a yes or no in its own words.
+    private static readonly Dictionary<string, string> Required = new(StringComparer.Ordinal)
+    {
+        ["radioList"] = "Choose an answer",
+        ["radioRow"] = "Choose an answer",
+        ["radioCards"] = "Choose an answer",
+        ["checks"] = "Choose at least one answer",
+        ["pick"] = "Choose an answer",
+        ["picks"] = "Choose at least one answer",
+        ["yesButtons"] = "Choose Sure or No",
+        ["yesSwitch"] = "Choose Yes or No",
+        ["nps"] = "Choose a point on the scale",
+        ["stars"] = "Choose a rating",
+        ["grid"] = "Choose an answer in each row",
+        ["rank"] = "Put the options in order",
+        ["box"] = "Tick the box",
+        ["consent"] = "Tick the box to agree",
+        ["country"] = "Choose a country",
+    };
+
     /// <summary>The state the view <c>choices</c> leaves for the form: none, or a post's answers, errors or the rules' trigger.</summary>
     /// <param name="state">The state's name: answered, errors or hidden.</param>
     internal static FormPostState? State(string state) => state switch
@@ -93,7 +113,7 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
                 [Of("country")] = new FieldAnswers(["CH"]),
             },
         },
-        "errors" => new FormPostState { Errors = Choices.ToDictionary(choice => choice.Key, choice => "Answer " + choice.Alias) },
+        "errors" => new FormPostState { Errors = Choices.ToDictionary(choice => choice.Key, _ => new FormPostError("required")) },
         "hidden" => new FormPostState { Answers = new Dictionary<Guid, FieldAnswers> { [Trigger] = new FieldAnswers(["yes"]) } },
         _ => null,
     };
@@ -249,7 +269,7 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
             {
                 var field = Field(errors, alias);
                 var error = field.QuerySelector($"p.jfb-error#jfb-1-{alias}-error[data-jfb-error]");
-                Assert.That(error?.TextContent, Is.EqualTo("Answer " + alias), alias);
+                Assert.That(error?.TextContent, Is.EqualTo(Required[alias]), alias);
                 var described = grouped ? field.QuerySelector(":scope > fieldset")! : Control(errors, alias);
                 Assert.That(described.GetAttribute("aria-invalid"), Is.EqualTo("true"), alias);
                 Assert.That(described.GetAttribute("aria-describedby")?.Split(' '), Does.Contain($"jfb-1-{alias}-error"), alias);

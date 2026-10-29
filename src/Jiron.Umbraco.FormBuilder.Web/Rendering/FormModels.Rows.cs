@@ -9,7 +9,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
 // A repeatable group's rows (ADR-0098): the rows the page's answers hold, each a fieldset numbered after its row label
 // whose fields are named by their path and follow their row's state, with the Add and Remove buttons the no-JS post
-// reads (6.2g).
+// reads (6.2i).
 internal sealed partial class FormModels
 {
     // The rows of a repeatable group, each row's fields built in its row, and the buttons that add and remove one: Add
@@ -26,7 +26,7 @@ internal sealed partial class FormModels
         {
             var number = (row + 1).ToString(CultureInfo.InvariantCulture);
             var legend = label is null ? string.Format(build.Culture, build.Words.RepeaterRow, number) : label + " " + number;
-            var inRow = build.Row(field, row);
+            var inRow = build.Row(field, row, legend);
             var fields = new List<FieldViewModel>();
             foreach (var child in field.Fields)
             {

@@ -107,10 +107,10 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
         },
         "errors" => new FormPostState
         {
-            Errors = Sink.Where(field => Fails(field.Type)).ToDictionary(field => field.Key, field => "Answer " + field.Alias),
+            Errors = Sink.Where(field => Fails(field.Type)).ToDictionary(field => field.Key, field => ErrorOf(field.Type)),
             Rows = new Dictionary<Guid, IReadOnlyList<FormPostRow>>
             {
-                [Of("repeater")] = [new FormPostRow { Errors = RowSink.Where(field => Fails(field.Type)).ToDictionary(field => field.Key, field => "Answer " + field.Alias) }],
+                [Of("repeater")] = [new FormPostRow { Errors = RowSink.Where(field => Fails(field.Type)).ToDictionary(field => field.Key, field => ErrorOf(field.Type)) }],
             },
         },
         "hidden" => new FormPostState { Answers = new Dictionary<Guid, FieldAnswers> { [Trigger] = new FieldAnswers(["yes"]) } },
@@ -200,7 +200,7 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
         {
             Assert.Multiple(() =>
             {
-                Assert.That(wrapper.QuerySelector($"[id='{control}-error']")?.OuterHtml, Is.EqualTo($"""<p class="jfb-error" id="{control}-error" data-jfb-error="">Answer {sinkAlias}</p>"""), at);
+                Assert.That(wrapper.QuerySelector($"[id='{control}-error']")?.OuterHtml, Is.EqualTo($"""<p class="jfb-error" id="{control}-error" data-jfb-error="">{Messages[type]}</p>"""), at);
                 Assert.That(form.QuerySelectorAll($".jfb-error-summary a[href='#{control}']"), Has.Length.EqualTo(1), $"{at}: the summary's link to the control");
             });
         }
@@ -264,6 +264,47 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
     }
 
     // Whether a type's field can carry an error: every type but the content types, the hidden field and a calculation.
+    // The error each type's field gets: no answer, a group's rows too few, and the captcha's answer unread.
+    private static FormPostError ErrorOf(string type) => new(type switch
+    {
+        "repeater" => "rowCount",
+        "captcha" => "invalid",
+        _ => "required",
+    });
+
+    // Each type's default message for its error (ADR-0099); the site's own type gets the general words.
+    private static readonly Dictionary<string, string> Messages = new(StringComparer.Ordinal)
+    {
+        ["text"] = "Enter an answer",
+        ["textarea"] = "Enter an answer",
+        ["email"] = "Enter an email address",
+        ["number"] = "Enter a number",
+        ["phone"] = "Enter a phone number",
+        ["url"] = "Enter a web address",
+        ["date"] = "Enter a date",
+        ["time"] = "Enter a time",
+        ["datetime"] = "Enter a date and a time",
+        ["dropdown"] = "Choose an answer",
+        ["radio"] = "Choose an answer",
+        ["checkboxes"] = "Choose at least one answer",
+        ["grid"] = "Choose an answer in each row",
+        ["ranking"] = "Put the options in order",
+        ["checkbox"] = "Tick the box",
+        ["yesno"] = "Choose Yes or No",
+        ["consent"] = "Tick the box to agree",
+        ["rating"] = "Choose a rating",
+        ["scale"] = "Choose a point on the scale",
+        ["slider"] = "Choose a value",
+        ["signature"] = "Add your signature, or type your name instead",
+        ["name"] = "Enter the name in full",
+        ["address"] = "Enter the address in full",
+        ["country"] = "Choose a country",
+        ["file"] = "Choose a file",
+        ["repeater"] = "Add at least 1 row",
+        ["captcha"] = "Check this answer",
+        [MoodFieldType.TypeAlias] = "Answer this question",
+    };
+
     private static bool Fails(string type) => type is not ("heading" or "paragraph" or "divider" or "image" or "hidden" or "calculation");
 
     // A control's name for a field: its alias, a part or row after it, a move or a row's button, or a consent's hash

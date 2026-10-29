@@ -116,7 +116,7 @@ public sealed class RenderingPartsTests
             var words = RenderingWords.Of(culture);
             var texts = new[]
             {
-                words.Back, words.Next, words.Send, words.Optional, words.Asterisk, words.ErrorSummary, words.Progress,
+                words.Back, words.Next, words.Send, words.Optional, words.Asterisk, words.Progress,
                 words.ConfirmEmail, words.OpensText, words.ClosedHeading, words.ClosedText, words.FullHeading, words.FullText,
                 words.Other, words.OtherText, words.Choose, words.ChooseCountry, words.SeveralHint, words.NoChoices,
                 words.ChoicesUnavailable, words.NameTitle, words.NameFirst, words.NameMiddle, words.NameLast, words.Street,
@@ -147,7 +147,6 @@ public sealed class RenderingPartsTests
         Assert.Multiple(() =>
         {
             Assert.That(words.Back, Is.EqualTo("Zur" + (char)0xFC + "ck"));
-            Assert.That(words.ErrorSummary, Is.EqualTo("Diese Antworten brauchen eine " + (char)0xC4 + "nderung"));
             Assert.That(words.OpensHeading, Is.EqualTo("Dieses Formular " + (char)0xF6 + "ffnet am {0}"));
             Assert.That(words.Choose, Is.EqualTo("Bitte w" + (char)0xE4 + "hlen"));
             Assert.That(words.SeveralHint, Does.Contain("gedr" + (char)0xFC + "ckt"));

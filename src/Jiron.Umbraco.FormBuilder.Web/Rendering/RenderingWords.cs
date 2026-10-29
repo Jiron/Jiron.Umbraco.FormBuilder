@@ -11,7 +11,6 @@ internal sealed record RenderingWords
 {
     // The letters outside ASCII the German words need.
     private const char AUmlaut = (char)0xE4;
-    private const char CapitalAUmlaut = (char)0xC4;
     private const char OUmlaut = (char)0xF6;
     private const char UUmlaut = (char)0xFC;
     private const char SharpS = (char)0xDF;
@@ -26,7 +25,6 @@ internal sealed record RenderingWords
             Optional = "(optional)",
             RequiredNote = "Questions marked {0} need an answer.",
             Asterisk = "with an asterisk",
-            ErrorSummary = "These answers need a change",
             Step = "Step {0} of {1}",
             Progress = "Progress",
             Page = "Page {0}",
@@ -79,7 +77,6 @@ internal sealed record RenderingWords
             Optional = "(optional)",
             RequiredNote = "Fragen mit {0} m" + UUmlaut + "ssen beantwortet werden.",
             Asterisk = "Sternchen",
-            ErrorSummary = "Diese Antworten brauchen eine " + CapitalAUmlaut + "nderung",
             Step = "Schritt {0} von {1}",
             Progress = "Fortschritt",
             Page = "Seite {0}",
@@ -146,9 +143,6 @@ internal sealed record RenderingWords
 
     /// <summary>What a screen reader says for the asterisk in <see cref="RequiredNote"/>.</summary>
     public required string Asterisk { get; init; }
-
-    /// <summary>The error summary's heading.</summary>
-    public required string ErrorSummary { get; init; }
 
     /// <summary>The progress in words; <c>{0}</c> is the current page's number, <c>{1}</c> the number of pages.</summary>
     public required string Step { get; init; }

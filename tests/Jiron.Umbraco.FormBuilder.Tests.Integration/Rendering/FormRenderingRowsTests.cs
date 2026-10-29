@@ -46,7 +46,7 @@ public sealed class FormRenderingRowsTests : RenderingTestBase
                 [
                     Row((GuestName, "Ada"), (Age, "adult"), (Nights, "2"), (Diet, "Vegan"), (Plan, "day")),
                     Row((GuestName, "Sam"), (Age, "child"), (Nights, "1"), (Diet, "None")),
-                    new FormPostRow { Answers = new Dictionary<Guid, FieldAnswers> { [Age] = new FieldAnswers(["adult"]) }, Errors = new Dictionary<Guid, string> { [GuestName] = "Give the guest's name" } },
+                    new FormPostRow { Answers = new Dictionary<Guid, FieldAnswers> { [Age] = new FieldAnswers(["adult"]) }, Errors = new Dictionary<Guid, FormPostError> { [GuestName] = new("required") } },
                 ],
                 [Party] = [Row((Who, "Lin"))],
             },
@@ -59,11 +59,11 @@ public sealed class FormRenderingRowsTests : RenderingTestBase
                 [
                     .. Enumerable.Range(1, 4).Select(n => Row((GuestName, "Guest " + n), (Age, "child"), (Nights, "1")) with
                     {
-                        Errors = n == 1 ? new Dictionary<Guid, string> { [Nights] = "Give the nights" } : new Dictionary<Guid, string>(),
+                        Errors = n == 1 ? new Dictionary<Guid, FormPostError> { [Nights] = new("required") } : new Dictionary<Guid, FormPostError>(),
                     }),
                 ],
             },
-            Errors = new Dictionary<Guid, string> { [Guests] = "Remove a guest" },
+            Errors = new Dictionary<Guid, FormPostError> { [Guests] = new("rowCount") },
         },
         "flood" => new FormPostState
         {
@@ -161,10 +161,10 @@ public sealed class FormRenderingRowsTests : RenderingTestBase
             Assert.That(rows.Select(row => string.Join(",", Offered(row, "room"))), Is.EqualTo(new[] { "bunk", "bunk", "bunk" }), "a parent outside the group filters every row's options, an answer for it in a row changing nothing");
             Assert.That(form.QuerySelector("#jfb-1-guests-2-name")!.GetAttribute("aria-invalid"), Is.EqualTo("true"));
             Assert.That(form.QuerySelector("#jfb-1-guests-2-name")!.GetAttribute("aria-describedby"), Is.EqualTo("jfb-1-guests-2-name-error"));
-            Assert.That(form.QuerySelector("#jfb-1-guests-2-name-error")!.OuterHtml, Is.EqualTo("""<p class="jfb-error" id="jfb-1-guests-2-name-error" data-jfb-error="">Give the guest's name</p>"""));
+            Assert.That(form.QuerySelector("#jfb-1-guests-2-name-error")!.OuterHtml, Is.EqualTo("""<p class="jfb-error" id="jfb-1-guests-2-name-error" data-jfb-error="">Enter an answer</p>"""));
             Assert.That(form.QuerySelectorAll("[data-jfb-error]"), Has.Length.EqualTo(1), "the error is its row's");
             Assert.That(Field(form, "party").QuerySelector(".jfb-row > div")!.GetAttribute("class"), Is.EqualTo("jfb-fields jfb-columns-3"), "a group's rows take the columns of its own group");
-            Assert.That(form.QuerySelectorAll(".jfb-error-summary a").Select(link => (link.GetAttribute("href"), link.TextContent)), Is.EqualTo(new[] { ("#jfb-1-guests-2-name", "Give the guest's name") }));
+            Assert.That(form.QuerySelectorAll(".jfb-error-summary a").Select(link => (link.GetAttribute("href"), link.TextContent)), Is.EqualTo(new[] { ("#jfb-1-guests-2-name", "Name (Guest 3): Enter an answer") }), "the default after its label and its row's legend");
             Assert.That(Text(Field(form, "notes"), "#jfb-1-notes-help"), Is.EqualTo("Coming: Ada, Sam; diets: Vegan"), "a recalled child lists its rows' answers, but not where its row's rule hides it");
         });
     }
@@ -184,7 +184,7 @@ public sealed class FormRenderingRowsTests : RenderingTestBase
             Assert.That(guests.QuerySelectorAll(".jfb-row"), Has.Length.EqualTo(4), "the rows the visitor posted, to remove one from");
             Assert.That(fieldset.GetAttribute("aria-invalid"), Is.EqualTo("true"));
             Assert.That(fieldset.GetAttribute("aria-describedby"), Is.EqualTo("jfb-1-guests-help jfb-1-guests-error"));
-            Assert.That(fieldset.Children[fieldset.Children.Length - 1].OuterHtml, Is.EqualTo("""<p class="jfb-error" id="jfb-1-guests-error" data-jfb-error="">Remove a guest</p>"""), "below the rows");
+            Assert.That(fieldset.Children[fieldset.Children.Length - 1].OuterHtml, Is.EqualTo("""<p class="jfb-error" id="jfb-1-guests-error" data-jfb-error="">Remove rows to keep at most 3</p>"""), "below the rows");
             Assert.That(form.QuerySelectorAll(".jfb-error-summary a").Select(link => link.GetAttribute("href")), Is.EqualTo(new[] { "#jfb-1-guests-0-nights", "#jfb-1-guests" }), "a row's error first, then the group's own to the rows' container, in the page's order");
             Assert.That(form.QuerySelectorAll("output").Select(output => output.TextContent), Is.All.Empty, "the pipeline reads no rows past the group's most, so the rules work out nothing");
             Assert.That(form.QuerySelectorAll("[data-jfb-alias$='.diet'][hidden]"), Is.Empty, "nor hide a child in them");

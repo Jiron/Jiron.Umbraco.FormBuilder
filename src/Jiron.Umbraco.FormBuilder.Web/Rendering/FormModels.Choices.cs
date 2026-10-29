@@ -339,7 +339,7 @@ internal sealed partial class FormModels
 
     // A ranking's options in the visitor's order (as positions posted without JavaScript, or in order), then the others
     // in their own order; each of the first few it asks for posts its position, and each moves up or down with a submit
-    // button the no-JS post reads (6.2g).
+    // button the no-JS post reads (6.2i).
     private async Task<RankingControlModel> RankingAsync(Build build, PublicField field, ShownSettings settings, string id, FieldAnswers answers, CancellationToken cancellationToken)
     {
         var (options, available) = await OptionsAsync(build, field, cancellationToken);
