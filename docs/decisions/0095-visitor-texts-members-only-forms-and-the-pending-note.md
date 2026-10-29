@@ -8,7 +8,7 @@
   style and labels) and [ADR-0033](0033-schema-v1.md) (how a website page knows a backoffice user)
 - Date: 2026-10-29
 - Roadmap step: 6.2c (decided and built); 6.2h fills the post's answers and rows, 6.2l keeps the renders that are per
-  visitor out of the output cache, 7.1 adds the member-bound challenge, 12.4a the settings screens, 14.3 the members'
+  visitor out of the output cache ([ADR-0104](0104-the-output-cache-rules-and-the-render-endpoint.md)), 7.1 adds the member-bound challenge, 12.4a the settings screens, 14.3 the members'
   submissions
 
 ## Context

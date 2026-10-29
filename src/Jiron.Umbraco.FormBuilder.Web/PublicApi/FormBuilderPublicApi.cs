@@ -45,8 +45,8 @@ internal static class FormBuilderPublicApi
 /// filter that applies each action's declarations. Every action declares its rate-limit policy, body limit and time
 /// limit (<see cref="FormBuilderRateLimitAttribute"/>, <see cref="FormBuilderBodyLimitAttribute"/>,
 /// <see cref="FormBuilderTimeLimitAttribute"/>), and a test fails for one that does not. Each response names its media type,
-/// <c>application/json</c> or, for a refusal, <c>application/problem+json</c>. The controllers are internal; the
-/// public API's registration adds them to MVC.
+/// <c>application/json</c> (<c>text/html</c> for a form's markup) or, for a refusal, <c>application/problem+json</c>.
+/// The controllers are internal; the public API's registration adds them to MVC.
 /// </summary>
 [MapToApi(FormBuilderPublicApi.ApiName)]
 [AllowAnonymous]

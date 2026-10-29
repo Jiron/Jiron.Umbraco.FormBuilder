@@ -29,11 +29,46 @@ internal static class FormInstances
         return Prefix + next.ToString(CultureInfo.InvariantCulture);
     }
 
-    /// <summary>Whether a text is an instance id as the render gives it: the prefix and a number, no longer than a page reaches.</summary>
+    /// <summary>
+    /// Whether a text is an instance id as the render gives it: the prefix and a whole number from 1 without a leading
+    /// zero, no longer than a page reaches.
+    /// </summary>
     /// <param name="instance">The text.</param>
     public static bool IsId(string instance) =>
         instance.Length <= LongestId && instance.StartsWith(Prefix, StringComparison.Ordinal) && instance.Length > Prefix.Length
-        && !instance.AsSpan(Prefix.Length).ContainsAnyExceptInRange('0', '9');
+        && instance[Prefix.Length] != '0' && !instance.AsSpan(Prefix.Length).ContainsAnyExceptInRange('0', '9');
+}
+
+/// <summary>
+/// Where the render endpoint renders a form (ADR-0104): the page's instance id, its path, its content and its culture, in
+/// place of the request's, so the markup is the page's.
+/// </summary>
+/// <param name="Instance">The instance id the page gave the form.</param>
+/// <param name="Page">The page's path as the browser has it, which the form posts to without JavaScript.</param>
+/// <param name="Content">The page's content, or null.</param>
+/// <param name="Culture">The page's culture as asked for, or null for the default language.</param>
+internal sealed record FormRenderTarget(string Instance, string Page, Guid? Content, string? Culture);
+
+/// <summary>The target of a request to the render endpoint, which the view component renders for.</summary>
+internal static class FormRenderTargets
+{
+    // The key under which a request holds its target.
+    private const string Key = "Jiron.FormBuilder.Rendering.Target";
+
+    /// <summary>Sets the request's target.</summary>
+    public static void Set(HttpContext httpContext, FormRenderTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(target);
+        httpContext.Items[Key] = target;
+    }
+
+    /// <summary>The request's target, or null for a page.</summary>
+    public static FormRenderTarget? Get(HttpContext httpContext)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+        return httpContext.Items.TryGetValue(Key, out var target) ? target as FormRenderTarget : null;
+    }
 }
 
 /// <summary>A notice above the form after a post, such as "the form has changed".</summary>

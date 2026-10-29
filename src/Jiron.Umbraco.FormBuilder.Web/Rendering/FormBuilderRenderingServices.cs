@@ -3,10 +3,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Web.Common.ApplicationBuilder;
+using Umbraco.Cms.Web.Website.Caching;
 
 namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
-/// <summary>The registrations of the website rendering (ADR-0092, ADR-0093), which the Web composer makes.</summary>
+/// <summary>The registrations of the website rendering (ADR-0092, ADR-0093, ADR-0104), which the Web composer makes.</summary>
 internal static class FormBuilderRenderingServices
 {
     /// <summary>The name of the pipeline filter that puts the asset middleware before Umbraco's routing.</summary>
@@ -16,8 +17,9 @@ internal static class FormBuilderRenderingServices
     public const string FilesFilterName = "Jiron.FormBuilder.PostFiles";
 
     /// <summary>
-    /// Adds the website assets, their middleware before routing, the page's asset tags and the rendering of forms (the
-    /// view component's services). Safe to call more than once.
+    /// Adds the website assets, their middleware before routing, the page's asset tags, the rendering of forms (the view
+    /// component's services) and the output cache's vary rule for <c>jfb-sent</c>, never a request filter, which would
+    /// replace the site's. Safe to call more than once.
     /// </summary>
     public static IUmbracoBuilder AddFormBuilderRendering(this IUmbracoBuilder builder)
     {
@@ -33,6 +35,7 @@ internal static class FormBuilderRenderingServices
         builder.Services.TryAddSingleton<SentTokens>();
         builder.Services.TryAddSingleton<BackOfficeVisitors>();
         builder.Services.TryAddScoped<FormMembers>();
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IWebsiteOutputCacheVaryByProvider, SentVaryBy>());
         builder.Services.Configure<UmbracoPipelineOptions>(options =>
         {
             if (!options.PipelineFilters.Any(filter => filter.Name == AssetsFilterName))

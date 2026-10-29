@@ -246,7 +246,7 @@ internal sealed class FormPostFilesMiddleware(PublishedFormCache forms, FileUplo
     private static void Refuse(HttpContext context, Marked marked)
     {
         context.Features.Set<IFormFeature>(NoFormFeature.Instance);
-        FormPostHandler.NoStore(context.Response);
+        PageCaching.NoStore(context);
         FormPostFileNotes.Set(context, marked.Key, marked.Instance, new FormPostFileRead([], IsRefused: true));
     }
 

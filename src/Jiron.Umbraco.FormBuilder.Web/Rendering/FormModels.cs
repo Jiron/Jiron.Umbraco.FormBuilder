@@ -34,6 +34,10 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// <param name="Instance">The instance id.</param>
 /// <param name="Context">The context values the page gives, by name; empty for none.</param>
 /// <param name="Gate">Why a form for members shows its notice to the visitor; null when the form shows.</param>
+/// <param name="Page">
+/// The path of the page the form posts to without JavaScript, as the render endpoint gives it (ADR-0104); null for the
+/// request's own.
+/// </param>
 internal sealed record FormRender(
     HttpContext HttpContext,
     CachedForm Form,
@@ -41,7 +45,8 @@ internal sealed record FormRender(
     string Culture,
     string Instance,
     IReadOnlyDictionary<string, string?> Context,
-    MemberGate? Gate = null);
+    MemberGate? Gate = null,
+    string? Page = null);
 
 /// <summary>
 /// The view models of a form (ADR-0015, ADR-0093): its texts as the form endpoint shows them in the culture, a visitor
@@ -111,7 +116,7 @@ internal sealed partial class FormModels(
                 : null);
         var culture = CultureInfo.GetCultureInfo(render.Culture);
         var request = render.HttpContext.Request;
-        var path = (request.PathBase + request.Path).ToUriComponent();
+        var path = render.Page ?? (request.PathBase + request.Path).ToUriComponent();
         var display = post?.Outcome is not null ? FormDisplay.Outcome : render.Shown.Unavailable is not null || render.Gate is not null ? FormDisplay.Notice : FormDisplay.Form;
         var root = new Root(
             form.Form.Key,

@@ -1,8 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
+using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
@@ -10,9 +13,9 @@ using Microsoft.Net.Http.Headers;
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 
 /// <summary>
-/// Forms, as headless sites render them, their fields' options, the files visitors upload to them, the pages they check
-/// and the entries they submit, and the receipts of those (section 4.6, ADR-0084, ADR-0086, ADR-0087, ADR-0088,
-/// ADR-0089).
+/// Forms, as headless sites render them and as a page's markup, their fields' options, the files visitors upload to
+/// them, the pages they check and the entries they submit, and the receipts of those (section 4.6, ADR-0084, ADR-0086,
+/// ADR-0087, ADR-0088, ADR-0089, ADR-0104).
 /// </summary>
 /// <param name="requests">What the endpoints of forms read of a request and answer with.</param>
 /// <param name="pages">The culture and the page a request is for.</param>
@@ -141,6 +144,80 @@ internal sealed class FormController(
         }
 
         return Answered(await requests.OptionsAsync(form, field, asked => answers.TryGetValue(asked, out var given) ? given : [], await pages.CultureAsync(culture), await pages.PageAsync(content), cancellationToken));
+    }
+
+    /// <summary>
+    /// A published form's markup as a page shows it at one place (ADR-0004, ADR-0104), for a page's runtime that met
+    /// <c>form_changed</c> on a page that may come from a cache: the same view component, in the page's culture, for its
+    /// page and content, with the page's instance id, without the asset tags the page has already. Every published form
+    /// not in the trash answers, as the page that shows it; a form for members shows what it shows the member signed in
+    /// on the request, or its notice. No outcome shows. <c>Cache-Control: no-store</c>.
+    /// </summary>
+    /// <param name="key">The form's key.</param>
+    /// <param name="instance">The instance id the page gave the form, such as <c>jfb-2</c>.</param>
+    /// <param name="page">
+    /// The page's path as the browser has it (<c>location.pathname</c>), which the form posts to without JavaScript: a
+    /// local path with no query or fragment.
+    /// </param>
+    /// <param name="culture">The page's culture: one of the site's languages, otherwise the default language.</param>
+    /// <param name="contentKey">The page's content, whose site's settings apply.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    [HttpGet("{key}/render")]
+    [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Read)]
+    [FormBuilderBodyLimit(0)]
+    [FormBuilderTimeLimit(20)]
+    [ProducesResponseType<string>(StatusCodes.Status200OK, "text/html")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, FormBuilderProblemResult.MediaType)]
+    public async Task<IActionResult> Render(
+        string key,
+        [FromQuery, Required] string? instance,
+        [FromQuery, Required] string? page,
+        [FromQuery] string? culture,
+        [FromQuery] string? contentKey,
+        CancellationToken cancellationToken)
+    {
+        if (instance is null || !FormInstances.IsId(instance))
+        {
+            return FormBuilderPublicProblems.InvalidRequest("instance");
+        }
+
+        if (!IsPagePath(page))
+        {
+            return FormBuilderPublicProblems.InvalidRequest("page");
+        }
+
+        Guid? content = null;
+        if (contentKey is not null)
+        {
+            if (!Guid.TryParse(contentKey, out var shown))
+            {
+                return FormBuilderPublicProblems.InvalidRequest("contentKey");
+            }
+
+            content = shown;
+        }
+
+        if (!FormPages.IsCulture(culture))
+        {
+            return FormBuilderPublicProblems.InvalidRequest("culture");
+        }
+
+        if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is null)
+        {
+            return FormBuilderPublicProblems.FormNotFound();
+        }
+
+        FormRenderTargets.Set(HttpContext, new FormRenderTarget(instance, page, content, culture));
+        var markup = new ViewComponentResult
+        {
+            ViewComponentName = FormBuilderFormViewComponent.Name,
+            Arguments = new { form = formKey, assets = false },
+            ContentType = "text/html; charset=utf-8",
+            StatusCode = StatusCodes.Status200OK,
+        };
+        return new CultureResult(markup, CultureInfo.GetCultureInfo(await pages.CultureAsync(culture)));
     }
 
     /// <summary>
@@ -365,11 +442,68 @@ internal sealed class FormController(
     // The start of a query name that gives the answers of a field up the chain.
     private const string ParentPrefix = "parent.";
 
+    /// <summary>The longest page path the render endpoint takes.</summary>
+    internal const int MaxPagePathLength = 2_048;
+
+    // The characters of a URL path besides letters, digits and escapes (RFC 3986: unreserved, sub-delims, ':', '@', '/').
+    private const string PathCharacters = "-._~!$&'()*+,;=:@/";
+
+    /// <summary>
+    /// Whether a page path is local, as <c>location.pathname</c> gives it: one leading slash, then only a URL path's
+    /// characters (no query, no fragment, no backslash, no second slash at the start), each <c>%</c> before two hex
+    /// digits, at most <see cref="MaxPagePathLength"/> characters.
+    /// </summary>
+    /// <param name="page">The path.</param>
+    internal static bool IsPagePath([NotNullWhen(true)] string? page)
+    {
+        if (page is not { Length: > 0 and <= MaxPagePathLength } || page[0] != '/' || (page.Length > 1 && page[1] == '/'))
+        {
+            return false;
+        }
+
+        for (var at = 1; at < page.Length; at++)
+        {
+            var character = page[at];
+            if (character == '%')
+            {
+                // Its two hex digits are a path's characters too.
+                if (at + 2 >= page.Length || !char.IsAsciiHexDigit(page[at + 1]) || !char.IsAsciiHexDigit(page[at + 2]))
+                {
+                    return false;
+                }
+            }
+            else if (!char.IsAsciiLetterOrDigit(character) && !PathCharacters.Contains(character, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // Whether the client holds this answer already: its tag, by the weak comparison If-None-Match uses, or any.
     private static bool Matches(IList<EntityTagHeaderValue> held, string etag)
     {
         var current = new EntityTagHeaderValue(etag);
         return held.Any(tag => tag.Equals(EntityTagHeaderValue.Any) || tag.Compare(current, useStrongComparison: false));
+    }
+}
+
+/// <summary>
+/// An action's result rendered with a culture as the current culture and UI culture, as Umbraco sets them on a page in
+/// that culture, so a form's markup from the render endpoint is the page's (ADR-0104), a site's own views included. The
+/// culture is the async method's own: the request's comes back when it ends.
+/// </summary>
+/// <param name="result">The result.</param>
+/// <param name="culture">The culture.</param>
+internal sealed class CultureResult(IActionResult result, CultureInfo culture) : IActionResult
+{
+    /// <inheritdoc />
+    public async Task ExecuteResultAsync(ActionContext context)
+    {
+        CultureInfo.CurrentCulture = culture;
+        CultureInfo.CurrentUICulture = culture;
+        await result.ExecuteResultAsync(context);
     }
 }
 

@@ -27,10 +27,13 @@ internal sealed record RenderedForm(string View, object Model, bool IsForm);
 /// (missing, unpublished or trashed, logged once per reference and process) and for a value of another type (logged once
 /// per type), so a page never breaks for its form. After a post without JavaScript sent the form, the page the post
 /// redirects to shows the outcome its <c>jfb-sent</c> token names, for that form and instance only (ADR-0100), as the
-/// receipt endpoint answers it, and is <c>no-store</c>. While the migrations are pending (ADR-0033) it renders nothing for
-/// visitors and a short note for a signed-in backoffice user. The page and the culture come from Umbraco's published
-/// request, held to the site's languages as the public API holds them (ADR-0084); outside an Umbraco page there is no
-/// page, and the culture is the request's.
+/// receipt endpoint answers it. While the migrations are pending (ADR-0033) it renders nothing for visitors and a short
+/// note for a signed-in backoffice user. The page and the culture come from Umbraco's published request, held to the
+/// site's languages as the public API holds them (ADR-0084); outside an Umbraco page there is no page, and the culture is
+/// the request's. The render endpoint gives the page, the culture and the instance id in their place (ADR-0104). A render
+/// that is per visitor keeps its page out of every cache (ADR-0004, ADR-0104): one on a request other than <c>GET</c> or
+/// <c>HEAD</c> or that carries <c>jfb-sent</c>, a form for members for anyone, and while the migrations are pending any
+/// form for anyone.
 /// </summary>
 /// <param name="forms">The published forms.</param>
 /// <param name="requests">What the form endpoint answers, which the model data is.</param>
@@ -80,9 +83,20 @@ internal sealed partial class FormRendering(
             return null;
         }
 
+        // A post to the page, or the page after a sent post, is the visitor's own.
+        var request = httpContext.Request;
+        if ((!HttpMethods.IsGet(request.Method) && !HttpMethods.IsHead(request.Method)) || request.Query.ContainsKey(SentTokens.QueryName))
+        {
+            PageCaching.NoStore(httpContext);
+        }
+
+        var target = FormRenderTargets.Get(httpContext);
+        var (content, requested) = target is null ? Request() : (target.Content, target.Culture);
         if (await migrations.IsPendingAsync(cancellationToken))
         {
-            return await PendingAsync(httpContext, cancellationToken);
+            // A visitor sees nothing and a backoffice user the note, so neither page may answer for the other.
+            PageCaching.NoStore(httpContext);
+            return await PendingAsync(httpContext, requested, cancellationToken);
         }
 
         if (await requests.KeyOfAsync(reference, cancellationToken) is not { } formKey || await forms.GetAsync(formKey, cancellationToken) is not { } cached)
@@ -95,20 +109,30 @@ internal sealed partial class FormRendering(
             return null;
         }
 
-        var (content, requested) = Request();
         var culture = await CultureAsync(requested);
         var shown = await requests.ShowAsync(cached, culture, await pages.PageAsync(content), cancellationToken);
         var availability = cached.Published.Definition.Settings.Availability;
-        var gate = availability.Access == MemberAccess.Anyone ? null : await httpContext.RequestServices.GetRequiredService<FormMembers>().GateAsync(availability);
-        var instance = FormInstances.Next(httpContext);
-        await SentAsync(httpContext, formKey, instance, culture, cancellationToken);
-        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), gate), cancellationToken);
+        MemberGate? gate = null;
+        if (availability.Access != MemberAccess.Anyone)
+        {
+            // Who is signed in decides what shows (ADR-0095).
+            PageCaching.NoStore(httpContext);
+            gate = await httpContext.RequestServices.GetRequiredService<FormMembers>().GateAsync(availability);
+        }
+
+        var instance = target?.Instance ?? FormInstances.Next(httpContext);
+        if (target is null)
+        {
+            await SentAsync(httpContext, formKey, instance, culture, cancellationToken);
+        }
+
+        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), gate, target?.Page), cancellationToken);
         return new RenderedForm(view, model, IsForm: true);
     }
 
     // The outcome of the entry a post without JavaScript sent, on the page it redirected to (ADR-0100): the token in
     // jfb-sent names the form, the instance and the submission id, and the outcome is the receipt's; a token that names
-    // nothing for this form and instance leaves the form as it is. A page that shows an outcome is no-store.
+    // nothing for this form and instance leaves the form as it is. The request carries jfb-sent, so the page is no-store.
     private async Task SentAsync(HttpContext httpContext, Guid form, string instance, string culture, CancellationToken cancellationToken)
     {
         if (FormPosts.Get(httpContext, form, instance) is not null
@@ -120,7 +144,6 @@ internal sealed partial class FormRendering(
             return;
         }
 
-        httpContext.Response.Headers.CacheControl = "no-store";
         var words = RenderingWords.Of(culture);
         FormPosts.Set(httpContext, form, instance, new FormPostState
         {
@@ -134,14 +157,14 @@ internal sealed partial class FormRendering(
 
     // The note in a form's place while the migrations are pending, for a signed-in backoffice user only: the page's
     // visitors see nothing there (ADR-0033). It is the default notice, in the page's culture.
-    private async Task<RenderedForm?> PendingAsync(HttpContext httpContext, CancellationToken cancellationToken)
+    private async Task<RenderedForm?> PendingAsync(HttpContext httpContext, string? requested, CancellationToken cancellationToken)
     {
         if (!backOffice.IsSignedIn(httpContext))
         {
             return null;
         }
 
-        var words = RenderingWords.Of(await CultureAsync(Request().Culture));
+        var words = RenderingWords.Of(await CultureAsync(requested));
         var note = new NoticeViewModel
         {
             Kind = NoticeKind.MigrationsPending,

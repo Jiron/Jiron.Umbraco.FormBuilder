@@ -89,7 +89,7 @@ internal sealed class FormPostHandler(
     public async Task<FormPostAnswer> HandleAsync(HttpContext http, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(http);
-        NoStore(http.Response);
+        PageCaching.NoStore(http);
         if (http.Features.Get<UmbracoRouteValues>()?.PublishedRequest is not { } published || !http.Request.HasFormContentType)
         {
             return FormPostAnswer.BadRequest;
@@ -349,19 +349,6 @@ internal sealed class FormPostHandler(
 
     // A whole number from a button, or null.
     private static int? Number(string text) => int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : null;
-
-    /// <summary>Sends a response <c>no-store</c>, set at once and again as it starts, after anything else set it.</summary>
-    /// <param name="response">The response.</param>
-    public static void NoStore(HttpResponse response)
-    {
-        response.Headers.CacheControl = "no-store";
-        response.OnStarting(() =>
-        {
-            response.Headers.CacheControl = "no-store";
-            response.Headers.Remove("Expires");
-            return Task.CompletedTask;
-        });
-    }
 
     // A refusal as the page shows it (ADR-0100); false when the page shows the form as for any visitor now, with nothing of the post.
     private async Task<bool> RefusedAsync(Step state, SubmissionResult result, CachedForm cached, string culture, Guid? content, CancellationToken cancellationToken)
