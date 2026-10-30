@@ -1,0 +1,4911 @@
+{
+  "full": {
+    "form": {
+      "key": "f0000000-0000-4000-8000-000000000001",
+      "settings": {
+        "submitLabel": "Send registration",
+        "nextLabel": "Next",
+        "backLabel": "Back",
+        "summaryPage": true,
+        "progress": "bar",
+        "resume": true,
+        "closedMessage": "\u003Cp\u003ERegistration has closed.\u003C/p\u003E",
+        "membersOnly": true,
+        "protection": "captcha",
+        "captchaProvider": "hcaptcha",
+        "theme": "conference",
+        "requiredMarker": "optional",
+        "validationSummary": false,
+        "choiceLayout": "cards",
+        "cssClass": "registration-form",
+        "queryValues": [
+          "utm_source",
+          "ref",
+          "name"
+        ]
+      },
+      "pages": [
+        {
+          "key": "10000000-0000-4000-8000-000000000001",
+          "title": "Your details",
+          "description": "\u003Cp\u003EWe need a few details.\u003C/p\u003E",
+          "rules": [],
+          "groups": [
+            {
+              "key": "20000000-0000-4000-8000-000000000001",
+              "title": "Contact",
+              "description": "\u003Cp\u003EHow we reach you.\u003C/p\u003E",
+              "columns": 2,
+              "style": "card",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "30000000-0000-4000-8000-000000000001",
+                  "type": "text",
+                  "alias": "name",
+                  "span": 2,
+                  "label": "Name",
+                  "hideLabel": false,
+                  "help": "As it should appear on your badge.\nFirst and last name.",
+                  "placeholder": "Anna M\u00FCller",
+                  "required": true,
+                  "messages": {
+                    "required": "Please tell us your name.",
+                    "maxLength": "That name is too long."
+                  },
+                  "defaultValue": "{{ member.name }}",
+                  "prefill": {
+                    "query": "name",
+                    "fromMember": true,
+                    "memberMode": "hide"
+                  },
+                  "autocomplete": "name",
+                  "cssClass": "badge-name",
+                  "validation": [
+                    {
+                      "kind": "pattern",
+                      "pattern": "[A-Za-z ]\u002B",
+                      "message": "Letters only."
+                    }
+                  ],
+                  "rules": [
+                    {
+                      "key": "40000000-0000-4000-8000-000000000002",
+                      "effect": "require",
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "30000000-0000-4000-8000-000000000002",
+                          "op": "isNotEmpty"
+                        }
+                      ]
+                    }
+                  ],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "counter": true,
+                    "maxLength": 80,
+                    "minLength": 0
+                  }
+                },
+                {
+                  "key": "30000000-0000-4000-8000-000000000002",
+                  "type": "email",
+                  "alias": "email",
+                  "span": 1,
+                  "label": "Email",
+                  "hideLabel": true,
+                  "required": true,
+                  "messages": {},
+                  "autocomplete": "email",
+                  "validation": [
+                    {
+                      "kind": "uniquePerForm",
+                      "message": "You are already registered."
+                    }
+                  ],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "confirm": true,
+                    "confirmLabel": "Email again"
+                  }
+                },
+                {
+                  "key": "30000000-0000-4000-8000-000000000003",
+                  "type": "email",
+                  "alias": "confirmEmail",
+                  "span": 1,
+                  "label": "Email again",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [
+                    {
+                      "kind": "matchesField",
+                      "field": "30000000-0000-4000-8000-000000000002",
+                      "message": "The addresses differ."
+                    }
+                  ],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "confirm": false
+                  }
+                }
+              ]
+            },
+            {
+              "key": "20000000-0000-4000-8000-000000000002",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "30000000-0000-4000-8000-000000000004",
+                  "type": "radio",
+                  "alias": "ticket",
+                  "span": 1,
+                  "label": "Ticket",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [
+                    {
+                      "key": "40000000-0000-4000-8000-000000000003",
+                      "effect": "show",
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "30000000-0000-4000-8000-000000000001",
+                          "op": "isNotEmpty"
+                        }
+                      ]
+                    }
+                  ],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "standard",
+                        "label": "Standard",
+                        "description": "Talks and lunch.",
+                        "image": "71000000-0000-4000-8000-000000000001",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "workshop",
+                        "label": "Workshop day",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "Caf\u00E9-Pa\u00DF",
+                        "label": "Caf\u00E9 \u0026 Pa\u00DF \uD83C\uDF9F",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "inherit",
+                    "other": false
+                  }
+                },
+                {
+                  "key": "30000000-0000-4000-8000-000000000005",
+                  "type": "checkboxes",
+                  "alias": "sessions",
+                  "span": 1,
+                  "label": "Sessions",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "defaultValue": [
+                    "keynote",
+                    "panel"
+                  ],
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [],
+                    "fromSource": true,
+                    "parent": "30000000-0000-4000-8000-000000000004"
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "inherit",
+                    "maxSelections": 3,
+                    "minSelections": 1,
+                    "other": false
+                  }
+                },
+                {
+                  "key": "30000000-0000-4000-8000-000000000006",
+                  "type": "dropdown",
+                  "alias": "country",
+                  "span": 1,
+                  "label": "Country",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "autocomplete": "country",
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [],
+                    "fromSource": true
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "multiple": false
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "key": "10000000-0000-4000-8000-000000000002",
+          "title": "Your stay",
+          "rules": [
+            {
+              "key": "40000000-0000-4000-8000-000000000004",
+              "effect": "show",
+              "match": "any",
+              "conditions": [
+                {
+                  "field": "30000000-0000-4000-8000-000000000004",
+                  "op": "equals",
+                  "value": "workshop"
+                },
+                {
+                  "match": "all",
+                  "conditions": [
+                    {
+                      "context": "query.ref",
+                      "op": "startsWith",
+                      "value": "partner"
+                    },
+                    {
+                      "context": "today",
+                      "op": "lessThan",
+                      "value": {
+                        "today": "\u002B30d"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "groups": [
+            {
+              "key": "20000000-0000-4000-8000-000000000003",
+              "columns": 3,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "30000000-0000-4000-8000-000000000007",
+                  "type": "date",
+                  "alias": "arrival",
+                  "span": 1,
+                  "label": "Arrival",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "defaultToday": false,
+                    "min": {
+                      "today": "\u002B1d"
+                    },
+                    "weekdaysOnly": true
+                  }
+                },
+                {
+                  "key": "30000000-0000-4000-8000-000000000008",
+                  "type": "date",
+                  "alias": "departure",
+                  "span": 1,
+                  "label": "Departure",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [
+                    {
+                      "key": "40000000-0000-4000-8000-000000000005",
+                      "effect": "require",
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "30000000-0000-4000-8000-000000000007",
+                          "op": "isNotEmpty"
+                        }
+                      ]
+                    }
+                  ],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "defaultToday": false,
+                    "weekdaysOnly": false
+                  }
+                },
+                {
+                  "key": "30000000-0000-4000-8000-000000000009",
+                  "type": "grid",
+                  "alias": "satisfaction",
+                  "span": 3,
+                  "label": "How was it?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "1",
+                        "label": "Poor",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "2",
+                        "label": "Good",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [
+                    {
+                      "key": "31000000-0000-4000-8000-000000000001",
+                      "label": "Venue",
+                      "required": true
+                    },
+                    {
+                      "key": "31000000-0000-4000-8000-000000000002",
+                      "label": "Food",
+                      "required": false
+                    }
+                  ],
+                  "fields": [],
+                  "settings": {
+                    "multiple": false
+                  }
+                },
+                {
+                  "key": "30000000-0000-4000-8000-00000000000a",
+                  "type": "repeater",
+                  "alias": "guests",
+                  "span": 3,
+                  "label": "Guests",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [
+                    {
+                      "key": "30000000-0000-4000-8000-00000000000b",
+                      "type": "text",
+                      "alias": "guestName",
+                      "span": 2,
+                      "label": "Guest name",
+                      "hideLabel": false,
+                      "required": true,
+                      "messages": {},
+                      "validation": [],
+                      "rules": [],
+                      "rows": [],
+                      "fields": [],
+                      "settings": {
+                        "counter": false,
+                        "maxLength": 255,
+                        "minLength": 0
+                      }
+                    },
+                    {
+                      "key": "30000000-0000-4000-8000-00000000000c",
+                      "type": "number",
+                      "alias": "guestAge",
+                      "span": 1,
+                      "label": "Age",
+                      "hideLabel": false,
+                      "required": false,
+                      "messages": {},
+                      "validation": [],
+                      "rules": [],
+                      "rows": [],
+                      "fields": [],
+                      "settings": {
+                        "decimals": 0,
+                        "max": "120",
+                        "min": "0"
+                      }
+                    }
+                  ],
+                  "settings": {
+                    "addLabel": "Add a guest",
+                    "maxRows": 4,
+                    "minRows": 0
+                  }
+                },
+                {
+                  "key": "30000000-0000-4000-8000-00000000000d",
+                  "type": "textarea",
+                  "alias": "notes",
+                  "span": 3,
+                  "label": "Anything else?",
+                  "hideLabel": false,
+                  "help": "Diet, access needs, a \u0022hello\u0022 \\ anything.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [
+                    {
+                      "key": "40000000-0000-4000-8000-000000000006",
+                      "effect": "hide",
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "30000000-0000-4000-8000-000000000005",
+                          "op": "isNoneOf",
+                          "value": [
+                            "keynote",
+                            {
+                              "field": "30000000-0000-4000-8000-000000000004"
+                            }
+                          ]
+                        },
+                        {
+                          "field": "30000000-0000-4000-8000-000000000007",
+                          "op": "between",
+                          "value": [
+                            {
+                              "today": ""
+                            },
+                            {
+                              "today": "\u002B1y"
+                            }
+                          ]
+                        },
+                        {
+                          "match": "any",
+                          "conditions": []
+                        }
+                      ]
+                    }
+                  ],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "autoGrow": true,
+                    "counter": false,
+                    "maxLength": 4000,
+                    "minLength": 0,
+                    "rows": 4
+                  }
+                },
+                {
+                  "key": "30000000-0000-4000-8000-00000000000e",
+                  "type": "heading",
+                  "span": 3,
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "level": 3,
+                    "text": "Almost done"
+                  }
+                },
+                {
+                  "key": "30000000-0000-4000-8000-00000000000f",
+                  "type": "consent",
+                  "alias": "privacy",
+                  "span": 3,
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "text": "I agree to the \u003Ca href=\u0022/privacy\u0022\u003Eprivacy notice\u003C/a\u003E."
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": [
+        {
+          "key": "41000000-0000-4000-8000-000000000001",
+          "field": "30000000-0000-4000-8000-000000000008",
+          "message": "Departure is after arrival.",
+          "match": "all",
+          "conditions": [
+            {
+              "field": "30000000-0000-4000-8000-000000000008",
+              "op": "lessThan",
+              "value": {
+                "field": "30000000-0000-4000-8000-000000000007"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "fields": {
+      "30000000-0000-4000-8000-000000000001": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-000000000002": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-000000000003": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-000000000004": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-000000000005": {
+        "kind": "choices",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-000000000006": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-000000000007": {
+        "kind": "date",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-000000000008": {
+        "kind": "date",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-000000000009": {
+        "rowKind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-00000000000a": {
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-00000000000b": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-00000000000c": {
+        "kind": "number",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-00000000000d": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-00000000000e": {
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "30000000-0000-4000-8000-00000000000f": {
+        "kind": "checkbox",
+        "canBeRequired": true,
+        "builtIn": true
+      }
+    },
+    "logic": {
+      "pages": [
+        {
+          "id": "10000000-0000-4000-8000-000000000001",
+          "rules": [],
+          "groups": [
+            {
+              "id": "20000000-0000-4000-8000-000000000001",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "30000000-0000-4000-8000-000000000001",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "name",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [
+                    {
+                      "effect": "require",
+                      "enabled": true,
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "30000000-0000-4000-8000-000000000002",
+                          "op": "isNotEmpty"
+                        }
+                      ]
+                    }
+                  ],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "30000000-0000-4000-8000-000000000002",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "email",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "30000000-0000-4000-8000-000000000003",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "confirmEmail",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            },
+            {
+              "id": "20000000-0000-4000-8000-000000000002",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "30000000-0000-4000-8000-000000000004",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "ticket",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [
+                    {
+                      "effect": "show",
+                      "enabled": true,
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "30000000-0000-4000-8000-000000000001",
+                          "op": "isNotEmpty"
+                        }
+                      ]
+                    }
+                  ],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "30000000-0000-4000-8000-000000000005",
+                  "kind": "choices",
+                  "canBeRequired": true,
+                  "alias": "sessions",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "30000000-0000-4000-8000-000000000006",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "country",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "10000000-0000-4000-8000-000000000002",
+          "rules": [
+            {
+              "effect": "show",
+              "enabled": true,
+              "match": "any",
+              "conditions": [
+                {
+                  "field": "30000000-0000-4000-8000-000000000004",
+                  "op": "equals",
+                  "value": "workshop"
+                },
+                {
+                  "match": "all",
+                  "conditions": [
+                    {
+                      "context": "query.ref",
+                      "op": "startsWith",
+                      "value": "partner"
+                    },
+                    {
+                      "context": "today",
+                      "op": "lessThan",
+                      "value": {
+                        "today": "\u002B30d"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "groups": [
+            {
+              "id": "20000000-0000-4000-8000-000000000003",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "30000000-0000-4000-8000-000000000007",
+                  "kind": "date",
+                  "canBeRequired": true,
+                  "alias": "arrival",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "30000000-0000-4000-8000-000000000008",
+                  "kind": "date",
+                  "canBeRequired": true,
+                  "alias": "departure",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [
+                    {
+                      "effect": "require",
+                      "enabled": true,
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "30000000-0000-4000-8000-000000000007",
+                          "op": "isNotEmpty"
+                        }
+                      ]
+                    }
+                  ],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "30000000-0000-4000-8000-000000000009",
+                  "kind": null,
+                  "canBeRequired": true,
+                  "alias": "satisfaction",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": [
+                    {
+                      "id": "31000000-0000-4000-8000-000000000001",
+                      "kind": "choice"
+                    },
+                    {
+                      "id": "31000000-0000-4000-8000-000000000002",
+                      "kind": "choice"
+                    }
+                  ]
+                },
+                {
+                  "id": "30000000-0000-4000-8000-00000000000a",
+                  "kind": null,
+                  "canBeRequired": false,
+                  "alias": "guests",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [
+                    {
+                      "id": "30000000-0000-4000-8000-00000000000b",
+                      "kind": "text",
+                      "canBeRequired": true,
+                      "alias": "guestName",
+                      "calculation": null,
+                      "required": true,
+                      "rules": [],
+                      "fields": [],
+                      "rows": []
+                    },
+                    {
+                      "id": "30000000-0000-4000-8000-00000000000c",
+                      "kind": "number",
+                      "canBeRequired": true,
+                      "alias": "guestAge",
+                      "calculation": null,
+                      "required": false,
+                      "rules": [],
+                      "fields": [],
+                      "rows": []
+                    }
+                  ],
+                  "rows": []
+                },
+                {
+                  "id": "30000000-0000-4000-8000-00000000000d",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "notes",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [
+                    {
+                      "effect": "hide",
+                      "enabled": true,
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "30000000-0000-4000-8000-000000000005",
+                          "op": "isNoneOf",
+                          "value": [
+                            "keynote",
+                            {
+                              "field": "30000000-0000-4000-8000-000000000004"
+                            }
+                          ]
+                        },
+                        {
+                          "field": "30000000-0000-4000-8000-000000000007",
+                          "op": "between",
+                          "value": [
+                            {
+                              "today": ""
+                            },
+                            {
+                              "today": "\u002B1y"
+                            }
+                          ]
+                        },
+                        {
+                          "match": "any",
+                          "conditions": []
+                        }
+                      ]
+                    }
+                  ],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "30000000-0000-4000-8000-00000000000e",
+                  "kind": null,
+                  "canBeRequired": false,
+                  "alias": null,
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "30000000-0000-4000-8000-00000000000f",
+                  "kind": "checkbox",
+                  "canBeRequired": true,
+                  "alias": "privacy",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": [
+        {
+          "id": "41000000-0000-4000-8000-000000000001",
+          "field": "30000000-0000-4000-8000-000000000008",
+          "enabled": true,
+          "match": "all",
+          "conditions": [
+            {
+              "field": "30000000-0000-4000-8000-000000000008",
+              "op": "lessThan",
+              "value": {
+                "field": "30000000-0000-4000-8000-000000000007"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "application": {
+    "form": {
+      "key": "d0000000-0000-4000-8000-000000000006",
+      "settings": {
+        "submitLabel": "Send my application",
+        "summaryPage": false,
+        "progress": "steps",
+        "resume": false,
+        "membersOnly": false,
+        "protection": "inherit",
+        "requiredMarker": "optional",
+        "validationSummary": true,
+        "choiceLayout": "vertical",
+        "queryValues": []
+      },
+      "pages": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000060",
+          "title": "About you",
+          "rules": [],
+          "groups": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000061",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000601",
+                  "type": "name",
+                  "alias": "fullName",
+                  "span": 1,
+                  "label": "Your name",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "parts": [
+                      "first",
+                      "last"
+                    ]
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000602",
+                  "type": "email",
+                  "alias": "email",
+                  "span": 1,
+                  "label": "Email address",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "autocomplete": "email",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "confirm": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000603",
+                  "type": "radio",
+                  "alias": "post",
+                  "span": 1,
+                  "label": "Which post are you applying for?",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "assistant",
+                        "label": "Library assistant (60%)",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "coordinator",
+                        "label": "Volunteer coordinator (40%)",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "inherit",
+                    "other": false
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000062",
+          "title": "Your references",
+          "rules": [],
+          "groups": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000063",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000604",
+                  "type": "repeater",
+                  "alias": "referees",
+                  "span": 1,
+                  "label": "Who can tell us about your work?",
+                  "hideLabel": false,
+                  "help": "Two people, for example a former manager.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [
+                    {
+                      "key": "d0000000-0000-4000-8000-000000000605",
+                      "type": "text",
+                      "alias": "refName",
+                      "span": 1,
+                      "label": "Name",
+                      "hideLabel": false,
+                      "required": true,
+                      "messages": {},
+                      "validation": [],
+                      "rules": [],
+                      "rows": [],
+                      "fields": [],
+                      "settings": {
+                        "counter": false,
+                        "maxLength": 255,
+                        "minLength": 0
+                      }
+                    },
+                    {
+                      "key": "d0000000-0000-4000-8000-000000000606",
+                      "type": "text",
+                      "alias": "refContact",
+                      "span": 1,
+                      "label": "Phone or email",
+                      "hideLabel": false,
+                      "required": true,
+                      "messages": {},
+                      "validation": [],
+                      "rules": [],
+                      "rows": [],
+                      "fields": [],
+                      "settings": {
+                        "counter": false,
+                        "maxLength": 255,
+                        "minLength": 0
+                      }
+                    }
+                  ],
+                  "settings": {
+                    "addLabel": "Add a reference",
+                    "maxRows": 3,
+                    "minRows": 2,
+                    "rowLabel": "Reference"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000064",
+          "title": "Your letter",
+          "rules": [],
+          "groups": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000065",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000607",
+                  "type": "textarea",
+                  "alias": "letter",
+                  "span": 1,
+                  "label": "Why would you like to work with us?",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "autoGrow": true,
+                    "counter": true,
+                    "maxLength": 4000,
+                    "minLength": 0,
+                    "rows": 6
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-00000000060b",
+                  "type": "file",
+                  "alias": "cv",
+                  "span": 1,
+                  "label": "Your CV",
+                  "hideLabel": false,
+                  "help": "A PDF or an office document, up to 2 MB.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "camera": false,
+                    "dropZone": true,
+                    "maxBytes": 2097152,
+                    "maxFiles": 1,
+                    "thumbnails": true,
+                    "types": [
+                      "pdf",
+                      "office"
+                    ]
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000608",
+                  "type": "yesno",
+                  "alias": "startEarly",
+                  "span": 1,
+                  "label": "Could you start earlier than the posting says?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "style": "switch"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000609",
+                  "type": "consent",
+                  "alias": "privacy",
+                  "span": 1,
+                  "label": "Consent",
+                  "hideLabel": true,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "text": "I agree that the library keeps my application until six months after the post is filled."
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    },
+    "fields": {
+      "d0000000-0000-4000-8000-000000000601": {
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000602": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000603": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000604": {
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000605": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000606": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000607": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-00000000060b": {
+        "kind": "files",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000608": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000609": {
+        "kind": "checkbox",
+        "canBeRequired": true,
+        "builtIn": true
+      }
+    },
+    "logic": {
+      "pages": [
+        {
+          "id": "d0000000-0000-4000-8000-000000000060",
+          "rules": [],
+          "groups": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000061",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000601",
+                  "kind": null,
+                  "canBeRequired": true,
+                  "alias": "fullName",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000602",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "email",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000603",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "post",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d0000000-0000-4000-8000-000000000062",
+          "rules": [],
+          "groups": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000063",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000604",
+                  "kind": null,
+                  "canBeRequired": false,
+                  "alias": "referees",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [
+                    {
+                      "id": "d0000000-0000-4000-8000-000000000605",
+                      "kind": "text",
+                      "canBeRequired": true,
+                      "alias": "refName",
+                      "calculation": null,
+                      "required": true,
+                      "rules": [],
+                      "fields": [],
+                      "rows": []
+                    },
+                    {
+                      "id": "d0000000-0000-4000-8000-000000000606",
+                      "kind": "text",
+                      "canBeRequired": true,
+                      "alias": "refContact",
+                      "calculation": null,
+                      "required": true,
+                      "rules": [],
+                      "fields": [],
+                      "rows": []
+                    }
+                  ],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d0000000-0000-4000-8000-000000000064",
+          "rules": [],
+          "groups": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000065",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000607",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "letter",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-00000000060b",
+                  "kind": "files",
+                  "canBeRequired": true,
+                  "alias": "cv",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000608",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "startEarly",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000609",
+                  "kind": "checkbox",
+                  "canBeRequired": true,
+                  "alias": "privacy",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    }
+  },
+  "contact": {
+    "form": {
+      "key": "d0000000-0000-4000-8000-000000000001",
+      "settings": {
+        "submitLabel": "Send message",
+        "summaryPage": false,
+        "progress": "steps",
+        "resume": false,
+        "membersOnly": false,
+        "protection": "inherit",
+        "requiredMarker": "optional",
+        "validationSummary": true,
+        "choiceLayout": "vertical",
+        "queryValues": []
+      },
+      "pages": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000010",
+          "rules": [],
+          "groups": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000011",
+              "columns": 2,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000101",
+                  "type": "text",
+                  "alias": "name",
+                  "span": 1,
+                  "label": "Your name",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "autocomplete": "name",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "counter": false,
+                    "maxLength": 255,
+                    "minLength": 0
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000102",
+                  "type": "email",
+                  "alias": "email",
+                  "span": 1,
+                  "label": "Email address",
+                  "hideLabel": false,
+                  "help": "We use it only to answer you.",
+                  "required": true,
+                  "messages": {},
+                  "autocomplete": "email",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "confirm": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000103",
+                  "type": "phone",
+                  "alias": "phone",
+                  "span": 2,
+                  "label": "Phone",
+                  "hideLabel": false,
+                  "help": "If you would rather we call you back.",
+                  "required": false,
+                  "messages": {},
+                  "autocomplete": "tel",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": []
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000104",
+                  "type": "textarea",
+                  "alias": "message",
+                  "span": 2,
+                  "label": "Your message",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "autoGrow": true,
+                    "counter": true,
+                    "maxLength": 2000,
+                    "minLength": 0,
+                    "rows": 6
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    },
+    "fields": {
+      "d0000000-0000-4000-8000-000000000101": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000102": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000103": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000104": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      }
+    },
+    "logic": {
+      "pages": [
+        {
+          "id": "d0000000-0000-4000-8000-000000000010",
+          "rules": [],
+          "groups": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000011",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000101",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "name",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000102",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "email",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000103",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "phone",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000104",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "message",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    }
+  },
+  "feedback": {
+    "form": {
+      "key": "d0000000-0000-4000-8000-000000000003",
+      "settings": {
+        "submitLabel": "Send feedback",
+        "summaryPage": false,
+        "progress": "steps",
+        "resume": false,
+        "membersOnly": false,
+        "protection": "inherit",
+        "requiredMarker": "optional",
+        "validationSummary": true,
+        "choiceLayout": "vertical",
+        "queryValues": []
+      },
+      "pages": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000030",
+          "rules": [],
+          "groups": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000031",
+              "title": "Your visits",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000301",
+                  "type": "radio",
+                  "alias": "visits",
+                  "span": 1,
+                  "label": "How often do you visit us?",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "weekly",
+                        "label": "Every week",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "monthly",
+                        "label": "Every month",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "rarely",
+                        "label": "A few times a year",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "first",
+                        "label": "This is my first visit",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "horizontal",
+                    "other": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000302",
+                  "type": "checkboxes",
+                  "alias": "uses",
+                  "span": 1,
+                  "label": "What do you come for?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "books",
+                        "label": "Borrowing books",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "study",
+                        "label": "A quiet place to study",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "events",
+                        "label": "Events and workshops",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "children",
+                        "label": "The children\u0027s corner",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "inherit",
+                    "other": true
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000303",
+                  "type": "dropdown",
+                  "alias": "branch",
+                  "span": 1,
+                  "label": "Which branch do you visit most?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "market",
+                        "label": "Market Street",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "riverside",
+                        "label": "Riverside",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "multiple": false
+                  }
+                }
+              ]
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000032",
+              "title": "What you think",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000304",
+                  "type": "rating",
+                  "alias": "lastVisit",
+                  "span": 1,
+                  "label": "How was your last visit?",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "count": 5,
+                    "highLabel": "Excellent",
+                    "lowLabel": "Poor",
+                    "symbol": "star"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000305",
+                  "type": "grid",
+                  "alias": "happyWith",
+                  "span": 1,
+                  "label": "How happy are you with these?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "1",
+                        "label": "Not happy",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "2",
+                        "label": "Fine",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "3",
+                        "label": "Happy",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [
+                    {
+                      "key": "d0000000-0000-4000-8000-000000000351",
+                      "label": "The opening hours",
+                      "required": false
+                    },
+                    {
+                      "key": "d0000000-0000-4000-8000-000000000352",
+                      "label": "The choice of books",
+                      "required": false
+                    },
+                    {
+                      "key": "d0000000-0000-4000-8000-000000000353",
+                      "label": "Help from our team",
+                      "required": false
+                    }
+                  ],
+                  "fields": [],
+                  "settings": {
+                    "multiple": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000306",
+                  "type": "ranking",
+                  "alias": "improve",
+                  "span": 1,
+                  "label": "What should we improve first?",
+                  "hideLabel": false,
+                  "help": "Put your three most important first.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "hours",
+                        "label": "Longer opening hours",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "seats",
+                        "label": "More quiet seats",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "children",
+                        "label": "More events for children",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "cafe",
+                        "label": "A caf\u00E9",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "wifi",
+                        "label": "Faster Wi-Fi",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "top": 3
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000307",
+                  "type": "yesno",
+                  "alias": "evenings",
+                  "span": 1,
+                  "label": "Would you come on a weekday evening, until 21:00?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "style": "buttons"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-00000000030a",
+                  "type": "checkboxes",
+                  "alias": "eveningDays",
+                  "span": 1,
+                  "label": "Which evenings would suit you?",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [
+                    {
+                      "key": "d0000000-0000-4000-8000-000000003a0a",
+                      "effect": "show",
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "d0000000-0000-4000-8000-000000000307",
+                          "op": "equals",
+                          "value": "yes"
+                        }
+                      ]
+                    }
+                  ],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "mon",
+                        "label": "Monday",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "tue",
+                        "label": "Tuesday",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "wed",
+                        "label": "Wednesday",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "thu",
+                        "label": "Thursday",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "fri",
+                        "label": "Friday",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "inherit",
+                    "other": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000308",
+                  "type": "scale",
+                  "alias": "recommend",
+                  "span": 1,
+                  "label": "How likely are you to recommend the library to a friend?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "from": 0,
+                    "highLabel": "Very likely",
+                    "lowLabel": "Not likely",
+                    "to": 10
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000309",
+                  "type": "textarea",
+                  "alias": "comments",
+                  "span": 1,
+                  "label": "Anything else you would like to tell us?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [
+                    {
+                      "key": "d0000000-0000-4000-8000-000000003a09",
+                      "effect": "require",
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "d0000000-0000-4000-8000-000000000308",
+                          "op": "lessThan",
+                          "value": "7"
+                        }
+                      ]
+                    }
+                  ],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "autoGrow": true,
+                    "counter": true,
+                    "maxLength": 2000,
+                    "minLength": 0,
+                    "rows": 4
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    },
+    "fields": {
+      "d0000000-0000-4000-8000-000000000301": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000302": {
+        "kind": "choices",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000303": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000304": {
+        "kind": "number",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000305": {
+        "rowKind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000306": {
+        "kind": "choices",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000307": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-00000000030a": {
+        "kind": "choices",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000308": {
+        "kind": "number",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000309": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      }
+    },
+    "logic": {
+      "pages": [
+        {
+          "id": "d0000000-0000-4000-8000-000000000030",
+          "rules": [],
+          "groups": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000031",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000301",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "visits",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000302",
+                  "kind": "choices",
+                  "canBeRequired": true,
+                  "alias": "uses",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000303",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "branch",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            },
+            {
+              "id": "d0000000-0000-4000-8000-000000000032",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000304",
+                  "kind": "number",
+                  "canBeRequired": true,
+                  "alias": "lastVisit",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000305",
+                  "kind": null,
+                  "canBeRequired": true,
+                  "alias": "happyWith",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": [
+                    {
+                      "id": "d0000000-0000-4000-8000-000000000351",
+                      "kind": "choice"
+                    },
+                    {
+                      "id": "d0000000-0000-4000-8000-000000000352",
+                      "kind": "choice"
+                    },
+                    {
+                      "id": "d0000000-0000-4000-8000-000000000353",
+                      "kind": "choice"
+                    }
+                  ]
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000306",
+                  "kind": "choices",
+                  "canBeRequired": true,
+                  "alias": "improve",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000307",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "evenings",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-00000000030a",
+                  "kind": "choices",
+                  "canBeRequired": true,
+                  "alias": "eveningDays",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [
+                    {
+                      "effect": "show",
+                      "enabled": true,
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "d0000000-0000-4000-8000-000000000307",
+                          "op": "equals",
+                          "value": "yes"
+                        }
+                      ]
+                    }
+                  ],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000308",
+                  "kind": "number",
+                  "canBeRequired": true,
+                  "alias": "recommend",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000309",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "comments",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [
+                    {
+                      "effect": "require",
+                      "enabled": true,
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "d0000000-0000-4000-8000-000000000308",
+                          "op": "lessThan",
+                          "value": "7"
+                        }
+                      ]
+                    }
+                  ],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    }
+  },
+  "newsletter": {
+    "form": {
+      "key": "d0000000-0000-4000-8000-000000000005",
+      "settings": {
+        "submitLabel": "Subscribe",
+        "summaryPage": false,
+        "progress": "steps",
+        "resume": false,
+        "membersOnly": false,
+        "protection": "inherit",
+        "requiredMarker": "optional",
+        "validationSummary": true,
+        "choiceLayout": "vertical",
+        "queryValues": []
+      },
+      "pages": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000050",
+          "rules": [],
+          "groups": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000051",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000501",
+                  "type": "email",
+                  "alias": "email",
+                  "span": 1,
+                  "label": "Email address",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "autocomplete": "email",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "confirm": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000502",
+                  "type": "yesno",
+                  "alias": "children",
+                  "span": 1,
+                  "label": "Also send me the children\u0027s programme",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "style": "switch"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000503",
+                  "type": "consent",
+                  "alias": "agree",
+                  "span": 1,
+                  "label": "Consent",
+                  "hideLabel": true,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "text": "I agree to receive the newsletter by email and can unsubscribe at any time."
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    },
+    "fields": {
+      "d0000000-0000-4000-8000-000000000501": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000502": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000503": {
+        "kind": "checkbox",
+        "canBeRequired": true,
+        "builtIn": true
+      }
+    },
+    "logic": {
+      "pages": [
+        {
+          "id": "d0000000-0000-4000-8000-000000000050",
+          "rules": [],
+          "groups": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000051",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000501",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "email",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000502",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "children",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000503",
+                  "kind": "checkbox",
+                  "canBeRequired": true,
+                  "alias": "agree",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    }
+  },
+  "roomHire": {
+    "form": {
+      "key": "d0000000-0000-4000-8000-000000000004",
+      "settings": {
+        "submitLabel": "Request the room",
+        "summaryPage": false,
+        "progress": "steps",
+        "resume": false,
+        "membersOnly": false,
+        "protection": "inherit",
+        "requiredMarker": "optional",
+        "validationSummary": true,
+        "choiceLayout": "vertical",
+        "queryValues": []
+      },
+      "pages": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000040",
+          "rules": [],
+          "groups": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000041",
+              "title": "When",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000401",
+                  "type": "date",
+                  "alias": "day",
+                  "span": 1,
+                  "label": "Which day?",
+                  "hideLabel": false,
+                  "help": "We take bookings from tomorrow up to three months ahead.",
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "defaultToday": false,
+                    "max": {
+                      "today": "\u002B3m"
+                    },
+                    "min": {
+                      "today": "\u002B1d"
+                    },
+                    "weekdaysOnly": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000402",
+                  "type": "time",
+                  "alias": "from",
+                  "span": 1,
+                  "label": "From",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "max": "17:00",
+                    "min": "09:00",
+                    "stepMinutes": 30
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000403",
+                  "type": "slider",
+                  "alias": "hours",
+                  "span": 1,
+                  "label": "How many hours?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "max": "8",
+                    "min": "1",
+                    "showValue": true,
+                    "step": "1",
+                    "unit": "hours"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000404",
+                  "type": "calculation",
+                  "alias": "cost",
+                  "span": 1,
+                  "label": "Room hire",
+                  "hideLabel": false,
+                  "help": "15 euros an hour.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "format": {
+                      "decimals": 2,
+                      "prefix": "EUR"
+                    },
+                    "formula": "hours * 15",
+                    "visible": true
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000405",
+                  "type": "datetime",
+                  "alias": "keyPickup",
+                  "span": 1,
+                  "label": "When will you pick up the key?",
+                  "hideLabel": false,
+                  "help": "The library desk is open from 9:00 to 18:00.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "defaultToday": false,
+                    "min": {
+                      "today": ""
+                    },
+                    "stepMinutes": 15,
+                    "weekdaysOnly": false
+                  }
+                }
+              ]
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000042",
+              "title": "Who",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000406",
+                  "type": "name",
+                  "alias": "contact",
+                  "span": 1,
+                  "label": "Who is the contact on the day?",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "parts": [
+                      "first",
+                      "last"
+                    ]
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000407",
+                  "type": "email",
+                  "alias": "email",
+                  "span": 1,
+                  "label": "Email address",
+                  "hideLabel": false,
+                  "help": "We send the confirmation there.",
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "confirm": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000408",
+                  "type": "address",
+                  "alias": "billing",
+                  "span": 1,
+                  "label": "Address for the invoice",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "parts": [
+                      "street2",
+                      "country"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000043",
+              "title": "Plan and signature",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000409",
+                  "type": "file",
+                  "alias": "plan",
+                  "span": 1,
+                  "label": "A plan of the room as you need it",
+                  "hideLabel": false,
+                  "help": "A PDF or a photo of a sketch is enough.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "camera": false,
+                    "dropZone": true,
+                    "maxFiles": 1,
+                    "thumbnails": true,
+                    "types": [
+                      "pdf",
+                      "images"
+                    ]
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000410",
+                  "type": "signature",
+                  "alias": "signature",
+                  "span": 1,
+                  "label": "Your signature",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    },
+    "fields": {
+      "d0000000-0000-4000-8000-000000000401": {
+        "kind": "date",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000402": {
+        "kind": "time",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000403": {
+        "kind": "number",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000404": {
+        "kind": "number",
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000405": {
+        "kind": "dateTime",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000406": {
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000407": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000408": {
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000409": {
+        "kind": "files",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000410": {
+        "kind": "files",
+        "canBeRequired": true,
+        "builtIn": true
+      }
+    },
+    "logic": {
+      "pages": [
+        {
+          "id": "d0000000-0000-4000-8000-000000000040",
+          "rules": [],
+          "groups": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000041",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000401",
+                  "kind": "date",
+                  "canBeRequired": true,
+                  "alias": "day",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000402",
+                  "kind": "time",
+                  "canBeRequired": true,
+                  "alias": "from",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000403",
+                  "kind": "number",
+                  "canBeRequired": true,
+                  "alias": "hours",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000404",
+                  "kind": "number",
+                  "canBeRequired": false,
+                  "alias": "cost",
+                  "calculation": {
+                    "formula": "hours * 15",
+                    "decimals": 2
+                  },
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000405",
+                  "kind": "dateTime",
+                  "canBeRequired": true,
+                  "alias": "keyPickup",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            },
+            {
+              "id": "d0000000-0000-4000-8000-000000000042",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000406",
+                  "kind": null,
+                  "canBeRequired": true,
+                  "alias": "contact",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000407",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "email",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000408",
+                  "kind": null,
+                  "canBeRequired": true,
+                  "alias": "billing",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            },
+            {
+              "id": "d0000000-0000-4000-8000-000000000043",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000409",
+                  "kind": "files",
+                  "canBeRequired": true,
+                  "alias": "plan",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000410",
+                  "kind": "files",
+                  "canBeRequired": true,
+                  "alias": "signature",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    }
+  },
+  "specimen": {
+    "form": {
+      "key": "d0000000-0000-4000-8000-000000000007",
+      "settings": {
+        "submitLabel": "Send the sample",
+        "summaryPage": false,
+        "progress": "steps",
+        "resume": false,
+        "membersOnly": false,
+        "protection": "inherit",
+        "requiredMarker": "optional",
+        "validationSummary": true,
+        "choiceLayout": "vertical",
+        "queryValues": []
+      },
+      "pages": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000070",
+          "title": "Every field type",
+          "description": "\u003Cp\u003ESample answers are fine: the demo keeps them only until it is reset.\u003C/p\u003E",
+          "rules": [],
+          "groups": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000071",
+              "title": "Words and numbers",
+              "description": "\u003Cp\u003EText, numbers and addresses on the web.\u003C/p\u003E",
+              "columns": 2,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000701",
+                  "type": "text",
+                  "alias": "displayName",
+                  "span": 1,
+                  "label": "Name on your library card",
+                  "hideLabel": false,
+                  "help": "As it should be printed.",
+                  "required": true,
+                  "messages": {},
+                  "autocomplete": "name",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "counter": true,
+                    "maxLength": 40,
+                    "minLength": 0
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000702",
+                  "type": "email",
+                  "alias": "email",
+                  "span": 1,
+                  "label": "Email address",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "autocomplete": "email",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "confirm": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000703",
+                  "type": "text",
+                  "alias": "cardNumber",
+                  "span": 1,
+                  "label": "Library card number",
+                  "hideLabel": false,
+                  "help": "The six digits on the back of your card.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "counter": false,
+                    "maxLength": 6,
+                    "minLength": 0,
+                    "prefix": "LIB"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000704",
+                  "type": "number",
+                  "alias": "copies",
+                  "span": 1,
+                  "label": "How many copies?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "decimals": 0,
+                    "max": "10",
+                    "min": "1",
+                    "step": "1",
+                    "suffix": "copies"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000705",
+                  "type": "phone",
+                  "alias": "phone",
+                  "span": 1,
+                  "label": "Phone number",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "autocomplete": "tel",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": []
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000706",
+                  "type": "url",
+                  "alias": "website",
+                  "span": 1,
+                  "label": "Your website",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "autocomplete": "url",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "schemes": [
+                      "https"
+                    ]
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000707",
+                  "type": "textarea",
+                  "alias": "message",
+                  "span": 2,
+                  "label": "Your message",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "autoGrow": true,
+                    "counter": true,
+                    "maxLength": 500,
+                    "minLength": 0,
+                    "rows": 4
+                  }
+                }
+              ]
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000072",
+              "title": "Dates and times",
+              "columns": 3,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000708",
+                  "type": "date",
+                  "alias": "visitDay",
+                  "span": 1,
+                  "label": "Day of your visit",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "defaultToday": false,
+                    "min": {
+                      "today": ""
+                    },
+                    "weekdaysOnly": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000709",
+                  "type": "time",
+                  "alias": "visitTime",
+                  "span": 1,
+                  "label": "Time",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "max": "18:00",
+                    "min": "09:00",
+                    "stepMinutes": 30
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000710",
+                  "type": "datetime",
+                  "alias": "returnAt",
+                  "span": 1,
+                  "label": "Return by",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "defaultToday": false,
+                    "stepMinutes": 15,
+                    "weekdaysOnly": false
+                  }
+                }
+              ]
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000073",
+              "title": "Choices",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000711",
+                  "type": "dropdown",
+                  "alias": "branch",
+                  "span": 1,
+                  "label": "Branch",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "market",
+                        "label": "Market Street",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "riverside",
+                        "label": "Riverside",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "oldTown",
+                        "label": "Old Town",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "multiple": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000712",
+                  "type": "dropdown",
+                  "alias": "topics",
+                  "span": 1,
+                  "label": "Topics you read about",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "history",
+                        "label": "History",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "nature",
+                        "label": "Nature",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "travel",
+                        "label": "Travel",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "cooking",
+                        "label": "Cooking",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "multiple": true
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000713",
+                  "type": "radio",
+                  "alias": "format",
+                  "span": 1,
+                  "label": "Which format?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "print",
+                        "label": "In print",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "ebook",
+                        "label": "E-book",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "audio",
+                        "label": "Audiobook",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "horizontal",
+                    "other": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000714",
+                  "type": "radio",
+                  "alias": "room",
+                  "span": 1,
+                  "label": "Where would you like to sit?",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "reading",
+                        "label": "The reading room",
+                        "description": "Quiet, with 40 seats.",
+                        "image": "d0000000-0000-4000-8000-0000000000f1",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "booth",
+                        "label": "A study booth",
+                        "description": "For one, with a door.",
+                        "image": "d0000000-0000-4000-8000-0000000000f1",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "cafe",
+                        "label": "The caf\u00E9 corner",
+                        "description": "Talking is fine.",
+                        "image": "d0000000-0000-4000-8000-0000000000f1",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "cards",
+                    "other": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000715",
+                  "type": "checkboxes",
+                  "alias": "interests",
+                  "span": 1,
+                  "label": "What else interests you?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "readings",
+                        "label": "Author readings",
+                        "description": "Usually on Thursday evenings.",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "courses",
+                        "label": "Computer courses",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "games",
+                        "label": "Board game afternoons",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "inherit",
+                    "other": true
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000716",
+                  "type": "checkbox",
+                  "alias": "reminder",
+                  "span": 1,
+                  "label": "Reminder",
+                  "hideLabel": false,
+                  "help": "We write once, the day before.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "text": "Send me a reminder"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000717",
+                  "type": "yesno",
+                  "alias": "firstVisit",
+                  "span": 1,
+                  "label": "Is this your first visit?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "style": "buttons"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000718",
+                  "type": "yesno",
+                  "alias": "newsletter",
+                  "span": 1,
+                  "label": "Get the monthly newsletter",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "style": "switch"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000719",
+                  "type": "country",
+                  "alias": "country",
+                  "span": 1,
+                  "label": "Country",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "autocomplete": "country",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "top": [
+                      "DE",
+                      "CH",
+                      "AT"
+                    ]
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000720",
+                  "type": "consent",
+                  "alias": "privacy",
+                  "span": 1,
+                  "label": "Privacy",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "text": "I agree that the library keeps my answers for six months."
+                  }
+                }
+              ]
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000074",
+              "title": "Scales and lists",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000721",
+                  "type": "rating",
+                  "alias": "rating",
+                  "span": 1,
+                  "label": "How was your last visit?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "count": 5,
+                    "highLabel": "Excellent",
+                    "lowLabel": "Poor",
+                    "symbol": "star"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000722",
+                  "type": "scale",
+                  "alias": "recommend",
+                  "span": 1,
+                  "label": "Would you recommend us?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "from": 0,
+                    "highLabel": "Very likely",
+                    "lowLabel": "Not likely",
+                    "to": 10
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000723",
+                  "type": "slider",
+                  "alias": "hours",
+                  "span": 1,
+                  "label": "Hours a week you read",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "max": "20",
+                    "min": "0",
+                    "showValue": true,
+                    "step": "1",
+                    "unit": "hours"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000724",
+                  "type": "grid",
+                  "alias": "opinions",
+                  "span": 1,
+                  "label": "How happy are you with these?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "1",
+                        "label": "Not happy",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "2",
+                        "label": "Fine",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "3",
+                        "label": "Happy",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [
+                    {
+                      "key": "d0000000-0000-4000-8000-000000000781",
+                      "label": "The opening hours",
+                      "required": false
+                    },
+                    {
+                      "key": "d0000000-0000-4000-8000-000000000782",
+                      "label": "The choice of books",
+                      "required": false
+                    }
+                  ],
+                  "fields": [],
+                  "settings": {
+                    "multiple": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000725",
+                  "type": "ranking",
+                  "alias": "priorities",
+                  "span": 1,
+                  "label": "What matters most to you?",
+                  "hideLabel": false,
+                  "help": "Put the most important first.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "hours",
+                        "label": "Opening hours",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "quiet",
+                        "label": "Quiet",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "books",
+                        "label": "New books",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": []
+                }
+              ]
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000075",
+              "title": "People and files",
+              "description": "\u003Cp\u003EA group in the card style.\u003C/p\u003E",
+              "columns": 1,
+              "style": "card",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000726",
+                  "type": "name",
+                  "alias": "contact",
+                  "span": 1,
+                  "label": "Your name",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "parts": [
+                      "first",
+                      "last"
+                    ]
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000727",
+                  "type": "address",
+                  "alias": "address",
+                  "span": 1,
+                  "label": "Address",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "parts": [
+                      "street2",
+                      "country"
+                    ]
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000728",
+                  "type": "file",
+                  "alias": "attachments",
+                  "span": 1,
+                  "label": "Attachments",
+                  "hideLabel": false,
+                  "help": "PDFs or pictures, up to three.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "camera": false,
+                    "dropZone": true,
+                    "maxFiles": 3,
+                    "thumbnails": true,
+                    "types": [
+                      "pdf",
+                      "images"
+                    ]
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000729",
+                  "type": "signature",
+                  "alias": "signature",
+                  "span": 1,
+                  "label": "Your signature",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": []
+                }
+              ]
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000076",
+              "title": "Content and calculations",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000731",
+                  "type": "paragraph",
+                  "span": 1,
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "html": "\u003Cp\u003EA paragraph an editor writes, with \u003Cstrong\u003Ebold words\u003C/strong\u003E and \u003Ca href=\u0022/\u0022\u003Ea link\u003C/a\u003E.\u003C/p\u003E"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000732",
+                  "type": "image",
+                  "span": 1,
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "alt": "Shelves of books under a window",
+                    "media": "d0000000-0000-4000-8000-0000000000f1",
+                    "size": "medium"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000733",
+                  "type": "divider",
+                  "span": 1,
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": []
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000730",
+                  "type": "heading",
+                  "span": 1,
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "level": 3,
+                    "text": "What it costs"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000734",
+                  "type": "calculation",
+                  "alias": "deposit",
+                  "span": 1,
+                  "label": "Deposit",
+                  "hideLabel": false,
+                  "help": "Two euros a copy.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "format": {
+                      "decimals": 2,
+                      "prefix": "EUR"
+                    },
+                    "formula": "copies * 2",
+                    "visible": true
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000735",
+                  "type": "hidden",
+                  "alias": "source",
+                  "span": 1,
+                  "label": "Source",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": []
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000736",
+                  "type": "captcha",
+                  "span": 1,
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": []
+                }
+              ]
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000077",
+              "title": "A repeatable group",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000737",
+                  "type": "repeater",
+                  "alias": "guests",
+                  "span": 1,
+                  "label": "Who comes with you",
+                  "hideLabel": false,
+                  "help": "Up to three guests.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [
+                    {
+                      "key": "d0000000-0000-4000-8000-000000000738",
+                      "type": "text",
+                      "alias": "guestName",
+                      "span": 1,
+                      "label": "Name",
+                      "hideLabel": false,
+                      "required": true,
+                      "messages": {},
+                      "validation": [],
+                      "rules": [],
+                      "rows": [],
+                      "fields": [],
+                      "settings": {
+                        "counter": false,
+                        "maxLength": 255,
+                        "minLength": 0
+                      }
+                    },
+                    {
+                      "key": "d0000000-0000-4000-8000-000000000739",
+                      "type": "radio",
+                      "alias": "guestAge",
+                      "span": 1,
+                      "label": "Age",
+                      "hideLabel": false,
+                      "required": false,
+                      "messages": {},
+                      "validation": [],
+                      "rules": [],
+                      "options": {
+                        "items": [
+                          {
+                            "value": "under16",
+                            "label": "Under 16",
+                            "parentValues": []
+                          },
+                          {
+                            "value": "adult",
+                            "label": "16 or over",
+                            "parentValues": []
+                          }
+                        ],
+                        "fromSource": false
+                      },
+                      "rows": [],
+                      "fields": [],
+                      "settings": {
+                        "layout": "horizontal",
+                        "other": false
+                      }
+                    }
+                  ],
+                  "settings": {
+                    "addLabel": "Add a guest",
+                    "maxRows": 3,
+                    "minRows": 0,
+                    "rowLabel": "Guest"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000078",
+          "title": "One more thing",
+          "rules": [],
+          "groups": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000079",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000740",
+                  "type": "textarea",
+                  "alias": "anythingElse",
+                  "span": 1,
+                  "label": "Anything else?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "autoGrow": true,
+                    "counter": false,
+                    "maxLength": 4000,
+                    "minLength": 0,
+                    "rows": 3
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    },
+    "fields": {
+      "d0000000-0000-4000-8000-000000000701": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000702": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000703": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000704": {
+        "kind": "number",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000705": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000706": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000707": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000708": {
+        "kind": "date",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000709": {
+        "kind": "time",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000710": {
+        "kind": "dateTime",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000711": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000712": {
+        "kind": "choices",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000713": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000714": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000715": {
+        "kind": "choices",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000716": {
+        "kind": "checkbox",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000717": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000718": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000719": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000720": {
+        "kind": "checkbox",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000721": {
+        "kind": "number",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000722": {
+        "kind": "number",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000723": {
+        "kind": "number",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000724": {
+        "rowKind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000725": {
+        "kind": "choices",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000726": {
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000727": {
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000728": {
+        "kind": "files",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000729": {
+        "kind": "files",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000731": {
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000732": {
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000733": {
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000730": {
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000734": {
+        "kind": "number",
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000735": {
+        "kind": "text",
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000736": {
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000737": {
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000738": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000739": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000740": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      }
+    },
+    "logic": {
+      "pages": [
+        {
+          "id": "d0000000-0000-4000-8000-000000000070",
+          "rules": [],
+          "groups": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000071",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000701",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "displayName",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000702",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "email",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000703",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "cardNumber",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000704",
+                  "kind": "number",
+                  "canBeRequired": true,
+                  "alias": "copies",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000705",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "phone",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000706",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "website",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000707",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "message",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            },
+            {
+              "id": "d0000000-0000-4000-8000-000000000072",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000708",
+                  "kind": "date",
+                  "canBeRequired": true,
+                  "alias": "visitDay",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000709",
+                  "kind": "time",
+                  "canBeRequired": true,
+                  "alias": "visitTime",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000710",
+                  "kind": "dateTime",
+                  "canBeRequired": true,
+                  "alias": "returnAt",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            },
+            {
+              "id": "d0000000-0000-4000-8000-000000000073",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000711",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "branch",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000712",
+                  "kind": "choices",
+                  "canBeRequired": true,
+                  "alias": "topics",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000713",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "format",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000714",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "room",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000715",
+                  "kind": "choices",
+                  "canBeRequired": true,
+                  "alias": "interests",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000716",
+                  "kind": "checkbox",
+                  "canBeRequired": true,
+                  "alias": "reminder",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000717",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "firstVisit",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000718",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "newsletter",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000719",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "country",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000720",
+                  "kind": "checkbox",
+                  "canBeRequired": true,
+                  "alias": "privacy",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            },
+            {
+              "id": "d0000000-0000-4000-8000-000000000074",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000721",
+                  "kind": "number",
+                  "canBeRequired": true,
+                  "alias": "rating",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000722",
+                  "kind": "number",
+                  "canBeRequired": true,
+                  "alias": "recommend",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000723",
+                  "kind": "number",
+                  "canBeRequired": true,
+                  "alias": "hours",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000724",
+                  "kind": null,
+                  "canBeRequired": true,
+                  "alias": "opinions",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": [
+                    {
+                      "id": "d0000000-0000-4000-8000-000000000781",
+                      "kind": "choice"
+                    },
+                    {
+                      "id": "d0000000-0000-4000-8000-000000000782",
+                      "kind": "choice"
+                    }
+                  ]
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000725",
+                  "kind": "choices",
+                  "canBeRequired": true,
+                  "alias": "priorities",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            },
+            {
+              "id": "d0000000-0000-4000-8000-000000000075",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000726",
+                  "kind": null,
+                  "canBeRequired": true,
+                  "alias": "contact",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000727",
+                  "kind": null,
+                  "canBeRequired": true,
+                  "alias": "address",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000728",
+                  "kind": "files",
+                  "canBeRequired": true,
+                  "alias": "attachments",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000729",
+                  "kind": "files",
+                  "canBeRequired": true,
+                  "alias": "signature",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            },
+            {
+              "id": "d0000000-0000-4000-8000-000000000076",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000731",
+                  "kind": null,
+                  "canBeRequired": false,
+                  "alias": null,
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000732",
+                  "kind": null,
+                  "canBeRequired": false,
+                  "alias": null,
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000733",
+                  "kind": null,
+                  "canBeRequired": false,
+                  "alias": null,
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000730",
+                  "kind": null,
+                  "canBeRequired": false,
+                  "alias": null,
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000734",
+                  "kind": "number",
+                  "canBeRequired": false,
+                  "alias": "deposit",
+                  "calculation": {
+                    "formula": "copies * 2",
+                    "decimals": 2
+                  },
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000735",
+                  "kind": "text",
+                  "canBeRequired": false,
+                  "alias": "source",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000736",
+                  "kind": null,
+                  "canBeRequired": false,
+                  "alias": null,
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            },
+            {
+              "id": "d0000000-0000-4000-8000-000000000077",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000737",
+                  "kind": null,
+                  "canBeRequired": false,
+                  "alias": "guests",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [
+                    {
+                      "id": "d0000000-0000-4000-8000-000000000738",
+                      "kind": "text",
+                      "canBeRequired": true,
+                      "alias": "guestName",
+                      "calculation": null,
+                      "required": true,
+                      "rules": [],
+                      "fields": [],
+                      "rows": []
+                    },
+                    {
+                      "id": "d0000000-0000-4000-8000-000000000739",
+                      "kind": "choice",
+                      "canBeRequired": true,
+                      "alias": "guestAge",
+                      "calculation": null,
+                      "required": false,
+                      "rules": [],
+                      "fields": [],
+                      "rows": []
+                    }
+                  ],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d0000000-0000-4000-8000-000000000078",
+          "rules": [],
+          "groups": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000079",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000740",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "anythingElse",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    }
+  },
+  "workshop": {
+    "form": {
+      "key": "d0000000-0000-4000-8000-000000000002",
+      "settings": {
+        "submitLabel": "Book my place",
+        "summaryPage": false,
+        "progress": "steps",
+        "resume": false,
+        "membersOnly": true,
+        "protection": "inherit",
+        "requiredMarker": "optional",
+        "validationSummary": true,
+        "choiceLayout": "vertical",
+        "queryValues": []
+      },
+      "pages": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000020",
+          "rules": [],
+          "groups": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000021",
+              "columns": 2,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000201",
+                  "type": "radio",
+                  "alias": "workshop",
+                  "span": 2,
+                  "label": "Workshop",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "bikes",
+                        "label": "Bike repair basics",
+                        "description": "Saturday, 10:00 to 12:00",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "mending",
+                        "label": "Mending clothes",
+                        "description": "Saturday, 14:00 to 16:00",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "cards",
+                    "other": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000202",
+                  "type": "text",
+                  "alias": "name",
+                  "span": 1,
+                  "label": "Your name",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "autocomplete": "name",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "counter": false,
+                    "maxLength": 255,
+                    "minLength": 0
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000203",
+                  "type": "repeater",
+                  "alias": "guests",
+                  "span": 2,
+                  "label": "Who comes with you",
+                  "hideLabel": false,
+                  "help": "Up to three guests per booking.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [
+                    {
+                      "key": "d0000000-0000-4000-8000-000000000205",
+                      "type": "text",
+                      "alias": "guestName",
+                      "span": 1,
+                      "label": "Name",
+                      "hideLabel": false,
+                      "required": true,
+                      "messages": {},
+                      "validation": [],
+                      "rules": [],
+                      "rows": [],
+                      "fields": [],
+                      "settings": {
+                        "counter": false,
+                        "maxLength": 255,
+                        "minLength": 0
+                      }
+                    },
+                    {
+                      "key": "d0000000-0000-4000-8000-000000000206",
+                      "type": "radio",
+                      "alias": "guestAge",
+                      "span": 1,
+                      "label": "Age",
+                      "hideLabel": false,
+                      "required": false,
+                      "messages": {},
+                      "validation": [],
+                      "rules": [],
+                      "options": {
+                        "items": [
+                          {
+                            "value": "under16",
+                            "label": "Under 16",
+                            "parentValues": []
+                          },
+                          {
+                            "value": "adult",
+                            "label": "16 or over",
+                            "parentValues": []
+                          }
+                        ],
+                        "fromSource": false
+                      },
+                      "rows": [],
+                      "fields": [],
+                      "settings": {
+                        "layout": "horizontal",
+                        "other": false
+                      }
+                    }
+                  ],
+                  "settings": {
+                    "addLabel": "Add a guest",
+                    "maxRows": 3,
+                    "minRows": 0,
+                    "rowLabel": "Guest"
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000204",
+                  "type": "textarea",
+                  "alias": "notes",
+                  "span": 2,
+                  "label": "Anything the leader should know?",
+                  "hideLabel": false,
+                  "help": "For {{ field.workshop | default: \u0022the workshop\u0022 }}: access needs, allergies or a question.",
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "autoGrow": true,
+                    "counter": true,
+                    "maxLength": 1000,
+                    "minLength": 0,
+                    "rows": 4
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    },
+    "fields": {
+      "d0000000-0000-4000-8000-000000000201": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000202": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000203": {
+        "canBeRequired": false,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000205": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000206": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000204": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      }
+    },
+    "logic": {
+      "pages": [
+        {
+          "id": "d0000000-0000-4000-8000-000000000020",
+          "rules": [],
+          "groups": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000021",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000201",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "workshop",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000202",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "name",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000203",
+                  "kind": null,
+                  "canBeRequired": false,
+                  "alias": "guests",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [
+                    {
+                      "id": "d0000000-0000-4000-8000-000000000205",
+                      "kind": "text",
+                      "canBeRequired": true,
+                      "alias": "guestName",
+                      "calculation": null,
+                      "required": true,
+                      "rules": [],
+                      "fields": [],
+                      "rows": []
+                    },
+                    {
+                      "id": "d0000000-0000-4000-8000-000000000206",
+                      "kind": "choice",
+                      "canBeRequired": true,
+                      "alias": "guestAge",
+                      "calculation": null,
+                      "required": false,
+                      "rules": [],
+                      "fields": [],
+                      "rows": []
+                    }
+                  ],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000204",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "notes",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    }
+  }
+}

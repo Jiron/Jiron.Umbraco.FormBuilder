@@ -45,6 +45,9 @@ const CONTEXT = 'jfb-context-';
 const QUERY = 'jfb-query-';
 /** The most rows any repeatable group may have, as its `maxRows` setting may say at most. */
 export const MOST_ROWS = 100;
+/** The most values of one query name a submission carries, and the longest each may be: Core's FormSubmissions'. */
+export const MOST_QUERY_VALUES = 20;
+export const LONGEST_QUERY_VALUE = 2000;
 /** The part a consent's wording hash is posted as, and the part a signature's typed name is. */
 const WORDING = 'wording';
 const TYPED = 'typed';
@@ -265,6 +268,23 @@ function pathOf(name: string): Path | null {
 function split(name: string): readonly [string, string | null] {
   const dot = name.indexOf('.');
   return dot < 0 ? [name, null] : [name.slice(0, dot), dot < name.length - 1 ? name.slice(dot + 1) : null];
+}
+
+/**
+ * The query values of the names the form lists, each held to the pipeline's limits (ROADMAP 6.4c, ADR-0088, ADR-0100):
+ * Web's FormPostHandler holds a post's, or on a first post its page's address's, this way, so a long address never
+ * refuses a submission, and the rules on the page read the same values.
+ */
+export function holdQuery(
+  query: Iterable<readonly [string, readonly string[]]>,
+  listed: readonly string[],
+): Record<string, string[]> {
+  const held: Record<string, string[]> = Object.create(null) as Record<string, string[]>;
+  for (const [name, values] of query) {
+    if (listed.includes(name))
+      held[name] = values.filter((value) => value.length <= LONGEST_QUERY_VALUE).slice(0, MOST_QUERY_VALUES);
+  }
+  return held;
 }
 
 /**

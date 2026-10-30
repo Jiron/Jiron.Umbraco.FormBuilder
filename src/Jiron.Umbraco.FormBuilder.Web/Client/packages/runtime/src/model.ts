@@ -3,13 +3,10 @@
  * `<script type="application/json" data-jfb-model>`. These are the parts the runtime reads; the endpoint's OpenAPI
  * document (docs/api/jfb-public.json) describes them all.
  */
+import type { ProjectedField, ProjectedRule } from '@jfb/logic';
 
-/** A field of the public projection (ADR-0002, ADR-0035), as far as the runtime reads it. */
-export interface ModelField {
-  readonly key: string;
-  readonly type: string;
-  readonly alias?: string | null;
-  readonly settings?: Readonly<Record<string, unknown>> | null;
+/** A field of the public projection (ADR-0002, ADR-0035), as far as the runtime reads it: its rules too (ADR-0111). */
+export interface ModelField extends ProjectedField {
   readonly prefill?: { readonly query?: string | null } | null;
   /** A grid's rows. */
   readonly rows?: readonly { readonly key: string }[];
@@ -19,11 +16,13 @@ export interface ModelField {
 
 export interface ModelGroup {
   readonly key: string;
+  readonly rules?: readonly ProjectedRule[] | null;
   readonly fields: readonly ModelField[];
 }
 
 export interface ModelPage {
   readonly key: string;
+  readonly rules?: readonly ProjectedRule[] | null;
   readonly groups: readonly ModelGroup[];
 }
 
@@ -41,7 +40,13 @@ export interface FormModel {
   readonly culture: string;
   readonly timeZone: string;
   readonly open: boolean;
-  readonly form: { readonly key: string; readonly pages: readonly ModelPage[] };
+  readonly form: {
+    readonly key: string;
+    readonly pages: readonly ModelPage[];
+    readonly validationRules?: readonly (ProjectedRule & { readonly key: string; readonly field: string })[] | null;
+    /** The query values the rules and hidden fields may read, by name (ADR-0088). */
+    readonly settings?: { readonly queryValues?: readonly string[] | null } | null;
+  };
   /** By each field's key, a repeatable group's child fields too. */
   readonly fields: Readonly<Record<string, ModelFieldLogic>>;
   readonly consents: Readonly<Record<string, string>>;

@@ -113,6 +113,31 @@
               "label": { "": "Would you come on a weekday evening, until 21:00?", "de": "Würden Sie werktags abends bis 21 Uhr kommen?" }
             },
             {
+              "key": "d0000000-0000-4000-8000-00000000030a",
+              "type": "checkboxes",
+              "alias": "eveningDays",
+              "label": { "": "Which evenings would suit you?", "de": "Welche Abende passen Ihnen?" },
+              "required": true,
+              "options": {
+                "items": [
+                  { "value": "mon", "label": { "": "Monday", "de": "Montag" } },
+                  { "value": "tue", "label": { "": "Tuesday", "de": "Dienstag" } },
+                  { "value": "wed", "label": { "": "Wednesday", "de": "Mittwoch" } },
+                  { "value": "thu", "label": { "": "Thursday", "de": "Donnerstag" } },
+                  { "value": "fri", "label": { "": "Friday", "de": "Freitag" } }
+                ]
+              },
+              "rules": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000003a0a",
+                  "effect": "show",
+                  "enabled": true,
+                  "match": "all",
+                  "conditions": [{ "field": "d0000000-0000-4000-8000-000000000307", "op": "equals", "value": "yes" }]
+                }
+              ]
+            },
+            {
               "key": "d0000000-0000-4000-8000-000000000308",
               "type": "scale",
               "alias": "recommend",
@@ -124,7 +149,16 @@
               "type": "textarea",
               "alias": "comments",
               "label": { "": "Anything else you would like to tell us?", "de": "Möchten Sie uns sonst noch etwas sagen?" },
-              "settings": { "rows": 4, "counter": true, "maxLength": 2000 }
+              "settings": { "rows": 4, "counter": true, "maxLength": 2000 },
+              "rules": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000003a09",
+                  "effect": "require",
+                  "enabled": true,
+                  "match": "all",
+                  "conditions": [{ "field": "d0000000-0000-4000-8000-000000000308", "op": "lessThan", "value": "7" }]
+                }
+              ]
             }
           ]
         }

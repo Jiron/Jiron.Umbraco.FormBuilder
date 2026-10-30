@@ -4,7 +4,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { MOST_ROWS, readPost, type PostField } from '../src/index.ts';
+import {
+  holdQuery,
+  LONGEST_QUERY_VALUE,
+  MOST_QUERY_VALUES,
+  MOST_ROWS,
+  readPost,
+  type PostField,
+} from '../src/index.ts';
 import { repositoryRoot } from '../tools/repository.ts';
 
 interface ServedSetting {
@@ -17,6 +24,18 @@ const served = (
     readonly types: readonly { readonly alias: string; readonly settings: readonly ServedSetting[] }[];
   }
 ).types;
+
+// A whole-number constant of Core's FormSubmissions, as its source declares it.
+const submissionsConstant = (name: string): number => {
+  const source = readFileSync(
+    join(repositoryRoot(), 'src', 'Jiron.Umbraco.FormBuilder.Core', 'Submissions', 'FormSubmissions.cs'),
+    'utf8',
+  );
+  const start = source.indexOf('public const int ' + name + ' = ');
+  if (start < 0) throw new Error('FormSubmissions declares no ' + name);
+  const value = source.slice(start, source.indexOf(';', start)).split(' = ')[1] ?? '';
+  return Number(value.split('_').join(''));
+};
 
 const answers = (fields: readonly PostField[], entries: readonly (readonly [string, string])[]) => {
   const read = readPost(fields, entries);
@@ -100,5 +119,30 @@ describe('the post reader', () => {
       fields: { constructor: { values: ['x'] } },
       rows: {},
     });
+  });
+});
+
+describe('the query values a submission carries', () => {
+  it("holds them to Core's limits", () => {
+    expect(MOST_QUERY_VALUES).toBe(submissionsConstant('MaxQueryValues'));
+    expect(LONGEST_QUERY_VALUE).toBe(submissionsConstant('MaxValueLength'));
+  });
+
+  it('takes only the names the form lists, each value within the longest and at most the most of them', () => {
+    const many = Array.from({ length: MOST_QUERY_VALUES + 3 }, (_, at) => 'v' + String(at));
+    const held = holdQuery(
+      [
+        ['source', ['ad', 'x'.repeat(LONGEST_QUERY_VALUE + 1), 'x'.repeat(LONGEST_QUERY_VALUE)]],
+        ['ref', many],
+        ['other', ['kept out']],
+        ['__proto__', ['a']],
+      ],
+      ['source', 'ref', 'missing'],
+    );
+    expect({ ...held }).toEqual({
+      source: ['ad', 'x'.repeat(LONGEST_QUERY_VALUE)],
+      ref: many.slice(0, MOST_QUERY_VALUES),
+    });
+    expect(Object.getPrototypeOf(held)).toBeNull();
   });
 });

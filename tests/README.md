@@ -115,7 +115,12 @@ names and values in the order a browser posts them, expecting each field's answe
 in the order first posted), each group's rows, and the context and query values. `Logic/PostVector.cs` runs it
 through the no-JS post's `FormPostReader`, `packages/logic/test/vectors.test.ts` through `readPost`, and
 `packages/logic/test/posts.test.ts` holds what only the browser decides: a site's own type under a built-in alias,
-and the most rows a group takes held to the served field types.
+and the most rows a group takes held to the served field types, and the query values' limits held to Core's
+`FormSubmissions`. The form engine's model of a form (6.4c, [ADR-0111](../docs/decisions/0111-rules-on-the-page.md))
+is held by a fixture rather than vectors, since it is made from a whole form: `Forms/LogicModelFixtureTests.cs`
+writes `tests/fixtures/definitions/logic.json` (the form endpoint's answer and Core's `DefinitionLogic` model of the
+full definition fixture and each demo form; `JFB_UPDATE_SNAPSHOTS=1` writes it and fails), and
+`packages/logic/test/projection.test.ts` makes the same model from each answer with `logicFormOf`.
 
 **The mutation check** proves the vectors. Each mutant in `vectors/mutants.mjs` changes one piece of the logic in one
 runtime, that runtime's vector runner runs, and the file is put back; the check fails on a mutant that nothing catches,

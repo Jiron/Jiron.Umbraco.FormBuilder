@@ -69,7 +69,9 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
   ([ADR-0095](../docs/decisions/0095-visitor-texts-members-only-forms-and-the-pending-note.md)) and the guests who
   come along are the rows of a repeatable group ([ADR-0098](../docs/decisions/0098-the-repeaters-rows.md)); the feedback
   form on the feedback page, with radio buttons side by side, checkboxes with "Other", a dropdown, a rating, a grid,
-  a ranking, yes or no and a scale ([ADR-0096](../docs/decisions/0096-the-choice-controls.md)); and the room hire
+  a ranking, yes or no and a scale ([ADR-0096](../docs/decisions/0096-the-choice-controls.md)), and rules: the
+  evenings that suit a visitor show once they would come in the evening, and the comments are required when they
+  would hardly recommend the library ([ADR-0111](../docs/decisions/0111-rules-on-the-page.md)); and the room hire
   form on its page, with a day from tomorrow to three months ahead, a start time, the hours on a slider and the cost
   worked out from them, the key's pick-up, a name, an address, a file and a signature
   ([ADR-0097](../docs/decisions/0097-the-part-date-and-output-controls.md)); the newsletter form in the footer, with an

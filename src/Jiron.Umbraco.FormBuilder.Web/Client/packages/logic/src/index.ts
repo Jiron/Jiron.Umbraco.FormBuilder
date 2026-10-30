@@ -7,7 +7,8 @@
  * (ADR-0063), 5.3b and 5.3c the merge tags, 5.3f answer recall with the answers' display texts (ADR-0068), and 5.4a
  * the forms of an email address, a phone number and a web address (ADR-0069), 6.2g the visitor messages
  * (ADR-0099), whose words are tables of their own in lang/, 6.4a the reading of answers before the rules and checks
- * (ADR-0109), and 6.4b the reading of a page's post by its names, as the server reads one (ADR-0110).
+ * (ADR-0109), 6.4b the reading of a page's post by its names, as the server reads one (ADR-0110), and 6.4c the form
+ * engine's model made of the form endpoint's answer, as Core makes it of the definition (ADR-0111).
  */
 export {
   calculate,
@@ -82,7 +83,24 @@ export {
   type VisitorError,
 } from './messages.ts';
 export { compilePattern, type Pattern } from './pattern.ts';
-export { MOST_ROWS, readPost, type PostAnswer, type PostField, type ReadPost } from './posts.ts';
+export {
+  logicFormOf,
+  type FieldLogic,
+  type ProjectedField,
+  type ProjectedForm,
+  type ProjectedItem,
+  type ProjectedRule,
+} from './projection.ts';
+export {
+  holdQuery,
+  LONGEST_QUERY_VALUE,
+  MOST_QUERY_VALUES,
+  MOST_ROWS,
+  readPost,
+  type PostAnswer,
+  type PostField,
+  type ReadPost,
+} from './posts.ts';
 export {
   BUILT_IN_TYPES,
   checkRows,
