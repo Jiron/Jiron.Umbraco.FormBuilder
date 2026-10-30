@@ -4,7 +4,9 @@
   `<jfb-assets>` and its nonce built in 6.2a (ADR-0092); the view component, `<jfb-render>` and the views built in 6.2b
   (ADR-0093); the no-JS post, the page after its redirect and a message with a redirect decided and built in 6.2h
   (ADR-0100); the output cache rules and `render` built in 6.2l, with the output cache's own switch beside `no-store`
-  ([ADR-0104](0104-the-output-cache-rules-and-the-render-endpoint.md))
+  ([ADR-0104](0104-the-output-cache-rules-and-the-render-endpoint.md)); the runtime's frame, and its error display
+  on demand as one chunk with the logic loaded on a form's first interaction, decided and built in 6.4b
+  ([ADR-0110](0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md))
 - Date: 2026-10-23
 - Roadmap step: 1.4a (decided); built in 6.1 (the public API), 6.2 (Razor rendering, the no-JS post, the cache
   rules, `render`), 6.4 (the runtime) and 6.6 (headless); reviewed in 6.8 and 16.x

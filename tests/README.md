@@ -893,6 +893,18 @@ test refreshes the domain cache after assigning a culture.
 | `FormRenderingKitchenTests` | The kitchen sink (ADR-0015, `sink.cshtml`): a field of every built-in type and of a site's own type (`MoodFieldType`, whose view `fields/acme.mood.cshtml` follows the contract), each empty, answered after a post, with errors and hidden by a rule, with the same checks on each: the wrapper's classes, type, alias and hidden state, disabled controls when hidden, the control's id, its label or legend, its names, its help, and after an error the error, `aria-invalid` and the summary's link; what each answer shows. The repeatable group's row holds a field of every type a row may hold, each with the same checks by the row's ids and path, and its fields in order, a part's and an "Other" text's names, a few answers, a consent's wording named by the path, and its errors linked from the summary in the row's order. |
 | `FormRenderingPendingTests` | A site whose plan has not run: a page answers `200` with its own text and no form markup for a visitor, and exactly one note in the form's place, without the form's element or assets, for a signed-in backoffice user, in the page's culture (German). |
 
+**The website runtime** (`packages/runtime`, Vitest in jsdom, [ADR-0110](../docs/decisions/0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md)):
+`frame.test.ts` enhances every form of the contract once with one `jfb:ready` each, later forms through
+`init(root)`, leaves a form of another contract version, without model data or with model data of another shape
+to the post without JavaScript, and loads the chunk with the logic on a form's first `focusin`, `pointerdown`,
+`input` or `change` only, once for the page, trying once when it cannot load; `page.test.ts` reads a page
+named as the views name it through `FormData` and the post reader (a switch left off, a consent's wording, a
+group's rows and their limits, a value the server resolves, a site's own type's cleaned texts, a disabled control
+and a file left out) into the rules' answers; `jfb-runtime.test.ts` holds the global. In Edge,
+`e2e/specs/website/runtime-frame.spec.ts` shows each demo form enhanced once with its `jfb:ready`, a form the page
+puts in later enhanced through `init(root)`, the chunk loaded only once a form is touched (by focus, or by a change
+without focus as autofill makes), and no error in the console.
+
 ## Writing tests
 
 - Name C# tests `Method_Situation_Expected` and assert with NUnit's constraint model.

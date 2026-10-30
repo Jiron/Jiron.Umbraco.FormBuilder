@@ -150,7 +150,12 @@ flowchart LR
   `SubmissionReader.Clean` and `FieldTypes/FieldValues.cs`) cleans a field's answer, holds it to the longest answer
   its built-in type takes and reads it into the wire form as the type's `Read` does, a site's own type left to the
   server ([ADR-0109](decisions/0109-reading-answers-in-the-browser.md));
-- `runtime`: enhances Razor-rendered forms through the markup contract;
+- `runtime`: enhances Razor-rendered forms through the markup contract. Its entry is the frame (`frame.ts`): it
+  finds the forms of the contract, reads each one's model data, enhances it once with `jfb:ready` and
+  `JironFormBuilder.init(root)` for later ones, and loads the chunk with the logic (`form.ts`) on a form's first
+  interaction; the chunk reads the page (`page.ts`) through `FormData` and the shared logic's `readPost`
+  (`posts.ts`, the twin of Web's `FormPostReader`), then each field through the reading stage, into the answers
+  the server would take ([ADR-0110](decisions/0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md));
 - `element`: `<jfb-form>`, the headless renderer, with the same markup and runtime;
 - `backoffice`: the Forms section in Lit and TypeScript with UUI, through the generated client.
 
@@ -671,7 +676,7 @@ The budgets are §4.12's; the measured starting points come from the spikes.
 
 | Budget | Target | Measured so far |
 | --- | --- | --- |
-| Website runtime | ≤ 16 KB gzip core, ≤ 40 KB with everything; theme CSS ≤ 10 KB | – (6.4, 6.3) |
+| Website runtime | ≤ 16 KB gzip core, ≤ 40 KB with everything; theme CSS ≤ 10 KB | core 0.99 KB, everything 7.08 KB (6.4b, ADR-0110); default theme 8.02 KB (6.3b) |
 | Rendering a 50-field form | ≤ 20 ms from the cached definition | median 0.12 to 0.15 ms (ADR-0004) |
 | A submission | ≤ 150 ms at p95 with 10 at the same moment on SQLite | p95 59 to 115 ms with 10 at once (ADR-0003) |
 | The first page of 100,000 entries; a 10,000-entry CSV | ≤ 300 ms; ≤ 5 s | 7.9 to 16.7 ms by date; 0.77 to 1.09 s (ADR-0003) |
