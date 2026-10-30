@@ -6,9 +6,6 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  parseTemplate,
-  recallAnswers,
-  renderTemplate,
   type CultureFormats,
   type DisplayWords,
   type MergeValue,
@@ -16,6 +13,8 @@ import {
   type RecallForm,
   type TemplateContext,
 } from '../src/index.ts';
+import { recallAnswers } from '../src/recall.ts';
+import { parseTemplate, renderTemplate } from '../src/template.ts';
 import { repositoryRoot } from '../tools/repository.ts';
 
 /** A visitor text the answer names: its owner's key, the property it is, and the context it renders in. */

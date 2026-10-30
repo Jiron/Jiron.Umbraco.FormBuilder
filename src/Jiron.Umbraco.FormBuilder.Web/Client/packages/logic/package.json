@@ -6,6 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./calc": "./src/calc.ts",
+    "./recall": "./src/recall.ts",
+    "./template": "./src/template.ts",
     "./lang/en": "./src/lang/messages.en.ts",
     "./lang/de": "./src/lang/messages.de.ts"
   },

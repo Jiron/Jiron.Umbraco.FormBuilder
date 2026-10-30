@@ -14,11 +14,8 @@ import {
   formatDecimal,
   LogicError,
   messageWordsOf,
-  parseTemplate,
   readField,
   readPost,
-  recallAnswers,
-  renderTemplate,
   summaryEntry,
   summaryHeading,
   type Calculation,
@@ -46,6 +43,8 @@ import {
   type VisitorError,
 } from '../src/index.ts';
 import { calculate, evaluateFormula, FORMULAS, storedNumber } from '../src/calc.ts';
+import { recallAnswers } from '../src/recall.ts';
+import { parseTemplate, renderTemplate } from '../src/template.ts';
 import { today } from '../src/dates.ts';
 import { de } from '../src/lang/messages.de.ts';
 import { en } from '../src/lang/messages.en.ts';

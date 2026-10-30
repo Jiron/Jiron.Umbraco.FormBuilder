@@ -10,13 +10,6 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  MAX_TAG_FILTERS,
-  MAX_TEMPLATE_OUTPUT,
-  MAX_TEMPLATE_TAGS,
-  parseTemplate,
-  renderTemplate,
-  TEMPLATE_CONTEXTS,
-  TEMPLATE_WARNINGS,
   type CultureFormats,
   type MergeValue,
   type ParsedTemplate,
@@ -24,6 +17,15 @@ import {
   type TemplateContext,
   type TemplateProblemCode,
 } from '../src/index.ts';
+import {
+  MAX_TAG_FILTERS,
+  MAX_TEMPLATE_OUTPUT,
+  MAX_TEMPLATE_TAGS,
+  parseTemplate,
+  renderTemplate,
+  TEMPLATE_CONTEXTS,
+  TEMPLATE_WARNINGS,
+} from '../src/template.ts';
 import { vectorsFolder } from '../tools/repository.ts';
 import { Random, show } from './fuzzing.ts';
 
