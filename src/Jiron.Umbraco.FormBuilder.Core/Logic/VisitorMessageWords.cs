@@ -120,6 +120,7 @@ internal sealed record VisitorMessageWords
             Empty = "Answer at least one question before you send the form",
             SummaryHeading = new("This answer needs a change", "These answers need a change"),
             SummaryEntry = "{label}: {message}",
+            SummaryMarkedEntry = "{label} {message}",
             SummaryRowEntry = "{label} ({row}): {message}",
         },
         ["de"] = new VisitorMessageWords
@@ -215,6 +216,7 @@ internal sealed record VisitorMessageWords
             Empty = "Beantworten Sie mindestens eine Frage, bevor Sie das Formular senden",
             SummaryHeading = new("Diese Antwort muss noch ge" + AUmlaut + "ndert werden", "Diese Antworten m" + UUmlaut + "ssen noch ge" + AUmlaut + "ndert werden"),
             SummaryEntry = "{label}: {message}",
+            SummaryMarkedEntry = "{label} {message}",
             SummaryRowEntry = "{label} ({row}): {message}",
         },
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
@@ -510,6 +512,12 @@ internal sealed record VisitorMessageWords
 
     /// <summary>A link to a default message, with the field's label.</summary>
     public required string SummaryEntry { get; init; }
+
+    /// <summary>
+    /// A link to a default message, with a label that already ends in a question mark, an exclamation mark, a full stop
+    /// or a colon, so no colon follows it.
+    /// </summary>
+    public required string SummaryMarkedEntry { get; init; }
 
     /// <summary>A link to a default message in a row, with the field's label and the row's legend.</summary>
     public required string SummaryRowEntry { get; init; }

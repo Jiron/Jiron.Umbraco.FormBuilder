@@ -1,7 +1,8 @@
 # 0099. Visitor error messages
 
 - Status: accepted; extends [ADR-0022](0022-default-theme-and-tokens.md) (the error summary's heading and links) and
-  [ADR-0005](0005-shared-logic-and-test-vectors.md) (a vector suite for messages)
+  [ADR-0005](0005-shared-logic-and-test-vectors.md) (a vector suite for messages); a summary link after a label that
+  ends in its own mark takes no colon since 6.4a ([ADR-0106](0106-the-default-theme-ships.md))
 - Date: 2026-10-29
 - Roadmap step: 6.2g (decided and built); 6.2h shows the messages after a post without JavaScript, 6.4 shows them in
   the browser from the same words, 14.2 adds the other five languages
@@ -99,9 +100,10 @@ Option 3 for both.
 - **The error summary** (amends ADR-0022's "the same words under the field"): its heading says "This answer needs a
   change" for one error and "These answers need a change" for several, in German "Diese Antwort muss noch geändert
   werden" and "Diese Antworten müssen noch geändert werden", as the copy guide has it. A link to a package default
-  puts the field's label first, "{label}: {message}", and a field in a repeatable group's row adds the row's legend,
-  "{label} ({row}): {message}"; a field without a label, or one whose label is hidden, shows the message alone, as
-  does every editor's own message. The error under the field is always the message alone. The empty submission's
+  puts the field's label first, "{label}: {message}" ("{label} {message}" after a label that already ends in a
+  question mark, an exclamation mark, a full stop or a colon, since 6.4a), and a field in a repeatable group's row
+  adds the row's legend, "{label} ({row}): {message}"; a field without a label, or one whose label is hidden, shows
+  the message alone, as does every editor's own message. The error under the field is always the message alone. The empty submission's
   message stands first in the summary, linked to the first field of the page that takes an answer; a form whose
   summary is off still shows it there, alone, since it belongs to no field.
 - **On the page** a post leaves each error as its kind (`FormPostError`: the code, the check's index, the rule's key

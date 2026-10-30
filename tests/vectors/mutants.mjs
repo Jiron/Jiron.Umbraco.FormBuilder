@@ -4,8 +4,8 @@
  * The mutation check of the shared logic (ROADMAP 5.2a, ADR-0061), since 5.3a of the calculations (ADR-0063), since
  * 5.3f of answer recall (ADR-0068), since 5.4a of the forms of email addresses, phone numbers and web addresses
  * (ADR-0069), since 5.5d of the options a choice's answers are held to (ADR-0077), since 5.5h of the reader of a
- * value's parts (ADR-0083), since 6.1e of which fields can be required (ADR-0088), and since 6.2g of the visitor
- * messages (ADR-0099).
+ * value's parts (ADR-0083), since 6.1e of which fields can be required (ADR-0088), since 6.2g of the visitor
+ * messages (ADR-0099), and since 6.4a of the summary link after a label's own mark (ADR-0106).
  * Each mutant changes one piece of code in one runtime; that runtime's vector runner runs, and the file is put back. A
  * mutant that no vector catches survives, and the check fails unless the mutant is written down here as an equivalent
  * change, with the reason. A mutant written down as equivalent that a vector catches fails the check too, so the notes
@@ -1149,7 +1149,10 @@ const mutants = [
   ts('msg-culture-case-kept', 'messages.ts', 'let candidate = culture.toLowerCase();', 'let candidate = culture;', { tests: MESSAGES_TS }),
   ts('msg-fill-unknown-name-dropped', 'messages.ts', '(Object.hasOwn(values, name) ? values[name] : template.slice(open, close + 1))', "(Object.hasOwn(values, name) ? values[name] : '')", { tests: MESSAGES_TS }),
   ts('msg-fill-open-brace-dropped', 'messages.ts', lines('      text += template.slice(at);', '      break;'), '      break;', { tests: MESSAGES_TS }),
-  ts('msg-entry-label-read-as-a-template', 'messages.ts', '? fill(words.summaryEntry, { label, message })', '? fill(fill(words.summaryEntry, { label }), { message })'),
+  ts('msg-entry-label-read-as-a-template', 'messages.ts', '? fill(endsWithMark(label) ? words.summaryMarkedEntry : words.summaryEntry, { label, message })', '? fill(fill(endsWithMark(label) ? words.summaryMarkedEntry : words.summaryEntry, { label }), { message })'),
+  ts('msg-entry-mark-ignored', 'messages.ts', '? fill(endsWithMark(label) ? words.summaryMarkedEntry : words.summaryEntry, { label, message })', '? fill(words.summaryEntry, { label, message })'),
+  ts('msg-entry-mark-before-a-space-missed', 'messages.ts', '    if (!isTrimmed(unit)) return CLOSING_MARKS.has(unit);', '    return CLOSING_MARKS.has(unit);'),
+  ts('msg-entry-other-scripts-marks-missed', 'messages.ts', 'new Set([0x3f, 0x21, 0x2e, 0x3a, 0x2026, 0x37e, 0x61f, 0x3002, 0xff01, 0xff0e, 0xff1a, 0xff1f])', 'new Set([0x3f, 0x21, 0x2e, 0x3a])'),
   ts('msg-entry-blank-label-shown', 'messages.ts', 'if (label === null || label === undefined || label.trim().length === 0) return message;', 'if (label === null || label === undefined) return message;'),
   ts('msg-entry-row-ignored', 'messages.ts', 'return row === null || row === undefined || row.trim().length === 0', 'return true'),
   ts('msg-site-type-as-built-in', 'messages.ts', "  if (field.builtIn === false) return error.code === 'required' ? words.answerThis : words.checkThis;", ''),
@@ -1285,7 +1288,10 @@ const mutants = [
   cs('cs-msg-plural-always-other', 'VisitorMessageWords.cs', 'public string For(long count) => count == 1 ? One : Other;', 'public string For(long count) => count == long.MinValue ? One : Other;'),
   cs('cs-msg-region-falls-to-english', 'VisitorMessageWords.cs', 'candidate = dash < 0 ? string.Empty : candidate[..dash];', 'candidate = dash < -1 ? candidate : string.Empty;', { tests: MESSAGES_CS }),
   cs('cs-msg-fill-unknown-name-dropped', 'VisitorMessages.cs', 'text.Append(found < 0 ? template[open..(close + 1)] : values[found].Value);', 'text.Append(found < 0 ? string.Empty : values[found].Value);', { tests: MESSAGES_CS }),
-  cs('cs-msg-entry-label-read-as-a-template', 'VisitorMessages.cs', '? Fill(words.SummaryEntry, ("label", label), ("message", message))', '? Fill(Fill(words.SummaryEntry, ("label", label)), ("message", message))'),
+  cs('cs-msg-entry-label-read-as-a-template', 'VisitorMessages.cs', '? Fill(EndsWithMark(label) ? words.SummaryMarkedEntry : words.SummaryEntry, ("label", label), ("message", message))', '? Fill(Fill(EndsWithMark(label) ? words.SummaryMarkedEntry : words.SummaryEntry, ("label", label)), ("message", message))'),
+  cs('cs-msg-entry-mark-ignored', 'VisitorMessages.cs', '? Fill(EndsWithMark(label) ? words.SummaryMarkedEntry : words.SummaryEntry, ("label", label), ("message", message))', '? Fill(words.SummaryEntry, ("label", label), ("message", message))'),
+  cs('cs-msg-entry-mark-before-a-space-missed', 'VisitorMessages.cs', 'if (!TextSemantics.IsTrimmed(label[at]))', 'if (at >= 0)'),
+  cs('cs-msg-entry-other-scripts-marks-missed', 'VisitorMessages.cs', "['?', '!', '.', ':', (char)0x2026, (char)0x037E, (char)0x061F, (char)0x3002, (char)0xFF01, (char)0xFF0E, (char)0xFF1A, (char)0xFF1F]", "['?', '!', '.', ':']"),
   cs('cs-msg-entry-blank-label-shown', 'VisitorMessages.cs', 'if (string.IsNullOrWhiteSpace(label))', 'if (string.IsNullOrEmpty(label))'),
   cs('cs-msg-site-type-as-built-in', 'VisitorMessages.cs', 'if (!field.BuiltIn)', 'if (!field.BuiltIn && field.Type.Length == 0)'),
   cs('cs-msg-dropdown-of-several-as-one', 'VisitorMessages.cs', '"dropdown" => settings.Bool("multiple") ? words.ChooseSeveral : words.Choose,', '"dropdown" => settings.Bool("several") ? words.ChooseSeveral : words.Choose,'),

@@ -411,7 +411,9 @@ check's or a validation rule's comes first. Both runtimes use these words, held 
 `tests/vectors/messages.json`; the other five languages come with 14.2. A value in braces prints in the culture's
 format; where a count changes the words, the singular comes first, then the plural, after a ·. Under the field a
 message stands alone, but for a grid's row, which it names first ("Morning: Choose an answer in this row"); in the
-summary a default follows the field's label, and a row's legend or a grid's row after it in brackets.
+summary a default follows the field's label, and a row's legend or a grid's row after it in brackets; a label that
+already ends in a question mark, an exclamation mark, a full stop or a colon takes no colon after it ("Where would you
+like to sit? Choose an answer", ADR-0106).
 
 | Case | English | German |
 | --- | --- | --- |
@@ -506,6 +508,7 @@ summary a default follows the field's label, and a row's legend or a grid's row 
 | a submission without an answer, in the summary | Answer at least one question before you send the form | Beantworten Sie mindestens eine Frage, bevor Sie das Formular senden |
 | the error summary's heading, by the number of its links | This answer needs a change · These answers need a change | Diese Antwort muss noch geändert werden · Diese Antworten müssen noch geändert werden |
 | a summary link to a default | {label}: {message} | {label}: {message} |
+| a summary link to a default after a label that ends in a question mark, an exclamation mark, a full stop or a colon | {label} {message} | {label} {message} |
 | a summary link to a default in a repeatable group's row | {label} ({row}): {message} | {label} ({row}): {message} |
 
 ## Checklist for every new string

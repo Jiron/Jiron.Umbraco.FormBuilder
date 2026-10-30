@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -67,6 +68,12 @@ internal static class VisitorMessages
     private const long Kilobyte = 1_024;
     private const long Megabyte = Kilobyte * Kilobyte;
 
+    // The marks that already close a label, so its summary link takes no colon after it (ADR-0106): a question mark, an
+    // exclamation mark, a full stop and a colon, the ellipsis, the Greek question mark, the Arabic question mark, the
+    // ideographic full stop, and the full-width forms of the four.
+    private static readonly SearchValues<char> ClosingMarks = SearchValues.Create(
+        ['?', '!', '.', ':', (char)0x2026, (char)0x037E, (char)0x061F, (char)0x3002, (char)0xFF01, (char)0xFF0E, (char)0xFF1A, (char)0xFF1F]);
+
     /// <summary>The default message for an error.</summary>
     /// <param name="error">The error.</param>
     /// <param name="culture">The page's culture, whose language picks the words.</param>
@@ -135,7 +142,9 @@ internal static class VisitorMessages
 
     /// <summary>
     /// The error summary's link to a default message: the field's label first, and in a row the row's legend, so each
-    /// link says which question it is (WCAG 2.4.4); the message alone without a label.
+    /// link says which question it is (WCAG 2.4.4); the message alone without a label. A label that already ends in a
+    /// question mark, an exclamation mark, a full stop or a colon takes no colon after it ("Where would you like to sit?
+    /// Choose an answer").
     /// </summary>
     /// <param name="message">The default message.</param>
     /// <param name="label">The field's label as the page shows it, or null when it shows none.</param>
@@ -150,8 +159,24 @@ internal static class VisitorMessages
 
         var words = VisitorMessageWords.Of(culture);
         return string.IsNullOrWhiteSpace(row)
-            ? Fill(words.SummaryEntry, ("label", label), ("message", message))
+            ? Fill(EndsWithMark(label) ? words.SummaryMarkedEntry : words.SummaryEntry, ("label", label), ("message", message))
             : Fill(words.SummaryRowEntry, ("label", label), ("row", row), ("message", message));
+    }
+
+    /// <summary>Whether the label's last character that cleaning keeps (ADR-0005) closes it as a question mark, an exclamation mark, a full stop or a colon does.</summary>
+    /// <param name="label">The label as the page shows it.</param>
+    public static bool EndsWithMark(string label)
+    {
+        ArgumentNullException.ThrowIfNull(label);
+        for (var at = label.Length - 1; at >= 0; at--)
+        {
+            if (!TextSemantics.IsTrimmed(label[at]))
+            {
+                return ClosingMarks.Contains(label[at]);
+            }
+        }
+
+        return false;
     }
 
     /// <summary>A template with each <c>{name}</c> it holds replaced by its value, in one pass, so a value is never read as a template.</summary>

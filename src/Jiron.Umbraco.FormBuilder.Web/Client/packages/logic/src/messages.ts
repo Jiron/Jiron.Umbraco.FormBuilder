@@ -9,7 +9,7 @@ import { formatCalendar, formatNumber, type CultureFormats } from './culture.ts'
 import { formatDate, parseDate } from './dates.ts';
 import type { DisplayWords } from './display.ts';
 import { isEmailAddress } from './forms.ts';
-import { clean } from './text.ts';
+import { clean, isTrimmed } from './text.ts';
 
 /** A message that counts: the words for one and for any other number. */
 export interface PluralWords {
@@ -110,6 +110,8 @@ export interface MessageWords {
   readonly empty: string;
   readonly summaryHeading: PluralWords;
   readonly summaryEntry: string;
+  /** A summary link after a label that already ends in a question mark, an exclamation mark, a full stop or a colon. */
+  readonly summaryMarkedEntry: string;
   readonly summaryRowEntry: string;
 }
 
@@ -187,7 +189,25 @@ export function fill(template: string, values: Readonly<Record<string, string>>)
 /** The error summary's heading for a number of errors. */
 export const summaryHeading = (errors: number, words: MessageWords): string => plural(words.summaryHeading, errors);
 
-/** A summary link to a default message: the field's label first, and in a row the row's legend; the message alone without a label. */
+// The marks that already close a label, so its summary link takes no colon after it (ADR-0106), the same as Core's: a
+// question mark, an exclamation mark, a full stop and a colon, the ellipsis, the Greek question mark, the Arabic
+// question mark, the ideographic full stop, and the full-width forms of the four.
+const CLOSING_MARKS = new Set([0x3f, 0x21, 0x2e, 0x3a, 0x2026, 0x37e, 0x61f, 0x3002, 0xff01, 0xff0e, 0xff1a, 0xff1f]);
+
+/** Whether the label's last code unit that cleaning keeps (ADR-0005) closes it as a question mark, an exclamation mark, a full stop or a colon does. */
+export function endsWithMark(label: string): boolean {
+  for (let at = label.length - 1; at >= 0; at--) {
+    const unit = label.charCodeAt(at);
+    if (!isTrimmed(unit)) return CLOSING_MARKS.has(unit);
+  }
+  return false;
+}
+
+/**
+ * A summary link to a default message: the field's label first, and in a row the row's legend; the message alone
+ * without a label. A label that already ends in a question mark, an exclamation mark, a full stop or a colon takes no
+ * colon after it ("Where would you like to sit? Choose an answer").
+ */
 export function summaryEntry(
   message: string,
   label: string | null | undefined,
@@ -196,7 +216,7 @@ export function summaryEntry(
 ): string {
   if (label === null || label === undefined || label.trim().length === 0) return message;
   return row === null || row === undefined || row.trim().length === 0
-    ? fill(words.summaryEntry, { label, message })
+    ? fill(endsWithMark(label) ? words.summaryMarkedEntry : words.summaryEntry, { label, message })
     : fill(words.summaryRowEntry, { label, row, message });
 }
 

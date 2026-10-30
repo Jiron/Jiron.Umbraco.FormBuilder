@@ -613,6 +613,65 @@ const summary = [
     message: { entry: { message: 'Enter an answer', label: 'Code {message}' } },
     expect: 'Code {message}: Enter an answer',
   },
+  // A label that already ends in a question mark, an exclamation mark, a full stop or a colon takes no colon after it
+  // (ROADMAP 6.3b, ADR-0106), in every language and in other scripts' forms of the marks.
+  {
+    id: 'entry-after-a-question-takes-no-colon-en',
+    message: { entry: { message: 'Choose an answer', label: 'Where would you like to sit?' } },
+    expect: 'Where would you like to sit? Choose an answer',
+  },
+  {
+    id: 'entry-after-a-question-takes-no-colon-de',
+    context: { culture: 'de-CH' },
+    message: { entry: { message: x('W{e4}hlen Sie eine Antwort'), label: x('Wo m{f6}chten Sie sitzen?') } },
+    expect: x('Wo m{f6}chten Sie sitzen? W{e4}hlen Sie eine Antwort'),
+  },
+  {
+    id: 'entry-after-an-exclamation-mark-takes-no-colon',
+    message: { entry: { message: 'Enter an answer', label: 'Tell us more!' } },
+    expect: 'Tell us more! Enter an answer',
+  },
+  {
+    id: 'entry-after-a-full-stop-takes-no-colon',
+    message: { entry: { message: 'Enter an answer', label: 'Your name, as it should be printed.' } },
+    expect: 'Your name, as it should be printed. Enter an answer',
+  },
+  {
+    id: 'entry-after-a-colon-takes-no-second-colon',
+    message: { entry: { message: 'Enter an answer', label: 'Postcode:' } },
+    expect: 'Postcode: Enter an answer',
+  },
+  {
+    id: 'entry-after-an-ellipsis-takes-no-colon',
+    message: { entry: { message: 'Enter an answer', label: x('And then{2026}') } },
+    expect: x('And then{2026} Enter an answer'),
+  },
+  {
+    id: 'entry-after-a-full-width-question-mark-takes-no-colon',
+    message: { entry: { message: 'Enter an answer', label: x('{304a}{540d}{524d}{ff1f}') } },
+    expect: x('{304a}{540d}{524d}{ff1f} Enter an answer'),
+  },
+  {
+    id: 'entry-after-an-arabic-question-mark-takes-no-colon',
+    message: { entry: { message: 'Enter an answer', label: x('{645}{627} {627}{633}{645}{643}{61f}') } },
+    expect: x('{645}{627} {627}{633}{645}{643}{61f} Enter an answer'),
+  },
+  {
+    // The mark is read past the spaces cleaning trims; a page shows the two spaces as one.
+    id: 'entry-after-a-question-and-a-space-takes-no-colon',
+    message: { entry: { message: 'Choose an answer', label: 'Where would you like to sit? ' } },
+    expect: 'Where would you like to sit?  Choose an answer',
+  },
+  {
+    id: 'entry-after-a-mark-inside-brackets-keeps-its-colon',
+    message: { entry: { message: 'Enter an answer', label: 'Size (in cm?)' } },
+    expect: 'Size (in cm?): Enter an answer',
+  },
+  {
+    id: 'entry-in-a-row-after-a-question-names-the-row-with-its-colon',
+    message: { entry: { message: 'Enter an answer', label: 'Who is coming?', row: 'Guest 2' } },
+    expect: 'Who is coming? (Guest 2): Enter an answer',
+  },
 ];
 
 export default {

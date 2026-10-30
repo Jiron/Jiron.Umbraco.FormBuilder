@@ -108,5 +108,6 @@ export const de: MessageWords = {
     other: 'Diese Antworten müssen noch geändert werden',
   },
   summaryEntry: '{label}: {message}',
+  summaryMarkedEntry: '{label} {message}',
   summaryRowEntry: '{label} ({row}): {message}',
 };

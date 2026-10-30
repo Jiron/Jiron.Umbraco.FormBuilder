@@ -99,5 +99,6 @@ export const en: MessageWords = {
   empty: 'Answer at least one question before you send the form',
   summaryHeading: { one: 'This answer needs a change', other: 'These answers need a change' },
   summaryEntry: '{label}: {message}',
+  summaryMarkedEntry: '{label} {message}',
   summaryRowEntry: '{label} ({row}): {message}',
 };

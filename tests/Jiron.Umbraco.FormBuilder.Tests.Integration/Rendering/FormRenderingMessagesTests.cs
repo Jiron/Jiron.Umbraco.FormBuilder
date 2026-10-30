@@ -13,7 +13,7 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 /// <summary>
 /// The messages of a post's errors on real pages (ROADMAP 6.2g, ADR-0099): a field's own message, a check's and a
 /// validation rule's shown instead of the defaults, the package's defaults under the field and, after the field's label
-/// and a row's legend, in the summary, whose heading counts, with the values they name (a full option's label, a grid's
+/// and a row's legend, in the summary (with no colon after a label that ends in its own mark, ADR-0106), whose heading counts, with the values they name (a full option's label, a grid's
 /// row, a date window from the site's today, a number in the culture's format); the empty submission's message, linked to the page's first
 /// field, also on a form without the summary; and the defaults and the heading on a German page.
 /// </summary>
@@ -97,11 +97,11 @@ public sealed class FormRenderingMessagesTests : RenderingTestBase
                 ("#jfb-1-membership", "Member number: This answer has already been given. Enter another one."),
                 ("#jfb-1-workshop", "Workshop: Bike repair basics is now full. Choose another option."),
                 ("#jfb-1-times", "Times (Morning): Choose an answer in this row"),
-                ("#jfb-1-visit", "Visit: Choose a date on or after Jun 16, 2026"),
+                ("#jfb-1-visit", "When will you visit? Choose a date on or after Jun 16, 2026"),
                 ("#jfb-1-count", "Count: Enter a number from 1 to 1,000"),
                 ("#jfb-1-guests-0-guestName", "Guest name (Guest 1): Enter an answer"),
                 ("#jfb-1-guests", "Guests: Add at least 2 rows"),
-            }), "a default after its field's label and its row's legend, a field whose label is hidden and an editor's own message as written");
+            }), "a default after its field's label (with no colon after a question) and its row's legend, a field whose label is hidden and an editor's own message as written");
             Assert.That(Errors(form), Is.EqualTo(new[]
             {
                 ("jfb-1-name-error", "Enter an answer"),
@@ -207,7 +207,7 @@ public sealed class FormRenderingMessagesTests : RenderingTestBase
                                 Options = Options(("yes", "Yes"), ("no", "No")),
                                 Rows = [new GridRow { Key = Morning, Label = new LocalizedText("Morning") }, new GridRow { Key = K(0x31), Label = new LocalizedText("Evening") }],
                             },
-                            Field(Visit, "visit", "date", "Visit", """{"min":{"today":"+1d"}}"""),
+                            Field(Visit, "visit", "date", "When will you visit?", """{"min":{"today":"+1d"}}"""),
                             Field(Count, "count", "number", "Count", """{"min":"1","max":"1000"}"""),
                             Field(Guests, "guests", "repeater", "Guests", """{"minRows":2,"rowLabel":{"":"Guest"}}""") with
                             {

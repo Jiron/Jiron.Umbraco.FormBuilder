@@ -7,8 +7,8 @@
   rating's numbers, which [ADR-0107](0107-markup-that-reads-without-a-theme.md) shows in 6.3c, behind its stars
 - Date: 2026-10-30
 - Roadmap step: 6.3b (decided and built); 6.3d gives `bootstrap5` its stylesheet under the same rules
-  ([ADR-0108](0108-the-bootstrap5-theme.md)), 6.4 the ground check and the error summary's punctuation, 12.2 the
-  library themes built on `default`
+  ([ADR-0108](0108-the-bootstrap5-theme.md)), 6.4a the error summary's punctuation (built), 6.4e the ground check,
+  12.2 the library themes built on `default`
 
 ## Context
 
@@ -89,6 +89,9 @@ mock as the `default` theme left these questions:
 - The specimen's review (`docs/ux/review-6.3.md`) found one defect that is not the theme's: the error summary writes
   "Where would you like to sit?: Choose an answer" after a label that ends in a question mark. The summary entry is
   shared logic of C# and TypeScript with vectors in every visitor language, so 6.4, which reworks that logic for the
-  runtime, takes it.
+  runtime, takes it. **Built in 6.4a:** a label whose last character that cleaning keeps is a question mark, an
+  exclamation mark, a full stop or a colon (or the ellipsis, or one of the Greek, Arabic, ideographic or full-width
+  forms) takes the words' marked entry, `{label} {message}` in English and German, in both runtimes, with vectors and
+  mutants; a row's legend keeps its colon after the bracket.
 - **Revisit** if browsers make `@scope` reliable enough to scope a theme without the nesting, or if a field type needs
   more than eight rows side by side.
