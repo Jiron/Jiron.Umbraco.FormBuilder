@@ -6,6 +6,7 @@ using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Umbraco.Cms.Tests.Common.Testing;
 
@@ -15,7 +16,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 /// The kitchen sink (ROADMAP 6.2f, ADR-0015, ADR-0098): a form with a field of every built-in type and of a site's own
 /// type, and a repeatable group whose row holds a field of every type a row may hold, each rendered empty, answered,
 /// with an error and hidden by a rule, and the markup contract's hooks checked on each the same way, in a row by the
-/// row's path, so that a type added later joins the check.
+/// row's path, so that a type added later joins the check; in every built-in theme, with each theme's classes beside
+/// ours on every slot of the class map (ADR-0105).
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -117,15 +119,18 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
         _ => null,
     };
 
-    [Test]
-    public async Task EveryFieldType_EmptyAnsweredWithAnErrorAndHidden_CarriesTheMarkupContractsHooks()
+    [TestCase(BuiltInThemes.DefaultAlias)]
+    [TestCase("unstyled")]
+    [TestCase("bootstrap5")]
+    public async Task EveryFieldType_EmptyAnsweredWithAnErrorAndHidden_CarriesTheMarkupContractsHooks_InEveryBuiltInTheme(string alias)
     {
+        var theme = GetRequiredService<FormBuilderThemes>().Find(alias)!;
         _ = await PublishFormAsync("renderingSink", SinkForm);
         _ = await PagesAsync("sink");
 
         foreach (var state in new[] { "empty", "answered", "errors", "hidden" })
         {
-            var form = (await DocumentAsync("/sink/?state=" + state)).QuerySelector("form.jfb-form")!;
+            var form = (await DocumentAsync($"/sink/?state={state}&theme={alias}")).QuerySelector("form.jfb-form")!;
             var wrappers = form.QuerySelectorAll("[data-jfb-field]").Where(wrapper => wrapper.ParentElement?.Closest(".jfb-row") is null);
             Assert.Multiple(() =>
             {
@@ -133,17 +138,21 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
                 Assert.That(form.QuerySelectorAll("[data-jfb-error]"), Has.Length.EqualTo(state == "errors" ? Sink.Concat(RowSink).Count(field => Fails(field.Type)) : 0), $"{state}: an error for each field that can fail, its row's among them");
                 Assert.That(form.QuerySelector(".jfb-error-summary") is null, Is.EqualTo(state != "errors"), $"{state}: the summary only with errors");
                 Assert.That(form.QuerySelectorAll("[aria-invalid]").Length > 0, Is.EqualTo(state == "errors"), $"{state}: aria-invalid only after errors");
+                Assert.That(form.ClassList, Does.Contain("jfb-theme-" + alias), state);
             });
 
+            var error = theme.Classes.TryGetValue(FormBuilderThemeSlots.Error, out var errorClasses) ? "jfb-error " + errorClasses : "jfb-error";
             foreach (var field in Sink.Where(field => field.Type != "hidden"))
             {
-                Hooks(form, state, field, inRow: false);
+                Hooks(form, state, field, inRow: false, error);
             }
 
             foreach (var field in RowSink.Where(field => field.Type != "hidden"))
             {
-                Hooks(form, state, field, inRow: true);
+                Hooks(form, state, field, inRow: true, error);
             }
+
+            ThemeClasses(form, $"{alias}, {state}", theme);
 
             Rows(form, state);
             if (state == "answered")
@@ -164,7 +173,7 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
     // its row's group; for a built-in field with an alias, its control's id, its label or legend, its names and its
     // help; after an error, the error, aria-invalid on what it describes and the summary's link to the control. A row's
     // field has its row's ids and is named by the row's path (ADR-0098).
-    private static void Hooks(IElement form, string state, (Guid Key, string Alias, string Type) field, bool inRow)
+    private static void Hooks(IElement form, string state, (Guid Key, string Alias, string Type) field, bool inRow, string error)
     {
         var (key, sinkAlias, type) = field;
         var alias = Unnamed.Contains(type) ? null : sinkAlias;
@@ -200,10 +209,67 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
         {
             Assert.Multiple(() =>
             {
-                Assert.That(wrapper.QuerySelector($"[id='{control}-error']")?.OuterHtml, Is.EqualTo($"""<p class="jfb-error" id="{control}-error" data-jfb-error="">{Messages[type]}</p>"""), at);
+                Assert.That(wrapper.QuerySelector($"[id='{control}-error']")?.OuterHtml, Is.EqualTo($"""<p class="{error}" id="{control}-error" data-jfb-error="">{Messages[type]}</p>"""), at);
                 Assert.That(form.QuerySelectorAll($".jfb-error-summary a[href='#{control}']"), Has.Length.EqualTo(1), $"{at}: the summary's link to the control");
             });
         }
+    }
+
+    // Each slot's elements carry the theme's classes beside ours (ADR-0105): one of ours keeps its classes and gains the
+    // theme's for its slot, and one without a class of ours gets the theme's alone. Every class on the form is ours or
+    // one the theme's map gives, but in the site's own type's view, which writes its own. The slots the sink always
+    // shows are each seen.
+    private static void ThemeClasses(IElement form, string at, IFormBuilderTheme theme)
+    {
+        string[] Of(string slot) => theme.Classes.TryGetValue(slot, out var classes) ? classes.Split(' ') : [];
+        bool Ours(IElement element) => element.Closest($"[data-jfb-type='{MoodFieldType.TypeAlias}']") is null;
+        var slots = new (string Selector, string Slot, bool Seen)[]
+        {
+            ("form.jfb-form", FormBuilderThemeSlots.Form, true),
+            (".jfb-page", FormBuilderThemeSlots.Page, true),
+            (".jfb-group", FormBuilderThemeSlots.Group, true),
+            (".jfb-field", FormBuilderThemeSlots.Field, true),
+            ("label.jfb-label, legend.jfb-label", FormBuilderThemeSlots.Label, true),
+            (".jfb-part > label", FormBuilderThemeSlots.Label, true),
+            (".jfb-help", FormBuilderThemeSlots.Help, true),
+            (".jfb-error", FormBuilderThemeSlots.Error, false),
+            ("input.jfb-control, textarea.jfb-control", FormBuilderThemeSlots.Control, true),
+            ("select.jfb-control", FormBuilderThemeSlots.Select, true),
+            (".jfb-choices", FormBuilderThemeSlots.Choices, true),
+            (".jfb-choice", FormBuilderThemeSlots.Choice, true),
+            (".jfb-choice > input:is([type=radio], [type=checkbox])", FormBuilderThemeSlots.ChoiceInput, true),
+            (".jfb-choice > label", FormBuilderThemeSlots.ChoiceLabel, true),
+            ("input[type=range]", FormBuilderThemeSlots.Range, true),
+            (".jfb-affix", FormBuilderThemeSlots.Affix, false),
+            (".jfb-affix > span", FormBuilderThemeSlots.AffixText, false),
+            (".jfb-counter", FormBuilderThemeSlots.Counter, false),
+            (".jfb-navigation", FormBuilderThemeSlots.Navigation, true),
+            (".jfb-button-primary", FormBuilderThemeSlots.ButtonPrimary, true),
+            (".jfb-button-link", FormBuilderThemeSlots.ButtonLink, false),
+            (".jfb-button:not(.jfb-button-primary):not(.jfb-button-link)", FormBuilderThemeSlots.Button, true),
+            (".jfb-progress", FormBuilderThemeSlots.Progress, false),
+            (".jfb-error-summary", FormBuilderThemeSlots.ErrorSummary, false),
+        };
+        var allowed = theme.Classes.Values.SelectMany(classes => classes.Split(' ')).ToHashSet(StringComparer.Ordinal);
+        Assert.Multiple(() =>
+        {
+            foreach (var (selector, slot, seen) in slots)
+            {
+                var elements = (selector == "form.jfb-form" ? new[] { form } : form.QuerySelectorAll(selector).AsEnumerable()).Where(Ours).ToList();
+                if (seen)
+                {
+                    Assert.That(elements, Is.Not.Empty, $"{at}: the sink shows {selector}");
+                }
+
+                foreach (var element in elements)
+                {
+                    Assert.That(element.ClassList, Is.SupersetOf(Of(slot)), $"{at}: {selector} carries the theme's classes for {slot}: {element.OuterHtml}");
+                }
+            }
+
+            var foreign = form.QuerySelectorAll("[class]").Where(Ours).SelectMany(element => element.ClassList).Where(name => !name.StartsWith("jfb-", StringComparison.Ordinal) && !allowed.Contains(name)).Distinct();
+            Assert.That(foreign, Is.Empty, $"{at}: every class is ours or the theme's");
+        });
     }
 
     // What the answered state shows of each answer: a text in its input, a choice checked or selected, a part in its

@@ -1,0 +1,5 @@
+@* One form in a theme (Rendering/FormRenderingThemeTests.cs): ?form= names it, and ?theme=, if given, the placement's theme. *@
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+}
+<jfb-render form="@(Context.Request.Query["form"].ToString())" theme="@(Context.Request.Query["theme"].ToString())" />

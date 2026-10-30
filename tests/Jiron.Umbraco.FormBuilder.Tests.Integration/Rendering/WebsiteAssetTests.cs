@@ -57,7 +57,7 @@ public sealed class WebsiteAssetTests : ConfiguredTestServerTestBase
         Assert.Multiple(() =>
         {
             Assert.That(pending, Is.True, "the test host has not run the plan");
-            Assert.That(originals, Does.Contain("runtime/jfb-runtime.js").And.Contain("element/jfb-element.js"), "the client was built");
+            Assert.That(originals, Does.Contain("runtime/jfb-runtime.js").And.Contain("element/jfb-element.js").And.Contain("themes/base.css"), "the client was built");
             Assert.That(assets.All.Select(asset => asset.Name), Is.EquivalentTo(originals), "the assembly holds exactly the built originals");
             Assert.That(originals.Where(name => assets.Find(name)?.Fingerprint != Convert.ToHexStringLower(SHA256.HashData(built[name]))[..12]), Is.Empty, "each fingerprint is of its original");
             Assert.That(originals.Where(name => !Decompressed(built, name)), Is.Empty, "each copy holds its original");
@@ -131,23 +131,22 @@ public sealed class WebsiteAssetTests : ConfiguredTestServerTestBase
     }
 
     [Test]
-    public async Task TheAssetsTag_WritesTheServedAddress_OncePerRequest_WithTheSitesNonce()
+    public async Task TheAssetsTag_WritesTheServedAddresses_OncePerRequest_WithTheSitesNonce()
     {
         var page = Request("site-nonce-1");
         var first = Run(page, null);
         var second = Run(page, "page-nonce");
         var other = Run(Request(string.Empty), null);
-        var start = first.IndexOf("src=\"", StringComparison.Ordinal) + "src=\"".Length;
-        var src = first[start..first.IndexOf('"', start)];
-        using var answer = await GetAsync(src, "br");
+        using var script = await GetAsync(Attribute(first, "src"), "br");
+        using var stylesheet = await GetAsync(Attribute(first, "href"), "br");
 
         Assert.Multiple(() =>
         {
-            Assert.That(first, Does.StartWith("<script nonce=\"site-nonce-1\" src=\"/jfb/assets/runtime/jfb-runtime.js?v=").And.EndWith("\" type=\"module\"></script>"));
+            Assert.That(first, Does.StartWith("<link href=\"/jfb/assets/themes/base.css?v=").And.Contain("\" nonce=\"site-nonce-1\" rel=\"stylesheet\"><script nonce=\"site-nonce-1\" src=\"/jfb/assets/runtime/jfb-runtime.js?v=").And.EndWith("\" type=\"module\"></script>"));
             Assert.That(second, Is.Empty, "named twice, written once");
             Assert.That(other, Does.Not.Contain("nonce"), "the site gave this request none");
-            Assert.That(answer.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(answer.Headers.CacheControl?.ToString(), Is.EqualTo(Year));
+            Assert.That((script.StatusCode, script.Headers.CacheControl?.ToString()), Is.EqualTo((HttpStatusCode.OK, Year)));
+            Assert.That((stylesheet.StatusCode, stylesheet.Headers.CacheControl?.ToString(), stylesheet.Content.Headers.ContentType?.ToString()), Is.EqualTo((HttpStatusCode.OK, Year, "text/css; charset=utf-8")));
         });
     }
 
@@ -245,6 +244,13 @@ public sealed class WebsiteAssetTests : ConfiguredTestServerTestBase
         var http = new DefaultHttpContext { RequestServices = Services };
         http.Items[NonceItem] = nonce;
         return http;
+    }
+
+    // The value of the first attribute of this name that the tags hold.
+    private static string Attribute(string tags, string name)
+    {
+        var start = tags.IndexOf(name + "=\"", StringComparison.Ordinal) + name.Length + 2;
+        return tags[start..tags.IndexOf('"', start)];
     }
 
     // Runs <jfb-assets> as Razor does, and writes what it leaves.

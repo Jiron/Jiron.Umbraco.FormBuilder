@@ -1,6 +1,8 @@
 using System.Net;
 using AngleSharp.Dom;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
+using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Localization;
@@ -13,7 +15,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 /// <summary>
 /// <c>GET forms/{key}/render</c> behind Umbraco's website output cache (ROADMAP 6.2l, ADR-0004, ADR-0104): the published
 /// form's markup as the page shows it at the place the request names, with the given instance id, in the page's
-/// culture, for anyone or for the member signed in; never an outcome; <c>no-store</c>; and its refusals. The site reads no
+/// culture, for anyone or for the member signed in, in the theme it names, else the form's (ADR-0105); never an outcome;
+/// <c>no-store</c>; and its refusals. The site reads no
 /// culture from the query string, as a site may choose, so the culture render renders in is its own doing.
 /// </summary>
 [TestFixture]
@@ -105,6 +108,29 @@ public sealed class RenderEndpointTests : OutputCacheTestBase
     }
 
     [Test]
+    public async Task Render_InTheThemeItNames_ElseTheFormsOwn_AndAThemeTheSiteLacksAsDefault()
+    {
+        var key = await PublishFormAsync(CacheForm, definition => definition with { Settings = definition.Settings with { Appearance = definition.Settings.Appearance with { Theme = "unstyled" } } }, RequiredName);
+        var content = (await PagesAsync(CachePage))[CachePage];
+
+        var named = await RenderAsync(key, "jfb-1", "/cache/", content, null, "&theme=bootstrap5");
+        var own = await RenderAsync(key, "jfb-1", "/cache/", content, null);
+        var lacking = await RenderAsync(key, "jfb-1", "/cache/", content, null, "&theme=a-theme-the-site-lacks");
+        var blank = await RenderAsync(key, "jfb-1", "/cache/", content, null, "&theme=%20");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(named.Served.Document.QuerySelector("form#jfb-1")!.ClassList, Does.Contain("jfb-theme-bootstrap5"));
+            Assert.That(named.Served.Document.QuerySelector("input#jfb-1-name")!.GetAttribute("class"), Is.EqualTo("jfb-control form-control"), "the theme's classes beside ours");
+            Assert.That(own.Served.Document.QuerySelector("form#jfb-1")!.ClassList, Does.Contain("jfb-theme-unstyled"), "the form's own theme");
+            Assert.That(lacking.Served.Document.QuerySelector("form#jfb-1")!.ClassList, Does.Contain("jfb-theme-default"));
+            Assert.That(blank.Served.Document.QuerySelector("form#jfb-1")!.ClassList, Does.Contain("jfb-theme-unstyled"), "a blank theme is none");
+            Assert.That(named.Served.Document.QuerySelectorAll("link, script[src]"), Is.Empty, "still without the asset tags");
+            Assert.That(GetRequiredService<LogCapture>().Entries.Where(entry => entry.Category == typeof(FormBuilderThemes).FullName), Is.Empty, "a name from a request is neither logged nor kept");
+        });
+    }
+
+    [Test]
     public async Task Render_RefusesWhatNamesNoPlaceOnAPage_AndAKeyThatNamesNoPublishedForm()
     {
         var key = await PublishFormAsync(CacheForm, null, RequiredName);
@@ -124,6 +150,8 @@ public sealed class RenderEndpointTests : OutputCacheTestBase
             ["a query"] = $"{Root}/forms/{key}/render?instance=jfb-1&page=%2Fcache%2F%3Fx%3D1",
             ["a content key that is no key"] = $"{Root}/forms/{key}/render?instance=jfb-1&page=%2Fcache%2F&contentKey=nope",
             ["a culture that is none"] = $"{Root}/forms/{key}/render?instance=jfb-1&{place}&culture=not%20one",
+            ["a theme that is no alias"] = $"{Root}/forms/{key}/render?instance=jfb-1&{place}&theme=Bootstrap5",
+            ["a theme over two lines"] = $"{Root}/forms/{key}/render?instance=jfb-1&{place}&theme=bootstrap5%0A",
             ["the alias"] = $"{Root}/forms/{CacheForm}/render?instance=jfb-1&{place}",
             ["a key without hyphens"] = $"{Root}/forms/{key:N}/render?instance=jfb-1&{place}",
             ["no form"] = $"{Root}/forms/{Guid.NewGuid()}/render?instance=jfb-1&{place}",
@@ -147,6 +175,8 @@ public sealed class RenderEndpointTests : OutputCacheTestBase
             ["a query"] = "400 invalid_request, no-store",
             ["a content key that is no key"] = "400 invalid_request, no-store",
             ["a culture that is none"] = "400 invalid_request, no-store",
+            ["a theme that is no alias"] = "400 invalid_request, no-store",
+            ["a theme over two lines"] = "400 invalid_request, no-store",
             ["the alias"] = "404 form_not_found, no-store",
             ["a key without hyphens"] = "404 form_not_found, no-store",
             ["no form"] = "404 form_not_found, no-store",
@@ -159,6 +189,7 @@ public sealed class RenderEndpointTests : OutputCacheTestBase
     {
         ArgumentNullException.ThrowIfNull(builder);
         base.CustomTestSetup(builder);
+        builder.Services.AddLogCapture();
         builder.Services.PostConfigure<RequestLocalizationOptions>(options =>
             options.RequestCultureProviders = [.. options.RequestCultureProviders.Where(provider => provider is not QueryStringRequestCultureProvider)]);
     }

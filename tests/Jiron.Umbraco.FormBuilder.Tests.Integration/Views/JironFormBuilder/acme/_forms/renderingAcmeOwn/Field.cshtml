@@ -1,0 +1,7 @@
+@* jfb-view: Field 1 *@
+@* The form renderingAcmeOwn's own field wrapper in the test theme acme (Rendering/FormRenderingThemeTests.cs). *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+<div class="@Model.CssClass" data-jfb-field="@Model.Key" data-test-view="acme-form">
+    <label class="@Model.Classes.Label" for="@Model.Id">@Model.Label</label>
+    @await Html.PartialAsync(Model.ControlView, Model)
+</div>

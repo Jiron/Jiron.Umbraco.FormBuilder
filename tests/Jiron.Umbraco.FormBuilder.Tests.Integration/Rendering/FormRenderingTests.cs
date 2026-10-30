@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -71,6 +72,38 @@ public sealed class FormRenderingTests : RenderingTestBase
             Assert.That(document.QuerySelector("script[type=module]")!.GetAttribute("src"), Does.StartWith("/jfb/assets/runtime/jfb-runtime.js?v="));
             Assert.That(Single(document, "#after").TextContent, Is.EqualTo("The page goes on."), "a page goes on after its form");
             Assert.That(html, Does.Not.Contain("<jfb-render"), "the element itself is not written");
+        });
+    }
+
+    [Test]
+    public async Task AForm_CarriesItsHoneypot_NamedForItsRevision_AndHiddenFromAssistiveTechnology()
+    {
+        var key = await PublishFormAsync("renderingContact");
+        _ = await PagesAsync("two-forms");
+        _ = await PublishFormAsync("renderingSecond");
+        var (_, document) = await PageAsync("two-forms");
+
+        var forms = document.QuerySelectorAll("form.jfb-form");
+        var honeypot = forms[0].QuerySelectorAll(".jfb-hp");
+        var name = FormHoneypot.NameOf(key, 1);
+        Assert.Multiple(() =>
+        {
+            Assert.That(honeypot, Has.Length.EqualTo(1));
+            Assert.That(Attributes(honeypot[0]), Is.EqualTo(new Dictionary<string, string> { ["class"] = "jfb-hp", ["aria-hidden"] = "true" }));
+            Assert.That(honeypot[0].NextElementSibling?.HasAttribute("data-jfb-live"), Is.True, "last, before the live region, after every field");
+            Assert.That(honeypot[0].Children.Select(child => child.LocalName), Is.EqualTo(new[] { "label", "input" }));
+            Assert.That(Attributes(honeypot[0].Children[0]), Is.EqualTo(new Dictionary<string, string> { ["for"] = "jfb-1-" + name }));
+            Assert.That(honeypot[0].Children[0].TextContent, Is.EqualTo("Leave this field empty"));
+            Assert.That(Attributes(honeypot[0].Children[1]), Is.EqualTo(new Dictionary<string, string>
+            {
+                ["type"] = "text",
+                ["id"] = "jfb-1-" + name,
+                ["name"] = name,
+                ["tabindex"] = "-1",
+                ["autocomplete"] = "off",
+            }), "empty, out of the tab order and never filled in by the browser");
+            Assert.That(forms[1].QuerySelector(".jfb-hp input")!.Id, Does.StartWith("jfb-2-"), "each form its own");
+            Assert.That(forms[1].QuerySelector(".jfb-hp input")!.GetAttribute("name"), Is.Not.EqualTo(name), "each form a name of its own");
         });
     }
 

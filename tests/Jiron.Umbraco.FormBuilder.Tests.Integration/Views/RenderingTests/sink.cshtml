@@ -1,4 +1,4 @@
-@* The kitchen sink, a field of every type (Rendering/FormRenderingKitchenTests.cs): the first render, or ?state=answered, errors or hidden. *@
+@* The kitchen sink, a field of every type (Rendering/FormRenderingKitchenTests.cs): the first render, or ?state=answered, errors or hidden, in the theme ?theme= names. *@
 @using Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering
 @inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
@@ -10,4 +10,4 @@
         FormPosts.Set(Context, key, "jfb-1", state);
     }
 }
-<jfb-render form="renderingSink" />
+<jfb-render form="renderingSink" theme="@(Context.Request.Query["theme"].ToString())" />

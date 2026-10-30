@@ -108,6 +108,7 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
             SubmitLabel = new Dictionary<string, string> { [""] = "Send for the allowlist" },
             NextLabel = new Dictionary<string, string> { [""] = "Next for the allowlist" },
             BackLabel = new Dictionary<string, string> { [""] = "Back for the allowlist" },
+            Theme = "bootstrap5",
             NewForms = new NewFormDefaults { Consent = new NewFormConsent { Label = new Dictionary<string, string> { [""] = "JFB_TEST consent label" }, Text = new Dictionary<string, string> { [""] = "<p>JFB_TEST consent text</p>" } } },
             History = new HistorySettings { DraftDays = 7, DraftCount = 3 },
         };
@@ -119,7 +120,7 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
         allowed["timeZone"] = unset["timeZone"]!.DeepClone();
         var settings = allowed["form"]!["settings"]!.AsObject();
         var defaults = unset["form"]!["settings"]!.AsObject();
-        foreach (var name in new[] { "requiredMarker", "submitLabel", "nextLabel", "backLabel" })
+        foreach (var name in new[] { "requiredMarker", "submitLabel", "nextLabel", "backLabel", "theme" })
         {
             settings.Remove(name);
             if (defaults[name] is { } shown)
@@ -137,6 +138,7 @@ public sealed class PublicFormSiteTests : PublicApiTestBase
             Assert.That(set["timeZone"]!.GetValue<string>(), Is.EqualTo("Pacific/Chatham"), "visitors get the time zone");
             Assert.That(set["form"]!["settings"]!["requiredMarker"]!.GetValue<string>(), Is.EqualTo("none"), "the style of a form that inherits it");
             Assert.That(set["form"]!["settings"]!["submitLabel"]!.GetValue<string>(), Is.EqualTo(defaults["submitLabel"]?.GetValue<string>() ?? "Send for the allowlist"), "and a label the form has not");
+            Assert.That(set["form"]!["settings"]!["theme"]!.GetValue<string>(), Is.EqualTo(defaults["theme"]?.GetValue<string>() ?? "bootstrap5"), "and the site's theme for a form without one (ADR-0105)");
             Assert.That(JsonNode.DeepEquals(allowed, unset), Is.True, $"nothing else of the settings shows:\n{unset.ToJsonString()}\n{set.ToJsonString()}");
             Assert.That(set.ToJsonString(), Does.Not.Contain("JFB_TEST").And.Not.Contain("jfb-allowlist"));
         });

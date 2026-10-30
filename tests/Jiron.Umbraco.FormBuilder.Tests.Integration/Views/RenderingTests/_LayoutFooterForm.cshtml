@@ -1,0 +1,17 @@
+@* A layout with jfb-assets in its head and a form of its own in its footer, which Razor renders after the head's tag ran. *@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Rendering test</title>
+    <jfb-assets />
+</head>
+<body>
+    <main>
+        @RenderBody()
+    </main>
+    <footer>
+        <jfb-render form="renderingCalm" />
+    </footer>
+</body>
+</html>

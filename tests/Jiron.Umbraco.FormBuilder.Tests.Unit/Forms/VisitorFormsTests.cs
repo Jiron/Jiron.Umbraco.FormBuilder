@@ -85,6 +85,27 @@ public sealed class VisitorFormsTests
     }
 
     [Test]
+    public async Task TheSitesTheme_StandsInForAFormWithoutOne_AndAFormsOwnStands()
+    {
+        _general = new GeneralSettings { Theme = "bootstrap5" };
+        var projection = Projection(page => page);
+        var without = projection with { Settings = projection.Settings with { Theme = null } };
+        var own = projection with { Settings = projection.Settings with { Theme = "unstyled" } };
+
+        var taken = JsonNode.Parse(await FormAsync(without, "en-US"))!["settings"]!;
+        var kept = JsonNode.Parse(await FormAsync(own, "en-US"))!["settings"]!;
+        _general = new GeneralSettings();
+        var neither = JsonNode.Parse(await FormAsync(without, "en-US"))!["settings"]!.AsObject();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(taken["theme"]!.GetValue<string>(), Is.EqualTo("bootstrap5"), "the site's theme for a form without one");
+            Assert.That(kept["theme"]!.GetValue<string>(), Is.EqualTo("unstyled"), "a form's own theme stands");
+            Assert.That(neither.ContainsKey("theme"), Is.False, "neither names one, so the code's default renders");
+        });
+    }
+
+    [Test]
     public async Task ASitesLabelThatIsNoLocalisedText_IsNone_SoThePageShowsThePackagesWord()
     {
         _general = new GeneralSettings { NextLabel = new Dictionary<string, string> { ["de"] = "Weiter so" } };

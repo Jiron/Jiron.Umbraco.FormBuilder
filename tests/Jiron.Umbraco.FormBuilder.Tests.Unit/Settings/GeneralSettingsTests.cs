@@ -10,7 +10,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Settings;
 /// The general section (section 4.8, ADR-0043): its defaults, its scope and its validator. A time zone the server cannot
 /// resolve as an IANA zone cannot be saved, and a zone is stored as the server spells it (ADR-0005, ADR-0030). A site's
 /// required-marker style is never inherit, and its button labels are texts a form's own labels take (ADR-0095). The
-/// consent field a new form starts with has texts a definition takes (ADR-0044).
+/// consent field a new form starts with has texts a definition takes (ADR-0044). The site's theme is an alias a form's
+/// own theme would take, not held to the themes the code registers, or none (ADR-0105).
 /// </summary>
 [TestFixture]
 public sealed class GeneralSettingsTests
@@ -104,6 +105,40 @@ public sealed class GeneralSettingsTests
     [TestCase((RequiredMarker)9, Description = "no style")]
     public void InheritOrNoStyle_CannotBeSaved(RequiredMarker marker) =>
         Assert.That(Errors(new GeneralSettings { RequiredMarker = marker }), Is.EqualTo(new[] { new SettingsError("general.requiredMarker", "requiredMarker", "Must be optional, required or none: inherit is how a form takes the site's style.") }));
+
+    [Test]
+    public void TheTheme_IsNoneByDefault_SoFormsTakeTheCodesDefault() =>
+        Assert.That(new GeneralSettings().Theme, Is.Null);
+
+    [TestCase("bootstrap5")]
+    [TestCase("a-theme-the-code-lacks")]
+    [TestCase("Not An Alias")]
+    public void ATheme_ThatAFormsOwnThemeWouldTake_Passes(string theme) =>
+        Assert.That(Errors(new GeneralSettings { Theme = theme }), Is.Empty);
+
+    [Test]
+    public void AThemeOfSixtyFourCharacters_Passes() =>
+        Assert.That(Errors(new GeneralSettings { Theme = new string('a', 64) }), Is.Empty);
+
+    [TestCase(65, "")]
+    [TestCase(3, "\n")]
+    [TestCase(3, "\t")]
+    [TestCase(3, "\u0000")]
+    public void AThemeTooLongOrOverLines_CannotBeSaved(int length, string tail)
+    {
+        var theme = new string('a', length) + tail;
+
+        Assert.That(Errors(new GeneralSettings { Theme = theme }), Is.EqualTo(new[] { new SettingsError("general.theme", "theme", "Must be a theme's alias of at most 64 characters on one line.") }));
+    }
+
+    [TestCase("")]
+    [TestCase("   ")]
+    public void ABlankTheme_IsStoredAsNone(string theme) =>
+        Assert.That(((ISettingsValidator<GeneralSettings>)Validator).Normalize(new GeneralSettings { Theme = theme }).Theme, Is.Null);
+
+    [Test]
+    public void ATheme_IsStoredAsGiven() =>
+        Assert.That(((ISettingsValidator<GeneralSettings>)Validator).Normalize(new GeneralSettings { Theme = "bootstrap5" }).Theme, Is.EqualTo("bootstrap5"));
 
     [Test]
     public void EachLabelWithoutTexts_IsStoredAsNone()

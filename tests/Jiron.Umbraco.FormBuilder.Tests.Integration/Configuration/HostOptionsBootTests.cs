@@ -3,7 +3,9 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Testing;
+using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
@@ -12,8 +14,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Configuration;
 
 /// <summary>
 /// A real Umbraco site with host configuration (ADR-0042): the composers bind <c>JironFormBuilder</c> once, check it, the
-/// runtime, the field types, the locks of their settings and the merge-tag names when the site starts, and the
-/// definition reader takes the limits the site configured.
+/// runtime, the field types, the locks of their settings, the merge-tag names, the option sources and the themes with
+/// their stylesheets when the site starts, and the definition reader takes the limits the site configured.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
@@ -50,7 +52,8 @@ public sealed class HostOptionsBootTests : UmbracoIntegrationTest
         {
             Assert.That(options.LockedSections, Is.EqualTo(new[] { "privacy" }));
             Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderOptions>>>().Single(), Is.InstanceOf<FormBuilderOptionsValidator>());
-            Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderStartupChecks>>>().Select(check => check.GetType()), Is.EquivalentTo(new[] { typeof(GlobalizationStartupCheck), typeof(FieldTypeStartupCheck), typeof(FieldSettingLockStartupCheck), typeof(MergeTagStartupCheck), typeof(OptionSourceStartupCheck) }));
+            Assert.That(GetRequiredService<IEnumerable<IValidateOptions<FormBuilderStartupChecks>>>().Select(check => check.GetType()), Is.EquivalentTo(new[] { typeof(GlobalizationStartupCheck), typeof(FieldTypeStartupCheck), typeof(FieldSettingLockStartupCheck), typeof(MergeTagStartupCheck), typeof(OptionSourceStartupCheck), typeof(ThemeStartupCheck), typeof(ThemeStylesheetStartupCheck) }));
+            Assert.That(GetRequiredService<FormBuilderThemes>().All.Select(theme => theme.Name), Is.EqualTo(new[] { "default", "unstyled", "bootstrap5" }), "the registry holds the built-in themes");
             Assert.That(() => GetRequiredService<IStartupValidator>().Validate(), Throws.Nothing);
         });
     }
