@@ -18,7 +18,8 @@
   a submission from an older revision is read, through the newest version published with it, extended by
   [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) in 6.1e; which types may have a
   `uniquePerForm` check, and how it compares answers, amended by [ADR-0091](0091-unique-answers.md) in 6.1h; a
-  repeatable group's `rowLabel` added by [ADR-0098](0098-the-repeaters-rows.md) in 6.2f
+  repeatable group's `rowLabel` added by [ADR-0098](0098-the-repeaters-rows.md) in 6.2f; `prefill.context`, the
+  member property's name format and the projection's prefill amended by [ADR-0124](0124-prefill.md) in 6.5c
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 4.2a (the model, the schema, upgraders), 4.2b (structural validation, the
   projection), 4.5 (the form service), 5.x (the field types), 6.6 (the headless definition) and 12.5 (the mirror)
@@ -146,7 +147,7 @@ not support keeps its default (ADR-0034: booleans and numbers are always written
 | `required` | boolean | false | |
 | `messages` | object | empty | A custom message per error kind of the type (`required`, `invalid`, `minLength`, `maxLength`, `minWords`, `maxWords`, `min`, `max`, `step`, `dateWindow`, `selections`, `fileType`, `fileSize`, `fileCount`, `full`, `confirmation`, `digits`, `rowCount`). |
 | `defaultValue` | string, string[] or null | null | Merge tags allowed (ADR-0014). A list for types with several answers. |
-| `prefill` | object or null | null | `{ "query": name or null, "member": property alias or null, "memberMode": "show" or "hide" }`. |
+| `prefill` | object or null | null | `{ "query": name or null, "member": property alias or null, "context": name or null, "memberMode": "show" or "hide" }`: the member's value wins, then the context value, then the query value, then the default (ADR-0124). |
 | `sensitive` | boolean | false | §4.10. |
 | `includeInEmails` | boolean | true | False leaves the field out of `entry.answers` in mail (ADR-0014); a tag that names the field still renders it. |
 | `keep` | `always` or `untilActionsRun` | `always` | §4.4. |
@@ -292,7 +293,7 @@ strings (ADR-0005); counts are JSON integers; relative dates use the operand for
 | `file` | `types` (`images`, `pdf`, `office`, `text`, `archives`; with none and no extensions, images and PDFs), `extensions`, `maxBytes`, `maxFiles` (1), `dropZone` (true), `thumbnails` (true), `camera` (false) |
 | `signature` | `width`, `height` |
 | `repeater` | `minRows` (0), `maxRows` (10), `rowLabel` (each row's legend before its number, ADR-0098), `addLabel`, `removeLabel` |
-| `hidden` | none: its value is `defaultValue` or `prefill.query` |
+| `hidden` | none: its value is `prefill.member`, `prefill.context`, `prefill.query` or `defaultValue` (ADR-0124) |
 | `heading` | `text` (LocalizedText), `level` (2 to 4) |
 | `paragraph` | `html` (LocalizedHtml) |
 | `divider` | none |
@@ -390,7 +391,7 @@ A type's `settings` belong to it: publishing holds them to its settings schema a
 - **It never contains:** actions, outcomes (the submission's answer carries the outcome, §4.6), recipients,
   `sensitive`, `includeInEmails`, `keep`, `formerAliases`, option-source configuration, member prefill mappings (only
   the fact that a field is prefilled from the member), the entry title and reference, storage, approval, retention,
-  IP handling, insights, context values, switched-off rules, the hidden field's default value (resolved when the
+  IP handling, insights, context values (a field prefilled from one names it, ADR-0124), switched-off rules, the hidden field's default value (resolved when the
   entry is submitted), or anything a type marks private.
 - **Options:** a field's own `items` are part of the projection, without their `places` (places left are per moment,
   and come with the challenge, §4.6). Options from a library list or another source are resolved when the form is

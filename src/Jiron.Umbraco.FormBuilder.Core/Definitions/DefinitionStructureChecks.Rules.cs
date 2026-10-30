@@ -179,6 +179,10 @@ internal sealed partial class DefinitionStructureChecks
             {
                 Fail(DefinitionErrors.UnknownField, P(path, "field"), "The validation rule shows its message on no field of the form that holds a value.");
             }
+            else if (LeftOutForMembers(rule.Field))
+            {
+                Fail(DefinitionErrors.InvalidReference, P(path, "field"), $"The validation rule shows its message on {entry.Describe}, which a signed-in member's page leaves out (prefill.memberMode hide).");
+            }
 
             Conditions(rule.Conditions, P(path, "conditions"), _visitorKinds, dependencies: null, depth: 1);
         }

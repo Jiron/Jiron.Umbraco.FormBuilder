@@ -195,6 +195,9 @@ public sealed record FieldPrefill
     /// <summary>The alias of a member property, read on the server only.</summary>
     public string? Member { get; init; }
 
+    /// <summary>The name of a context value the form lists (section 4.3.4), which the page that places the form gives (ADR-0124).</summary>
+    public string? Context { get; init; }
+
     /// <summary>Whether a value from the member is shown.</summary>
     public PrefillMemberMode MemberMode { get; init; } = PrefillMemberMode.Show;
 }

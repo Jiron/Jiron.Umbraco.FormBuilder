@@ -79,7 +79,7 @@
               "required": true,
               "messages": { "required": { "": "Please tell us your name." }, "maxLength": { "": "That name is too long." } },
               "defaultValue": "{{ member.name }}",
-              "prefill": { "query": "name", "member": "displayName", "memberMode": "hide" },
+              "prefill": { "query": "name", "member": "displayName", "context": "campaign", "memberMode": "show" },
               "sensitive": false,
               "includeInEmails": true,
               "keep": "always",

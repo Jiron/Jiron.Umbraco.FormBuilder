@@ -111,6 +111,12 @@ public sealed class StructureTests
 
     private static JsonObject CheckAcross(JsonObject d) => d["validationRules"]![0]!["conditions"]![0]!.AsObject();
 
+    // The notes on the second page, which nothing else reads.
+    private static JsonObject Notes(JsonObject d) => d["pages"]![1]!["groups"]![0]!["fields"]![0]!.AsObject();
+
+    // A prefill that hides the field behind the member's value of this property (ADR-0124).
+    private static JsonObject FromMember(string property) => new() { ["member"] = property, ["memberMode"] = "hide" };
+
     private static JsonArray Items(JsonObject d, int field) => Field(d, field)["options"]!["items"]!.AsArray();
 
     private static JsonObject Developer(JsonObject d) => d["settings"]!["developer"]!.AsObject();
@@ -315,6 +321,21 @@ public sealed class StructureTests
             d["settings"]!["submission"]!["verification"]!["emailField"] = K(0xb);
         }, DefinitionErrors.InvalidReference, "$.settings.submission.verification.emailField");
         yield return Case("a prefill from a query value the form does not allow", d => Field(d, 0)["prefill"]!["query"] = "utm", DefinitionErrors.InvalidReference, $"{F(0)}.prefill.query");
+        yield return Case("a prefill from a context value the form does not list", d => Field(d, 0)["prefill"]!["context"] = "topic", DefinitionErrors.InvalidReference, $"{F(0)}.prefill.context");
+        yield return Case("a prefill from a member property no merge tag can name", d => Field(d, 0)["prefill"]!["member"] = "display name", DefinitionErrors.NameInvalid, $"{F(0)}.prefill.member");
+        yield return Case("a member's value hidden in a repeatable group's rows", d => Field2(d, 1)["fields"]![0]!["prefill"] = FromMember("name"), DefinitionErrors.PropertyNotSupported, $"{F2(1)}.fields[0].prefill.memberMode");
+        yield return Case("a member's value hidden behind a field that must match another", d => Field(d, 2)["prefill"] = FromMember("email"), DefinitionErrors.PropertyNotSupported, $"{F(2)}.prefill.memberMode");
+        yield return Case("a member's value hidden behind a field that is unique per form", d =>
+        {
+            Notes(d)["prefill"] = FromMember("note");
+            Notes(d)["validation"] = new JsonArray(new JsonObject { ["kind"] = "uniquePerForm" });
+        }, DefinitionErrors.PropertyNotSupported, "$.pages[1].groups[0].fields[0].prefill.memberMode");
+        yield return Case("a page's rule on a field hidden behind the member's value", d => Field(d, 0)["prefill"] = FromMember("name"), DefinitionErrors.InvalidReference, "$.pages[0].groups[1].rules[0].conditions[0].field");
+        yield return Case("a validation rule's message on a field hidden behind the member's value", d =>
+        {
+            Notes(d)["prefill"] = FromMember("note");
+            d["validationRules"]![0]!["field"] = K(0xe);
+        }, DefinitionErrors.InvalidReference, "$.validationRules[0].field");
 
         // The conditions both runtimes check before they evaluate (ADR-0005).
         yield return Case("a condition on a field and a context", d => Guests(d)["context"] = "culture", DefinitionErrors.InvalidCondition, $"{F(5)}.rules[0].conditions[0]");
@@ -515,6 +536,15 @@ public sealed class StructureTests
             ["options"] = new JsonObject { ["items"] = new JsonArray(new JsonObject { ["value"] = "a" }, new JsonObject { ["value"] = "b" }) },
         }));
         yield return Case("a site-relative redirect with merge tags", d => d["outcomes"]![0]!["redirect"]!["url"] = "/events/{{ field.city | lower }}/thanks?n={{ field.name }}");
+        yield return Case("a prefill from the member, a context value the form lists and a query value", d =>
+            Field(d, 0)["prefill"] = new JsonObject { ["query"] = "ref", ["context"] = "campaign", ["member"] = "display-name_2", ["memberMode"] = "show" });
+        yield return Case("a member's value hidden behind a field with a pattern, read by an action's rule", d =>
+        {
+            Notes(d)["prefill"] = FromMember("note");
+            Notes(d)["validation"] = new JsonArray(new JsonObject { ["kind"] = "pattern", ["pattern"] = "[a-z]+" });
+            d["actions"]![0]!["rules"]![0]!["conditions"]![0]!.ReplaceWith(new JsonObject { ["field"] = K(0xe), ["op"] = "isNotEmpty" });
+        });
+        yield return Case("a member's value shown in a repeatable group's rows", d => Field2(d, 1)["fields"]![0]!["prefill"] = new JsonObject { ["member"] = "name" });
         yield return Case("an action rule on a hidden field's value", d =>
         {
             AddHidden(d);
@@ -562,6 +592,14 @@ public sealed class StructureTests
     [TestCaseSource(nameof(Accepted))]
     public void Publishing_AcceptsWhatFitsTogether(Action<JsonObject> change) =>
         Assert.That(Publish(Changed(change)), Is.Empty);
+
+    [Test]
+    public void ARuleOnAFieldHiddenBehindTheMembersValue_SaysWhyThePageCannotCompareIt()
+    {
+        var problem = Publish(Changed(d => Field(d, 0)["prefill"] = FromMember("name"))).Single();
+
+        Assert.That(problem.Message, Does.StartWith("The value of field 'name' (text) stands in for a signed-in member's own").And.Contain("memberMode show"));
+    }
 
     [Test]
     public void AFormulasMistake_SaysWhereItStarts()

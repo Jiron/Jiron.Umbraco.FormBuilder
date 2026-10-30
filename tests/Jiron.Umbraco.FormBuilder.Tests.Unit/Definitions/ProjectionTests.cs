@@ -38,7 +38,7 @@ public sealed partial class ProjectionTests
         "$.pages[].groups[].fields[].help", "$.pages[].groups[].fields[].placeholder", "$.pages[].groups[].fields[].required",
         "$.pages[].groups[].fields[].messages", "$.pages[].groups[].fields[].defaultValue",
         "$.pages[].groups[].fields[].prefill", "$.pages[].groups[].fields[].prefill.query",
-        "$.pages[].groups[].fields[].prefill.fromMember", "$.pages[].groups[].fields[].prefill.memberMode",
+        "$.pages[].groups[].fields[].prefill.context", "$.pages[].groups[].fields[].prefill.fromMember", "$.pages[].groups[].fields[].prefill.memberMode",
         "$.pages[].groups[].fields[].autocomplete", "$.pages[].groups[].fields[].cssClass",
         "$.pages[].groups[].fields[].validation", "$.pages[].groups[].fields[].validation[].kind",
         "$.pages[].groups[].fields[].validation[].pattern", "$.pages[].groups[].fields[].validation[].field",
@@ -255,7 +255,7 @@ public sealed partial class ProjectionTests
     {
         var projection = PublicProjection.Create(DefinitionFixtures.Read(DefinitionFixtures.Full), TestFieldTypes.Registry);
 
-        Assert.That(projection.Pages[0].Groups[0].Fields[0].Prefill, Is.EqualTo(new PublicPrefill { Query = "name", FromMember = true, MemberMode = PrefillMemberMode.Hide }));
+        Assert.That(projection.Pages[0].Groups[0].Fields[0].Prefill, Is.EqualTo(new PublicPrefill { Query = "name", Context = "campaign", FromMember = true, MemberMode = PrefillMemberMode.Show }));
     }
 
     // A field's settings as given, and the settings the projection writes: every public setting with its effective

@@ -38,6 +38,8 @@ internal sealed partial class DefinitionStructureChecks
     // What the visitor's browser can look at as well: the same, without the fields whose value the server sets.
     private readonly Dictionary<string, FieldKind> _visitorKinds = new(StringComparer.Ordinal);
     private readonly HashSet<string> _queryValues = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _contextValues = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _fromMember = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _aliases = new(StringComparer.OrdinalIgnoreCase);
 
     // The fields formulas can name: each alias, compared exactly as formulas name it, with the first field that has it.
@@ -107,6 +109,7 @@ internal sealed partial class DefinitionStructureChecks
     private void Index(FormDefinition definition)
     {
         _queryValues.UnionWith(definition.Settings.Developer.QueryValues);
+        _contextValues.UnionWith(definition.Settings.Developer.ContextValues);
         var pagesPath = P(JsonPaths.Root, "pages");
         for (var p = 0; p < definition.Pages.Count; p++)
         {
@@ -139,7 +142,12 @@ internal sealed partial class DefinitionStructureChecks
             if (_fields.TryAdd(field.Key, new Entry(field, traits, node, inRepeater, Row: null)) && traits?.KindOf(field) is { } kind)
             {
                 _kinds[KeyText(field.Key)] = kind;
-                if (traits is { ServerOnlyDefault: false })
+                // A field a member's value stands in for is not on that member's page, so the page's rules cannot read it (ADR-0124).
+                if (HidesFromMember(field, traits))
+                {
+                    _fromMember.Add(KeyText(field.Key));
+                }
+                else if (traits is { ServerOnlyDefault: false })
                 {
                     _visitorKinds[KeyText(field.Key)] = kind;
                 }
@@ -158,6 +166,39 @@ internal sealed partial class DefinitionStructureChecks
             }
 
             IndexFields(field.Fields, P(fieldPath, "fields"), node, inRepeater: true);
+        }
+    }
+
+    // Whether a field is left out of a signed-in member's page when the member's value stands in for it (ADR-0124).
+    private static bool HidesFromMember(FormField field, FieldTypeTraits traits) =>
+        traits.Supports(FieldFeatures.Prefill) && field.Prefill is { Member: not null, MemberMode: PrefillMemberMode.Hide };
+
+    // A field's prefill (ADR-0124): a query value the form allows, a context value it lists, a member name as merge tags
+    // write it, and a member's value hidden only outside repeatable groups.
+    private void CheckPrefill(FormField field, FieldPrefill prefill, FieldTypeTraits traits, string path, bool inRepeater)
+    {
+        if (prefill.Query is { } query && !_queryValues.Contains(query))
+        {
+            Fail(DefinitionErrors.InvalidReference, P(path, "query"), $"The form does not allow the query value '{query}' (settings.developer.queryValues).");
+        }
+
+        if (prefill.Context is { } context && !_contextValues.Contains(context))
+        {
+            Fail(DefinitionErrors.InvalidReference, P(path, "context"), $"The form does not list the context value '{context}' (settings.developer.contextValues).");
+        }
+
+        if (prefill.Member is { } member && !IsName(member))
+        {
+            Fail(DefinitionErrors.NameInvalid, P(path, "member"), "A member property's name has 1 to 64 letters, digits, hyphens and underscores, as merge tags write it.");
+        }
+
+        if (inRepeater && HidesFromMember(field, traits))
+        {
+            Fail(DefinitionErrors.PropertyNotSupported, P(path, "memberMode"), "A field in a repeatable group cannot hide behind the member's value: every row would hold the same.");
+        }
+        else if (HidesFromMember(field, traits) && field.Validation.Any(check => check is MatchesFieldCheck or UniquePerFormCheck))
+        {
+            Fail(DefinitionErrors.PropertyNotSupported, P(path, "memberMode"), "A field hidden behind the member's value takes no check against another field or the other entries: the member could not change an answer that fails it.");
         }
     }
 
@@ -333,9 +374,9 @@ internal sealed partial class DefinitionStructureChecks
 
         CheckOptions(field, traits, path);
         CheckValidation(field, traits, path);
-        if (traits.Supports(FieldFeatures.Prefill) && field.Prefill?.Query is { } query && !_queryValues.Contains(query))
+        if (traits.Supports(FieldFeatures.Prefill) && field.Prefill is { } prefill)
         {
-            Fail(DefinitionErrors.InvalidReference, P(P(path, "prefill"), "query"), $"The form does not allow the query value '{query}' (settings.developer.queryValues).");
+            CheckPrefill(field, prefill, traits, P(path, "prefill"), inRepeater);
         }
 
         ImmutableArray<RuleEffect> effects = (traits.Supports(FieldFeatures.VisibilityRules), traits.Supports(FieldFeatures.Required)) switch
@@ -737,9 +778,14 @@ internal sealed partial class DefinitionStructureChecks
         }
     }
 
-    // Rules and checks on the page run in the visitor's browser as well, which never gets such a value (ADR-0035).
-    private static string ServerValue(Entry entry) =>
-        $"The value of {entry.Describe} is set on the server when the entry is submitted, so the visitor's browser cannot compare it; a condition on the query value or the member can look at its source.";
+    // Rules and checks on the page run in the visitor's browser as well, which never gets such a value (ADR-0035): a
+    // hidden field's, or a member's value standing in for a field their page leaves out (ADR-0124).
+    private string ServerValue(Entry entry) => _fromMember.Contains(KeyText(entry.Field.Key))
+        ? $"The value of {entry.Describe} stands in for a signed-in member's own, which their page leaves out, so the visitor's browser cannot compare it; show the field to the member (prefill.memberMode show) to compare it."
+        : $"The value of {entry.Describe} is set on the server when the entry is submitted, so the visitor's browser cannot compare it; a condition on the query value or the member can look at its source.";
+
+    // Whether a field is left out of a signed-in member's page, where no message can show on it (ADR-0124).
+    private bool LeftOutForMembers(Guid key) => _fromMember.Contains(KeyText(key));
 
     private static string? PatternProblem(string pattern)
     {

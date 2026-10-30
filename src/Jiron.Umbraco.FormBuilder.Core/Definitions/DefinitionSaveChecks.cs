@@ -389,6 +389,7 @@ internal sealed class DefinitionSaveChecks
             var prefillPath = P(path, "prefill");
             String(prefill.Query, P(prefillPath, "query"), LineLength, singleLine: true);
             String(prefill.Member, P(prefillPath, "member"), LineLength, singleLine: true);
+            String(prefill.Context, P(prefillPath, "context"), LineLength, singleLine: true);
             Word(prefill.MemberMode, P(prefillPath, "memberMode"));
         }
 

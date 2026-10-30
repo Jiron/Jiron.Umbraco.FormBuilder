@@ -253,7 +253,7 @@ internal sealed class DefinitionGenerator
                 1 => FieldDefaultValue.Of(String(200, singleLine: false)),
                 _ => FieldDefaultValue.OfList(Many(1, 3, () => String(50))),
             },
-            Prefill = Chance() ? new FieldPrefill { Query = Chance() ? Identifier() : null, Member = Chance() ? Identifier() : null, MemberMode = Word<PrefillMemberMode>() } : null,
+            Prefill = Chance() ? new FieldPrefill { Query = Chance() ? Identifier() : null, Member = Chance() ? Identifier() : null, Context = Chance() ? Identifier() : null, MemberMode = Word<PrefillMemberMode>() } : null,
             Sensitive = Chance(),
             IncludeInEmails = Chance(),
             Keep = Word<FieldKeep>(),

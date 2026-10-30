@@ -234,6 +234,7 @@
       "properties": {
         "query": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
         "member": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
+        "context": { "$ref": "#/$defs/SingleLine", "maxLength": 500 },
         "memberMode": { "anyOf": [ { "$ref": "#/$defs/PrefillMemberMode" }, { "type": "null" } ] }
       }
     },

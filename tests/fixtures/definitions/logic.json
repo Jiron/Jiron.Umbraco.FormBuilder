@@ -56,8 +56,9 @@
                   "defaultValue": "{{ member.name }}",
                   "prefill": {
                     "query": "name",
+                    "context": "campaign",
                     "fromMember": true,
-                    "memberMode": "hide"
+                    "memberMode": "show"
                   },
                   "autocomplete": "name",
                   "cssClass": "badge-name",

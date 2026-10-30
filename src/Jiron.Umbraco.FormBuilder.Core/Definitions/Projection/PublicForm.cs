@@ -196,11 +196,17 @@ public sealed record PublicField
     public SettingsObject? Settings { get; init; }
 }
 
-/// <summary>Where a field's value is prefilled from: a query value, or the signed-in member (which property stays on the server).</summary>
+/// <summary>
+/// Where a field's value is prefilled from: a query value, a context value, or the signed-in member (which property stays
+/// on the server).
+/// </summary>
 public sealed record PublicPrefill
 {
     /// <summary>The name of an allowed query value.</summary>
     public string? Query { get; init; }
+
+    /// <summary>The name of a context value the form lists (ADR-0124).</summary>
+    public string? Context { get; init; }
 
     /// <summary>Whether the value comes from the signed-in member.</summary>
     public bool FromMember { get; init; }

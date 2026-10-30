@@ -115,8 +115,8 @@ internal static class PublicProjection
             Messages = field.Messages,
             // A type the site lacks may keep its default on the server, so its default stays there too.
             DefaultValue = traits is null or { ServerOnlyDefault: true } ? null : field.DefaultValue,
-            Prefill = field.Prefill is { } prefill && (prefill.Query is not null || prefill.Member is not null)
-                ? new PublicPrefill { Query = prefill.Query, FromMember = prefill.Member is not null, MemberMode = prefill.MemberMode }
+            Prefill = field.Prefill is { } prefill && (prefill.Query is not null || prefill.Context is not null || prefill.Member is not null)
+                ? new PublicPrefill { Query = prefill.Query, Context = prefill.Context, FromMember = prefill.Member is not null, MemberMode = prefill.MemberMode }
                 : null,
             Autocomplete = field.Autocomplete,
             CssClass = field.CssClass,
