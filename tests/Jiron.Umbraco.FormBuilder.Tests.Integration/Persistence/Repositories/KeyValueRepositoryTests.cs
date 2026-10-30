@@ -78,6 +78,27 @@ public sealed class KeyValueRepositoryTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task DeleteOlder_RemovesTheKeysWithAPrefixStoredBeforeATime_AndLeavesTheRest()
+    {
+        await KeyValues.TryAddAsync("sent-copy:old", null);
+        await KeyValues.SetAsync("sent-copyist", "another prefix");
+        await KeyValues.SetAsync("other:old", "another prefix too");
+        Clock.Advance(TimeSpan.FromMinutes(31));
+        await KeyValues.TryAddAsync("sent-copy:new", null);
+
+        var removed = await KeyValues.DeleteOlderAsync("sent-copy:", Now.AddMinutes(30).UtcDateTime);
+        var again = await KeyValues.DeleteOlderAsync("sent-copy:", Now.AddMinutes(30).UtcDateTime);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(removed, Is.EqualTo(1));
+            Assert.That(again, Is.Zero, "removed already");
+            Assert.That((await KeyValues.ListAsync("sent-copy")).Select(pair => pair.Key), Is.EqualTo(new[] { "sent-copy:new", "sent-copyist" }), "a newer key, and an older one under another prefix, stay");
+            Assert.That(await KeyValues.GetAsync("other:old"), Is.EqualTo("another prefix too"));
+        });
+    }
+
+    [Test]
     public async Task TheMigrationsFlag_IsReadable()
     {
         // The section grant of migration step 3 writes its flag through the step's own frozen row.

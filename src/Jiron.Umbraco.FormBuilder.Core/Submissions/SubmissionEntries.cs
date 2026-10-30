@@ -42,6 +42,15 @@ internal sealed record NewSubmission(
 internal sealed record SubmittedEntry(StoredEntry Entry, SubmissionReceipt Receipt, SubmissionOutcome Outcome);
 
 /// <summary>
+/// What a copy of an entry's answers shows (ADR-0123): the scope its outcome renders in, with the version the entry was
+/// submitted with and its stored answers, the pages, groups and fields the rules hid for it, and when it was submitted.
+/// </summary>
+/// <param name="Scope">The scope: the entry's version as its form, its culture, its page and its stored answers.</param>
+/// <param name="Hidden">The keys of the pages, groups and fields the rules hid; null for an entry whose event does not record them.</param>
+/// <param name="Submitted">When the entry was submitted.</param>
+internal sealed record EntryCopy(MergeTagScope Scope, IReadOnlySet<Guid>? Hidden, DateTimeOffset Submitted);
+
+/// <summary>
 /// The entries of submissions (ADR-0088): stores a submission's entry in one transaction with its <c>submitted</c>
 /// event, its action runs and its daily count, once its choices are held against the places left (ADR-0090) and its
 /// answers that must be unique against the other entries' (ADR-0091), and gives
@@ -72,6 +81,9 @@ internal sealed class SubmissionEntries(
 
     // The name of the outcome in the submitted event's details.
     private const string OutcomeDetail = "outcome";
+
+    // The name of what the rules hid in the submitted event's details: the keys of pages, groups and fields (ADR-0123).
+    private const string HiddenDetail = "hidden";
 
     // The origin a page's address is built on when the site has no base URL: only its path is kept.
     private const string NoOrigin = "https://jfb.invalid";
@@ -128,7 +140,7 @@ internal sealed class SubmissionEntries(
                     }
                 }
 
-                await events.AddAsync(new NewEntryEvent(created.Id, SubmittedEvent, Details: Details(outcome)), cancellationToken);
+                await events.AddAsync(new NewEntryEvent(created.Id, SubmittedEvent, Details: Details(outcome, submission.Answers.State.Hidden)), cancellationToken);
                 if (queued.Count > 0)
                 {
                     await runs.AddAsync(created.Id, created.FormVersionId, Guid.NewGuid(), queued, cancellationToken: cancellationToken);
@@ -157,14 +169,35 @@ internal sealed class SubmissionEntries(
     /// <param name="cancellationToken">Cancels the reads and the rendering.</param>
     public async Task<SubmittedEntry> ReplayAsync(StoredEntry entry, PublishedForm form, CancellationToken cancellationToken = default)
     {
+        var (scope, timeline) = await ReadAsync(entry, form, cancellationToken);
+        var receipt = await ReceiptAsync(entry, scope.Form, scope.Site, cancellationToken);
+        return new SubmittedEntry(entry, receipt, await outcomes.RenderAsync(Outcome(timeline), scope, cancellationToken));
+    }
+
+    /// <summary>
+    /// What a copy of an entry's answers shows (ADR-0123): the scope its replay renders in, with what the rules hid for
+    /// it as its <c>submitted</c> event records it.
+    /// </summary>
+    /// <param name="entry">The entry.</param>
+    /// <param name="form">The form as the site serves it now, as for <see cref="ReplayAsync"/>.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public async Task<EntryCopy> CopyAsync(StoredEntry entry, PublishedForm form, CancellationToken cancellationToken = default)
+    {
+        var (scope, timeline) = await ReadAsync(entry, form, cancellationToken);
+        return new EntryCopy(scope, Hidden(timeline), entry.SubmittedUtc);
+    }
+
+    // An entry as its replay and its copy read it: the scope with the version it was submitted with, its page, its
+    // context values and its stored answers, with the fields the rules hid for it, and its timeline.
+    private async Task<(MergeTagScope Scope, IReadOnlyList<StoredEntryEvent> Timeline)> ReadAsync(StoredEntry entry, PublishedForm form, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(form);
         var definition = await forms.GetVersionByIdAsync(entry.FormVersionId, cancellationToken) is { } version
             ? locks.Apply(documents.Readable(version))
             : form.Definition;
         var page = await pages.PageAsync(entry.ContentKey);
-        var receipt = await ReceiptAsync(entry, definition, page.Site, cancellationToken);
-        var outcome = Outcome(await events.ListForEntryAsync(entry.Id, cancellationToken));
+        var timeline = await events.ListForEntryAsync(entry.Id, cancellationToken);
         var answers = await store.ReadAsync(entry.Id, cancellationToken);
         var scope = new MergeTagScope
         {
@@ -176,9 +209,9 @@ internal sealed class SubmissionEntries(
             Page = page.Content,
             Entry = EntryOf(entry),
             Context = Context(entry.Context),
-            Answers = answers?.ForMergeTags() ?? MergeTagAnswers.None,
+            Answers = answers?.ForMergeTags(Hidden(timeline)) ?? MergeTagAnswers.None,
         };
-        return new SubmittedEntry(entry, receipt, await outcomes.RenderAsync(outcome, scope, cancellationToken));
+        return (scope, timeline);
     }
 
     // The runs of the enabled actions the rules let run that fire on submission, in the form's order.
@@ -246,8 +279,57 @@ internal sealed class SubmissionEntries(
         Submitted = entry.SubmittedUtc,
     };
 
-    // The submitted event's details: the outcome the rules chose, and nothing a visitor typed.
-    private static string Details(string? outcome) => outcome is null ? "{}" : Json(new Dictionary<string, string> { [OutcomeDetail] = outcome });
+    // The submitted event's details: the outcome the rules chose and the keys of what they hid, in the form's order,
+    // and nothing a visitor typed.
+    private static string Details(string? outcome, IReadOnlyList<string> hidden)
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            if (outcome is not null)
+            {
+                writer.WriteString(OutcomeDetail, outcome);
+            }
+
+            writer.WriteStartArray(HiddenDetail);
+            foreach (var id in hidden)
+            {
+                writer.WriteStringValue(id);
+            }
+
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
+
+        return StrictText.Utf8.GetString(buffer.WrittenSpan);
+    }
+
+    // The keys of what the rules hid, as the entry's submitted event records them; null when it records none.
+    private static HashSet<Guid>? Hidden(IReadOnlyList<StoredEntryEvent> timeline)
+    {
+        if (timeline.FirstOrDefault(item => item.Kind == SubmittedEvent) is not { } submitted)
+        {
+            return null;
+        }
+
+        using var details = JsonDocument.Parse(submitted.Details);
+        if (details.RootElement.ValueKind != JsonValueKind.Object || !details.RootElement.TryGetProperty(HiddenDetail, out var hidden) || hidden.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        var keys = new HashSet<Guid>();
+        foreach (var item in hidden.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String && Guid.TryParseExact(item.GetString(), "D", out var key))
+            {
+                keys.Add(key);
+            }
+        }
+
+        return keys;
+    }
 
     // The outcome the entry's submitted event names, or null.
     private static string? Outcome(IReadOnlyList<StoredEntryEvent> timeline)

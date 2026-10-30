@@ -24,6 +24,9 @@ internal interface IKeyValueRepository
 
     /// <summary>Removes a key. True when it was stored.</summary>
     Task<bool> DeleteAsync(string key, CancellationToken cancellationToken = default);
+
+    /// <summary>Removes every key that starts with <paramref name="prefix"/> and was last stored before <paramref name="before"/> (UTC). The number removed.</summary>
+    Task<int> DeleteOlderAsync(string prefix, DateTime before, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
@@ -102,6 +105,22 @@ internal sealed class KeyValueRepository(FormBuilderDatabase database) : IKeyVal
             {
                 var n = new SqlNames(db);
                 return await db.ExecAsync($"DELETE FROM {n.T(FormBuilderTables.KeyValue)} WHERE {n.C("key")} = @0", key) == 1;
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<int> DeleteOlderAsync(string prefix, DateTime before, CancellationToken cancellationToken = default)
+    {
+        CheckKey(prefix, nameof(prefix));
+        return database.WriteAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                return await db.ExecAsync(
+                    $"DELETE FROM {n.T(FormBuilderTables.KeyValue)} WHERE {n.C("key")} LIKE @0 {SqlNames.EscapeClause} AND {n.C("updatedUtc")} < @1",
+                    SqlNames.Escape(prefix) + "%",
+                    before);
             },
             cancellationToken);
     }

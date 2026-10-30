@@ -164,6 +164,26 @@ internal sealed class FormSubmissions(
             : SubmissionResult.Refused(SubmissionRefusal.EntryNotFound);
     }
 
+    /// <summary>
+    /// What a copy of the form's entry that a submission id names shows (ADR-0123): its stored answers in the scope its
+    /// outcome renders in, with what the rules hid for it; null when the form is not served or is for members, and when
+    /// it has no such entry, or only a draft.
+    /// </summary>
+    /// <param name="form">The form's key.</param>
+    /// <param name="submissionId">The submission id the submission posted.</param>
+    /// <param name="cancellationToken">Cancelled when the request is.</param>
+    public async Task<EntryCopy?> CopyAsync(Guid form, Guid submissionId, CancellationToken cancellationToken = default)
+    {
+        if (await ServedAsync(form, cancellationToken) is not { } served || IsForMembers(served.Form))
+        {
+            return null;
+        }
+
+        return await entries.GetBySubmissionAsync(served.Row.Id, submissionId, cancellationToken) is { State: not EntryState.Draft } entry
+            ? await recorder.CopyAsync(entry, served.Form, cancellationToken)
+            : null;
+    }
+
     // The form, as the site serves it, and its row read again, so a form trashed a moment ago takes nothing (step 1).
     private async Task<Served?> ServedAsync(Guid key, CancellationToken cancellationToken) =>
         await cache.GetAsync(key, cancellationToken) is { } cached

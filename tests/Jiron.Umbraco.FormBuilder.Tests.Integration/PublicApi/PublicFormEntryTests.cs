@@ -108,7 +108,7 @@ public sealed class PublicFormEntryTests : PublicApiTestBase
             Assert.That(values[catalogue[Note.Key]], Is.EqualTo("A note"), "kept until the queued run has run");
             Assert.That(entry.SearchText, Does.Contain("ada lovelace").And.Contain("ada@example.com").And.Contain("a note"));
             Assert.That(entry.SearchText, Does.Not.Contain("hidden"), "a sensitive answer is not searchable");
-            Assert.That(events.Select(each => (each.Kind, each.Details, each.UserKey)), Is.EqualTo(new[] { (SubmissionEntries.SubmittedEvent, $$"""{"outcome":"{{Thanks.Key}}"}""", (Guid?)null) }));
+            Assert.That(events.Select(each => (each.Kind, each.Details, each.UserKey)), Is.EqualTo(new[] { (SubmissionEntries.SubmittedEvent, $$"""{"outcome":"{{Thanks.Key}}","hidden":[]}""", (Guid?)null) }), "the outcome the rules chose, and nothing they hid (ADR-0123)");
             Assert.That(runs.Select(run => (run.ActionKey, run.ActionType, run.Trigger, run.State)), Is.EqualTo(new[] { (Notify.Key, "email", ActionTrigger.Submitted, ActionRunState.Pending) }), "the enabled action only");
             Assert.That(stats.Select(stat => (stat.Metric, stat.Dimension, stat.Value)), Is.EqualTo(new[] { (SubmissionEntries.SubmissionsMetric, string.Empty, 2L) }));
         });
