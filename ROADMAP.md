@@ -2106,7 +2106,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Vitest covers validation (the checks over the page's answers and their messages);
     - a fixture of the server's errors (added in this split: forms, answers as a browser posts them without JavaScript, and each field's message and summary link as the server renders them after the post, written by an integration test) passes in Vitest against the runtime's;
     - the size check passes with every chunk, the language files among them.
-- [ ] **6.4e Errors on the page** (6.4 split in nine, WORKLOG 2026-10-30; then 6.4a in two, WORKLOG 2026-10-30; then 6.4b in two, WORKLOG 2026-10-30; then 6.4c in two, WORKLOG 2026-10-30; then 6.4d in two, WORKLOG 2026-10-30)
+- [x] **6.4e Errors on the page** (6.4 split in nine, WORKLOG 2026-10-30; then 6.4a in two, WORKLOG 2026-10-30; then 6.4b in two, WORKLOG 2026-10-30; then 6.4c in two, WORKLOG 2026-10-30; then 6.4d in two, WORKLOG 2026-10-30) (2026-10-30, ef7dfd5)
   - **What the visitor sees:** the server's inline errors and error summary, in the server's markup with the theme's classes, from 6.4d's checks and messages; a refused send moves the focus to the summary, and an answer fixed clears its error. `jfb:invalid` fires with the field and the kind of error, never the answer.
   - Until 6.4g, a form that passes the client's checks still sends through the no-JS post.
   - Done when:
