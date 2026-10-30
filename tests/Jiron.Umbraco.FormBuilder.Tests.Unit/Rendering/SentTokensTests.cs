@@ -30,6 +30,22 @@ public sealed class SentTokensTests
     }
 
     [Test]
+    public void AValue_IssuedToExpireAtATime_CountsUntilThen()
+    {
+        var value = _tokens.Issue(Form, Submission, "jfb-1", _clock.GetUtcNow().AddMinutes(2));
+        var expired = _tokens.Issue(Form, Submission, "jfb-1", _clock.GetUtcNow().AddMinutes(-1));
+        var counted = _tokens.Read(value, Form, "jfb-1");
+        _clock.Advance(TimeSpan.FromMinutes(2));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(counted, Is.EqualTo(Submission));
+            Assert.That(_tokens.Read(value, Form, "jfb-1"), Is.Null, "at its time");
+            Assert.That(_tokens.Read(expired, Form, "jfb-1"), Is.Null, "already expired");
+        });
+    }
+
+    [Test]
     public void AValue_NamesTheSubmission_ForItsFormAndInstance_BehindTheInstance()
     {
         var value = _tokens.Issue(Form, Submission, "jfb-2");

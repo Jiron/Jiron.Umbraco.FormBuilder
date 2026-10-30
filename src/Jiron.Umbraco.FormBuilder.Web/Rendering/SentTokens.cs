@@ -37,7 +37,17 @@ internal sealed class SentTokens(IDataProtectionProvider protection, TimeProvide
     /// <param name="formKey">The form's key.</param>
     /// <param name="submissionId">The entry's submission id.</param>
     /// <param name="instance">The form's instance id on the page.</param>
-    public string Issue(Guid formKey, Guid submissionId, string instance)
+    public string Issue(Guid formKey, Guid submissionId, string instance) => Issue(formKey, submissionId, instance, time.GetUtcNow() + Lifetime);
+
+    /// <summary>
+    /// The query value for an entry of a form sent from an instance, which expires at <paramref name="expires"/>: the
+    /// browser tests' test host gives an expired one through it, since its clock is shared by every test.
+    /// </summary>
+    /// <param name="formKey">The form's key.</param>
+    /// <param name="submissionId">The entry's submission id.</param>
+    /// <param name="instance">The form's instance id on the page.</param>
+    /// <param name="expires">When the value stops counting.</param>
+    internal string Issue(Guid formKey, Guid submissionId, string instance, DateTimeOffset expires)
     {
         ArgumentException.ThrowIfNullOrEmpty(instance);
         var name = Encoding.UTF8.GetBytes(instance);
@@ -45,7 +55,7 @@ internal sealed class SentTokens(IDataProtectionProvider protection, TimeProvide
         payload[0] = Version;
         formKey.TryWriteBytes(payload.AsSpan(1, KeyLength));
         submissionId.TryWriteBytes(payload.AsSpan(1 + KeyLength, KeyLength));
-        BinaryPrimitives.WriteInt64BigEndian(payload.AsSpan(1 + (2 * KeyLength)), (time.GetUtcNow() + Lifetime).UtcTicks);
+        BinaryPrimitives.WriteInt64BigEndian(payload.AsSpan(1 + (2 * KeyLength)), expires.UtcTicks);
         name.CopyTo(payload.AsSpan(FixedLength));
         return instance + "." + Base64Url.EncodeToString(_protector.Protect(payload));
     }

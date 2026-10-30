@@ -1,7 +1,7 @@
-import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Browser, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { axe } from '../../support/axe.ts';
 import { formPages, pathOf } from '../../support/demo-content.ts';
-import { fillForm, submitForm } from '../../support/form.ts';
+import { fillForm, press, submitForm } from '../../support/form.ts';
 
 // The journeys through the demo's forms of several pages (ROADMAP 6.5a, ADR-0100, ADR-0122), without and with
 // JavaScript: the job application moves through its three pages with Next and Back, every page checked on the server
@@ -23,66 +23,11 @@ const formOf = (page: Page): Locator => page.locator('main form.jfb-form');
 /** The title of the page the form shows. */
 const titleOf = (form: Locator): Locator => form.locator('[data-jfb-page]:not([hidden]) > .jfb-title');
 
-/**
- * Axe's WCAG 2.2 A and AA rules on the whole page, once the theme's fades have ended. Axe runs as a script of the page,
- * which a page without JavaScript runs none of: its markup is then checked in a twin with the same address, the same
- * size and the same stylesheets, whose own scripts are blocked, so neither the runtime nor the site's scripts run.
- */
-async function axe(page: Page, what: string, javaScript: boolean): Promise<void> {
-  const browser = page.context().browser();
-  if (browser === null) throw new Error('The page has no browser.');
-  const checked = javaScript ? page : await twinOf(page, browser);
-  try {
-    await checked.waitForFunction(() =>
-      document.getAnimations().every((animation) => animation.playState !== 'running'),
-    );
-    const result = await new AxeBuilder({ page: checked })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .analyze();
-    expect(
-      result.violations.map(
-        (violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(' ')).join(', ')}`,
-      ),
-      `${what}: axe`,
-    ).toEqual([]);
-  } finally {
-    if (checked !== page) await checked.context().close();
-  }
-}
-
-/** A page with the markup the given page holds now, at its address, with every script of its own blocked. */
-async function twinOf(page: Page, browser: Browser): Promise<Page> {
-  const markup = await page.content();
-  const address = page.url();
-  const context = await browser.newContext({ viewport: page.viewportSize(), locale: 'en-GB', javaScriptEnabled: true });
-  const twin = await context.newPage();
-  await twin.route('**/*', (route) => {
-    const request = route.request();
-    if (request.isNavigationRequest()) return route.fulfill({ body: markup, contentType: 'text/html; charset=utf-8' });
-    return request.resourceType() === 'script' ? route.abort() : route.continue();
-  });
-  await twin.goto(address);
-  await expect(twin.locator('main .jfb-form[data-jfb-form]'), 'the twin holds the page as it is').toHaveCount(1);
-  return twin;
-}
-
 /** Picks a choice by its label, as a visitor does: a card's label covers its control. */
 async function choose(form: Locator, name: string, value: string): Promise<void> {
   const input = form.locator(`input[name="${name}"][value="${value}"]`);
   await form.locator(`label[for="${(await input.getAttribute('id')) ?? ''}"]`).click();
   await expect(input).toBeChecked();
-}
-
-/** Presses a button of the form's navigation and waits for the page it leads to, or for the errors the runtime shows. */
-async function press(form: Locator, nav: 'next' | 'back'): Promise<void> {
-  const page = form.page();
-  const loaded = page.waitForEvent('load', { timeout: 15_000 });
-  const refused = expect(form.locator('[data-jfb-summary]')).toBeFocused({ timeout: 15_000 });
-  loaded.catch(() => undefined);
-  refused.catch(() => undefined);
-  await form.locator(`.jfb-navigation button[data-jfb-nav="${nav}"]`).click();
-  // The post loads the page it leads to; the runtime keeps a page that needs answers and moves the focus to its errors.
-  await Promise.any([loaded, refused]);
 }
 
 /** The steps' names, and the one the visitor is on. */

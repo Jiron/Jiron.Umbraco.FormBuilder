@@ -7,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Signatures;
 using Jiron.Umbraco.FormBuilder.Testing.Stub;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
+using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -77,6 +78,10 @@ internal sealed class TestEndpointsStartupFilter(IOptions<FormBuilderTestingOpti
 /// stored values by the field's key, row and item (ADR-0100) and its files by the field's key, name, size and the name
 /// a typed signature holds (ADR-0102, ADR-0103), so the browser tests can compare what two paths stored for the same
 /// answers; <c>404</c> for a form the host does not have.</description></item>
+/// <item><description><c>POST /jfb-testing/sent-expired {"form": "&lt;alias&gt;", "value": "&lt;jfb-sent value&gt;"}</c>: the
+/// same form's, instance's and entry's <c>jfb-sent</c> value, expired a minute ago (ADR-0123), so the browser tests see
+/// what an expired one shows without moving the clock that every test shares; <c>404</c> for a form the host does not
+/// have or a value that names nothing for it.</description></item>
 /// </list>
 /// Requests from another machine, and paths outside <c>/jfb-testing/</c>, go on to the site as if this did not exist.
 /// </summary>
@@ -111,6 +116,9 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
                 return;
             case "entries" when HttpMethods.IsGet(context.Request.Method):
                 await EntriesAsync(context);
+                return;
+            case "sent-expired" when HttpMethods.IsPost(context.Request.Method):
+                await SentExpiredAsync(context);
                 return;
             default:
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -243,6 +251,26 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
         await context.Response.WriteAsJsonAsync(new { entries = answer }, Json, context.RequestAborted);
     }
 
+    // A form's sent value again, for the same instance and entry, expired a minute ago by the host's clock.
+    private static async Task SentExpiredAsync(HttpContext context)
+    {
+        var services = context.RequestServices;
+        var request = await JsonSerializer.DeserializeAsync<SentExpiredRequest>(context.Request.Body, Json, context.RequestAborted);
+        var tokens = services.GetRequiredService<SentTokens>();
+        var dot = request?.Value?.IndexOf('.', StringComparison.Ordinal) ?? -1;
+        if (request is not { Form: { } alias, Value: { } value } || dot < 1
+            || await services.GetRequiredService<IFormRepository>().GetByAliasAsync(alias, context.RequestAborted) is not { } form
+            || tokens.Read(value, form.Key, value[..dot]) is not { } submission)
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        var time = services.GetService<TimeProvider>() ?? TimeProvider.System;
+        var expired = tokens.Issue(form.Key, submission, value[..dot], time.GetUtcNow() - TimeSpan.FromMinutes(1));
+        await context.Response.WriteAsJsonAsync(new { value = expired }, Json, context.RequestAborted);
+    }
+
     // The name a stored signature's PNG holds as typed (ADR-0103); null for any other file.
     private static async Task<string?> TypedNameAsync(IFormBuilderFileStore store, string storedName, CancellationToken cancellationToken)
     {
@@ -258,4 +286,6 @@ internal sealed class TestEndpointsMiddleware(RequestDelegate next)
     }
 
     private sealed record ClockRequest(DateTimeOffset? Utc = null, double? AdvanceSeconds = null);
+
+    private sealed record SentExpiredRequest(string? Form = null, string? Value = null);
 }

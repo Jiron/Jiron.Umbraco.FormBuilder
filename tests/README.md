@@ -394,7 +394,7 @@ A host turns these on in the `JironFormBuilderTesting` section; everything is of
 
 | Setting | Effect |
 | --- | --- |
-| `Endpoints` | Answers `/jfb-testing/status`, `/jfb-testing/clock` and `/jfb-testing/access` (each backoffice user's effective permissions, globally, at the root and in each root folder), only in Development and only for requests from this machine. |
+| `Endpoints` | Answers `/jfb-testing/status`, `/jfb-testing/clock`, `/jfb-testing/access` (each backoffice user's effective permissions, globally, at the root and in each root folder), `/jfb-testing/entries` (a form's stored entries) and `/jfb-testing/sent-expired` (a sent page's token again, expired a minute ago, ADR-0123), only in Development and only for requests from this machine. |
 | `Clock` | Runs the host on `TestClock`. |
 | `StubPort` | Starts the stub on that port (5560 for the browser tests' host), only in Development, where calls to other hosts may then reach it on loopback at that port only (ADR-0076). |
 | `StartupMarker` | Logs `Jiron Form Builder test host: indexes rebuilt` after each rebuild of Umbraco's indexes. |
@@ -1000,8 +1000,18 @@ on the way back, the send from there), the job application's three pages again r
 holds the summary page without JavaScript to its rules on the server: the pages and fields the rules show, an
 untitled page numbered, a sensitive answer masked, options by their labels, a repeatable group's rows, a file's
 name, line breaks, the default Send first, a name of no field, and a send whose earlier pages' errors show in their
-rows, linked to their "Change". The size check holds every file of the runtime's build but its entry to a
-content-hashed name, and `Client/scripts/scripts.test.mjs` shows the hash following a chunk's content.
+rows, linked to their "Change". `e2e/specs/website/copy-of-the-answers.spec.ts` (6.5b,
+[ADR-0123](../docs/decisions/0123-the-copy-of-the-answers.md)) sends the job application without JavaScript and finds
+the copy of its answers below the outcome, page by page, with "Not answered", a repeatable group's rows and no
+"Change", in print media (`emulateMedia`) the answers in ink on white with the links gone, the same page again with
+the outcome and a line in the answers' place, and a token the test host expired (`/jfb-testing/sent-expired`) showing
+the form and nothing of the entry; with JavaScript the print button shows and prints, and the copy fits 375 px; axe is
+clean on the copy. `Rendering/FormPostTests.Copy.cs` holds the copy to its rules on the server: the pages and fields
+the rules showed, as the submitted event records what they hid, a title's merge tag from the entry's answers, a
+sensitive answer masked, the page `no-store`, a HEAD that takes nothing, two views at once of which one shows the
+answers, an expired token, the old marks deleted with a new one, and an outcome without the copy; `SentCopiesTests`
+and `KeyValueRepositoryTests` hold its marks. The size check holds every file of the runtime's build but its entry to
+a content-hashed name, and `Client/scripts/scripts.test.mjs` shows the hash following a chunk's content.
 
 ## Writing tests
 

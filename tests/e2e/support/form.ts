@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { setTimeout as delay } from 'node:timers/promises';
 
 // Filling in and sending a form as a visitor does, through the markup contract every theme keeps (ADR-0015): fields are
@@ -152,4 +152,16 @@ export async function submitForm(form: Locator, timeoutMs = 15_000): Promise<Sub
   } finally {
     page.off('framenavigated', onNavigated);
   }
+}
+
+/** Presses a button of the form's navigation and waits for the page it leads to, or for the errors the runtime shows. */
+export async function press(form: Locator, nav: 'next' | 'back'): Promise<void> {
+  const page = form.page();
+  const loaded = page.waitForEvent('load', { timeout: 15_000 });
+  const refused = expect(form.locator('[data-jfb-summary]')).toBeFocused({ timeout: 15_000 });
+  loaded.catch(() => undefined);
+  refused.catch(() => undefined);
+  await form.locator(`.jfb-navigation button[data-jfb-nav="${nav}"]`).click();
+  // The post loads the page it leads to; the runtime keeps a page that needs answers and moves the focus to its errors.
+  await Promise.any([loaded, refused]);
 }
