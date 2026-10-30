@@ -2147,7 +2147,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Blocked (2026-10-30):** `form_changed` is the answer of a send, which 6.4i builds, and it adds to the website runtime past section 4.12's budget, which only the owner can change (ADR-0120, `docs/OWNER-TODO.md`).
   - `form_changed` handling with answer restore (§3.1), through the `render` endpoint, leaving a consent whose wording changed unticked (ADR-0004).
   - Done when: Vitest covers the runtime's part; Playwright shows `form_changed` on a page served stale from the output cache (the published form swapped in, the answers kept, and a consent whose wording changed left unticked with a notice); axe is clean with the notice; the size check passes with every chunk.
-- [ ] **6.4k CSP, cookies and chunk names** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; 6.4k split in two, WORKLOG 2026-10-30)
+- [x] **6.4k CSP, cookies and chunk names** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; 6.4k split in two, WORKLOG 2026-10-30) (2026-10-30, d567886)
   - **The constraints of ADR-0004,** checked on the runtime as 6.4a to 6.4h built it: the CSP nonce, no cookies, and chunk file names with a content hash (split off 6.4l, whose code waits for the runtime's budget, ADR-0120).
   - Done when:
     - Playwright shows no CSP violation with `script-src 'self'` on a cached page and with a nonce on an uncached one, lazily loaded chunks included;
