@@ -3,7 +3,9 @@
 - Status: accepted; the permission matrix (`403` and `404`) amended in 1.8; the start-up marker, the stub inside the
   host and the static site with 6.6 amended in 3.4c (ADR-0031); the floor the install test checks raised to 17.6 in
   5.5a ([ADR-0074](0074-umbraco-17-6-as-the-floor.md)); the coverage tool and where the coverage runs amended in 5.5f
-  ([ADR-0079](0079-coverage-without-rewritten-assemblies.md))
+  ([ADR-0079](0079-coverage-without-rewritten-assemblies.md)); where the gate may run amended by the owner on
+  2026-10-30 ([ADR-0117](0117-long-checks-run-beside-the-next-step.md): on a commit in a throwaway clone, beside the
+  next step)
 - Date: 2026-10-23
 - Roadmap step: 1.7a (decided); built in 3.4 (the harness) and 3.5 (CI and the gate), extended by every later step
 

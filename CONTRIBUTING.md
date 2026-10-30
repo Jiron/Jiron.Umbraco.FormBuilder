@@ -97,6 +97,16 @@ node scripts/fix.mjs
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\ci-local.ps1
 ```
 
+To go on working while the gate runs, commit and run it on that commit in a throwaway clone under `%TEMP%`; `status`
+and `stop` follow it, and its log and verdict land in `.local/gate/`
+([ADR-0117](docs/decisions/0117-long-checks-run-beside-the-next-step.md)). Keep this folder off the browser
+projects' ports while it runs.
+
+```
+node scripts/gate-clone.mjs run HEAD
+node scripts/gate-clone.mjs status
+```
+
 CI runs on a push only when the repository variable `JFB_CI` is `true`, and always when it is started by hand or for
 a version tag.
 
