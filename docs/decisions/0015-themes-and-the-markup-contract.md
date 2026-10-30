@@ -16,6 +16,8 @@
 - Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): the views mark each visitor text that holds merge
   tags with `data-jfb-text`, written however it renders and `hidden` while empty, and an empty heading or text block is
   hidden
+- Amended in 6.4h by [ADR-0118](0118-defaults-with-merge-tags-on-the-page.md): a field whose controls start from a
+  default that holds merge tags carries `data-jfb-default`
 - Roadmap step: 1.7b (decided); built in 2.3 (the visual design and its tokens), 6.2 (rendering), 6.3 (the themes),
   6.4 (the runtime), 6.6 (the headless element) and 12.2 (the theme editor)
 
@@ -112,6 +114,7 @@ What the runtime, the headless element and site CSS may rely on, in every theme:
 | Hidden by a rule | the element carries `hidden` and `data-jfb-hidden`; its controls are `disabled`, so they are never posted |
 | A form with rules | the hooks the runtime shows them by ([ADR-0111](0111-rules-on-the-page.md)): `data-jfb-requires` on a control whose `required` follows its field; `data-jfb-mark="required"` or `"optional"` on a label's mark, the field's state it shows in, `hidden` in the other; `data-jfb-disabled` on a control that stays disabled when its field shows; `data-jfb-required-note` on the note that explains the asterisk, `hidden` while none shows |
 | A text that recalls answers | the element that shows a visitor text holding merge tags carries `data-jfb-text="<owner key> <name>"` (`FormBuilderHtml.Text`, a label's text a `<span>` of its own through `FormBuilderHtml.Label`, a placeholder's hook on its control) and holds that text alone; it is written however the text renders, `hidden` while empty, a progress step with `data-jfb-fallback` instead; the runtime renders it again as the visitor answers ([ADR-0115](0115-answer-recall-on-the-page.md)) |
+| A default for the page | a field whose controls start from a default value that holds merge tags carries `data-jfb-default` on its element, its controls written empty; the runtime fills them in as the form shows and drops the mark ([ADR-0118](0118-defaults-with-merge-tags-on-the-page.md)) |
 | The error summary | `<div class="jfb-error-summary" data-jfb-summary role="alert" tabindex="-1">` with a heading and one link per error to the control's id |
 | Live messages | one `<div data-jfb-live aria-live="polite">` per form (places left, the changed form, saved drafts) |
 | Navigation | `<div class="jfb-navigation">` with `<button type="submit" name="jfb-nav" value="back\|next\|submit" data-jfb-nav="…">` |

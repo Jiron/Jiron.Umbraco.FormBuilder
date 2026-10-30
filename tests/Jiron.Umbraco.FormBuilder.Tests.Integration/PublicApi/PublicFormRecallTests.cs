@@ -54,7 +54,9 @@ public sealed partial class PublicFormRecallTests : PublicApiTestBase
         Settings = SettingsObject.Parse("""{"html":{"":"<p>Hello {{ field.fullName | upper }}, this is <b>{{ form.name }}</b>.</p>"}}"""),
     };
 
-    private static readonly FormField Notes = Field("notes", "textarea", "Anything else, {{ field.fullName }}?", placeholder: "{{ member.name }} writes here");
+    // Its help holds a tag of a source visitor texts do not take beside one that renders: the first is written as it
+    // stands in both runtimes, which the answer tells the browser (ADR-0118).
+    private static readonly FormField Notes = Field("notes", "textarea", "Anything else, {{ field.fullName }}?", help: "Signed in as {{ member.name }}, {{ field.fullName }}", placeholder: "{{ member.name }} writes here");
 
     [Test]
     public async Task TheAnswer_GivesTheBrowserEveryTextThatRenders_AndWhatItRendersThemWith_AsTheServerRendersThem()
@@ -145,7 +147,12 @@ public sealed partial class PublicFormRecallTests : PublicApiTestBase
                 $"settings.text: Anna from Shop on Contact: Support, 1,234.5 guests, subscriber Yes, card {masked}, with Ben, Cleo; later {{{{ field.notes | upper }}}}",
                 "settings.html: <p>Hello ANNA, this is <b>Contact us</b>.</p>",
                 "label: Anything else, Anna?",
+                "help: Signed in as {{ member.name }}, Anna",
             }), "the texts that render, in the form's order");
+            Assert.That(
+                answer["mergeTags"]!["texts"]!.AsArray().Where(text => text!["refused"] is not null).Select(text => $"{text!["text"]}: {text["refused"]!.ToJsonString()}"),
+                Is.EqualTo(new[] { """help: ["member.name"]""" }),
+                "a text that renders names the tags its place refuses, which are written as they stand");
             Assert.That(asWritten, Is.EqualTo(new Dictionary<string, string> { ["description"] = "as written", ["help"] = "as written", ["placeholder"] = "as written" }));
             Assert.That(answer["mergeTags"]!["values"]!.ToJsonString(), Is.EqualTo("""{"html":{"form.name":"Contact us"},"text":{"site.name":"Shop","page.name":"Contact"}}"""));
             Assert.That(answer["consents"]!.ToJsonString(), Is.EqualTo("{}"));
@@ -168,6 +175,42 @@ public sealed partial class PublicFormRecallTests : PublicApiTestBase
 
         Assert.That(System.IO.File.Exists(FixturePath), Is.True, $"the reviewed fixture {FixturePath}; run with JFB_UPDATE_SNAPSHOTS=1");
         Assert.That(WithoutFormats(await System.IO.File.ReadAllTextAsync(FixturePath)), Is.EqualTo(WithoutFormats(written)), "the answer or the server's renderings changed: run with JFB_UPDATE_SNAPSHOTS=1 and review the diff");
+    }
+
+    [Test]
+    public async Task TheAnswer_GivesEachDefaultValueThatRendersForThePageToFillIn_WithTheValuesTheServerKnows_AndLeavesTheQueryToThePage()
+    {
+        var (_, page) = await ContentAsync();
+        FormField source = Field("source", "text", "Source") with { DefaultValue = FieldDefaultValue.Of("""{{ query.ref | default: "web" }} via {{ site.name }}""") };
+        FormField topics = Field("topics", "checkboxes", "Topics") with
+        {
+            Options = new FieldOptions { Items = [new FieldOption { Value = "news", Label = new LocalizedText("News") }, new FieldOption { Value = "events", Label = new LocalizedText("Events") }] },
+            DefaultValue = FieldDefaultValue.OfList(["{{ query.topic }}", "news"]),
+        };
+        FormField greeting = Field("greeting", "text", "Greeting") with { DefaultValue = FieldDefaultValue.Of("Hello") };
+        FormField signed = Field("signed", "text", "Signed") with { DefaultValue = FieldDefaultValue.Of("{{ member.name }}") };
+        FormField mixed = Field("mixed", "text", "Mixed") with { DefaultValue = FieldDefaultValue.Of("{{ form.name }} for {{ member.email }}") };
+        FormField recalled = Field("recalled", "text", "Recalled") with { DefaultValue = FieldDefaultValue.Of("{{ field.source }}") };
+        var key = await PublishAsync(
+            "Contact us",
+            change: definition => definition with
+            {
+                Settings = definition.Settings with { Developer = definition.Settings.Developer with { QueryValues = ["ref", "topic"] } },
+            },
+            fields: [source, topics, greeting, signed, mixed, recalled]);
+        using var response = await GetAsync($"{Root}/forms/{key}?culture=en-US&contentKey={page}&ref=mail");
+        var tags = (await JsonAsync(response))["mergeTags"]!;
+        var recall = tags["recall"]!.ToJsonString();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(tags["texts"]!.ToJsonString(), Is.EqualTo(
+                $$"""[{"owner":"{{source.Key:D}}","text":"defaultValue","context":"text"},{"owner":"{{topics.Key:D}}","text":"defaultValue","context":"text"},{"owner":"{{mixed.Key:D}}","text":"defaultValue","context":"text","refused":["member.email"]}]"""),
+                "a default that renders, a list's as one, in the form's order; one without tags or with only tags its place refuses renders as it is written, so the page needs nothing for it");
+            Assert.That(tags["values"]!.ToJsonString(), Is.EqualTo("""{"html":{},"text":{"site.name":"Shop","form.name":"Contact us"}}"""), "the query is the page's own, never the address the answer was asked for");
+            Assert.That(recall, Does.Not.Contain("\"alias\""), "a default names no field, so the browser never loads answer recall for it");
+            Assert.That(recall, Does.Not.Contain(source.Key.ToString()), "a default's owner is no visitor text's");
+        });
     }
 
     [Test]

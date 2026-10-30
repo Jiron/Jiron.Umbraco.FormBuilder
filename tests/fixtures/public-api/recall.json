@@ -208,6 +208,7 @@
                   "span": 1,
                   "label": "Anything else, {{ field.fullName }}?",
                   "hideLabel": false,
+                  "help": "Signed in as {{ member.name }}, {{ field.fullName }}",
                   "placeholder": "{{ member.name }} writes here",
                   "required": false,
                   "messages": {},
@@ -360,6 +361,14 @@
           "owner": "00000000-0000-4000-8000-000000000013",
           "text": "label",
           "context": "text"
+        },
+        {
+          "owner": "00000000-0000-4000-8000-000000000013",
+          "text": "help",
+          "context": "text",
+          "refused": [
+            "member.name"
+          ]
         }
       ],
       "values": {
@@ -599,6 +608,11 @@
       "owner": "00000000-0000-4000-8000-000000000013",
       "text": "label",
       "server": "Anything else, Anna?"
+    },
+    {
+      "owner": "00000000-0000-4000-8000-000000000013",
+      "text": "help",
+      "server": "Signed in as {{ member.name }}, Anna"
     }
   ]
 }

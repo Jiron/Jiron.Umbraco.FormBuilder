@@ -19,6 +19,10 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
     // The source of answer recall in visitor texts.
     private const string FieldSource = "field";
 
+    // The source whose values a page fills in itself in a default value: its address's query values, which a cached page
+    // must not keep from the address it was cached for (ADR-0118).
+    private const string QuerySource = "query";
+
     /// <inheritdoc />
     public async Task<MergeTagRendering> RenderAsync(string text, MergeTagPlace place, MergeTagContext context, MergeTagScope scope, CancellationToken cancellationToken = default)
     {
@@ -45,6 +49,22 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
         ArgumentNullException.ThrowIfNull(scope);
         var rules = Rules(place, context, scope.Culture, scope.Form, scope.TextOwner);
         var recalled = new List<Guid>();
+        // Each path the place refuses for its source, which the browser cannot tell from an unknown one (ADR-0118).
+        var refused = new List<string>();
+        var problem = rules.PathProblem;
+        rules = rules with
+        {
+            PathProblem = path =>
+            {
+                var code = problem(path);
+                if (code == MergeTagProblems.SourceNotForPlace && !refused.Contains(path))
+                {
+                    refused.Add(path);
+                }
+
+                return code;
+            },
+        };
         if (place == MergeTagPlace.VisitorText && registry.Sources.GetValueOrDefault(FieldSource) is FieldMergeTagSource fields)
         {
             // Every field a well-formed tag names, refused or not: the browser refuses one that does not come before the
@@ -88,7 +108,8 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
             }
 
             // The browser fills in answer recall itself, from the answers given so far (ADR-0068).
-            if (place == MergeTagPlace.VisitorText && SourceName(path) == FieldSource)
+            if ((place == MergeTagPlace.VisitorText && SourceName(path) == FieldSource)
+                || (place == MergeTagPlace.DefaultValue && SourceName(path) == QuerySource))
             {
                 continue;
             }
@@ -99,7 +120,7 @@ internal sealed partial class FormBuilderMergeTagService(MergeTagRegistry regist
             }
         }
 
-        return new MergeTagTemplateValues(renders, values, recalled);
+        return new MergeTagTemplateValues(renders, values, recalled) { Refused = refused };
     }
 
     /// <inheritdoc />

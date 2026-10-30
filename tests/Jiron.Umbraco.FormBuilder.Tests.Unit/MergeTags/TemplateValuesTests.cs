@@ -5,8 +5,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
 
 /// <summary>
 /// What a visitor's browser renders a template with (ADR-0085): whether the template renders other than as it is written,
-/// each path's value but answer recall's in a visitor text, each resolved once as a rendering resolves it, and the fields
-/// its answer-recall tags name.
+/// each path's value but answer recall's in a visitor text and the query's in a default value, each resolved once as a
+/// rendering resolves it, the fields its answer-recall tags name, and the paths its place refuses (ADR-0118).
 /// </summary>
 public sealed class TemplateValuesTests
 {
@@ -43,6 +43,25 @@ public sealed class TemplateValuesTests
             Assert.That(found.Renders, Is.False, "the member source is not for visitor texts, the topic comes after the text, and the email is the field whose text it is");
             Assert.That(found.Values, Is.Empty);
             Assert.That(found.Recalled, Is.EqualTo(new[] { topic.Key, email.Key }), "the browser refuses them by their places in the form, as the server does");
+            Assert.That(found.Refused, Is.EqualTo(new[] { "member.name" }), "a source the place does not take, which the browser cannot tell from one no site has; the fields it refuses itself");
+        });
+    }
+
+    [Test]
+    public async Task ADefaultValue_LeavesItsQueryValuesToThePage_AndNamesEachSourceItsPlaceRefusesOnce()
+    {
+        var email = Field("email", "email", "Email");
+        var notes = Field("textarea", "notes", "Notes");
+        var form = Form(email, notes);
+
+        var found = await Values("{{ query.ref }} at {{ form.name }} by {{ member.name }}, {{ field.email }} and {{ member.name | upper }}", MergeTagPlace.DefaultValue, form, notes.Key);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(found.Renders, Is.True);
+            Assert.That(found.Values.Keys, Is.EqualTo(new[] { "form.name" }), "the page fills in its own address's query values, which a cached page must not keep");
+            Assert.That(found.Refused, Is.EqualTo(new[] { "member.name", "field.email" }), "each once, in the order the template first names it: a default recalls no answer");
+            Assert.That(found.Recalled, Is.Empty);
         });
     }
 

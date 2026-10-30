@@ -51,7 +51,8 @@ export type TemplateProblemCode =
   | 'too_long'
   | 'unknown_path'
   | 'unknown_filter'
-  | 'field_after_text';
+  | 'field_after_text'
+  | 'source_not_for_place';
 
 /** A problem and the UTF-16 index where it starts. */
 export interface TemplateProblem {

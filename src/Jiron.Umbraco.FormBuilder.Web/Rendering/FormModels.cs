@@ -602,6 +602,7 @@ internal sealed partial class FormModels(
             Recalling = build.Recalling(field.Key),
             Autocomplete = field.Autocomplete ?? DefaultAutocomplete(field.Type),
             Values = answers.Values,
+            FillsDefault = build.Starts && field.DefaultValue is { } defaults && Untagged(defaults.Values) is null,
             ControlView = await build.ControlViewAsync(views, field.Type, cancellationToken),
             Control = model,
         };
@@ -960,7 +961,7 @@ internal sealed partial class FormModels(
 
     // Where a repeatable group's row stands: the group's alias, the row from 0, its legend, and the errors, the rankings'
     // orders and the kept files a post left in it.
-    private sealed record RowPlace(string Alias, int Row, string Legend, IReadOnlyDictionary<Guid, FormPostError> Errors, IReadOnlyDictionary<Guid, IReadOnlyList<string>> Orders, IReadOnlyDictionary<Guid, IReadOnlyList<FormPostFile>> Files);
+    private sealed record RowPlace(string Alias, int Row, string Legend, IReadOnlyDictionary<Guid, FormPostError> Errors, IReadOnlyDictionary<Guid, IReadOnlyList<string>> Orders, IReadOnlyDictionary<Guid, IReadOnlyList<FormPostFile>> Files, bool Starts);
 
     // What building one form's fields shares, and what it collects.
     private sealed class Build(
@@ -1020,6 +1021,10 @@ internal sealed partial class FormModels(
 
         // The row a row's build stands in; null for the page's.
         public RowPlace? Place { get; init; }
+
+        // Whether the controls where the build stands start as a first render starts them (RowsOf): on a first render,
+        // and in a row the visitor just added or the group's least added; after a post, its answers stand.
+        public bool Starts => Place?.Starts ?? post is null;
 
         // The start of the ids of the fields where the build stands: the instance's, or the row's below it (ADR-0098).
         public string Prefix => Place is { } place ? RowPrefix(place.Alias, place.Row) : root.Id;
@@ -1133,7 +1138,7 @@ internal sealed partial class FormModels(
             return new Build(render, root, post, words, culture, answers with { Fields = inRow }, rowHidden, rowRequired, marker, recalled, layout, facts with { Calculations = calculations }, hooks)
             {
                 Outer = this,
-                Place = new RowPlace(group.Alias ?? string.Empty, row, legend, left?.Errors ?? NoErrors, left?.Orders ?? NoOrders, left?.Files ?? NoFiles),
+                Place = new RowPlace(group.Alias ?? string.Empty, row, legend, left?.Errors ?? NoErrors, left?.Orders ?? NoOrders, left?.Files ?? NoFiles, post is null || left is null || left.IsNew),
             };
         }
 

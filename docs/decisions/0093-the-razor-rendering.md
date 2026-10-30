@@ -14,6 +14,9 @@
 - Date: 2026-10-28
 - Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): a visitor text that holds merge tags carries its
   hook, and one that renders empty keeps its element, hidden
+- Amended in 6.4h by [ADR-0118](0118-defaults-with-merge-tags-on-the-page.md): a field whose controls start from a
+  default that holds merge tags carries `data-jfb-default`, on a first render and in a row just added, for the page to
+  fill in
 - Roadmap step: 6.2b (decided and built); 6.2c the visitor texts with merge tags, members-only forms and the note
   while the migrations are pending (ADR-0095), 6.2d the choice controls (ADR-0096), 6.2e the part, date and output
   controls (ADR-0097), 6.2f the repeater's rows (ADR-0098),

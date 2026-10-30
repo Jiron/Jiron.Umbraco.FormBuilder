@@ -25,9 +25,10 @@ public interface IFormBuilderMergeTagService
     /// <summary>
     /// What a visitor's browser renders a template with (ADR-0068, ADR-0085): whether it renders other than as it is
     /// written, the value of each of its paths that the browser does not fill in itself (all but answer recall's
-    /// <c>field.*</c> in a visitor text), each resolved once as <see cref="RenderAsync"/> resolves it, and the fields its
-    /// answer-recall tags name, refused or not. A tag the place refuses is written as it stands in both runtimes, so it
-    /// gets no value.
+    /// <c>field.*</c> in a visitor text, and the page's own <c>query.*</c> in a default value, ADR-0118),
+    /// each resolved once as <see cref="RenderAsync"/> resolves it, and the fields its answer-recall tags name, refused or
+    /// not. A tag the place refuses is written as it stands in both runtimes, so it gets no value, and its path is
+    /// listed as refused.
     /// </summary>
     /// <param name="text">The template's text.</param>
     /// <param name="place">Where the template is used.</param>

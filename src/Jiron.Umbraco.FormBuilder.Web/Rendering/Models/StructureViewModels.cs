@@ -230,6 +230,13 @@ public sealed class FieldViewModel
     /// <summary>The field's answers: the visitor's after a post, else its default value; empty for none.</summary>
     public IReadOnlyList<string> Values { get; init; } = [];
 
+    /// <summary>
+    /// Whether the field's controls start from a default value that holds merge tags, which the server leaves empty for
+    /// the page to fill in as the form is shown (<c>data-jfb-default</c>, ADR-0118): on a first render, and in a row the
+    /// visitor just added or the group's least adds; never after a post, whose answers stand.
+    /// </summary>
+    public bool FillsDefault { get; init; }
+
     /// <summary>The first answer, or empty.</summary>
     public string Value => Values.Count > 0 ? Values[0] : string.Empty;
 

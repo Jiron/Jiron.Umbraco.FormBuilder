@@ -21,7 +21,7 @@
         }
     }
 }
-<div class="@Model.CssClass" data-jfb-field="@Model.Key" @FormBuilderHtml.Attribute("data-jfb-alias", Model.Alias) data-jfb-type="@Model.Type" hidden="@Model.IsHidden" @FormBuilderHtml.Flag("data-jfb-hidden", Model.IsHidden)>
+<div class="@Model.CssClass" data-jfb-field="@Model.Key" @FormBuilderHtml.Attribute("data-jfb-alias", Model.Alias) data-jfb-type="@Model.Type" hidden="@Model.IsHidden" @FormBuilderHtml.Flag("data-jfb-hidden", Model.IsHidden) @FormBuilderHtml.Flag("data-jfb-default", Model.FillsDefault)>
     @switch (Model.LabelElement)
     {
         case FieldLabelElement.Legend:

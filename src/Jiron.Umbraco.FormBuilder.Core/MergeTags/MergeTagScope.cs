@@ -101,7 +101,15 @@ public sealed record MergeTagRendering(string Text, IReadOnlyList<MergeTagProble
 /// The fields its answer-recall tags name, each once, in the order the template first names them; in a visitor text also
 /// those it refuses for not coming before the text, which the browser refuses by their places in the form.
 /// </param>
-public sealed record MergeTagTemplateValues(bool Renders, IReadOnlyDictionary<string, MergeTagValue> Values, IReadOnlyList<Guid> Recalled);
+public sealed record MergeTagTemplateValues(bool Renders, IReadOnlyDictionary<string, MergeTagValue> Values, IReadOnlyList<Guid> Recalled)
+{
+    /// <summary>
+    /// The paths of the tags the place refuses for their source, each once, in the order the template first names them:
+    /// such a tag is written as it stands, and the browser cannot tell it from a tag no source knows, which renders
+    /// empty, so it is told (ADR-0118).
+    /// </summary>
+    public IReadOnlyList<string> Refused { get; init; } = [];
+}
 
 /// <summary>A path a source offers in the picker, with what the picker shows for it.</summary>
 /// <param name="Path">The whole path, the source's name first, for example <c>entry.reference</c>.</param>

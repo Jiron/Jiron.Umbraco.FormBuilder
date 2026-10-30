@@ -10,6 +10,9 @@
   the page, for its consents' hidden inputs, by [ADR-0096](0096-the-choice-controls.md) in 6.2d; `words` and
   `culture` moved to the answer's top as `words` and `formats`, given on every form, by
   [ADR-0109](0109-reading-answers-in-the-browser.md) in 6.4a
+- Amended in 6.4h by [ADR-0118](0118-defaults-with-merge-tags-on-the-page.md): `mergeTags.texts` also lists each default
+  value that renders (`defaultValue`), whose query values the page gives, and each text's tags its place refuses
+  (`refused`)
 - Date: 2026-10-28
 - Roadmap step: 6.1b (decided and built); 6.1c's `options` endpoint gives a cascading field's options, 6.2 renders
   the same texts on the server, 6.4 renders them in the browser as the visitor types, 6.1e compares a posted

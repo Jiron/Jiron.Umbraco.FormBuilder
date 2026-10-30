@@ -53,6 +53,9 @@ internal sealed class VisitorForms(
     // The consent type's setting that holds its wording.
     private const string ConsentText = "text";
 
+    // The property of a field that holds its default value, as the form endpoint's merge tags name it (ADR-0118).
+    private const string DefaultValue = "defaultValue";
+
     /// <summary>The visitor's form, its visitor texts and its consents, as a page shows them.</summary>
     /// <param name="projection">The form's public projection.</param>
     /// <param name="scope">
@@ -197,11 +200,12 @@ internal sealed class VisitorForms(
         return SettingsObject.From(document.RootElement);
     }
 
-    // The visitor texts that hold tags, the values of their tags but recall's for this page, and what recall needs; and
-    // those texts, for the page that renders them itself.
+    // The visitor texts that hold tags, each with the paths its place refuses, the values of their tags but recall's for
+    // this page, and what recall needs; the default values that hold tags, which the page fills in (ADR-0118); and the
+    // visitor texts, for the page that renders them itself.
     private async Task<(byte[] Json, IReadOnlyList<VisitorText> Tagged)> MergeTagsAsync(PublicForm shown, MergeTagScope scope, CancellationToken cancellationToken)
     {
-        var texts = new List<(VisitorText Text, MergeTagContext Context)>();
+        var texts = new List<(VisitorText Text, MergeTagContext Context, IReadOnlyList<string> Refused)>();
         var values = new Dictionary<MergeTagContext, Dictionary<string, MergeTagValue>>
         {
             [MergeTagContext.Html] = new(StringComparer.Ordinal),
@@ -217,7 +221,7 @@ internal sealed class VisitorForms(
                 continue;
             }
 
-            texts.Add((text, context));
+            texts.Add((text, context, found.Refused));
             foreach (var (path, value) in found.Values)
             {
                 values[context].TryAdd(path, value);
@@ -226,10 +230,38 @@ internal sealed class VisitorForms(
             recalled.AddRange(found.Recalled.Where(field => !recalled.Contains(field)));
         }
 
+        // A default value renders in text, each of a list's texts alike; the page gives its query values and its clock.
+        var defaults = new List<(Guid Owner, List<string> Refused)>();
+        foreach (var field in shown.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)))
+        {
+            if (field.DefaultValue is not { } given)
+            {
+                continue;
+            }
+
+            var renders = false;
+            var refused = new List<string>();
+            foreach (var text in given.Values)
+            {
+                var found = await mergeTags.ValuesAsync(text, MergeTagPlace.DefaultValue, MergeTagContext.Text, scope with { TextOwner = field.Key }, cancellationToken);
+                renders |= found.Renders;
+                refused.AddRange(found.Refused.Where(path => !refused.Contains(path)));
+                foreach (var (path, value) in found.Values)
+                {
+                    values[MergeTagContext.Text].TryAdd(path, value);
+                }
+            }
+
+            if (renders)
+            {
+                defaults.Add((field.Key, refused));
+            }
+        }
+
         var buffer = new ArrayBufferWriter<byte>();
         await using (var writer = new Utf8JsonWriter(buffer))
         {
-            if (texts.Count == 0)
+            if (texts.Count == 0 && defaults.Count == 0)
             {
                 writer.WriteNullValue();
             }
@@ -237,13 +269,14 @@ internal sealed class VisitorForms(
             {
                 writer.WriteStartObject();
                 writer.WriteStartArray("texts");
-                foreach (var (text, context) in texts)
+                foreach (var (text, context, refused) in texts)
                 {
-                    writer.WriteStartObject();
-                    writer.WriteString("owner", text.Owner);
-                    writer.WriteString("text", text.Name);
-                    writer.WriteString("context", context == MergeTagContext.Html ? "html" : "text");
-                    writer.WriteEndObject();
+                    WriteText(writer, text.Owner, text.Name, context == MergeTagContext.Html ? "html" : "text", refused);
+                }
+
+                foreach (var (owner, refused) in defaults)
+                {
+                    WriteText(writer, owner, DefaultValue, "text", refused);
                 }
 
                 writer.WriteEndArray();
@@ -258,6 +291,27 @@ internal sealed class VisitorForms(
         }
 
         return (buffer.WrittenSpan.ToArray(), [.. texts.Select(each => each.Text)]);
+    }
+
+    // A text the browser renders: its owner, the property it is, its context, and the paths its place refuses, if any.
+    private static void WriteText(Utf8JsonWriter writer, Guid owner, string name, string context, IReadOnlyList<string> refused)
+    {
+        writer.WriteStartObject();
+        writer.WriteString("owner", owner);
+        writer.WriteString("text", name);
+        writer.WriteString("context", context);
+        if (refused.Count > 0)
+        {
+            writer.WriteStartArray("refused");
+            foreach (var path in refused)
+            {
+                writer.WriteStringValue(path);
+            }
+
+            writer.WriteEndArray();
+        }
+
+        writer.WriteEndObject();
     }
 
     // A source's value as the vectors write one: a string, an object with its text and the number or date behind it, or

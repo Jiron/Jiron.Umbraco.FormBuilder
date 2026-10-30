@@ -22,6 +22,7 @@ interface NamedText {
   readonly owner: string;
   readonly text: string;
   readonly context: TemplateContext;
+  readonly refused?: readonly string[];
 }
 
 /** What the answer gives the browser for its visitor texts (FormDefinitionResponseModel.MergeTags). */
@@ -98,8 +99,12 @@ describe("the form endpoint's answer", () => {
       const given = mergeTags.values[named.context] ?? {};
       const values = (path: string): MergeValue | undefined =>
         recall.values(path) ?? (Object.hasOwn(given, path) ? given[path] : undefined);
+      // A tag of a source the text's place refuses is written as it stands, as the answer tells (ADR-0118).
+      const refused = named.refused ?? [];
       const rendered = renderTemplate(
-        parseTemplate(textOf(owner, text), named.context, recall.pathProblem),
+        parseTemplate(textOf(owner, text), named.context, (path) =>
+          refused.includes(path) ? 'source_not_for_place' : recall.pathProblem(path),
+        ),
         values,
         formats,
       );
