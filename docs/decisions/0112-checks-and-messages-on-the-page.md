@@ -55,7 +55,7 @@ Option 2 each time.
   site's time zone and the other fields' values as the rules see them (in a row, the row's children's); then the
   validation rules whose message shows at the field or one of a grid's rows.
 - **Left to the server:** a calculation (its value is the server's), the `hidden` type (its value is resolved there), a
-  type that stores files (uploads and signatures, 6.4l and 6.4m), options from a list or a source (any answer is taken,
+  type that stores files (uploads and signatures, 6.4m and 6.4n), options from a list or a source (any answer is taken,
   as on the server when a source cannot give them), the checks that compare with other entries (`uniquePerForm`, the
   places an option has left) and a site's own type's check (only `required` is the browser's).
 - **What the page shows:** a field's first error, as the post handler keeps it; on Next, the errors of the page's

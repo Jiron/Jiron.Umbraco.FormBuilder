@@ -46,6 +46,6 @@ new code.
 - The check measures what a page can load at most: with every feature on 6.4g's runtime, 39.93 KB gzip of 40.00 (the
   sum with every language is 41.49 KB).
 - A new language's words count only when they are the largest, and a feature's code counts whole, as before.
-- The 0.07 KB left will not hold the features 6.4i to 6.4n add (sending, form_changed, uploads, the signature pad,
+- The 0.07 KB left will not hold the features 6.4i to 6.4o add (sending, form_changed, uploads, the signature pad,
   rows in place, counters, cards); `docs/OWNER-TODO.md` asks the owner whether section 4.12's 40 KB should grow, and
   until then each of those steps has to make room for what it adds.

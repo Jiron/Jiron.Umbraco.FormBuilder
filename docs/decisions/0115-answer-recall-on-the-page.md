@@ -14,7 +14,7 @@
   refuses is written as it stands on the page too, as the endpoint lists it, and the merge tags' chunk holds the
   defaults' filler
 - Date: 2026-10-30
-- Roadmap step: 6.4g (decided and built); 6.4h fills defaults with merge tags, 6.4n adds and removes rows in place,
+- Roadmap step: 6.4g (decided and built); 6.4h fills defaults with merge tags, 6.4o adds and removes rows in place,
   6.5 moves through pages in the browser
 
 ## Context
@@ -147,7 +147,7 @@ element for element, empty and hidden ones included.
   a post; a page without JavaScript is unchanged but for an empty text's hidden element.
 - A theme's own views add the hook to keep their texts live; the built-in views' contract stays at version 1, as
   nothing has been released (ADR-0096).
-- Rows added and removed in place (6.4n) and pages moved in the browser (6.5) bring texts on other rows and pages
+- Rows added and removed in place (6.4o) and pages moved in the browser (6.5) bring texts on other rows and pages
   that the reading already covers.
 - **Revisit** if a site's own type needs its texts rendered in a place no hook can mark, such as an attribute other
   than a placeholder.

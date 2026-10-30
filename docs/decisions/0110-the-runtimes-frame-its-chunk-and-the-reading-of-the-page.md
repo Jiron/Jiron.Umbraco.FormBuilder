@@ -10,7 +10,7 @@
 - Amended in 6.4h by [ADR-0118](0118-defaults-with-merge-tags-on-the-page.md): a form with a default for the page to
   fill in loads its logic as the frame enhances it, not on its first interaction
 - Roadmap step: 6.4b (decided and built); 6.4c applies the rules and 6.4d the checks to what the frame reads, 6.4i
-  sends it, 6.4j swaps a changed form in, 6.4k adds `get(formEl)` and the other events
+  sends it, 6.4j swaps a changed form in, 6.4l adds `get(formEl)` and the other events
 
 ## Context
 
@@ -75,7 +75,7 @@ Option 4 for the logic, option 2 for the page, and the reader in `packages/logic
 
 ### Reading the page
 
-- `entriesOf(form)` is `new FormData(form)` with its texts: a file is the upload's to read (6.4l), a disabled control
+- `entriesOf(form)` is `new FormData(form)` with its texts: a file is the upload's to read (6.4m), a disabled control
   (one a rule hides) and a button are left out, as a browser's post leaves them out.
 - `readPost(fields, entries)` (`packages/logic/src/posts.ts`) reads them as `FormPostReader` does, over the fields'
   aliases in the projection (the page and its model data are one published version, so a former alias never names a
@@ -115,7 +115,7 @@ Option 4 for the logic, option 2 for the page, and the reader in `packages/logic
   read from the controls when the chunk is there.
 - A change to the names the views give controls, or to how the no-JS post reads them, is a change to the vectors,
   which both readers then fail until they agree.
-- `jfb:ready` fires before the scripts that run after the runtime, so they miss it; from 6.4k, `get(formEl)` answers
+- `jfb:ready` fires before the scripts that run after the runtime, so they miss it; from 6.4l, `get(formEl)` answers
   for a form that is already enhanced.
 - **Revisit** if the chunk with the logic grows past what a first touch should wait for, or if browsers give a way to
   load a module when a form is first seen that costs nothing before then.

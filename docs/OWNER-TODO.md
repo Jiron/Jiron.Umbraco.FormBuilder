@@ -97,14 +97,18 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 ## Budgets
 
 - [ ] **Decide whether the website runtime's 40 KB "with everything" (ROADMAP §4.12) should grow.**
-  After 6.4h the runtime with every feature it has so far is 39.89 KB gzip, with a terser pass that
-  took 0.65 KB off (ADR-0119); after 6.4g it was 39.93 KB gzip without it. It counts the largest
-  language's words (ADR-0116): the frame 1 KB, the form chunk 28 KB (the rules, checks and messages
-  both runtimes share, D10), the calculation language 2.5 KB, the merge tags with the defaults'
-  filler 7 KB. Sending, form_changed, uploads, the signature pad and the field behaviours (6.4i to
-  6.4n) still come, a few KB each. Until you decide, each of those steps has to make room for what
-  it adds. The core, what every page with a form loads before the visitor touches it, is 1 KB of its
-  16 KB.
+  It blocks step 6.4i, step 6.4j, step 6.4l, step 6.4m, step 6.4n, step 6.4o and step 6.4p
+  ([ADR-0120](decisions/0120-sending-waits-for-the-runtimes-budget.md)). After 6.4h the runtime with
+  every feature it has is 39.89 KB gzip (counting the largest language's words, ADR-0116, after a
+  terser pass, ADR-0119): the frame 1 KB, the form chunk 28 KB (the rules, checks and messages both
+  runtimes share, D10), the calculation language 2.5 KB, the merge tags with the defaults' filler
+  7 KB. Sending (6.4i), built on the branch `wip/6.4i-sending`, takes it to 41.38 KB. The plan's other
+  runtime features, estimated: `form_changed` 0.8 KB, fitting the page and the developer surface 1.5,
+  uploads 3, the signature pad 3, the other field behaviours 3, paging in the browser (6.5) 1.5, the
+  challenge's use (7.1) 1, proof of work and the captchas (7.2) 2.5: about 58 KB with everything. The
+  core, what every page with a form loads before the visitor touches it, stays 1 KB of its 16 KB, and a
+  page loads only the features its form uses. Once you set a number, the blocked steps resume from the
+  branch.
 
 ## Real-world checks (no real keys are used during the build)
 

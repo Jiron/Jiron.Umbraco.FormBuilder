@@ -9,7 +9,7 @@
   logic at once) and ADR-0115 (a refused tag is written as it stands on the page too, and the chunk holds the
   defaults' filler)
 - Date: 2026-10-30
-- Roadmap step: 6.4h (decided and built); 6.4n adds rows in place, whose new rows start from their defaults too; 6.5
+- Roadmap step: 6.4h (decided and built); 6.4o adds rows in place, whose new rows start from their defaults too; 6.5
   builds prefill, which wins over a default
 
 ## Context
@@ -129,5 +129,5 @@ after a post. `defaults.test.ts`, `engine.test.ts`, `frame.test.ts` and `recall.
 
 - A link can open a form with its choices made, on a cached page too, as long as the form allows the query value.
 - A page without JavaScript shows such a default empty, as ADR-0093 decided.
-- Rows added in place (6.4n) start from their defaults through the same filler; prefill (6.5) comes before a default.
+- Rows added in place (6.4o) start from their defaults through the same filler; prefill (6.5) comes before a default.
 - Every visitor text that holds a refused tag now reads the same on the page and after a post.

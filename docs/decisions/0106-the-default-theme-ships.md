@@ -7,7 +7,7 @@
   rating's numbers, which [ADR-0107](0107-markup-that-reads-without-a-theme.md) shows in 6.3c, behind its stars
 - Date: 2026-10-30
 - Roadmap step: 6.3b (decided and built); 6.3d gives `bootstrap5` its stylesheet under the same rules
-  ([ADR-0108](0108-the-bootstrap5-theme.md)), 6.4a the error summary's punctuation (built), 6.4k the ground check,
+  ([ADR-0108](0108-the-bootstrap5-theme.md)), 6.4a the error summary's punctuation (built), 6.4l the ground check,
   12.2 the library themes built on `default`
 
 ## Context

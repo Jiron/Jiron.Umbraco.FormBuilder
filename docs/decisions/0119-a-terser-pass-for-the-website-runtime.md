@@ -41,6 +41,6 @@ banner and runs as before, and a build with source maps skips it. The size check
 ## Consequences
 
 - Every page that loads the runtime downloads a little less.
-- It is a one-time gain: the features 6.4i to 6.4n add still need room or the owner's answer on section 4.12's budget
+- It is a one-time gain: the features 6.4i to 6.4o add still need room or the owner's answer on section 4.12's budget
   (`docs/OWNER-TODO.md`).
 - **Revisit** when the bundler's own minifier closes the gap: then the pass costs build time for nothing.
