@@ -711,6 +711,11 @@ submit whatever was posted (and absent from the public projection) with the acti
 long for its type left out and logged by alias, a query prefill and its default, what the rules hide (a field, a
 group's rows) neither checked nor stored, required and own checks, a form-level validation rule's message, files by
 their upload tokens, parts cleaned, and keys, types and time zones the server does not know.
+`SubmissionReaderPrefillTests` reads prefill (6.5c, [ADR-0124](../docs/decisions/0124-prefill.md)): a field hidden
+behind the signed-in member's value takes it whatever was posted, the visitor's answer without a member (and is
+required of them), and the posted answer where the member's value fails the field's own check; a field shown with the
+member's value stores what was posted; and a hidden field takes the member's value, then the context value, then its
+default, never a posted one.
 `SubmissionReaderPostTests` reads what a client can post but the browser's runtime never does (ADR-0080): one upload
 named in two rows (stored at the first, `invalid` at the later) and twice in one answer, by one token and by two, an
 upload an entry holds `invalid`, a token two fields name `invalid` at the field whose upload it is not and kept by the
@@ -957,7 +962,8 @@ load to the post without JavaScript, fills a marked default in before the rules 
 only for a form the server marked (6.4h); `defaults.test.ts` fills the marked fields once from the query values the
 form allows and the endpoint's values, writes a refused tag as it stands and a default the endpoint does not list as
 it is written, ticks and selects the matching choices, and never touches a control the visitor changed or a hidden
-input; `recall.test.ts` renders a label, a help text, a placeholder, a heading, a
+input, and fills a field prefilled from the query from its own query name before its default, a list for several
+choices, nothing from a name the form does not allow or one an object inherits (6.5c); `recall.test.ts` renders a label, a help text, a placeholder, a heading, a
 text block, a group's description and a later page's title as the visitor types, nothing of a field the rules hide
 or of a row's child they hide in its row, a value escaped in a rich text, a text without a field tag and a field
 after its text left as the server wrote them, and the error summary's link naming a label as it reads now, also
@@ -1010,7 +1016,18 @@ clean on the copy. `Rendering/FormPostTests.Copy.cs` holds the copy to its rules
 the rules showed, as the submitted event records what they hid, a title's merge tag from the entry's answers, a
 sensitive answer masked, the page `no-store`, a HEAD that takes nothing, two views at once of which one shows the
 answers, an expired token, the old marks deleted with a new one, and an outcome without the copy; `SentCopiesTests`
-and `KeyValueRepositoryTests` hold its marks. The size check holds every file of the runtime's build but its entry to
+and `KeyValueRepositoryTests` hold its marks. `e2e/specs/website/prefill-on-the-page.spec.ts` (6.5c,
+[ADR-0124](../docs/decisions/0124-prefill.md)) signs the demo member in and finds the contact form with their name in
+its field, no email field, the contact page's topic chosen from its context value and "Where did you hear about us?"
+from the allowed `?source=`, the server's markup holding neither the query value nor the member's address; the form
+sends without the email field and the entry holds the member's address; a visitor who is not signed in answers the
+email address, and a value under a name the form does not allow is left out; axe is clean.
+`Rendering/FormPostTests.Prefill.cs` (`post-prefill.cshtml`) renders the same form for a visitor (cacheable, the
+context value written in, the query prefill marked and empty) and a signed-in member (`no-store`, the name written in,
+the email field left out), and proves the tamper case: a forged address posted for the hidden field is ignored on the
+post without JavaScript and on the entries endpoint alike. `StructureTests` refuses a context value the form does not
+list, a member name no merge tag can write, a hiding field in a repeatable group's rows or with a check against
+another field or the other entries, and a page's rule or a validation rule's message on a hiding field. The size check holds every file of the runtime's build but its entry to
 a content-hashed name, and `Client/scripts/scripts.test.mjs` shows the hash following a chunk's content.
 
 ## Writing tests

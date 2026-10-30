@@ -4,7 +4,8 @@ import { LANGUAGES, formPages, pathOf } from '../../support/demo-content.ts';
 
 // The runtime's frame on the demo (ROADMAP 6.4b, ADR-0110): every form of the markup contract is enhanced once and
 // says so once with `jfb:ready`, a form the page puts in later is enhanced through `JironFormBuilder.init(root)`, the
-// chunk with the logic loads only once the visitor touches a form, and nothing writes an error to the console.
+// chunk with the logic loads only once the visitor touches a form, or at once where the server marked a default to fill
+// as the form shows (ADR-0118, ADR-0124), and nothing writes an error to the console.
 
 interface Ready {
   readonly id: string;
@@ -60,17 +61,31 @@ test('every form on every demo page is enhanced once, says so once, and loads no
   page,
 }) => {
   const { chunks, errors } = await watch(page);
+  const filling: string[] = [];
   for (const language of LANGUAGES) {
     for (const path of [`/${language}/`, ...formPages().map((shown) => pathOf(shown.texts[language], language))]) {
+      // A default to fill as the form shows loads the logic at once; the page's own markup says whether it has one.
+      const marked = (await (await page.request.get(path)).text()).includes('data-jfb-default');
+      const before = chunks.length;
       await page.goto(path);
       const forms = await formsOn(page);
       expect(forms.length, `${path}: a form at least`).toBeGreaterThan(0);
       await expect.poll(() => readies(page), `${path}: one jfb:ready per form, in order`).toEqual(forms);
       await page.waitForLoadState('networkidle');
       expect(await readies(page), `${path}: and no more`).toEqual(forms);
+      if (marked) {
+        filling.push(path);
+        await expect(page.locator('[data-jfb-default]'), `${path}: its defaults filled as it shows`).toHaveCount(0);
+      } else {
+        expect(chunks.slice(before), `${path}: no logic before a form is touched`).toEqual([]);
+      }
     }
   }
-  expect(chunks, 'no page loaded the logic before a form was touched').toEqual([]);
+  expect(filling, 'the contact form, prefilled from the query, fills as it shows').toEqual(
+    LANGUAGES.map((language) =>
+      pathOf(formPages().find((shown) => shown.form === 'contact')!.texts[language], language),
+    ),
+  );
   expect(errors, 'nothing wrote an error to the console').toEqual([]);
 });
 
@@ -78,8 +93,9 @@ test("the logic loads on a form's first interaction, once for the page, and on a
   page,
 }) => {
   const { chunks, errors } = await watch(page);
-  const contact = formPages().find((shown) => shown.form === 'contact') ?? formPages()[0]!;
-  await page.goto(pathOf(contact.texts.en, 'en'));
+  // The feedback form has nothing to fill as it shows, so its logic waits for the visitor.
+  const feedback = formPages().find((shown) => shown.form === 'feedback') ?? formPages()[0]!;
+  await page.goto(pathOf(feedback.texts.en, 'en'));
   const forms = page.locator('form[data-jfb-form]');
   await expect(forms, 'the page form and the newsletter').toHaveCount(2);
   await page.waitForLoadState('networkidle');
@@ -95,7 +111,7 @@ test("the logic loads on a form's first interaction, once for the page, and on a
   // A browser's autofill changes a field without focusing it.
   const fresh = await page.context().newPage();
   const watched = await watch(fresh);
-  await fresh.goto(pathOf(contact.texts.en, 'en'));
+  await fresh.goto(pathOf(feedback.texts.en, 'en'));
   await fresh.waitForLoadState('networkidle');
   const changed = fresh.waitForResponse((response) => CHUNK.test(new URL(response.url()).pathname));
   await fresh

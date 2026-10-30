@@ -131,12 +131,12 @@ for (const language of LANGUAGES) {
 }
 
 test('a form without a text that recalls answers never loads the merge tags', async ({ page }) => {
+  // The feedback form has no merge tags and no prefill; its chunk loads as the visitor touches it.
   const { errors, chunks } = watch(page);
-  await page.goto(pathOfForm('contact', 'en'));
+  await page.goto(pathOfForm('feedback', 'en'));
   const form = formOn(page);
-  const loaded = page.waitForRequest(/\/chunks\/form-[^/]*\.js/);
-  await form.locator('input, textarea').first().fill('Ada');
-  await loaded;
+  await form.locator('textarea').first().fill('Ada');
+  await expect.poll(() => chunks, "the form's chunk").toContain('form');
   await form.locator('button[data-jfb-nav="submit"]').click();
   await expect(form.locator('[data-jfb-summary]'), 'the runtime refused the send').toBeVisible();
   await page.waitForLoadState('networkidle');
