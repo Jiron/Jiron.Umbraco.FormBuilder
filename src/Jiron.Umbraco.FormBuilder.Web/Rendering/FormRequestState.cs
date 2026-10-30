@@ -47,7 +47,8 @@ internal static class FormInstances
 /// <param name="Page">The page's path as the browser has it, which the form posts to without JavaScript.</param>
 /// <param name="Content">The page's content, or null.</param>
 /// <param name="Culture">The page's culture as asked for, or null for the default language.</param>
-internal sealed record FormRenderTarget(string Instance, string Page, Guid? Content, string? Culture);
+/// <param name="Theme">The theme the page's placement names, or null for the form's own (ADR-0105).</param>
+internal sealed record FormRenderTarget(string Instance, string Page, Guid? Content, string? Culture, string? Theme = null);
 
 /// <summary>The target of a request to the render endpoint, which the view component renders for.</summary>
 internal static class FormRenderTargets

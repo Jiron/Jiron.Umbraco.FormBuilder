@@ -7,8 +7,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
 /// <summary>
 /// <c>&lt;jfb-render form="contact" /&gt;</c> renders a published form through <see cref="FormBuilderFormViewComponent"/>
-/// (ADR-0004, ADR-0093), with the tags that load the website runtime once per page unless <c>assets="false"</c>, and
-/// <c>context-&lt;name&gt;="..."</c> for the context values the form lists. The element itself is not written. Add
+/// (ADR-0004, ADR-0093), with the tags that load the website runtime once per page unless <c>assets="false"</c>,
+/// <c>theme="..."</c> for a theme in place of the form's (ADR-0105), and <c>context-&lt;name&gt;="..."</c> for the
+/// context values the form lists. The element itself is not written. Add
 /// <c>@addTagHelper *, Jiron.Umbraco.FormBuilder.Web</c> to the site's <c>_ViewImports.cshtml</c> to use it. A value
 /// arrives as the page's code gives it, and a value written in the page as it is written, as with MVC's tag helpers.
 /// </summary>
@@ -29,6 +30,10 @@ public sealed class FormBuilderRenderTagHelper(IViewComponentHelper components) 
     [HtmlAttributeName("assets")]
     public bool Assets { get; set; } = true;
 
+    /// <summary>The alias of the theme the form renders with here, in place of its own and the site's; none for those.</summary>
+    [HtmlAttributeName("theme")]
+    public string? Theme { get; set; }
+
     /// <summary>The context values, from the attributes <c>context-&lt;name&gt;</c>.</summary>
     [HtmlAttributeName(DictionaryAttributePrefix = "context-")]
     public IDictionary<string, string?> Context { get; set; } = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
@@ -40,6 +45,6 @@ public sealed class FormBuilderRenderTagHelper(IViewComponentHelper components) 
         ((IViewContextAware)components).Contextualize(ViewContext);
         output.TagName = null;
         var values = new Dictionary<string, string?>(Context, StringComparer.OrdinalIgnoreCase);
-        output.Content.SetHtmlContent(await components.InvokeAsync(FormBuilderFormViewComponent.Name, new { form = Form, assets = Assets, context = (IReadOnlyDictionary<string, string?>)values }));
+        output.Content.SetHtmlContent(await components.InvokeAsync(FormBuilderFormViewComponent.Name, new { form = Form, assets = Assets, context = (IReadOnlyDictionary<string, string?>)values, theme = Theme }));
     }
 }

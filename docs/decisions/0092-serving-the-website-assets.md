@@ -2,7 +2,9 @@
 
 - Status: accepted; builds what [ADR-0026](0026-client-workspace-and-asset-delivery.md) left to 6.2 and the
   `<jfb-assets>` part of [ADR-0004](0004-rendering-and-submission-paths.md); how the automatic inclusion counts
-  "once" amended in 6.2b ([ADR-0093](0093-the-razor-rendering.md))
+  "once" amended in 6.2b ([ADR-0093](0093-the-razor-rendering.md)); the base rules and the stylesheets of the themes a
+  page uses, each once and decided when the page is written, added in 6.3a by
+  [ADR-0105](0105-the-theme-registry-and-the-base-rules.md)
 - Date: 2026-10-28
 - Roadmap step: 6.2a (decided and built); 6.2b includes the assets from `<jfb-render>`, 6.3 adds the themes'
   stylesheets, 6.4 the runtime's chunks, 6.6 the element on other origins

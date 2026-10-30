@@ -5,15 +5,15 @@
 @{
     var control = (SingleChoiceControlModel)Model.Control!;
 }
-<div class="jfb-choice">
-    <input type="checkbox" id="@Model.Id" name="@Model.Name" value="@control.Value" checked="@control.IsChecked" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+<div class="@Model.Classes.Choice">
+    <input class="@Model.Classes.ChoiceInput" type="checkbox" id="@Model.Id" name="@Model.Name" value="@control.Value" checked="@control.IsChecked" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
     @if (Model.Mark == FieldMark.Required)
     {
-        <label for="@Model.Id">@control.Label <span class="jfb-mark" aria-hidden="true">@Model.MarkText</span></label>
+        <label class="@Model.Classes.ChoiceLabel" for="@Model.Id">@control.Label <span class="jfb-mark" aria-hidden="true">@Model.MarkText</span></label>
     }
     else
     {
-        <label for="@Model.Id">@control.Label</label>
+        <label class="@Model.Classes.ChoiceLabel" for="@Model.Id">@control.Label</label>
     }
 </div>
 @if (control.Wording is { } wording)

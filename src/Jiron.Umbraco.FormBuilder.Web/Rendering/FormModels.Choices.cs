@@ -3,6 +3,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
 using Microsoft.AspNetCore.Html;
 
@@ -93,14 +94,14 @@ internal sealed partial class FormModels
                 {
                     var from = Math.Clamp(settings.Int("from", new ScaleFieldSettings().From), 0, 1);
                     var to = Math.Clamp(settings.Int("to", new ScaleFieldSettings().To), 5, 10);
-                    return (Numbers(settings, id, answers, from, to, "jfb-choices jfb-choices-scale"), []);
+                    return (Numbers(settings, id, answers, from, to, build.Root.Classes.Join("jfb-choices jfb-choices-scale", FormBuilderThemeSlots.Choices)), []);
                 }
 
             case RatingFieldType:
                 {
                     var count = Math.Clamp(settings.Int("count", new RatingFieldSettings().Count), 3, 10);
                     var symbol = settings.Text("symbol") is "heart" or "circle" ? settings.Text("symbol") : "star";
-                    return (Numbers(settings, id, answers, 1, count, "jfb-choices jfb-choices-rating jfb-choices-" + symbol), []);
+                    return (Numbers(settings, id, answers, 1, count, build.Root.Classes.Join("jfb-choices jfb-choices-rating jfb-choices-" + symbol, FormBuilderThemeSlots.Choices)), []);
                 }
 
             case GridFieldType:
@@ -158,12 +159,12 @@ internal sealed partial class FormModels
         return new ChoicesControlModel
         {
             InputType = several ? "checkbox" : "radio",
-            CssClass = Classes("jfb-choices", layout switch
+            CssClass = build.Root.Classes.Join(Classes("jfb-choices", layout switch
             {
                 ChoiceLayout.Horizontal => "jfb-choices-horizontal",
                 ChoiceLayout.Cards => "jfb-choices-cards",
                 _ => null,
-            }),
+            }), FormBuilderThemeSlots.Choices),
             Choices = choices,
             Other = other,
             Empty = choices.Count == 0 && other is null ? NoOptions(build, available) : null,
@@ -177,7 +178,7 @@ internal sealed partial class FormModels
         return new ChoicesControlModel
         {
             InputType = "radio",
-            CssClass = "jfb-choices jfb-choices-buttons",
+            CssClass = build.Root.Classes.Join("jfb-choices jfb-choices-buttons", FormBuilderThemeSlots.Choices),
             Choices =
             [
                 new ChoiceModel

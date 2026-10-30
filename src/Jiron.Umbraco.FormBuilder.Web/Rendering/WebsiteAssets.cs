@@ -18,6 +18,9 @@ internal sealed class WebsiteAssets
     /// <summary>The runtime's entry module.</summary>
     public const string Runtime = "runtime/jfb-runtime.js";
 
+    /// <summary>The functional base rules every form loads, whatever its theme (ADR-0105).</summary>
+    public const string BaseRules = "themes/base.css";
+
     /// <summary>The prefix of the assets' resource names (the Web project's <c>JfbEmbedWebsiteAssets</c> target).</summary>
     internal const string ResourcePrefix = "jfb/assets/";
 

@@ -9,7 +9,8 @@
   outputs, and the page's answers read as the pipeline reads them, in 6.2e by
   [ADR-0097](0097-the-part-date-and-output-controls.md); a repeatable group's rows, their rules and the post state's
   rows in 6.2f by [ADR-0098](0098-the-repeaters-rows.md); the hidden inputs a post carries, the page a post moves to
-  and the page after a sent post in 6.2h by [ADR-0100](0100-the-post-without-javascript.md)
+  and the page after a sent post in 6.2h by [ADR-0100](0100-the-post-without-javascript.md); the `theme` attribute, the
+  views of a form's theme and the classes they write in 6.3a by [ADR-0105](0105-the-theme-registry-and-the-base-rules.md)
 - Date: 2026-10-28
 - Roadmap step: 6.2b (decided and built); 6.2c the visitor texts with merge tags, members-only forms and the note
   while the migrations are pending (ADR-0095), 6.2d the choice controls (ADR-0096), 6.2e the part, date and output
@@ -147,8 +148,9 @@ layout; and what a hidden field and the `context-…` values put into the page.
   (6.2h) to send. A name the form does not list, or a value longer than 2,000 characters (ADR-0088), renders nothing
   and is logged. The values are part of the page's markup and the same for every visitor of the page; the docs say
   that per-visitor values belong elsewhere.
-- **Left to their steps:** the honeypot and the member-bound challenge (7.1), the route token (6.2h), a theme's
-  classes and stylesheet (6.3), and the controls of the other types (6.2d, 6.2e, 6.2f).
+- **Left to their steps:** the honeypot and the member-bound challenge (7.1; the honeypot's markup came with the base
+  rules in 6.3a, ADR-0105), the route token (6.2h), a theme's classes and stylesheet (6.3), and the controls of the
+  other types (6.2d, 6.2e, 6.2f).
 
 ## Consequences
 

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Http;
@@ -23,6 +24,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="entries">What the entries endpoint reads of a request and answers with.</param>
 /// <param name="availability">Whether a form takes entries now.</param>
 /// <param name="forms">The published forms.</param>
+/// <param name="themes">The site's themes, which a page's markup is rendered in.</param>
 [Route("forms")]
 internal sealed class FormController(
     FormRequests requests,
@@ -30,7 +32,8 @@ internal sealed class FormController(
     UploadRequests uploads,
     EntryRequests entries,
     FormAvailability availability,
-    PublishedFormCache forms) : FormBuilderPublicApiController
+    PublishedFormCache forms,
+    FormBuilderThemes themes) : FormBuilderPublicApiController
 {
     /// <summary>
     /// A published form for headless rendering, when its settings allow it: its public projection with its texts in the
@@ -161,6 +164,7 @@ internal sealed class FormController(
     /// </param>
     /// <param name="culture">The page's culture: one of the site's languages, otherwise the default language.</param>
     /// <param name="contentKey">The page's content, whose site's settings apply.</param>
+    /// <param name="theme">The theme the page's placement names (ADR-0105), or none for the form's own; one the site lacks renders as <c>default</c>.</param>
     /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
     [HttpGet("{key}/render")]
     [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Read)]
@@ -176,6 +180,7 @@ internal sealed class FormController(
         [FromQuery, Required] string? page,
         [FromQuery] string? culture,
         [FromQuery] string? contentKey,
+        [FromQuery] string? theme,
         CancellationToken cancellationToken)
     {
         if (instance is null || !FormInstances.IsId(instance))
@@ -204,12 +209,20 @@ internal sealed class FormController(
             return FormBuilderPublicProblems.InvalidRequest("culture");
         }
 
+        if (theme is not null && !FormBuilderThemes.IsAlias(theme))
+        {
+            return FormBuilderPublicProblems.InvalidRequest("theme");
+        }
+
         if (!Guid.TryParseExact(key, "D", out var formKey) || await forms.GetAsync(formKey, cancellationToken) is null)
         {
             return FormBuilderPublicProblems.FormNotFound();
         }
 
-        FormRenderTargets.Set(HttpContext, new FormRenderTarget(instance, page, content, culture));
+        // A theme the site lacks renders as default, as the page renders it, without a line in the log or a name kept
+        // for it: the name is the request's, and a page whose placement names it is logged as it renders (ADR-0105).
+        var placed = theme is null ? null : themes.Find(theme)?.Name ?? BuiltInThemes.DefaultAlias;
+        FormRenderTargets.Set(HttpContext, new FormRenderTarget(instance, page, content, culture, placed));
         var markup = new ViewComponentResult
         {
             ViewComponentName = FormBuilderFormViewComponent.Name,

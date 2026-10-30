@@ -548,6 +548,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "theme",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

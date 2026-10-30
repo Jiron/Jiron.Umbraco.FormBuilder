@@ -11,12 +11,12 @@
 }
 @if (control.Kept.Count > 0)
 {
-    <div class="jfb-choices jfb-files">
+    <div class="@Model.Classes.Choices jfb-files">
         @foreach (var kept in control.Kept)
         {
-            <div class="jfb-choice">
-                <input type="checkbox" id="@kept.Id" name="@Model.Name" value="@kept.Token" checked disabled="@Model.IsDisabled">
-                <label for="@kept.Id">@kept.Label</label>
+            <div class="@Model.Classes.Choice">
+                <input class="@Model.Classes.ChoiceInput" type="checkbox" id="@kept.Id" name="@Model.Name" value="@kept.Token" checked disabled="@Model.IsDisabled">
+                <label class="@Model.Classes.ChoiceLabel" for="@kept.Id">@kept.Label</label>
             </div>
         }
     </div>

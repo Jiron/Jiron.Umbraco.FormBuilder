@@ -8,6 +8,7 @@
     "packages/logic",
     "packages/runtime",
     "packages/element",
+    "packages/themes",
     "packages/backoffice"
   ],
   "engines": {
@@ -16,7 +17,7 @@
   "scripts": {
     "lint": "eslint . && prettier --check .",
     "fix": "eslint . --fix && prettier --write .",
-    "typecheck": "npm run typecheck --workspaces && tsc -p tsconfig.config.json",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p tsconfig.config.json",
     "test": "vitest run",
     "build": "npm run typecheck && npm run build --workspaces --if-present && node scripts/compress.mjs && node scripts/stamp.mjs write",
     "check-build": "node scripts/stamp.mjs check",

@@ -87,8 +87,9 @@ internal sealed class VisitorForms(
         return new VisitorPage(shown, new VisitorAnswer(VisitorForm.Write(shown), tags, Consents(hashes)), tagged, hashes.ToDictionary(pair => pair.Field, pair => pair.Hash));
     }
 
-    // The site's style for a form whose marker is inherit, and the site's label for each button the form labels not
-    // itself (ADR-0095); a site's label that is no localised text is none, so the page shows the package's word.
+    // The site's style for a form whose marker is inherit, the site's label for each button the form labels not itself
+    // (ADR-0095), and the site's theme for a form that names none (ADR-0105); a site's label that is no localised text is
+    // none, so the page shows the package's word.
     private static PublicForm WithSite(PublicForm projection, GeneralSettings general)
     {
         var own = projection.Settings;
@@ -100,6 +101,7 @@ internal sealed class VisitorForms(
                 SubmitLabel = own.SubmitLabel ?? Label(general.SubmitLabel),
                 NextLabel = own.NextLabel ?? Label(general.NextLabel),
                 BackLabel = own.BackLabel ?? Label(general.BackLabel),
+                Theme = own.Theme ?? general.Theme,
             },
         };
     }

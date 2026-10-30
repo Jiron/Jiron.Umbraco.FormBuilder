@@ -16,6 +16,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -93,6 +94,9 @@ public sealed class FormBuilderCoreComposer : IComposer
 
         // The field types (ADR-0055): the collection with the built-in ones, its registry and the check of both at start.
         builder.AddFormBuilderFieldTypes();
+
+        // The themes (ADR-0105): the collection with the built-in ones, its registry and the check of both at start.
+        builder.AddFormBuilderThemes();
 
         // Merge tags (ADR-0065): the site's own sources and filters beside the built-in ones, the culture formats and the
         // service, with the check of the site's names at start.

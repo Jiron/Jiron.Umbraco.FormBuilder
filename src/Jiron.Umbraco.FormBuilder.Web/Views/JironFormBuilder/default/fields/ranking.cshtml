@@ -10,12 +10,12 @@
     var control = (RankingControlModel)Model.Control!;
     void Move(RankingMoveModel move, string icon)
     {
-        <button type="submit" class="jfb-button jfb-button-icon" id="@move.Id" name="jfb-nav" value="@move.Value" formaction="@move.Action" aria-disabled="@(move.IsDisabled ? "true" : null)" disabled="@Model.IsDisabled"><span class="jfb-icon @icon" aria-hidden="true"></span><span class="jfb-visually-hidden">@move.Label</span></button>
+        <button type="submit" class="@Model.Classes.ButtonIcon" id="@move.Id" name="jfb-nav" value="@move.Value" formaction="@move.Action" aria-disabled="@(move.IsDisabled ? "true" : null)" disabled="@Model.IsDisabled"><span class="jfb-icon @icon" aria-hidden="true"></span><span class="jfb-visually-hidden">@move.Label</span></button>
     }
 }
 @if (control.Empty is { } empty)
 {
-    <p class="jfb-help" id="@Model.Id">@empty</p>
+    <p class="@Model.Classes.Help" id="@Model.Id">@empty</p>
 }
 else
 {

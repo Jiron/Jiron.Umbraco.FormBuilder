@@ -1,6 +1,7 @@
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Umbraco.Cms.Core.DependencyInjection;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Composing;
@@ -27,12 +28,15 @@ public sealed class FormBuilderComposition
 
     /// <summary>The option sources, the standard lists among them (ADR-0073).</summary>
     public FormBuilderOptionSourceCollectionBuilder OptionSources() => Builder.WithCollectionBuilder<FormBuilderOptionSourceCollectionBuilder>();
+
+    /// <summary>The themes of the website forms, the built-in ones among them (ADR-0105).</summary>
+    public FormBuilderThemeCollectionBuilder Themes() => Builder.WithCollectionBuilder<FormBuilderThemeCollectionBuilder>();
 }
 
 /// <summary>The way into Jiron Form Builder's composition from a composer (section 4.9).</summary>
 public static class FormBuilderUmbracoBuilderExtensions
 {
-    /// <summary>Jiron Form Builder's composition: its field types, its merge-tag sources and filters, and its option sources.</summary>
+    /// <summary>Jiron Form Builder's composition: its field types, its merge-tag sources and filters, its option sources and its themes.</summary>
     public static FormBuilderComposition JironFormBuilder(this IUmbracoBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);

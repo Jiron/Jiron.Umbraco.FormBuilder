@@ -28,7 +28,7 @@ public sealed class FormRenderingTests
         var migrations = new Migrations();
         var logger = new RecordingLogger<FormRendering>();
 
-        var rendered = await Rendering(migrations, logger).RenderAsync(new DefaultHttpContext(), form, null, CancellationToken.None);
+        var rendered = await Rendering(migrations, logger).RenderAsync(new DefaultHttpContext(), form, null, null, CancellationToken.None);
 
         Assert.Multiple(() =>
         {
@@ -47,7 +47,7 @@ public sealed class FormRenderingTests
 
         foreach (var form in new object[] { 42, 7, 1.5m, 42 })
         {
-            Assert.That(await rendering.RenderAsync(new DefaultHttpContext(), form, null, CancellationToken.None), Is.Null);
+            Assert.That(await rendering.RenderAsync(new DefaultHttpContext(), form, null, null, CancellationToken.None), Is.Null);
         }
 
         Assert.Multiple(() =>
@@ -71,9 +71,9 @@ public sealed class FormRenderingTests
 
         Assert.Multiple(async () =>
         {
-            Assert.That(await rendering.RenderAsync(visitors[0], "contact", null, CancellationToken.None), Is.Null);
-            Assert.That(await rendering.RenderAsync(visitors[1], Guid.NewGuid(), null, CancellationToken.None), Is.Null);
-            Assert.That(await rendering.RenderAsync(visitors[2], new FormBuilderFormReference(Guid.NewGuid()), null, CancellationToken.None), Is.Null);
+            Assert.That(await rendering.RenderAsync(visitors[0], "contact", null, null, CancellationToken.None), Is.Null);
+            Assert.That(await rendering.RenderAsync(visitors[1], Guid.NewGuid(), null, null, CancellationToken.None), Is.Null);
+            Assert.That(await rendering.RenderAsync(visitors[2], new FormBuilderFormReference(Guid.NewGuid()), null, null, CancellationToken.None), Is.Null);
             Assert.That(logger.Entries, Is.Empty, "a pending migration is no missing form");
             Assert.That(migrations.Asked, Is.EqualTo(3));
             Assert.That(visitors.Select(visitor => visitor.Response.Headers.CacheControl.ToString()), Is.All.EqualTo("no-store"), "a backoffice user's page shows the note");
@@ -89,17 +89,17 @@ public sealed class FormRenderingTests
 
         Assert.Multiple(async () =>
         {
-            Assert.That(await Rendering(new Migrations { Pending = true }, new RecordingLogger<FormRendering>()).RenderAsync(post, null, null, CancellationToken.None), Is.Null);
+            Assert.That(await Rendering(new Migrations { Pending = true }, new RecordingLogger<FormRendering>()).RenderAsync(post, null, null, null, CancellationToken.None), Is.Null);
             Assert.That(post.Response.Headers.ContainsKey("Cache-Control"), Is.False, "nothing renders");
         });
     }
 
     [Test]
     public void WithoutARequest_TheRenderIsRefused() =>
-        Assert.ThrowsAsync<ArgumentNullException>(() => Rendering(new Migrations(), new RecordingLogger<FormRendering>()).RenderAsync(null!, "contact", null, CancellationToken.None));
+        Assert.ThrowsAsync<ArgumentNullException>(() => Rendering(new Migrations(), new RecordingLogger<FormRendering>()).RenderAsync(null!, "contact", null, null, CancellationToken.None));
 
     private static FormRendering Rendering(IFormBuilderMigrationState migrations, RecordingLogger<FormRendering> logger) =>
-        new(forms: null!, requests: null!, pages: null!, migrations, Substitute.For<IUmbracoContextAccessor>(), models: null!, views: null!, BackOffice(), submissions: null!, sent: null!, logger);
+        new(forms: null!, requests: null!, pages: null!, migrations, Substitute.For<IUmbracoContextAccessor>(), models: null!, views: null!, BackOffice(), submissions: null!, sent: null!, themes: null!, logger: logger);
 
     // The backoffice's cookie options, which a visitor's request carries no cookie of.
     private static BackOfficeVisitors BackOffice()

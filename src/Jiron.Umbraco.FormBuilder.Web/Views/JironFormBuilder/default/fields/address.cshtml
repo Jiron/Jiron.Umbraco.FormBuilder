@@ -16,11 +16,11 @@
     @foreach (var part in control.Parts)
     {
         <div class="@(part.IsWide ? "jfb-part jfb-part-wide" : "jfb-part")">
-            <label for="@part.Id">@part.Label@Mark(part)</label>
+            <label class="@Model.Classes.PartLabel" for="@part.Id">@part.Label@Mark(part)</label>
             @if (part.Countries is { } countries)
             {
                 <div class="jfb-select">
-                    <select class="jfb-control" id="@part.Id" name="@part.Name" autocomplete="@part.Autocomplete" required="@part.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(part.IsInvalid ? "true" : null)">
+                    <select class="@Model.Classes.Select" id="@part.Id" name="@part.Name" autocomplete="@part.Autocomplete" required="@part.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(part.IsInvalid ? "true" : null)">
                         <option value="">@countries.Prompt</option>
                         @foreach (var option in countries.Options)
                         {
@@ -31,7 +31,7 @@
             }
             else
             {
-                <input class="jfb-control" id="@part.Id" name="@part.Name" value="@(part.Value.Length == 0 ? null : part.Value)" autocomplete="@part.Autocomplete" autocapitalize="@(part.Part == "postcode" ? null : "words")" spellcheck="false" required="@part.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(part.IsInvalid ? "true" : null)">
+                <input class="@Model.Classes.Control" id="@part.Id" name="@part.Name" value="@(part.Value.Length == 0 ? null : part.Value)" autocomplete="@part.Autocomplete" autocapitalize="@(part.Part == "postcode" ? null : "words")" spellcheck="false" required="@part.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(part.IsInvalid ? "true" : null)">
             }
         </div>
     }

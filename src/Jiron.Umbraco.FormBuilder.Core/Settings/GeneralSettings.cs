@@ -4,8 +4,8 @@ namespace Jiron.Umbraco.FormBuilder.Core.Settings;
 
 /// <summary>
 /// The general settings (section 4.8, ADR-0008), set per site unless a field says otherwise. It holds the time zone, the
-/// base URL, the required-marker style and the buttons' default labels, the new-form defaults and how long draft saves
-/// stay so far; the other fields come with what they configure (ADR-0043).
+/// base URL, the required-marker style, the buttons' default labels and the default theme, the new-form defaults and how
+/// long draft saves stay so far; the other fields come with what they configure (ADR-0043).
 /// </summary>
 internal sealed record GeneralSettings : ISettingsSection
 {
@@ -53,6 +53,13 @@ internal sealed record GeneralSettings : ISettingsSection
 
     /// <summary>The label of the button to the page before of a form without one of its own, as <see cref="SubmitLabel"/>.</summary>
     public IReadOnlyDictionary<string, string>? BackLabel { get; init; }
+
+    /// <summary>
+    /// The alias of the theme the site's forms take when neither the form nor its placement names one (ADR-0015,
+    /// ADR-0105); null for <c>default</c>. It is not held to the registered themes: one the site no longer has renders as
+    /// <c>default</c>.
+    /// </summary>
+    public string? Theme { get; init; }
 
     /// <summary>What a form created from blank starts with; every site shares it, since a new form belongs to no site (ADR-0044).</summary>
     [GlobalOnly]
@@ -122,7 +129,8 @@ internal sealed class GeneralSettingsValidator : ISettingsValidator<GeneralSetti
     /// <inheritdoc />
     /// <remarks>
     /// A base URL of white space is the default; one that is an origin is written as its origin (<c>HTTPS://Example.com/</c>
-    /// as <c>https://example.com</c>). A label without texts is the default, the package's word.
+    /// as <c>https://example.com</c>). A label without texts is the default, the package's word, and so is a theme of white
+    /// space.
     /// </remarks>
     public GeneralSettings Normalize(GeneralSettings section)
     {
@@ -135,6 +143,11 @@ internal sealed class GeneralSettingsValidator : ISettingsValidator<GeneralSetti
                 BackLabel = section.BackLabel is { Count: 0 } ? null : section.BackLabel,
             }
             : section;
+        if (labelled.Theme is { } theme && string.IsNullOrWhiteSpace(theme))
+        {
+            labelled = labelled with { Theme = null };
+        }
+
         if (string.IsNullOrWhiteSpace(labelled.BaseUrl))
         {
             return labelled.BaseUrl is null ? labelled : labelled with { BaseUrl = null };
@@ -162,6 +175,11 @@ internal sealed class GeneralSettingsValidator : ISettingsValidator<GeneralSetti
         Label(errors, "submitLabel", section.SubmitLabel);
         Label(errors, "nextLabel", section.NextLabel);
         Label(errors, "backLabel", section.BackLabel);
+        if (section.Theme is { } theme && (theme.Length > DefinitionSaveChecks.ThemeLength || theme.Any(char.IsControl)))
+        {
+            errors.Add("theme", SettingsErrors.ThemeCode, $"Must be a theme's alias of at most {DefinitionSaveChecks.ThemeLength} characters on one line.");
+        }
+
         if (section.NewForms?.Consent is { } consent)
         {
             errors.Text("newForms.consent.label", consent.Label, html: false);

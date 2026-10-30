@@ -8,7 +8,8 @@
   ([ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md)); what a page's validation checks and the
   receipt before 7.1 extended in 6.1f ([ADR-0089](0089-the-validate-and-receipt-endpoints.md)); a page's places on
   options extended in 6.1g ([ADR-0090](0090-places-on-options.md)); a submission's `uniquePerForm`, which a page's
-  validation leaves out, built in 6.1h ([ADR-0091](0091-unique-answers.md))
+  validation leaves out, built in 6.1h ([ADR-0091](0091-unique-answers.md)); the honeypot's markup and name rendered
+  from 6.3a by [ADR-0105](0105-the-theme-registry-and-the-base-rules.md), its scoring still 7.1's
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 6.1 (the public API and the pipeline), 6.6 (server keys), 7.1 (standard
   protection, content rules and the spam folder), 7.2 (proof of work and captchas), 8.x (mail limits) and 16.1 (the

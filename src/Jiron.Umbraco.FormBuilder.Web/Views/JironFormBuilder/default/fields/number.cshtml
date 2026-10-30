@@ -5,7 +5,7 @@
     var control = (NumberControlModel)Model.Control!;
     void Input()
     {
-        <input class="jfb-control" type="@control.InputType" id="@Model.Id" name="@Model.Name" value="@(Model.Value.Length == 0 ? null : Model.Value)" inputmode="@control.InputMode" min="@control.Min" max="@control.Max" step="@control.Step" placeholder="@Model.Placeholder" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+        <input class="@Model.Classes.Control" type="@control.InputType" id="@Model.Id" name="@Model.Name" value="@(Model.Value.Length == 0 ? null : Model.Value)" inputmode="@control.InputMode" min="@control.Min" max="@control.Max" step="@control.Step" placeholder="@Model.Placeholder" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
     }
 }
 @if (control.Prefix is null && control.Suffix is null)
@@ -14,15 +14,15 @@
 }
 else
 {
-    <div class="jfb-affix">
+    <div class="@Model.Classes.Affix">
         @if (control.Prefix is { } prefix)
         {
-            <span id="@prefix.Id">@prefix.Text</span>
+            <span class="@Model.Classes.AffixText" id="@prefix.Id">@prefix.Text</span>
         }
         @{ Input(); }
         @if (control.Suffix is { } suffix)
         {
-            <span id="@suffix.Id">@suffix.Text</span>
+            <span class="@Model.Classes.AffixText" id="@suffix.Id">@suffix.Text</span>
         }
     </div>
 }

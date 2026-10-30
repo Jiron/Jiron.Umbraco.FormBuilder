@@ -1,0 +1,9 @@
+{
+  "name": "@jfb/themes",
+  "private": true,
+  "type": "module",
+  "description": "The stylesheets of the website forms (ROADMAP 6.3, ADR-0015, ADR-0105): the functional base rules every form gets and each theme's own, embedded in the Web assembly and served from /jfb/assets/themes/.",
+  "scripts": {
+    "build": "vite build"
+  }
+}

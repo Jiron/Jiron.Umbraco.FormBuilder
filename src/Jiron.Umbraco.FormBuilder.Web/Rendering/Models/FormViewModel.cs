@@ -22,6 +22,9 @@ public enum FormDisplay
 /// </summary>
 public sealed class FormViewModel
 {
+    /// <summary>The classes the views write, Jiron Form Builder's own with the form's theme's (ADR-0105).</summary>
+    public ThemeClassesModel Classes { get; init; } = ThemeClassesModel.None;
+
     /// <summary>The version of the markup contract the built-in views write.</summary>
     public const int ContractVersion = 1;
 
@@ -99,6 +102,12 @@ public sealed class FormViewModel
     /// </summary>
     public IReadOnlyList<HiddenInputModel> PostValues { get; init; } = [];
 
+    /// <summary>
+    /// The honeypot (ADR-0012), in a <c>jfb-hp</c> container that the functional base rules keep out of view and
+    /// <c>aria-hidden</c> keeps out of the accessibility tree (ADR-0015, ADR-0105); null where there is no form to fill in.
+    /// </summary>
+    public HoneypotModel? Honeypot { get; init; }
+
     /// <summary>The views that write the form's parts.</summary>
     public required FormViewPaths Views { get; init; }
 }
@@ -133,6 +142,12 @@ public sealed class FormViewPaths
     /// <summary><c>Notice.cshtml</c>.</summary>
     public required string Notice { get; init; }
 }
+
+/// <summary>The honeypot of a form (ADR-0012): a text input no visitor sees, with its label.</summary>
+/// <param name="Id">Its id, the instance's followed by its name.</param>
+/// <param name="Name">Its name, which the form's key and public revision give.</param>
+/// <param name="Label">Its label, which asks to leave it empty.</param>
+public sealed record HoneypotModel(string Id, string Name, string Label);
 
 /// <summary>A hidden input the form carries.</summary>
 /// <param name="Name">The input's name.</param>

@@ -23,7 +23,7 @@
         }
         @if (Model.RequiredNote is { } note)
         {
-            <p class="jfb-help">@note</p>
+            <p class="@Model.Classes.Help">@note</p>
         }
         @foreach (var page in Model.Pages)
         {
@@ -40,6 +40,13 @@
         @foreach (var input in Model.PostValues)
         {
             <input type="hidden" name="@input.Name" value="@input.Value">
+        }
+        @if (Model.Honeypot is { } honeypot)
+        {
+            <div class="jfb-hp" aria-hidden="true">
+                <label for="@honeypot.Id">@honeypot.Label</label>
+                <input type="text" id="@honeypot.Id" name="@honeypot.Name" tabindex="-1" autocomplete="off">
+            </div>
         }
         <div data-jfb-live aria-live="polite"></div>
     </form>

@@ -23,23 +23,34 @@ public sealed class FormBuilderFormViewComponent : ViewComponent
     /// <see cref="FormBuilderFormReference"/> the form picker gives.
     /// </param>
     /// <param name="assets">
-    /// Whether the form includes the tags that load the website runtime; they are written once per page, and a
-    /// <c>&lt;jfb-assets&gt;</c> anywhere on the page writes them in its place (ADR-0093).
+    /// Whether the form includes the tags that load the website runtime, the base rules and its theme's stylesheet; each
+    /// is written once per page, and a <c>&lt;jfb-assets&gt;</c> anywhere on the page writes them in its place, for a form
+    /// without its own tags too (ADR-0093, ADR-0105).
     /// </param>
     /// <param name="context">
     /// Context values for the entry, by name: those the form lists (its developer settings) are carried in the form, the
     /// same for every visitor of the page; any other name, and a value longer than 2,000 characters, is left out and logged.
     /// </param>
-    public async Task<IViewComponentResult> InvokeAsync(object? form, bool assets = true, IReadOnlyDictionary<string, string?>? context = null)
+    /// <param name="theme">
+    /// The alias of the theme the form renders with here, in place of the form's own and the site's default (ADR-0105);
+    /// a theme the site lacks renders as <c>default</c>.
+    /// </param>
+    public async Task<IViewComponentResult> InvokeAsync(object? form, bool assets = true, IReadOnlyDictionary<string, string?>? context = null, string? theme = null)
     {
-        var rendered = await HttpContext.RequestServices.GetRequiredService<FormRendering>().RenderAsync(HttpContext, form, context, HttpContext.RequestAborted);
+        var rendered = await HttpContext.RequestServices.GetRequiredService<FormRendering>().RenderAsync(HttpContext, form, context, theme, HttpContext.RequestAborted);
         if (rendered is not { } found)
         {
             return Content(string.Empty);
         }
 
         var view = View(found.View, found.Model);
-        return assets && found.IsForm ? new AssetsFirst(HttpContext.RequestServices.GetRequiredService<PageAssets>().Automatic(HttpContext), view) : view;
+        if (found.Theme is not { } formTheme)
+        {
+            return view;
+        }
+
+        PageAssets.Use(HttpContext, formTheme);
+        return assets ? new AssetsFirst(HttpContext.RequestServices.GetRequiredService<PageAssets>().Automatic(HttpContext, formTheme), view) : view;
     }
 
     /// <summary>

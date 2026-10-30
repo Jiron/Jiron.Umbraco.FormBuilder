@@ -56,6 +56,7 @@ describe('what a page loads at once', () => {
 describe('the check', () => {
   const base = () => ({
     element: { folder: 'WebsiteAssets/element', files: [{ meta: chunk('jfb-element.js', [], [], true), bytes: small('e') }] },
+    themes: { folder: 'WebsiteAssets/themes', files: [{ meta: chunk('base.css'), bytes: small('c') }] },
     backoffice: {
       folder: 'wwwroot/App_Plugins/JironFormBuilder',
       files: [{ meta: chunk('jfb-backoffice.js', [], [], true), bytes: small('b') }],
@@ -84,7 +85,7 @@ describe('the check', () => {
       measure({ folder: 'WebsiteAssets/runtime' }, ['jfb-runtime.js', 'chunks/upload-x.js'], paths.webProject),
       gzipSize(small('r')) + gzipSize(upload),
     );
-    assert.ok(results.some((r) => /^theme CSS: 10[.]00 KB gzip each, no theme is built yet/.test(r.line)));
+    assert.ok(results.some((r) => /^stylesheet base[.]css: .* gzip of 10[.]00 KB, ok$/.test(r.line)));
     assert.ok(results.some((r) => /^element [(]1 file[)]: .* gzip, no budget/.test(r.line)));
     assert.ok(results.some((r) => /^backoffice bundle [(]1 file[)]: .* gzip, no budget yet [(]9[.]6/.test(r.line)));
   });
@@ -100,19 +101,21 @@ describe('the check', () => {
     assert.match(core.line, /OVER BUDGET$/);
   });
 
-  test('holds each theme to 10 KB once the themes are built', () => {
+  test('holds each stylesheet to 10 KB', () => {
     const paths = project({
       ...base(),
       runtime: { folder: 'WebsiteAssets/runtime', files: [{ meta: chunk('jfb-runtime.js', [], [], true), bytes: small('r') }] },
       themes: { folder: 'WebsiteAssets/themes', files: [{ meta: chunk('default.css'), bytes: randomBytes(11 * 1024) }] },
     });
-    const theme = check(paths).find((r) => r.line.startsWith('theme default.css'));
+    const theme = check(paths).find((r) => r.line.startsWith('stylesheet default.css'));
     assert.equal(theme.ok, false);
+    assert.match(theme.line, /OVER BUDGET$/);
   });
 
   test('fails without a build, and names a file that is missing', () => {
     const empty = project({});
     assert.ok(check(empty).some((r) => !r.ok && /runtime: no chunk report/.test(r.line)));
+    assert.ok(check(empty).some((r) => !r.ok && /themes: no chunk report/.test(r.line)), 'the stylesheets are always built');
     const paths = project({
       ...base(),
       runtime: { folder: 'WebsiteAssets/runtime', files: [{ meta: chunk('jfb-runtime.js', [], [], true), bytes: small('r') }] },

@@ -402,6 +402,7 @@ it is the example form's own wording, and the default follows the same pattern w
 | closed: one entry per member, already sent | **You have already booked** You booked a place on 3 November, and each member can book one workshop a month. To change your booking, write to events@lindenhall.example. | **Sie haben bereits gebucht** Sie haben am 3. November einen Platz gebucht, und jedes Mitglied kann einen Workshop pro Monat buchen. Um Ihre Buchung zu ändern, schreiben Sie an events@lindenhall.example. |
 | the signature's Clear, until the next stroke | Undo clear | Löschen zurücknehmen |
 | an upload that stopped (in the file's row) | The upload stopped before it finished. [Try again] | Das Hochladen wurde vor dem Ende abgebrochen. [Erneut versuchen] |
+| the honeypot's label, out of view and out of the accessibility tree, for a screen reader that reaches it anyway (ADR-0012) | Leave this field empty | Lassen Sie dieses Feld leer |
 
 ### The default error messages
 

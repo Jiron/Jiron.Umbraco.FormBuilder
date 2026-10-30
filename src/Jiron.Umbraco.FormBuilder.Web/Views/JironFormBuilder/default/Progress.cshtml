@@ -4,14 +4,14 @@
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
 @if (Model.Style == ProgressStyle.Bar)
 {
-    <div class="jfb-progress jfb-progress-bar">
+    <div class="@Model.Classes.ProgressBar">
         <p class="jfb-progress-text" id="@Model.TextId">@Model.Text</p>
         <progress max="@Model.Total" value="@Model.Current" aria-labelledby="@Model.TextId">@Model.Text</progress>
     </div>
 }
 else
 {
-    <div class="jfb-progress jfb-progress-steps">
+    <div class="@Model.Classes.ProgressSteps">
         <p class="jfb-progress-text">@Model.Text</p>
         <ol aria-label="@Model.Label">
             @foreach (var step in Model.Steps)

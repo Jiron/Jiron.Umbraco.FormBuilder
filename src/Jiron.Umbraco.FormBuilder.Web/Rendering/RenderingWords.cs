@@ -80,6 +80,7 @@ internal sealed record RenderingWords
             KeepFile = "Keep {0} ({1})",
             Kilobytes = "{0} KB",
             Megabytes = "{0} MB",
+            Honeypot = "Leave this field empty",
         },
         ["de"] = new RenderingWords
         {
@@ -144,6 +145,7 @@ internal sealed record RenderingWords
             KeepFile = "{0} ({1}) behalten",
             Kilobytes = "{0} KB",
             Megabytes = "{0} MB",
+            Honeypot = "Lassen Sie dieses Feld leer",
         },
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
@@ -332,6 +334,9 @@ internal sealed record RenderingWords
 
     /// <summary>A size in megabytes, the number first.</summary>
     public required string Megabytes { get; init; }
+
+    /// <summary>The honeypot's label, for a screen reader that reaches it all the same (ADR-0012).</summary>
+    public required string Honeypot { get; init; }
 
     /// <summary>The words of a culture, of its more general culture, or English.</summary>
     /// <param name="culture">The culture, such as <c>de-CH</c>.</param>

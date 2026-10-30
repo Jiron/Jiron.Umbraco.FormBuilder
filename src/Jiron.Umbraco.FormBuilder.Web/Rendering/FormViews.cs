@@ -10,12 +10,12 @@ using Microsoft.Extensions.Logging;
 namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
 /// <summary>
-/// Which view writes each part of a form (ADR-0015, ADR-0093): the form's own override in <c>_forms/&lt;alias&gt;/</c> of
-/// the view folder, else the folder's view, which the Razor class library ships under the same paths, so a site's file
-/// at such a path wins over it. MVC's view engine answers whether a path exists and keeps its answers, dropping them when
-/// a view changes under runtime compilation. The themes add their folders and their order with 6.3. In Development, a
-/// view of the site's own whose contract header names an older version than the built-in view's, or none, is logged
-/// once per view.
+/// Which view writes each part of a form (ADR-0015, ADR-0093, ADR-0105): the form's own override in
+/// <c>_forms/&lt;alias&gt;/</c> of its theme's view folder, else that folder's view, else the default folder's, which the
+/// Razor class library ships under the same paths, so a site's file at such a path wins over it. MVC's view engine
+/// answers whether a path exists and keeps its answers, dropping them when a view changes under runtime compilation. In
+/// Development, a view of the site's own whose contract header names an older version than the built-in view's, or
+/// none, is logged once per view.
 /// </summary>
 /// <param name="engine">MVC's view engine.</param>
 /// <param name="environment">The host, whose content root holds the site's own views.</param>
@@ -34,32 +34,32 @@ internal sealed partial class FormViews(ICompositeViewEngine engine, IWebHostEnv
     // The views whose headers were looked at in this process.
     private readonly ConcurrentDictionary<string, bool> _checked = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>The paths a form's view is looked for at, the override first.</summary>
+    /// <summary>The paths a form's view is looked for at, in order: the override in the theme's folder, the theme's folder, the default folder.</summary>
+    /// <param name="folder">The theme's view folder.</param>
     /// <param name="alias">The form's alias.</param>
     /// <param name="view">The view's name below the folder, such as <c>Field</c> or <c>fields/email</c>.</param>
-    public static IReadOnlyList<string> Candidates(string alias, string view) =>
-    [
-        $"~{Root}{DefaultFolder}/{Overrides}/{alias}/{view}.cshtml",
-        $"~{Root}{DefaultFolder}/{view}.cshtml",
-    ];
+    public static IReadOnlyList<string> Candidates(string folder, string alias, string view) => folder == DefaultFolder
+        ? [$"~{Root}{folder}/{Overrides}/{alias}/{view}.cshtml", $"~{Root}{folder}/{view}.cshtml"]
+        : [$"~{Root}{folder}/{Overrides}/{alias}/{view}.cshtml", $"~{Root}{folder}/{view}.cshtml", $"~{Root}{DefaultFolder}/{view}.cshtml"];
 
     /// <summary>The views of a form's parts.</summary>
+    /// <param name="folder">The theme's view folder.</param>
     /// <param name="alias">The form's alias.</param>
     /// <param name="cancellationToken">Cancels reading a view's header.</param>
     /// <exception cref="InvalidOperationException">A part has no view at any of its paths.</exception>
-    public async Task<(string Form, FormViewPaths Parts)> PartsAsync(string alias, CancellationToken cancellationToken)
+    public async Task<(string Form, FormViewPaths Parts)> PartsAsync(string folder, string alias, CancellationToken cancellationToken)
     {
-        var form = await FindAsync(alias, "Form", cancellationToken);
+        var form = await FindAsync(folder, alias, "Form", cancellationToken);
         return (form, new FormViewPaths
         {
-            Page = await FindAsync(alias, "Page", cancellationToken),
-            Group = await FindAsync(alias, "Group", cancellationToken),
-            Field = await FindAsync(alias, "Field", cancellationToken),
-            Navigation = await FindAsync(alias, "Navigation", cancellationToken),
-            Progress = await FindAsync(alias, "Progress", cancellationToken),
-            ErrorSummary = await FindAsync(alias, "ErrorSummary", cancellationToken),
-            Outcome = await FindAsync(alias, "Outcome", cancellationToken),
-            Notice = await FindAsync(alias, "Notice", cancellationToken),
+            Page = await FindAsync(folder, alias, "Page", cancellationToken),
+            Group = await FindAsync(folder, alias, "Group", cancellationToken),
+            Field = await FindAsync(folder, alias, "Field", cancellationToken),
+            Navigation = await FindAsync(folder, alias, "Navigation", cancellationToken),
+            Progress = await FindAsync(folder, alias, "Progress", cancellationToken),
+            ErrorSummary = await FindAsync(folder, alias, "ErrorSummary", cancellationToken),
+            Outcome = await FindAsync(folder, alias, "Outcome", cancellationToken),
+            Notice = await FindAsync(folder, alias, "Notice", cancellationToken),
         });
     }
 
@@ -80,15 +80,16 @@ internal sealed partial class FormViews(ICompositeViewEngine engine, IWebHostEnv
     }
 
     /// <summary>The view that writes the control of a field type, <c>fields/&lt;type&gt;.cshtml</c>.</summary>
+    /// <param name="folder">The theme's view folder.</param>
     /// <param name="alias">The form's alias.</param>
     /// <param name="type">The field type's alias.</param>
     /// <param name="cancellationToken">Cancels reading the view's header.</param>
     /// <exception cref="InvalidOperationException">The type has no control view at any of its paths.</exception>
-    public Task<string> ControlAsync(string alias, string type, CancellationToken cancellationToken) => FindAsync(alias, "fields/" + type, cancellationToken);
+    public Task<string> ControlAsync(string folder, string alias, string type, CancellationToken cancellationToken) => FindAsync(folder, alias, "fields/" + type, cancellationToken);
 
-    private async Task<string> FindAsync(string alias, string view, CancellationToken cancellationToken)
+    private async Task<string> FindAsync(string folder, string alias, string view, CancellationToken cancellationToken)
     {
-        var candidates = Candidates(alias, view);
+        var candidates = Candidates(folder, alias, view);
         foreach (var path in candidates)
         {
             if (engine.GetView(executingFilePath: null, path, isMainPage: false).Success)

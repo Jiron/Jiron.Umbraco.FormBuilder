@@ -7,7 +7,7 @@
         <legend>@Model.Title</legend>
         @if (Model.Description is not null)
         {
-            <div class="jfb-help" id="@Model.DescriptionId">@Model.Description</div>
+            <div class="@Model.Classes.Help" id="@Model.DescriptionId">@Model.Description</div>
         }
         <div class="jfb-fields">
             @foreach (var field in Model.Fields)
@@ -22,7 +22,7 @@ else
     <div class="@Model.CssClass" data-jfb-group="@Model.Key" hidden="@Model.IsHidden" @FormBuilderHtml.Flag("data-jfb-hidden", Model.IsHidden)>
         @if (Model.Description is not null)
         {
-            <div class="jfb-help" id="@Model.DescriptionId">@Model.Description</div>
+            <div class="@Model.Classes.Help" id="@Model.DescriptionId">@Model.Description</div>
         }
         <div class="jfb-fields">
             @foreach (var field in Model.Fields)

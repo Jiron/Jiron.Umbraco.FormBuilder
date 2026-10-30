@@ -6,10 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
 /// <summary>
-/// <c>&lt;jfb-assets /&gt;</c> writes the tags that load Jiron Form Builder's website runtime (and, with the themes, their
-/// stylesheets) once per page, wherever the layout puts it, usually in <c>&lt;head&gt;</c> (ADR-0004, ADR-0092). A page
-/// that names it twice gets the tags once, and <c>&lt;jfb-render&gt;</c> includes them by itself when no
-/// <c>&lt;jfb-assets&gt;</c> came before it. The element itself is not written. Add
+/// <c>&lt;jfb-assets /&gt;</c> writes the tags that load Jiron Form Builder's website runtime, its functional base rules
+/// and the stylesheets of the themes the page's forms use, once per page, wherever the layout puts it, best in
+/// <c>&lt;head&gt;</c> (ADR-0004, ADR-0092, ADR-0105). It writes the runtime wherever it is, and each stylesheet the page
+/// has not written before it, of the forms the layout renders after it too. A page that names it twice gets the tags
+/// once, and <c>&lt;jfb-render&gt;</c> includes what a form needs by itself when no <c>&lt;jfb-assets&gt;</c> wrote it
+/// before. The element itself is not written. Add
 /// <c>@addTagHelper *, Jiron.Umbraco.FormBuilder.Web</c> to the site's <c>_ViewImports.cshtml</c> to use it.
 /// </summary>
 [HtmlTargetElement("jfb-assets")]

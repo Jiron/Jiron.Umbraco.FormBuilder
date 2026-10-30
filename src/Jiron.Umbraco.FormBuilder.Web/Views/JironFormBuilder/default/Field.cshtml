@@ -4,7 +4,7 @@
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
 @using Microsoft.AspNetCore.Html
 @{
-    var labelClass = Model.HideLabel ? "jfb-label jfb-visually-hidden" : "jfb-label";
+    var labelClass = Model.HideLabel ? Model.Classes.Label + " jfb-visually-hidden" : Model.Classes.Label;
     IHtmlContent? mark = Model.Mark switch
     {
         FieldMark.Optional => new HtmlContentBuilder().AppendHtml(" <span class=\"jfb-mark\">").Append(Model.MarkText).AppendHtml("</span>"),
@@ -15,14 +15,14 @@
     {
         if (Model.Help is not null)
         {
-            <p class="jfb-help" id="@Model.HelpId">@Model.Help</p>
+            <p class="@Model.Classes.Help" id="@Model.HelpId">@Model.Help</p>
         }
     }
     void Error()
     {
         if (Model.Error is not null)
         {
-            <p class="jfb-error" id="@Model.ErrorId" data-jfb-error>@Model.Error</p>
+            <p class="@Model.Classes.Error" id="@Model.ErrorId" data-jfb-error>@Model.Error</p>
         }
     }
 }

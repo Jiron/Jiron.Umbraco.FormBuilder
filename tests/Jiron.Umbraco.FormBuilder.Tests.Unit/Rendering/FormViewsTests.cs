@@ -12,33 +12,71 @@ using NSubstitute;
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Rendering;
 
 /// <summary>
-/// Which view writes each part of a form (ADR-0015, ADR-0093), over a view engine that knows the paths the test gives:
-/// the form's override first, else the default view; a part without a view names the paths looked at; what renders
-/// without a form, the default folder's view only (ADR-0095); and in
-/// Development, a site's own view whose header names an older contract version, or none, is logged once.
+/// Which view writes each part of a form (ADR-0015, ADR-0093, ADR-0105), over a view engine that knows the paths the
+/// test gives: the form's override in its theme's folder first, then the theme's folder, then the default view; a part
+/// without a view names the paths looked at; what renders without a form, the default folder's view only (ADR-0095);
+/// and in Development, a site's own view whose header names an older contract version, or none, is logged once.
 /// </summary>
 [TestFixture]
 public sealed class FormViewsTests
 {
     private const string Folder = "~/Views/JironFormBuilder/default/";
 
+    private const string Themed = "~/Views/JironFormBuilder/bootstrap5/";
+
     private static readonly string[] Parts = ["Form", "Page", "Group", "Field", "Navigation", "Progress", "ErrorSummary", "Outcome", "Notice"];
 
     [Test]
     public void TheCandidates_AreTheFormsOverride_ThenTheDefaultView() =>
-        Assert.That(FormViews.Candidates("contact", "fields/email"), Is.EqualTo(new[]
+        Assert.That(FormViews.Candidates("default", "contact", "fields/email"), Is.EqualTo(new[]
         {
             Folder + "_forms/contact/fields/email.cshtml",
             Folder + "fields/email.cshtml",
         }));
 
     [Test]
+    public void ForAnotherTheme_TheCandidates_AreTheFormsOverrideInItsFolder_ThenItsFolder_ThenTheDefaultView() =>
+        Assert.That(FormViews.Candidates("bootstrap5", "contact", "Field"), Is.EqualTo(new[]
+        {
+            Themed + "_forms/contact/Field.cshtml",
+            Themed + "Field.cshtml",
+            Folder + "Field.cshtml",
+        }));
+
+    [Test]
+    public async Task ForAnotherTheme_EachPart_IsTheFormsOverride_ElseTheThemes_ElseTheDefault()
+    {
+        var views = Views(Defaults()
+            .Append(Themed + "_forms/contact/Field.cshtml")
+            .Append(Themed + "Field.cshtml")
+            .Append(Themed + "Page.cshtml")
+            .Append(Themed + "fields/email.cshtml")
+            .Append(Folder + "_forms/contact/Group.cshtml")
+            .Append(Folder + "fields/email.cshtml")
+            .Append(Folder + "fields/text.cshtml"));
+
+        var (form, parts) = await views.PartsAsync("bootstrap5", "contact", CancellationToken.None);
+        var (_, otherParts) = await views.PartsAsync("bootstrap5", "other", CancellationToken.None);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(form, Is.EqualTo(Folder + "Form.cshtml"));
+            Assert.That(parts.Field, Is.EqualTo(Themed + "_forms/contact/Field.cshtml"), "the form's override in the theme's folder");
+            Assert.That(otherParts.Field, Is.EqualTo(Themed + "Field.cshtml"), "the theme's view for another form");
+            Assert.That(parts.Page, Is.EqualTo(Themed + "Page.cshtml"));
+            Assert.That(parts.Group, Is.EqualTo(Folder + "Group.cshtml"), "an override in the default folder belongs to the default theme");
+            Assert.That(await views.ControlAsync("bootstrap5", "contact", "email", CancellationToken.None), Is.EqualTo(Themed + "fields/email.cshtml"));
+            Assert.That(await views.ControlAsync("bootstrap5", "contact", "text", CancellationToken.None), Is.EqualTo(Folder + "fields/text.cshtml"));
+        });
+    }
+
+    [Test]
     public async Task EachPart_IsTheDefaultView_UnlessTheFormHasItsOwn()
     {
         var views = Views(Defaults().Append(Folder + "_forms/contact/Field.cshtml").Append(Folder + "_forms/contact/Form.cshtml"));
 
-        var (form, parts) = await views.PartsAsync("contact", CancellationToken.None);
-        var (otherForm, otherParts) = await views.PartsAsync("other", CancellationToken.None);
+        var (form, parts) = await views.PartsAsync("default", "contact", CancellationToken.None);
+        var (otherForm, otherParts) = await views.PartsAsync("default", "other", CancellationToken.None);
 
         Assert.Multiple(() =>
         {
@@ -61,8 +99,8 @@ public sealed class FormViewsTests
 
         Assert.Multiple(async () =>
         {
-            Assert.That(await views.ControlAsync("contact", "email", CancellationToken.None), Is.EqualTo(Folder + "fields/email.cshtml"));
-            Assert.That(await views.ControlAsync("contact", "text", CancellationToken.None), Is.EqualTo(Folder + "_forms/contact/fields/text.cshtml"));
+            Assert.That(await views.ControlAsync("default", "contact", "email", CancellationToken.None), Is.EqualTo(Folder + "fields/email.cshtml"));
+            Assert.That(await views.ControlAsync("default", "contact", "text", CancellationToken.None), Is.EqualTo(Folder + "_forms/contact/fields/text.cshtml"));
         });
     }
 
@@ -71,7 +109,7 @@ public sealed class FormViewsTests
     {
         var views = Views(Defaults());
 
-        var failure = Assert.ThrowsAsync<InvalidOperationException>(() => views.ControlAsync("contact", "rating", CancellationToken.None));
+        var failure = Assert.ThrowsAsync<InvalidOperationException>(() => views.ControlAsync("default", "contact", "rating", CancellationToken.None));
 
         Assert.That(failure!.Message, Does.Contain("'fields/rating'").And.Contain("'contact'").And.Contain(Folder + "_forms/contact/fields/rating.cshtml").And.Contain(Folder + "fields/rating.cshtml"));
     }
@@ -101,8 +139,8 @@ public sealed class FormViewsTests
         var logger = new RecordingLogger<FormViews>();
         var views = Views(Defaults().Append(path), files, logger);
 
-        _ = await views.PartsAsync("contact", CancellationToken.None);
-        _ = await views.PartsAsync("contact", CancellationToken.None);
+        _ = await views.PartsAsync("default", "contact", CancellationToken.None);
+        _ = await views.PartsAsync("default", "contact", CancellationToken.None);
 
         Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Message)), Is.EqualTo(new[]
         {
@@ -119,7 +157,7 @@ public sealed class FormViewsTests
         var logger = new RecordingLogger<FormViews>();
         var views = Views(Defaults().Append(path), new Files { [path[1..]] = firstLine }, logger);
 
-        _ = await views.PartsAsync("contact", CancellationToken.None);
+        _ = await views.PartsAsync("default", "contact", CancellationToken.None);
 
         Assert.That(logger.Entries, Is.Empty);
     }
@@ -131,7 +169,7 @@ public sealed class FormViewsTests
         var logger = new RecordingLogger<FormViews>();
         var views = Views(Defaults(), files, logger);
 
-        _ = await views.PartsAsync("contact", CancellationToken.None);
+        _ = await views.PartsAsync("default", "contact", CancellationToken.None);
 
         Assert.Multiple(() =>
         {
@@ -148,7 +186,7 @@ public sealed class FormViewsTests
         var logger = new RecordingLogger<FormViews>();
         var views = Views(Defaults(), files, logger, Environments.Production);
 
-        _ = await views.PartsAsync("contact", CancellationToken.None);
+        _ = await views.PartsAsync("default", "contact", CancellationToken.None);
 
         Assert.Multiple(() =>
         {

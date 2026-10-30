@@ -9,9 +9,9 @@
         <div class="@control.CssClass">
             @foreach (var choice in control.Choices)
             {
-                <div class="jfb-choice">
-                    <input type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" disabled="@Model.IsDisabled">
-                    <label for="@choice.Id"><span class="jfb-visually-hidden">@choice.Label@choice.HiddenText</span></label>
+                <div class="@Model.Classes.Choice">
+                    <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" disabled="@Model.IsDisabled">
+                    <label class="@Model.Classes.ChoiceLabel" for="@choice.Id"><span class="jfb-visually-hidden">@choice.Label@choice.HiddenText</span></label>
                 </div>
             }
         </div>

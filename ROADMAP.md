@@ -842,7 +842,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | Route | Purpose |
 | --- | --- |
 | `GET forms/{keyOrAlias}?culture=&contentKey=` | The public projection for headless rendering, when the form allows it. `ETag` from the response itself, so it follows the public revision, the culture and dictionary changes (ADR-0002). |
-| `GET forms/{key}/render?instance=&page=&contentKey=&culture=` | The published form as HTML in the page's theme and culture, for a runtime that got `form_changed` on a page that may come from a cache (ADR-0004). `page` must be a local path. `no-store`. |
+| `GET forms/{key}/render?instance=&page=&contentKey=&culture=&theme=` | The published form as HTML in the page's theme and culture, for a runtime that got `form_changed` on a page that may come from a cache (ADR-0004). `page` must be a local path; `theme`, the placement's theme if the page named one, is a theme's alias (ADR-0105). `no-store`. |
 | `POST forms/{key}/challenge` | A signed challenge (form, time, and optionally a proof-of-work puzzle). Fetched on first interaction, so cached pages stay cacheable. The response also carries what cached markup cannot: the places left per option, and the member values that rules use (§4.3.3). |
 | `POST forms/{key}/uploads` | Upload one file before submitting (progress per file): `multipart/form-data` with the `challenge` part first, then the `file` part, streamed and checked on its first bytes (ADR-0006). Returns a signed upload token. Limits per form, file and IP; `413 payload_too_large` and `415 unsupported_media_type` close the connection. |
 | `POST forms/{key}/validate` | Validate one page's values on the server: `{revision, pageKey, culture, contentKey, values, consents, query, context, challenge}`, the answers given so far read and ruled as the submission's; `204` when the page's answers pass, `422` with the errors of that page's fields by alias (multi-page); nothing is stored (ADR-0089). |
@@ -2043,7 +2043,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when: with Umbraco's output cache on, tests show a cached page byte-identical for two visitors and holding nothing per visitor; a page with a members-only form, for a visitor and for a member, and a page with a form while the migrations are pending, for a visitor and for a signed-in backoffice user, never stored; `?jfb-sent` showing the outcome and never stored, for any value; no response to a post stored; the surface auto-route answering `400`; and `render` returning the published form with the given instance id. The `jfb-public` snapshot and declarations tests cover `render`.
 - [ ] **6.3a The theme registry, view resolution and the base rules** (6.3 split in three, WORKLOG 2026-10-29)
   - **Mechanics:**
-    - a theme registry (`IFormBuilderTheme`): the three built-in themes with their alias, name, stylesheet, class map, token defaults, dark scheme and view folder (ADR-0015, added in this split);
+    - a theme registry (`IFormBuilderTheme`): the three built-in themes with their alias, name, stylesheet, class map, token defaults, dark scheme and view folder, each stylesheet and its tokens coming with the theme's look in 6.3b and 6.3c (ADR-0015, ADR-0105, added in this split);
     - a form's theme: its `appearance.theme`, else the default theme of the General section for its site, a setting that comes with this feature (code default `default`), else `default`; a theme that is gone renders with `default` (ADR-0015, added in this split);
     - view resolution in the order per form → theme → default, in the layout of ADR-0015;
     - versioned view-contract headers;
@@ -2127,7 +2127,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 
 - [ ] **7.1 Standard protection, content rules and the spam folder**
   - **Signals:**
-    - a honeypot whose name varies per public revision;
+    - a honeypot whose name varies per public revision (its markup and name rendered since 6.3a, ADR-0105; 7.1 reads and scores it);
     - a minimum fill time from the signed challenge;
     - the `challenge` endpoint (§4.6) and its use by the runtime for JS posts, and as the first part of every upload, verified before the file is read (ADR-0006);
     - no time signal on no-JS posts, because the markup of anonymous forms is cache-safe (§3.4). They are scored on the honeypot, the blocked ranges and the content rules, and rate limited like every post (ADR-0012), and a test covers that case;

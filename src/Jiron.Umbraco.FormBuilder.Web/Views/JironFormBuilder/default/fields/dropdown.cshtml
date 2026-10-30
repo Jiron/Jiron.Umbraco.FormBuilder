@@ -6,7 +6,7 @@
     var control = (SelectControlModel)Model.Control!;
     void Select()
     {
-        <select class="jfb-control" id="@Model.Id" name="@Model.Name" multiple="@control.Multiple" size="@control.Size" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" disabled="@(Model.IsDisabled || control.Empty is not null)" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+        <select class="@Model.Classes.Select" id="@Model.Id" name="@Model.Name" multiple="@control.Multiple" size="@control.Size" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" disabled="@(Model.IsDisabled || control.Empty is not null)" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
             @if (control.Empty is { } empty)
             {
                 <option value="">@empty</option>
@@ -29,7 +29,7 @@
 {
     if (control.Hint is { } hint)
     {
-        <p class="jfb-help" id="@hint.Id">@hint.Text</p>
+        <p class="@Model.Classes.Help" id="@hint.Id">@hint.Text</p>
     }
     Select();
 }

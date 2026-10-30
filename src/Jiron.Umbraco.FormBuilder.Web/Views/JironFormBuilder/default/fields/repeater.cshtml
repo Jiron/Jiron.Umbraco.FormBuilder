@@ -13,11 +13,11 @@
     {
         if (remove.Context is { } context)
         {
-            <button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="@remove.Value" formaction="@remove.Action" disabled="@Model.IsDisabled">@remove.Text<span class="jfb-visually-hidden"> @context</span></button>
+            <button type="submit" class="@Model.Classes.ButtonLink" name="jfb-nav" value="@remove.Value" formaction="@remove.Action" disabled="@Model.IsDisabled">@remove.Text<span class="jfb-visually-hidden"> @context</span></button>
         }
         else
         {
-            <button type="submit" class="jfb-button jfb-button-link" name="jfb-nav" value="@remove.Value" formaction="@remove.Action" disabled="@Model.IsDisabled">@remove.Text</button>
+            <button type="submit" class="@Model.Classes.ButtonLink" name="jfb-nav" value="@remove.Value" formaction="@remove.Action" disabled="@Model.IsDisabled">@remove.Text</button>
         }
     }
 }
@@ -41,6 +41,6 @@
     }
     @if (control.Add is { } add)
     {
-        <button type="submit" class="jfb-button" name="jfb-nav" value="@add.Value" formaction="@add.Action" disabled="@Model.IsDisabled"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>@add.Text</button>
+        <button type="submit" class="@Model.Classes.Button" name="jfb-nav" value="@add.Value" formaction="@add.Action" disabled="@Model.IsDisabled"><span class="jfb-icon jfb-icon-add" aria-hidden="true"></span>@add.Text</button>
     }
 </div>

@@ -5,6 +5,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
 /// <summary>The model of <c>Page.cshtml</c>: one page of a form (ADR-0015).</summary>
 public sealed class PageViewModel
 {
+    /// <summary>The classes the views write, Jiron Form Builder's own with the form's theme's (ADR-0105).</summary>
+    public ThemeClassesModel Classes { get; init; } = ThemeClassesModel.None;
+
     /// <summary>The page's key (<c>data-jfb-page</c>).</summary>
     public required Guid Key { get; init; }
 
@@ -30,6 +33,9 @@ public sealed class PageViewModel
 /// <summary>The model of <c>Group.cshtml</c>: a fieldset when the group has a title, otherwise a plain block (ADR-0015).</summary>
 public sealed class GroupViewModel
 {
+    /// <summary>The classes the views write, Jiron Form Builder's own with the form's theme's (ADR-0105).</summary>
+    public ThemeClassesModel Classes { get; init; } = ThemeClassesModel.None;
+
     /// <summary>The group's key (<c>data-jfb-group</c>).</summary>
     public required Guid Key { get; init; }
 
@@ -97,6 +103,9 @@ public enum FieldMark
 /// </summary>
 public sealed class FieldViewModel
 {
+    /// <summary>The classes the views write, Jiron Form Builder's own with the form's theme's (ADR-0105).</summary>
+    public ThemeClassesModel Classes { get; init; } = ThemeClassesModel.None;
+
     /// <summary>The field's key (<c>data-jfb-field</c>).</summary>
     public required Guid Key { get; init; }
 

@@ -6,7 +6,7 @@
     var control = (SliderControlModel)Model.Control!;
 }
 <div class="jfb-range">
-    <input type="range" id="@Model.Id" name="@Model.Name" min="@control.Min" max="@control.Max" step="@control.Step" value="@control.Value" aria-valuetext="@control.ValueText" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+    <input class="@Model.Classes.Range" type="range" id="@Model.Id" name="@Model.Name" min="@control.Min" max="@control.Max" step="@control.Step" value="@control.Value" aria-valuetext="@control.ValueText" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
     @if (control.Shown is { } shown)
     {
         <output for="@Model.Id" aria-hidden="true">@shown</output>

@@ -1,6 +1,8 @@
+using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Web.Common.ApplicationBuilder;
 using Umbraco.Cms.Web.Website.Caching;
@@ -36,6 +38,7 @@ internal static class FormBuilderRenderingServices
         builder.Services.TryAddSingleton<BackOfficeVisitors>();
         builder.Services.TryAddScoped<FormMembers>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IWebsiteOutputCacheVaryByProvider, SentVaryBy>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<FormBuilderStartupChecks>, ThemeStylesheetStartupCheck>());
         builder.Services.Configure<UmbracoPipelineOptions>(options =>
         {
             if (!options.PipelineFilters.Any(filter => filter.Name == AssetsFilterName))

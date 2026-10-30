@@ -7,7 +7,7 @@
  *
  *   - the runtime's core, its entry and every chunk the entry imports statically: at most 16 KB;
  *   - the runtime with every feature, all its files: at most 40 KB;
- *   - each theme's CSS: at most 10 KB, once 6.3 builds the themes (until then the line says so);
+ *   - each stylesheet the themes package builds, the base rules and each theme's: at most 10 KB (ADR-0105);
  *   - the element and the backoffice bundle: reported, without a budget (section 4.12 sets none for the element,
  *     and 9.6 sets the backoffice's).
  *
@@ -84,10 +84,10 @@ export function check({ reports = REPORTS, webProject = WEB_PROJECT } = {}) {
   }
 
   const themes = readReport('themes', reports);
-  if (!themes) results.push({ ok: true, line: `theme CSS: ${kb(BUDGETS.themeCss)} gzip each, no theme is built yet (6.3)` });
+  if (!themes) missing('themes');
   else {
     for (const file of themes.files.filter((f) => f.file.endsWith('.css'))) {
-      budget(`theme ${file.file}`, measure(themes, [file.file], webProject), BUDGETS.themeCss);
+      budget(`stylesheet ${file.file}`, measure(themes, [file.file], webProject), BUDGETS.themeCss);
     }
   }
 

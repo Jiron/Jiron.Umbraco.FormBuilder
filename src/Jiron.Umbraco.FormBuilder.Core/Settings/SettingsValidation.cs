@@ -38,6 +38,9 @@ internal sealed class SettingsErrors(string section)
     /// <summary>The code of a required-marker style a site cannot have: <c>inherit</c> is a form's (ADR-0095).</summary>
     public const string RequiredMarkerCode = "requiredMarker";
 
+    /// <summary>The code of a theme's alias that is too long or not on one line (ADR-0105).</summary>
+    public const string ThemeCode = "theme";
+
     /// <summary>The code of a field a site cannot override.</summary>
     public const string Scope = "scope";
 

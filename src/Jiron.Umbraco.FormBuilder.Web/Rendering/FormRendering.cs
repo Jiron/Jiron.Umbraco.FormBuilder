@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Migrations;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
 using Microsoft.AspNetCore.Html;
@@ -18,8 +19,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// <summary>What a page renders for a form: a view and its model.</summary>
 /// <param name="View">The view's path.</param>
 /// <param name="Model">Its model: a <see cref="FormViewModel"/>, or for the note while the migrations are pending a <see cref="NoticeViewModel"/>.</param>
-/// <param name="IsForm">Whether it is the form, which brings the form's assets; the note brings none.</param>
-internal sealed record RenderedForm(string View, object Model, bool IsForm);
+/// <param name="Theme">The form's theme, whose stylesheet the page loads with the form's assets; null for the note, which brings none.</param>
+internal sealed record RenderedForm(string View, object Model, IFormBuilderTheme? Theme);
 
 /// <summary>
 /// What a page renders for a form it names (ADR-0004, ADR-0093, ADR-0095): the form's view and its model, with its
@@ -33,7 +34,8 @@ internal sealed record RenderedForm(string View, object Model, bool IsForm);
 /// the request's. The render endpoint gives the page, the culture and the instance id in their place (ADR-0104). A render
 /// that is per visitor keeps its page out of every cache (ADR-0004, ADR-0104): one on a request other than <c>GET</c> or
 /// <c>HEAD</c> or that carries <c>jfb-sent</c>, a form for members for anyone, and while the migrations are pending any
-/// form for anyone.
+/// form for anyone. The form's theme is the placement's, else the form's own, else the site's default, else
+/// <c>default</c> (ADR-0105).
 /// </summary>
 /// <param name="forms">The published forms.</param>
 /// <param name="requests">What the form endpoint answers, which the model data is.</param>
@@ -45,6 +47,7 @@ internal sealed record RenderedForm(string View, object Model, bool IsForm);
 /// <param name="backOffice">Whether the request comes from a signed-in backoffice user, who sees that note.</param>
 /// <param name="submissions">The submission pipeline, whose receipt the page after a sent post shows.</param>
 /// <param name="sent">The tokens of the redirect after a sent post.</param>
+/// <param name="themes">The themes, which give the form's.</param>
 /// <param name="logger">Where a reference that names no form is logged.</param>
 internal sealed partial class FormRendering(
     PublishedFormCache forms,
@@ -57,6 +60,7 @@ internal sealed partial class FormRendering(
     BackOfficeVisitors backOffice,
     FormSubmissions submissions,
     SentTokens sent,
+    FormBuilderThemes themes,
     ILogger<FormRendering> logger)
 {
     // The references that named no form in this process, so each is logged once.
@@ -66,8 +70,9 @@ internal sealed partial class FormRendering(
     /// <param name="httpContext">The request.</param>
     /// <param name="form">A key (a <see cref="Guid"/> or its text with hyphens), an alias, or a <see cref="FormBuilderFormReference"/>.</param>
     /// <param name="context">The context values the page gives, by name, or null.</param>
+    /// <param name="theme">The alias of the theme the placement names, or null for the form's own.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
-    public async Task<RenderedForm?> RenderAsync(HttpContext httpContext, object? form, IReadOnlyDictionary<string, string?>? context, CancellationToken cancellationToken)
+    public async Task<RenderedForm?> RenderAsync(HttpContext httpContext, object? form, IReadOnlyDictionary<string, string?>? context, string? theme, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         var reference = form switch
@@ -126,8 +131,9 @@ internal sealed partial class FormRendering(
             await SentAsync(httpContext, formKey, instance, culture, cancellationToken);
         }
 
-        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), gate, target?.Page), cancellationToken);
-        return new RenderedForm(view, model, IsForm: true);
+        var formTheme = themes.Resolve(target is null ? theme : target.Theme, shown.Form.Settings.Theme);
+        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), formTheme, gate, target?.Page), cancellationToken);
+        return new RenderedForm(view, model, formTheme);
     }
 
     // The outcome of the entry a post without JavaScript sent, on the page it redirected to (ADR-0100): the token in
@@ -171,7 +177,7 @@ internal sealed partial class FormRendering(
             Heading = words.PendingHeading,
             Text = new HtmlString("<p>" + WebUtility.HtmlEncode(words.PendingText) + "</p>"),
         };
-        return new RenderedForm(await views.DefaultAsync("Notice", cancellationToken), note, IsForm: false);
+        return new RenderedForm(await views.DefaultAsync("Notice", cancellationToken), note, Theme: null);
     }
 
     // The page's content and culture from Umbraco's published request; outside an Umbraco page, none and the request's.

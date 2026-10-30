@@ -13,6 +13,8 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
+using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
@@ -33,6 +35,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// <param name="Culture">The culture, one of the site's languages.</param>
 /// <param name="Instance">The instance id.</param>
 /// <param name="Context">The context values the page gives, by name; empty for none.</param>
+/// <param name="Theme">The form's theme (ADR-0105), whose classes and view folder the models take.</param>
 /// <param name="Gate">Why a form for members shows its notice to the visitor; null when the form shows.</param>
 /// <param name="Page">
 /// The path of the page the form posts to without JavaScript, as the render endpoint gives it (ADR-0104); null for the
@@ -45,6 +48,7 @@ internal sealed record FormRender(
     string Culture,
     string Instance,
     IReadOnlyDictionary<string, string?> Context,
+    IFormBuilderTheme Theme,
     MemberGate? Gate = null,
     string? Page = null);
 
@@ -108,7 +112,8 @@ internal sealed partial class FormModels(
     {
         ArgumentNullException.ThrowIfNull(render);
         var form = render.Form.Published;
-        var (formView, parts) = await views.PartsAsync(form.Form.Alias, cancellationToken);
+        var (formView, parts) = await views.PartsAsync(render.Theme.ViewFolder, form.Form.Alias, cancellationToken);
+        var classes = new ThemeClassesModel(render.Theme.Classes);
         var words = RenderingWords.Of(render.Culture);
         var post = FormPosts.Get(render.HttpContext, form.Form.Key, render.Instance)
             ?? (FormPostFileNotes.Get(render.HttpContext, form.Form.Key, render.Instance) is { IsRefused: true }
@@ -125,17 +130,18 @@ internal sealed partial class FormModels(
             render.Instance,
             render.Culture,
             culture.TextInfo.IsRightToLeft ? "rtl" : "ltr",
-            Classes("jfb-form", "jfb-theme-" + FormViews.DefaultFolder, render.Shown.Form.Settings.CssClass),
+            Classes("jfb-form", "jfb-theme-" + render.Theme.Name, render.Theme.Classes.GetValueOrDefault(FormBuilderThemeSlots.Form), render.Shown.Form.Settings.CssClass),
             display,
             (path.Length == 0 ? "/" : path) + (HoldsFile(form.Definition) ? "?" + FormPostFields.PostMarker + "=" + form.Form.Key.ToString("D") + "." + render.Instance : string.Empty) + "#" + render.Instance,
             HoldsFile(form.Definition) ? Multipart : null,
             (request.PathBase + new PathString(paths.Root)).ToUriComponent(),
             ModelData.Of(render.Shown.Answer.Body),
-            parts);
+            parts,
+            classes);
         var model = display switch
         {
-            FormDisplay.Outcome => root.Model(outcome: Outcome(post!.Outcome!, words)),
-            FormDisplay.Notice => root.Model(notice: render.Shown.Unavailable is not null ? Unavailable(render, words, culture) : Gated(render.Gate!.Value, words)),
+            FormDisplay.Outcome => root.Model(outcome: Outcome(post!.Outcome!, words, classes)),
+            FormDisplay.Notice => root.Model(notice: render.Shown.Unavailable is not null ? Unavailable(render, words, culture, classes) : Gated(render.Gate!.Value, words, classes)),
             _ => await FormAsync(render, root, post, words, culture, cancellationToken),
         };
         return (formView, model);
@@ -143,13 +149,13 @@ internal sealed partial class FormModels(
 
     // The notice of a form for members to a visitor it does not admit, in the culture (ADR-0095); a form that takes no
     // entry now says so first, since signing in would not help.
-    private static NoticeViewModel Gated(MemberGate gate, RenderingWords words) => gate == MemberGate.SignIn
-        ? new NoticeViewModel { Kind = NoticeKind.SignIn, Heading = words.SignInHeading, Text = Paragraph(words.SignInText) }
-        : new NoticeViewModel { Kind = NoticeKind.MemberGroups, Heading = words.GroupsHeading, Text = Paragraph(words.GroupsText) };
+    private static NoticeViewModel Gated(MemberGate gate, RenderingWords words, ThemeClassesModel classes) => gate == MemberGate.SignIn
+        ? new NoticeViewModel { Classes = classes, CssClass = classes.Join("jfb-notice", FormBuilderThemeSlots.Notice), Kind = NoticeKind.SignIn, Heading = words.SignInHeading, Text = Paragraph(words.SignInText) }
+        : new NoticeViewModel { Classes = classes, CssClass = classes.Join("jfb-notice", FormBuilderThemeSlots.Notice), Kind = NoticeKind.MemberGroups, Heading = words.GroupsHeading, Text = Paragraph(words.GroupsText) };
 
     // The notice of a form that takes no entry now: the form's closed message when it is closed or full, otherwise the
     // package's heading and sentence; a form that opens later says when, in the site's time zone and the culture.
-    private NoticeViewModel Unavailable(FormRender render, RenderingWords words, CultureInfo culture)
+    private NoticeViewModel Unavailable(FormRender render, RenderingWords words, CultureInfo culture, ThemeClassesModel classes)
     {
         var availability = render.Form.Published.Definition.Settings.Availability;
         if (render.Shown.Unavailable == FormUnavailable.Closed && availability.OpensAt is { } opens && time.GetUtcNow().UtcDateTime < opens)
@@ -157,6 +163,8 @@ internal sealed partial class FormModels(
             var local = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(opens, DateTimeKind.Utc), render.Shown.TimeZone);
             return new NoticeViewModel
             {
+                Classes = classes,
+                CssClass = classes.Join("jfb-notice", FormBuilderThemeSlots.Notice),
                 Kind = NoticeKind.NotOpenYet,
                 Heading = string.Format(culture, words.OpensHeading, local.ToString("f", culture)),
                 Text = Paragraph(words.OpensText),
@@ -166,12 +174,13 @@ internal sealed partial class FormModels(
         var full = render.Shown.Unavailable == FormUnavailable.Full;
         var kind = full ? NoticeKind.Full : NoticeKind.Closed;
         return render.Shown.Form.Settings.ClosedMessage?.Default is { Length: > 0 } message
-            ? new NoticeViewModel { Kind = kind, Text = new HtmlString(message) }
-            : new NoticeViewModel { Kind = kind, Heading = full ? words.FullHeading : words.ClosedHeading, Text = Paragraph(full ? words.FullText : words.ClosedText) };
+            ? new NoticeViewModel { Classes = classes, CssClass = classes.Join("jfb-notice", FormBuilderThemeSlots.Notice), Kind = kind, Text = new HtmlString(message) }
+            : new NoticeViewModel { Classes = classes, CssClass = classes.Join("jfb-notice", FormBuilderThemeSlots.Notice), Kind = kind, Heading = full ? words.FullHeading : words.ClosedHeading, Text = Paragraph(full ? words.FullText : words.ClosedText) };
     }
 
-    private static OutcomeViewModel Outcome(FormPostOutcome outcome, RenderingWords words) => new()
+    private static OutcomeViewModel Outcome(FormPostOutcome outcome, RenderingWords words, ThemeClassesModel classes) => new()
     {
+        Classes = classes,
         Message = new HtmlString(outcome.Html),
         Reference = outcome.Reference is { Length: > 0 } reference ? WithMarkup(words.Reference, "<strong>" + WebUtility.HtmlEncode(reference) + "</strong>") : null,
         IsPending = outcome.IsPending,
@@ -260,7 +269,8 @@ internal sealed partial class FormModels(
                     Title = build.Text(group.Key, "title", group.Title),
                     Description = build.Html(group.Key, "description", group.Description),
                     DescriptionId = root.Id + "-" + group.Key.ToString("N") + "-help",
-                    CssClass = Classes("jfb-group", "jfb-columns-" + Math.Clamp(group.Columns, 1, 4).ToString(CultureInfo.InvariantCulture), group.Style == GroupStyle.Card ? "jfb-group-card" : null),
+                    Classes = root.Classes,
+                    CssClass = Classes("jfb-group", "jfb-columns-" + Math.Clamp(group.Columns, 1, 4).ToString(CultureInfo.InvariantCulture), group.Style == GroupStyle.Card ? "jfb-group-card" : null, render.Theme.Classes.GetValueOrDefault(FormBuilderThemeSlots.Group)),
                     IsHidden = groupHidden,
                     Fields = fields,
                     Views = root.Views,
@@ -269,6 +279,7 @@ internal sealed partial class FormModels(
 
             pages.Add(new PageViewModel
             {
+                Classes = root.Classes,
                 Key = page.Key,
                 Title = build.Text(page.Key, "title", page.Title),
                 Description = build.Html(page.Key, "description", page.Description),
@@ -279,8 +290,9 @@ internal sealed partial class FormModels(
             });
         }
 
-        var navigation = Navigation(settings, shownPages, current, words);
+        var navigation = Navigation(settings, shownPages, current, words, root.Classes);
         var errors = Summary(build, settings.ValidationSummary, pages.FirstOrDefault(page => page.IsCurrent));
+        var honeypot = FormHoneypot.NameOf(root.Key, root.Revision);
         return root.Model(
             pages: pages,
             defaultButton: pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Control is RankingControlModel or RepeaterControlModel)
@@ -288,15 +300,16 @@ internal sealed partial class FormModels(
                 : null,
             progress: Progress(settings, shownPages, current, build),
             errors: errors.Count > 0
-                ? new ErrorSummaryViewModel { Heading = VisitorMessages.SummaryHeading(errors.Count, render.Culture), HeadingId = root.Id + "-summary", Errors = errors }
+                ? new ErrorSummaryViewModel { Classes = root.Classes, Heading = VisitorMessages.SummaryHeading(errors.Count, render.Culture), HeadingId = root.Id + "-summary", Errors = errors }
                 : null,
             navigation: navigation,
             requiredNote: build.MarksRequired
                 ? WithMarkup(words.RequiredNote, "<span aria-hidden=\"true\">*</span><span class=\"jfb-visually-hidden\">" + WebUtility.HtmlEncode(words.Asterisk) + "</span>")
                 : null,
             notice: post?.Notice is { } notice
-                ? new NoticeViewModel { Kind = NoticeKind.Message, Heading = notice.Heading, Text = Paragraph(notice.Text), Code = notice.Code, HeadingId = notice.Code is null ? null : root.Id + "-notice", CssClass = notice.Code is FormPostHandler.NotSentCode or FormPostHandler.TooLargeCode ? "jfb-notice jfb-notice-error" : "jfb-notice" }
+                ? new NoticeViewModel { Classes = root.Classes, Kind = NoticeKind.Message, Heading = notice.Heading, Text = Paragraph(notice.Text), Code = notice.Code, HeadingId = notice.Code is null ? null : root.Id + "-notice", CssClass = root.Classes.Join(notice.Code is FormPostHandler.NotSentCode or FormPostHandler.TooLargeCode ? "jfb-notice jfb-notice-error" : "jfb-notice", FormBuilderThemeSlots.Notice) }
                 : null,
+            honeypot: new HoneypotModel(root.Id + "-" + honeypot, honeypot, words.Honeypot),
             context: Context(render),
             postValues: PostValues(root, current, post));
     }
@@ -543,7 +556,8 @@ internal sealed partial class FormModels(
             Alias = field.Alias is null ? null : build.Name(field),
             Id = control,
             Name = build.Name(field),
-            CssClass = Classes("jfb-field", "jfb-field-" + field.Type, field.Span > 1 ? "jfb-span-" + field.Span.ToString(CultureInfo.InvariantCulture) : null, field.CssClass),
+            Classes = build.Root.Classes,
+            CssClass = Classes("jfb-field", "jfb-field-" + field.Type, field.Span > 1 ? "jfb-span-" + field.Span.ToString(CultureInfo.InvariantCulture) : null, build.Render.Theme.Classes.GetValueOrDefault(FormBuilderThemeSlots.Field), field.CssClass),
             LabelElement = element,
             Label = label,
             HideLabel = field.HideLabel,
@@ -701,6 +715,7 @@ internal sealed partial class FormModels(
         var at = shownPages.IndexOf(current);
         return new ProgressViewModel
         {
+            Classes = build.Root.Classes,
             Style = settings.Progress == ProgressIndicator.Bar ? ProgressStyle.Bar : ProgressStyle.Steps,
             Current = at + 1,
             Total = shownPages.Count,
@@ -713,12 +728,13 @@ internal sealed partial class FormModels(
 
     // Back unless the current page is the first the rules show, Next unless it is the last, Send on the last; a form
     // whose rules show no page shows Send.
-    private static NavigationViewModel Navigation(PublicFormSettings settings, List<PublicPage> shownPages, PublicPage? current, RenderingWords words)
+    private static NavigationViewModel Navigation(PublicFormSettings settings, List<PublicPage> shownPages, PublicPage? current, RenderingWords words, ThemeClassesModel classes)
     {
         var at = current is null ? -1 : shownPages.IndexOf(current);
         var last = at == shownPages.Count - 1 || at < 0;
         return new NavigationViewModel
         {
+            Classes = classes,
             Back = at > 0 ? new NavigationButtonModel(Text(settings.BackLabel) ?? words.Back, FormPostFields.Back) : null,
             Next = last ? null : new NavigationButtonModel(Text(settings.NextLabel) ?? words.Next, FormPostFields.Next),
             Submit = last ? new NavigationButtonModel(Text(settings.SubmitLabel) ?? words.Send, FormPostFields.Submit) : null,
@@ -827,7 +843,8 @@ internal sealed partial class FormModels(
         string? EncodingType,
         string ApiBase,
         IHtmlContent ModelData,
-        FormViewPaths Views)
+        FormViewPaths Views,
+        ThemeClassesModel Classes)
     {
         // The form's address opening at another element of the page than the form (ADR-0101).
         public string At(string id) => Action[..(Action.LastIndexOf('#') + 1)] + id;
@@ -842,7 +859,8 @@ internal sealed partial class FormModels(
             NoticeViewModel? notice = null,
             OutcomeViewModel? outcome = null,
             IReadOnlyList<HiddenInputModel>? context = null,
-            IReadOnlyList<HiddenInputModel>? postValues = null) => new()
+            IReadOnlyList<HiddenInputModel>? postValues = null,
+            HoneypotModel? honeypot = null) => new()
             {
                 Key = Key,
                 Alias = Alias,
@@ -857,6 +875,7 @@ internal sealed partial class FormModels(
                 ApiBase = ApiBase,
                 ModelData = ModelData,
                 Views = Views,
+                Classes = Classes,
                 Pages = pages ?? [],
                 DefaultButton = defaultButton,
                 Progress = progress,
@@ -867,6 +886,7 @@ internal sealed partial class FormModels(
                 Outcome = outcome,
                 ContextValues = context ?? [],
                 PostValues = postValues ?? [],
+                Honeypot = honeypot,
             };
     }
 
@@ -1074,7 +1094,7 @@ internal sealed partial class FormModels(
 
             if (!_controls.TryGetValue(type, out var path))
             {
-                path = await views.ControlAsync(render.Form.Published.Form.Alias, type, cancellationToken);
+                path = await views.ControlAsync(render.Theme.ViewFolder, render.Form.Published.Form.Alias, type, cancellationToken);
                 _controls[type] = path;
             }
 

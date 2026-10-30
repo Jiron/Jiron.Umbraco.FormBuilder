@@ -6,7 +6,7 @@
     var control = (SelectControlModel)Model.Control!;
 }
 <div class="jfb-select">
-    <select class="jfb-control" id="@Model.Id" name="@Model.Name" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+    <select class="@Model.Classes.Select" id="@Model.Id" name="@Model.Name" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
         <option value="">@control.Prompt</option>
         @foreach (var option in control.Options)
         {

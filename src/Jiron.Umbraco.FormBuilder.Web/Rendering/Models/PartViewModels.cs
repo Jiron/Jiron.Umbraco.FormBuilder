@@ -5,6 +5,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
 /// <summary>The model of <c>Navigation.cshtml</c>: the buttons below the current page (ADR-0015).</summary>
 public sealed class NavigationViewModel
 {
+    /// <summary>The classes the views write, Jiron Form Builder's own with the form's theme's (ADR-0105).</summary>
+    public ThemeClassesModel Classes { get; init; } = ThemeClassesModel.None;
+
     /// <summary>The button back to the previous page, or null on the first page.</summary>
     public NavigationButtonModel? Back { get; init; }
 
@@ -33,6 +36,9 @@ public enum ProgressStyle
 /// <summary>The model of <c>Progress.cshtml</c>: where the visitor is among the pages the rules show (ADR-0015).</summary>
 public sealed class ProgressViewModel
 {
+    /// <summary>The classes the views write, Jiron Form Builder's own with the form's theme's (ADR-0105).</summary>
+    public ThemeClassesModel Classes { get; init; } = ThemeClassesModel.None;
+
     /// <summary>How the progress shows.</summary>
     public required ProgressStyle Style { get; init; }
 
@@ -64,6 +70,9 @@ public sealed record ProgressStepModel(string Title, bool IsCurrent, bool IsDone
 /// <summary>The model of <c>ErrorSummary.cshtml</c>: the errors after a post, each with a link to its field (ADR-0015).</summary>
 public sealed class ErrorSummaryViewModel
 {
+    /// <summary>The classes the views write, Jiron Form Builder's own with the form's theme's (ADR-0105).</summary>
+    public ThemeClassesModel Classes { get; init; } = ThemeClassesModel.None;
+
     /// <summary>The summary's heading.</summary>
     public required string Heading { get; init; }
 
@@ -110,6 +119,9 @@ public enum NoticeKind
 /// <summary>The model of <c>Notice.cshtml</c>: a notice in place of the form or above it (ADR-0015).</summary>
 public sealed class NoticeViewModel
 {
+    /// <summary>The classes the views write, Jiron Form Builder's own with the form's theme's (ADR-0105).</summary>
+    public ThemeClassesModel Classes { get; init; } = ThemeClassesModel.None;
+
     /// <summary>Why the notice shows.</summary>
     public required NoticeKind Kind { get; init; }
 
@@ -135,6 +147,9 @@ public sealed class NoticeViewModel
 /// <summary>The model of <c>Outcome.cshtml</c>: the message after the visitor sent the form (ADR-0015).</summary>
 public sealed class OutcomeViewModel
 {
+    /// <summary>The classes the views write, Jiron Form Builder's own with the form's theme's (ADR-0105).</summary>
+    public ThemeClassesModel Classes { get; init; } = ThemeClassesModel.None;
+
     /// <summary>The message, sanitised.</summary>
     public required IHtmlContent Message { get; init; }
 

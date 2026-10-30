@@ -5,9 +5,9 @@
     var control = (TextAreaControlModel)Model.Control!;
 }
 @* The line break after the start tag is the parser's, so a text that starts with one keeps it. *@
-<textarea class="jfb-control" id="@Model.Id" name="@Model.Name" rows="@control.Rows" placeholder="@Model.Placeholder" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+<textarea class="@Model.Classes.Control" id="@Model.Id" name="@Model.Name" rows="@control.Rows" placeholder="@Model.Placeholder" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
 @Model.Value</textarea>
 @if (control.Counter is { } counter)
 {
-    <p class="jfb-counter" id="@counter.Id">@counter.Text</p>
+    <p class="@Model.Classes.Counter" id="@counter.Id">@counter.Text</p>
 }
