@@ -40,8 +40,11 @@ internal sealed record DemoContent(
 /// <summary>A text in English and German.</summary>
 internal sealed record DemoTranslation(string En, string De);
 
-/// <summary>A page with its fixed key, document type, texts per language, blocks and the alias of the form it shows.</summary>
-internal sealed record DemoPage(Guid Key, string Type, DemoPageTexts En, DemoPageTexts De, IReadOnlyList<DemoBlock> Blocks, string? Form = null)
+/// <summary>
+/// A page with its fixed key, document type, texts per language, blocks, the alias of the form it shows and the topic it
+/// gives that form as a context value (ADR-0124).
+/// </summary>
+internal sealed record DemoPage(Guid Key, string Type, DemoPageTexts En, DemoPageTexts De, IReadOnlyList<DemoBlock> Blocks, string? Form = null, string? FormTopic = null)
 {
     public DemoPageTexts Texts(bool german) => german ? De : En;
 }

@@ -271,6 +271,9 @@ internal sealed partial class DemoSeeder(
 
         // The form below the content, by its alias, the same in both languages (the form picker replaces it with 6.7).
         type.AddPropertyType(new PropertyType(shortStrings, properties.TextBox, "form") { Name = "Form", Description = "The alias of a form to show below the content." }, "content", "Content");
+
+        // What the page is about, which its form may take as the context value topic (ADR-0124).
+        type.AddPropertyType(new PropertyType(shortStrings, properties.TextBox, "formTopic") { Name = "Form topic", Description = "What the page is about; a form that lists the context value topic may take it." }, "content", "Content");
         if (isRoot)
         {
             // The footer's newsletter slot: its texts now, the newsletter form once a step brings it.
@@ -319,6 +322,11 @@ internal sealed partial class DemoSeeder(
         if (page.Form is not null)
         {
             properties.Add(new PropertyValueModel { Alias = "form", Value = page.Form });
+        }
+
+        if (page.FormTopic is not null)
+        {
+            properties.Add(new PropertyValueModel { Alias = "formTopic", Value = page.FormTopic });
         }
 
         foreach (var (culture, german) in new[] { (English, false), (German, true) })

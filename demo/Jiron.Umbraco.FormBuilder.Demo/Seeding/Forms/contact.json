@@ -4,7 +4,8 @@
   "settings": {
     "submission": {
       "submitLabel": { "": "Send message", "de": "Nachricht senden" }
-    }
+    },
+    "developer": { "queryValues": [ "source" ], "contextValues": [ "topic" ] }
   },
   "pages": [
     {
@@ -20,7 +21,8 @@
               "alias": "name",
               "label": { "": "Your name", "de": "Ihr Name" },
               "required": true,
-              "autocomplete": "name"
+              "autocomplete": "name",
+              "prefill": { "member": "name" }
             },
             {
               "key": "d0000000-0000-4000-8000-000000000102",
@@ -30,7 +32,30 @@
               "help": { "": "We use it only to answer you.", "de": "Wir nutzen sie nur für unsere Antwort." },
               "required": true,
               "sensitive": true,
-              "autocomplete": "email"
+              "autocomplete": "email",
+              "prefill": { "member": "email", "memberMode": "hide" }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000105",
+              "type": "dropdown",
+              "alias": "topic",
+              "label": { "": "What is it about?", "de": "Worum geht es?" },
+              "options": {
+                "items": [
+                  { "value": "general", "label": { "": "A general question", "de": "Eine allgemeine Frage" } },
+                  { "value": "account", "label": { "": "Your account", "de": "Ihr Konto" } },
+                  { "value": "booking", "label": { "": "A booking", "de": "Eine Buchung" } },
+                  { "value": "collection", "label": { "": "Our collection", "de": "Unser Bestand" } }
+                ]
+              },
+              "prefill": { "context": "topic" }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000106",
+              "type": "text",
+              "alias": "source",
+              "label": { "": "Where did you hear about us?", "de": "Wie haben Sie von uns erfahren?" },
+              "prefill": { "query": "source" }
             },
             {
               "key": "d0000000-0000-4000-8000-000000000103",

@@ -63,7 +63,10 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
 - the member group "Library members", the two members, and public access on the members page;
 - the demo forms, from `Seeding/Forms/<alias>.json` in the package's definition format, created and published
   through the form service when their alias is missing ([ADR-0094](../docs/decisions/0094-demo-forms.md)): the
-  contact form, which the contact page shows through its `form` property, and the workshop booking on the events
+  contact form, which the contact page shows through its `form` property and gives its `formTopic` property as the
+  context value `topic`: a signed-in member finds their name in its field and no email field, their own address
+  standing in for it, every visitor finds "What is it about?" chosen from the page's topic, and "Where did you hear
+  about us?" takes the address's `?source=` ([ADR-0124](../docs/decisions/0124-prefill.md)); the workshop booking on the events
   page, which is for members: a visitor sees a notice that asks them to sign in, a member the form, where the
   workshop is chosen from cards, already chosen when the visitor follows a workshop's link on the events page
   (`?workshop=`, a default with merge tags, [ADR-0118](../docs/decisions/0118-defaults-with-merge-tags-on-the-page.md)),

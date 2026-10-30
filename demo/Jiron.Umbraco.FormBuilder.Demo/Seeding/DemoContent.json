@@ -231,7 +231,8 @@
         "body": "<p>Bibliothek Lindenhall<br>Marktstraße 12<br>12345 Lindenhall</p><p>Telefon: 01234 56789<br>E-Mail: info@lindenhall.example</p>"
       },
       "blocks": [],
-      "form": "contact"
+      "form": "contact",
+      "formTopic": "general"
     },
     {
       "key": "f282792e-a9ed-4bd4-9224-bab20781a827",
