@@ -316,7 +316,26 @@ describe('a text that recalls answers', () => {
   });
 
   it('never takes a default value for a visitor text', () => {
-    const model = modelOf([...TEXTS, { owner: 'k-name', text: 'defaultValue', context: 'text' }]);
+    // A default that names a field, which its place refuses (ADR-0118): taken for a text, it would render here.
+    const listed = modelOf([
+      ...TEXTS,
+      { owner: 'k-name', text: 'defaultValue', context: 'text', refused: ['field.plan'] },
+    ]);
+    const model: FormModel = {
+      ...listed,
+      form: {
+        ...listed.form,
+        pages: listed.form.pages.map((page) => ({
+          ...page,
+          groups: page.groups.map((group) => ({
+            ...group,
+            fields: group.fields.map((each) =>
+              each.key === 'k-name' ? { ...each, defaultValue: '{{ field.plan }}' } : each,
+            ),
+          })),
+        })),
+      },
+    };
     const form = formOf(FORM);
     const reading = readPage(form, model);
     const state = engineOf(model, null).decide(reading.answers, CONTEXT);

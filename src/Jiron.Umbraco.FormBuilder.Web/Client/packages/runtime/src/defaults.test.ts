@@ -136,14 +136,21 @@ describe('a default value with merge tags', () => {
   it('leaves a choice whose rendering matches no option, and a field whose default renders empty, as they are', () => {
     const form = formOf({
       room: '<select name="room"><option value="">Choose</option><option value="hall">Hall</option></select>',
+      days: '<select name="days" multiple><option value="mon" selected>Mon</option><option value="tue">Tue</option></select>',
       source: '<input name="source" value="">',
     });
     const model = modelOf(
-      [field('room', 'dropdown', '{{ query.room }}'), field('source', 'text', '{{ query.ref }}')],
-      [listed('room'), listed('source')],
+      [
+        field('room', 'dropdown', '{{ query.room }}'),
+        field('days', 'dropdown', ['{{ query.day }}']),
+        field('source', 'text', '{{ query.ref }}'),
+      ],
+      [listed('room'), listed('days'), listed('source')],
     );
-    fillDefaults(form, model, context({ room: ['attic'] }));
+    fillDefaults(form, model, context({ room: ['attic'], day: ['fri'] }));
+    const days = document.querySelector<HTMLSelectElement>('[name="days"]');
     expect([value('room'), value('source')]).toEqual(['', '']);
+    expect([...(days?.selectedOptions ?? [])].map((option) => option.value)).toEqual(['mon']);
   });
 
   it("never fills a control the visitor changed before the default was there, nor its field's other controls", () => {
@@ -175,10 +182,14 @@ describe('a default value with merge tags', () => {
       },
       ['kid'],
     );
-    const model = modelOf(
-      [field('kid', 'text', '{{ site.name }} guest'), field('other', 'text', '{{ site.name }}')],
-      [listed('kid'), listed('other')],
-    );
+    const kids: ModelField = {
+      key: 'kids',
+      type: 'repeater',
+      alias: 'kids',
+      settings: {},
+      fields: [field('kid', 'text', '{{ site.name }} guest')],
+    };
+    const model = modelOf([kids, field('other', 'text', '{{ site.name }}')], [listed('kid'), listed('other')]);
     fillDefaults(form, model, context());
     expect([value('kids[1].kid'), value('jfb-order-kid'), value('other')]).toEqual(['Library guest', '', '']);
   });
