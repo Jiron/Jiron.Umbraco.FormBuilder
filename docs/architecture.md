@@ -178,7 +178,8 @@ flowchart LR
   now ([ADR-0115](decisions/0115-answer-recall-on-the-page.md)); and fills in the default values that hold merge tags
   (`defaults.ts`, in the merge tags' chunk) on the fields the server marks `data-jfb-default`, loaded as the form
   shows, before the rules first decide, with the address's query values the form allows and never over a control the
-  visitor changed ([ADR-0118](decisions/0118-defaults-with-merge-tags-on-the-page.md)); its budget of every feature
+  visitor changed ([ADR-0118](decisions/0118-defaults-with-merge-tags-on-the-page.md)), a field prefilled from the
+  query taking the address's value first ([ADR-0124](decisions/0124-prefill.md)); its budget of every feature
   counts the largest language's words, as a page loads one
   ([ADR-0116](decisions/0116-the-runtimes-budget-counts-one-language.md)), and its build takes a terser pass besides
   the bundler's minifier ([ADR-0119](decisions/0119-a-terser-pass-for-the-website-runtime.md));

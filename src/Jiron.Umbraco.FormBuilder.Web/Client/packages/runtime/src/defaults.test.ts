@@ -203,3 +203,48 @@ describe('a default value with merge tags', () => {
     expect(value('source')).toBe('');
   });
 });
+
+describe('a field prefilled from the query (ADR-0124)', () => {
+  const prefilled = (key: string, type: string, query: string, defaultValue: string | string[] = []): ModelField => ({
+    ...field(key, type, defaultValue),
+    prefill: { query },
+  });
+
+  it("takes the address's value of its query name over its default, and the default where the address has none", () => {
+    const form = formOf({ source: '<input name="source">', topic: '<input name="topic">' });
+    const model = modelOf(
+      [prefilled('source', 'text', 'ref', '{{ site.name }}'), prefilled('topic', 'text', 'topic', '{{ site.name }}')],
+      [listed('source'), listed('topic')],
+    );
+    fillDefaults(form, model, context({ ref: ['mail'] }));
+    expect([value('source'), value('topic')]).toEqual(['mail', 'Library']);
+    expect(form.querySelector('[data-jfb-default]')).toBeNull();
+  });
+
+  it('ticks the choices of several values, and leaves an empty value to the default', () => {
+    const form = formOf({
+      topics: '<input type="checkbox" name="topics" value="news"><input type="checkbox" name="topics" value="events">',
+      source: '<input name="source">',
+    });
+    const model = modelOf(
+      [prefilled('topics', 'checkboxList', 'topic'), prefilled('source', 'text', 'ref', 'web')],
+      [],
+    );
+    fillDefaults(form, model, context({ topic: ['news', 'events'], ref: [''] }));
+    expect([ticked('topics'), value('source')]).toEqual([['news', 'events'], 'web']);
+  });
+
+  it('reads only its own query name, so a value the form does not allow never reaches it', () => {
+    const form = formOf({ source: '<input name="source">', shape: '<input name="shape">' });
+    const model = modelOf([prefilled('source', 'text', 'ref'), prefilled('shape', 'text', 'constructor')], []);
+    fillDefaults(form, model, context({ other: ['mail'] }));
+    expect([value('source'), value('shape')]).toEqual(['', '']);
+  });
+
+  it('never fills a control the visitor changed already', () => {
+    const form = formOf({ source: '<input name="source">' });
+    (document.querySelector('[name="source"]') as HTMLInputElement).value = 'own';
+    fillDefaults(form, modelOf([prefilled('source', 'text', 'ref')], []), context({ ref: ['mail'] }));
+    expect(value('source')).toBe('own');
+  });
+});

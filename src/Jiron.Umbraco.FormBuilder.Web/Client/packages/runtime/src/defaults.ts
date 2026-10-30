@@ -4,7 +4,8 @@
  * marks each field whose controls start from one `data-jfb-default`. The page renders it with the query values of its
  * address that the form allows and the form endpoint's values for its other tags, writes a tag its place refuses as it
  * stands, and gives the result to the controls the visitor has not changed yet, before the rules first decide. A
- * default the endpoint does not list renders as it is written.
+ * default the endpoint does not list renders as it is written. A field prefilled from the query takes the address's
+ * value, where it has one, before its default (ADR-0124).
  */
 import type { Context } from '@jfb/logic';
 import { parseTemplate, renderTemplate, type MergeValue } from '@jfb/logic/template';
@@ -47,7 +48,11 @@ export function fillDefaults(form: HTMLFormElement, model: FormModel, context: C
             ).text,
       )
       .filter((text) => text.length > 0);
-    fill(element, texts);
+    // A field prefilled from the query takes the address's value first (ADR-0124).
+    const asked = field?.prefill?.query;
+    const prefilled =
+      typeof asked === 'string' ? [own(context.query, asked) ?? []].flat().filter((text) => text.length > 0) : [];
+    fill(element, prefilled.length > 0 ? prefilled : texts);
   }
 }
 
