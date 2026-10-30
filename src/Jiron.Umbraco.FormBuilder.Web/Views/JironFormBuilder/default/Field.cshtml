@@ -7,9 +7,10 @@
     var mark = FormBuilderHtml.Mark(Model);
     void Help()
     {
-        if (Model.Help is not null)
+        @* A help text that holds merge tags is written however it renders, hidden while empty (ADR-0115). *@
+        if (Model.Help is not null || Model.Recalling.Contains("help"))
         {
-            <p class="@Model.Classes.Help" id="@Model.HelpId">@Model.Help</p>
+            <p class="@Model.Classes.Help" id="@Model.HelpId" @FormBuilderHtml.Text(Model, "help") hidden="@(Model.Help is null)">@Model.Help</p>
         }
     }
     void Error()
@@ -26,7 +27,7 @@
         case FieldLabelElement.Legend:
             @* A group of choices: the fieldset carries the description and the error state. *@
             <fieldset aria-describedby="@Model.DescribedBy" aria-invalid="@(Model.Error is null ? null : "true")">
-                <legend class="@labelClass">@Model.Label@mark</legend>
+                <legend class="@labelClass">@FormBuilderHtml.Label(Model)@mark</legend>
                 @{ Help(); }
                 @await Html.PartialAsync(Model.ControlView, Model)
                 @{ Error(); }
@@ -41,7 +42,7 @@
         default:
             if (Model.LabelElement == FieldLabelElement.Label)
             {
-                <label class="@labelClass" for="@Model.Id">@Model.Label@mark</label>
+                <label class="@labelClass" for="@Model.Id">@FormBuilderHtml.Label(Model)@mark</label>
             }
             Help();
             @await Html.PartialAsync(Model.ControlView, Model)

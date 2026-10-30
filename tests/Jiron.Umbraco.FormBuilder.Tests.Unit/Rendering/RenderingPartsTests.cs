@@ -1,9 +1,11 @@
+using System.Collections.Frozen;
 using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
+using Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
 
@@ -63,6 +65,51 @@ public sealed class RenderingPartsTests
         {
             Assert.That(() => FormBuilderHtml.Flag(name, on: true), Throws.InstanceOf<ArgumentException>());
             Assert.That(() => FormBuilderHtml.Attribute(name, "value"), Throws.InstanceOf<ArgumentException>());
+        });
+    }
+
+    [Test]
+    public void ATextsHook_NamesItsOwnerAndItsName_OnlyForATextThatHoldsMergeTags()
+    {
+        var field = FieldWith("Anna & co", recalling: ["help", "settings.text"]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Write(FormBuilderHtml.Text(field, "help")), Is.EqualTo("data-jfb-text=\"30000000-0000-4000-8000-0000000062c1 help\""));
+            Assert.That(Write(FormBuilderHtml.Text(field, "settings.text")), Is.EqualTo("data-jfb-text=\"30000000-0000-4000-8000-0000000062c1 settings.text\""));
+            Assert.That(Write(FormBuilderHtml.Text(field, "placeholder")), Is.Empty, "a text without tags has no hook");
+            Assert.That(() => FormBuilderHtml.Text(field, " "), Throws.InstanceOf<ArgumentException>());
+        });
+    }
+
+    [Test]
+    public void ALabel_IsItsTextEncoded_InASpanWithItsHookWhenItHoldsMergeTags_HiddenWhileEmpty()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(Write(FormBuilderHtml.Label(FieldWith("Anna & <co>", recalling: []))), Is.EqualTo("Anna &amp; &lt;co&gt;"));
+            Assert.That(Write(FormBuilderHtml.Label(FieldWith(null, recalling: []))), Is.Empty);
+            Assert.That(
+                Write(FormBuilderHtml.Label(FieldWith("Anna & <co>", recalling: ["label"]))),
+                Is.EqualTo("<span data-jfb-text=\"30000000-0000-4000-8000-0000000062c1 label\">Anna &amp; &lt;co&gt;</span>"));
+            Assert.That(
+                Write(FormBuilderHtml.Label(FieldWith(null, recalling: ["label"]))),
+                Is.EqualTo("<span data-jfb-text=\"30000000-0000-4000-8000-0000000062c1 label\" hidden></span>"),
+                "an empty label keeps its element, hidden, for the runtime to fill");
+        });
+    }
+
+    [Test]
+    public void AProgressStepsHook_CarriesWhatTheStepShowsWithoutATitle_OnlyForATitleThatHoldsMergeTags()
+    {
+        var step = new ProgressStepModel("Page 2", IsCurrent: false, IsDone: false) { Page = Form, Fallback = "Page \"2\"" };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Write(FormBuilderHtml.Text(step)), Is.Empty);
+            Assert.That(
+                Write(FormBuilderHtml.Text(step with { RecallsTitle = true })),
+                Is.EqualTo("data-jfb-text=\"30000000-0000-4000-8000-0000000062c1 title\" data-jfb-fallback=\"Page &quot;2&quot;\""));
         });
     }
 
@@ -222,6 +269,22 @@ public sealed class RenderingPartsTests
             Assert.That(reference, Is.EqualTo(new FormBuilderFormReference(Form)));
         });
     }
+
+    // A field's view model with a label and the names of its texts that hold merge tags.
+    private static FieldViewModel FieldWith(string? label, string[] recalling) => new()
+    {
+        Key = Form,
+        Type = "text",
+        Id = "jfb-1-name",
+        Name = "name",
+        CssClass = "jfb-field",
+        LabelElement = FieldLabelElement.Label,
+        Label = label,
+        HelpId = "jfb-1-name-help",
+        ErrorId = "jfb-1-name-error",
+        ControlView = "fields/text",
+        Recalling = recalling.ToFrozenSet(StringComparer.Ordinal),
+    };
 
     // The escape JSON reads back as the character.
     private static string Escaped(int code) => (char)92 + "u" + code.ToString("x4", CultureInfo.InvariantCulture);

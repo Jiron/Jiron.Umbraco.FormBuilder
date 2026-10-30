@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Microsoft.AspNetCore.Html;
 
 namespace Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
@@ -16,6 +17,13 @@ public sealed class PageViewModel
 
     /// <summary>The text above the page's groups, sanitised, or null.</summary>
     public IHtmlContent? Description { get; init; }
+
+    /// <summary>
+    /// The names of the page's texts that hold merge tags (ADR-0095), such as <c>title</c>: the views mark each with
+    /// <c>data-jfb-text</c> and write it however it renders, so the runtime renders it again as the visitor answers
+    /// (ADR-0115).
+    /// </summary>
+    public IReadOnlySet<string> Recalling { get; init; } = FrozenSet<string>.Empty;
 
     /// <summary>Whether this is the page the visitor is on; the other pages carry <c>hidden</c>.</summary>
     public required bool IsCurrent { get; init; }
@@ -47,6 +55,13 @@ public sealed class GroupViewModel
 
     /// <summary>The id of the description, which the fieldset names in <c>aria-describedby</c>.</summary>
     public required string DescriptionId { get; init; }
+
+    /// <summary>
+    /// The names of the group's texts that hold merge tags (ADR-0095), such as <c>title</c>: the views mark each with
+    /// <c>data-jfb-text</c> and write it however it renders, so the runtime renders it again as the visitor answers
+    /// (ADR-0115).
+    /// </summary>
+    public IReadOnlySet<string> Recalling { get; init; } = FrozenSet<string>.Empty;
 
     /// <summary>The group's classes: <c>jfb-group</c>, its columns and its style.</summary>
     public required string CssClass { get; init; }
@@ -201,6 +216,13 @@ public sealed class FieldViewModel
 
     /// <summary>The placeholder, or null.</summary>
     public string? Placeholder { get; init; }
+
+    /// <summary>
+    /// The names of the field's texts that hold merge tags (ADR-0095), such as <c>title</c>: the views mark each with
+    /// <c>data-jfb-text</c> and write it however it renders, so the runtime renders it again as the visitor answers
+    /// (ADR-0115).
+    /// </summary>
+    public IReadOnlySet<string> Recalling { get; init; } = FrozenSet<string>.Empty;
 
     /// <summary>The <c>autocomplete</c> token, or null.</summary>
     public string? Autocomplete { get; init; }

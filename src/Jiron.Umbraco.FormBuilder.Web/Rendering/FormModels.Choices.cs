@@ -91,7 +91,7 @@ internal sealed partial class FormModels
                 return (new SingleChoiceControlModel
                 {
                     Value = YesNoFieldType.Yes,
-                    Label = Encoded(build.Text(field.Key, "label", field.Label)),
+                    Label = build.Label(field),
                     IsChecked = answers.Values.Contains(YesNoFieldType.Yes, StringComparer.Ordinal),
                 }, []);
 
@@ -287,7 +287,7 @@ internal sealed partial class FormModels
     private static SingleChoiceControlModel Box(Build build, PublicField field, ShownSettings settings, FieldAnswers answers, HiddenInputModel? wording) => new()
     {
         Value = FieldAnswerDefaults.Ticked,
-        Label = settings.Text("text") is { Length: > 0 } html ? new HtmlString(html) : Encoded(build.Text(field.Key, "label", field.Label)),
+        Label = settings.Text("text") is { Length: > 0 } html ? new HtmlString(html) : build.Label(field),
         IsChecked = answers.Values.Contains(FieldAnswerDefaults.Ticked, StringComparer.Ordinal),
         Wording = wording,
     };
@@ -419,8 +419,6 @@ internal sealed partial class FormModels
     private static string NoOptions(Build build, bool available) => available ? build.Words.NoChoices : build.Words.ChoicesUnavailable;
 
     private static string ChoiceId(string id, int index) => index == 0 ? id : id + "-" + (index + 1).ToString(CultureInfo.InvariantCulture);
-
-    private static IHtmlContent Encoded(string? text) => new HtmlContentBuilder().Append(text ?? string.Empty);
 
     [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull(nameof(fallback))]
     private static string? Shown(string? text, string? fallback) => string.IsNullOrWhiteSpace(text) ? fallback : text;

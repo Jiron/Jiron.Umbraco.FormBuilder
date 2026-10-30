@@ -1,13 +1,17 @@
 @* jfb-view: Group 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.GroupViewModel
 @using Jiron.Umbraco.FormBuilder.Web.Rendering
-@if (Model.Title is not null)
+@* A text that holds merge tags is written however it renders, hidden while empty, so the runtime can show it (ADR-0115). *@
+@{
+    var describes = Model.Description is not null || Model.Recalling.Contains("description");
+}
+@if (Model.Title is not null || Model.Recalling.Contains("title"))
 {
-    <fieldset class="@Model.CssClass" data-jfb-group="@Model.Key" hidden="@Model.IsHidden" @FormBuilderHtml.Flag("data-jfb-hidden", Model.IsHidden) aria-describedby="@(Model.Description is null ? null : Model.DescriptionId)">
-        <legend>@Model.Title</legend>
-        @if (Model.Description is not null)
+    <fieldset class="@Model.CssClass" data-jfb-group="@Model.Key" hidden="@Model.IsHidden" @FormBuilderHtml.Flag("data-jfb-hidden", Model.IsHidden) aria-describedby="@(describes ? Model.DescriptionId : null)">
+        <legend @FormBuilderHtml.Text(Model, "title") hidden="@(Model.Title is null)">@Model.Title</legend>
+        @if (describes)
         {
-            <div class="@Model.Classes.Help" id="@Model.DescriptionId">@Model.Description</div>
+            <div class="@Model.Classes.Help" id="@Model.DescriptionId" @FormBuilderHtml.Text(Model, "description") hidden="@(Model.Description is null)">@Model.Description</div>
         }
         <div class="jfb-fields">
             @foreach (var field in Model.Fields)
@@ -20,9 +24,9 @@
 else
 {
     <div class="@Model.CssClass" data-jfb-group="@Model.Key" hidden="@Model.IsHidden" @FormBuilderHtml.Flag("data-jfb-hidden", Model.IsHidden)>
-        @if (Model.Description is not null)
+        @if (describes)
         {
-            <div class="@Model.Classes.Help" id="@Model.DescriptionId">@Model.Description</div>
+            <div class="@Model.Classes.Help" id="@Model.DescriptionId" @FormBuilderHtml.Text(Model, "description") hidden="@(Model.Description is null)">@Model.Description</div>
         }
         <div class="jfb-fields">
             @foreach (var field in Model.Fields)

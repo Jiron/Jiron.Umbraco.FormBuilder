@@ -1,7 +1,9 @@
 @* jfb-view: fields/paragraph 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@* A text block that renders empty, as one that recalls answers may, is hidden (ADR-0115). *@
 @{
     var control = (TextBlockControlModel)Model.Control!;
 }
-<div class="jfb-text">@control.Html</div>
+<div class="jfb-text" @FormBuilderHtml.Text(Model, "settings.html") hidden="@control.IsEmpty">@control.Html</div>

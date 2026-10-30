@@ -269,6 +269,7 @@ internal sealed partial class FormModels(
                     Title = build.Text(group.Key, "title", group.Title),
                     Description = build.Html(group.Key, "description", group.Description),
                     DescriptionId = root.Id + "-" + group.Key.ToString("N") + "-help",
+                    Recalling = build.Recalling(group.Key),
                     Classes = root.Classes,
                     CssClass = Classes("jfb-group", "jfb-columns-" + Math.Clamp(group.Columns, 1, 4).ToString(CultureInfo.InvariantCulture), group.Style == GroupStyle.Card ? "jfb-group-card" : null, render.Theme.Classes.GetValueOrDefault(FormBuilderThemeSlots.Group)),
                     IsHidden = groupHidden,
@@ -283,6 +284,7 @@ internal sealed partial class FormModels(
                 Key = page.Key,
                 Title = build.Text(page.Key, "title", page.Title),
                 Description = build.Html(page.Key, "description", page.Description),
+                Recalling = build.Recalling(page.Key),
                 IsCurrent = page == current,
                 IsHidden = pageHidden,
                 Groups = groups,
@@ -560,7 +562,7 @@ internal sealed partial class FormModels(
 
         var help = build.Text(field.Key, "help", field.Help);
         var describedBy = new List<string>();
-        if (help is not null)
+        if (help is not null || build.Recalls(field.Key, "help"))
         {
             describedBy.Add(control + "-help");
         }
@@ -597,6 +599,7 @@ internal sealed partial class FormModels(
             IsHidden = isHidden,
             IsDisabled = isHidden,
             Placeholder = build.Text(field.Key, "placeholder", field.Placeholder),
+            Recalling = build.Recalling(field.Key),
             Autocomplete = field.Autocomplete ?? DefaultAutocomplete(field.Type),
             Values = answers.Values,
             ControlView = await build.ControlViewAsync(views, field.Type, cancellationToken),
@@ -684,7 +687,10 @@ internal sealed partial class FormModels(
                 return (new HeadingControlModel(settings.Text("text") ?? string.Empty, Math.Clamp(settings.Int("level", new HeadingFieldSettings().Level), 2, 4)), []);
 
             case ParagraphFieldType:
-                return (new TextBlockControlModel(new HtmlString(settings.Text("html") ?? string.Empty)), []);
+                {
+                    var html = settings.Text("html") ?? string.Empty;
+                    return (new TextBlockControlModel(new HtmlString(html)) { IsEmpty = html.Length == 0 }, []);
+                }
 
             case ImageFieldType:
                 return (await ImageAsync(settings), []);
@@ -742,7 +748,19 @@ internal sealed partial class FormModels(
             Text = string.Format(culture, words.Step, at + 1, shownPages.Count),
             TextId = root.Id + "-progress",
             Label = words.Progress,
-            Steps = [.. shownPages.Select((page, index) => new ProgressStepModel(build.Text(page.Key, "title", page.Title) ?? string.Format(culture, words.Page, index + 1), index == at, index < at))],
+            Steps =
+            [
+                .. shownPages.Select((page, index) =>
+                {
+                    var untitled = string.Format(culture, words.Page, index + 1);
+                    return new ProgressStepModel(build.Text(page.Key, "title", page.Title) ?? untitled, index == at, index < at)
+                    {
+                        Page = page.Key,
+                        RecallsTitle = build.Recalls(page.Key, "title"),
+                        Fallback = untitled,
+                    };
+                }),
+            ],
         };
     }
 
@@ -975,6 +993,8 @@ internal sealed partial class FormModels(
 
         private Dictionary<Guid, FormField>? _fields;
 
+        private Dictionary<Guid, IReadOnlySet<string>>? _recalling;
+
         private bool _marksRequired;
 
         private bool _writesMarks;
@@ -1124,6 +1144,23 @@ internal sealed partial class FormModels(
 
         public HtmlString? Html(Guid owner, string name, LocalizedHtml? html) =>
             recalled.TryGetValue((owner, name), out var shown) ? (shown.Length > 0 ? new HtmlString(shown) : null) : FormModels.Html(html);
+
+        // Whether an element's visitor text holds tags, so its view writes it with its hook however it renders
+        // (ADR-0115).
+        public bool Recalls(Guid owner, string name) => recalled.ContainsKey((owner, name));
+
+        // The names of an element's visitor texts that hold tags.
+        public IReadOnlySet<string> Recalling(Guid owner)
+        {
+            _recalling ??= recalled.Keys
+                .GroupBy(key => key.Owner)
+                .ToDictionary(group => group.Key, group => (IReadOnlySet<string>)group.Select(key => key.Name).ToFrozenSet(StringComparer.Ordinal));
+            return _recalling.GetValueOrDefault(owner) ?? FrozenSet<string>.Empty;
+        }
+
+        // A field's label in a box's own label, with its hook when it holds tags (ADR-0115).
+        public IHtmlContent Label(PublicField field) =>
+            FormBuilderHtml.LabelText(field.Key, Text(field.Key, "label", field.Label), Recalls(field.Key, "label"));
 
         // A field's settings that are visitor texts holding tags, rendered for the page's answers, by the setting's name.
         public Dictionary<string, string> Settings(Guid owner) =>

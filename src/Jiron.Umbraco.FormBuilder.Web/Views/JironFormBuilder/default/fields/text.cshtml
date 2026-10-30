@@ -6,7 +6,7 @@
     var control = (TextControlModel)Model.Control!;
     void Input()
     {
-        <input class="@Model.Classes.Control" type="@control.InputType" id="@Model.Id" name="@Model.Name" value="@(Model.Value.Length == 0 ? null : Model.Value)" placeholder="@Model.Placeholder" autocomplete="@Model.Autocomplete" spellcheck="@(control.Spellcheck is { } check ? (check ? "true" : "false") : null)" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+        <input class="@Model.Classes.Control" type="@control.InputType" id="@Model.Id" name="@Model.Name" value="@(Model.Value.Length == 0 ? null : Model.Value)" placeholder="@Model.Placeholder" @FormBuilderHtml.Text(Model, "placeholder") autocomplete="@Model.Autocomplete" spellcheck="@(control.Spellcheck is { } check ? (check ? "true" : "false") : null)" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
     }
 }
 @if (control.Prefix is null && control.Suffix is null)

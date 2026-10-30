@@ -48,6 +48,19 @@ public sealed class FormRenderingTextsTests : RenderingTestBase
             Assert.That(form.QuerySelector("#jfb-1-note")!.GetAttribute("placeholder"), Is.EqualTo("Ada <Lovelace>, tell us more"));
             Assert.That(form.QuerySelector(".jfb-heading")!.TextContent, Is.EqualTo("Ada <Lovelace>'s notes"), "a setting that takes merge tags");
             Assert.That(form.QuerySelector(".jfb-text")!.InnerHtml, Is.EqualTo("<p>Hi <b>Ada &lt;Lovelace&gt;</b></p>"), "rich text escapes the answer");
+            Assert.That(Hooks(form), Is.EqualTo(new[]
+            {
+                ("span", $"{PageTwo:D} title"),
+                ("h2", $"{PageTwo:D} title"),
+                ("legend", $"{Key(0x04):D} title"),
+                ("span", $"{Note:D} label"),
+                ("p", $"{Note:D} help"),
+                ("textarea", $"{Note:D} placeholder"),
+                ("h2", $"{Key(0x21):D} settings.text"),
+                ("div", $"{Key(0x22):D} settings.html"),
+            }), "each text that holds tags carries its hook, in the order of the page (ADR-0115)");
+            Assert.That(form.QuerySelector(".jfb-progress-steps li span[data-jfb-text]")!.GetAttribute("data-jfb-fallback"), Is.EqualTo("Page 2"), "what the step shows while the title renders empty");
+            Assert.That(form.QuerySelector("[data-jfb-alias=name] label")!.QuerySelector("[data-jfb-text]"), Is.Null, "a label without tags has none");
         });
     }
 
@@ -82,8 +95,11 @@ public sealed class FormRenderingTextsTests : RenderingTestBase
         Assert.Multiple(() =>
         {
             Assert.That(Label(form, "note"), Is.EqualTo("Anything else, ?"), "an answer longer than a text takes recalls nothing");
-            Assert.That(form.QuerySelector("#jfb-1-after-help"), Is.Null, "a help that recalls only a hidden field shows no help");
-            Assert.That(form.QuerySelector("#jfb-1-after")!.GetAttribute("aria-describedby"), Is.Null);
+            var help = form.QuerySelector("#jfb-1-after-help");
+            Assert.That(help?.HasAttribute("hidden"), Is.True, "a help that recalls only a hidden field renders empty, hidden, for the runtime to fill (ADR-0115)");
+            Assert.That(help?.TextContent, Is.Empty);
+            Assert.That(help?.GetAttribute("data-jfb-text"), Is.EqualTo(Key(0x23).ToString("D") + " help"));
+            Assert.That(form.QuerySelector("#jfb-1-after")!.GetAttribute("aria-describedby"), Is.EqualTo("jfb-1-after-help"), "the control names it while it is hidden");
         });
     }
 
@@ -226,6 +242,10 @@ public sealed class FormRenderingTextsTests : RenderingTestBase
 
     private static string Label(IElement form, string alias) =>
         (form.QuerySelector($"[data-jfb-alias={alias}] label") ?? throw new AssertionException($"no label of {alias}")).TextContent.Trim();
+
+    // Each element that carries a text's hook, by its tag, with the hook.
+    private static (string, string)[] Hooks(IElement form) =>
+        [.. form.QuerySelectorAll("[data-jfb-text]").Select(element => (element.LocalName, element.GetAttribute("data-jfb-text")!))];
 
     // Each field's alias and the mark beside its label.
     private static (string, string)[] Marks(IElement form) =>

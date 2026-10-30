@@ -7,6 +7,9 @@
   [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) (the visitor's form carries the site's
   style and labels) and [ADR-0033](0033-schema-v1.md) (how a website page knows a backoffice user)
 - Date: 2026-10-29
+- Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): a visitor text with tags that renders empty is
+  written hidden instead of left out, a group whose title has tags is a fieldset, and a description or help with tags is
+  always named by `aria-describedby`
 - Roadmap step: 6.2c (decided and built); 6.2h fills the post's answers and rows, 6.2l keeps the renders that are per
   visitor out of the output cache ([ADR-0104](0104-the-output-cache-rules-and-the-render-endpoint.md)), 7.1 adds the member-bound challenge, 12.4a the settings screens, 14.3 the members'
   submissions

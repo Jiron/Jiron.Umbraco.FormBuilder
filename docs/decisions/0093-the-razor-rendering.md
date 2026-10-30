@@ -12,6 +12,8 @@
   and the page after a sent post in 6.2h by [ADR-0100](0100-the-post-without-javascript.md); the `theme` attribute, the
   views of a form's theme and the classes they write in 6.3a by [ADR-0105](0105-the-theme-registry-and-the-base-rules.md)
 - Date: 2026-10-28
+- Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): a visitor text that holds merge tags carries its
+  hook, and one that renders empty keeps its element, hidden
 - Roadmap step: 6.2b (decided and built); 6.2c the visitor texts with merge tags, members-only forms and the note
   while the migrations are pending (ADR-0095), 6.2d the choice controls (ADR-0096), 6.2e the part, date and output
   controls (ADR-0097), 6.2f the repeater's rows (ADR-0098),

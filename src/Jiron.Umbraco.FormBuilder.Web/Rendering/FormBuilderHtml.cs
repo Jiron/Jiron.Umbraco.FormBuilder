@@ -57,6 +57,95 @@ public static class FormBuilderHtml
         return Mark(row.Mark, row.MarkText, row.MarkShownWhile, row.IsMarkShown);
     }
 
+    /// <summary>
+    /// The hook of a page's visitor text that holds merge tags (ADR-0115): <c>data-jfb-text</c> with the page's key
+    /// and the text's name, such as <c>title</c>, so the runtime renders it again as the visitor answers; nothing for a
+    /// text without tags. The element it marks holds the text and nothing else, and is written <c>hidden</c> while the
+    /// text is empty.
+    /// </summary>
+    /// <param name="page">The page whose text it is.</param>
+    /// <param name="name">The text's name: <c>title</c> or <c>description</c>.</param>
+    public static IHtmlContent Text(PageViewModel page, string name)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        return Hook(page.Key, name, page.Recalling);
+    }
+
+    /// <summary>
+    /// The hook of a group's visitor text that holds merge tags, as <see cref="Text(PageViewModel, string)"/> writes a
+    /// page's.
+    /// </summary>
+    /// <param name="group">The group whose text it is.</param>
+    /// <param name="name">The text's name: <c>title</c> or <c>description</c>.</param>
+    public static IHtmlContent Text(GroupViewModel group, string name)
+    {
+        ArgumentNullException.ThrowIfNull(group);
+        return Hook(group.Key, name, group.Recalling);
+    }
+
+    /// <summary>
+    /// The hook of a field's visitor text that holds merge tags, as <see cref="Text(PageViewModel, string)"/> writes a
+    /// page's; a placeholder's goes on its control, whose attribute the runtime writes.
+    /// </summary>
+    /// <param name="field">The field whose text it is.</param>
+    /// <param name="name">
+    /// The text's name: <c>help</c>, <c>placeholder</c>, or <c>settings.</c> and a text setting's path, such as
+    /// <c>settings.text</c>; a label takes <see cref="Label(FieldViewModel)"/>.
+    /// </param>
+    public static IHtmlContent Text(FieldViewModel field, string name)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        return Hook(field.Key, name, field.Recalling);
+    }
+
+    /// <summary>
+    /// The hook of a progress step whose page's title holds merge tags, with <c>data-jfb-fallback</c>, what the step
+    /// shows while the title renders empty; nothing for a title without tags.
+    /// </summary>
+    /// <param name="step">The step.</param>
+    public static IHtmlContent Text(ProgressStepModel step)
+    {
+        ArgumentNullException.ThrowIfNull(step);
+        return step.RecallsTitle
+            ? new HtmlString(HookOf(step.Page, "title") + " data-jfb-fallback=\"" + WebUtility.HtmlEncode(step.Fallback) + "\"")
+            : HtmlString.Empty;
+    }
+
+    /// <summary>
+    /// A field's label, encoded: for a label that holds merge tags in a <c>&lt;span&gt;</c> of its own with its hook,
+    /// <c>hidden</c> while empty, so the mark after it stays as the runtime renders the label again (ADR-0115).
+    /// </summary>
+    /// <param name="field">The field whose label it is.</param>
+    public static IHtmlContent Label(FieldViewModel field)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        return LabelText(field.Key, field.Label, field.Recalling.Contains("label"));
+    }
+
+    // A field's label, encoded, in its own span with its hook when it holds merge tags; a box's label is one too.
+    internal static IHtmlContent LabelText(Guid owner, string? text, bool recalls)
+    {
+        var label = new HtmlContentBuilder();
+        if (!recalls)
+        {
+            return label.Append(text ?? string.Empty);
+        }
+
+        return label.AppendHtml("<span " + HookOf(owner, "label") + (string.IsNullOrEmpty(text) ? " hidden" : string.Empty) + ">")
+            .Append(text ?? string.Empty)
+            .AppendHtml("</span>");
+    }
+
+    private static HtmlString Hook(Guid owner, string name, IReadOnlySet<string> recalling)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(recalling);
+        return recalling.Contains(name) ? new HtmlString(HookOf(owner, name)) : HtmlString.Empty;
+    }
+
+    private static string HookOf(Guid owner, string name) =>
+        "data-jfb-text=\"" + WebUtility.HtmlEncode(owner.ToString("D") + " " + name) + "\"";
+
     private static IHtmlContent Mark(FieldMark mark, string text, string? shownWhile, bool shown)
     {
         if (mark == FieldMark.None)

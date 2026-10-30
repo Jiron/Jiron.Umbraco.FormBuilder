@@ -1,18 +1,20 @@
 @* jfb-view: fields/heading 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
+@* A heading that renders empty, as one that recalls answers may, is hidden (ADR-0115). *@
 @{
     var control = (HeadingControlModel)Model.Control!;
 }
 @switch (control.Level)
 {
     case 3:
-        <h3 class="jfb-heading">@control.Text</h3>
+        <h3 class="jfb-heading" @FormBuilderHtml.Text(Model, "settings.text") hidden="@(control.Text.Length == 0)">@control.Text</h3>
         break;
     case 4:
-        <h4 class="jfb-heading">@control.Text</h4>
+        <h4 class="jfb-heading" @FormBuilderHtml.Text(Model, "settings.text") hidden="@(control.Text.Length == 0)">@control.Text</h4>
         break;
     default:
-        <h2 class="jfb-heading">@control.Text</h2>
+        <h2 class="jfb-heading" @FormBuilderHtml.Text(Model, "settings.text") hidden="@(control.Text.Length == 0)">@control.Text</h2>
         break;
 }

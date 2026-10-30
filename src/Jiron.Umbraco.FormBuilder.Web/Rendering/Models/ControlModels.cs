@@ -93,7 +93,11 @@ public sealed record HeadingControlModel(string Text, int Level);
 
 /// <summary>The control of a text block (<c>paragraph</c>).</summary>
 /// <param name="Html">The text, sanitised.</param>
-public sealed record TextBlockControlModel(IHtmlContent Html);
+public sealed record TextBlockControlModel(IHtmlContent Html)
+{
+    /// <summary>Whether the text is empty, as one that recalls answers may render; the block is then hidden.</summary>
+    public bool IsEmpty { get; init; }
+}
 
 /// <summary>The control of an image (<c>image</c>).</summary>
 public sealed class ImageControlModel

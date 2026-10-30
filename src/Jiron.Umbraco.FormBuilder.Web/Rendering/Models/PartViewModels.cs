@@ -65,7 +65,20 @@ public sealed class ProgressViewModel
 /// <param name="Title">The page's title, or "Page 2" for a page without one.</param>
 /// <param name="IsCurrent">Whether it is the current page (<c>aria-current="step"</c>).</param>
 /// <param name="IsDone">Whether it comes before the current page (<c>data-jfb-done</c>).</param>
-public sealed record ProgressStepModel(string Title, bool IsCurrent, bool IsDone);
+public sealed record ProgressStepModel(string Title, bool IsCurrent, bool IsDone)
+{
+    /// <summary>The page's key.</summary>
+    public Guid Page { get; init; }
+
+    /// <summary>
+    /// Whether the page's title holds merge tags, so the step carries its hook and the runtime renders it again as the
+    /// visitor answers (ADR-0115).
+    /// </summary>
+    public bool RecallsTitle { get; init; }
+
+    /// <summary>What the step shows while the page has no title, such as "Page 2".</summary>
+    public string Fallback { get; init; } = string.Empty;
+}
 
 /// <summary>The model of <c>ErrorSummary.cshtml</c>: the errors after a post, each with a link to its field (ADR-0015).</summary>
 public sealed class ErrorSummaryViewModel
