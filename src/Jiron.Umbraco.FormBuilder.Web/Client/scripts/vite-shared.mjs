@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 // What every package build shares (ADR-0026): the licence banner on every JS and CSS file, content-hashed chunk
-// names, source maps only on request, and a report of the chunks for scripts/size-check.mjs.
+// names, source maps only on request, and a report of the chunks for scripts/size-check.mjs; and the terser pass the
+// website runtime takes (ADR-0119).
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { minify } from 'terser';
 import { licenceBanner } from './banner.mjs';
 
 export const clientRoot = join(fileURLToPath(new URL('.', import.meta.url)), '..');
@@ -101,6 +103,35 @@ export function stampPackageVersion(outDir, version) {
  */
 export function sharedPlugins({ version, name, ...report }) {
   return [cssLicenceBanner(licenceBanner(version)), chunkReport(name, report)];
+}
+
+/** What the terser pass does: an ES module of the build's target, compressed in three passes, legal comments kept. */
+export const TERSER_OPTIONS = Object.freeze({
+  module: true,
+  ecma: 2022,
+  compress: { passes: 3 },
+  mangle: true,
+  format: { comments: /^!/ },
+});
+
+/**
+ * A pass of terser over each chunk before the bundler's own minifier, for the website runtime, whose size section 4.12
+ * budgets: the two together write a few percent less than either alone (ADR-0119). It runs while the chunk is
+ * rendered, so the chunk's content hash covers what it writes. A debugging build with source maps
+ * (`JFB_SOURCEMAP=1`) goes without it, as terser would cut the maps' thread.
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {import('vite').Plugin}
+ */
+export function terserPass(env = process.env) {
+  return {
+    name: 'jfb-terser-pass',
+    apply: () => env.JFB_SOURCEMAP !== '1',
+    async renderChunk(code) {
+      const out = await minify(code, TERSER_OPTIONS);
+      if (out.code === undefined) throw new Error('terser wrote nothing');
+      return { code: out.code, map: null };
+    },
+  };
 }
 
 /**

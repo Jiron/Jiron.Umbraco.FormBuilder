@@ -97,12 +97,14 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 ## Budgets
 
 - [ ] **Decide whether the website runtime's 40 KB "with everything" (ROADMAP §4.12) should grow.**
-  After 6.4g the runtime with every feature it has so far is 39.93 KB gzip, counting the largest
+  After 6.4h the runtime with every feature it has so far is 39.89 KB gzip, with a terser pass that
+  took 0.65 KB off (ADR-0119); after 6.4g it was 39.93 KB gzip without it. It counts the largest
   language's words (ADR-0116): the frame 1 KB, the form chunk 28 KB (the rules, checks and messages
-  both runtimes share, D10), the calculation language 2.5 KB, the merge tags 6.6 KB. Sending,
-  form_changed, uploads, the signature pad and the field behaviours (6.4i to 6.4n) still come, a few
-  KB each. Until you decide, each of those steps has to make room for what it adds. The core, what
-  every page with a form loads before the visitor touches it, is 1 KB of its 16 KB.
+  both runtimes share, D10), the calculation language 2.5 KB, the merge tags with the defaults'
+  filler 7 KB. Sending, form_changed, uploads, the signature pad and the field behaviours (6.4i to
+  6.4n) still come, a few KB each. Until you decide, each of those steps has to make room for what
+  it adds. The core, what every page with a form loads before the visitor touches it, is 1 KB of its
+  16 KB.
 
 ## Real-world checks (no real keys are used during the build)
 

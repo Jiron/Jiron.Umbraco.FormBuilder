@@ -4,6 +4,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { brotliDecompressSync, gunzipSync } from 'node:zlib';
 import { build } from 'vite';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -20,7 +21,7 @@ import {
   write,
 } from './stamp.mjs';
 import { buildVersion, versionFromProps } from './version.mjs';
-import { sharedBuild, sharedPlugins } from './vite-shared.mjs';
+import { sharedBuild, sharedPlugins, terserPass } from './vite-shared.mjs';
 
 const licenseText = readFileSync(licensePath, 'utf8');
 const VERSION = '17.0.0-test.1';
@@ -141,6 +142,43 @@ describe('the shared build', () => {
       entry: true,
       dynamicImports: [chunk],
     });
+  }, 60_000);
+
+  it('takes a terser pass where asked, which writes no more, keeps the banner and the behaviour, and skips a build with source maps', async () => {
+    const dir = tempFolder();
+    put(dir, 'src/entry.ts', "export const load = async () => (await import('./count')).count;\n");
+    put(
+      dir,
+      'src/count.ts',
+      'export function count(words: readonly string[]): number {\n  let total = 0;\n  for (const word of words) {\n    if (word.length > 0) {\n      total = total + 1;\n    }\n  }\n  return total;\n}\n',
+    );
+    const built = async (name, plugins) => {
+      const outDir = join(dir, name);
+      await build({
+        configFile: false,
+        root: dir,
+        logLevel: 'silent',
+        publicDir: false,
+        build: {
+          ...sharedBuild({ version: VERSION, outDir }),
+          lib: { entry: join(dir, 'src', 'entry.ts'), formats: ['es'], fileName: () => 'entry.js' },
+        },
+        plugins: [...sharedPlugins({ version: VERSION, name, buildDir: join(dir, 'reports'), base: dir }), ...plugins],
+      });
+      const file = [...walk(outDir)].find((path) => /count-[A-Za-z0-9_-]+[.]js$/.test(path));
+      if (file === undefined) throw new Error(`no count chunk in ${name}`);
+      return file;
+    };
+    const plain = await built('plain', []);
+    const tersed = await built('tersed', [terserPass({})]);
+
+    const code = readFileSync(tersed, 'utf8');
+    expect(bannerProblem(code, VERSION)).toBeNull();
+    expect(code.length).toBeLessThanOrEqual(readFileSync(plain, 'utf8').length);
+    const { count } = await import(pathToFileURL(tersed).href);
+    expect(count(['a', '', 'b'])).toBe(2);
+    expect(terserPass({}).apply()).toBe(true);
+    expect(terserPass({ JFB_SOURCEMAP: '1' }).apply()).toBe(false);
   }, 60_000);
 });
 

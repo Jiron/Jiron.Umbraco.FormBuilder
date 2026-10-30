@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import { buildVersion } from '../../scripts/version.mjs';
-import { sharedBuild, sharedPlugins, websiteAssets } from '../../scripts/vite-shared.mjs';
+import { sharedBuild, sharedPlugins, terserPass, websiteAssets } from '../../scripts/vite-shared.mjs';
 
 const version = buildVersion();
 const shared = sharedBuild({ version, outDir: `${websiteAssets}/runtime` });
@@ -29,7 +29,8 @@ export default defineConfig({
     },
     lib: { entry: 'src/jfb-runtime.ts', formats: ['es'], fileName: () => 'jfb-runtime.js' },
   },
-  plugins: sharedPlugins({ version, name: 'runtime' }),
+  // Terser as well as the bundler's minifier, as section 4.12 budgets the runtime's size (ADR-0119).
+  plugins: [...sharedPlugins({ version, name: 'runtime' }), terserPass()],
   test: {
     name: 'runtime',
     environment: 'jsdom',
