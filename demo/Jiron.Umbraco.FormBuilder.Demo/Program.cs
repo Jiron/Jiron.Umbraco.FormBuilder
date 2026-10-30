@@ -1,5 +1,7 @@
 // The Jiron Form Builder demo site (ROADMAP 3.3). Start it with scripts/demo.ps1, which passes the generated admin,
 // members and imaging key as environment variables.
+using Jiron.Umbraco.FormBuilder.Demo;
+
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 #if DEBUG
@@ -26,6 +28,9 @@ builder.CreateUmbracoBuilder()
 WebApplication app = builder.Build();
 
 await app.BootUmbracoAsync();
+
+// ?theme= shows the demo's forms in another theme, kept in a cookie (ROADMAP 6.3a).
+app.UseDemoThemes();
 
 app.UseUmbraco()
     .WithMiddleware(u =>

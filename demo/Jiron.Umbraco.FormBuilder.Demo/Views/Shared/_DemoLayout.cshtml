@@ -55,7 +55,7 @@
             <section class="site-slot" data-demo-slot="newsletter" aria-labelledby="newsletter-heading">
                 <h2 id="newsletter-heading">@(home.Value<string>("newsletterHeading"))</h2>
                 <p>@(home.Value<string>("newsletterText"))</p>
-                <jfb-render form="newsletter" />
+                <jfb-render form="newsletter" theme="@Jiron.Umbraco.FormBuilder.Demo.DemoThemes.Of(Context)" />
             </section>
             <div class="site-foot-meta">
                 <p>@Umbraco.GetDictionaryValue("Demo.Address")</p>

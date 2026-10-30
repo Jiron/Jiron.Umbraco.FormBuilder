@@ -12,5 +12,5 @@
 @await Html.GetBlockListHtmlAsync(Model, "blocks")
 @if (Model.Value<string>("form") is { Length: > 0 } form)
 {
-    <jfb-render form="@form" />
+    <jfb-render form="@form" theme="@Jiron.Umbraco.FormBuilder.Demo.DemoThemes.Of(Context)" />
 }

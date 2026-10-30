@@ -77,6 +77,15 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
   two references as the rows of a repeatable group, a letter, a switch and a consent, which works without JavaScript
   too ([ADR-0100](../docs/decisions/0100-the-post-without-javascript.md)).
 
+## Looking at the themes
+
+`?theme=<alias>` on any page shows its forms in that theme, for example
+`http://127.0.0.1:5500/en/feedback/?theme=bootstrap5`: the demo keeps the choice in the cookie `jfb-demo-theme`, so the
+next pages and a post without JavaScript keep it, and `?theme=` alone goes back to each form's own theme. Only a theme
+the site registers counts (`Jiron.Umbraco.FormBuilder.Demo/DemoThemes.cs`; ROADMAP 6.3a). A real site names a form's
+theme in the form, in the General settings or where it places the form
+([ADR-0105](../docs/decisions/0105-the-theme-registry-and-the-base-rules.md)).
+
 To add a page, add it to `DemoContent.json` with a new fixed key. Texts the views show belong in its `dictionary`.
 To add a form, add its definition to `Seeding/Forms/` and its alias to `DemoFormSeeder`, and name it in a page's
 `form`. The seeder never changes a page, a type or a form that exists, so after changing texts or types, run `reset`.
