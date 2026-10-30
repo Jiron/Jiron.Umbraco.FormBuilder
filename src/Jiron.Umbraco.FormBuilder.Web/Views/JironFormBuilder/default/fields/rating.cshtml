@@ -1,7 +1,12 @@
 @* jfb-view: fields/rating 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
-@* The symbols show; each label's number is for screen readers, with the word at its end when the rating has one. *@
+@*
+    Each label holds its number, which shows without a theme; a theme that draws the symbols hides it from sight. The
+    first and the last point of a rating with words at its ends say their whole name in one hidden span ("1, Poor") and
+    keep the shown number from screen readers: a visually hidden span counts as a block, so browsers would otherwise
+    put a space before its comma.
+*@
 @{
     var control = (ChoicesControlModel)Model.Control!;
     void Choices()
@@ -11,7 +16,14 @@
             {
                 <div class="@Model.Classes.Choice">
                     <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" disabled="@Model.IsDisabled">
-                    <label class="@Model.Classes.ChoiceLabel" for="@choice.Id"><span class="jfb-visually-hidden">@choice.Label@choice.HiddenText</span></label>
+                    @if (choice.HiddenText is { } hidden)
+                    {
+                        <label class="@Model.Classes.ChoiceLabel" for="@choice.Id"><span class="jfb-rating-value" aria-hidden="true">@choice.Label</span><span class="jfb-visually-hidden">@choice.Label@hidden</span></label>
+                    }
+                    else
+                    {
+                        <label class="@Model.Classes.ChoiceLabel" for="@choice.Id"><span class="jfb-rating-value">@choice.Label</span></label>
+                    }
                 </div>
             }
         </div>
@@ -21,7 +33,7 @@
 {
     <div class="jfb-scale">
         @{ Choices(); }
-        <div class="jfb-ends" aria-hidden="true"><span>@ends.Low</span><span>@ends.High</span></div>
+        <div class="jfb-ends" aria-hidden="true"><span>@ends.Low</span> <span>@ends.High</span></div>
     </div>
 }
 else

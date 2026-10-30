@@ -1,16 +1,18 @@
 # 0105. The theme registry, view resolution and the base rules
 
-- Status: accepted; builds [ADR-0015](0015-themes-and-the-markup-contract.md)'s themes (the registry, a form's
-  theme, the view order, the class map and the functional base rules) and the honeypot's markup of
+- Status: accepted; builds [ADR-0015](0015-themes-and-the-markup-contract.md)'s themes (the registry, a form's theme,
+  the view order, the class map and the functional base rules) and the honeypot's markup of
   [ADR-0012](0012-anonymous-endpoints-spam-protection-and-challenges.md), and extends
   [ADR-0092](0092-serving-the-website-assets.md) (the stylesheets of the themes a page uses, each once),
   [ADR-0093](0093-the-razor-rendering.md) (the `theme` attribute) and
   [ADR-0104](0104-the-output-cache-rules-and-the-render-endpoint.md) (the render endpoint's `theme`); the honeypot's
-  base rule clipped where it stands instead of moved off the page by [ADR-0106](0106-the-default-theme-ships.md) in 6.3b
+  base rule clipped where it stands instead of moved off the page by [ADR-0106](0106-the-default-theme-ships.md) in
+  6.3b; the base rules extended by [ADR-0107](0107-markup-that-reads-without-a-theme.md) in 6.3c (a scale along a
+  line, a grid's column heads, a ranking's arrows and places)
 - Date: 2026-10-29
-- Roadmap step: 6.3a (decided and built); 6.3b gives `default` its stylesheet and tokens, 6.3c `bootstrap5` its
-  stylesheet and `unstyled` its review, 6.6 the headless element's base rules, 6.7 the form picker's placement, 12.2
-  the library themes, 12.4a the General setting's screen
+- Roadmap step: 6.3a (decided and built); 6.3b gives `default` its stylesheet and tokens, 6.3c `unstyled` its review
+  and the markup that reads without a theme, 6.3d `bootstrap5` its stylesheet, 6.6 the headless element's base rules,
+  6.7 the form picker's placement, 12.2 the library themes, 12.4a the General setting's screen
 
 ## Context
 
@@ -21,7 +23,7 @@ theme's folder, the theme's folder, a library theme's base folder and `default`;
 with every theme. ADR-0093 left the `theme` attribute of `<jfb-render>` to the themes, and ADR-0092 said that from the
 themes on `<jfb-assets>` writes the stylesheets too, once per request.
 
-Step 6.3a builds those mechanics; the looks come after it (`default` in 6.3b, `unstyled` and `bootstrap5` in 6.3c).
+Step 6.3a builds those mechanics; the looks come after it (`default` in 6.3b, `unstyled` in 6.3c, `bootstrap5` in 6.3d).
 Still open were:
 
 - **where the registry lives** and how a site adds or changes a theme;
@@ -34,7 +36,7 @@ Still open were:
 - **what the base rules hold** besides ADR-0015's three: 6.2i (ADR-0101) asked every theme for a scroll margin where a
   press without JavaScript lands, and 6.2k for a group that shrinks to a phone's width;
 - **the honeypot** the base rules keep out of view: ADR-0093 left its markup to 7.1 with its scoring, so no page had
-  one, yet 6.3a and 6.3c check in Edge that every theme keeps it out of view and out of the accessibility tree.
+  one, yet 6.3a, 6.3c and 6.3d check in Edge that every theme keeps it out of view and out of the accessibility tree.
 
 ## Options
 
@@ -80,7 +82,7 @@ Option 2, option 2 and option 3.
     declaration's or holds an address, or a view folder that is not a folder name below `Views/JironFormBuilder/`.
 - **The built-in themes:** `default` (its view folder `default`; the dark scheme; its stylesheet and tokens come with
   its look in 6.3b), `unstyled` (no stylesheet, no classes, no tokens, no dark scheme) and `bootstrap5` (its class map
-  now, onto Bootstrap 5's own classes; its small stylesheet for what Bootstrap lacks comes in 6.3c). Each built-in
+  now, onto Bootstrap 5's own classes; its small stylesheet for what Bootstrap lacks comes in 6.3d). Each built-in
   theme's view folder is its alias; only `default` ships views, so the others render the default views with their
   classes, and a site may still give them views of its own.
 - **A form's theme**, first that is set: the placement's `theme` (`<jfb-render theme="…">`, the view component's

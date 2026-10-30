@@ -59,9 +59,11 @@ should adopt:
 - **Progress:** `jfb-progress-steps` (an `ol` with `aria-current="step"` and `data-jfb-done`) or `jfb-progress-bar`
   (a `progress` element), each with `jfb-progress-text`.
 - **Choices:** `jfb-choices-horizontal`, `-cards`, `-buttons` (yes/no), `-scale`, `-rating`; `jfb-scale` and
-  `jfb-ends` around a scale; `jfb-switch` (with `role="switch"`) on a yes/no checkbox; `jfb-matrix` with
-  `jfb-matrix-head` for a grid; `jfb-ranking` for a ranking with move buttons; an option's description as a
-  `jfb-help` after its label in the `jfb-choice`, which its input names in `aria-describedby` (added in 6.2d).
+  `jfb-ends` around a scale; `jfb-rating-value` on a rating point's number, which shows without a theme and which a
+  theme that draws the symbols hides (added in 6.3c, ADR-0107); `jfb-switch` (with `role="switch"`) on a yes/no
+  checkbox; `jfb-matrix` with `jfb-matrix-head` for a grid; `jfb-ranking` for a ranking with move buttons; an
+  option's description as a `jfb-help` after its label in the `jfb-choice`, which its input names in
+  `aria-describedby` (added in 6.2d).
 - **Other parts:** `jfb-affix` (prefix and suffix); `jfb-select` around a single dropdown for the theme's chevron;
   `jfb-range` (a slider and its `output`); `jfb-output` (a calculated value); `jfb-parts`, `jfb-part` and
   `jfb-part-wide` (name and address); `jfb-repeater` (the rows and Add, with the field's id) and `jfb-row` (a

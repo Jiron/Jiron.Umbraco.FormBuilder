@@ -1,6 +1,25 @@
+/*!
+ * Jiron Form Builder, the base rules. The two arrows below are Lucide's:
+ *
+ * ISC License
+ *
+ * Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other
+ * copyright (c) for Lucide are held by Lucide Contributors 2022.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby
+ * granted, provided that the above copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING
+ * ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL,
+ * DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+ * WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
+ * USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 /*
  * The functional base rules (ADR-0015, ADR-0105): every form gets them, whatever its theme, `unstyled` included, and
- * they need no JavaScript. Every rule sits under .jfb-form, and only logical properties are used.
+ * they need no JavaScript. Every rule sits under .jfb-form, and only logical properties are used. The comment above
+ * stays in the built stylesheet, since the licence asks for it in every copy.
  */
 
 /* An element hidden by a rule or a page that is not the current one stays hidden, whatever a theme sets. */
@@ -67,4 +86,56 @@
 
 .jfb-form img {
   block-size: auto;
+}
+
+/*
+ * Markup that reads without a theme (ADR-0107). A scale reads along a line: its points in a row, and the words at its
+ * ends under its two ends. A grid's column heads are for a theme that lines its columns up; without one, each answer's
+ * label names its column, and the heads would say it a second time. A ranking writes each option's place, which only
+ * the ranked ones have, so the list's own numbers would say it twice.
+ */
+.jfb-form .jfb-scale {
+  display: inline-grid;
+  max-inline-size: 100%;
+}
+
+.jfb-form :is(.jfb-choices-scale, .jfb-choices-rating) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1em;
+}
+
+.jfb-form .jfb-ends {
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+}
+
+.jfb-form .jfb-matrix-head {
+  display: none;
+}
+
+.jfb-form .jfb-ranking {
+  list-style: none;
+}
+
+/* A ranking's moves hold only a symbol, so every theme shows the arrows; a theme may draw its own. */
+.jfb-form :is(.jfb-icon-up, .jfb-icon-down) {
+  display: inline-block;
+  inline-size: 1.25em;
+  block-size: 1.25em;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.jfb-form .jfb-icon-down {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+@media (forced-colors: active) {
+  .jfb-form :is(.jfb-icon-up, .jfb-icon-down) {
+    forced-color-adjust: none;
+    background: ButtonText;
+  }
 }

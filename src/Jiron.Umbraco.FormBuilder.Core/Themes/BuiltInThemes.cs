@@ -109,7 +109,7 @@ public sealed class UnstyledTheme : IFormBuilderTheme
 
 /// <summary>
 /// Bootstrap 5's own classes on the default markup, for a site that loads Bootstrap itself (ADR-0015); Jiron Form
-/// Builder never ships Bootstrap. Its small stylesheet for what Bootstrap lacks comes with its look (6.3c).
+/// Builder never ships Bootstrap. Its small stylesheet for what Bootstrap lacks comes with its look (6.3d).
 /// </summary>
 public sealed class Bootstrap5Theme : IFormBuilderTheme
 {

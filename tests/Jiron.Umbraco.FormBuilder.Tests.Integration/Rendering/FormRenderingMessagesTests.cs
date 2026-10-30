@@ -130,7 +130,7 @@ public sealed class FormRenderingMessagesTests : RenderingTestBase
         var form = (await DocumentAsync("/messages/?state=one")).QuerySelector("form.jfb-form")!;
 
         Assert.That(Compact(form.QuerySelector(".jfb-error-summary")!.OuterHtml), Is.EqualTo(
-            """<div class="jfb-error-summary" data-jfb-summary="" role="alert" tabindex="-1" aria-labelledby="jfb-1-summary"><h2 id="jfb-1-summary">This answer needs a change</h2><ul><li><a href="#jfb-1-name">Name: Enter an answer</a></li></ul></div>"""));
+            """<div class="jfb-error-summary" data-jfb-summary="" role="alert" tabindex="-1" aria-labelledby="jfb-1-summary"><h2 id="jfb-1-summary">This answer needs a change</h2><ul role="list"><li><a href="#jfb-1-name">Name: Enter an answer</a></li></ul></div>"""));
     }
 
     [Test]

@@ -43,6 +43,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
             Assert.That(Text(form, ".jfb-progress-steps .jfb-progress-text"), Is.EqualTo("Step 1 of 2"), "a page the rules hide is no step");
             Assert.That(form.QuerySelectorAll(".jfb-progress-steps li").Select(step => (step.TextContent, step.GetAttribute("aria-current"))), Is.EqualTo(new[] { ("Your details", "step"), ("Page 2", (string?)null) }));
             Assert.That(form.QuerySelector(".jfb-progress-steps ol")!.GetAttribute("aria-label"), Is.EqualTo("Progress"));
+            Assert.That(form.QuerySelector(".jfb-progress-steps ol")!.GetAttribute("role"), Is.EqualTo("list"), "a list the themes draw without markers says it is one");
             Assert.That(form.QuerySelector("p.jfb-help")!.InnerHtml, Is.EqualTo("""Questions marked <span aria-hidden="true">*</span><span class="jfb-visually-hidden">with an asterisk</span> need an answer."""));
             Assert.That(Text(pages[0], "h2.jfb-title"), Is.EqualTo("Your details"));
             Assert.That(pages[0].QuerySelector(".jfb-intro")!.InnerHtml, Is.EqualTo("<p>Tell us who you are.</p>"));
@@ -149,7 +150,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
             Assert.That(form.QuerySelectorAll("section.jfb-page").Select(page => page.HasAttribute("hidden")), Is.EqualTo(new[] { true, false }), "the post's page");
             Assert.That(Compact(form.QuerySelector(".jfb-progress-bar")!.OuterHtml), Is.EqualTo("""<div class="jfb-progress jfb-progress-bar"><p class="jfb-progress-text" id="jfb-1-progress">Step 2 of 2</p><progress max="2" value="2" aria-labelledby="jfb-1-progress">Step 2 of 2</progress></div>"""));
             Assert.That(Compact(form.QuerySelector(".jfb-notice")!.OuterHtml), Is.EqualTo("""<div class="jfb-notice"><h2>The form has changed</h2><p>Check your answers, then send them again.</p></div>"""));
-            Assert.That(Compact(form.QuerySelector(".jfb-error-summary")!.OuterHtml), Is.EqualTo("""<div class="jfb-error-summary" data-jfb-summary="" role="alert" tabindex="-1" aria-labelledby="jfb-1-summary"><h2 id="jfb-1-summary">This answer needs a change</h2><ul><li><a href="#jfb-1-name">Enter your whole name</a></li></ul></div>"""), "the field's own message for the kind, as written");
+            Assert.That(Compact(form.QuerySelector(".jfb-error-summary")!.OuterHtml), Is.EqualTo("""<div class="jfb-error-summary" data-jfb-summary="" role="alert" tabindex="-1" aria-labelledby="jfb-1-summary"><h2 id="jfb-1-summary">This answer needs a change</h2><ul role="list"><li><a href="#jfb-1-name">Enter your whole name</a></li></ul></div>"""), "the field's own message for the kind, as written");
             Assert.That(Control(form, "name").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="text" id="jfb-1-name" name="name" value="Bob <b>" aria-invalid="true" aria-describedby="jfb-1-name-error">"""));
             Assert.That(Field(form, "name").QuerySelector("p.jfb-error")!.OuterHtml, Is.EqualTo("""<p class="jfb-error" id="jfb-1-name-error" data-jfb-error="">Enter your whole name</p>"""));
             Assert.That(Compact(form.QuerySelector(".jfb-navigation")!.InnerHtml), Is.EqualTo(

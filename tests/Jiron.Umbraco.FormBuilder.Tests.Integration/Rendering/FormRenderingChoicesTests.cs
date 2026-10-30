@@ -196,13 +196,14 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
 
             var nps = Field(empty, "nps");
             Assert.That(nps.QuerySelectorAll(".jfb-scale > .jfb-choices.jfb-choices-scale input").Select(input => input.GetAttribute("value")), Is.EqualTo(Enumerable.Range(0, 11).Select(number => number.ToString(System.Globalization.CultureInfo.InvariantCulture))));
-            Assert.That(nps.QuerySelector("label[for=jfb-1-nps]")!.InnerHtml, Is.EqualTo("""0<span class="jfb-visually-hidden">, Not likely</span>"""));
-            Assert.That(nps.QuerySelector("label[for=jfb-1-nps-11]")!.InnerHtml, Is.EqualTo("""10<span class="jfb-visually-hidden">, Very likely</span>"""));
-            Assert.That(nps.QuerySelector(".jfb-ends")!.OuterHtml, Is.EqualTo("""<div class="jfb-ends" aria-hidden="true"><span>Not likely</span><span>Very likely</span></div>"""));
+            Assert.That(nps.QuerySelector("label[for=jfb-1-nps]")!.InnerHtml, Is.EqualTo("""<span aria-hidden="true">0</span><span class="jfb-visually-hidden">0, Not likely</span>"""), "the whole name in one span, so no browser puts a space before its comma");
+            Assert.That(nps.QuerySelector("label[for=jfb-1-nps-11]")!.InnerHtml, Is.EqualTo("""<span aria-hidden="true">10</span><span class="jfb-visually-hidden">10, Very likely</span>"""));
+            Assert.That(nps.QuerySelector("label[for=jfb-1-nps-2]")!.InnerHtml, Is.EqualTo("1"), "a point between the ends is its number");
+            Assert.That(nps.QuerySelector(".jfb-ends")!.OuterHtml, Is.EqualTo("""<div class="jfb-ends" aria-hidden="true"><span>Not likely</span> <span>Very likely</span></div>"""), "the words at the ends apart, also without a stylesheet");
             var stars = Field(empty, "stars");
             Assert.That(stars.QuerySelector(".jfb-scale"), Is.Null, "a rating without words at its ends needs no frame");
             Assert.That(stars.QuerySelector(".jfb-choices")!.GetAttribute("class"), Is.EqualTo("jfb-choices jfb-choices-rating jfb-choices-heart"));
-            Assert.That(stars.QuerySelectorAll("label").Select(label => label.InnerHtml), Is.EqualTo(new[] { 1, 2, 3, 4, 5 }.Select(number => $"""<span class="jfb-visually-hidden">{number}</span>""")));
+            Assert.That(stars.QuerySelectorAll("label").Select(label => label.InnerHtml), Is.EqualTo(new[] { 1, 2, 3, 4, 5 }.Select(number => $"""<span class="jfb-rating-value">{number}</span>""")), "each point's number shows without a theme; a theme that draws the symbols hides it");
 
             var grid = Field(empty, "grid");
             Assert.That(grid.QuerySelector(".jfb-matrix-head")!.GetAttribute("aria-hidden"), Is.EqualTo("true"));
@@ -226,6 +227,7 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
                 (null, "up:rank:3", null, "Move Z up"), (null, "down:rank:3", "true", "Move Z down"),
             }), "the moves are submit buttons; one at an end is aria-disabled and stays in the tab order");
             Assert.That(rank.QuerySelectorAll("button").All(button => button.GetAttribute("type") == "submit" && button.GetAttribute("name") == "jfb-nav"), Is.True);
+            Assert.That(rank.QuerySelector("ol.jfb-ranking")!.GetAttribute("role"), Is.EqualTo("list"), "a list the themes draw without markers says it is one");
             Assert.That(rank.QuerySelectorAll("ol.jfb-ranking > li").Select(item => item.Id), Is.EqualTo(new[] { "jfb-1-rank-place-1", "jfb-1-rank-place-2", "jfb-1-rank-place-3" }));
             Assert.That(rank.QuerySelectorAll("button").Select(button => button.GetAttribute("formaction")), Is.EqualTo(new[]
             {

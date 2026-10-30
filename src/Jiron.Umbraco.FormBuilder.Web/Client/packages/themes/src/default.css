@@ -1011,6 +1011,18 @@
 
   & .jfb-choices-rating {
     display: flex;
+    gap: 0;
+  }
+
+  /* Each point's number is for screen readers here, since the stars show it (the base rules show it without a theme). */
+  & .jfb-choices-rating .jfb-rating-value {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   & .jfb-choices-rating > .jfb-choice > label {

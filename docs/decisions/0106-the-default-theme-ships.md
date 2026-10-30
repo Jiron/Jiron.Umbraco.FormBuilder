@@ -3,9 +3,10 @@
 - Status: accepted; builds [ADR-0022](0022-default-theme-and-tokens.md)'s default theme on
   [ADR-0105](0105-the-theme-registry-and-the-base-rules.md)'s registry, amends ADR-0022's layout (fields side by side
   share their rows) and ADR-0105's base rules (the honeypot is clipped, not moved), and extends
-  [ADR-0015](0015-themes-and-the-markup-contract.md)'s dark scheme (the class may sit on an ancestor)
+  [ADR-0015](0015-themes-and-the-markup-contract.md)'s dark scheme (the class may sit on an ancestor); hides a
+  rating's numbers, which [ADR-0107](0107-markup-that-reads-without-a-theme.md) shows in 6.3c, behind its stars
 - Date: 2026-10-30
-- Roadmap step: 6.3b (decided and built); 6.3c gives `bootstrap5` its stylesheet under the same rules, 6.4 the ground
+- Roadmap step: 6.3b (decided and built); 6.3d gives `bootstrap5` its stylesheet under the same rules, 6.4 the ground
   check and the error summary's punctuation, 12.2 the library themes built on `default`
 
 ## Context
@@ -47,7 +48,7 @@ mock as the `default` theme left these questions:
 
 - **Each theme's stylesheet styles only its forms.** `packages/themes/src/default.css` is the mock ported rule by rule,
   every rule nested under `.jfb-form:where(.jfb-theme-default)`; only `@keyframes` stay at the top level, where they
-  must. A later theme's stylesheet nests under `.jfb-form:where(.jfb-theme-<alias>)` the same way (6.3c). A site's own
+  must. A later theme's stylesheet nests under `.jfb-form:where(.jfb-theme-<alias>)` the same way (6.3d). A site's own
   theme that builds on the default stylesheet adds `jfb-theme-default` to its form slot through its class map. The
   base rules keep `.jfb-form`, since every form takes them.
 - **The lint.** `scripts/lib/stylesheets.mjs` holds the stylesheet lint the mock checker had: a top-level selector that

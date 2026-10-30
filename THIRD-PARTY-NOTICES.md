@@ -29,6 +29,7 @@ Material embedded in the shipped files, which no package graph lists:
 | Material | Licence | Where |
 | --- | --- | --- |
 | Lucide's check, alert, chevrons, plus, x, cloud upload, file, printer, star, calendar, clock and mail icons, as CSS masks in the default theme (ROADMAP 6.3b) | ISC, with its notice at the top of the stylesheet, which the build keeps | [packages/themes/src/default.css](src/Jiron.Umbraco.FormBuilder.Web/Client/packages/themes/src/default.css), served as `/jfb/assets/themes/default.css` |
+| Lucide's chevron up and chevron down, as CSS masks on a ranking's moves in the base rules every theme ships (ROADMAP 6.3c) | ISC, with its notice at the top of the stylesheet, which the build keeps | [packages/themes/src/base.css](src/Jiron.Umbraco.FormBuilder.Web/Client/packages/themes/src/base.css), served as `/jfb/assets/themes/base.css` |
 
 ## Development only (never shipped)
 

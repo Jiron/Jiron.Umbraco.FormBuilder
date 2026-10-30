@@ -4,7 +4,8 @@
 @*
     The options in order, each posting its place in the order and each ranked one its position. The move buttons are
     submit buttons, so a page without JavaScript moves an option by rendering the page again, opened at the option's new
-    place; one at an end is aria-disabled and stays in the tab order.
+    place; one at an end is aria-disabled and stays in the tab order. The list has its role in so many words, since the
+    themes draw it without markers, and a browser may then stop announcing it as a list.
 *@
 @{
     var control = (RankingControlModel)Model.Control!;
@@ -19,7 +20,7 @@
 }
 else
 {
-    <ol class="jfb-ranking">
+    <ol class="jfb-ranking" role="list">
         @foreach (var item in control.Items)
         {
             <li id="@item.Id">

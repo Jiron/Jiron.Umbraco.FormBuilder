@@ -1,7 +1,11 @@
 @* jfb-view: fields/scale 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
-@* The words at the ends show below the numbers; screen readers hear them with the first and the last number. *@
+@*
+    The words at the ends show below the numbers; screen readers hear them with the first and the last number, whose
+    whole name is in one hidden span ("0, Not likely") with the shown number kept from them: a visually hidden span
+    counts as a block, so browsers would otherwise put a space before its comma.
+*@
 @{
     var control = (ChoicesControlModel)Model.Control!;
 }
@@ -13,7 +17,7 @@
                 <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" disabled="@Model.IsDisabled">
                 @if (choice.HiddenText is { } hidden)
                 {
-                    <label class="@Model.Classes.ChoiceLabel" for="@choice.Id">@choice.Label<span class="jfb-visually-hidden">@hidden</span></label>
+                    <label class="@Model.Classes.ChoiceLabel" for="@choice.Id"><span aria-hidden="true">@choice.Label</span><span class="jfb-visually-hidden">@choice.Label@hidden</span></label>
                 }
                 else
                 {
@@ -24,6 +28,6 @@
     </div>
     @if (control.Ends is { } ends)
     {
-        <div class="jfb-ends" aria-hidden="true"><span>@ends.Low</span><span>@ends.High</span></div>
+        <div class="jfb-ends" aria-hidden="true"><span>@ends.Low</span> <span>@ends.High</span></div>
     }
 </div>

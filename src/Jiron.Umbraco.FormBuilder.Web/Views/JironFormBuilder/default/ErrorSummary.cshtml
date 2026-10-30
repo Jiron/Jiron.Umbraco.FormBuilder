@@ -1,8 +1,9 @@
 @* jfb-view: ErrorSummary 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.ErrorSummaryViewModel
+@* The list has its role in so many words, since the themes draw it without markers, and a browser may then stop announcing it as a list. *@
 <div class="@Model.Classes.ErrorSummary" data-jfb-summary role="alert" tabindex="-1" aria-labelledby="@Model.HeadingId">
     <h2 id="@Model.HeadingId">@Model.Heading</h2>
-    <ul>
+    <ul role="list">
         @foreach (var error in Model.Errors)
         {
             <li><a href="#@error.Target">@error.Message</a></li>
