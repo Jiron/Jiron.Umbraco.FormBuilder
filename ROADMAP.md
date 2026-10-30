@@ -2195,7 +2195,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **The summary page** ("check your answers", §4.3.4): before sending, a page of every answer the rules leave shown, grouped by page, with a "Change" for each that opens its page with every answer kept, and the send from there.
   - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before building the summary page (ADR-0019, ADR-0020).
   - Done when: Playwright journeys pass for multi-page forms and the summary page; a three-page journey passes with `dir="rtl"`; axe is clean on every page of them.
-- [ ] **6.5b A copy of the answers** (6.5 split in four, WORKLOG 2026-10-30)
+- [x] **6.5b A copy of the answers** (6.5 split in four, WORKLOG 2026-10-30) (2026-10-30, 6288e0e)
   - **Keep a copy** (added in 1.1): the outcome option of §4.3.4 shows the submitted answers with a print button and a "fill in again" link, reusing the summary page's rendering:
     - only in the response to the submission: after a no-JS post, the redirect carries a short-lived, single-use signed token, never answers in the URL;
     - never cached (`no-store`), sensitive values masked, print styles only.
