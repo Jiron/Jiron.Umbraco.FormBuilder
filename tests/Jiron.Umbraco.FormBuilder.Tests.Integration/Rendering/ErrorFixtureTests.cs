@@ -15,13 +15,15 @@ using Umbraco.Cms.Tests.Common.Testing;
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 
 /// <summary>
-/// The server's own errors, which the runtime's checks and messages are held to (ROADMAP 6.4d, ADR-0112): a form with a
-/// field of every kind the browser checks is posted without JavaScript, as a browser posts it, in English and in German,
-/// and each page the server renders again with its errors is saved, the form element alone (its route token and
-/// honeypot left out, its key fixed), with the clock it used, in <c>tests/fixtures/rendering/errors-&lt;language&gt;.json</c>.
-/// <c>packages/runtime</c>'s <c>checks.fixture.test.ts</c> loads each page, checks it as the runtime does and expects the
-/// server's errors and summary links. After a deliberate change, run the fixture with <c>JFB_UPDATE_SNAPSHOTS=1</c>: it
-/// writes the files and fails, so the diff gets reviewed.
+/// The server's own errors, which the runtime's checks, messages and their display are held to (ROADMAP 6.4d and 6.4e,
+/// ADR-0112, ADR-0113): a form with a field of every kind the browser checks, in the default theme and, marked with
+/// asterisks, in <c>bootstrap5</c>, is posted without JavaScript, as a browser posts it, in English and in German, and
+/// each page the server renders again with its errors is saved with the page as it was first rendered, the form element
+/// alone (its route token and honeypot left out, its key fixed), with the clock it used, in
+/// <c>tests/fixtures/rendering/errors-&lt;language&gt;.json</c>. <c>packages/runtime</c>'s
+/// <c>checks.fixture.test.ts</c> loads each page, checks it as the runtime does and expects the server's errors and
+/// summary links, and shows them on the page as the server wrote them. After a deliberate change, run the fixture with
+/// <c>JFB_UPDATE_SNAPSHOTS=1</c>: it writes the files and fails, so the diff gets reviewed.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -30,6 +32,7 @@ public sealed class ErrorFixtureTests : RenderingTestBase
     private static readonly DateTimeOffset Now = new(2026, 6, 15, 9, 30, 0, TimeSpan.Zero);
     private static readonly Guid ChecksKey = Guid.Parse("30000000-0000-4000-8000-0000000000e1");
     private static readonly Guid PagedKey = Guid.Parse("30000000-0000-4000-8000-0000000000e2");
+    private static readonly Guid BootstrapKey = Guid.Parse("30000000-0000-4000-8000-0000000000e3");
 
     private static readonly Guid Name = K(0x10);
     private static readonly Guid Email = K(0x12);
@@ -44,12 +47,15 @@ public sealed class ErrorFixtureTests : RenderingTestBase
         GetRequiredService<TestClock>().SetNow(Now);
         var checks = await PublishFormAsync("renderingErrors", Checks);
         var paged = await PublishFormAsync("renderingErrorsPaged", Paged);
-        _ = language == "de" ? await CulturePagesAsync("de-DE", "German", "errors", "errors-paged") : await PagesAsync("errors", "errors-paged");
+        var bootstrap = await PublishFormAsync("renderingErrorsBootstrap", definition => Checks(definition) with { Settings = definition.Settings with { Appearance = definition.Settings.Appearance with { Theme = "bootstrap5", RequiredMarker = RequiredMarker.Required } } });
+        string[] pages = ["errors", "errors-paged", "errors-bootstrap"];
+        _ = language == "de" ? await CulturePagesAsync("de-DE", "German", pages) : await PagesAsync(pages);
 
         var cases = new JsonArray();
         foreach (var (name, page, nav, answers) in Cases())
         {
             var form = await FormAtAsync(page);
+            var first = Normalised(form, (checks, ChecksKey), (paged, PagedKey), (bootstrap, BootstrapKey));
             foreach (var (field, values) in answers)
             {
                 Fill(form, field, values);
@@ -65,7 +71,8 @@ public sealed class ErrorFixtureTests : RenderingTestBase
                 ["name"] = name,
                 ["scope"] = nav == FormPostFields.Next ? "page" : "send",
                 ["now"] = Now.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
-                ["html"] = Normalised(shown, (checks, ChecksKey), (paged, PagedKey)),
+                ["first"] = first,
+                ["html"] = Normalised(shown, (checks, ChecksKey), (paged, PagedKey), (bootstrap, BootstrapKey)),
             });
         }
 
@@ -93,15 +100,16 @@ public sealed class ErrorFixtureTests : RenderingTestBase
     }
 
     // The posts: every required field left empty with one answer given, so the post is not empty; answers each check
-    // refuses; nothing at all; and Next on the first page of two with its errors.
+    // refuses; nothing at all; Next on the first page of two with its errors; and the first two in bootstrap5.
     private static IEnumerable<(string Name, string Path, string Nav, (string Field, string[] Values)[] Answers)> Cases()
     {
-        yield return ("required", "/errors/", FormPostFields.Submit, [("promo", ["1234"])]);
-        yield return ("refused", "/errors/", FormPostFields.Submit,
+        (string Field, string[] Values)[] required = [("promo", ["1234"])];
+        (string Field, string[] Values)[] refused =
         [
             ("name", ["Ada"]),
             ("nickname", ["Ad"]),
             ("email", ["not an address"]),
+            ("email.confirm", ["not an address"]),
             ("code", ["abc"]),
             ("promo", ["12"]),
             ("again", ["Bob"]),
@@ -119,9 +127,13 @@ public sealed class ErrorFixtureTests : RenderingTestBase
             ("guests[0].guest", ["Bob"]),
             ("guests[0].confirm", ["Rob"]),
             ("guests[0].diet", ["Nothing with nuts"]),
-        ]);
+        ];
+        yield return ("required", "/errors/", FormPostFields.Submit, required);
+        yield return ("refused", "/errors/", FormPostFields.Submit, refused);
         yield return ("empty", "/errors/", FormPostFields.Submit, []);
         yield return ("next", "/errors-paged/", FormPostFields.Next, [("pagedEmail", ["nope"])]);
+        yield return ("bootstrap5 required", "/errors-bootstrap/", FormPostFields.Submit, required);
+        yield return ("bootstrap5 refused", "/errors-bootstrap/", FormPostFields.Submit, refused);
     }
 
     // JSON whose markup stays readable in a diff and whose other characters are escaped, as the repository's fixtures
@@ -144,10 +156,11 @@ public sealed class ErrorFixtureTests : RenderingTestBase
         return ascii.ToString();
     }
 
-    // A form element as the fixture keeps it: without its route token, which changes with every render, and its
-    // honeypot, whose name follows the form's key, and with each form's key fixed.
-    private static string Normalised(IElement form, params (Guid Key, Guid Fixed)[] keys)
+    // A copy of a form element as the fixture keeps it: without its route token, which changes with every render, and
+    // its honeypot, whose name follows the form's key, and with each form's key fixed.
+    private static string Normalised(IElement shown, params (Guid Key, Guid Fixed)[] keys)
     {
+        var form = (IElement)shown.Clone(deep: true);
         foreach (var varying in form.QuerySelectorAll($"input[name='{FormPostFields.RouteToken}'], .jfb-hp").ToList())
         {
             varying.Remove();
@@ -179,7 +192,8 @@ public sealed class ErrorFixtureTests : RenderingTestBase
             request.Headers.Referrer = new Uri(Client.BaseAddress!, page);
         });
 
-    // A field of every kind the browser checks: required texts, one with its label hidden, one with its own message;
+    // A field of every kind the browser checks: required texts, one with its label hidden, an email address asked twice
+    // with its own message;
     // checks with and without their message, one that names another field; a number's range and a date's window; a
     // phone and a web address; a text's longest; choices a rule requires and a radio; a grid with a row required by
     // itself and a row a validation rule without a message refuses; a consent; a name in parts; a field a rule shows;
@@ -200,7 +214,7 @@ public sealed class ErrorFixtureTests : RenderingTestBase
                         [
                             Field(Name, "name", "text", "Name") with { Required = true },
                             Field(K(0x11), "nickname", "text", "Nickname") with { Required = true, HideLabel = true, Settings = SettingsObject.Parse("""{"minLength":3}""") },
-                            Field(Email, "email", "email", "Email address") with { Required = true, Messages = new FieldMessages { Required = new LocalizedText("Tell us your email address") } },
+                            Field(Email, "email", "email", "Email address", """{"confirm":true}""") with { Required = true, Messages = new FieldMessages { Required = new LocalizedText("Tell us your email address") } },
                             Field(K(0x13), "code", "text", "Code") with { Validation = [new PatternCheck { Pattern = "[A-Z]{3}", Message = new LocalizedText("Use three capital letters") }] },
                             Field(K(0x14), "promo", "text", "Promo code") with { Validation = [new PatternCheck { Pattern = "[0-9]{4}" }] },
                             Field(K(0x15), "again", "text", "Name again") with { Validation = [new MatchesFieldCheck { Field = Name }] },

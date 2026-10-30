@@ -11,7 +11,7 @@
   lists' roles) in 6.3c ([ADR-0107](0107-markup-that-reads-without-a-theme.md)); `bootstrap5`'s stylesheet, its class
   map's plain button and outcome, and the file input's theme classes in 6.3d
   ([ADR-0108](0108-the-bootstrap5-theme.md)); the hooks of a form with rules in 6.4c
-  ([ADR-0111](0111-rules-on-the-page.md))
+  ([ADR-0111](0111-rules-on-the-page.md)); the runtime's templates in 6.4e ([ADR-0113](0113-errors-on-the-page.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 2.3 (the visual design and its tokens), 6.2 (rendering), 6.3 (the themes),
   6.4 (the runtime), 6.6 (the headless element) and 12.2 (the theme editor)
@@ -100,6 +100,7 @@ What the runtime, the headless element and site CSS may rely on, in every theme:
 | --- | --- |
 | The form | `<form class="jfb-form jfb-theme-<alias>" id="<instance>" data-jfb-form="<key>" data-jfb-revision="<n>" data-jfb-api="<public API base>" data-jfb-contract="1" lang="<culture>" dir="ltr or rtl" method="post" novalidate>`; `action` and `enctype` as ADR-0004 sets them |
 | The model data | one `<script type="application/json" data-jfb-model>` per form with what the runtime needs from the projection (rules, checks, recall templates, field kinds, culture patterns, ADR-0014); data, never executed, so a CSP needs nothing for it |
+| The runtime's templates | one `<template data-jfb-templates>` per form with the error summary as the `ErrorSummary` view renders it for one empty link and an error paragraph with the error slot's classes, which the runtime copies to show errors in the theme's markup ([ADR-0113](0113-errors-on-the-page.md)); inert, so nothing in it is posted, read out or styled |
 | A page | `<section class="jfb-page" data-jfb-page="<key>">`; pages other than the current one carry `hidden` |
 | A group | `<fieldset class="jfb-group jfb-columns-<n>" data-jfb-group="<key>">` with a `<legend>` when titled, otherwise a `<div>` |
 | A field | `<div class="jfb-field jfb-field-<type> jfb-span-<n>" data-jfb-field="<key>" data-jfb-alias="<alias>" data-jfb-type="<type>">` |

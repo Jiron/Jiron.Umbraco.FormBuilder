@@ -893,6 +893,9 @@ internal sealed partial class FormModels(
                 DefaultButton = defaultButton,
                 Progress = progress,
                 ErrorSummary = errors,
+                ErrorSummaryTemplate = Display == FormDisplay.Form
+                    ? new ErrorSummaryViewModel { Classes = Classes, Heading = string.Empty, HeadingId = Id + "-summary", Errors = [new ErrorLinkModel(string.Empty, string.Empty)] }
+                    : null,
                 Navigation = navigation,
                 RequiredNote = requiredNote,
                 IsRequiredNoteHidden = requiredNote is not null && isRequiredNoteHidden,
