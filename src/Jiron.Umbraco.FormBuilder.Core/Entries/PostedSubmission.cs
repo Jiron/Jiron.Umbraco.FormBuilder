@@ -37,6 +37,12 @@ internal sealed record PostedSubmission
     /// <summary>The site's time zone, an IANA name this server knows; the pipeline falls back to UTC for one it does not (ADR-0043).</summary>
     public required string TimeZone { get; init; }
 
+    /// <summary>
+    /// Whether the rules see a signed-in member. The pipeline leaves it false, as the page's rules do, until 14.3 binds
+    /// members to the page's rules, so the two always decide alike (ADR-0124); the merge tags' member is the scope's.
+    /// </summary>
+    public bool MemberSignedIn { get; init; }
+
     /// <summary>The member groups of the signed-in member, which rules may look at; none without a member.</summary>
     public IReadOnlyList<string> MemberGroups { get; init => field = value ?? []; } = [];
 

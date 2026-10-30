@@ -47,6 +47,12 @@ internal sealed record SubmissionRequest
     public IReadOnlyDictionary<string, string> Context { get; init => field = value ?? NoContext; } = NoContext;
 
     /// <summary>
+    /// The key of the member signed in on the request, as the transport found it, or null: the merge tags' member, whose
+    /// values a field prefilled from the member takes (ADR-0124).
+    /// </summary>
+    public Guid? Member { get; init; }
+
+    /// <summary>
     /// Reads the upload tokens that the values of fields storing files post (ADR-0087): the transport's own, since only
     /// it knows how its tokens are protected; null for a transport that posts none, so every such value is invalid.
     /// </summary>

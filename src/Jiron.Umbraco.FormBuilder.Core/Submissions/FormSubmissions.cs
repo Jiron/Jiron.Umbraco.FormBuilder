@@ -233,6 +233,7 @@ internal sealed class FormSubmissions(
             Culture = culture,
             Site = page.Site,
             Page = page.Content,
+            Member = request.Member,
             Query = query,
             Context = context,
         };

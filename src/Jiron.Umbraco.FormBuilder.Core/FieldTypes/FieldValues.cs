@@ -71,6 +71,36 @@ internal static class FieldValues
             : FieldMessageKinds.Invalid;
     }
 
+    /// <summary>
+    /// Whether a signed-in member's value stands in for a field hidden from them (ADR-0124): it keeps the field's limits,
+    /// the type reads a value from it, and it passes the type's checks and the field's own, so an entry never fails on a
+    /// value the member can neither see nor change. The page shows the field to the member otherwise, and the posted
+    /// answer counts.
+    /// </summary>
+    /// <param name="type">The field's type.</param>
+    /// <param name="field">The field.</param>
+    /// <param name="answers">The member's value.</param>
+    /// <param name="today">Today in the form's time zone, for a date's checks.</param>
+    public static bool StandsIn(IFormBuilderFieldType type, FormField field, FieldAnswers answers, DateOnly today)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(field);
+        ArgumentNullException.ThrowIfNull(answers);
+        if (type.Declaration.Storage == FieldStorageKind.File || CheckLimits(type, field, answers) is not null)
+        {
+            return false;
+        }
+
+        var read = Read(type, field, answers);
+        if (read.IsUnreadable || read.Values.IsEmpty)
+        {
+            return false;
+        }
+
+        var errors = Check(type, field, read, new FieldCheckInput(IsRequired: false, today));
+        return errors.Errors.IsEmpty && errors.Checks.IsEmpty;
+    }
+
     /// <summary>The answers read by the field's type; no values for a field that takes no answer.</summary>
     /// <exception cref="InvalidOperationException">The type read a value its storage kind cannot hold (<see cref="EntryValueColumns.Holds"/>).</exception>
     public static FieldRead Read(IFormBuilderFieldType type, FormField field, FieldAnswers answers)

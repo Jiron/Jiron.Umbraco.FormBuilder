@@ -43,11 +43,11 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         var definition = post.Scope.Form;
         var now = post.Now.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
         var today = DateOnly.FromDayNumber(CalendarValues.Today(now, post.TimeZone));
-        var slots = Take(definition, post);
+        var slots = Take(definition, post, await MemberAnswersAsync(definition, post, today, cancellationToken));
         var logic = DefinitionLogic.From(definition, types);
         var allowed = definition.Settings.Developer.QueryValues;
         var query = post.Scope.Query.Where(pair => allowed.Contains(pair.Key, StringComparer.Ordinal)).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
-        var context = new EvaluationContext(now, post.TimeZone, post.Scope.Culture, new Member(post.Scope.Member is not null, post.MemberGroups), query, []);
+        var context = new EvaluationContext(now, post.TimeZone, post.Scope.Culture, new Member(post.MemberSignedIn, post.MemberGroups), query, []);
         var state = FormRules.Evaluate(logic, Answers(slots), context);
 
         // Only the rules of actions and outcomes may look at a value the server resolves (ADR-0035), so evaluating again
@@ -66,10 +66,64 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         };
     }
 
+    // The answers that a signed-in member's values stand in for (ADR-0124): each field outside repeatable groups that is
+    // prefilled from the member and hidden from them takes the member's value, whatever was posted, where it stands in
+    // (FieldValues.StandsIn), as the page decides it; none where the member has no such value, or without a member, so
+    // the visitor's own answer stands where the page showed the field.
+    private async Task<Dictionary<Guid, PostedAnswer>> MemberAnswersAsync(FormDefinition definition, PostedSubmission post, DateOnly today, CancellationToken cancellationToken)
+    {
+        var answers = new Dictionary<Guid, PostedAnswer>();
+        if (post.Scope.Member is null)
+        {
+            return answers;
+        }
+
+        foreach (var field in definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields))
+        {
+            if (field.Prefill is { Member: { } name, MemberMode: PrefillMemberMode.Hide }
+                && types.FindType(field.Type) is { Declaration.ServerOnlyDefault: false } type
+                && type.Declaration.Features.HasFlag(FieldFeatures.Prefill)
+                && await TagTextAsync(MemberTag(name), post.Scope, cancellationToken) is { } text
+                && FieldValues.StandsIn(type, field, new FieldAnswers([text]), today))
+            {
+                answers[field.Key] = new PostedAnswer([text]);
+            }
+        }
+
+        return answers;
+    }
+
+    // The member's and the context value's tags a field is prefilled from, in the order they win (ADR-0124).
+    private static List<string> ServerPrefill(FormField field)
+    {
+        var tags = new List<string>(2);
+        if (field.Prefill?.Member is { } member)
+        {
+            tags.Add(MemberTag(member));
+        }
+
+        if (field.Prefill?.Context is { } context)
+        {
+            tags.Add("{{ context." + context + " }}");
+        }
+
+        return tags;
+    }
+
+    private static string MemberTag(string name) => "{{ member." + name + " }}";
+
+    // A tag rendered where hidden values render, cleaned; null for an empty text.
+    private async Task<string?> TagTextAsync(string tag, MergeTagScope scope, CancellationToken cancellationToken)
+    {
+        var rendering = await mergeTags.RenderAsync(tag, MergeTagPlace.HiddenValue, MergeTagContext.Text, scope with { TextOwner = null }, cancellationToken);
+        return TextSemantics.Clean(rendering.Text) is { Length: > 0 } clean ? clean : null;
+    }
+
     // Every field of the version whose type the site has, outside repeatable groups and in the form's order, with its
-    // answer read; a repeatable group with its rows, read only when their number keeps the group's limits, so a post with
-    // too many rows costs no more than its count.
-    private List<Slot> Take(FormDefinition definition, PostedSubmission post)
+    // answer read (a member's value in place of a posted one where it stands in, MemberAnswersAsync); a repeatable group
+    // with its rows, read only when their number keeps the group's limits, so a post with too many rows costs no more
+    // than its count.
+    private List<Slot> Take(FormDefinition definition, PostedSubmission post, Dictionary<Guid, PostedAnswer> fromMember)
     {
         var slots = new List<Slot>();
         foreach (var field in definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields))
@@ -97,7 +151,7 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
             }
             else
             {
-                Read(slot, post.Fields.GetValueOrDefault(field.Key));
+                Read(slot, fromMember.GetValueOrDefault(field.Key) ?? post.Fields.GetValueOrDefault(field.Key));
             }
 
             slots.Add(slot);
@@ -226,6 +280,40 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
             if (!slot.Type.Declaration.ServerOnlyDefault)
             {
                 continue;
+            }
+
+            // The member's value, else the context value, comes first (ADR-0124), over a posted query value.
+            var prefilled = ServerPrefill(slot.Field);
+            if (prefilled.Count > 0)
+            {
+                scope ??= post.Scope with { Answers = MergeTagAnswers.Replaceable(ForMergeTags(Stored(slots, state, post)), HiddenKeys(state)), TextOwner = null };
+                string? own = null;
+                foreach (var tag in prefilled)
+                {
+                    if ((own = await TagTextAsync(tag, scope, cancellationToken)) is not null)
+                    {
+                        break;
+                    }
+                }
+
+                if (own is not null)
+                {
+                    var posted = slot.Read;
+                    var given = new FieldAnswers([own]);
+                    if (FieldValues.CheckLimits(slot.Type, slot.Field, given) is null)
+                    {
+                        slot.Read = FieldValues.Read(slot.Type, slot.Field, given);
+                        if (!slot.Read.IsUnreadable && await TakesAsync(slot, row, slots, state, resolving, today, cancellationToken))
+                        {
+                            changed = true;
+                            scope.Answers.Replace(ForMergeTags(Stored(slots, state, post)));
+                            continue;
+                        }
+                    }
+
+                    LogPrefillNotTaken(logger, NameOf(slot));
+                    slot.Read = posted;
+                }
             }
 
             if (!slot.Values.IsEmpty)
