@@ -9,6 +9,8 @@
  *   - the runtime's core, its entry and every chunk the entry imports statically: at most 16 KB;
  *   - the runtime with every feature: every file but the languages' words, and the largest language's, as a page
  *     loads its culture's words alone: at most 40 KB (ADR-0116); the sum with every language is reported beside it;
+ *   - the runtime's chunk names: every file but the entry carries a content hash, since the entry's `?v=` does not
+ *     reach the chunks it imports, so a changed chunk needs a name of its own (ADR-0004);
  *   - each stylesheet the themes package builds, the base rules and each theme's: at most 10 KB (ADR-0105), and
  *     linted as it is served (scripts/lib/stylesheets.mjs): the base rules under .jfb-form, a theme's under
  *     .jfb-form:where(.jfb-theme-<alias>), so it styles only its own forms, and nothing physical anywhere;
@@ -62,6 +64,11 @@ export function isWords(file) {
   return modules.length > 0 && modules.every((module) => /(^|\/)packages\/logic\/src\/lang\//.test(module));
 }
 
+/** Whether a file's name carries the bundler's content hash: `<name>-<eight letters, digits, _ or ->.<ext>`. */
+export function isHashed(file) {
+  return /-[A-Za-z0-9_-]{8}[.][a-z]+$/.test(file);
+}
+
 /** The gzip size of some of a report's files, summed; a missing file is an error. */
 export function measure(report, files, webProject = WEB_PROJECT) {
   let total = 0;
@@ -105,6 +112,11 @@ export function check({ reports = REPORTS, webProject = WEB_PROJECT } = {}) {
     if (words.length > 1) {
       results.push({ ok: true, line: `runtime with every feature and every language (${files(all.length)}): ${kb(measure(runtime, all, webProject))} gzip, more than a page loads` });
     }
+    const unhashed = runtime.files.filter((f) => !f.entry && !isHashed(f.file)).map((f) => f.file);
+    results.push({
+      ok: unhashed.length === 0,
+      line: `runtime chunk names: ${unhashed.length === 0 ? 'every file but the entry carries a content hash, ok' : `WITHOUT A CONTENT HASH: ${unhashed.join(', ')}`}`,
+    });
   }
 
   const themes = readReport('themes', reports);

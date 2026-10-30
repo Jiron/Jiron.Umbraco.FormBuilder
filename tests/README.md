@@ -387,6 +387,7 @@ answers what no socket shows: an `https` address, a body whose length is not dec
 | `Stub/` | `StubServer`, the local HTTP stub: webhooks, captcha verification (`StubCaptcha` tokens) and scripted answers (a redirect with its `Location`), with every call recorded. |
 | `Endpoints/` | The test-only endpoints under `/jfb-testing/`. |
 | `Startup/` | `StartupMarkerPopulator`, which logs a line once Umbraco has rebuilt its indexes, for the browser tests' start-up wait. |
+| `Csp/` | `TestCspMiddleware`, a strict site's Content Security Policy on every response, and `TestCspNonces`, the host's nonce provider (ADR-0121). |
 | `Settings/` | `SampleSettings`, the settings tests' section (below), and `SettingsJson.Global`, a section's global row as the settings service writes it. |
 
 A host turns these on in the `JironFormBuilderTesting` section; everything is off by default:
@@ -397,6 +398,7 @@ A host turns these on in the `JironFormBuilderTesting` section; everything is of
 | `Clock` | Runs the host on `TestClock`. |
 | `StubPort` | Starts the stub on that port (5560 for the browser tests' host), only in Development, where calls to other hosts may then reach it on loopback at that port only (ADR-0076). |
 | `StartupMarker` | Logs `Jiron Form Builder test host: indexes rebuilt` after each rebuild of Umbraco's indexes. |
+| `Csp` | Gives every response, in Development only, `script-src 'self'` and nothing inline, from another host or in a style attribute; a request with `jfb-test-nonce=nonce` (or `=strict-dynamic`) gets a nonce of its own instead, which `<jfb-assets>` writes, and is never stored (`TestCspHostTests`; the strict-site spec). |
 | `UserGroups`, `Users`, `Members` | The people the host creates at start-up, each group with its global `Permissions`; their passwords come from the environment only. |
 | `RestrictedFolders` | Root folders the host restricts at start-up, each to one group (`Name`, `Group`, `Permissions`); a folder of that name in the trash is left there and a new one made. |
 
@@ -983,7 +985,13 @@ summary's link naming the question as it reads now, the merge tags loaded once, 
 never loading them; and `e2e/specs/website/defaults-on-the-page.spec.ts` shows, in English and German, the events
 page's link opening the booking with its workshop chosen from the address before the visitor touches it, the help
 naming it at once, the server's markup leaving the choice empty, axe clean, and a value no option has, or none,
-choosing nothing.
+choosing nothing; and `e2e/specs/website/strict-site.spec.ts` starts the demo as a second host on 5525, with the
+output cache on and the Testing project's strict policy (ADR-0121), shows that an inline script the page did not
+bring is refused and counted, runs the room hire form (the calculation language) from a page the cache serves and the
+workshop booking (the merge tags) as a signed-in member, both with `script-src 'self'`, and both again from a page
+with a nonce, with and without `'strict-dynamic'`, every chunk loaded, the error summary shown, no violation and axe
+clean, and sends the contact form with no cookie set by any response. The size check holds every file of the runtime's build but its entry to a
+content-hashed name, and `Client/scripts/scripts.test.mjs` shows the hash following a chunk's content.
 
 ## Writing tests
 

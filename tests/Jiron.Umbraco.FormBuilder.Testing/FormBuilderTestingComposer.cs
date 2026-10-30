@@ -1,9 +1,11 @@
 using System.Net;
 using Jiron.Umbraco.FormBuilder.Core.Outbound;
+using Jiron.Umbraco.FormBuilder.Testing.Csp;
 using Jiron.Umbraco.FormBuilder.Testing.Endpoints;
 using Jiron.Umbraco.FormBuilder.Testing.People;
 using Jiron.Umbraco.FormBuilder.Testing.Stub;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
+using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,9 +20,9 @@ namespace Jiron.Umbraco.FormBuilder.Testing;
 /// <summary>
 /// Registers the test-only services in the hosts that reference this project (the test hosts, and the demo from 3.4c).
 /// Everything is off unless the <c>JironFormBuilderTesting</c> section turns it on (<see cref="FormBuilderTestingOptions"/>):
-/// the people seeder does nothing without people, the clock and the stub are registered only when asked for (the
-/// start-up marker too, in <see cref="Startup.StartupMarkerComposer"/>), and the test-only endpoints answer only behind
-/// their gate (<see cref="TestEndpointsGate"/>). With the stub, calls to other hosts may reach it (ADR-0076).
+/// the people seeder does nothing without people, the clock, the stub and the strict CSP are registered only when asked
+/// for (the start-up marker too, in <see cref="Startup.StartupMarkerComposer"/>), and the test-only endpoints answer
+/// only behind their gate (<see cref="TestEndpointsGate"/>). With the stub, calls to other hosts may reach it (ADR-0076).
 /// </summary>
 public sealed class FormBuilderTestingComposer : IComposer
 {
@@ -34,6 +36,12 @@ public sealed class FormBuilderTestingComposer : IComposer
         builder.Services.AddTransient<IStartupFilter, TestEndpointsStartupFilter>();
 
         var section = builder.Config.GetSection(FormBuilderTestingOptions.SectionName);
+        if (section.GetValue<bool>(nameof(FormBuilderTestingOptions.Csp)))
+        {
+            builder.Services.AddTransient<IStartupFilter, TestCspStartupFilter>();
+            builder.Services.AddSingleton<IFormBuilderCspNonceProvider, TestCspNonces>();
+        }
+
         if (section.GetValue<bool>(nameof(FormBuilderTestingOptions.Clock)))
         {
             var clock = new TestClock();

@@ -6,6 +6,8 @@
   the largest language's words, as a page loads its culture's alone, and the chunk report names each chunk's modules
 - Amended in 6.4h by [ADR-0119](0119-a-terser-pass-for-the-website-runtime.md): the website runtime takes a terser pass
   besides the bundler's minifier
+- Amended in 6.4k by [ADR-0121](0121-a-strict-site-in-the-browser-tests.md): the size check holds every file of the
+  runtime's build but its entry to a name with the bundler's content hash
 - Roadmap step: 3.2 (decided and built); 6.2 serves the embedded assets, 6.3 adds the themes, 9.6 sets the
   backoffice budget, 18.1 and 18.2 pack and install
 

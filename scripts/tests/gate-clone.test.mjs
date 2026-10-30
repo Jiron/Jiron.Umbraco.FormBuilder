@@ -50,14 +50,16 @@ describe('browserPorts', () => {
     for (const port of ports) assert.ok(port >= 5500 && port <= 5599, `${port} is in Jiron Form Builder's range`);
   });
 
-  test('reads a single port and a map of them, and nothing else', () => {
+  test('reads every single port and map of them the harness exports, and nothing else', () => {
     const source = [
       'export const PORT_RANGE = { first: 5500, last: 5599 } as const;',
       'export const E2E_PORT = 5520;',
+      'export const E2E_BASE_URL = `http://127.0.0.1:${E2E_PORT}`;',
       'export const REFUSAL_PORTS = { configuration: 5521, globalization: 5522 } as const;',
       'export const STUB_PORT = 5560;',
+      'export const CACHED_PORT = 5525;',
     ].join('\n');
-    assert.deepEqual(browserPorts(source), [5520, 5521, 5522, 5560]);
+    assert.deepEqual(browserPorts(source), [5520, 5521, 5522, 5560, 5525]);
   });
 
   test('fails when the harness names no port', () => {

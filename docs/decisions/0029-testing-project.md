@@ -4,6 +4,8 @@
 - Date: 2026-10-23
 - Roadmap step: 3.4a (decided and built); 3.4c's browser host turns these on, and later steps add their fakes and
   test-only endpoints here
+- Amended in 6.4k by [ADR-0121](0121-a-strict-site-in-the-browser-tests.md): `Csp` gives every response a strict
+  Content Security Policy, with a nonce of its own for a request that asks for one
 
 ## Context
 

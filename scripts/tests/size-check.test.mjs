@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, test } from 'node:test';
-import { BUDGETS, check, gzipSize, isWords, measure, scopeOf, staticClosure } from '../size-check.mjs';
+import { BUDGETS, check, gzipSize, isHashed, isWords, measure, scopeOf, staticClosure } from '../size-check.mjs';
 
 const folders = [];
 after(() => {
@@ -76,19 +76,20 @@ describe('the check', () => {
       runtime: {
         folder: 'WebsiteAssets/runtime',
         files: [
-          { meta: chunk('jfb-runtime.js', [], ['chunks/upload-x.js'], true), bytes: small('r') },
-          { meta: chunk('chunks/upload-x.js'), bytes: upload },
+          { meta: chunk('jfb-runtime.js', [], ['chunks/upload-Ab3_x9Zq.js'], true), bytes: small('r') },
+          { meta: chunk('chunks/upload-Ab3_x9Zq.js'), bytes: upload },
         ],
       },
     });
     const results = check(paths);
     assert.equal(results.every((r) => r.ok), true);
+    assert.ok(results.some((r) => r.line === 'runtime chunk names: every file but the entry carries a content hash, ok'));
     const core = results.find((r) => r.line.startsWith('runtime core'));
     const all = results.find((r) => r.line.startsWith('runtime with every feature'));
     assert.match(core.line, /[(]1 file: the entry/);
     assert.match(all.line, /[(]2 files[)]/);
     assert.equal(
-      measure({ folder: 'WebsiteAssets/runtime' }, ['jfb-runtime.js', 'chunks/upload-x.js'], paths.webProject),
+      measure({ folder: 'WebsiteAssets/runtime' }, ['jfb-runtime.js', 'chunks/upload-Ab3_x9Zq.js'], paths.webProject),
       gzipSize(small('r')) + gzipSize(upload),
     );
     assert.ok(results.some((r) => /^stylesheet base[.]css: .* gzip of 10[.]00 KB, ok$/.test(r.line)));
@@ -130,6 +131,26 @@ describe('the check', () => {
     assert.equal(isWords(chunk('chunks/messages.en-x.js', [], [], false, ['Client/packages/logic/src/lang/messages.en.ts'])), true);
     assert.equal(isWords(chunk('chunks/form-x.js', [], [], false, ['Client/packages/logic/src/lang/messages.en.ts', 'Client/packages/runtime/src/form.ts'])), false);
     assert.equal(isWords(chunk('chunks/messages.en-x.js')), false, 'a report without modules counts the file as a feature');
+  });
+
+  test('fails for a chunk whose name carries no content hash, and names it; the entry keeps its own name', () => {
+    const paths = project({
+      ...base(),
+      runtime: {
+        folder: 'WebsiteAssets/runtime',
+        files: [
+          { meta: chunk('jfb-runtime.js', [], ['chunks/form-C6Ttrlit.js', 'chunks/upload.js'], true), bytes: small('r') },
+          { meta: chunk('chunks/form-C6Ttrlit.js'), bytes: small('f') },
+          { meta: chunk('chunks/upload.js'), bytes: small('u') },
+        ],
+      },
+    });
+    const names = check(paths).find((r) => r.line.startsWith('runtime chunk names'));
+    assert.equal(names.ok, false);
+    assert.equal(names.line, 'runtime chunk names: WITHOUT A CONTENT HASH: chunks/upload.js');
+    assert.equal(isHashed('chunks/messages.de-CzJlC_Mw.js'), true);
+    assert.equal(isHashed('chunks/form-short.js'), false, 'a hash has eight characters');
+    assert.equal(isHashed('jfb-runtime.js'), false);
   });
 
   test('fails when the core is over its budget, although a feature chunk is not counted in it', () => {

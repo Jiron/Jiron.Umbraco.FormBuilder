@@ -11,6 +11,7 @@ using Jiron.Umbraco.FormBuilder.Testing.Startup;
 using Jiron.Umbraco.FormBuilder.Testing.Time;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Jiron.Umbraco.FormBuilder.Web.Composing;
+using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
@@ -106,6 +107,12 @@ public sealed partial class FormBuilderBootTests : UmbracoIntegrationTest
     public void Boot_WithoutTheStartupMarker_RegistersNoMarkerPopulator()
     {
         Assert.That(GetRequiredService<IEnumerable<IIndexPopulator>>().OfType<StartupMarkerPopulator>(), Is.Empty);
+    }
+
+    [Test]
+    public void Boot_WithoutTheStrictCsp_RegistersNoNonceProvider()
+    {
+        Assert.That(Services.GetService<IFormBuilderCspNonceProvider>(), Is.Null, "a site has none by default, and the test host's policy is off");
     }
 
     [Test]

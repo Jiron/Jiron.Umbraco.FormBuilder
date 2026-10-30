@@ -122,6 +122,14 @@ export function createSecrets(): E2ESecrets {
   return secrets;
 }
 
+/** The run's secrets, for a spec that starts a host of its own beside the run's; the global set-up has created them. */
+export function readSecrets(): E2ESecrets {
+  const found = readCredentials().e2e;
+  if (found?.users === undefined || found.members === undefined || found.imagingHmacSecretKey === undefined)
+    throw new Error('No E2E secrets in .local/credentials.json; the global set-up creates them.');
+  return found as E2ESecrets;
+}
+
 /** The account of a persona, for fixtures; the global set-up has created it. */
 export function account(role: Role): Account {
   const found = readCredentials().e2e?.users?.[role];

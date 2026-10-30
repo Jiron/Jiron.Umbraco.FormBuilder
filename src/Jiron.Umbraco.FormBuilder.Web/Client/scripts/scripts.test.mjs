@@ -144,6 +144,42 @@ describe('the shared build', () => {
     });
   }, 60_000);
 
+  it('names a chunk by its content: the same sources give the same name, a changed module a new one, and the entry keeps its own', async () => {
+    const dir = tempFolder();
+    put(dir, 'src/entry.ts', "export const load = async () => (await import('./count')).count;\n");
+    const built = async (name, body) => {
+      put(dir, 'src/count.ts', body);
+      const outDir = join(dir, name);
+      await build({
+        configFile: false,
+        root: dir,
+        logLevel: 'silent',
+        publicDir: false,
+        build: {
+          ...sharedBuild({ version: VERSION, outDir }),
+          lib: { entry: join(dir, 'src', 'entry.ts'), formats: ['es'], fileName: () => 'entry.js' },
+        },
+        plugins: [
+          ...sharedPlugins({ version: VERSION, name: 'count', buildDir: join(dir, 'reports', name), base: dir }),
+        ],
+      });
+      return [...walk(outDir)]
+        .map((path) => rel(outDir, path))
+        .filter((file) => file.endsWith('.js'))
+        .sort();
+    };
+    const first = await built('first', 'export const count = (words: string[]): number => words.length;\n');
+    const again = await built('again', 'export const count = (words: string[]): number => words.length;\n');
+    const changed = await built('changed', 'export const count = (words: string[]): number => words.length + 1;\n');
+    expect(first).toContain('entry.js');
+    expect(first.some((file) => /^chunks[/]count-[A-Za-z0-9_-]{8}[.]js$/.test(file))).toBe(true);
+    expect(again).toEqual(first);
+    expect(changed).toContain('entry.js');
+    expect(changed.find((file) => file.startsWith('chunks/count-'))).not.toBe(
+      first.find((file) => file.startsWith('chunks/count-')),
+    );
+  });
+
   it('takes a terser pass where asked, which writes no more, keeps the banner and the behaviour, and skips a build with source maps', async () => {
     const dir = tempFolder();
     put(dir, 'src/entry.ts', "export const load = async () => (await import('./count')).count;\n");

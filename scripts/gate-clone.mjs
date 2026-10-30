@@ -70,9 +70,12 @@ export function gatePaths(root, hash = '', temp = tmpdir()) {
   };
 }
 
-/** The ports the browser projects listen on, read from the harness's own constants ("One source for every value"). */
+/**
+ * The ports the browser projects listen on, read from the harness's own constants ("One source for every value"): every
+ * `<NAME>_PORT` and `<NAME>_PORTS` it exports, such as the cached host's of 6.4k; its `PORT_RANGE` is no port.
+ */
 export function browserPorts(pathsSource) {
-  const ports = [...pathsSource.matchAll(/^export const (?:E2E_PORT|REFUSAL_PORTS|STUB_PORT) = ([^;]+);/gm)].flatMap(
+  const ports = [...pathsSource.matchAll(/^export const [A-Z0-9]+(?:_[A-Z0-9]+)*_PORTS? = ([^;]+);/gm)].flatMap(
     ([, value]) => [...value.matchAll(/\b(\d{4})\b/g)].map(([, port]) => Number(port)),
   );
   if (ports.length === 0) throw new Error("tests/e2e/support/paths.ts no longer names the browser projects' ports");

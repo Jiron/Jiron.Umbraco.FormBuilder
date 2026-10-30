@@ -35,6 +35,12 @@ public sealed class FormBuilderTestingOptions
     public bool StartupMarker { get; set; }
 
     /// <summary>
+    /// True to give every response the strict Content Security Policy of <see cref="Csp.TestCspMiddleware"/>, with a nonce
+    /// for the requests that ask for one (ROADMAP 6.4k); only a host in the Development environment sets it.
+    /// </summary>
+    public bool Csp { get; set; }
+
+    /// <summary>
     /// Backoffice user groups to create before the users; existing aliases are left as they are, and each group's global
     /// grant is set to its <see cref="TestUserGroup.Permissions"/>.
     /// </summary>
