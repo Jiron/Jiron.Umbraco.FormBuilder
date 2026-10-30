@@ -146,9 +146,9 @@ test('a form without a calculation never loads the calculation language', async 
   const { errors, chunks } = watch(page);
   await page.goto(pathOfForm('contact', 'en'));
   const form = formOn(page);
-  const loaded = page.waitForRequest(/\/chunks\/form-[^/]*\.js/);
+  // The contact form fills its query prefill as it shows, so its chunk may load before the visitor touches it.
   await form.locator('input, textarea').first().fill('Ada');
-  await loaded;
+  await expect.poll(() => chunks, "the form's chunk").toContain('form');
   await form.locator('button[data-jfb-nav="submit"]').click();
   await expect(form.locator('[data-jfb-summary]'), 'the runtime refused the send').toBeVisible();
   await page.waitForLoadState('networkidle');
