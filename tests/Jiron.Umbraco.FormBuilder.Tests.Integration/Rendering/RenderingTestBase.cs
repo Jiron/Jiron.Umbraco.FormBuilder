@@ -40,6 +40,81 @@ public abstract class RenderingTestBase : PublicApiTestBase
     /// <summary>The member a test signs in.</summary>
     private protected const string MemberName = "jfb-rendering-member";
 
+    /// <summary>
+    /// The names and values a browser posts for the form (HTML's form data set): every named control that is not
+    /// disabled, a box only when ticked, a select's chosen options, the button pressed, every line break as CRLF.
+    /// </summary>
+    private protected static List<KeyValuePair<string, string>> Posted(IElement form, string? nav)
+    {
+        var pressed = nav is null ? null : form.QuerySelectorAll("button[name='jfb-nav']:not([tabindex])").Single(button => button.GetAttribute("value") == nav);
+        var posted = new List<KeyValuePair<string, string>>();
+        foreach (var control in form.QuerySelectorAll("input, select, textarea, button"))
+        {
+            if (control.GetAttribute("name") is not { Length: > 0 } name || control.HasAttribute("disabled") || control.Closest("fieldset[disabled]") is not null)
+            {
+                continue;
+            }
+
+            switch (control)
+            {
+                case IHtmlButtonElement button when button == pressed:
+                    posted.Add(new(name, button.Value));
+                    break;
+                case IHtmlInputElement { Type: "checkbox" or "radio" } box when box.IsChecked:
+                    posted.Add(new(name, box.Value));
+                    break;
+                case IHtmlInputElement { Type: "checkbox" or "radio" or "submit" or "button" or "reset" or "image" or "file" }:
+                    break;
+                case IHtmlInputElement input:
+                    posted.Add(new(name, input.Value));
+                    break;
+                case IHtmlTextAreaElement area:
+                    posted.Add(new(name, area.Value));
+                    break;
+                case IHtmlSelectElement select:
+                    posted.AddRange(select.Options.Where(option => option.IsSelected).Select(option => new KeyValuePair<string, string>(name, option.Value)));
+                    break;
+            }
+        }
+
+        var cr = ((char)13).ToString();
+        var lf = ((char)10).ToString();
+        var crlf = cr + lf;
+        return [.. posted.Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.Replace(crlf, lf, StringComparison.Ordinal).Replace(cr, lf, StringComparison.Ordinal).Replace(lf, crlf, StringComparison.Ordinal)))];
+    }
+
+    /// <summary>
+    /// Sets a control's value as a visitor would: a box or a radio ticked when its value is among the values, else the
+    /// first value typed in.
+    /// </summary>
+    private protected static void Fill(IElement form, string name, params string[] values)
+    {
+        var controls = form.QuerySelectorAll($"[name='{name}']");
+        Assert.That(controls, Is.Not.Empty, $"no control {name}");
+        foreach (var control in controls)
+        {
+            switch (control)
+            {
+                case IHtmlInputElement { Type: "checkbox" or "radio" } box:
+                    box.IsChecked = values.Contains(box.Value);
+                    break;
+                case IHtmlInputElement input:
+                    input.Value = values[0];
+                    break;
+                case IHtmlTextAreaElement area:
+                    area.Value = values[0];
+                    break;
+                case IHtmlSelectElement select:
+                    foreach (var option in select.Options)
+                    {
+                        option.IsSelected = values.Contains(option.Value);
+                    }
+
+                    break;
+            }
+        }
+    }
+
     /// <summary>The content service.</summary>
     private protected IContentService Contents => GetRequiredService<IContentService>();
 
@@ -118,7 +193,6 @@ public abstract class RenderingTestBase : PublicApiTestBase
         return pages;
     }
 
-    /// <summary>Gets a page and parses it; the page answers <c>200</c>.</summary>
     /// <summary>
     /// The test pages in a site of one culture: the language, the pages, and the culture on the site's root; the test
     /// server sends no cache messages, so the domain cache learns of the culture here.
@@ -170,6 +244,7 @@ public abstract class RenderingTestBase : PublicApiTestBase
         return (html, await new HtmlParser().ParseDocumentAsync(html));
     }
 
+    /// <summary>Gets a page and parses it; the page answers <c>200</c>.</summary>
     private protected async Task<(string Html, IHtmlDocument Document)> PageAsync(string name)
     {
         using var response = await GetAsync("/" + name + "/");
@@ -188,7 +263,6 @@ public abstract class RenderingTestBase : PublicApiTestBase
         Assert.That(Succeeded(response), Is.True, await response.Content.ReadAsStringAsync());
     }
 
-    /// <inheritdoc />
     /// <summary>The host of the first site once there is a second one.</summary>
     private protected const string FirstHost = "first.test";
 
@@ -217,6 +291,7 @@ public abstract class RenderingTestBase : PublicApiTestBase
         Assert.That(Succeeded(response), Is.True, await response.Content.ReadAsStringAsync());
     }
 
+    /// <inheritdoc />
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
