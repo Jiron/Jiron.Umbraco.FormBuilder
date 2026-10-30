@@ -1,7 +1,9 @@
 # 0022. The default theme and its tokens
 
 - Status: accepted; the error summary's heading for one answer or several, and its links to a default message naming
-  their field, amended by [ADR-0099](0099-visitor-error-messages.md) in 6.2g
+  their field, amended by [ADR-0099](0099-visitor-error-messages.md) in 6.2g; built as the `default` theme in 6.3b,
+  where [ADR-0106](0106-the-default-theme-ships.md) scopes its stylesheet to its forms, lets fields side by side
+  share their rows and lets the scheme class sit on an ancestor
 - Date: 2026-10-23
 - Roadmap step: 2.3 (decided); built in 6.2 (the views' markup), 6.3 (the theme) and 6.4 (the runtime's states)
 

@@ -2070,6 +2070,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [ ] **6.4 The website runtime**
   - **Validation and rules:** progressive enhancement, plus client validation and rules from `packages/logic`. Values are cleaned with the same functions before they are sent, and numbers sent in the wire form (ADR-0005).
     - **Messages:** the server's (6.2g), held to the same words by `tests/vectors/messages.json`; English and German now; 14.2 adds the other five languages.
+    - **The error summary after a question** (added in 6.3b, ADR-0106): an entry whose label already ends in a question mark, an exclamation mark, a full stop or a colon takes no colon after it ("Where would you like to sit? Choose an answer"), in the server's words, the runtime's and the vectors alike, in every visitor language.
     - **Delivery:** one small file per language, loaded for the page's culture only, to keep the §4.12 budget.
   - **Live calculations and answer recall:** texts that use earlier answers update as the visitor types (§4.3.3), through `recallAnswers` over the answers the runtime reads into the wire form as Core's types read them (ADR-0058, ADR-0068).
   - **Submitting:**
@@ -2078,13 +2079,13 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - `form_changed` handling with answer restore (§3.1), through the `render` endpoint, leaving a consent whose wording changed unticked (ADR-0004);
     - a submission id that does not depend on `crypto.randomUUID()`, which exists only in secure contexts, and chunk file names with a content hash (ADR-0004);
     - the send states of ADR-0022's amendment: the busy primary button (`data-jfb-busy`, `aria-disabled`, "Sending your answers" in the live region), the error notice just above the buttons that takes the focus after a refused or failed send (`rate_limited`, `server_error`, `timeout`) with every answer kept, and the redirect notice with "Go now" and "Stay here".
-  - **Fitting the page** (ADR-0022, amended in 2.4): the ground check (a form without a scheme class on a dark ground gets `jfb-scheme-dark`; a class the site set is never changed) and step folding (`data-jfb-compact` when a word of a step name is wider than its step, after layout and on every resize).
+  - **Fitting the page** (ADR-0022, amended in 2.4): the ground check (a form without a scheme class, on itself or on an ancestor (ADR-0106), on a dark ground gets `jfb-scheme-dark`; a class the site set is never changed) and step folding (`data-jfb-compact` when a word of a step name is wider than its step, after layout and on every resize).
   - **The developer surface and constraints:** the JS API and DOM events (§4.9), the CSP nonce, no cookies.
   - **Field behaviours:**
     - Loaded on demand: uploads with progress (against `uploads`, the challenge part first; size and type are checked in the browser before sending, with signature test vectors shared with the server; a reset during an upload is a failed upload the visitor can retry, ADR-0006), the repeater, the signature pad (with the typed alternative, whose PNG carries the name typed in its `jfb:typed-name` text chunk as the server's does, ADR-0103, added in 6.2k), character counters, choice cards and the "Other" input.
     - The ranking field's move buttons with live announcements, and the grid's stacked layout on phones.
   - Done when:
-    - Vitest covers the runtime and passes `tests/vectors/messages.json` (added in 6.2g's split);
+    - Vitest covers the runtime and passes `tests/vectors/messages.json` (added in 6.2g's split), whose vectors include an error summary entry after a label that ends in a question mark (added in 6.3b);
     - Playwright on the demo covers validation, rules, calculations, answer recall, submission, `form_changed` and every field type's interaction, with `form_changed` on a page served stale from the output cache (the published form swapped in, the answers kept, and a consent whose wording changed left unticked with a notice);
     - Playwright shows no CSP violation with `script-src 'self'` on a cached page and with a nonce on an uncached one, lazily loaded chunks included, and a submission from a plain-HTTP origin;
     - a **keyboard-only** run completes the kitchen-sink form;

@@ -5,7 +5,8 @@
   default button decided in 6.2d (ADR-0096); the controls with parts, dates and outputs, the captcha's place and a
   site's own type's control in 6.2e (ADR-0097); a repeatable group's rows, their names and ids, and its Add and Remove
   buttons in 6.2f (ADR-0098); the registry, a form's theme, the view order, the class map and the base rules built in
-  6.3a by [ADR-0105](0105-the-theme-registry-and-the-base-rules.md)
+  6.3a by [ADR-0105](0105-the-theme-registry-and-the-base-rules.md); the dark scheme's class on the form or on any
+  ancestor, and each theme's stylesheet scoped to its forms, in 6.3b ([ADR-0106](0106-the-default-theme-ships.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 2.3 (the visual design and its tokens), 6.2 (rendering), 6.3 (the themes),
   6.4 (the runtime), 6.6 (the headless element) and 12.2 (the theme editor)

@@ -41,8 +41,9 @@ illustration, no decorative gradients and no decorative icons.
 - Tall controls with corners derived from one radius.
 - One ink-tinted shade, used only by card-style groups.
 - Drawn checkboxes, radios and switches on native inputs, so keyboards and screen readers work as ever.
-- A light scheme by default and an opt-in dark scheme with the same token names. A form without a scheme class
-  that lands on a dark ground takes the dark scheme anyway, so its text never sits dark on dark (ADR-0022).
+- A light scheme by default and an opt-in dark scheme with the same token names, whose class sits on the form or on
+  any ancestor (ADR-0106). A form without a scheme class that lands on a dark ground takes the dark scheme anyway, so
+  its text never sits dark on dark (ADR-0022).
 
 ### The backoffice
 
@@ -141,8 +142,9 @@ width (`@container jfb-form`), not the viewport. A form in a narrow sidebar beha
 - **Narrow:** one column of fields; group headings sit above their fields; navigation buttons take the full width;
   step progress becomes "Step 2 of 3" beside short bars; long scales wrap into even rows; a grid of statements stacks
   each statement above its choices; summary answers drop under their question.
-- **Field columns:** a group can lay its fields in two to four columns, and a field can span several. All collapse to
-  one column on a narrow form.
+- **Field columns:** a group can lay its fields in two to four columns, and a field can span several. Fields side by
+  side share their rows, so their controls line up whatever the labels and help above them hold (ADR-0106). All
+  collapse to one column on a narrow form.
 - **Rhythm:** every padding and gap is a step of the spacing grid (`--jfb-space-1` to `--jfb-space-7`). Small steps
   join a label to its help and control; the middle steps space fields and pad cards; `--jfb-space-6` separates groups
   and the form's parts (progress, page, navigation); `--jfb-space-7` is reserved for the ledger's gutter.

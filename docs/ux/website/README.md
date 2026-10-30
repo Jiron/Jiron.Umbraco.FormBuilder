@@ -1,8 +1,12 @@
 # Website form design (ROADMAP 2.3, revised in 2.4)
 
 The default theme of the forms visitors fill in on a customer's site, drawn as mock HTML and CSS with no build step.
-The stylesheets in `assets/` are the theme itself: step 6.3 ships `theme.css` as the `default` theme and `base.css`
-as the functional base rules (ADR-0015, ADR-0022). The tokens are listed in [`../tokens.md`](../tokens.md), and
+The stylesheets in `assets/` were the theme itself until it shipped: step 6.3a made `base.css` the functional base
+rules and 6.3b `theme.css` the `default` theme (ADR-0015, ADR-0022, ADR-0106), in the client's
+`packages/themes/src/`. From 6.3b on the shipped stylesheets are the source, and these mocks are the record of the
+design of 2.3 and 2.4: the shipped theme nests every rule under `.jfb-form:where(.jfb-theme-default)`, lets fields
+side by side share their rows, sets an option's description right under its label, and clips the honeypot where it
+stands; the mocks do not. The tokens are listed in [`../tokens.md`](../tokens.md), and
 [`DESIGN.md`](../../../DESIGN.md) says how the theme is meant to look and move.
 
 ## The pages

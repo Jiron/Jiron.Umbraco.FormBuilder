@@ -13,11 +13,15 @@ public static class BuiltInThemes
 }
 
 /// <summary>
-/// The default theme (ADR-0022): the design of ROADMAP 2.3, with an opt-in dark scheme. Its stylesheet and tokens come
-/// with its look (6.3b); until then it renders with the base rules alone.
+/// The default theme (ADR-0022, ADR-0106): the design of ROADMAP 2.3, with an opt-in dark scheme, its stylesheet styling
+/// only the forms that carry <c>jfb-theme-default</c>. A site's theme that builds on its stylesheet adds that class to
+/// its form slot.
 /// </summary>
 public sealed class DefaultTheme : IFormBuilderTheme
 {
+    /// <summary>The address of the default theme's stylesheet, one of the package's website assets.</summary>
+    public const string StylesheetPath = "/jfb/assets/themes/default.css";
+
     /// <inheritdoc />
     public string Name => BuiltInThemes.DefaultAlias;
 
@@ -25,13 +29,51 @@ public sealed class DefaultTheme : IFormBuilderTheme
     public string Label => "Default";
 
     /// <inheritdoc />
-    public string? Stylesheet => null;
+    public string? Stylesheet => StylesheetPath;
 
     /// <inheritdoc />
     public IReadOnlyDictionary<string, string> Classes { get; } = FrozenDictionary<string, string>.Empty;
 
-    /// <inheritdoc />
-    public IReadOnlyDictionary<string, string> Tokens { get; } = FrozenDictionary<string, string>.Empty;
+    /// <summary>
+    /// The public tokens and their light defaults (<c>docs/ux/tokens.md</c>), the dark scheme's own aside;
+    /// <c>--jfb-font-family</c> and <c>--jfb-font-size</c> have none, since the form takes the site's.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Tokens { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["--jfb-color-text"] = "#1d2433",
+        ["--jfb-color-text-muted"] = "#5b6372",
+        ["--jfb-color-surface"] = "#fff",
+        ["--jfb-color-border"] = "#767c88",
+        ["--jfb-color-rule"] = "#d9dde3",
+        ["--jfb-color-accent"] = "#0f6e5c",
+        ["--jfb-color-on-accent"] = "#fff",
+        ["--jfb-color-focus"] = "#1a5fd1",
+        ["--jfb-color-error"] = "#b3261e",
+        ["--jfb-shade"] = "0 1px 2px rgb(29 36 51 / .08), 0 4px 16px -2px rgb(29 36 51 / .12)",
+        ["--jfb-radius"] = "12px",
+        ["--jfb-radius-panel"] = "var(--jfb-radius, 12px)",
+        ["--jfb-radius-card"] = "calc(var(--jfb-radius, 12px) * .75)",
+        ["--jfb-radius-control"] = "calc(var(--jfb-radius, 12px) / 2)",
+        ["--jfb-radius-tag"] = "calc(var(--jfb-radius, 12px) / 4)",
+        ["--jfb-space-1"] = "4px",
+        ["--jfb-space-2"] = "8px",
+        ["--jfb-space-3"] = "12px",
+        ["--jfb-space-4"] = "16px",
+        ["--jfb-space-5"] = "24px",
+        ["--jfb-space-6"] = "32px",
+        ["--jfb-space-7"] = "48px",
+        ["--jfb-line-height"] = "1.5",
+        ["--jfb-font-size-small"] = ".875em",
+        ["--jfb-font-size-large"] = "1.25em",
+        ["--jfb-font-size-title"] = "1.5em",
+        ["--jfb-font-weight-strong"] = "600",
+        ["--jfb-size-control"] = "48px",
+        ["--jfb-size-form"] = "960px",
+        ["--jfb-focus-ring"] = "2px solid var(--jfb-color-focus, #1a5fd1)",
+        ["--jfb-motion-fast"] = "120ms",
+        ["--jfb-motion-base"] = "200ms",
+        ["--jfb-motion-ease"] = "cubic-bezier(.23, 1, .32, 1)",
+    }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <inheritdoc />
     public bool DarkScheme => true;

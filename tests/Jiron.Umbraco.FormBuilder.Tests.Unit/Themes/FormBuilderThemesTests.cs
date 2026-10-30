@@ -1,5 +1,7 @@
+using System.Text.RegularExpressions;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
+using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.OptionLists;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,9 +15,19 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Themes;
 /// problem, naming each problem.
 /// </summary>
 [TestFixture]
-public sealed class FormBuilderThemesTests
+public sealed partial class FormBuilderThemesTests
 {
     private static readonly IFormBuilderTheme[] BuiltIn = [new DefaultTheme(), new UnstyledTheme(), new Bootstrap5Theme()];
+
+    // The public tokens of docs/ux/tokens.md that a theme built on default may set: all but the site's font and size.
+    private static readonly string[] DefaultTokens =
+    [
+        "--jfb-color-text", "--jfb-color-text-muted", "--jfb-color-surface", "--jfb-color-border", "--jfb-color-rule", "--jfb-color-accent",
+        "--jfb-color-on-accent", "--jfb-color-focus", "--jfb-color-error", "--jfb-shade", "--jfb-radius", "--jfb-radius-panel", "--jfb-radius-card",
+        "--jfb-radius-control", "--jfb-radius-tag", "--jfb-space-1", "--jfb-space-2", "--jfb-space-3", "--jfb-space-4", "--jfb-space-5", "--jfb-space-6",
+        "--jfb-space-7", "--jfb-line-height", "--jfb-font-size-small", "--jfb-font-size-large", "--jfb-font-size-title", "--jfb-font-weight-strong",
+        "--jfb-size-control", "--jfb-size-form", "--jfb-focus-ring", "--jfb-motion-fast", "--jfb-motion-base", "--jfb-motion-ease",
+    ];
 
     [Test]
     public void TheCollectionBuilder_HoldsTheBuiltInThemes_FromItsStart()
@@ -42,11 +54,34 @@ public sealed class FormBuilderThemesTests
             Assert.That(registry.All.Select(theme => (theme.Name, theme.Label)), Is.EqualTo(new[] { ("default", "Default"), ("unstyled", "Unstyled"), ("bootstrap5", "Bootstrap 5") }));
             Assert.That(registry.All.Select(theme => theme.ViewFolder), Is.EqualTo(new[] { "default", "unstyled", "bootstrap5" }), "each theme's folder is its alias");
             Assert.That(registry.All.Select(theme => theme.DarkScheme), Is.EqualTo(new[] { true, false, false }), "only default offers the dark scheme");
-            Assert.That(registry.All.Select(theme => theme.Stylesheet), Is.All.Null, "their stylesheets come with their looks (6.3b, 6.3c)");
-            Assert.That(registry.All.Select(theme => theme.Tokens.Count), Is.All.Zero);
+            Assert.That(registry.All.Select(theme => theme.Stylesheet), Is.EqualTo(new[] { "/jfb/assets/themes/default.css", null, null }), "default's is the package's; bootstrap5's comes in 6.3c");
+            Assert.That(registry.Find("default")!.Tokens.Keys, Is.EquivalentTo(DefaultTokens), "default declares every public token but the site's font and size");
+            Assert.That(registry.All.Skip(1).Select(theme => theme.Tokens.Count), Is.All.Zero);
             Assert.That(registry.Default, Is.InstanceOf<DefaultTheme>());
             Assert.That(registry.Find("unstyled")!.Classes, Is.Empty, "unstyled adds no class to ours");
             Assert.That(registry.Find("default")!.Classes, Is.Empty);
+        });
+    }
+
+    [Test]
+    public void DefaultsTokens_AreTheLightFallbacksItsStylesheetReadsThemWith()
+    {
+        var css = File.ReadAllText(RepositoryRoot.Path(typeof(FormBuilderThemesTests).Assembly, "src", "Jiron.Umbraco.FormBuilder.Web", "Client", "packages", "themes", "src", "default.css"));
+
+        // Each public token the stylesheet reads, with the fallback of its first reading, the light scheme's.
+        var read = TokenRead().Matches(css).GroupBy(match => match.Groups["token"].Value).ToDictionary(each => each.Key, each => each.First().Groups["fallback"].Value.Trim());
+        var tokens = new DefaultTheme().Tokens;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(tokens.Keys, Is.SubsetOf(read.Keys), "every default names a token the stylesheet reads");
+            Assert.That(read.Where(each => each.Value.Length == 0).Select(each => each.Key), Is.EquivalentTo(new[] { "--jfb-font-family", "--jfb-font-size" }), "only the site's font and size have none");
+            foreach (var (token, fallback) in read.Where(each => each.Value.Length > 0 && !each.Value.Contains("var(--_", StringComparison.Ordinal)))
+            {
+                Assert.That(Plain(tokens.GetValueOrDefault(token) ?? "none"), Is.EqualTo(Plain(fallback)), token);
+            }
+
+            Assert.That(read.Count(each => each.Value.Contains("var(--_", StringComparison.Ordinal)), Is.EqualTo(5), "the radius steps and the focus ring derive from other tokens");
         });
     }
 
@@ -367,4 +402,14 @@ public sealed class FormBuilderThemesTests
 
         public string ViewFolder { get; init; } = "custom";
     }
+
+    // A value without its spaces and with no zero before a decimal point, as formatters write either.
+    private static string Plain(string value) => LeadingZero().Replace(value.Replace(" ", string.Empty, StringComparison.Ordinal), ".");
+
+    // var(--jfb-..., fallback), the fallback held to balanced parentheses two deep.
+    [GeneratedRegex(@"var\((?<token>--jfb-[a-z0-9-]+)\s*(?:,(?<fallback>(?:[^()]|\((?:[^()]|\([^()]*\))*\))*))?\)", RegexOptions.CultureInvariant)]
+    private static partial Regex TokenRead();
+
+    [GeneratedRegex(@"(?<![0-9])0\.", RegexOptions.CultureInvariant)]
+    private static partial Regex LeadingZero();
 }

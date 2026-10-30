@@ -21,6 +21,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
 public sealed class FormRenderingThemeTests : RenderingTestBase
 {
+    private const string PackageSheets = "/jfb/assets/themes/";
+
     [Test]
     public async Task AFormsTheme_IsThePlacements_ThenTheFormsOwn_ThenTheSites_ThenTheDefault()
     {
@@ -103,12 +105,13 @@ public sealed class FormRenderingThemeTests : RenderingTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(Sheets(document), Is.EqualTo(new[] { "base", "/css/acme.css", "/css/calm.css" }), "the base rules and each theme's once; quiet's form brings no tags, and no tag covers it");
+            Assert.That(Sheets(document), Is.EqualTo(new[] { "base", "/css/acme.css", "/css/calm.css", "default" }), "the base rules and each theme's once, the default theme's the package's; quiet's form brings no tags, and no tag covers it");
             Assert.That(document.QuerySelectorAll("script[type=module]"), Has.Length.EqualTo(1));
             Assert.That(document.QuerySelectorAll("form.jfb-form").Select(form => form.ClassList.First(name => name.StartsWith("jfb-theme-", StringComparison.Ordinal))), Is.EqualTo(new[] { "jfb-theme-acme", "jfb-theme-acme", "jfb-theme-calm", "jfb-theme-default", "jfb-theme-quiet" }));
             Assert.That(html.IndexOf("/css/acme.css", StringComparison.Ordinal), Is.LessThan(html.IndexOf("<form", StringComparison.Ordinal)), "before the first form");
             Assert.That(html.IndexOf("/css/calm.css", StringComparison.Ordinal), Is.GreaterThan(html.IndexOf("id=\"jfb-2\"", StringComparison.Ordinal)).And.LessThan(html.IndexOf("id=\"jfb-3\"", StringComparison.Ordinal)), "calm's before its form");
             Assert.That(html.IndexOf("themes/base.css", StringComparison.Ordinal), Is.LessThan(html.IndexOf("/css/acme.css", StringComparison.Ordinal)), "the base rules first");
+            Assert.That(html.IndexOf("/jfb/assets/themes/default.css?v=", StringComparison.Ordinal), Is.GreaterThan(html.IndexOf("id=\"jfb-3\"", StringComparison.Ordinal)).And.LessThan(html.IndexOf("id=\"jfb-4\"", StringComparison.Ordinal)), "default's before its form, under its fingerprint");
         });
     }
 
@@ -154,7 +157,8 @@ public sealed class FormRenderingThemeTests : RenderingTestBase
     private static Func<FormDefinition, FormDefinition> Themed(string theme) =>
         definition => definition with { Settings = definition.Settings with { Appearance = definition.Settings.Appearance with { Theme = theme } } };
 
-    // A stylesheet tag's address, the base rules' without their fingerprint; other tags by name.
+    // A stylesheet tag's address, a package stylesheet's by its name without its fingerprint, such as base; other tags
+    // by name.
     private static string Tag(IElement element) => element.LocalName switch
     {
         "link" => "link " + Address(element),
@@ -162,8 +166,9 @@ public sealed class FormRenderingThemeTests : RenderingTestBase
         _ => element.LocalName,
     };
 
-    private static string Address(IElement link) =>
-        link.GetAttribute("href")!.StartsWith("/jfb/assets/themes/base.css?v=", StringComparison.Ordinal) ? "base" : link.GetAttribute("href")!;
+    private static string Address(IElement link) => link.GetAttribute("href")! is var href && href.StartsWith(PackageSheets, StringComparison.Ordinal)
+        ? href[PackageSheets.Length..href.IndexOf(".css?v=", StringComparison.Ordinal)]
+        : href;
 
     private static IEnumerable<string> Sheets(IParentNode node) => node.QuerySelectorAll("link[rel=stylesheet]").Select(Address);
 

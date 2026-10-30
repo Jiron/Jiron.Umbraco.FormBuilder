@@ -22,8 +22,8 @@ There are two surfaces with two token sets:
 - **The site's type wins.** `--jfb-font-family` and `--jfb-font-size` have no default: unset, the form inherits the
   page's font and size, so it reads as part of the site.
 - **Dark scheme** values apply with the class `jfb-scheme-dark`, or `jfb-scheme-auto` when the visitor's system asks
-  for dark (ADR-0015). A site that sets a colour token sets it for both schemes, or sets it again inside its own dark
-  rule.
+  for dark (ADR-0015), on the form or on any ancestor, such as `<html class="jfb-scheme-auto">` (ADR-0106). A site
+  that sets a colour token sets it for both schemes, or sets it again inside its own dark rule.
 - The checker `node scripts/website-mocks.mjs --check` renders every mock and refuses any colour, corner, font size or
   shade that is not a token, and any padding or gap off the 4 px grid.
 

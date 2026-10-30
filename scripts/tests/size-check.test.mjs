@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, test } from 'node:test';
-import { BUDGETS, check, gzipSize, measure, staticClosure } from '../size-check.mjs';
+import { BUDGETS, check, gzipSize, measure, scopeOf, staticClosure } from '../size-check.mjs';
 
 const folders = [];
 after(() => {
@@ -110,6 +110,31 @@ describe('the check', () => {
     const theme = check(paths).find((r) => r.line.startsWith('stylesheet default.css'));
     assert.equal(theme.ok, false);
     assert.match(theme.line, /OVER BUDGET$/);
+  });
+
+  test("lints each stylesheet as it is served: the base rules under the form, a theme's under its own forms", () => {
+    assert.equal(scopeOf('base.css'), '.jfb-form');
+    assert.equal(scopeOf('default.css'), '.jfb-form:where(.jfb-theme-default)');
+    const css = (text) => Buffer.from(text);
+    const paths = project({
+      ...base(),
+      runtime: { folder: 'WebsiteAssets/runtime', files: [{ meta: chunk('jfb-runtime.js', [], [], true), bytes: small('r') }] },
+      themes: {
+        folder: 'WebsiteAssets/themes',
+        files: [
+          { meta: chunk('base.css'), bytes: css('.jfb-form [hidden]{display:none}') },
+          { meta: chunk('default.css'), bytes: css('.jfb-form:where(.jfb-theme-default){color:red;& .a{margin-inline-start:0}}@keyframes jfb-turn{to{rotate:1turn}}') },
+          { meta: chunk('plain.css'), bytes: css('.jfb-form .a{color:red}.jfb-form:where(.jfb-theme-plain){& .b{padding-left:1px}}') },
+        ],
+      },
+    });
+    const results = check(paths);
+    const line = (file) => results.filter((r) => r.line.startsWith(`stylesheet ${file}: `) && !/gzip/.test(r.line));
+    assert.deepEqual(line('base.css'), [{ ok: true, line: 'stylesheet base.css: every rule under .jfb-form, nothing physical, ok' }]);
+    assert.deepEqual(line('default.css'), [{ ok: true, line: 'stylesheet default.css: every rule under .jfb-form:where(.jfb-theme-default), nothing physical, ok' }]);
+    assert.deepEqual(line('plain.css'), [
+      { ok: false, line: 'stylesheet plain.css: REFUSED, outside .jfb-form:where(.jfb-theme-plain): .jfb-form .a; physical: padding-left: 1px' },
+    ]);
   });
 
   test('fails without a build, and names a file that is missing', () => {

@@ -16,6 +16,7 @@ public sealed class ThemeStylesheetStartupCheckTests
     private static readonly WebsiteAssets Assets = new(new Dictionary<string, byte[]>
     {
         ["themes/base.css"] = Encoding.UTF8.GetBytes(".jfb-form [hidden] { display: none; }"),
+        ["themes/default.css"] = Encoding.UTF8.GetBytes(".jfb-form:where(.jfb-theme-default) { color: black; }"),
         ["themes/calm.css"] = Encoding.UTF8.GetBytes(".jfb-form { color: teal; }"),
         ["themes/calm.css.br"] = [1, 2],
     });

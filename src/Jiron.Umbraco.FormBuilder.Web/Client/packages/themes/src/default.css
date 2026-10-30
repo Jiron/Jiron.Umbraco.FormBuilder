@@ -1,0 +1,2210 @@
+/*!
+ * Jiron Form Builder, the default theme. The icons below are Lucide's:
+ *
+ * ISC License
+ *
+ * Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other
+ * copyright (c) for Lucide are held by Lucide Contributors 2022.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby
+ * granted, provided that the above copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING
+ * ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL,
+ * DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+ * WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
+ * USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+ * The default theme (ROADMAP 2.3 and 6.3b; ADR-0015, ADR-0022, ADR-0106), as docs/ux/website/assets/theme.css drew
+ * it. The comment above is kept in the built stylesheet, since the licence asks for it in every copy.
+ *
+ * Every rule is nested under .jfb-form:where(.jfb-theme-default): it styles only the forms of this theme, so a page
+ * that shows a form in another theme as well leaves that form alone, and :where() keeps the specificity of a plain
+ * .jfb-form, so a site that styles .jfb-form .jfb-control competes as it would without the theme class. The rules use
+ * logical properties only and take their values from the tokens; docs/ux/tokens.md lists the public ones, and
+ * DESIGN.md says how the theme is meant to look and move.
+ */
+
+.jfb-form:where(.jfb-theme-default) {
+  /* -------------------------------------------------------------------------------------------------------------
+   * Tokens. A site may set any public --jfb-* property on the form or on any ancestor; the value after the comma
+   * is the theme's default. The --_* properties are the theme's private shorthands and are not public surface.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  /* Colour, light scheme */
+  --_ink: var(--jfb-color-text, #1d2433);
+  --_muted: var(--jfb-color-text-muted, #5b6372);
+  --_surface: var(--jfb-color-surface, #fff);
+  --_border: var(--jfb-color-border, #767c88);
+  --_rule: var(--jfb-color-rule, #d9dde3);
+  --_accent: var(--jfb-color-accent, #0f6e5c);
+  --_on-accent: var(--jfb-color-on-accent, #fff);
+  --_focus: var(--jfb-color-focus, #1a5fd1);
+  --_error: var(--jfb-color-error, #b3261e);
+  --_shade: var(--jfb-shade, 0 1px 2px rgb(29 36 51 / 0.08), 0 4px 16px -2px rgb(29 36 51 / 0.12));
+
+  /* Colour, derived: hover and press, chosen options, quiet fills */
+  --_accent-strong: color-mix(in srgb, var(--_accent) 80%, var(--_ink));
+  --_border-strong: color-mix(in srgb, var(--_border) 50%, var(--_ink));
+  --_tint: color-mix(in srgb, var(--_accent) 8%, var(--_surface));
+  --_wash: color-mix(in srgb, var(--_ink) 5%, var(--_surface));
+  --_error-wash: color-mix(in srgb, var(--_error) 7%, var(--_surface));
+
+  /* Corners: one radius, four steps */
+  --_r: var(--jfb-radius, 12px);
+  --_r-panel: var(--jfb-radius-panel, var(--_r));
+  --_r-card: var(--jfb-radius-card, calc(var(--_r) * 0.75));
+  --_r-control: var(--jfb-radius-control, calc(var(--_r) / 2));
+  --_r-tag: var(--jfb-radius-tag, calc(var(--_r) / 4));
+
+  /* Spacing: the 4 px grid */
+  --_s1: var(--jfb-space-1, 4px);
+  --_s2: var(--jfb-space-2, 8px);
+  --_s3: var(--jfb-space-3, 12px);
+  --_s4: var(--jfb-space-4, 16px);
+  --_s5: var(--jfb-space-5, 24px);
+  --_s6: var(--jfb-space-6, 32px);
+  --_s7: var(--jfb-space-7, 48px);
+
+  /* Type: the site's font and size; three steps around them */
+  --_small: var(--jfb-font-size-small, 0.875em);
+  --_large: var(--jfb-font-size-large, 1.25em);
+  --_title: var(--jfb-font-size-title, 1.5em);
+  --_bold: var(--jfb-font-weight-strong, 600);
+
+  /* Sizes, focus and motion */
+  --_control: var(--jfb-size-control, 48px);
+  --_width: var(--jfb-size-form, 960px);
+  --_ring: var(--jfb-focus-ring, 2px solid var(--_focus));
+  --_fast: var(--jfb-motion-fast, 120ms);
+  --_base: var(--jfb-motion-base, 200ms);
+  --_ease: var(--jfb-motion-ease, cubic-bezier(0.23, 1, 0.32, 1));
+
+  /* How far things move, and how fast a thumb or a pressed button moves; reduced motion stops only the movement */
+  --_rise: 4px;
+  --_slide: 8px;
+  --_move: var(--_fast);
+
+  /* Icons, drawn as masks so that they take the text colour */
+  --_i-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  --_i-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4M12 17h.01'/%3E%3C/svg%3E");
+  --_i-back: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 18-6-6 6-6'/%3E%3C/svg%3E");
+  --_i-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E");
+  --_i-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --_i-add: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M12 5v14'/%3E%3C/svg%3E");
+  --_i-remove: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E");
+  --_i-upload: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 13v8M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242'/%3E%3Cpath d='m8 17 4-4 4 4'/%3E%3C/svg%3E");
+  --_i-file: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z'/%3E%3Cpath d='M14 2v5a1 1 0 0 0 1 1h5'/%3E%3C/svg%3E");
+  --_i-calendar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2v4M16 2v4'/%3E%3Crect width='18' height='18' x='3' y='4' rx='2'/%3E%3Cpath d='M3 10h18'/%3E%3C/svg%3E");
+  --_i-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 6v6l4 2'/%3E%3C/svg%3E");
+  --_i-print: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6'/%3E%3Crect width='12' height='8' x='6' y='14' rx='1'/%3E%3C/svg%3E");
+  --_i-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z'/%3E%3C/svg%3E");
+  --_i-mail: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7'/%3E%3Crect x='2' y='4' width='20' height='16' rx='2'/%3E%3C/svg%3E");
+  --_i-star-full: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z'/%3E%3C/svg%3E");
+
+  container: jfb-form / inline-size;
+  display: grid;
+  gap: var(--_s6);
+  max-inline-size: var(--_width);
+  font-family: var(--jfb-font-family);
+  font-size: var(--jfb-font-size);
+  line-height: var(--jfb-line-height, 1.5);
+  color: var(--_ink);
+  color-scheme: light;
+  accent-color: var(--_accent);
+  -webkit-tap-highlight-color: transparent;
+
+  /*
+   * The opt-in dark scheme: jfb-scheme-dark always, jfb-scheme-auto when the visitor's system asks for it, each on
+   * the form or on any ancestor, as the tokens are (ADR-0106).
+   */
+  &.jfb-scheme-dark,
+  .jfb-scheme-dark & {
+    --_ink: var(--jfb-color-text, #e8eaee);
+    --_muted: var(--jfb-color-text-muted, #aab2bf);
+    --_surface: var(--jfb-color-surface, #1d232d);
+    --_border: var(--jfb-color-border, #8b95a5);
+    --_rule: var(--jfb-color-rule, #343c49);
+    --_accent: var(--jfb-color-accent, #5fd0b8);
+    --_on-accent: var(--jfb-color-on-accent, #0b1a17);
+    --_focus: var(--jfb-color-focus, #8ab4f8);
+    --_error: var(--jfb-color-error, #f2a59e);
+    --_shade: var(--jfb-shade, 0 1px 2px rgb(5 7 10 / 0.4), 0 8px 24px -4px rgb(5 7 10 / 0.5));
+    color-scheme: dark;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    &.jfb-scheme-auto,
+    .jfb-scheme-auto & {
+      --_ink: var(--jfb-color-text, #e8eaee);
+      --_muted: var(--jfb-color-text-muted, #aab2bf);
+      --_surface: var(--jfb-color-surface, #1d232d);
+      --_border: var(--jfb-color-border, #8b95a5);
+      --_rule: var(--jfb-color-rule, #343c49);
+      --_accent: var(--jfb-color-accent, #5fd0b8);
+      --_on-accent: var(--jfb-color-on-accent, #0b1a17);
+      --_focus: var(--jfb-color-focus, #8ab4f8);
+      --_error: var(--jfb-color-error, #f2a59e);
+      --_shade: var(--jfb-shade, 0 1px 2px rgb(5 7 10 / 0.4), 0 8px 24px -4px rgb(5 7 10 / 0.5));
+      color-scheme: dark;
+    }
+  }
+
+  /* Reduced motion: nothing slides, rises or travels; fades and colour changes stay, since they move nothing. */
+  @media (prefers-reduced-motion: reduce) {
+    & {
+      --_rise: 0px;
+      --_slide: 0px;
+      --_move: 0s;
+    }
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * The ground: box sizing, the site's margins on our own elements, links, selection.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & *,
+  & *::before,
+  & *::after {
+    box-sizing: border-box;
+  }
+
+  & :where(h1, h2, h3, h4, p, dl, dd, figure, fieldset, ul, ol) {
+    margin: 0;
+  }
+
+  & :where(fieldset) {
+    min-inline-size: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  & :where(legend) {
+    padding: 0;
+  }
+
+  /* Controls lose the browser's margins at the lowest weight, so a field's own rhythm still spaces them. */
+
+  & :where(input, select, textarea, button) {
+    margin: 0;
+  }
+
+  & :where(h1, h2, h3, h4) {
+    font-size: inherit;
+    font-weight: var(--_bold);
+    line-height: 1.25;
+    color: inherit;
+  }
+
+  & a {
+    color: var(--_accent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+
+  & a:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  & :is(a, button, summary):focus-visible {
+    outline: var(--_ring);
+    outline-offset: 2px;
+  }
+
+  & ::selection {
+    color: var(--_ink);
+    background: color-mix(in srgb, var(--_accent) 25%, var(--_surface));
+  }
+
+  & .jfb-icon {
+    display: inline-block;
+    flex: none;
+    inline-size: 1.25em;
+    block-size: 1.25em;
+    background: currentColor;
+    mask: var(--_i) center / contain no-repeat;
+  }
+
+  & .jfb-icon-back {
+    --_i: var(--_i-back);
+  }
+
+  & .jfb-icon-up {
+    --_i: var(--_i-up);
+  }
+
+  & .jfb-icon-down {
+    --_i: var(--_i-down);
+  }
+
+  & .jfb-icon-add {
+    --_i: var(--_i-add);
+  }
+
+  & .jfb-icon-remove {
+    --_i: var(--_i-remove);
+  }
+
+  & .jfb-icon-upload {
+    --_i: var(--_i-upload);
+  }
+
+  & .jfb-icon-file {
+    --_i: var(--_i-file);
+  }
+
+  & .jfb-icon-print {
+    --_i: var(--_i-print);
+  }
+
+  & .jfb-icon-back:dir(rtl) {
+    transform: scaleX(-1);
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * Pages and groups: the ledger. A titled group puts its heading and help in the first third and its fields in the
+   * other two when the form is at least 720 px wide; below that, everything is one column.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & > .jfb-help {
+    color: var(--_muted);
+  }
+
+  & .jfb-page {
+    display: grid;
+    gap: var(--_s6);
+  }
+
+  & .jfb-title {
+    font-size: var(--_title);
+  }
+
+  & .jfb-intro {
+    max-inline-size: 65ch;
+  }
+
+  & .jfb-title + .jfb-intro {
+    margin-block-start: calc(var(--_s2) - var(--_s6));
+  }
+
+  & .jfb-group {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  & .jfb-group > legend {
+    float: inline-start;
+    inline-size: 100%;
+    font-size: var(--_large);
+    font-weight: var(--_bold);
+    line-height: 1.25;
+  }
+
+  & .jfb-group > .jfb-help {
+    margin-block-start: var(--_s1);
+  }
+
+  & .jfb-group > :is(legend, .jfb-help) + .jfb-fields {
+    margin-block-start: var(--_s4);
+  }
+
+  & .jfb-group + .jfb-group {
+    padding-block-start: var(--_s6);
+    border-block-start: 1px solid var(--_rule);
+  }
+
+  /* A card is lifted by the shade alone; its transparent border becomes the edge in forced colours, where shades go. */
+
+  & .jfb-group-card {
+    padding: var(--_s5);
+    border: 1px solid transparent;
+    border-radius: var(--_r-panel);
+    background: var(--_surface);
+    box-shadow: var(--_shade);
+  }
+
+  & .jfb-group-card + .jfb-group:not(.jfb-group-card) {
+    padding-block-start: 0;
+    border-block-start: 0;
+  }
+
+  & .jfb-fields {
+    display: grid;
+    grid-template-columns: repeat(var(--_cols, 1), minmax(0, 1fr));
+    gap: var(--_s5) var(--_s4);
+    align-items: start;
+  }
+
+  & .jfb-columns-2 {
+    --_cols: 2;
+  }
+
+  & .jfb-columns-3 {
+    --_cols: 3;
+  }
+
+  & .jfb-columns-4 {
+    --_cols: 4;
+  }
+
+  & .jfb-fields > .jfb-span-2 {
+    grid-column: span 2;
+  }
+
+  & .jfb-fields > .jfb-span-3 {
+    grid-column: span 3;
+  }
+
+  & .jfb-fields > .jfb-span-4 {
+    grid-column: span 4;
+  }
+
+  /*
+   * Fields side by side share their rows (6.3b): each takes eight rows of the group's grid and fills them in its own
+   * order, a label without help taking two, so every control starts on the third row and the controls of a row line up
+   * whatever the labels and help above them hold. The rows meet without a gap; a field's padding spaces the rows of
+   * fields, and the grid gives the last one's back.
+   */
+  @container jfb-form (min-width: 480px) {
+    & :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4) > .jfb-fields {
+      row-gap: 0;
+      margin-block-end: calc(-1 * var(--_s5));
+    }
+
+    & :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4) > .jfb-fields > .jfb-field {
+      grid-row: span 8;
+      grid-template-rows: subgrid;
+      padding-block-end: var(--_s5);
+    }
+
+    & :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4) > .jfb-fields > .jfb-field > fieldset {
+      grid-row: 1 / -1;
+      grid-template-rows: subgrid;
+    }
+
+    &
+      :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4)
+      > .jfb-fields
+      > .jfb-field
+      > :first-child:not(:has(+ .jfb-help)),
+    &
+      :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4)
+      > .jfb-fields
+      > .jfb-field
+      > fieldset
+      > :first-child:not(:has(+ .jfb-help)) {
+      grid-row: span 2;
+    }
+  }
+
+  @container jfb-form (max-width: 479px) {
+    & .jfb-fields {
+      --_cols: 1;
+    }
+
+    & .jfb-fields > .jfb-field {
+      grid-column: auto;
+    }
+
+    & .jfb-group-card {
+      padding: var(--_s4);
+    }
+  }
+
+  @container jfb-form (min-width: 720px) {
+    & .jfb-page:has(> .jfb-group > legend, > .jfb-summary) > .jfb-group,
+    & .jfb-page .jfb-summary > section {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+      grid-template-rows: auto 1fr;
+      column-gap: var(--_s7);
+      align-items: start;
+    }
+
+    & .jfb-page:has(> .jfb-group > legend, > .jfb-summary) > .jfb-group > :is(legend, .jfb-help),
+    & .jfb-page .jfb-summary > section > h3 {
+      grid-column: 1;
+    }
+
+    & .jfb-page:has(> .jfb-group > legend, > .jfb-summary) > .jfb-group > .jfb-fields,
+    & .jfb-page .jfb-summary > section > dl {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      margin-block-start: 0;
+    }
+
+    /* The buttons, and a notice just above them, line up with the fields. */
+
+    &:has(> .jfb-page:not([hidden]) > .jfb-group > legend, > .jfb-page:not([hidden]) .jfb-summary)
+      > :is(.jfb-navigation, .jfb-page ~ .jfb-notice) {
+      max-inline-size: none;
+      margin-inline-start: calc((100% - var(--_s7)) / 3 + var(--_s7));
+    }
+
+    /*
+     * A card group keeps its frame inside the form, since a theme draws nothing outside it (ADR-0015), so its heading
+     * sits one padding in; its fields still start on the line every other group's fields start on.
+     */
+
+    & .jfb-page:has(> .jfb-group > legend, > .jfb-summary) > .jfb-group-card {
+      grid-template-columns: calc((100% + 2 * (var(--_s5) + 1px) - var(--_s7)) / 3 - var(--_s5) - 1px) minmax(0, 1fr);
+    }
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * A field: label (or legend), help, the control, then the error. Help comes before the input.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-field,
+  & .jfb-field > fieldset {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    min-inline-size: 0;
+  }
+
+  & .jfb-field > fieldset > legend {
+    float: inline-start;
+    inline-size: 100%;
+  }
+
+  & .jfb-field > * + *,
+  & .jfb-field > fieldset > * + * {
+    margin-block-start: var(--_s2);
+  }
+
+  & .jfb-label {
+    font-weight: var(--_bold);
+  }
+
+  & .jfb-mark {
+    font-weight: 400;
+    color: var(--_muted);
+  }
+
+  & .jfb-help,
+  & .jfb-counter,
+  & .jfb-places {
+    font-size: var(--_small);
+    color: var(--_muted);
+  }
+
+  & .jfb-field .jfb-help {
+    margin-block-start: var(--_s1);
+    max-inline-size: 65ch;
+  }
+
+  /* Help for a single checkbox or switch sits under its label text, not under the box. */
+
+  & .jfb-field > .jfb-choice + .jfb-help {
+    margin-block-start: calc(-1 * var(--_s2));
+    padding-inline-start: calc(24px + var(--_s3));
+  }
+
+  & .jfb-field > .jfb-choice:has(> .jfb-switch) + .jfb-help {
+    padding-inline-start: calc(52px + var(--_s3));
+  }
+
+  & .jfb-counter[data-jfb-over] {
+    display: flex;
+    gap: var(--_s2);
+    justify-content: end;
+    font-weight: var(--_bold);
+    color: var(--_error);
+  }
+
+  & .jfb-error {
+    display: flex;
+    gap: var(--_s2);
+    font-weight: var(--_bold);
+    color: var(--_error);
+    transition:
+      opacity var(--_base) var(--_ease),
+      translate var(--_base) var(--_ease);
+
+    @starting-style {
+      opacity: 0;
+      translate: 0 calc(-1 * var(--_rise));
+    }
+  }
+
+  & .jfb-error::before,
+  & .jfb-counter[data-jfb-over]::before,
+  & :is(.jfb-error-summary, .jfb-notice-error) > h2::before {
+    content: '';
+    flex: none;
+    inline-size: 1.25em;
+    block-size: 1.5em;
+    background: currentColor;
+    mask: var(--_i-alert) center / 1.25em no-repeat;
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * Text controls: inputs, text areas and dropdowns. At least 16 px text, so phones do not zoom in.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-control {
+    inline-size: 100%;
+    min-block-size: var(--_control);
+    padding: var(--_s2) var(--_s3);
+    font: inherit;
+    font-size: max(1em, 16px);
+    line-height: 1.5;
+    color: var(--_ink);
+    background: var(--_surface);
+    border: 1px solid var(--_border);
+    border-radius: var(--_r-control);
+    caret-color: var(--_accent);
+    transition: border-color var(--_fast) ease;
+  }
+
+  /* The date and time pickers wear the theme's icons, in the text colour. */
+
+  & .jfb-control::-webkit-calendar-picker-indicator {
+    inline-size: 1.25em;
+    block-size: 1.25em;
+    margin: 0;
+    padding: 0;
+    background: var(--_ink);
+    mask: var(--_i-calendar) center / contain no-repeat;
+    opacity: 1;
+    cursor: pointer;
+  }
+
+  & .jfb-control[type='time']::-webkit-calendar-picker-indicator {
+    mask-image: var(--_i-clock);
+  }
+
+  & .jfb-control::placeholder {
+    color: var(--_muted);
+    opacity: 1;
+  }
+
+  & textarea.jfb-control {
+    min-block-size: calc(var(--_control) * 3);
+    padding-block: var(--_s3);
+    resize: vertical;
+  }
+
+  & select.jfb-control[multiple] {
+    padding: var(--_s1);
+  }
+
+  /*
+   * A list of several choices: its options on the grid, a chosen one in the accent (the gradient makes every browser
+   * paint it).
+   */
+
+  & select.jfb-control[multiple] option {
+    padding: var(--_s1) var(--_s2);
+    border-radius: var(--_r-tag);
+  }
+
+  & select.jfb-control[multiple] option:checked {
+    color: var(--_on-accent);
+    background: var(--_accent) linear-gradient(var(--_accent), var(--_accent));
+  }
+
+  /* A single dropdown wears the theme's chevron instead of the browser's arrow. */
+
+  & .jfb-select {
+    position: relative;
+    display: grid;
+  }
+
+  & .jfb-select > select {
+    appearance: none;
+    padding-inline-end: var(--_s7);
+  }
+
+  & .jfb-select::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: var(--_s3);
+    inline-size: 20px;
+    margin-block: auto;
+    block-size: 20px;
+    background: var(--_ink);
+    mask: var(--_i-down) center / contain no-repeat;
+    pointer-events: none;
+  }
+
+  & .jfb-control:focus-visible {
+    outline: var(--_ring);
+    outline-offset: 2px;
+  }
+
+  & .jfb-control[aria-invalid='true'] {
+    border-color: var(--_error);
+    box-shadow: inset 0 0 0 1px var(--_error);
+  }
+
+  /* Disabled is dashed and muted; read-only keeps its text at full strength on a quiet fill, since it is still read. */
+
+  & .jfb-control:disabled {
+    color: var(--_muted);
+    background: var(--_wash);
+    border-style: dashed;
+    cursor: not-allowed;
+  }
+
+  & .jfb-control[readonly] {
+    background: var(--_wash);
+  }
+
+  /* Prefix and suffix text, such as a currency or a unit */
+
+  & .jfb-affix {
+    display: flex;
+  }
+
+  & .jfb-affix > span {
+    display: flex;
+    align-items: center;
+    padding-inline: var(--_s3);
+    color: var(--_muted);
+    background: var(--_wash);
+    border: 1px solid var(--_border);
+  }
+
+  & .jfb-affix > span:first-child {
+    border-inline-end: 0;
+    border-start-start-radius: var(--_r-control);
+    border-end-start-radius: var(--_r-control);
+  }
+
+  & .jfb-affix > span:last-child {
+    border-inline-start: 0;
+    border-start-end-radius: var(--_r-control);
+    border-end-end-radius: var(--_r-control);
+  }
+
+  & .jfb-affix > .jfb-control:not(:first-child) {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+  }
+
+  & .jfb-affix > .jfb-control:not(:last-child) {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+  }
+
+  & .jfb-counter {
+    text-align: end;
+  }
+
+  /* A slider and its value; a calculated value */
+
+  & .jfb-range {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--_s4);
+    align-items: center;
+  }
+
+  & .jfb-range > input {
+    inline-size: 100%;
+    block-size: 44px;
+    margin: 0;
+    color: inherit;
+    background: transparent;
+  }
+
+  & .jfb-range > input:focus-visible {
+    outline: var(--_ring);
+    outline-offset: 2px;
+  }
+
+  & :is(.jfb-range > output, output.jfb-output) {
+    font-size: var(--_large);
+    font-weight: var(--_bold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * Choices: radio buttons and checkboxes on native inputs, as a list, in a row, as cards or as buttons.
+   * The label is the target, at least 44 px high; the box sits on its first line.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-choices {
+    display: grid;
+  }
+
+  & .jfb-choice {
+    position: relative;
+    display: flex;
+    gap: var(--_s3);
+    align-items: flex-start;
+  }
+
+  & .jfb-choice > label {
+    flex: 1;
+    min-block-size: 44px;
+    padding-block: var(--_s2);
+    cursor: pointer;
+  }
+
+  & input:is([type='checkbox'], [type='radio']) {
+    appearance: none;
+    display: grid;
+    flex: none;
+    place-content: center;
+    inline-size: 24px;
+    block-size: 24px;
+    margin: var(--_s2) 0 0;
+    color: inherit;
+    background: var(--_surface);
+    border: 2px solid var(--_border);
+    border-radius: var(--_r-tag);
+    cursor: pointer;
+  }
+
+  & input[type='radio'] {
+    border-radius: 50%;
+  }
+
+  & input[type='checkbox']::before {
+    content: '';
+    inline-size: 16px;
+    block-size: 16px;
+    background: var(--_on-accent);
+    mask: var(--_i-check) center / contain no-repeat;
+    visibility: hidden;
+  }
+
+  & input[type='checkbox']:checked {
+    background: var(--_accent);
+    border-color: var(--_accent);
+  }
+
+  & input[type='checkbox']:checked::before {
+    visibility: visible;
+  }
+
+  & input[type='radio']:checked {
+    border: 7px solid var(--_accent);
+  }
+
+  & input:is([type='checkbox'], [type='radio']):focus-visible {
+    outline: var(--_ring);
+    outline-offset: 2px;
+  }
+
+  & input:is([type='checkbox'], [type='radio'])[aria-invalid='true']:not(:checked),
+  & [aria-invalid='true'] > .jfb-choices input:not(:checked, :disabled) {
+    border-color: var(--_error);
+  }
+
+  & [aria-invalid='true'] > :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > label,
+  & [aria-invalid='true'] > .jfb-choices-cards > .jfb-choice:not(:has(> :disabled)),
+  & [aria-invalid='true'] .jfb-signature-pad {
+    border-color: var(--_error);
+    box-shadow: inset 0 0 0 1px var(--_error);
+  }
+
+  & input:is([type='checkbox'], [type='radio']):disabled {
+    background: var(--_wash);
+    border-style: dashed;
+    cursor: not-allowed;
+  }
+
+  & .jfb-choice:has(> input:disabled) > label {
+    cursor: not-allowed;
+  }
+
+  @media (hover: hover) {
+    & .jfb-choice:hover > input:not(:checked, :disabled) {
+      border-color: var(--_border-strong);
+    }
+  }
+
+  & .jfb-choices-horizontal {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--_s5);
+  }
+
+  /* The text an "Other" choice asks for, lined up with the choice labels */
+
+  & .jfb-other {
+    padding-inline-start: calc(24px + var(--_s3));
+  }
+
+  /* An option's description sits under its label text, the box beside both */
+
+  & .jfb-choice:has(> .jfb-help) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0 var(--_s3);
+  }
+
+  & .jfb-choice > .jfb-help {
+    grid-column: 2;
+    margin-block-start: calc(-1 * var(--_s2));
+  }
+
+  /* Cards: the whole card is the target; a chosen card takes the accent; a full one is dashed but still readable. */
+
+  & .jfb-choices-cards {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+    gap: var(--_s3);
+  }
+
+  & .jfb-choices-cards > .jfb-choice {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: start;
+    gap: 0 var(--_s3);
+    padding: var(--_s4);
+    background: var(--_surface);
+    border: 1px solid var(--_border);
+    border-radius: var(--_r-card);
+    transition:
+      border-color var(--_fast) ease,
+      background-color var(--_fast) ease;
+  }
+
+  & .jfb-choices-cards > .jfb-choice > img {
+    grid-column: 1 / -1;
+    inline-size: calc(100% + 2 * var(--_s4));
+    max-inline-size: none;
+    block-size: auto;
+    aspect-ratio: 3 / 2;
+    margin: calc(-1 * var(--_s4)) calc(-1 * var(--_s4)) var(--_s4);
+    object-fit: cover;
+    border-start-start-radius: calc(var(--_r-card) - 1px);
+    border-start-end-radius: calc(var(--_r-card) - 1px);
+  }
+
+  & .jfb-choices-cards > .jfb-choice > input {
+    margin: 0;
+  }
+
+  & .jfb-choices-cards > .jfb-choice > label {
+    min-block-size: 0;
+    padding: 0;
+    font-weight: var(--_bold);
+  }
+
+  & .jfb-choices-cards > .jfb-choice > label::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+
+  & .jfb-choices-cards > .jfb-choice > .jfb-help {
+    margin-block-start: var(--_s1);
+  }
+
+  & .jfb-choices-cards .jfb-places {
+    display: block;
+    margin-block-start: var(--_s1);
+    font-weight: 400;
+  }
+
+  & .jfb-choices-cards > .jfb-choice:has(> :checked) {
+    background: var(--_tint);
+    border-color: var(--_accent);
+    box-shadow: inset 0 0 0 1px var(--_accent);
+  }
+
+  & .jfb-choices-cards > .jfb-choice:has(> :disabled) {
+    background: transparent;
+    border-style: dashed;
+  }
+
+  & .jfb-choices-cards > .jfb-choice:has(> :disabled) > img {
+    filter: grayscale(1);
+  }
+
+  & .jfb-choices-cards > .jfb-choice > input:focus-visible {
+    outline: 0;
+  }
+
+  & .jfb-choices-cards > .jfb-choice:has(> :focus-visible) {
+    outline: var(--_ring);
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) {
+    & .jfb-choices-cards > .jfb-choice:hover:not(:has(> :checked, > :disabled)) {
+      border-color: var(--_border-strong);
+    }
+  }
+
+  /* Buttons (yes/no and the 0 to 10 scale): the input stays in place for keyboards and screen readers, unseen. */
+
+  & .jfb-choices-buttons,
+  & .jfb-choices-scale {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--_s2);
+  }
+
+  & .jfb-choices-scale {
+    gap: var(--_s1);
+  }
+
+  & :is(.jfb-choices-buttons, .jfb-choices-scale, .jfb-choices-rating) > .jfb-choice > input {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: 0;
+    opacity: 0;
+  }
+
+  & :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 44px;
+    min-block-size: var(--_control);
+    padding: var(--_s2) var(--_s5);
+    font-weight: var(--_bold);
+    background: var(--_surface);
+    border: 1px solid var(--_border);
+    border-radius: var(--_r-control);
+    transition:
+      background-color var(--_fast) ease,
+      border-color var(--_fast) ease,
+      translate var(--_move) var(--_ease);
+  }
+
+  /* A choice drawn as a button sinks when pressed, as the buttons do. */
+  & :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > :not(:disabled) + label:active {
+    translate: 0 1px;
+  }
+
+  & .jfb-choices-scale > .jfb-choice > label {
+    padding-inline: var(--_s2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  & :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > :checked + label {
+    color: var(--_on-accent);
+    background: var(--_accent);
+    border-color: var(--_accent);
+  }
+
+  & :is(.jfb-choices-buttons, .jfb-choices-scale, .jfb-choices-rating) > .jfb-choice > :focus-visible + label {
+    outline: var(--_ring);
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) {
+    & :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > :not(:checked) + label:hover {
+      background: var(--_wash);
+    }
+  }
+
+  /* A rating: stars that fill up to the chosen one */
+
+  & .jfb-scale {
+    display: inline-grid;
+    gap: var(--_s1);
+    justify-self: start;
+    max-inline-size: 100%;
+  }
+
+  & .jfb-choices-rating {
+    display: flex;
+  }
+
+  & .jfb-choices-rating > .jfb-choice > label {
+    display: grid;
+    place-items: center;
+    inline-size: 44px;
+    block-size: 44px;
+    padding: 0;
+  }
+
+  & .jfb-choices-rating > .jfb-choice > label::before {
+    content: '';
+    inline-size: 32px;
+    block-size: 32px;
+    background: var(--_border);
+    mask: var(--_i-star) center / contain no-repeat;
+  }
+
+  & .jfb-choices-rating > .jfb-choice:is(:has(> :checked), :has(~ .jfb-choice > :checked)) > label::before {
+    background: var(--_accent);
+    mask-image: var(--_i-star-full);
+  }
+
+  @media (hover: hover) {
+    & .jfb-choices-rating:hover > .jfb-choice:is(:hover, :has(~ .jfb-choice:hover)) > label::before {
+      background: var(--_accent);
+      mask-image: var(--_i-star-full);
+    }
+  }
+
+  & .jfb-ends {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--_s4);
+    font-size: var(--_small);
+    color: var(--_muted);
+  }
+
+  /* On a narrow form a long scale (8 points or more) wraps into even rows, its two end words in one row below. */
+
+  @container jfb-form (max-width: 539px) {
+    & .jfb-scale:has(> .jfb-choices-scale > :nth-child(8)) {
+      justify-self: stretch;
+    }
+
+    & .jfb-choices-scale:has(> :nth-child(8)) {
+      --_half: 4;
+      display: grid;
+      grid-template-columns: repeat(var(--_half), minmax(0, 1fr));
+    }
+
+    & .jfb-choices-scale:has(> :nth-child(9)) {
+      --_half: 5;
+    }
+
+    & .jfb-choices-scale:has(> :nth-child(11)) {
+      --_half: 6;
+    }
+  }
+
+  /* A switch: a checkbox with role="switch" */
+
+  & input.jfb-switch {
+    inline-size: 52px;
+    block-size: 32px;
+    justify-content: start;
+    margin-block-start: var(--_s1);
+    padding: var(--_s1);
+    border-radius: 999px;
+  }
+
+  & input.jfb-switch::before {
+    inline-size: 0;
+    block-size: 0;
+    border: 10px solid var(--_border);
+    border-radius: 50%;
+    background: none;
+    mask: none;
+    visibility: visible;
+    transition: translate var(--_move) var(--_ease);
+  }
+
+  & input.jfb-switch:checked::before {
+    border-color: var(--_on-accent);
+    translate: 20px 0;
+  }
+
+  & input.jfb-switch:checked:dir(rtl)::before {
+    translate: -20px 0;
+  }
+
+  /* A grid: rows of statements answered on shared columns; on narrow forms each row stacks */
+
+  & .jfb-matrix {
+    display: grid;
+  }
+
+  & .jfb-matrix-head,
+  & .jfb-matrix > fieldset {
+    display: flex;
+    gap: var(--_s4);
+    align-items: center;
+    padding-block: var(--_s2);
+    border-block-end: 1px solid var(--_rule);
+  }
+
+  & .jfb-matrix-head {
+    font-size: var(--_small);
+    font-weight: var(--_bold);
+    color: var(--_muted);
+  }
+
+  & .jfb-matrix-head > :first-child,
+  & .jfb-matrix > fieldset > legend {
+    float: inline-start;
+    flex: 0 0 40%;
+  }
+
+  & .jfb-matrix-head > :last-child,
+  & .jfb-matrix > fieldset > .jfb-choices {
+    display: flex;
+    flex: 1;
+  }
+
+  & .jfb-matrix-head > :last-child > span,
+  & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice {
+    flex: 1 1 0;
+    justify-content: center;
+    text-align: center;
+  }
+
+  & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice > label {
+    position: absolute;
+    inset: 0;
+    min-block-size: 0;
+  }
+
+  & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice > label > span {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice {
+    align-items: center;
+    min-block-size: 44px;
+  }
+
+  & .jfb-matrix .jfb-choice > input {
+    margin: 0;
+  }
+
+  @container jfb-form (max-width: 599px) {
+    & .jfb-matrix-head {
+      display: none;
+    }
+
+    & .jfb-matrix > fieldset {
+      display: grid;
+      gap: var(--_s1);
+      padding-block: var(--_s3);
+    }
+
+    & .jfb-matrix > fieldset > .jfb-choices {
+      display: grid;
+    }
+
+    & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice {
+      align-items: flex-start;
+      justify-content: start;
+      text-align: start;
+    }
+
+    & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice > label {
+      position: static;
+      min-block-size: 44px;
+    }
+
+    & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice > label > span {
+      position: static;
+      inline-size: auto;
+      block-size: auto;
+      clip-path: none;
+      white-space: normal;
+    }
+
+    & .jfb-matrix .jfb-choice > input {
+      margin-block: var(--_s2) 0;
+    }
+  }
+
+  /* Ranking: move buttons, never drag only */
+
+  & .jfb-ranking {
+    padding: var(--_s2);
+    list-style: none;
+    border: 1px solid var(--_border);
+    border-radius: var(--_r-card);
+  }
+
+  & .jfb-ranking > li {
+    display: grid;
+    grid-template-columns: 2em minmax(0, 1fr) auto auto;
+    gap: var(--_s2);
+    align-items: center;
+    padding-inline: var(--_s2) 0;
+  }
+
+  & .jfb-ranking > li + li {
+    border-block-start: 1px solid var(--_rule);
+  }
+
+  & .jfb-ranking > li > :first-child {
+    font-weight: var(--_bold);
+    font-variant-numeric: tabular-nums;
+    color: var(--_muted);
+  }
+
+  /* Name and address: parts with their own labels */
+
+  & .jfb-parts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--_s4);
+  }
+
+  & .jfb-parts > .jfb-part {
+    display: grid;
+    gap: var(--_s2);
+  }
+
+  & .jfb-parts > .jfb-part-wide {
+    grid-column: 1 / -1;
+  }
+
+  @container jfb-form (max-width: 479px) {
+    & .jfb-parts {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * Buttons: one primary per page, filled with the accent; the others outlined; links for small actions.
+   * They sink a pixel when pressed.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-button {
+    display: inline-flex;
+    gap: var(--_s2);
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--_control);
+    margin: 0;
+    padding: var(--_s2) var(--_s5);
+    font: inherit;
+    font-weight: var(--_bold);
+    line-height: 1.25;
+    color: var(--_ink);
+    text-align: center;
+    text-decoration: none;
+    background: var(--_surface);
+    border: 1px solid var(--_border);
+    border-radius: var(--_r-control);
+    cursor: pointer;
+    transition:
+      background-color var(--_fast) ease,
+      border-color var(--_fast) ease,
+      transform var(--_move) var(--_ease);
+  }
+
+  & .jfb-button:active:not(:disabled, [aria-disabled='true']) {
+    transform: translateY(1px);
+  }
+
+  & .jfb-button-primary {
+    color: var(--_on-accent);
+    background: var(--_accent);
+    border-color: var(--_accent);
+  }
+
+  & .jfb-button-link {
+    justify-content: start;
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    padding: var(--_s2) 0;
+    color: var(--_accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    background: none;
+    border: 0;
+  }
+
+  & .jfb-button-icon {
+    inline-size: 44px;
+    min-block-size: 44px;
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+  }
+
+  /*
+   * A button that cannot be used now: disabled, or aria-disabled where it stays in the tab order (a move button at the
+   * end of its list), but not a busy one.
+   */
+
+  & .jfb-button:is(:disabled, [aria-disabled='true']:not([data-jfb-busy])) {
+    color: var(--_muted);
+    background: transparent;
+    border-style: dashed;
+    cursor: not-allowed;
+  }
+
+  & .jfb-button-icon:is(:disabled, [aria-disabled='true']) {
+    border-color: transparent;
+  }
+
+  /* Busy while the answers are on their way: the label gives way to a turning ring, so the button keeps its size. */
+
+  & .jfb-button-primary[data-jfb-busy] {
+    position: relative;
+    color: transparent;
+    cursor: progress;
+  }
+
+  & .jfb-button-primary[data-jfb-busy]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    inline-size: 1.25em;
+    block-size: 1.25em;
+    margin: auto;
+    border: 2px solid var(--_on-accent);
+    border-block-start-color: transparent;
+    border-radius: 50%;
+    animation: jfb-turn 0.7s linear infinite;
+  }
+
+  /* With reduced motion the ring stays still and fades in and out instead. */
+
+  @media (prefers-reduced-motion: reduce) {
+    & .jfb-button-primary[data-jfb-busy]::after {
+      animation: jfb-pulse 1.4s ease-in-out infinite alternate;
+    }
+  }
+
+  @media (hover: hover) {
+    & .jfb-button:hover:not(:disabled, [aria-disabled='true']) {
+      background: var(--_wash);
+      border-color: var(--_border-strong);
+    }
+
+    & .jfb-button-primary:hover:not(:disabled, [aria-disabled='true']) {
+      background: var(--_accent-strong);
+      border-color: var(--_accent-strong);
+    }
+
+    & .jfb-button-link:hover:not(:disabled, [aria-disabled='true']) {
+      background: none;
+      text-decoration-thickness: 2px;
+    }
+
+    & .jfb-button-icon:hover:not(:disabled, [aria-disabled='true']) {
+      border-color: transparent;
+    }
+  }
+
+  & .jfb-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--_s3);
+    align-items: center;
+  }
+
+  @container jfb-form (max-width: 479px) {
+    & .jfb-navigation > .jfb-button {
+      flex: 1 1 100%;
+    }
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * Progress: steps (the page titles, which then stand in for the page's own title) or a bar.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-progress-steps > ol {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: var(--_s2);
+    padding: 0;
+    list-style: none;
+  }
+
+  & .jfb-progress-steps > ol > li {
+    display: flex;
+    gap: var(--_s1);
+    overflow-wrap: anywhere;
+    hyphens: auto;
+    padding-block-start: var(--_s2);
+    font-size: var(--_small);
+    color: var(--_muted);
+    border-block-start: 4px solid var(--_rule);
+  }
+
+  & .jfb-progress-steps > ol > li:is([aria-current='step'], [data-jfb-done]) {
+    color: var(--_ink);
+    border-color: var(--_accent);
+  }
+
+  & .jfb-progress-steps > ol > li[aria-current='step'] {
+    font-weight: var(--_bold);
+  }
+
+  & .jfb-progress-steps > ol > li[data-jfb-done]::before {
+    content: '';
+    flex: none;
+    inline-size: 1em;
+    block-size: 1.5em;
+    background: var(--_accent);
+    mask: var(--_i-check) center / 1em no-repeat;
+  }
+
+  & .jfb-progress-steps > .jfb-progress-text {
+    display: none;
+  }
+
+  /*
+   * The step names stand in for the page title while they have room: from 480 px with up to four steps, from 720 px
+   * with up to six. A narrower form, or more steps, shows "Step 2 of 6" with short bars instead, and the title. The
+   * runtime also folds them (data-jfb-compact) when a step name would break inside a word, as long compounds do.
+   */
+
+  @container jfb-form (min-width: 480px) {
+    &:has(> .jfb-progress-steps:not([data-jfb-compact]) li:last-child:nth-child(-n + 4)) > .jfb-page > .jfb-title {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    &:has(> .jfb-progress-steps:not([data-jfb-compact]) li:last-child:nth-child(-n + 4)) > .jfb-page > .jfb-intro {
+      margin-block-start: 0;
+    }
+  }
+
+  @container jfb-form (min-width: 720px) {
+    &:has(> .jfb-progress-steps:not([data-jfb-compact]) li:last-child:nth-child(-n + 6)) > .jfb-page > .jfb-title {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    &:has(> .jfb-progress-steps:not([data-jfb-compact]) li:last-child:nth-child(-n + 6)) > .jfb-page > .jfb-intro {
+      margin-block-start: 0;
+    }
+  }
+
+  @container jfb-form (max-width: 479px) {
+    & .jfb-progress-steps {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: var(--_s3);
+      align-items: center;
+
+      & > .jfb-progress-text {
+        display: block;
+        order: -1;
+      }
+
+      & > ol > li {
+        padding: 0;
+      }
+
+      & > ol > li > *,
+      & > ol > li::before {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+    }
+  }
+
+  @container jfb-form (max-width: 719px) {
+    & .jfb-progress-steps:has(> ol > :nth-child(5)) {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: var(--_s3);
+      align-items: center;
+
+      & > .jfb-progress-text {
+        display: block;
+        order: -1;
+      }
+
+      & > ol > li {
+        padding: 0;
+      }
+
+      & > ol > li > *,
+      & > ol > li::before {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+    }
+  }
+
+  & .jfb-progress-steps:is([data-jfb-compact], :has(> ol > :nth-child(7))) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--_s3);
+    align-items: center;
+
+    & > .jfb-progress-text {
+      display: block;
+      order: -1;
+    }
+
+    & > ol > li {
+      padding: 0;
+    }
+
+    & > ol > li > *,
+    & > ol > li::before {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  & .jfb-progress-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--_s3);
+    align-items: center;
+  }
+
+  & .jfb-progress-text {
+    font-size: var(--_small);
+    color: var(--_muted);
+  }
+
+  & progress {
+    appearance: none;
+    inline-size: 100%;
+    block-size: 8px;
+    overflow: hidden;
+    color: var(--_accent);
+    background: var(--_rule);
+    border: 0;
+    border-radius: 999px;
+  }
+
+  & progress::-webkit-progress-bar {
+    background: var(--_rule);
+  }
+
+  & progress::-webkit-progress-value {
+    background: var(--_accent);
+    border-radius: 999px;
+  }
+
+  & progress::-moz-progress-bar {
+    background: var(--_accent);
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * The error summary: named problems, each a link to its field.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-error-summary {
+    display: grid;
+    gap: var(--_s2);
+    padding: var(--_s4) var(--_s5);
+    background: var(--_error-wash);
+    border: 2px solid var(--_error);
+    border-radius: var(--_r-panel);
+    transition: opacity var(--_base) var(--_ease);
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
+
+  & :is(.jfb-error-summary, .jfb-notice):focus {
+    outline: 0;
+  }
+
+  & :is(.jfb-error-summary, .jfb-notice):focus-visible {
+    outline: var(--_ring);
+    outline-offset: 2px;
+  }
+
+  & :is(.jfb-error-summary, .jfb-notice-error) > h2 {
+    display: flex;
+    gap: var(--_s2);
+    font-size: var(--_large);
+  }
+
+  & :is(.jfb-error-summary, .jfb-notice-error) > h2::before {
+    block-size: 1.25em;
+    color: var(--_error);
+  }
+
+  & .jfb-error-summary > ul {
+    display: grid;
+    padding: 0;
+    list-style: none;
+  }
+
+  & .jfb-error-summary a {
+    display: block;
+    min-block-size: 44px;
+    padding-block: var(--_s2);
+    font-weight: var(--_bold);
+    color: var(--_error);
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * Files: a drop zone around the native input, then the chosen files with their state.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-upload {
+    display: grid;
+    gap: var(--_s3);
+    justify-items: center;
+    padding: var(--_s5);
+    text-align: center;
+    color: var(--_muted);
+    background: var(--_surface);
+    border: 2px dashed var(--_border);
+    border-radius: var(--_r-card);
+    transition:
+      border-color var(--_fast) ease,
+      background-color var(--_fast) ease;
+  }
+
+  & .jfb-upload[data-jfb-drop] {
+    background: var(--_tint);
+    border-color: var(--_accent);
+  }
+
+  & .jfb-upload:has([aria-invalid='true']) {
+    border-color: var(--_error);
+  }
+
+  /* Without JavaScript nothing can be dropped on the frame, so it is drawn solid and says nothing about dragging. */
+
+  & .jfb-upload:not([data-jfb-enhanced]) {
+    border-style: solid;
+  }
+
+  & .jfb-upload > .jfb-icon {
+    inline-size: 32px;
+    block-size: 32px;
+  }
+
+  & .jfb-upload-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--_s3);
+    justify-content: center;
+  }
+
+  /* Two buttons that no longer fit side by side take the full width, one above the other. */
+
+  & .jfb-upload-actions > label {
+    flex: 1 1 auto;
+  }
+
+  & .jfb-upload input[type='file'] {
+    max-inline-size: 100%;
+    font: inherit;
+    color: var(--_muted);
+  }
+
+  & .jfb-upload input[type='file']::file-selector-button {
+    min-block-size: 44px;
+    margin-inline-end: var(--_s3);
+    padding: var(--_s2) var(--_s4);
+    font: inherit;
+    font-weight: var(--_bold);
+    color: var(--_ink);
+    background: var(--_surface);
+    border: 1px solid var(--_border);
+    border-radius: var(--_r-control);
+    cursor: pointer;
+  }
+
+  & .jfb-upload input[type='file']:focus-visible,
+  & .jfb-upload input:focus-visible + label {
+    outline: var(--_ring);
+    outline-offset: 2px;
+  }
+
+  & .jfb-upload[data-jfb-enhanced] input[type='file'] {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  & .jfb-upload:not([data-jfb-enhanced]) :is(label, p),
+  & .jfb-upload-camera {
+    display: none;
+  }
+
+  @media (pointer: coarse) {
+    & .jfb-upload > p {
+      display: none;
+    }
+
+    /* Nothing can be dropped on a touch screen: no drop frame, only the two buttons. */
+
+    & .jfb-upload[data-jfb-enhanced] {
+      justify-items: stretch;
+      padding: 0;
+      background: none;
+      border-color: transparent;
+    }
+
+    & .jfb-upload[data-jfb-enhanced] > .jfb-icon {
+      display: none;
+    }
+
+    & .jfb-upload[data-jfb-enhanced] label.jfb-upload-camera {
+      display: inline-flex;
+    }
+
+    & .jfb-upload[data-jfb-enhanced] input.jfb-upload-camera {
+      display: block;
+    }
+  }
+
+  & .jfb-files {
+    display: grid;
+    gap: var(--_s2);
+    padding: 0;
+    list-style: none;
+  }
+
+  & .jfb-file {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 0 var(--_s3);
+    align-items: center;
+    padding: var(--_s2);
+    background: var(--_surface);
+    border: 1px solid var(--_rule);
+    border-radius: var(--_r-card);
+  }
+
+  & .jfb-file > :first-child {
+    grid-row: span 3;
+    inline-size: 48px;
+    block-size: 48px;
+    object-fit: cover;
+    border-radius: var(--_r-tag);
+  }
+
+  & .jfb-file > .jfb-icon {
+    color: var(--_muted);
+    mask-size: 28px;
+  }
+
+  & .jfb-file > strong {
+    overflow-wrap: anywhere;
+  }
+
+  & .jfb-file > .jfb-button {
+    grid-row: 1 / span 3;
+    grid-column: 3;
+  }
+
+  & .jfb-file > :is(.jfb-help, .jfb-error, progress, .jfb-button-link) {
+    grid-row: auto;
+    grid-column: 2;
+    justify-self: start;
+    margin: 0;
+  }
+
+  & .jfb-file[data-jfb-error] {
+    border-color: var(--_error);
+  }
+
+  /* Signature: draw on the pad, or type a name instead (the keyboard and screen-reader path) */
+
+  & .jfb-signature {
+    display: grid;
+    gap: var(--_s2);
+  }
+
+  & .jfb-signature-pad {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    aspect-ratio: 3 / 1;
+    background:
+      linear-gradient(var(--_border), var(--_border)) var(--_s5) 75% / calc(100% - 2 * var(--_s5)) 1px no-repeat,
+      var(--_surface);
+    border: 1px solid var(--_border);
+    border-radius: var(--_r-card);
+    touch-action: none;
+  }
+
+  & .jfb-signature-tools {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--_s5);
+  }
+
+  /* The help sits under the legend at the same distance as any field's help. */
+
+  & .jfb-field > fieldset > .jfb-signature {
+    margin-block-start: var(--_s1);
+  }
+
+  & .jfb-signature > .jfb-help {
+    margin: 0;
+  }
+
+  /* Repeater rows: entries under a hairline, like the groups, never a box inside the form's boxes */
+
+  & .jfb-repeater {
+    display: grid;
+    gap: var(--_s4);
+    justify-items: start;
+  }
+
+  & .jfb-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0 var(--_s4);
+    align-items: center;
+    justify-self: stretch;
+    padding-block-start: var(--_s2);
+    border-block-start: 1px solid var(--_rule);
+    transition:
+      opacity var(--_base) var(--_ease),
+      translate var(--_base) var(--_ease);
+
+    @starting-style {
+      opacity: 0;
+      translate: 0 calc(-1 * var(--_rise));
+    }
+  }
+
+  & .jfb-row > legend {
+    float: inline-start;
+    font-weight: var(--_bold);
+  }
+
+  & .jfb-row > .jfb-fields {
+    grid-column: 1 / -1;
+  }
+
+  /* Content: headings, text, dividers and images */
+
+  & .jfb-heading {
+    font-size: var(--_large);
+  }
+
+  & h4.jfb-heading {
+    font-size: 1em;
+  }
+
+  & .jfb-text {
+    max-inline-size: 65ch;
+  }
+
+  & .jfb-text > * + * {
+    margin-block-start: var(--_s3);
+  }
+
+  & .jfb-divider {
+    margin: 0;
+    border: 0;
+    border-block-start: 1px solid var(--_rule);
+  }
+
+  & .jfb-image img {
+    display: block;
+    max-inline-size: 100%;
+    block-size: auto;
+    border-radius: var(--_r-card);
+  }
+
+  & .jfb-image figcaption {
+    margin-block-start: var(--_s2);
+    font-size: var(--_small);
+    color: var(--_muted);
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * After the last page: the answers to check, the outcome, and the notices that stand in for a closed form.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-summary {
+    display: grid;
+    gap: var(--_s6);
+  }
+
+  & .jfb-summary > section {
+    display: grid;
+    gap: var(--_s2);
+  }
+
+  & .jfb-summary > section + section {
+    padding-block-start: var(--_s6);
+    border-block-start: 1px solid var(--_rule);
+  }
+
+  & .jfb-summary h3 {
+    font-size: var(--_large);
+  }
+
+  & .jfb-summary dl > div {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto;
+    gap: 0 var(--_s4);
+    align-items: baseline;
+    padding-block: var(--_s2);
+    border-block-end: 1px solid var(--_rule);
+  }
+
+  & .jfb-summary dt {
+    font-weight: var(--_bold);
+  }
+
+  & .jfb-summary dd {
+    overflow-wrap: anywhere;
+  }
+
+  & .jfb-summary dd[data-jfb-empty] {
+    color: var(--_muted);
+  }
+
+  & .jfb-summary dd > .jfb-error {
+    margin-block-start: var(--_s1);
+  }
+
+  @container jfb-form (max-width: 479px) {
+    & .jfb-summary dl > div {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    & .jfb-summary dt + dd {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+
+  & .jfb-outcome {
+    position: relative;
+    display: grid;
+    gap: var(--_s4);
+    justify-items: start;
+    max-inline-size: 65ch;
+  }
+
+  & .jfb-outcome:focus {
+    outline: 0;
+  }
+
+  & .jfb-outcome::before,
+  & .jfb-outcome::after {
+    content: '';
+    inline-size: 48px;
+    block-size: 48px;
+    border-radius: 50%;
+  }
+
+  & .jfb-outcome::before {
+    background: var(--_tint);
+  }
+
+  & .jfb-outcome::after {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    background: var(--_accent);
+    mask: var(--_i-check) center / 28px no-repeat;
+  }
+
+  /* Waiting for the visitor to confirm their address: a letter, not a tick */
+
+  & .jfb-outcome[data-jfb-pending]::after {
+    mask-image: var(--_i-mail);
+    mask-size: 24px;
+  }
+
+  & .jfb-reference strong {
+    font-weight: var(--_bold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  & .jfb-outcome :where(h1, h2) {
+    font-size: var(--_title);
+  }
+
+  & .jfb-outcome > .jfb-navigation {
+    justify-self: stretch;
+    padding: 0;
+  }
+
+  /*
+   * A notice stands in place of the form, above it (the form has changed, welcome back) or above its buttons (not
+   * sent, save for later). The captcha's notice shares its look.
+   */
+
+  & :is(.jfb-notice, .jfb-captcha) {
+    display: grid;
+    gap: var(--_s2);
+    justify-items: start;
+    max-inline-size: 65ch;
+    padding: var(--_s5);
+    background: var(--_surface);
+    border: 1px solid var(--_rule);
+    border-radius: var(--_r-panel);
+  }
+
+  /* The captcha's place is empty until its provider's notice or check fills it, and an empty panel says nothing */
+
+  & .jfb-captcha:empty {
+    display: none;
+  }
+
+  & .jfb-notice > :is(h1, h2) {
+    font-size: var(--_large);
+  }
+
+  & .jfb-notice-error {
+    background: var(--_error-wash);
+    border: 2px solid var(--_error);
+  }
+
+  & :is(.jfb-notice, .jfb-captcha) > :is(.jfb-field, .jfb-navigation, .jfb-button, form) {
+    margin-block-start: var(--_s2);
+  }
+
+  & .jfb-notice > :is(.jfb-field, .jfb-navigation) {
+    justify-self: stretch;
+  }
+
+  /* While a headless form loads: shapes where its first fields will be, pulsing gently unless motion is reduced */
+
+  & .jfb-skeleton {
+    display: grid;
+    gap: var(--_s5);
+  }
+
+  & .jfb-skeleton > div {
+    display: grid;
+    gap: var(--_s2);
+  }
+
+  & .jfb-skeleton span {
+    display: block;
+    block-size: var(--_control);
+    background: var(--_rule);
+    border-radius: var(--_r-control);
+    animation: jfb-pulse 1.4s ease-in-out infinite alternate;
+  }
+
+  & .jfb-skeleton > div > :first-child {
+    inline-size: 30%;
+    block-size: 1em;
+    border-radius: var(--_r-tag);
+  }
+
+  & .jfb-skeleton > span {
+    inline-size: 8em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & .jfb-skeleton span {
+      animation: none;
+    }
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * Pages moving: the runtime marks the direction, and the new page slides in a few pixels from that side.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  &[data-jfb-direction] > .jfb-page {
+    transition:
+      opacity var(--_base) var(--_ease),
+      translate var(--_base) var(--_ease);
+
+    @starting-style {
+      opacity: 0;
+      translate: var(--_slide) 0;
+    }
+  }
+
+  &[data-jfb-direction='back'] > .jfb-page {
+    @starting-style {
+      translate: calc(-1 * var(--_slide)) 0;
+    }
+  }
+
+  &[data-jfb-direction]:dir(rtl) > .jfb-page {
+    @starting-style {
+      translate: calc(-1 * var(--_slide)) 0;
+    }
+  }
+
+  &[data-jfb-direction='back']:dir(rtl) > .jfb-page {
+    @starting-style {
+      translate: var(--_slide) 0;
+    }
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * Forced colours (Windows contrast themes) and print.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  @media (forced-colors: active) {
+    & .jfb-icon,
+    & .jfb-error::before,
+    & .jfb-counter[data-jfb-over]::before,
+    & :is(.jfb-error-summary, .jfb-notice-error) > h2::before,
+    & .jfb-outcome::after,
+    & .jfb-select::after,
+    & .jfb-control::-webkit-calendar-picker-indicator,
+    & input[type='checkbox']:not(.jfb-switch)::before,
+    & .jfb-progress-steps > ol > li[data-jfb-done]::before,
+    & .jfb-choices-rating > .jfb-choice > label::before {
+      forced-color-adjust: none;
+      background: CanvasText;
+    }
+
+    & :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > :checked + label {
+      forced-color-adjust: none;
+      color: HighlightText;
+      background: Highlight;
+      border-color: Highlight;
+    }
+
+    & .jfb-choices-rating > .jfb-choice:is(:has(> :checked), :has(~ .jfb-choice > :checked)) > label::before {
+      background: Highlight;
+    }
+
+    & .jfb-progress-steps > ol > li:is([aria-current='step'], [data-jfb-done]) {
+      border-color: Highlight;
+    }
+
+    & .jfb-button-primary[data-jfb-busy] {
+      forced-color-adjust: none;
+      color: transparent;
+      background: ButtonFace;
+      border-color: ButtonText;
+    }
+
+    & .jfb-button-primary[data-jfb-busy]::after {
+      border-color: ButtonText;
+      border-block-start-color: transparent;
+    }
+  }
+
+  @media print {
+    & :is(.jfb-navigation, .jfb-button, .jfb-progress) {
+      display: none;
+    }
+  }
+}
+
+@keyframes jfb-turn {
+  to {
+    rotate: 1turn;
+  }
+}
+
+@keyframes jfb-pulse {
+  to {
+    opacity: 0.4;
+  }
+}

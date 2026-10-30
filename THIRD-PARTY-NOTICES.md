@@ -24,6 +24,12 @@ Runtime dependencies, direct and transitive, may only be MIT, Apache-2.0, BSD-2-
 Umbraco CMS packages, and what they bring, are not listed here: sites already run them, and Jiron Form Builder only
 declares them as dependencies.
 
+Material embedded in the shipped files, which no package graph lists:
+
+| Material | Licence | Where |
+| --- | --- | --- |
+| Lucide's check, alert, chevrons, plus, x, cloud upload, file, printer, star, calendar, clock and mail icons, as CSS masks in the default theme (ROADMAP 6.3b) | ISC, with its notice at the top of the stylesheet, which the build keeps | [packages/themes/src/default.css](src/Jiron.Umbraco.FormBuilder.Web/Client/packages/themes/src/default.css), served as `/jfb/assets/themes/default.css` |
+
 ## Development only (never shipped)
 
 These tools build and test Jiron Form Builder. They are used unmodified and are not part of any package.
@@ -31,8 +37,8 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | Package | Version | Licence | Used for |
 | --- | --- | --- | --- |
 | `@playwright/test`, `playwright`, `playwright-core` | 1.63.0 | Apache-2.0 | browser checks and screenshots (`scripts/`), the browser tests (`tests/e2e/`) |
-| `axe-core` | 4.14.0 | MPL-2.0 | accessibility checks (`scripts/`) |
-| `@axe-core/playwright` | 4.14.0 | MPL-2.0 | accessibility checks in Playwright (`scripts/`) |
+| `axe-core` | 4.14.0 | MPL-2.0 | accessibility checks (`scripts/`, `tests/e2e/`) |
+| `@axe-core/playwright` | 4.14.0 | MPL-2.0 | accessibility checks in Playwright (`scripts/`, `tests/e2e/`) |
 | `@actions/workflow-parser` | 0.3.61 | MIT | GitHub's workflow parser, for the workflow check (`scripts/`) |
 | `yaml` | 2.9.1 | ISC | reading the workflow files and `dependabot.yml` (`scripts/`) |
 | `NUnit` | 3.14.0 | MIT | unit and integration tests (`tests/`) |
@@ -79,4 +85,4 @@ packages come through jsdom, the Unlicense one through a peer of `@umbraco-cms/b
 | --- | --- | --- |
 | Contributor Covenant 2.1, adopted by reference with its attribution | CC BY 4.0 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
 | Wireframe icons: Umbraco CMS 17.7.1's backoffice icons (drawn from Lucide) and UUI's "more" symbol, copied into the design documents only | Lucide: ISC; Umbraco CMS and UUI: MIT | [docs/ux/wireframes/assets/icons.js](docs/ux/wireframes/assets/icons.js), licence texts in [ICONS-LICENSE.txt](docs/ux/wireframes/assets/ICONS-LICENSE.txt) |
-| Website theme icons: Lucide's check, alert, chevrons, plus, x, cloud upload, file, printer, star, calendar and clock, embedded as CSS masks in the default theme (a design mock now; step 6.3 ships it and moves this row to "Shipped to sites", with the notice kept in the CSS) | ISC | [docs/ux/website/assets/theme.css](docs/ux/website/assets/theme.css), licence text in [ICONS-LICENSE.txt](docs/ux/website/assets/ICONS-LICENSE.txt) |
+| Website theme icons in the design mocks: Lucide's check, alert, chevrons, plus, x, cloud upload, file, printer, star, calendar, clock and mail, as CSS masks, and its image icon in the stand-in photo (the shipped theme carries the same icons, under "Shipped to sites") | ISC | [docs/ux/website/assets/theme.css](docs/ux/website/assets/theme.css) and [placeholder.svg](docs/ux/website/assets/placeholder.svg), licence text in [ICONS-LICENSE.txt](docs/ux/website/assets/ICONS-LICENSE.txt) |

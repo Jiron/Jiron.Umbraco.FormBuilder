@@ -5,7 +5,8 @@
   [ADR-0012](0012-anonymous-endpoints-spam-protection-and-challenges.md), and extends
   [ADR-0092](0092-serving-the-website-assets.md) (the stylesheets of the themes a page uses, each once),
   [ADR-0093](0093-the-razor-rendering.md) (the `theme` attribute) and
-  [ADR-0104](0104-the-output-cache-rules-and-the-render-endpoint.md) (the render endpoint's `theme`)
+  [ADR-0104](0104-the-output-cache-rules-and-the-render-endpoint.md) (the render endpoint's `theme`); the honeypot's
+  base rule clipped where it stands instead of moved off the page by [ADR-0106](0106-the-default-theme-ships.md) in 6.3b
 - Date: 2026-10-29
 - Roadmap step: 6.3a (decided and built); 6.3b gives `default` its stylesheet and tokens, 6.3c `bootstrap5` its
   stylesheet and `unstyled` its review, 6.6 the headless element's base rules, 6.7 the form picker's placement, 12.2

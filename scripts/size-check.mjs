@@ -1,24 +1,28 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 /**
- * The client's size budgets (ROADMAP 3.2 and section 4.12). It reads the chunk reports that the client build writes
+ * The client's size budgets (ROADMAP 3.2 and section 4.12), and the lint of the shipped stylesheets (ROADMAP 6.3b,
+ * ADR-0106). It reads the chunk reports that the client build writes
  * (src/Jiron.Umbraco.FormBuilder.Web/Client/.build/<package>.chunks.json) and measures each file as it is served:
  * gzip at level 9, licence banner included, one file at a time.
  *
  *   - the runtime's core, its entry and every chunk the entry imports statically: at most 16 KB;
  *   - the runtime with every feature, all its files: at most 40 KB;
- *   - each stylesheet the themes package builds, the base rules and each theme's: at most 10 KB (ADR-0105);
+ *   - each stylesheet the themes package builds, the base rules and each theme's: at most 10 KB (ADR-0105), and
+ *     linted as it is served (scripts/lib/stylesheets.mjs): the base rules under .jfb-form, a theme's under
+ *     .jfb-form:where(.jfb-theme-<alias>), so it styles only its own forms, and nothing physical anywhere;
  *   - the element and the backoffice bundle: reported, without a budget (section 4.12 sets none for the element,
  *     and 9.6 sets the backoffice's).
  *
  *   node scripts/size-check.mjs     run after the client build (npm run build in the Client folder)
  *
- * Exit codes: 0 within budget, 1 over a budget or a report or file missing.
+ * Exit codes: 0 within budget and lint, 1 over a budget, a stylesheet the lint refuses, or a report or file missing.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { lintStylesheet, themeScope } from './lib/stylesheets.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 export const WEB_PROJECT = join(root, 'src', 'Jiron.Umbraco.FormBuilder.Web');
@@ -65,7 +69,13 @@ export function measure(report, files, webProject = WEB_PROJECT) {
 const kb = (bytes) => `${(bytes / KB).toFixed(2)} KB`;
 const files = (count) => `${count} file${count === 1 ? '' : 's'}`;
 
-/** One result per budget or report: `{ line, ok }`. */
+/** The scope of a stylesheet the themes package builds: the base rules' is the form, a theme's its own forms. */
+export function scopeOf(file) {
+  const name = file.replace(/[.]css$/, '');
+  return name === 'base' ? '.jfb-form' : themeScope(name);
+}
+
+/** One result per budget, stylesheet lint or report: `{ line, ok }`. */
 export function check({ reports = REPORTS, webProject = WEB_PROJECT } = {}) {
   const results = [];
   const budget = (label, bytes, max) => {
@@ -88,6 +98,10 @@ export function check({ reports = REPORTS, webProject = WEB_PROJECT } = {}) {
   else {
     for (const file of themes.files.filter((f) => f.file.endsWith('.css'))) {
       budget(`stylesheet ${file.file}`, measure(themes, [file.file], webProject), BUDGETS.themeCss);
+      const css = readFileSync(join(webProject, ...themes.folder.split('/'), file.file), 'utf8');
+      const { unscoped, physical } = lintStylesheet(css, scopeOf(file.file));
+      const found = [...unscoped.map((s) => `outside ${scopeOf(file.file)}: ${s}`), ...physical.map((p) => `physical: ${p}`)];
+      results.push({ ok: found.length === 0, line: `stylesheet ${file.file}: ${found.length === 0 ? `every rule under ${scopeOf(file.file)}, nothing physical, ok` : `REFUSED, ${found.join('; ')}`}` });
     }
   }
 

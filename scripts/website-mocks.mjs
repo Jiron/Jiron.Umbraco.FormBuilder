@@ -37,6 +37,7 @@ import { basename, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { launchOptions } from './lib/browser.mjs';
+import { lintStylesheet } from './lib/stylesheets.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const WEBSITE = join(ROOT, 'docs', 'ux', 'website');
@@ -121,86 +122,6 @@ export function contrast(a, b) {
 /** Whether text counts as large for WCAG: at least 24 px, or 18.66 px when bold (700 and up). */
 export function isLargeText(px, weight) {
   return px >= 24 || (px >= 18.66 && weight >= 700);
-}
-
-/** Splits a CSS value on whitespace outside parentheses. */
-function words(value) {
-  const out = [];
-  let depth = 0;
-  let cur = '';
-  for (const ch of value.trim()) {
-    if (ch === '(') depth++;
-    if (ch === ')') depth--;
-    if (/\s/.test(ch) && depth === 0) {
-      if (cur) out.push(cur);
-      cur = '';
-    } else cur += ch;
-  }
-  if (cur) out.push(cur);
-  return out;
-}
-
-/**
- * Lints a theme stylesheet (ADR-0015): every selector must start with .jfb-form, and nothing may be physical:
- * no left or right in a property name or as a float, clear or text-align value, no four-value shorthand whose
- * sides differ, and no border-radius shorthand with different corners. Returns { unscoped, physical }.
- */
-export function lintStylesheet(css) {
-  const text = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  const unscoped = [];
-  const physical = [];
-  const stack = ['top'];
-  let prelude = '';
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const ctx = stack[stack.length - 1];
-    if (ctx === 'rule') {
-      if (ch === '{') stack.push('rule');
-      else if (ch === '}') stack.pop();
-      continue;
-    }
-    if (ch === '{') {
-      const head = prelude.trim();
-      prelude = '';
-      if (head.startsWith('@')) {
-        stack.push(/^@(media|container|supports|layer)\b/.test(head) ? 'at' : 'rule');
-      } else {
-        let depth = 0;
-        let cur = '';
-        const parts = [];
-        for (const c of head) {
-          if (c === '(') depth++;
-          if (c === ')') depth--;
-          if (c === ',' && depth === 0) {
-            parts.push(cur);
-            cur = '';
-          } else cur += c;
-        }
-        parts.push(cur);
-        for (const p of parts.map((x) => x.trim().replace(/\s+/g, ' '))) if (!/^\.jfb-form(?![\w-])/.test(p)) unscoped.push(p);
-        stack.push('rule');
-      }
-    } else if (ch === '}') {
-      stack.pop();
-      prelude = '';
-    } else if (ch === ';' && ctx !== 'rule') {
-      prelude = '';
-    } else prelude += ch;
-  }
-  const SHORTHANDS = new Set(['margin', 'padding', 'inset', 'border-width', 'border-style', 'border-color', 'scroll-margin', 'scroll-padding']);
-  for (const m of text.matchAll(/(?:^|[;{\s])([a-z-]+)\s*:\s*([^;{}]+)/g)) {
-    const [prop, rawValue] = [m[1], m[2].trim()];
-    if (prop.startsWith('--')) continue;
-    const value = rawValue.replace(/\s*!important$/, '');
-    const where = `${prop}: ${value}`;
-    if (/(^|-)(left|right)(-|$)/.test(prop)) physical.push(where);
-    else if (['float', 'clear', 'text-align'].includes(prop) && /^(left|right)$/.test(value)) physical.push(where);
-    else if (SHORTHANDS.has(prop)) {
-      const v = words(value);
-      if (v.length === 4 && v[1] !== v[3]) physical.push(where);
-    } else if (prop === 'border-radius' && new Set(words(value.split('/')[0])).size > 1) physical.push(where);
-  }
-  return { unscoped: [...new Set(unscoped)], physical: [...new Set(physical)] };
 }
 
 /** The gzip size of a stylesheet once its comments and spare whitespace are gone, as a minifier would leave it. */

@@ -15,7 +15,7 @@ export default defineConfig({
     cssMinify: 'lightningcss',
     cssTarget: ['chrome123', 'edge123', 'firefox129', 'safari17.5'],
     rolldownOptions: {
-      input: { base: 'src/base.css' },
+      input: { base: 'src/base.css', default: 'src/default.css' },
       output: { assetFileNames: '[name][extname]' },
     },
   },

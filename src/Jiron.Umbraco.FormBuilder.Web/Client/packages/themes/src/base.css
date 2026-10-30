@@ -30,13 +30,19 @@
   clip-path: inset(50%) !important;
 }
 
-/* The honeypot: out of view and, through aria-hidden in the markup, out of the accessibility tree (ADR-0012). */
+/*
+ * The honeypot: out of view and, through aria-hidden in the markup, out of the accessibility tree (ADR-0012). It is
+ * clipped to nothing where it stands rather than moved off the page, since a move to the start side lands on the
+ * scrolling side when a form's direction differs from its page's, and widens the page.
+ */
 .jfb-form .jfb-hp {
   position: absolute !important;
-  inset-inline-start: -10000px !important;
   inline-size: 1px !important;
   block-size: 1px !important;
+  margin: -1px !important;
   overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
 }
 
 /*
@@ -47,11 +53,18 @@
   scroll-margin-block-start: var(--jfb-scroll-margin, 6rem);
 }
 
-/* A phone's width: a fieldset shrinks below its widest control, and no control is wider than its field. */
+/*
+ * A phone's width: a fieldset shrinks below its widest control, and no control or picture is wider than its field; a
+ * picture keeps its shape as it shrinks.
+ */
 .jfb-form fieldset {
   min-inline-size: 0;
 }
 
-.jfb-form :is(input, select, textarea) {
+.jfb-form :is(input, select, textarea, img) {
   max-inline-size: 100%;
+}
+
+.jfb-form img {
+  block-size: auto;
 }
