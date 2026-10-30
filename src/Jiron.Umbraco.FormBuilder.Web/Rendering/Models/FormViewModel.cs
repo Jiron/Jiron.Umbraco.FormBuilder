@@ -159,6 +159,9 @@ public sealed class FormViewPaths
 
     /// <summary><c>Notice.cshtml</c>.</summary>
     public required string Notice { get; init; }
+
+    /// <summary><c>Summary.cshtml</c>, the answers the summary page shows (ADR-0122).</summary>
+    public required string Summary { get; init; }
 }
 
 /// <summary>The honeypot of a form (ADR-0012): a text input no visitor sees, with its label.</summary>

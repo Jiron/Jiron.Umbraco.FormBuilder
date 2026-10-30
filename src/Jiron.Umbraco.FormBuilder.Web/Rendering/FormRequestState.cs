@@ -144,6 +144,12 @@ internal sealed record FormPostState
     public FormPostMove Move { get; init; }
 
     /// <summary>
+    /// The first page that holds an error the post left, which shows, unless the posted page is the summary page, which
+    /// shows the errors of the pages before it in its rows (ADR-0122); null when the post left no error at a field.
+    /// </summary>
+    public Guid? ErrorPage { get; init; }
+
+    /// <summary>
     /// Each ranking's order by the field's key, as the page showed it or as a move left it (ADR-0100), which places the
     /// options a ranking of the top few leaves unranked.
     /// </summary>

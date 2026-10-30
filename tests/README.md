@@ -990,7 +990,17 @@ output cache on and the Testing project's strict policy (ADR-0121), shows that a
 bring is refused and counted, runs the room hire form (the calculation language) from a page the cache serves and the
 workshop booking (the merge tags) as a signed-in member, both with `script-src 'self'`, and both again from a page
 with a nonce, with and without `'strict-dynamic'`, every chunk loaded, the error summary shown, no violation and axe
-clean, and sends the contact form with no cookie set by any response. The size check holds every file of the runtime's build but its entry to a
+clean, and sends the contact form with no cookie set by any response; and `e2e/specs/website/journeys.spec.ts`
+(6.5a, [ADR-0122](../docs/decisions/0122-the-summary-page.md)) takes, without and with JavaScript, the job
+application through its three pages (Next refused while a page needs answers, Back keeping every answer, the steps
+naming where the visitor is) and the specimen to its summary page (the first page's answers, "Not answered", a
+calculation without "Change", a "Change" that opens the page at its field without a check, the changed answer listed
+on the way back, the send from there), the job application's three pages again right to left, and the summary at
+375 px with each answer under its question; axe is clean on every page of them. `Rendering/FormPostTests.Summary.cs`
+holds the summary page without JavaScript to its rules on the server: the pages and fields the rules show, an
+untitled page numbered, a sensitive answer masked, options by their labels, a repeatable group's rows, a file's
+name, line breaks, the default Send first, a name of no field, and a send whose earlier pages' errors show in their
+rows, linked to their "Change". The size check holds every file of the runtime's build but its entry to a
 content-hashed name, and `Client/scripts/scripts.test.mjs` shows the hash following a chunk's content.
 
 ## Writing tests

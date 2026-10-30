@@ -11,6 +11,7 @@ internal sealed record RenderingWords
 {
     // The letters outside ASCII the German words need.
     private const char AUmlaut = (char)0xE4;
+    private const char CapitalAUmlaut = (char)0xC4;
     private const char OUmlaut = (char)0xF6;
     private const char UUmlaut = (char)0xFC;
     private const char SharpS = (char)0xDF;
@@ -81,6 +82,9 @@ internal sealed record RenderingWords
             Kilobytes = "{0} KB",
             Megabytes = "{0} MB",
             Honeypot = "Leave this field empty",
+            Change = "Change",
+            NotAnswered = "Not answered",
+            HiddenAnswer = "Hidden for your privacy",
         },
         ["de"] = new RenderingWords
         {
@@ -146,6 +150,9 @@ internal sealed record RenderingWords
             Kilobytes = "{0} KB",
             Megabytes = "{0} MB",
             Honeypot = "Lassen Sie dieses Feld leer",
+            Change = CapitalAUmlaut + "ndern",
+            NotAnswered = "Nicht beantwortet",
+            HiddenAnswer = "Zum Schutz Ihrer Daten ausgeblendet",
         },
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
@@ -337,6 +344,15 @@ internal sealed record RenderingWords
 
     /// <summary>The honeypot's label, for a screen reader that reaches it all the same (ADR-0012).</summary>
     public required string Honeypot { get; init; }
+
+    /// <summary>The button of an answer on the summary page that opens its page (ADR-0122).</summary>
+    public required string Change { get; init; }
+
+    /// <summary>What an unanswered question reads on the summary page.</summary>
+    public required string NotAnswered { get; init; }
+
+    /// <summary>What a screen reader hears for a sensitive answer that the summary page masks.</summary>
+    public required string HiddenAnswer { get; init; }
 
     /// <summary>The words of a culture, of its more general culture, or English.</summary>
     /// <param name="culture">The culture, such as <c>de-CH</c>.</param>

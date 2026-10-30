@@ -24,7 +24,7 @@ public sealed class FormViewsTests
 
     private const string Themed = "~/Views/JironFormBuilder/bootstrap5/";
 
-    private static readonly string[] Parts = ["Form", "Page", "Group", "Field", "Navigation", "Progress", "ErrorSummary", "Outcome", "Notice"];
+    private static readonly string[] Parts = ["Form", "Page", "Group", "Field", "Navigation", "Progress", "ErrorSummary", "Outcome", "Notice", "Summary"];
 
     [Test]
     public void TheCandidates_AreTheFormsOverride_ThenTheDefaultView() =>
@@ -82,10 +82,10 @@ public sealed class FormViewsTests
         {
             Assert.That(form, Is.EqualTo(Folder + "_forms/contact/Form.cshtml"));
             Assert.That(parts.Field, Is.EqualTo(Folder + "_forms/contact/Field.cshtml"));
-            Assert.That(new[] { parts.Page, parts.Group, parts.Navigation, parts.Progress, parts.ErrorSummary, parts.Outcome, parts.Notice }, Is.EqualTo(new[]
+            Assert.That(new[] { parts.Page, parts.Group, parts.Navigation, parts.Progress, parts.ErrorSummary, parts.Outcome, parts.Notice, parts.Summary }, Is.EqualTo(new[]
             {
                 Folder + "Page.cshtml", Folder + "Group.cshtml", Folder + "Navigation.cshtml", Folder + "Progress.cshtml",
-                Folder + "ErrorSummary.cshtml", Folder + "Outcome.cshtml", Folder + "Notice.cshtml",
+                Folder + "ErrorSummary.cshtml", Folder + "Outcome.cshtml", Folder + "Notice.cshtml", Folder + "Summary.cshtml",
             }));
             Assert.That(otherForm, Is.EqualTo(Folder + "Form.cshtml"), "another form's override is not this form's");
             Assert.That(otherParts.Field, Is.EqualTo(Folder + "Field.cshtml"));

@@ -3,7 +3,9 @@
   "key": "d0000000-0000-4000-8000-000000000007",
   "settings": {
     "submission": {
-      "submitLabel": { "": "Send the sample", "de": "Muster senden" }
+      "submitLabel": { "": "Send the sample", "de": "Muster senden" },
+      "summaryPage": true,
+      "progress": "bar"
     }
   },
   "pages": [
@@ -400,7 +402,7 @@
     },
     {
       "key": "d0000000-0000-4000-8000-000000000078",
-      "title": { "": "One more thing", "de": "Noch etwas" },
+      "title": { "": "Check your answers", "de": "Prüfen Sie Ihre Antworten" },
       "groups": [
         {
           "key": "d0000000-0000-4000-8000-000000000079",

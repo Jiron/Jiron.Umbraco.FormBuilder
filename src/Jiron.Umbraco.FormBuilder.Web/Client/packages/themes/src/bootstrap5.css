@@ -736,6 +736,69 @@
     margin-block-start: 1rem;
   }
 
+  /* -------------------------------------------------------------------------------------------------------------
+   * The summary page (ADR-0122): a section per page, a row per answer above Bootstrap's border, the answer's Change
+   * at the row's end; on a narrow form the answer drops under its question, as in the default theme.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-summary {
+    display: grid;
+    gap: 1.5rem;
+    margin-block-end: 1.5rem;
+  }
+
+  & .jfb-summary h3 {
+    margin-block-end: 0.5rem;
+    font-size: 1.25rem;
+  }
+
+  & .jfb-summary dl {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto;
+    column-gap: 1rem;
+    margin: 0;
+  }
+
+  & .jfb-summary dl > div {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: baseline;
+    padding-block: 0.5rem;
+    border-block-end: var(--bs-border-width) solid var(--bs-border-color);
+  }
+
+  & .jfb-summary :is(dt, dd) {
+    margin: 0;
+  }
+
+  & .jfb-summary dd {
+    overflow-wrap: anywhere;
+  }
+
+  & .jfb-summary dd[data-jfb-empty] {
+    color: var(--bs-secondary-color);
+  }
+
+  & .jfb-summary dd > ol {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @container jfb-form (max-width: 479px) {
+    & .jfb-summary dl {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    & .jfb-summary dt + dd {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+
   /* Motion that only colours or rings, and none at all when the visitor asks for less, as Bootstrap's own. */
 
   @media (prefers-reduced-motion: reduce) {

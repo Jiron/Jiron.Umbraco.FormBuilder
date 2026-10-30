@@ -82,6 +82,12 @@ should adopt:
 - **The typed signature:** the field's legend is the only visible label; the name input's own label is visually
   hidden, and the help says that typing counts as signing. The input takes up to 100 characters; without JavaScript
   the server draws the name as the signature (ADR-0103).
+- **The summary page** (ADR-0122): with the setting on, the last page the rules show lists the answers of the pages
+  before it in `jfb-summary`, after its title and text: a `section` per page with an `h3`, then a `dl` of rows (`dt` the
+  label, `dd` the answer, `dd` the Change button, `jfb-button-link` with `goto:<alias>`, whose `formaction` opens the
+  field's page at the field). An unanswered question reads "Not answered" (`data-jfb-empty`), a sensitive answer
+  shows three bullets (`data-jfb-masked`), and a repeatable group's rows are an `ol`. After a send from the summary
+  page, an earlier page's error shows in its row, and the error summary links to the row's Change.
 - **The outcome:** `jfb-outcome` takes the focus. The entry's reference is rendered by the view on its own line
   (`jfb-reference`, the value in `strong`), so an editor's message need not repeat it; the copy of the answers reuses
   `jfb-summary` without Change.

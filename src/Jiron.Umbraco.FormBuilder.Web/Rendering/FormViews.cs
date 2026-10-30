@@ -60,6 +60,7 @@ internal sealed partial class FormViews(ICompositeViewEngine engine, IWebHostEnv
             ErrorSummary = await FindAsync(folder, alias, "ErrorSummary", cancellationToken),
             Outcome = await FindAsync(folder, alias, "Outcome", cancellationToken),
             Notice = await FindAsync(folder, alias, "Notice", cancellationToken),
+            Summary = await FindAsync(folder, alias, "Summary", cancellationToken),
         });
     }
 

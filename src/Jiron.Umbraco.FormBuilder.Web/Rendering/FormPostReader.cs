@@ -239,6 +239,10 @@ internal sealed class FormPostReader
     /// <param name="alias">The group's alias, as a row's button names it.</param>
     public FormField? GroupOf(string alias) => _top.TryGetValue(alias, out var group) && IsGroup(group) ? group : null;
 
+    /// <summary>The field of a group that a name names, a repeatable group among them, by its alias now or one it had; null for any other name.</summary>
+    /// <param name="alias">The field's alias, as an answer's "Change" on the summary page names it (ADR-0122).</param>
+    public FormField? TopOf(string alias) => _top.GetValueOrDefault(alias);
+
     /// <summary>
     /// The field a control's name names (<c>alias</c> or <c>group[row].child</c>), with its repeatable group and row;
     /// null for a name of no field, of a part, or of a row past those the page showed.

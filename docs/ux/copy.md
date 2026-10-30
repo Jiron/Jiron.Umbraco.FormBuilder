@@ -388,6 +388,9 @@ it is the example form's own wording, and the default follows the same pattern w
 | a file already taken, without JavaScript (a ticked box above the file input; untick it to drop the file) | Keep cv.pdf (39.1 KB) | cv.pdf (39,1 KB) behalten |
 | a redirect after the message, without JavaScript (no countdown) | the message, then [Continue] | die Nachricht, dann [Weiter] |
 | a choice filled up meanwhile (an ordinary error) | Bike repair basics is now full. Choose another workshop | Bike repair basics ist jetzt ausgebucht. Wählen Sie einen anderen Workshop |
+| an answer's button on the summary page (the label follows it for screen readers) | Change | Ändern |
+| an unanswered question on the summary page | Not answered | Nicht beantwortet |
+| a sensitive answer on the summary page, for screen readers (three bullets show) | Hidden for your privacy | Zum Schutz Ihrer Daten ausgeblendet |
 | the outcome, while the address is unconfirmed | **Check your inbox, Mira** We have sent you a link. Open it within 7 days to confirm your email address; then your place is booked. | **Sehen Sie in Ihrem Postfach nach, Mira** Wir haben Ihnen einen Link geschickt. Öffnen Sie ihn innerhalb von 7 Tagen, um Ihre E-Mail-Adresse zu bestätigen; dann ist Ihr Platz gebucht. |
 | a redirect after the message (said once, not every second) | Taking you to the workshop programme in 8 seconds. [Go now] [Stay here] | In 8 Sekunden geht es weiter zum Workshop-Programm. [Jetzt weiter] [Hier bleiben] |
 | the verification page | **Confirm your email address** Confirm it to finish your booking for "Book a Saturday workshop". [Confirm my address] | **Bestätigen Sie Ihre E-Mail-Adresse** Bestätigen Sie sie, um Ihre Buchung für „Book a Saturday workshop“ abzuschließen. [Meine Adresse bestätigen] |

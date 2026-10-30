@@ -272,6 +272,46 @@ internal sealed partial class MergeTagAnswerTexts(
     }
 
     /// <summary>
+    /// A field's answer as the summary page lists it (ADR-0122), as <c>entry.answers</c> lists it in the outcome: the
+    /// texts of its values apart by ", ", or for a repeatable group one text for each answered row, its children's
+    /// <c>Label: answer</c> apart by "; "; none where it is unanswered or the rules hid it. A sensitive field is masked,
+    /// with no texts.
+    /// </summary>
+    /// <param name="field">A field of a group, which may be a repeatable group.</param>
+    /// <param name="scope">The answers, with the fields the rules hid.</param>
+    /// <param name="texts">The dictionary's texts and the options' labels the scope's fields show.</param>
+    public (bool IsMasked, IReadOnlyList<string> Texts) Summary(FormField field, MergeTagScope scope, ScopeTexts texts)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(texts);
+        var showing = Listing(new AnswerField(field, null), scope, MergeTagPlace.Outcome);
+        if (showing == Showing.Nothing)
+        {
+            return (false, []);
+        }
+
+        if (IsRepeater(field))
+        {
+            var rows = RowTexts(field, scope, MergeTagPlace.Outcome, listing: true, texts);
+            return showing == Showing.Masked && rows.Count > 0 ? (true, []) : (false, rows);
+        }
+
+        if (scope.Answers.Find(field.Key) is not { } answer)
+        {
+            return (false, []);
+        }
+
+        if (showing == Showing.Masked)
+        {
+            return (true, []);
+        }
+
+        var joined = Joined(Texts(field, answer, scope.Culture, listing: true, texts));
+        return (false, joined.Length > 0 ? [joined] : []);
+    }
+
+    /// <summary>
     /// The texts a field's answer shows as, in a culture, as its type writes them, with the dictionary's texts for the
     /// field's texts that name an item and the labels its list or source resolved; the values as they are for a type the
     /// site no longer has, and the default display for a type whose own throws. Where the browser renders the same texts

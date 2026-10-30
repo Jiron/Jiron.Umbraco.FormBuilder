@@ -1958,10 +1958,17 @@
     font-size: var(--_large);
   }
 
-  & .jfb-summary dl > div {
+  /* The rows share the list's columns, so an answer starts on one line whether or not its row has a Change. */
+  & .jfb-summary dl {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto;
-    gap: 0 var(--_s4);
+    column-gap: var(--_s4);
+  }
+
+  & .jfb-summary dl > div {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
     align-items: baseline;
     padding-block: var(--_s2);
     border-block-end: 1px solid var(--_rule);
@@ -1979,12 +1986,20 @@
     color: var(--_muted);
   }
 
+  /* A repeatable group's rows, one under another (ADR-0122). */
+  & .jfb-summary dd > ol {
+    display: grid;
+    gap: var(--_s1);
+    padding: 0;
+    list-style: none;
+  }
+
   & .jfb-summary dd > .jfb-error {
     margin-block-start: var(--_s1);
   }
 
   @container jfb-form (max-width: 479px) {
-    & .jfb-summary dl > div {
+    & .jfb-summary dl {
       grid-template-columns: minmax(0, 1fr) auto;
     }
 

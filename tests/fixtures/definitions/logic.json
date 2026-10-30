@@ -2930,8 +2930,8 @@
       "key": "d0000000-0000-4000-8000-000000000007",
       "settings": {
         "submitLabel": "Send the sample",
-        "summaryPage": false,
-        "progress": "steps",
+        "summaryPage": true,
+        "progress": "bar",
         "resume": false,
         "membersOnly": false,
         "protection": "inherit",
@@ -3909,7 +3909,7 @@
         },
         {
           "key": "d0000000-0000-4000-8000-000000000078",
-          "title": "One more thing",
+          "title": "Check your answers",
           "rules": [],
           "groups": [
             {

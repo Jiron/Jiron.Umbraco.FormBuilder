@@ -1,0 +1,64 @@
+@* jfb-view: Summary 1 *@
+@model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.SummaryViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@* The answers to check before sending (ADR-0122): a section per page, a row per answer, each with its Change, which opens its page at the field. A row's error shows after a send from this page. *@
+@{
+    void Lines(IReadOnlyList<string> lines)
+    {
+        for (var i = 0; i < lines.Count; i++)
+        {
+            if (i > 0)
+            {
+                <br>
+            }
+            @lines[i]
+        }
+    }
+}
+<div class="jfb-summary">
+    @foreach (var part in Model.Sections)
+    {
+        <section aria-labelledby="@part.HeadingId">
+            <h3 id="@part.HeadingId">@part.Title</h3>
+            <dl>
+                @foreach (var answer in part.Answers)
+                {
+                    <div>
+                        <dt>@answer.Label</dt>
+                        <dd @FormBuilderHtml.Flag("data-jfb-masked", answer.IsMasked) @FormBuilderHtml.Flag("data-jfb-empty", answer.IsEmpty)>
+                            @if (answer.IsMasked)
+                            {
+                                <span aria-hidden="true">@answer.Mask</span><span class="jfb-visually-hidden">@answer.HiddenText</span>
+                            }
+                            else if (answer.IsEmpty)
+                            {
+                                @answer.EmptyText
+                            }
+                            else if (answer.IsRows)
+                            {
+                                <ol role="list">
+                                    @foreach (var row in answer.Texts)
+                                    {
+                                        <li>@{ Lines(row); }</li>
+                                    }
+                                </ol>
+                            }
+                            else
+                            {
+                                Lines(answer.Texts[0]);
+                            }
+                            @if (answer.Error is { } error)
+                            {
+                                <p class="@Model.Classes.Error" id="@answer.ErrorId" data-jfb-error>@error</p>
+                            }
+                        </dd>
+                        @if (answer.Change is { } change)
+                        {
+                            <dd><button type="submit" class="@Model.Classes.ButtonLink" id="@change.Id" name="jfb-nav" value="@change.Value" formaction="@change.Action" aria-describedby="@(answer.Error is null ? null : answer.ErrorId)">@change.Text<span class="jfb-visually-hidden"> @change.Label</span></button></dd>
+                        }
+                    </div>
+                }
+            </dl>
+        </section>
+    }
+</div>

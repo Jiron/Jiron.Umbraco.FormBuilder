@@ -49,8 +49,9 @@ internal sealed record FormPostAnswer(FormPostAnswerKind Kind, string? Url = nul
 
 /// <summary>
 /// A form's post without JavaScript (ADR-0004, ADR-0100): read into the request the JSON endpoint reads (ADR-0088), the
-/// step its button asks for run through the pipeline (Back moves without a check, Next checks the page as the validate
-/// endpoint does, Send submits) or a row's Add or Remove or a ranking's move made without one, and the answers, the
+/// step its button asks for run through the pipeline (Back and an answer's "Change" on the summary page move without a
+/// check, Next checks the page as the validate endpoint does, Send submits) or a row's Add or Remove or a ranking's move
+/// made without one, and the answers, the
 /// errors, the page to move from and any notice left for the form's render through the request's items (ADR-0093); a sent
 /// form redirects to its outcome. Every answer is <c>no-store</c>.
 /// </summary>
@@ -123,7 +124,8 @@ internal sealed class FormPostHandler(
         var query = Held(reader.Query.Count > 0 ? reader.Query : Referred(http.Request), listed);
         var noted = await FilesAsync(http, posted.Files, reader, formKey, instance, cancellationToken);
         var nav = posted[FormPostFields.Nav].LastOrDefault();
-        if (nav is FormPostFields.Back or FormPostFields.Next or FormPostFields.Submit or null)
+        var moves = nav is FormPostFields.Back or FormPostFields.Next or FormPostFields.Submit or null || Goto(nav) is not null;
+        if (moves)
         {
             noted.AddRange(await SignaturesAsync(reader, formKey, cancellationToken));
         }
@@ -146,12 +148,15 @@ internal sealed class FormPostHandler(
         switch (nav)
         {
             // A file the post could not take: nothing is sent and no page is left (ADR-0102).
-            case FormPostFields.Back or FormPostFields.Next or FormPostFields.Submit or null when noted.Count > 0:
+            case var _ when moves && noted.Count > 0:
                 var shownCheck = page is { } posting ? await submissions.ValidateAsync(request, posting, cancellationToken) : null;
                 state.Problems([.. noted, .. shownCheck is { Refusal: SubmissionRefusal.ValidationFailed } ? shownCheck.Problems : []]);
                 break;
             case FormPostFields.Back:
                 state.Move = FormPostMove.Back;
+                break;
+            case var _ when Goto(nav) is { } alias:
+                state.Open(reader.TopOf(alias));
                 break;
             case FormPostFields.Next when page is { } shown:
                 var check = await submissions.ValidateAsync(request, shown, cancellationToken);
@@ -347,6 +352,10 @@ internal sealed class FormPostHandler(
             ? (Math.Min(settings.MinRows, RepeaterFieldType.MostRows), Math.Min(settings.MaxRows, RepeaterFieldType.MostRows))
             : (0, RepeaterFieldType.MostRows);
 
+    // The alias an answer's "Change" names, goto:<alias> (ADR-0122); null for any other button.
+    private static string? Goto(string? nav) =>
+        nav?.Split(FormPostFields.Separator) is [FormPostFields.Goto, { Length: > 0 } alias] ? alias : null;
+
     // A whole number from a button, or null.
     private static int? Number(string text) => int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : null;
 
@@ -455,6 +464,7 @@ internal sealed class FormPostHandler(
         private readonly Dictionary<Guid, Dictionary<int, Dictionary<Guid, FormPostError>>> _rowErrors = [];
         private bool _isEmpty;
         private Guid? _page = page;
+        private Guid? _errorPage;
 
         public FormPostReader Reader { get; } = reader;
 
@@ -463,7 +473,7 @@ internal sealed class FormPostHandler(
         public FormPostNotice? Notice { get; set; }
 
         // The pipeline's problems at their fields (ADR-0099): a field's first, by its path; the page then shows the first
-        // page that holds one.
+        // page that holds one, or on the summary page that page itself (ADR-0122).
         public void Problems(IEnumerable<SubmissionProblem> problems)
         {
             var paths = new ProblemPaths(definition);
@@ -505,9 +515,21 @@ internal sealed class FormPostHandler(
 
             if (first is { } field && paths.PageOf(field) is { } holding)
             {
-                _page = holding;
+                _errorPage = holding;
                 Move = FormPostMove.Stay;
             }
+        }
+
+        // An answer's "Change" on the summary page (ADR-0122): the page that holds the field, without a check; a name of
+        // no field shows the posted page again.
+        public void Open(FormField? field)
+        {
+            if (field is not null && new ProblemPaths(definition).PageOf(field.Key) is { } holding)
+            {
+                _page = holding;
+            }
+
+            Move = FormPostMove.Stay;
         }
 
         public FormPostState State(KeptFiles kept)
@@ -523,6 +545,7 @@ internal sealed class FormPostHandler(
                 Orders = orders.Fields,
                 Files = kept.Fields,
                 Page = _page,
+                ErrorPage = _errorPage,
                 Move = Move,
                 Query = query,
                 Notice = Notice,

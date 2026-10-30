@@ -65,6 +65,7 @@ internal sealed record FormRender(
 /// </summary>
 /// <param name="types">The field types.</param>
 /// <param name="mergeTags">The merge-tag service, which renders the visitor texts that hold tags.</param>
+/// <param name="answerTexts">The answers' texts as merge tags show them, which the summary page lists (ADR-0122).</param>
 /// <param name="cascading">The options of a field for its parents' answers, as the options endpoint resolves them.</param>
 /// <param name="views">Which view writes each part.</param>
 /// <param name="paths">The public API's paths.</param>
@@ -77,6 +78,7 @@ internal sealed record FormRender(
 internal sealed partial class FormModels(
     FieldTypeRegistry types,
     IFormBuilderMergeTagService mergeTags,
+    MergeTagAnswerTexts answerTexts,
     CascadingOptions cascading,
     FormViews views,
     FormBuilderPublicApiPaths paths,
@@ -188,9 +190,16 @@ internal sealed partial class FormModels(
     };
 
     // The page a post moves to (ADR-0100): from the posted page, the next one or the last one before it that the rules
-    // show, else the posted page again; a page the rules hide, or a first render, shows the first page they show.
-    private static PublicPage? CurrentOf(IReadOnlyList<PublicPage> pages, List<PublicPage> shownPages, FormPostState? post)
+    // show, else the posted page again; a page the rules hide, or a first render, shows the first page they show. A post
+    // that left errors shows the first page that holds one, unless it came from the summary page (ADR-0122).
+    private static PublicPage? CurrentOf(IReadOnlyList<PublicPage> pages, List<PublicPage> shownPages, FormPostState? post, PublicFormSettings settings)
     {
+        if (post?.ErrorPage is { } erring)
+        {
+            var from = shownPages.FirstOrDefault(page => page.Key == post.Page);
+            return SummaryPageOf(settings, shownPages, from) ?? shownPages.FirstOrDefault(page => page.Key == erring) ?? from ?? shownPages.FirstOrDefault();
+        }
+
         var at = post?.Page is { } posted ? pages.ToList().FindIndex(page => page.Key == posted) : -1;
         var moved = at < 0 ? null : post!.Move switch
         {
@@ -242,11 +251,15 @@ internal sealed partial class FormModels(
         var hidden = state.Hidden.ToHashSet(StringComparer.Ordinal);
         var required = state.Required.ToHashSet(StringComparer.Ordinal);
         var shownPages = shown.Pages.Where(page => !hidden.Contains(Id(page.Key))).ToList();
-        var current = CurrentOf(shown.Pages, shownPages, post);
+        var current = CurrentOf(shown.Pages, shownPages, post, settings);
+        var summaryPage = SummaryPageOf(settings, shownPages, current);
         var recalled = await RecalledAsync(render, read, hidden, state, cancellationToken);
         var facts = new PageFacts(DateOnly.FromDayNumber(CalendarValues.Today(now, render.Shown.TimeZone.Id)), state.Calculations, state.Rows, cultures.For(render.Culture));
         var build = new Build(render, root, post, words, culture, answers, hidden, required, MarkerOf(settings.RequiredMarker), recalled, settings.ChoiceLayout, facts, HasRules(shown));
         var pages = new List<PageViewModel>();
+
+        // Where each field's error links are in the build's errors, for the summary page's rows (ADR-0122).
+        var linked = new Dictionary<Guid, (int From, int To)>();
         foreach (var page in shown.Pages)
         {
             var pageHidden = hidden.Contains(Id(page.Key));
@@ -257,10 +270,13 @@ internal sealed partial class FormModels(
                 var fields = new List<FieldViewModel>();
                 foreach (var field in group.Fields)
                 {
+                    var from = build.Errors.Count;
                     if (await FieldAsync(build, field, cancellationToken) is { } built)
                     {
                         fields.Add(built);
                     }
+
+                    linked[field.Key] = (from, build.Errors.Count);
                 }
 
                 groups.Add(new GroupViewModel
@@ -287,6 +303,7 @@ internal sealed partial class FormModels(
                 Recalling = build.Recalling(page.Key),
                 IsCurrent = page == current,
                 IsHidden = pageHidden,
+                Summary = page == summaryPage ? await SummaryAsync(build, pages, shownPages, read, state, linked, cancellationToken) : null,
                 Groups = groups,
                 Views = root.Views,
             });
@@ -297,7 +314,7 @@ internal sealed partial class FormModels(
         var honeypot = FormHoneypot.NameOf(root.Key, root.Revision);
         return root.Model(
             pages: pages,
-            defaultButton: pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Control is RankingControlModel or RepeaterControlModel)
+            defaultButton: summaryPage is not null || pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Any(field => field.Control is RankingControlModel or RepeaterControlModel)
                 ? navigation.Next ?? navigation.Submit
                 : null,
             progress: Progress(settings, shownPages, current, build),

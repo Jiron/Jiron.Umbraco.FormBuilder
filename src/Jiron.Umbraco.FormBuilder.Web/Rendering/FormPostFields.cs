@@ -66,6 +66,12 @@ internal static class FormPostFields
     /// <summary>A ranking's move down, as <see cref="Up"/>.</summary>
     public const string Down = "down";
 
+    /// <summary>
+    /// An answer's "Change" on the summary page, before the field's alias: <c>goto:&lt;alias&gt;</c>, which opens the page
+    /// that holds the field (ADR-0122).
+    /// </summary>
+    public const string Goto = "goto";
+
     /// <summary>What separates a button's parts.</summary>
     public const char Separator = ':';
 }

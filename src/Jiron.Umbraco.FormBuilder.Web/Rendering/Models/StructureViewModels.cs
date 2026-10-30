@@ -31,6 +31,12 @@ public sealed class PageViewModel
     /// <summary>Whether a rule hides the page (<c>hidden</c> and <c>data-jfb-hidden</c>).</summary>
     public required bool IsHidden { get; init; }
 
+    /// <summary>
+    /// The answers of the pages before this one, which it shows after its text and before its groups when it is the
+    /// summary page: the last page the rules show, with the summary page on (ADR-0122); null otherwise.
+    /// </summary>
+    public SummaryViewModel? Summary { get; init; }
+
     /// <summary>The page's groups.</summary>
     public required IReadOnlyList<GroupViewModel> Groups { get; init; }
 

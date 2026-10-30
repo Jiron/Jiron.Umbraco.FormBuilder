@@ -11,6 +11,10 @@
     {
         <div class="jfb-intro" @FormBuilderHtml.Text(Model, "description") hidden="@(Model.Description is null)">@Model.Description</div>
     }
+    @if (Model.Summary is { } summary)
+    {
+        @await Html.PartialAsync(Model.Views.Summary, summary)
+    }
     @foreach (var group in Model.Groups)
     {
         @await Html.PartialAsync(Model.Views.Group, group)
