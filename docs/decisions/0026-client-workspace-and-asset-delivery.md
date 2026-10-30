@@ -2,6 +2,8 @@
 
 - Status: accepted; the embedded assets are served as ADR-0092 decides (6.2a)
 - Date: 2026-10-23
+- Amended in 6.4g by [ADR-0116](0116-the-runtimes-budget-counts-one-language.md): the runtime with every feature counts
+  the largest language's words, as a page loads its culture's alone, and the chunk report names each chunk's modules
 - Roadmap step: 3.2 (decided and built); 6.2 serves the embedded assets, 6.3 adds the themes, 9.6 sets the
   backoffice budget, 18.1 and 18.2 pack and install
 

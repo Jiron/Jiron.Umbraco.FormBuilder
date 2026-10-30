@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, test } from 'node:test';
-import { BUDGETS, check, gzipSize, measure, scopeOf, staticClosure } from '../size-check.mjs';
+import { BUDGETS, check, gzipSize, isWords, measure, scopeOf, staticClosure } from '../size-check.mjs';
 
 const folders = [];
 after(() => {
@@ -31,7 +31,13 @@ function project(reports) {
 }
 
 const small = (name) => Buffer.from(`export const ${name} = 1;`);
-const chunk = (file, imports = [], dynamicImports = [], entry = false) => ({ file, entry, imports, dynamicImports });
+const chunk = (file, imports = [], dynamicImports = [], entry = false, modules = []) => ({
+  file,
+  entry,
+  imports,
+  dynamicImports,
+  modules,
+});
 
 describe('the budgets', () => {
   test('are those of ROADMAP section 4.12', () => {
@@ -88,6 +94,42 @@ describe('the check', () => {
     assert.ok(results.some((r) => /^stylesheet base[.]css: .* gzip of 10[.]00 KB, ok$/.test(r.line)));
     assert.ok(results.some((r) => /^element [(]1 file[)]: .* gzip, no budget/.test(r.line)));
     assert.ok(results.some((r) => /^backoffice bundle [(]1 file[)]: .* gzip, no budget yet [(]9[.]6/.test(r.line)));
+  });
+
+  test("counts one language's words, the largest, in every feature, and reports the sum with every language", () => {
+    const lang = (language) => [`Client/packages/logic/src/lang/messages.${language}.ts`];
+    const english = randomBytes(3000);
+    const german = randomBytes(4000);
+    const feature = randomBytes(34 * 1024);
+    const paths = project({
+      ...base(),
+      runtime: {
+        folder: 'WebsiteAssets/runtime',
+        files: [
+          { meta: chunk('jfb-runtime.js', [], ['chunks/form-x.js'], true), bytes: small('r') },
+          { meta: chunk('chunks/form-x.js', [], ['chunks/messages.en-x.js', 'chunks/messages.de-x.js'], false, ['Client/packages/runtime/src/form.ts']), bytes: feature },
+          { meta: chunk('chunks/messages.en-x.js', [], [], false, lang('en')), bytes: english },
+          { meta: chunk('chunks/messages.de-x.js', [], [], false, lang('de')), bytes: german },
+        ],
+      },
+    });
+    const results = check(paths);
+    const every = results.find((r) => r.line.startsWith('runtime with every feature ('));
+    const all = results.find((r) => r.line.startsWith('runtime with every feature and every language'));
+    assert.match(every.line, /[(]2 files, and the largest of 2 languages' words[)]: /);
+    const counted = gzipSize(small('r')) + gzipSize(feature) + Math.max(gzipSize(english), gzipSize(german));
+    assert.match(every.line, new RegExp(`: ${(counted / 1024).toFixed(2)} KB gzip of 40[.]00 KB, ok$`));
+    assert.equal(every.ok, true);
+    const sum = gzipSize(small('r')) + gzipSize(feature) + gzipSize(english) + gzipSize(german);
+    assert.ok(sum > 40 * 1024, 'every language together is over the budget, which no page loads');
+    assert.equal(all.ok, true);
+    assert.match(all.line, /[(]4 files[)]: .* gzip, more than a page loads$/);
+  });
+
+  test('takes a file for words only when every module it holds is a language\'s', () => {
+    assert.equal(isWords(chunk('chunks/messages.en-x.js', [], [], false, ['Client/packages/logic/src/lang/messages.en.ts'])), true);
+    assert.equal(isWords(chunk('chunks/form-x.js', [], [], false, ['Client/packages/logic/src/lang/messages.en.ts', 'Client/packages/runtime/src/form.ts'])), false);
+    assert.equal(isWords(chunk('chunks/messages.en-x.js')), false, 'a report without modules counts the file as a feature');
   });
 
   test('fails when the core is over its budget, although a feature chunk is not counted in it', () => {

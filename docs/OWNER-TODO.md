@@ -94,6 +94,16 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
 - [ ] **Publish to NuGet and list on the Umbraco Marketplace.** Run the validator at
   marketplace.umbraco.com/validate after the repository is public. Nothing is published during the build.
 
+## Budgets
+
+- [ ] **Decide whether the website runtime's 40 KB "with everything" (ROADMAP §4.12) should grow.**
+  After 6.4g the runtime with every feature it has so far is 39.93 KB gzip, counting the largest
+  language's words (ADR-0116): the frame 1 KB, the form chunk 28 KB (the rules, checks and messages
+  both runtimes share, D10), the calculation language 2.5 KB, the merge tags 6.6 KB. Sending,
+  form_changed, uploads, the signature pad and the field behaviours (6.4i to 6.4n) still come, a few
+  KB each. Until you decide, each of those steps has to make room for what it adds. The core, what
+  every page with a form loads before the visitor touches it, is 1 KB of its 16 KB.
+
 ## Real-world checks (no real keys are used during the build)
 
 - [ ] **Captcha providers:** test reCAPTCHA v2/v3 and hCaptcha with real keys, set as environment

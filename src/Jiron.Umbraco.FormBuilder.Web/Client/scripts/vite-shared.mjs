@@ -2,7 +2,7 @@
 // What every package build shares (ADR-0026): the licence banner on every JS and CSS file, content-hashed chunk
 // names, source maps only on request, and a report of the chunks for scripts/size-check.mjs.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, relative, resolve, sep } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { licenceBanner } from './banner.mjs';
 
@@ -37,8 +37,9 @@ export function cssLicenceBanner(banner) {
 }
 
 /**
- * Writes `.build/<name>.chunks.json`: each emitted file with its static and dynamic imports, so the size check can
- * tell the code a page loads at once from the features it loads on demand. The folder is relative to the Web project.
+ * Writes `.build/<name>.chunks.json`: each emitted file with its static and dynamic imports and the modules it holds,
+ * so the size check can tell the code a page loads at once from the features it loads on demand, and a language's
+ * words from a feature. The folder and the modules are relative to the Web project.
  * @param {string} name
  * @param {{ buildDir?: string, base?: string }} [options] where the report goes, and what its folder is relative to
  * @returns {import('vite').Plugin}
@@ -54,7 +55,16 @@ export function chunkReport(name, { buildDir = buildFolder, base = webProject } 
         .filter((file) => file.type === 'chunk' || file.fileName.endsWith('.css'))
         .map((file) =>
           file.type === 'chunk'
-            ? { file: file.fileName, entry: file.isEntry, imports: file.imports, dynamicImports: file.dynamicImports }
+            ? {
+                file: file.fileName,
+                entry: file.isEntry,
+                imports: file.imports,
+                dynamicImports: file.dynamicImports,
+                modules: file.moduleIds
+                  .filter((id) => isAbsolute(id))
+                  .map((id) => relative(base, id).split(sep).join('/'))
+                  .sort(),
+              }
             : { file: file.fileName, entry: false, imports: [], dynamicImports: [] },
         )
         .sort((a, b) => a.file.localeCompare(b.file));

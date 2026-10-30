@@ -7,7 +7,8 @@
  * gzip at level 9, licence banner included, one file at a time.
  *
  *   - the runtime's core, its entry and every chunk the entry imports statically: at most 16 KB;
- *   - the runtime with every feature, all its files: at most 40 KB;
+ *   - the runtime with every feature: every file but the languages' words, and the largest language's, as a page
+ *     loads its culture's words alone: at most 40 KB (ADR-0116); the sum with every language is reported beside it;
  *   - each stylesheet the themes package builds, the base rules and each theme's: at most 10 KB (ADR-0105), and
  *     linted as it is served (scripts/lib/stylesheets.mjs): the base rules under .jfb-form, a theme's under
  *     .jfb-form:where(.jfb-theme-<alias>), so it styles only its own forms, and nothing physical anywhere;
@@ -55,6 +56,12 @@ export function readReport(name, reports = REPORTS) {
   return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null;
 }
 
+/** Whether a file holds a language's words and nothing else (ADR-0112): a page loads its culture's alone. */
+export function isWords(file) {
+  const modules = file.modules ?? [];
+  return modules.length > 0 && modules.every((module) => /(^|\/)packages\/logic\/src\/lang\//.test(module));
+}
+
 /** The gzip size of some of a report's files, summed; a missing file is an error. */
 export function measure(report, files, webProject = WEB_PROJECT) {
   let total = 0;
@@ -90,7 +97,14 @@ export function check({ reports = REPORTS, webProject = WEB_PROJECT } = {}) {
     const core = staticClosure(runtime);
     budget(`runtime core (${files(core.length)}: the entry and its static imports)`, measure(runtime, core, webProject), BUDGETS.runtimeCore);
     const all = runtime.files.map((f) => f.file);
-    budget(`runtime with every feature (${files(all.length)})`, measure(runtime, all, webProject), BUDGETS.runtimeAll);
+    const features = runtime.files.filter((f) => !isWords(f)).map((f) => f.file);
+    const words = runtime.files.filter(isWords).map((f) => f.file);
+    const largest = Math.max(0, ...words.map((file) => measure(runtime, [file], webProject)));
+    const languages = words.length === 0 ? '' : `, and the largest of ${words.length} languages' words`;
+    budget(`runtime with every feature (${files(features.length)}${languages})`, measure(runtime, features, webProject) + largest, BUDGETS.runtimeAll);
+    if (words.length > 1) {
+      results.push({ ok: true, line: `runtime with every feature and every language (${files(all.length)}): ${kb(measure(runtime, all, webProject))} gzip, more than a page loads` });
+    }
   }
 
   const themes = readReport('themes', reports);
