@@ -7,7 +7,9 @@
   [ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md) (the form endpoint's answer); the same texts
   rendered on the server, and the site's required-marker style and labels in the visitor's form, added by
   [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md) in 6.2c; the consents' hashes handed to
-  the page, for its consents' hidden inputs, by [ADR-0096](0096-the-choice-controls.md) in 6.2d
+  the page, for its consents' hidden inputs, by [ADR-0096](0096-the-choice-controls.md) in 6.2d; `words` and
+  `culture` moved to the answer's top as `words` and `formats`, given on every form, by
+  [ADR-0109](0109-reading-answers-in-the-browser.md) in 6.4a
 - Date: 2026-10-28
 - Roadmap step: 6.1b (decided and built); 6.1c's `options` endpoint gives a cascading field's options, 6.2 renders
   the same texts on the server, 6.4 renders them in the browser as the visitor types, 6.1e compares a posted
@@ -79,8 +81,9 @@ The form endpoint's answer gains `mergeTags`, `null` when no visitor text render
   with its alias). A field's options are its own, or those its list or source gives for no parent answer in the
   culture and on the page; a cascading field's depend on its parent's answers, which the browser asks the `options`
   endpoint for (6.1c) and adds (6.4).
-- `words`: the culture's words for yes and no (`FieldDisplayWords`).
-- `culture`: the culture's formats as the server writes them (ADR-0064), in the vectors' shape.
+- The texts render with the culture's words for yes and no (`FieldDisplayWords`) and its formats as the server
+  writes them (ADR-0064), in the vectors' shape. These were `mergeTags.words` and `mergeTags.culture`; since 6.4a
+  they are the answer's `words` and `formats`, on every form, since the messages need them too (ADR-0109).
 
 ### Consent wordings
 

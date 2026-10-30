@@ -8,14 +8,21 @@ using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Logic;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Forms;
 
-/// <summary>A published form as a visitor's page gets it, each part as UTF-8 JSON (ADR-0084, ADR-0085).</summary>
+/// <summary>A published form as a visitor's page gets it, each part as UTF-8 JSON (ADR-0084, ADR-0085, ADR-0109).</summary>
 /// <param name="Form">The visitor's form.</param>
+/// <param name="Fields">
+/// What the browser decides each field by, by the field's key, its child fields' too: the kind its rules compare it as
+/// and a grid row's, whether it can be required, and whether its type is the built-in one of its alias.
+/// </param>
+/// <param name="Formats">The culture's formats of numbers and dates, which messages and merge tags print with.</param>
+/// <param name="Words">The culture's words for yes and no.</param>
 /// <param name="MergeTags">What the browser renders the visitor texts that hold tags with; JSON <c>null</c> for none.</param>
 /// <param name="Consents">Each consent field's wording hash, by the field's key.</param>
-internal sealed record VisitorAnswer(byte[] Form, byte[] MergeTags, byte[] Consents);
+internal sealed record VisitorAnswer(byte[] Form, byte[] Fields, byte[] Formats, byte[] Words, byte[] MergeTags, byte[] Consents);
 
 /// <summary>A published form as a visitor's page shows it (ADR-0093): the visitor's form, and its parts as JSON.</summary>
 /// <param name="Form">The projection with each text as the culture shows it, a consent's text as the wording it shows.</param>
@@ -84,7 +91,8 @@ internal sealed class VisitorForms(
         var items = keys.Count == 0 ? DictionaryTexts.None : await dictionary.TextsAsync(keys, culture);
         var (shown, hashes) = await WithWordingsAsync(VisitorForm.Map(site, text => Show(text, culture, items), types), scope, cancellationToken);
         var (tags, tagged) = await MergeTagsAsync(shown, scope, cancellationToken);
-        return new VisitorPage(shown, new VisitorAnswer(VisitorForm.Write(shown), tags, Consents(hashes)), tagged, hashes.ToDictionary(pair => pair.Field, pair => pair.Hash));
+        var answer = new VisitorAnswer(VisitorForm.Write(shown), Fields(shown), Formats(culture), Words(culture), tags, Consents(hashes));
+        return new VisitorPage(shown, answer, tagged, hashes.ToDictionary(pair => pair.Field, pair => pair.Hash));
     }
 
     // The site's style for a form whose marker is inherit, the site's label for each button the form labels not itself
@@ -245,12 +253,6 @@ internal sealed class VisitorForms(
                 writer.WriteEndObject();
                 writer.WritePropertyName("recall");
                 await recall.WriteAsync(writer, shown, texts.Select(each => each.Text.Owner).ToHashSet(), recalled, scope, cancellationToken);
-                writer.WriteStartObject("words");
-                writer.WriteString("yes", FieldDisplayWords.Yes(scope.Culture));
-                writer.WriteString("no", FieldDisplayWords.No(scope.Culture));
-                writer.WriteEndObject();
-                writer.WritePropertyName("culture");
-                MergeTagCultures.Write(writer, cultures.For(scope.Culture));
                 writer.WriteEndObject();
             }
         }
@@ -306,6 +308,65 @@ internal sealed class VisitorForms(
         }
 
         writer.WriteEndObject();
+    }
+
+    // Each field's kinds, whether it can be required and whether its type is the built-in one, as the form engine's
+    // model reads them (DefinitionLogic): a field whose type the site lacks has no kind and cannot be required.
+    private byte[] Fields(PublicForm shown)
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            foreach (var field in shown.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).SelectMany(field => field.Fields.Prepend(field)))
+            {
+                var traits = types.Find(field.Type);
+                writer.WriteStartObject(field.Key.ToString("D"));
+                if (traits?.KindOf(field.Settings) is { } kind)
+                {
+                    writer.WriteString("kind", EnumNames<FieldKind>.ByValue[kind]);
+                }
+
+                if (traits is not null && traits.Supports(FieldFeatures.Rows))
+                {
+                    writer.WriteString("rowKind", EnumNames<FieldKind>.ByValue[traits.RowKindOf(field.Settings)]);
+                }
+
+                writer.WriteBoolean("canBeRequired", traits?.Supports(FieldFeatures.Required) == true);
+                writer.WriteBoolean("builtIn", traits is not null && BuiltInFieldTypes.All.Contains(traits.Type.GetType()));
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndObject();
+        }
+
+        return buffer.WrittenSpan.ToArray();
+    }
+
+    // The culture's formats, which the browser prints numbers and dates in, as the server does.
+    private byte[] Formats(string culture)
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            MergeTagCultures.Write(writer, cultures.For(culture));
+        }
+
+        return buffer.WrittenSpan.ToArray();
+    }
+
+    private static byte[] Words(string culture)
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("yes", FieldDisplayWords.Yes(culture));
+            writer.WriteString("no", FieldDisplayWords.No(culture));
+            writer.WriteEndObject();
+        }
+
+        return buffer.WrittenSpan.ToArray();
     }
 
     private static byte[] Consents(List<(Guid Field, string Hash)> hashes)

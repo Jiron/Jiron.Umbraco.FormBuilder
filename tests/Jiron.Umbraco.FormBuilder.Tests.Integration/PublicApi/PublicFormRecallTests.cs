@@ -116,7 +116,13 @@ public sealed partial class PublicFormRecallTests : PublicApiTestBase
         var fixture = new JsonObject
         {
             ["about"] = "The form endpoint's answer for a page and the server's renderings of its visitor texts for these answers (ADR-0085); written by PublicFormRecallTests.",
-            ["answer"] = new JsonObject { ["form"] = answer["form"]!.DeepClone(), ["mergeTags"] = answer["mergeTags"]!.DeepClone() },
+            ["answer"] = new JsonObject
+            {
+                ["form"] = answer["form"]!.DeepClone(),
+                ["formats"] = answer["formats"]!.DeepClone(),
+                ["words"] = answer["words"]!.DeepClone(),
+                ["mergeTags"] = answer["mergeTags"]!.DeepClone(),
+            },
             ["answers"] = new JsonObject
             {
                 ["fields"] = new JsonObject(given.Select(each => KeyValuePair.Create<string, JsonNode?>(each.Field.ToString(), Values(each)))),
@@ -143,6 +149,14 @@ public sealed partial class PublicFormRecallTests : PublicApiTestBase
             Assert.That(asWritten, Is.EqualTo(new Dictionary<string, string> { ["description"] = "as written", ["help"] = "as written", ["placeholder"] = "as written" }));
             Assert.That(answer["mergeTags"]!["values"]!.ToJsonString(), Is.EqualTo("""{"html":{"form.name":"Contact us"},"text":{"site.name":"Shop","page.name":"Contact"}}"""));
             Assert.That(answer["consents"]!.ToJsonString(), Is.EqualTo("{}"));
+            Assert.That(answer["fields"]![Topic.Key.ToString()]!.ToJsonString(), Is.EqualTo("""{"kind":"choice","canBeRequired":true,"builtIn":true}"""), "on a form whose texts hold tags as on one without");
+            Assert.That(answer["fields"]![Member.Key.ToString()]!.ToJsonString(), Is.EqualTo("""{"kind":"choice","canBeRequired":true,"builtIn":true}"""), "a yes or no is a choice");
+            Assert.That(answer["fields"]![Party.Key.ToString()]!.ToJsonString(), Is.EqualTo("""{"canBeRequired":false,"builtIn":true}"""));
+            Assert.That(answer["fields"]![Who.Key.ToString()]!.ToJsonString(), Is.EqualTo("""{"kind":"text","canBeRequired":true,"builtIn":true}"""), "a child field");
+            Assert.That(answer["fields"]![Heading.Key.ToString()]!.ToJsonString(), Is.EqualTo("""{"canBeRequired":false,"builtIn":true}"""));
+            Assert.That(answer["words"]!.ToJsonString(), Is.EqualTo("""{"yes":"Yes","no":"No"}"""));
+            Assert.That(answer["formats"]!["number"]!["group"]!.GetValue<string>(), Is.EqualTo(","));
+            Assert.That(answer["mergeTags"]!.AsObject().Select(property => property.Key), Is.EqualTo(new[] { "texts", "values", "recall" }));
         });
 
         if (Environment.GetEnvironmentVariable("JFB_UPDATE_SNAPSHOTS") == "1")
@@ -223,7 +237,7 @@ public sealed partial class PublicFormRecallTests : PublicApiTestBase
     private static string WithoutFormats(string json)
     {
         var node = JsonNode.Parse(json)!;
-        node["answer"]!["mergeTags"]!.AsObject().Remove("culture");
+        node["answer"]!.AsObject().Remove("formats");
         return node.ToJsonString();
     }
 

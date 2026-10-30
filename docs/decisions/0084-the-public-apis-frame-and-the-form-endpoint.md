@@ -11,7 +11,8 @@
   and the server's own limit set to each endpoint's, added by [ADR-0087](0087-the-upload-endpoint.md) in 6.1d; `open`
   false at the entry limit too, and an endpoint's own declaration of a status keeping the frame's reason in the
   document, added by [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) in 6.1e; the visitor's
-  form with the site's required-marker style and button labels, added by [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md) in 6.2c
+  form with the site's required-marker style and button labels, added by [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md) in 6.2c;
+  the answer's `fields`, `formats` and `words` added by [ADR-0109](0109-reading-answers-in-the-browser.md) in 6.4a
 - Date: 2026-10-28
 - Roadmap step: 6.1a (decided and built); 6.1b gives the consent wordings' hashes, 6.1d and 6.1e count a body without
   a declared length, 6.1e adds the entry limit to `open`, 7.1 enforces the rate-limit policies

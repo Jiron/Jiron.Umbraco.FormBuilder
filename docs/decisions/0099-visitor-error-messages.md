@@ -3,7 +3,8 @@
 - Status: accepted; extends [ADR-0022](0022-default-theme-and-tokens.md) (the error summary's heading and links) and
   [ADR-0005](0005-shared-logic-and-test-vectors.md) (a vector suite for messages); a summary link after a label that
   ends in its own mark takes no colon since 6.4a ([ADR-0106](0106-the-default-theme-ships.md)); a label or a
-  row's legend of only spaces counts as none since 6.4a ([ADR-0109](0109-reading-answers-in-the-browser.md))
+  row's legend of only spaces counts as none, and the form endpoint gives the formats, the words and whether a
+  field's type is built in on every form, since 6.4a ([ADR-0109](0109-reading-answers-in-the-browser.md))
 - Date: 2026-10-29
 - Roadmap step: 6.2g (decided and built); 6.2h shows the messages after a post without JavaScript, 6.4 shows them in
   the browser from the same words, 14.2 adds the other five languages
@@ -117,8 +118,9 @@ Option 3 for both.
 - 6.2h renders these messages for the pipeline's problems on a post without JavaScript, at their fields and in the
   summary, and 6.4's runtime renders the same from the same words; a change to a default is a change to the vectors,
   which both runtimes then fail until they agree.
-- The messages read only what the form endpoint already gives (the public settings with their effective values, the
-  options' labels, the culture's formats and the site's time zone), so the browser has every value a message needs.
+- The messages read only what the form endpoint gives (the public settings with their effective values, the
+  options' labels, the culture's formats and words, whether a field's type is built in, and the site's time zone;
+  the formats, words and types on every form since 6.4a, ADR-0109), so the browser has every value a message needs.
 - A cached page's dates relative to today go stale at midnight as its window does (ADR-0097); the runtime works the
   window out again.
 - A site's own type gets the generic defaults without values; its editors give it messages of their own.

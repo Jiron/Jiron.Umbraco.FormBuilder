@@ -77,12 +77,26 @@ internal sealed class FieldTypeTraits
     public bool Supports(FieldFeatures features) => (Features & features) == features;
 
     /// <summary>What rules compare a field of the type as, its settings considered.</summary>
-    public FieldKind? KindOf(FormField field) =>
-        Kind == FieldKind.Choice && MultipleSetting && IsMultiple(field) ? FieldKind.Choices : Kind;
+    public FieldKind? KindOf(FormField field)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        return KindOf(field.Settings);
+    }
+
+    /// <summary>What rules compare a field of the type with these settings as: the definition's or the projection's alike.</summary>
+    public FieldKind? KindOf(SettingsObject? settings) =>
+        Kind == FieldKind.Choice && MultipleSetting && IsMultiple(settings) ? FieldKind.Choices : Kind;
 
     /// <summary>What rules compare a grid row's answers as.</summary>
-    public FieldKind RowKindOf(FormField grid) => MultipleSetting && IsMultiple(grid) ? FieldKind.Choices : FieldKind.Choice;
+    public FieldKind RowKindOf(FormField grid)
+    {
+        ArgumentNullException.ThrowIfNull(grid);
+        return RowKindOf(grid.Settings);
+    }
 
-    private static bool IsMultiple(FormField field) =>
-        field.Settings is { } settings && settings.TryGetProperty("multiple", out var value) && value.ValueKind == JsonValueKind.True;
+    /// <summary>What rules compare the answers of a row of a grid with these settings as.</summary>
+    public FieldKind RowKindOf(SettingsObject? settings) => MultipleSetting && IsMultiple(settings) ? FieldKind.Choices : FieldKind.Choice;
+
+    private static bool IsMultiple(SettingsObject? settings) =>
+        settings is { } given && given.TryGetProperty("multiple", out var value) && value.ValueKind == JsonValueKind.True;
 }

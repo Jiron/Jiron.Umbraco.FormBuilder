@@ -2,10 +2,12 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Projection;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
+using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Logic;
 using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.Definitions;
 using Jiron.Umbraco.FormBuilder.Tests.Unit.MergeTags;
@@ -24,6 +26,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Forms;
 [TestFixture]
 public sealed class VisitorFormsTests
 {
+    private static readonly Guid Colour = Guid.Parse("30000000-0000-4000-8000-0000000000c1");
+    private static readonly Guid Several = Guid.Parse("30000000-0000-4000-8000-0000000000c2");
+
     private TestUmbraco _umbraco = null!;
     private VisitorForms _forms = null!;
     private GeneralSettings _general = null!;
@@ -199,7 +204,7 @@ public sealed class VisitorFormsTests
     }
 
     [Test]
-    public async Task AVisitorTextThatRenders_ComesWithItsValues_TheRecallForm_TheWordsAndTheFormats()
+    public async Task AVisitorTextThatRenders_ComesWithItsValues_AndTheRecallForm()
     {
         var definition = DefinitionFixtures.Read(DefinitionFixtures.Full);
         definition = definition with { Pages = [definition.Pages[0] with { Title = new LocalizedText("Hello from {{ form.name }}") }, .. definition.Pages.Skip(1)] };
@@ -216,8 +221,68 @@ public sealed class VisitorFormsTests
             Assert.That(mergeTags["values"]!["html"]!.AsObject(), Is.Empty);
             Assert.That(mergeTags["values"]!["text"]!.AsObject().Select(pair => (pair.Key, pair.Value!.GetValue<string>())), Is.EqualTo(new[] { ("form.name", "Contact <us>") }), "the context encodes it when it renders");
             Assert.That(mergeTags["recall"]!.ToJsonString(), Is.EqualTo($$"""{"pages":[{"id":"{{page}}","groups":[]}]}"""), "the owner's place alone");
-            Assert.That(mergeTags["words"]!.ToJsonString(), Is.EqualTo("""{"yes":"Ja","no":"Nein"}"""));
-            Assert.That(mergeTags["culture"]!["months"]![2]!.GetValue<string>(), Is.EqualTo("M" + (char)0xE4 + "rz"));
+            Assert.That(mergeTags.AsObject().Select(property => property.Key), Is.EqualTo(new[] { "texts", "values", "recall" }), "the words and formats are the answer's own");
+        });
+    }
+
+    [Test]
+    public async Task EveryForm_GetsTheCulturesFormatsAndWords_AndEachFieldsKinds_WhetherItCanBeRequired_AndWhoseTypeItIs()
+    {
+        var definition = DefinitionFixtures.Read(DefinitionFixtures.Full);
+        var site = TestFieldTypes.Build(builder => builder.Append<ColourFieldType>());
+        var grid = definition.Pages.SelectMany(page => page.Groups).SelectMany(group => group.Fields).Single(field => field.Type == "grid");
+        definition = definition with
+        {
+            Pages =
+            [
+                definition.Pages[0] with
+                {
+                    Groups =
+                    [
+                        definition.Pages[0].Groups[0] with
+                        {
+                            Fields =
+                            [
+                                .. definition.Pages[0].Groups[0].Fields,
+                                new FormField { Key = Colour, Type = ColourFieldType.Alias, Alias = "colour" },
+                                new FormField { Key = Several, Type = "dropdown", Alias = "several", Settings = SettingsObject.Parse("""{"multiple":true}"""), Options = new FieldOptions { Items = [new FieldOption { Value = "a" }] } },
+                            ],
+                        },
+                        .. definition.Pages[0].Groups.Skip(1),
+                    ],
+                },
+                .. definition.Pages.Skip(1),
+            ],
+        };
+        var forms = new VisitorForms(
+            new MergeTagDictionary(_umbraco.Dictionary, _umbraco.Languages),
+            new EditorHtml(),
+            site,
+            MergeTagTestSite.Create(umbraco: _umbraco).Service,
+            new MergeTagRecallForms(site, new OptionListTestSite().Options()),
+            new MergeTagCultures(),
+            new ConsentWordings(MergeTagTestSite.Create(umbraco: _umbraco).Service, new MergeTagDictionary(_umbraco.Dictionary, _umbraco.Languages), new EditorHtml(), site),
+            _settings);
+
+        var answer = (await forms.ShowAsync(PublicProjection.Create(definition, site), MergeTagTestSite.Scope(definition, culture: "de-DE"))).Answer;
+
+        var fields = JsonNode.Parse(answer.Fields)!.AsObject();
+        string Of(string key) => fields[key]!.ToJsonString();
+        Assert.Multiple(() =>
+        {
+            Assert.That(System.Text.Encoding.UTF8.GetString(answer.MergeTags), Is.EqualTo("null"), "no text holds a tag, and the formats and words come all the same");
+            Assert.That(System.Text.Encoding.UTF8.GetString(answer.Words), Is.EqualTo("""{"yes":"Ja","no":"Nein"}"""));
+            Assert.That(JsonNode.Parse(answer.Formats)!["months"]![2]!.GetValue<string>(), Is.EqualTo("M" + (char)0xE4 + "rz"));
+            Assert.That(Of("30000000-0000-4000-8000-000000000001"), Is.EqualTo("""{"kind":"text","canBeRequired":true,"builtIn":true}"""), "a text");
+            Assert.That(Of("30000000-0000-4000-8000-000000000005"), Is.EqualTo("""{"kind":"choices","canBeRequired":true,"builtIn":true}"""), "checkboxes");
+            Assert.That(Of("30000000-0000-4000-8000-000000000006"), Is.EqualTo("""{"kind":"choice","canBeRequired":true,"builtIn":true}"""), "a dropdown of one");
+            Assert.That(Of(Several.ToString("D")), Is.EqualTo("""{"kind":"choices","canBeRequired":true,"builtIn":true}"""), "a dropdown of several");
+            Assert.That(Of(grid.Key.ToString("D")), Is.EqualTo("""{"rowKind":"choice","canBeRequired":true,"builtIn":true}"""), "a grid: its rows have a kind");
+            Assert.That(Of("30000000-0000-4000-8000-00000000000a"), Is.EqualTo("""{"canBeRequired":false,"builtIn":true}"""), "a repeatable group");
+            Assert.That(Of("30000000-0000-4000-8000-00000000000c"), Is.EqualTo("""{"kind":"number","canBeRequired":true,"builtIn":true}"""), "a child field");
+            Assert.That(Of("30000000-0000-4000-8000-00000000000e"), Is.EqualTo("""{"canBeRequired":false,"builtIn":true}"""), "a heading");
+            Assert.That(Of("30000000-0000-4000-8000-00000000000f"), Is.EqualTo("""{"kind":"checkbox","canBeRequired":true,"builtIn":true}"""), "a consent");
+            Assert.That(Of(Colour.ToString("D")), Is.EqualTo("""{"kind":"text","canBeRequired":true,"builtIn":false}"""), "a site's own type");
         });
     }
 
@@ -316,6 +381,24 @@ public sealed class VisitorFormsTests
             "none" => new MergeTagValue([], IsList: false),
             _ => null,
         });
+    }
+
+    /// <summary>A site's own type that takes a text, which may be required.</summary>
+    public sealed class ColourFieldType() : FormBuilderFieldTypeBase<NoFieldSettings>(new FieldTypeDeclaration
+    {
+        Alias = Alias,
+        Name = "Colour",
+        Icon = "icon-colorpicker",
+        PaletteGroup = FieldPaletteGroup.Structure,
+        HoldsValue = true,
+        Storage = FieldStorageKind.Text,
+        RuleKind = FieldKind.Text,
+        Features = FieldFeatures.Label | FieldFeatures.Required | FieldFeatures.VisibilityRules,
+        Messages = FieldMessageKinds.Required,
+    })
+    {
+        /// <summary>The type's alias.</summary>
+        public const string Alias = "acme.colour";
     }
 
     // The full form's projection with its first page changed.

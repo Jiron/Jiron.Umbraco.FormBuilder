@@ -562,16 +562,63 @@ internal sealed record FormDefinitionResponseModel
     public required JsonElement Form { get; init; }
 
     /// <summary>
+    /// What a browser decides each field by, as the server does (ADR-0109), by the field's key, a repeatable group's child
+    /// fields too.
+    /// </summary>
+    public required IReadOnlyDictionary<Guid, FormFieldLogicResponseModel> Fields { get; init; }
+
+    /// <summary>
+    /// The culture's formats, which messages and merge tags print numbers and dates with (ADR-0064): <c>dates</c> (the
+    /// short, medium, long, time and date-and-time patterns), the months' and days' names, <c>am</c>, <c>pm</c> and
+    /// <c>minus</c>, <c>number</c> and <c>currency</c>.
+    /// </summary>
+    public required JsonElement Formats { get; init; }
+
+    /// <summary>The culture's words for yes and no, which answers and messages show (ADR-0066).</summary>
+    public required FormWordsResponseModel Words { get; init; }
+
+    /// <summary>
     /// What the browser renders the visitor texts with (ADR-0085); null when every one shows as it is written:
     /// <c>texts</c>, each that renders as its owner's key, the property it is and its context (<c>html</c> or
-    /// <c>text</c>); <c>values</c>, each path's value but answer recall's by context; <c>recall</c>, the form answer
-    /// recall reads, cut down to what the texts need; <c>words</c>, the culture's words for yes and no; and
-    /// <c>culture</c>, its formats.
+    /// <c>text</c>); <c>values</c>, each path's value but answer recall's by context; and <c>recall</c>, the form answer
+    /// recall reads, cut down to what the texts need. They render with the answer's <c>formats</c> and <c>words</c>.
     /// </summary>
     public JsonElement? MergeTags { get; init; }
 
     /// <summary>Each consent field's wording hash by its key, which a submission posts with the ticked consent (ADR-0009).</summary>
     public required IReadOnlyDictionary<Guid, string> Consents { get; init; }
+}
+
+/// <summary>What a browser decides a field by (ADR-0109): its kinds, whether it can be required and whose type it is.</summary>
+internal sealed record FormFieldLogicResponseModel
+{
+    /// <summary>
+    /// What rules compare the field's answers as (<c>text</c>, <c>number</c>, <c>date</c>, <c>time</c>, <c>dateTime</c>,
+    /// <c>choice</c>, <c>choices</c>, <c>checkbox</c> or <c>files</c>); absent for a field whose answers no condition reads.
+    /// </summary>
+    public string? Kind { get; init; }
+
+    /// <summary>What rules compare a grid row's answers as; only for a field with rows.</summary>
+    public string? RowKind { get; init; }
+
+    /// <summary>Whether a rule may require the field.</summary>
+    public required bool CanBeRequired { get; init; }
+
+    /// <summary>
+    /// Whether the field's type is the built-in one of its alias, which a browser reads and checks as the server does; a
+    /// site's own type is read and checked on the server only.
+    /// </summary>
+    public required bool BuiltIn { get; init; }
+}
+
+/// <summary>A culture's words for yes and no.</summary>
+internal sealed record FormWordsResponseModel
+{
+    /// <summary>Yes.</summary>
+    public required string Yes { get; init; }
+
+    /// <summary>No.</summary>
+    public required string No { get; init; }
 }
 
 /// <summary>A field's options for its parents' answers (ADR-0086).</summary>

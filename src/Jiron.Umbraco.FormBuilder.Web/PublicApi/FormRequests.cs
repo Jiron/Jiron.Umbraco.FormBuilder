@@ -41,7 +41,8 @@ internal sealed class FormRequests(
     /// <summary>
     /// The answer of the form endpoint: the form's alias, its public revision, the culture and the site's time zone it is
     /// in, whether it takes entries now by its opening and closing times and its entry limit (ADR-0088), the visitor's
-    /// form (ADR-0084), what the browser renders its visitor texts with, and its consents' wording hashes (ADR-0085).
+    /// form (ADR-0084), what the browser decides each field by, the culture's formats and words (ADR-0109), what the
+    /// browser renders its visitor texts with, and its consents' wording hashes (ADR-0085).
     /// </summary>
     public async Task<FormAnswer> DefinitionAsync(CachedForm form, string culture, RequestPage page, CancellationToken cancellationToken) =>
         (await ShowAsync(form, culture, page, cancellationToken)).Answer;
@@ -72,7 +73,7 @@ internal sealed class FormRequests(
         var shown = await visitorForms.ShowAsync(form.Projection, scope, cancellationToken);
         var visitor = shown.Answer;
         var unavailable = await availability.CheckAsync(form.Published.Definition.Settings.Availability, form.Published.Form.Key, cancellationToken);
-        var buffer = new ArrayBufferWriter<byte>(visitor.Form.Length + visitor.MergeTags.Length + visitor.Consents.Length + 256);
+        var buffer = new ArrayBufferWriter<byte>(visitor.Form.Length + visitor.Fields.Length + visitor.Formats.Length + visitor.Words.Length + visitor.MergeTags.Length + visitor.Consents.Length + 256);
         using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
@@ -83,6 +84,12 @@ internal sealed class FormRequests(
             writer.WriteBoolean("open", unavailable is null);
             writer.WritePropertyName("form");
             writer.WriteRawValue(visitor.Form, skipInputValidation: true);
+            writer.WritePropertyName("fields");
+            writer.WriteRawValue(visitor.Fields, skipInputValidation: true);
+            writer.WritePropertyName("formats");
+            writer.WriteRawValue(visitor.Formats, skipInputValidation: true);
+            writer.WritePropertyName("words");
+            writer.WriteRawValue(visitor.Words, skipInputValidation: true);
             writer.WritePropertyName("mergeTags");
             writer.WriteRawValue(visitor.MergeTags, skipInputValidation: true);
             writer.WritePropertyName("consents");

@@ -30,8 +30,6 @@ interface AnswerMergeTags {
   readonly texts: readonly NamedText[];
   readonly values: Readonly<Record<string, Readonly<Record<string, MergeValue>>>>;
   readonly recall: RecallForm;
-  readonly words: DisplayWords;
-  readonly culture: CultureFormats;
 }
 
 /** An element of the answer's form, as far as its texts go. */
@@ -49,6 +47,8 @@ interface Fixture {
         })[];
       })[];
     };
+    readonly formats: CultureFormats;
+    readonly words: DisplayWords;
     readonly mergeTags: AnswerMergeTags;
   };
   readonly answers: RecallAnswers;
@@ -78,7 +78,7 @@ function textOf(owner: string, name: string): string {
 }
 
 describe("the form endpoint's answer", () => {
-  const { mergeTags } = fixture.answer;
+  const { formats, words, mergeTags } = fixture.answer;
 
   it('names every text the server rendered, and only those', () => {
     expect(mergeTags.texts.map(({ owner, text }) => `${owner} ${text}`)).toEqual(
@@ -95,21 +95,14 @@ describe("the form endpoint's answer", () => {
     (_, { owner, text, server }) => {
       const named = mergeTags.texts.find((each) => each.owner === owner && each.text === text);
       if (named === undefined) throw new Error(`The answer does not name ${text} of ${owner}`);
-      const recall = recallAnswers(
-        mergeTags.recall,
-        owner,
-        fixture.answers,
-        fixture.hidden,
-        mergeTags.words,
-        mergeTags.culture,
-      );
+      const recall = recallAnswers(mergeTags.recall, owner, fixture.answers, fixture.hidden, words, formats);
       const given = mergeTags.values[named.context] ?? {};
       const values = (path: string): MergeValue | undefined =>
         recall.values(path) ?? (Object.hasOwn(given, path) ? given[path] : undefined);
       const rendered = renderTemplate(
         parseTemplate(textOf(owner, text), named.context, recall.pathProblem),
         values,
-        mergeTags.culture,
+        formats,
       );
       expect(rendered.text).toBe(server);
     },

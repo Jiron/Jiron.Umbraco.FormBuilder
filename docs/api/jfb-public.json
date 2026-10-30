@@ -1368,10 +1368,13 @@
           "alias",
           "consents",
           "culture",
+          "fields",
           "form",
+          "formats",
           "open",
           "revision",
-          "timeZone"
+          "timeZone",
+          "words"
         ],
         "type": "object",
         "properties": {
@@ -1392,6 +1395,24 @@
             "type": "boolean"
           },
           "form": {},
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FormFieldLogicResponseModel"
+                }
+              ]
+            }
+          },
+          "formats": {},
+          "words": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FormWordsResponseModel"
+              }
+            ]
+          },
           "mergeTags": {
             "nullable": true
           },
@@ -1400,6 +1421,46 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "FormFieldLogicResponseModel": {
+        "required": [
+          "builtIn",
+          "canBeRequired"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "rowKind": {
+            "type": "string",
+            "nullable": true
+          },
+          "canBeRequired": {
+            "type": "boolean"
+          },
+          "builtIn": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FormWordsResponseModel": {
+        "required": [
+          "no",
+          "yes"
+        ],
+        "type": "object",
+        "properties": {
+          "yes": {
+            "type": "string"
+          },
+          "no": {
+            "type": "string"
           }
         },
         "additionalProperties": false

@@ -230,6 +230,115 @@
       ],
       "validationRules": []
     },
+    "formats": {
+      "dates": {
+        "short": "M\\/d\\/yyyy",
+        "medium": "MMM d, yyyy",
+        "long": "dddd, MMMM d, yyyy",
+        "time": "h\\:mm tt",
+        "dateTime": "M\\/d\\/yyyy h\\:mm tt"
+      },
+      "months": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ],
+      "monthsShort": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ],
+      "monthsGenitive": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ],
+      "monthsShortGenitive": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ],
+      "days": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ],
+      "daysShort": [
+        "Sun",
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat"
+      ],
+      "am": "AM",
+      "pm": "PM",
+      "minus": "-",
+      "number": {
+        "decimal": ".",
+        "group": ",",
+        "sizes": [
+          3
+        ],
+        "negative": "-n"
+      },
+      "currency": {
+        "code": "USD",
+        "symbol": "$",
+        "decimal": ".",
+        "group": ",",
+        "sizes": [
+          3
+        ],
+        "positive": "$n",
+        "negative": "-$n"
+      }
+    },
+    "words": {
+      "yes": "Yes",
+      "no": "No"
+    },
     "mergeTags": {
       "texts": [
         {
@@ -405,115 +514,6 @@
             ]
           }
         ]
-      },
-      "words": {
-        "yes": "Yes",
-        "no": "No"
-      },
-      "culture": {
-        "dates": {
-          "short": "M\\/d\\/yyyy",
-          "medium": "MMM d, yyyy",
-          "long": "dddd, MMMM d, yyyy",
-          "time": "h\\:mm tt",
-          "dateTime": "M\\/d\\/yyyy h\\:mm tt"
-        },
-        "months": [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December"
-        ],
-        "monthsShort": [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec"
-        ],
-        "monthsGenitive": [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December"
-        ],
-        "monthsShortGenitive": [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec"
-        ],
-        "days": [
-          "Sunday",
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday"
-        ],
-        "daysShort": [
-          "Sun",
-          "Mon",
-          "Tue",
-          "Wed",
-          "Thu",
-          "Fri",
-          "Sat"
-        ],
-        "am": "AM",
-        "pm": "PM",
-        "minus": "-",
-        "number": {
-          "decimal": ".",
-          "group": ",",
-          "sizes": [
-            3
-          ],
-          "negative": "-n"
-        },
-        "currency": {
-          "code": "USD",
-          "symbol": "$",
-          "decimal": ".",
-          "group": ",",
-          "sizes": [
-            3
-          ],
-          "positive": "$n",
-          "negative": "-$n"
-        }
       }
     }
   },
