@@ -316,11 +316,9 @@ describe('a text that recalls answers', () => {
   });
 
   it('never takes a default value for a visitor text', () => {
-    // A default that names a field, which its place refuses (ADR-0118): taken for a text, it would render here.
-    const listed = modelOf([
-      ...TEXTS,
-      { owner: 'k-name', text: 'defaultValue', context: 'text', refused: ['field.plan'] },
-    ]);
+    // A default that names a field before it: taken for a text, it would render here as the visitor answers, though only
+    // the defaults' filler renders a default, once (ADR-0118).
+    const listed = modelOf([...TEXTS, { owner: 'k-notes', text: 'defaultValue', context: 'text' }]);
     const model: FormModel = {
       ...listed,
       form: {
@@ -330,7 +328,7 @@ describe('a text that recalls answers', () => {
           groups: page.groups.map((group) => ({
             ...group,
             fields: group.fields.map((each) =>
-              each.key === 'k-name' ? { ...each, defaultValue: '{{ field.plan }}' } : each,
+              each.key === 'k-notes' ? { ...each, defaultValue: '{{ field.name }}' } : each,
             ),
           })),
         })),
@@ -339,7 +337,9 @@ describe('a text that recalls answers', () => {
     const form = formOf(FORM);
     const reading = readPage(form, model);
     const state = engineOf(model, null).decide(reading.answers, CONTEXT);
-    expect([...textsOf(model)(reading, state).keys()]).not.toContain('k-name defaultValue');
+    const keys = [...textsOf(model)(reading, state).keys()];
+    expect(keys).toContain('k-notes help');
+    expect(keys).not.toContain('k-notes defaultValue');
   });
 
   it("leaves out a text whose element the endpoint's form does not hold", () => {
