@@ -44,6 +44,26 @@ const FORM =
   '<div data-jfb-field="k-count"><input id="count" name="count" value="4"></div>' +
   '<div data-jfb-field="k-total"><output id="total" name="total"></output></div></div></section></form>';
 
+/** The count's default takes the query value `n`, which the form allows, and the server marked it for the page. */
+const MARKED = FORM.replace(
+  '<div data-jfb-field="k-count"><input id="count" name="count" value="4">',
+  '<div data-jfb-field="k-count" data-jfb-default><input id="count" name="count">',
+);
+/** A model of these fields whose count takes the query value `n` as its default. */
+function defaultedOf(...more: ModelField[]): FormModel {
+  const model = modelOf([{ ...COUNT, defaultValue: '{{ query.n }}' }, ...more]);
+  return {
+    ...model,
+    form: { ...model.form, settings: { queryValues: ['n'] } },
+    mergeTags: {
+      texts: [{ owner: 'k-count', text: 'defaultValue', context: 'text' }],
+      values: {},
+      recall: { pages: [] },
+    },
+  };
+}
+const DEFAULTED = defaultedOf(TOTAL);
+
 const NOTE: ModelField = {
   key: 'k-note',
   type: 'text',
@@ -218,6 +238,46 @@ describe('the form chunk', () => {
     if (form === null) throw new Error('no form');
     const { attach } = await import('./form');
     expect(await attach(form, { ...modelOf([COUNT, NOTE]), mergeTags: tagsOf() })).toBeNull();
+  });
+
+  it('fills in a default the server marked before the rules first decide, so a calculation counts it at once', async () => {
+    window.history.replaceState(null, '', '/?n=5&other=9');
+    try {
+      document.body.innerHTML = MARKED;
+      const form = document.querySelector('form');
+      if (form === null) throw new Error('no form');
+      const { attach } = await import('./form');
+      const session = await attach(form, DEFAULTED);
+      expect(session).not.toBeNull();
+      expect((document.getElementById('count') as HTMLInputElement).value).toBe('5');
+      expect(document.getElementById('total')?.textContent).toBe('10.00');
+      expect(form.querySelector('[data-jfb-default]'), 'filled once').toBeNull();
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
+  });
+
+  it('loads the filler of defaults only for a form the server marked, once for the page', async () => {
+    document.body.innerHTML = FORM;
+    const form = document.querySelector('form');
+    if (form === null) throw new Error('no form');
+    const { attach, loadDefaults } = await import('./form');
+    const filler = vi.fn(loadDefaults);
+    expect(await attach(form, DEFAULTED, filler)).not.toBeNull();
+    expect(filler).not.toHaveBeenCalled();
+    const once = loadDefaults();
+    expect(loadDefaults()).toBe(once);
+    await once;
+  });
+
+  it('leaves a form whose filler of defaults cannot load to the post without JavaScript', async () => {
+    document.body.innerHTML = MARKED;
+    const form = document.querySelector('form');
+    if (form === null) throw new Error('no form');
+    const { attach } = await import('./form');
+    // Without a calculation, so no import of the language outlives the test.
+    expect(await attach(form, defaultedOf(), () => Promise.reject(new Error('offline')))).toBeNull();
+    expect((document.getElementById('count') as HTMLInputElement).value).toBe('');
   });
 
   it('leaves a form whose calculation language cannot load to the post without JavaScript', async () => {

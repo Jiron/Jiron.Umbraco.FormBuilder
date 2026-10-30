@@ -1,8 +1,9 @@
 /**
  * The runtime's frame (ROADMAP 6.4b, ADR-0110): it finds the forms of the markup contract (ADR-0015), reads each one's
  * model data and enhances it once, and loads the chunk with the logic on a form's first interaction, so a page whose
- * visitor never touches a form loads the frame alone. A form of another contract version, with model data this
- * runtime cannot read, or whose chunk cannot load, is left to the post without JavaScript.
+ * visitor never touches a form loads the frame alone; a form with a default value for the page to fill in loads it at
+ * once, so the default is there before the visitor touches the form (ADR-0118). A form of another contract version,
+ * with model data this runtime cannot read, or whose chunk cannot load, is left to the post without JavaScript.
  */
 import { parseModel, type FormModel } from './model';
 
@@ -45,6 +46,7 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
       void chunk.then((loaded) => loaded?.attach(form, model));
     };
     for (const type of TOUCHES) form.addEventListener(type, touched);
+    if (form.querySelector('[data-jfb-default]') !== null) touched();
     form.dispatchEvent(
       new CustomEvent<ReadyDetail>('jfb:ready', {
         bubbles: true,

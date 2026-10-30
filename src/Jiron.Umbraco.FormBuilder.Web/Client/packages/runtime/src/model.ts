@@ -22,6 +22,8 @@ export interface ModelField extends ProjectedField {
   /** Its help and placeholder in the page's culture, which merge tags may fill (ADR-0115). */
   readonly help?: string | null;
   readonly placeholder?: string | null;
+  /** What its controls start with, a list for a field of several answers; merge tags may fill it (ADR-0118). */
+  readonly defaultValue?: string | readonly string[] | null;
   /** The editor's own messages by the kind of error. */
   readonly messages?: Readonly<Record<string, string>> | null;
   /** The field's own checks, each with the editor's own message. */
@@ -73,9 +75,11 @@ export interface ModelText {
   /** `title`, `description`, `label`, `help`, `placeholder`, or `settings.` and a setting's path. */
   readonly text: string;
   readonly context: TemplateContext;
+  /** The paths of its tags that its place refuses for their source, written as they stand (ADR-0118). */
+  readonly refused?: readonly string[];
 }
 
-/** What the page renders its visitor texts with (ADR-0085, ADR-0115). */
+/** What the page renders its visitor texts and its default values with (ADR-0085, ADR-0115, ADR-0118). */
 export interface ModelMergeTags {
   readonly texts: readonly ModelText[];
   /** By context, the values of the tags that are the same for every visitor of the page. */
@@ -154,7 +158,8 @@ function isMergeTags(value: unknown): boolean {
         isObject(text) &&
         typeof text['owner'] === 'string' &&
         typeof text['text'] === 'string' &&
-        typeof text['context'] === 'string',
+        typeof text['context'] === 'string' &&
+        (text['refused'] === undefined || isArrayOf(text['refused'], (path) => typeof path === 'string')),
     ) &&
     isObject(value['values']) &&
     isObject(value['recall']) &&

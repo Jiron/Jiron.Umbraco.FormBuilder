@@ -4,15 +4,18 @@
  * answers (ADR-0112), 6.4e shows their errors (ADR-0113), 6.4f works the calculations out, with the calculation
  * language loaded first as a chunk of its own for a form that has one, and keeps the sliders' values (ADR-0114), and
  * 6.4g renders the visitor texts that recall answers as the visitor types, with the merge tags loaded first as a
- * chunk of their own for a form that has such a text (ADR-0115).
+ * chunk of their own for a form that has such a text (ADR-0115), and 6.4h fills in the default values that hold merge
+ * tags before the rules first decide, from a chunk of its own that a form loads only when the server marked such a
+ * field (ADR-0118).
  */
+import type { Context } from '@jfb/logic';
 import { loadEngine, type PageEngine } from './engine';
 import { pageErrorsOf } from './errors';
 import type { FormModel } from './model';
 import { followSliders } from './outputs';
 import { readPage, type PageReading } from './page';
 import type { ShownError } from './messages';
-import { rulesOf, type PageRules } from './rules';
+import { contextOf, rulesOf, type PageRules } from './rules';
 import { checkPage, type CheckScope } from './validation';
 
 /** An enhanced form with its logic. */
@@ -31,13 +34,35 @@ export interface FormSession {
   validate(scope: CheckScope): Promise<boolean>;
 }
 
+/** Fills in the default values the server marked, from a chunk of its own. */
+export type FillDefaults = (form: HTMLFormElement, model: FormModel, context: Context) => void;
+
+let filler: Promise<FillDefaults> | undefined;
+
 /**
- * Gives a form its logic; the frame calls it once per form. A form whose calculation language cannot load is left to
- * the post without JavaScript (null), as one whose chunk cannot.
+ * The filler of the default values that hold merge tags, imported once for the page from the merge tags' chunk, which
+ * answer recall is in too: one way into the chunk, so the bundler adds no helper chunk for two (ADR-0118).
  */
-export async function attach(form: HTMLFormElement, model: FormModel): Promise<FormSession | null> {
-  const engine = await loadEngine(model).catch(() => null);
-  if (engine === null) return null;
+export function loadDefaults(): Promise<FillDefaults> {
+  return (filler ??= import('./recall').then((module) => module.fillDefaults));
+}
+
+/**
+ * Gives a form its logic; the frame calls it once per form. A form whose calculation language or defaults' filler
+ * cannot load is left to the post without JavaScript (null), as one whose chunk cannot.
+ */
+export async function attach(
+  form: HTMLFormElement,
+  model: FormModel,
+  defaults: () => Promise<FillDefaults> = loadDefaults,
+): Promise<FormSession | null> {
+  const loaded = await Promise.all([
+    loadEngine(model),
+    form.querySelector('[data-jfb-default]') === null ? null : defaults(),
+  ]).catch(() => null);
+  if (loaded === null) return null;
+  const [engine, fill] = loaded;
+  fill?.(form, model, contextOf(model, readPage(form, model), Date.now(), form.ownerDocument.URL));
   const rules = rulesOf(form, model, engine);
   followSliders(form, model);
   const errors = pageErrorsOf(form, model, engine);

@@ -13,6 +13,8 @@ import type { TextRenderer } from './engine';
 import type { FormModel, ModelField, ModelText } from './model';
 import type { FieldRead, PageReading } from './page';
 
+export { fillDefaults } from './defaults';
+
 const own = <T>(record: Readonly<Record<string, T>>, key: string): T | undefined =>
   Object.hasOwn(record, key) ? record[key] : undefined;
 
@@ -23,11 +25,16 @@ export function textsOf(model: FormModel): TextRenderer {
   const recalled = (owner: string, answers: RecallAnswers, hidden: readonly string[]) =>
     recallAnswers(tags.recall, owner, answers, hidden, model.words, model.formats);
   const texts = tags.texts.flatMap((text) => {
-    const template = templateOf(model, text);
-    // Which fields a text may name depends on where it stands, never on the answers.
-    const parsed =
-      template === null ? null : parseTemplate(template, text.context, recalled(text.owner, {}, []).pathProblem);
-    return parsed?.parts.some(isFieldTag) === true ? [{ text, parsed }] : [];
+    const template = text.text === 'defaultValue' ? null : templateOf(model, text);
+    if (template === null) return [];
+    // Which fields a text may name depends on where it stands, never on the answers; a source its place refuses is
+    // written as it stands, as the server writes it (ADR-0118).
+    const refused = text.refused ?? [];
+    const problem = recalled(text.owner, {}, []).pathProblem;
+    const parsed = parseTemplate(template, text.context, (path) =>
+      refused.includes(path) ? 'source_not_for_place' : problem(path),
+    );
+    return parsed.parts.some(isFieldTag) ? [{ text, parsed }] : [];
   });
   return (reading, state) => {
     const answers = answersOf(reading, state);

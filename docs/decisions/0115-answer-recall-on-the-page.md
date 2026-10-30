@@ -10,6 +10,9 @@
   merge tags leave the form chunk), [ADR-0114](0114-calculations-on-the-page.md) (the rules' pass also renders the
   texts, on a form with neither rules nor calculations too) and [ADR-0112](0112-checks-and-messages-on-the-page.md)
   (a summary link names a label as it recalls the answers now)
+- Amended in 6.4h by [ADR-0118](0118-defaults-with-merge-tags-on-the-page.md): a tag of a source the text's place
+  refuses is written as it stands on the page too, as the endpoint lists it, and the merge tags' chunk holds the
+  defaults' filler
 - Date: 2026-10-30
 - Roadmap step: 6.4g (decided and built); 6.4h fills defaults with merge tags, 6.4n adds and removes rows in place,
   6.5 moves through pages in the browser

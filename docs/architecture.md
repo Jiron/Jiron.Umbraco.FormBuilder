@@ -174,9 +174,14 @@ flowchart LR
   again as the visitor types (`recall.ts`, `texts.ts`): the merge tags are the shared logic's `@jfb/logic/template`
   and `@jfb/logic/recall`, a chunk of their own loaded before a form whose recall form names a field is enhanced,
   each text written on the element the views mark `data-jfb-text`, hidden while empty, a rich text by its texts
-  and attribute values only, and the error summary naming a label as it reads now
-  ([ADR-0115](decisions/0115-answer-recall-on-the-page.md)); its budget of every feature counts the largest
-  language's words, as a page loads one ([ADR-0116](decisions/0116-the-runtimes-budget-counts-one-language.md));
+  and attribute values only, a tag its place refuses as it stands, and the error summary naming a label as it reads
+  now ([ADR-0115](decisions/0115-answer-recall-on-the-page.md)); and fills in the default values that hold merge tags
+  (`defaults.ts`, in the merge tags' chunk) on the fields the server marks `data-jfb-default`, loaded as the form
+  shows, before the rules first decide, with the address's query values the form allows and never over a control the
+  visitor changed ([ADR-0118](decisions/0118-defaults-with-merge-tags-on-the-page.md)); its budget of every feature
+  counts the largest language's words, as a page loads one
+  ([ADR-0116](decisions/0116-the-runtimes-budget-counts-one-language.md)), and its build takes a terser pass besides
+  the bundler's minifier ([ADR-0119](decisions/0119-a-terser-pass-for-the-website-runtime.md));
 - `element`: `<jfb-form>`, the headless renderer, with the same markup and runtime;
 - `backoffice`: the Forms section in Lit and TypeScript with UUI, through the generated client.
 

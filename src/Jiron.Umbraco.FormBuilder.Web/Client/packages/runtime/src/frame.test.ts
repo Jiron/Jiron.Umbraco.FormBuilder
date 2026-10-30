@@ -1,6 +1,6 @@
 // The frame (ROADMAP 6.4b, ADR-0110): the forms of the markup contract found and enhanced once, later ones through
 // init(root), others left to the post without JavaScript, `jfb:ready` once per form, and the chunk with the logic
-// loaded on a form's first interaction only.
+// loaded on a form's first interaction only, or at once for a form with a default the page fills in (6.4h, ADR-0118).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFrame, type Chunk, type ReadyDetail } from './frame';
 import type { FormModel } from './model';
@@ -135,6 +135,14 @@ describe('the frame', () => {
       model('x').replace('"mergeTags":null', '"mergeTags":[]'),
       model('x').replace('"mergeTags":null', '"mergeTags":{"texts":[],"values":{}}'),
       model('x').replace('"mergeTags":null', '"mergeTags":{"texts":[{"owner":1}],"values":{},"recall":{"pages":[]}}'),
+      model('x').replace(
+        '"mergeTags":null',
+        '"mergeTags":{"texts":[{"owner":"k","text":"label","context":"text","refused":[1]}],"values":{},"recall":{"pages":[]}}',
+      ),
+      model('x').replace(
+        '"mergeTags":null',
+        '"mergeTags":{"texts":[{"owner":"k","text":"label","context":"text","refused":"member.name"}],"values":{},"recall":{"pages":[]}}',
+      ),
     ];
     shapes.forEach((data, at) => document.body.append(form(`jfb-${at + 1}`, { data })));
     createFrame(chunk().load).init();
@@ -143,7 +151,9 @@ describe('the frame', () => {
 
   it('reads a form whose merge tags are the shape it renders its texts with', () => {
     const heard = readies();
-    const tags = '{"texts":[{"owner":"k","text":"label","context":"text"}],"values":{},"recall":{"pages":[]}}';
+    const tags =
+      '{"texts":[{"owner":"k","text":"label","context":"text"},' +
+      '{"owner":"k","text":"defaultValue","context":"text","refused":["member.name"]}],"values":{},"recall":{"pages":[]}}';
     document.body.append(form('jfb-1', { data: model('tagged').replace('"mergeTags":null', '"mergeTags":' + tags) }));
     createFrame(chunk().load).init();
     expect(heard).toEqual([{ key: 'key-jfb-1', alias: 'tagged' }]);
@@ -179,6 +189,24 @@ describe('the frame', () => {
     await settled();
     expect(loaded.loads()).toBe(1);
     expect(loaded.attached.map(([element]) => element.id)).toEqual(['jfb-1', 'jfb-2']);
+  });
+
+  it('loads the logic at once for a form with a default the page fills in, and attaches it once', async () => {
+    const loaded = chunk();
+    const marked = form('jfb-1');
+    const field = document.createElement('div');
+    field.dataset['jfbField'] = 'k';
+    field.dataset['jfbDefault'] = '';
+    marked.append(field);
+    document.body.append(marked, form('jfb-2'));
+    createFrame(loaded.load).init();
+    await settled();
+    expect(loaded.attached.map(([element]) => element.id)).toEqual(['jfb-1']);
+
+    inputOf(marked).dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    await settled();
+    expect(loaded.loads()).toBe(1);
+    expect(loaded.attached.map(([element]) => element.id)).toEqual(['jfb-1']);
   });
 
   it.each(['focusin', 'pointerdown', 'input', 'change'])('loads the logic on %s', async (type) => {

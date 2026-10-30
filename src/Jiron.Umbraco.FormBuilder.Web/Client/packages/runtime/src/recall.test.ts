@@ -298,6 +298,31 @@ describe('a text that recalls answers', () => {
     );
   });
 
+  it('writes a tag of a source its place refuses as it stands, as the server writes it (ADR-0118)', async () => {
+    const texts = TEXTS.map((text) =>
+      text.owner === 'k-site' && text.text === 'label' ? { ...text, refused: ['member.name'] } : text,
+    );
+    const model = modelOf(texts);
+    const [page, later] = model.form.pages;
+    if (page === undefined || later === undefined) throw new Error('no pages');
+    const [group, other] = page.groups;
+    if (group === undefined || other === undefined) throw new Error('no groups');
+    const fields = group.fields.map((each) =>
+      each.key === 'k-site' ? { ...each, label: '{{ member.name }} at {{ site.name }}, {{ field.name }}' } : each,
+    );
+    attach({ ...model, form: { ...model.form, pages: [{ ...page, groups: [{ ...group, fields }, other] }, later] } });
+    await type('name', 'Anna');
+    expect(textOf('site')).toBe('{{ member.name }} at Library, Anna');
+  });
+
+  it('never takes a default value for a visitor text', () => {
+    const model = modelOf([...TEXTS, { owner: 'k-name', text: 'defaultValue', context: 'text' }]);
+    const form = formOf(FORM);
+    const reading = readPage(form, model);
+    const state = engineOf(model, null).decide(reading.answers, CONTEXT);
+    expect([...textsOf(model)(reading, state).keys()]).not.toContain('k-name defaultValue');
+  });
+
   it("leaves out a text whose element the endpoint's form does not hold", () => {
     const model = modelOf([...TEXTS, { owner: 'k-gone', text: 'label', context: 'text' }]);
     const form = formOf(FORM);
