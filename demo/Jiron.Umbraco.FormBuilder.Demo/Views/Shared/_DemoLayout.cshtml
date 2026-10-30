@@ -18,14 +18,21 @@
     string? Current(IPublishedContent item) => item.Url().TrimEnd('/') == path ? "page" : null;
     // The scheme the demo was asked for: the site's dark design, and the forms' dark scheme through the class.
     var scheme = Jiron.Umbraco.FormBuilder.Demo.DemoThemes.SchemeOf(Context);
+    // A page whose forms show in bootstrap5 loads Bootstrap, as a Bootstrap site does, in Bootstrap's dark colour mode
+    // when the demo is dark (Bootstrap's own "auto" needs a script, which the demo does not add).
+    var bootstrap = Jiron.Umbraco.FormBuilder.Demo.DemoThemes.LoadsBootstrap(Context);
 }
 <!doctype html>
-<html lang="@(german ? "de" : "en")" class="@(scheme is null ? null : "jfb-scheme-" + scheme)" data-demo-scheme="@scheme">
+<html lang="@(german ? "de" : "en")" class="@(scheme is null ? null : "jfb-scheme-" + scheme)" data-demo-scheme="@scheme" data-bs-theme="@(bootstrap && scheme == "dark" ? "dark" : null)">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@title</title>
     <link rel="alternate" hreflang="@(german ? "en" : "de")" href="@Model.Url(otherCulture)" />
+    @if (bootstrap)
+    {
+        <link rel="stylesheet" href="@Jiron.Umbraco.FormBuilder.Demo.DemoThemes.Bootstrap" />
+    }
     <link rel="stylesheet" href="/demo/site.css" />
     @* The library has no icon; an empty one keeps browsers from asking for /favicon.ico. *@
     <link rel="icon" href="data:," />

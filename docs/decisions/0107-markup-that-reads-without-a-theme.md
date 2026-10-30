@@ -81,8 +81,8 @@ error summary), and WebKit stops announcing a list drawn without markers as a li
 - A site that takes `unstyled` gets a form that reads and works as it is, which it then styles from the classes; the
   base rules grow to 1.4 KB gzip of their 10 KB budget, the licence notice included.
 - A theme that draws a rating's symbols must hide `.jfb-rating-value` from sight; one that lines a grid's columns up
-  shows `.jfb-matrix-head`; one that draws its own arrows overrides the mask. `bootstrap5` (6.3d) decides each for
-  its look.
+  shows `.jfb-matrix-head`; one that draws its own arrows overrides the mask. `bootstrap5` (6.3d) draws stars
+  and the column heads and keeps the base arrows ([ADR-0108](0108-the-bootstrap5-theme.md)).
 - An error under a field reads as plain text in `unstyled`: the text names the problem and the error summary lists
   it, which is what the markup owes; colour is a theme's.
 - **Revisit** if a field type gains a control whose meaning only a symbol carries: it needs a visible fallback in the

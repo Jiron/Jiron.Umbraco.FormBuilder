@@ -31,3 +31,7 @@
 *.db binary
 *.sqlite binary
 *.eml binary
+
+# Third-party files copied byte for byte (THIRD-PARTY-NOTICES): kept exactly as published, never normalised, and
+# checked against the published files' hashes by scripts/tests/demo-vendor.test.mjs.
+demo/Jiron.Umbraco.FormBuilder.Demo/wwwroot/demo/vendor/** -text -diff linguist-vendored

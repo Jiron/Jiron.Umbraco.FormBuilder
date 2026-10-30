@@ -54,7 +54,7 @@ public sealed partial class FormBuilderThemesTests
             Assert.That(registry.All.Select(theme => (theme.Name, theme.Label)), Is.EqualTo(new[] { ("default", "Default"), ("unstyled", "Unstyled"), ("bootstrap5", "Bootstrap 5") }));
             Assert.That(registry.All.Select(theme => theme.ViewFolder), Is.EqualTo(new[] { "default", "unstyled", "bootstrap5" }), "each theme's folder is its alias");
             Assert.That(registry.All.Select(theme => theme.DarkScheme), Is.EqualTo(new[] { true, false, false }), "only default offers the dark scheme");
-            Assert.That(registry.All.Select(theme => theme.Stylesheet), Is.EqualTo(new[] { "/jfb/assets/themes/default.css", null, null }), "default's is the package's; bootstrap5's comes in 6.3d");
+            Assert.That(registry.All.Select(theme => theme.Stylesheet), Is.EqualTo(new[] { "/jfb/assets/themes/default.css", null, "/jfb/assets/themes/bootstrap5.css" }), "default's and bootstrap5's are the package's; unstyled has none");
             Assert.That(registry.Find("default")!.Tokens.Keys, Is.EquivalentTo(DefaultTokens), "default declares every public token but the site's font and size");
             Assert.That(registry.All.Skip(1).Select(theme => theme.Tokens.Count), Is.All.Zero);
             Assert.That(registry.Default, Is.InstanceOf<DefaultTheme>());
@@ -107,12 +107,13 @@ public sealed partial class FormBuilderThemesTests
             [FormBuilderThemeSlots.AffixText] = "input-group-text",
             [FormBuilderThemeSlots.Counter] = "form-text",
             [FormBuilderThemeSlots.Navigation] = "d-flex flex-wrap gap-2",
-            [FormBuilderThemeSlots.Button] = "btn btn-outline-secondary",
+            [FormBuilderThemeSlots.Button] = "btn btn-secondary",
             [FormBuilderThemeSlots.ButtonPrimary] = "btn btn-primary",
             [FormBuilderThemeSlots.ButtonLink] = "btn btn-link",
             [FormBuilderThemeSlots.ErrorSummary] = "alert alert-danger",
             [FormBuilderThemeSlots.Notice] = "alert alert-secondary",
-        }));
+            [FormBuilderThemeSlots.Outcome] = "alert alert-success",
+        }), "a plain button solid, since Bootstrap's outlined grey is too faint in its dark mode; the outcome a success");
     }
 
     [Test]

@@ -1,0 +1,766 @@
+/*!
+ * Jiron Form Builder, the bootstrap5 theme. The rating's stars below are Lucide's:
+ *
+ * ISC License
+ *
+ * Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other
+ * copyright (c) for Lucide are held by Lucide Contributors 2022.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby
+ * granted, provided that the above copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING
+ * ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL,
+ * DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+ * WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
+ * USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+ * The bootstrap5 theme (ROADMAP 6.3d; ADR-0015, ADR-0108). Bootstrap 5's own classes come through the theme's class
+ * map, and Bootstrap itself is the site's; this stylesheet draws only what Bootstrap has no class for, from Bootstrap's
+ * own variables (--bs-*), so a form follows the site's Bootstrap, its colours and its colour modes, and has no tokens
+ * of its own. Every rule is nested under .jfb-form:where(.jfb-theme-bootstrap5), as the default theme's are (ADR-0106),
+ * and uses logical properties only, so the same rules serve Bootstrap's right-to-left build. The comment above stays
+ * in the built stylesheet, since the licence asks for it in every copy.
+ */
+
+.jfb-form:where(.jfb-theme-bootstrap5) {
+  --_star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z'/%3E%3C/svg%3E");
+  --_star-full: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z'/%3E%3C/svg%3E");
+  --_ring: 0 0 0 var(--bs-focus-ring-width, 0.25rem) var(--bs-focus-ring-color, rgb(13 110 253 / 0.25));
+  --_cols: 1;
+
+  container: jfb-form / inline-size;
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * Pages, groups and the space between them. Bootstrap sizes a legend as a heading; a group's legend keeps that
+   * size with a heading's weight, and every other legend reads as the label it is.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-progress,
+  & .jfb-group {
+    margin-block-end: 1.5rem;
+  }
+
+  & .jfb-title + .jfb-intro {
+    margin-block-start: -0.25rem;
+  }
+
+  & .jfb-group > legend {
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  & fieldset:not(.jfb-group) > legend {
+    font-size: inherit;
+  }
+
+  & .jfb-group > .jfb-help {
+    margin-block-end: 1rem;
+  }
+
+  & .jfb-group-card {
+    padding: 1.25rem;
+    background: var(--bs-body-bg);
+    border: var(--bs-border-width) solid var(--bs-border-color-translucent);
+    border-radius: var(--bs-border-radius-lg);
+  }
+
+  & .jfb-group-card > legend {
+    margin-block-end: 0.75rem;
+  }
+
+  & .jfb-fields {
+    display: grid;
+    grid-template-columns: repeat(var(--_cols), minmax(0, 1fr));
+    column-gap: 1rem;
+    align-items: start;
+  }
+
+  & .jfb-columns-2 {
+    --_cols: 2;
+  }
+
+  & .jfb-columns-3 {
+    --_cols: 3;
+  }
+
+  & .jfb-columns-4 {
+    --_cols: 4;
+  }
+
+  & .jfb-fields > .jfb-span-2 {
+    grid-column: span 2;
+  }
+
+  & .jfb-fields > .jfb-span-3 {
+    grid-column: span 3;
+  }
+
+  & .jfb-fields > .jfb-span-4 {
+    grid-column: span 4;
+  }
+
+  /*
+   * Fields side by side share their rows, as in the default theme (ADR-0106): each takes eight rows of the group's
+   * grid, a label without help two, so the controls of a row line up whatever the labels and help above them hold.
+   */
+  @container jfb-form (min-width: 480px) {
+    & :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4) > .jfb-fields > .jfb-field {
+      display: grid;
+      grid-row: span 8;
+      grid-template-rows: subgrid;
+      align-content: start;
+    }
+
+    & :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4) > .jfb-fields > .jfb-field > fieldset {
+      display: grid;
+      grid-row: 1 / -1;
+      grid-template-rows: subgrid;
+    }
+
+    &
+      :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4)
+      > .jfb-fields
+      > .jfb-field
+      > :first-child:not(:has(+ .jfb-help)),
+    &
+      :is(.jfb-columns-2, .jfb-columns-3, .jfb-columns-4)
+      > .jfb-fields
+      > .jfb-field
+      > fieldset
+      > :first-child:not(:has(+ .jfb-help)) {
+      grid-row: span 2;
+    }
+  }
+
+  @container jfb-form (max-width: 479px) {
+    & .jfb-fields {
+      --_cols: 1;
+    }
+
+    & .jfb-fields > .jfb-field {
+      grid-column: auto;
+    }
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * Labels, help, counters and errors: Bootstrap's paragraphs keep a full line below them; here each sits close to
+   * what it belongs to.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-label:has(+ .jfb-help) {
+    margin-block-end: 0.25rem;
+  }
+
+  & .jfb-help {
+    margin-block: 0 0.5rem;
+  }
+
+  & .jfb-help > :last-child {
+    margin-block-end: 0;
+  }
+
+  & :is(.jfb-counter, .jfb-error, .jfb-choice + .jfb-help) {
+    margin-block: 0.25rem 0;
+  }
+
+  & .jfb-mark {
+    color: var(--bs-secondary-color);
+  }
+
+  & .jfb-counter[data-jfb-over] {
+    color: var(--bs-form-invalid-color);
+  }
+
+  /* An answer that needs a change, as Bootstrap marks .is-invalid, from the markup's aria-invalid. */
+
+  & .jfb-control[aria-invalid='true'] {
+    border-color: var(--bs-form-invalid-border-color);
+  }
+
+  & .jfb-control[aria-invalid='true']:focus {
+    border-color: var(--bs-form-invalid-border-color);
+    box-shadow: 0 0 0 var(--bs-focus-ring-width, 0.25rem) rgba(var(--bs-danger-rgb), 0.25);
+  }
+
+  & [aria-invalid='true'] > .jfb-choices .jfb-choice > input:not(:checked),
+  & .jfb-choice > input[aria-invalid='true']:not(:checked) {
+    border-color: var(--bs-form-invalid-border-color);
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * Choices: in a row, as cards, as buttons (yes or no, a scale) and as stars.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-choices-horizontal {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 1.5rem;
+  }
+
+  & .jfb-choice > .jfb-help {
+    margin-block: 0 0.25rem;
+  }
+
+  & .jfb-other {
+    margin-block-end: 0.25rem;
+    padding-inline-start: 1.5em;
+  }
+
+  & .jfb-choices-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 12.5rem), 1fr));
+    gap: 0.75rem;
+  }
+
+  & .jfb-choices-cards > .jfb-choice {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: start;
+    gap: 0 0.5rem;
+    min-block-size: 0;
+    margin: 0;
+    padding: 0.75rem;
+    background: var(--bs-body-bg);
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius-lg);
+    transition:
+      border-color 0.15s ease-in-out,
+      background-color 0.15s ease-in-out,
+      box-shadow 0.15s ease-in-out;
+  }
+
+  & .jfb-choices-cards > .jfb-choice > img {
+    grid-column: 1 / -1;
+    inline-size: calc(100% + 1.5rem);
+    max-inline-size: none;
+    aspect-ratio: 3 / 2;
+    margin: -0.75rem -0.75rem 0.75rem;
+    object-fit: cover;
+    border-start-start-radius: calc(var(--bs-border-radius-lg) - var(--bs-border-width));
+    border-start-end-radius: calc(var(--bs-border-radius-lg) - var(--bs-border-width));
+  }
+
+  & .jfb-choices-cards > .jfb-choice > input {
+    margin: 0.25em 0 0;
+  }
+
+  & .jfb-choices-cards > .jfb-choice > input:focus {
+    box-shadow: none;
+  }
+
+  & .jfb-choices-cards > .jfb-choice > label {
+    font-weight: 500;
+  }
+
+  /* The whole card is the target. */
+  & .jfb-choices-cards > .jfb-choice > label::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+
+  & .jfb-choices-cards > .jfb-choice > .jfb-help {
+    grid-column: 2;
+  }
+
+  & .jfb-choices-cards > .jfb-choice:has(> :checked) {
+    background: var(--bs-primary-bg-subtle);
+    border-color: var(--bs-primary);
+    box-shadow: inset 0 0 0 var(--bs-border-width) var(--bs-primary);
+  }
+
+  & .jfb-choices-cards > .jfb-choice:has(> :focus-visible) {
+    box-shadow: var(--_ring);
+  }
+
+  & .jfb-choices-cards > .jfb-choice:has(> :checked:focus-visible) {
+    box-shadow:
+      inset 0 0 0 var(--bs-border-width) var(--bs-primary),
+      var(--_ring);
+  }
+
+  & .jfb-choices-cards > .jfb-choice:has(> :disabled) {
+    border-style: dashed;
+  }
+
+  & [aria-invalid='true'] > .jfb-choices-cards > .jfb-choice:not(:has(> :checked, > :disabled)) {
+    border-color: var(--bs-form-invalid-border-color);
+  }
+
+  & .jfb-places {
+    display: block;
+    font-weight: 400;
+    color: var(--bs-secondary-color);
+  }
+
+  /* Buttons: the input stays in place for keyboards and screen readers, unseen, as Bootstrap's .btn-check does. */
+
+  & :is(.jfb-choices-buttons, .jfb-choices-scale) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  & .jfb-choices-scale {
+    gap: 0.25rem;
+  }
+
+  & :is(.jfb-choices-buttons, .jfb-choices-scale, .jfb-choices-rating) > .jfb-choice {
+    min-block-size: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  & :is(.jfb-choices-buttons, .jfb-choices-scale, .jfb-choices-rating) > .jfb-choice > input {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: 0;
+    clip-path: inset(50%);
+    pointer-events: none;
+  }
+
+  & :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 2.75rem;
+    min-block-size: 2.375rem;
+    padding: 0.375rem 0.75rem;
+    color: var(--bs-primary-text-emphasis);
+    cursor: pointer;
+    user-select: none;
+    border: var(--bs-border-width) solid var(--bs-primary);
+    border-radius: var(--bs-border-radius);
+    transition:
+      color 0.15s ease-in-out,
+      background-color 0.15s ease-in-out,
+      box-shadow 0.15s ease-in-out;
+  }
+
+  & .jfb-choices-scale > .jfb-choice > label {
+    padding-inline: 0.5rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* On a narrow form a long scale (8 points or more) wraps into even rows, as in the default theme. */
+
+  @container jfb-form (max-width: 539px) {
+    & .jfb-scale:has(> .jfb-choices-scale > :nth-child(8)) {
+      display: grid;
+    }
+
+    & .jfb-choices-scale:has(> :nth-child(8)) {
+      --_half: 4;
+      display: grid;
+      grid-template-columns: repeat(var(--_half), minmax(0, 1fr));
+    }
+
+    & .jfb-choices-scale:has(> :nth-child(9)) {
+      --_half: 5;
+    }
+
+    & .jfb-choices-scale:has(> :nth-child(11)) {
+      --_half: 6;
+    }
+
+    & .jfb-choices-scale:has(> :nth-child(8)) > .jfb-choice > label {
+      inline-size: 100%;
+    }
+  }
+
+  & :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > :checked + label {
+    color: var(--bs-white);
+    background: var(--bs-primary);
+  }
+
+  & :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > :not(:checked, :disabled) + label:active {
+    background: var(--bs-primary-bg-subtle);
+  }
+
+  @media (hover: hover) {
+    & :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > :not(:checked, :disabled) + label:hover {
+      background: var(--bs-primary-bg-subtle);
+    }
+  }
+
+  & :is(.jfb-choices-buttons, .jfb-choices-scale, .jfb-choices-rating) > .jfb-choice > :focus-visible + label {
+    box-shadow: var(--_ring);
+  }
+
+  & :is(.jfb-choices-buttons, .jfb-choices-scale, .jfb-choices-rating) > .jfb-choice > :disabled + label {
+    cursor: default;
+    opacity: 0.65;
+  }
+
+  & [aria-invalid='true'] > :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > :not(:checked) + label {
+    border-color: var(--bs-form-invalid-border-color);
+  }
+
+  /* A rating: stars that fill up to the chosen one, its numbers for screen readers only (ADR-0107). */
+
+  & .jfb-choices-rating {
+    gap: 0;
+  }
+
+  & .jfb-choices-rating .jfb-rating-value {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  & .jfb-choices-rating > .jfb-choice > label {
+    display: grid;
+    place-items: center;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    cursor: pointer;
+    border-radius: var(--bs-border-radius);
+  }
+
+  & .jfb-choices-rating > .jfb-choice > label::before {
+    content: '';
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+    background: var(--bs-secondary-color);
+    mask: var(--_star) center / contain no-repeat;
+  }
+
+  & .jfb-choices-rating > .jfb-choice:is(:has(> :checked), :has(~ .jfb-choice > :checked)) > label::before {
+    background: var(--bs-primary);
+    mask-image: var(--_star-full);
+  }
+
+  @media (hover: hover) {
+    & .jfb-choices-rating:hover > .jfb-choice:is(:hover, :has(~ .jfb-choice:hover)) > label::before {
+      background: var(--bs-primary);
+      mask-image: var(--_star-full);
+    }
+  }
+
+  & [aria-invalid='true'] .jfb-choices-rating > .jfb-choice > label::before {
+    background: var(--bs-form-invalid-color);
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * A grid: rows of statements answered on shared columns, the columns' heads above them; on a narrow form each row
+   * stacks and every answer shows its column.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-matrix-head,
+  & .jfb-matrix > fieldset {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding-block: 0.5rem;
+    border-block-end: var(--bs-border-width) solid var(--bs-border-color);
+  }
+
+  & .jfb-matrix-head {
+    font-size: 0.875em;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+  }
+
+  & .jfb-matrix-head > :first-child,
+  & .jfb-matrix > fieldset > legend {
+    flex: 0 0 40%;
+    margin: 0;
+  }
+
+  & .jfb-matrix-head > :last-child,
+  & .jfb-matrix > fieldset > .jfb-choices {
+    display: flex;
+    flex: 1;
+  }
+
+  & .jfb-matrix-head > :last-child > span,
+  & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 2.75rem;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+  }
+
+  & .jfb-matrix .jfb-choice > input {
+    margin: 0;
+  }
+
+  & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice > label {
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+  }
+
+  & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice > label > span {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @container jfb-form (max-width: 599px) {
+    & .jfb-matrix-head {
+      display: none;
+    }
+
+    & .jfb-matrix > fieldset {
+      display: grid;
+      gap: 0.25rem;
+    }
+
+    & .jfb-matrix > fieldset > .jfb-choices {
+      display: grid;
+    }
+
+    & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice {
+      gap: 0.5rem;
+      justify-content: start;
+      min-block-size: 1.75rem;
+      text-align: start;
+    }
+
+    & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice > label {
+      position: static;
+    }
+
+    & .jfb-matrix > fieldset > .jfb-choices > .jfb-choice > label > span {
+      position: static;
+      inline-size: auto;
+      block-size: auto;
+      clip-path: none;
+      white-space: normal;
+    }
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * A ranking, a slider, a repeatable group's rows and the buttons that hold only a symbol.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-ranking {
+    margin: 0;
+    padding: 0;
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+  }
+
+  & .jfb-ranking > li {
+    display: grid;
+    grid-template-columns: 2em minmax(0, 1fr) auto auto;
+    gap: 0.25rem;
+    align-items: center;
+    padding-block: 0.25rem;
+    padding-inline: 0.75rem 0.25rem;
+  }
+
+  & .jfb-ranking > li + li {
+    border-block-start: var(--bs-border-width) solid var(--bs-border-color);
+  }
+
+  & .jfb-ranking > li > :first-child {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--bs-secondary-color);
+  }
+
+  & .jfb-button-icon {
+    --bs-btn-color: var(--bs-body-color);
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-color: var(--bs-body-color);
+    --bs-btn-hover-bg: var(--bs-secondary-bg);
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-color: var(--bs-body-color);
+    --bs-btn-active-bg: var(--bs-tertiary-bg);
+    --bs-btn-active-border-color: transparent;
+    --bs-btn-disabled-color: var(--bs-secondary-color);
+    --bs-btn-disabled-bg: transparent;
+    --bs-btn-disabled-border-color: transparent;
+
+    display: inline-grid;
+    place-items: center;
+    min-inline-size: 2.75rem;
+    min-block-size: 2.75rem;
+    padding: 0;
+  }
+
+  & .jfb-button-icon[aria-disabled='true'] {
+    cursor: default;
+    opacity: var(--bs-btn-disabled-opacity, 0.65);
+  }
+
+  & .jfb-range {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  & :is(.jfb-range > output, output.jfb-output) {
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  & .jfb-repeater {
+    display: grid;
+    gap: 0.75rem;
+    justify-items: start;
+  }
+
+  & .jfb-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0 1rem;
+    align-items: center;
+    justify-self: stretch;
+    padding: 0.75rem 1rem;
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius-lg);
+  }
+
+  & .jfb-row > legend {
+    margin: 0;
+    font-weight: 500;
+  }
+
+  & .jfb-row > .jfb-fields {
+    grid-column: 1 / -1;
+    margin-block-start: 0.5rem;
+  }
+
+  /* -------------------------------------------------------------------------------------------------------------
+   * Progress, the error summary, notices and the outcome: Bootstrap's alerts, sized for a form.
+   * ----------------------------------------------------------------------------------------------------------- */
+
+  & .jfb-progress-text {
+    margin-block: 0 0.5rem;
+    font-size: 0.875em;
+    color: var(--bs-secondary-color);
+  }
+
+  & .jfb-progress-steps > ol {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  & .jfb-progress-steps > ol > li {
+    padding-block-start: 0.5rem;
+    font-size: 0.875em;
+    color: var(--bs-secondary-color);
+    border-block-start: 0.25rem solid var(--bs-secondary-bg);
+  }
+
+  & .jfb-progress-steps > ol > li:is([aria-current='step'], [data-jfb-done]) {
+    border-block-start-color: var(--bs-primary);
+  }
+
+  & .jfb-progress-steps > ol > li[aria-current='step'] {
+    font-weight: 500;
+    color: var(--bs-emphasis-color);
+  }
+
+  & .jfb-progress-bar > progress {
+    display: block;
+    inline-size: 100%;
+    block-size: 0.5rem;
+    overflow: hidden;
+    appearance: none;
+    background: var(--bs-secondary-bg);
+    border: 0;
+    border-radius: var(--bs-border-radius);
+  }
+
+  & .jfb-progress-bar > progress::-webkit-progress-bar {
+    background: var(--bs-secondary-bg);
+  }
+
+  & .jfb-progress-bar > progress::-webkit-progress-value {
+    background: var(--bs-primary);
+  }
+
+  & .jfb-progress-bar > progress::-moz-progress-bar {
+    background: var(--bs-primary);
+  }
+
+  & :is(.jfb-error-summary, .jfb-notice, .jfb-outcome) > :is(h1, h2) {
+    margin-block-end: 0.5rem;
+    font-size: 1.25rem;
+    color: inherit;
+  }
+
+  & :is(.jfb-error-summary, .jfb-notice, .jfb-outcome) > :last-child {
+    margin-block-end: 0;
+  }
+
+  & :is(.jfb-error-summary, .jfb-notice, .jfb-outcome) a:not(.btn) {
+    font-weight: 600;
+    color: var(--bs-alert-link-color);
+  }
+
+  & .jfb-notice-error {
+    --bs-alert-color: var(--bs-danger-text-emphasis);
+    --bs-alert-bg: var(--bs-danger-bg-subtle);
+    --bs-alert-border-color: var(--bs-danger-border-subtle);
+    --bs-alert-link-color: var(--bs-danger-text-emphasis);
+  }
+
+  & .jfb-outcome[data-jfb-pending] {
+    --bs-alert-color: var(--bs-info-text-emphasis);
+    --bs-alert-bg: var(--bs-info-bg-subtle);
+    --bs-alert-border-color: var(--bs-info-border-subtle);
+    --bs-alert-link-color: var(--bs-info-text-emphasis);
+  }
+
+  & .jfb-outcome > .jfb-navigation {
+    margin-block-start: 1rem;
+  }
+
+  /* Motion that only colours or rings, and none at all when the visitor asks for less, as Bootstrap's own. */
+
+  @media (prefers-reduced-motion: reduce) {
+    & :is(.jfb-choices-cards > .jfb-choice, .jfb-choice > label) {
+      transition: none;
+    }
+  }
+
+  /* Forced colours (Windows contrast themes): the stars take the system's colours. */
+
+  @media (forced-colors: active) {
+    & .jfb-choices-rating > .jfb-choice > label::before {
+      forced-color-adjust: none;
+      background: CanvasText;
+    }
+
+    & .jfb-choices-rating > .jfb-choice:is(:has(> :checked), :has(~ .jfb-choice > :checked)) > label::before {
+      background: Highlight;
+    }
+
+    & :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > :checked + label {
+      forced-color-adjust: none;
+      color: HighlightText;
+      background: Highlight;
+      border-color: Highlight;
+    }
+  }
+}

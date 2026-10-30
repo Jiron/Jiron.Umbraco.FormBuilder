@@ -25,6 +25,7 @@ public sealed class ThemeClassesModel
         Page = Join("jfb-page", FormBuilderThemeSlots.Page);
         Label = Join("jfb-label", FormBuilderThemeSlots.Label);
         PartLabel = Theme(FormBuilderThemeSlots.Label);
+        FileInput = Theme(FormBuilderThemeSlots.Control);
         Help = Join("jfb-help", FormBuilderThemeSlots.Help);
         Error = Join("jfb-error", FormBuilderThemeSlots.Error);
         Control = Join("jfb-control", FormBuilderThemeSlots.Control);
@@ -58,6 +59,9 @@ public sealed class ThemeClassesModel
 
     /// <summary>The label of a part of a name or an address, which has no class of Jiron Form Builder's own: the theme's classes for a label, or null.</summary>
     public string? PartLabel { get; }
+
+    /// <summary>A file input, which has no class of Jiron Form Builder's own: the theme's classes for a control, or null.</summary>
+    public string? FileInput { get; }
 
     /// <summary>A help text (<c>jfb-help</c>).</summary>
     public string Help { get; }

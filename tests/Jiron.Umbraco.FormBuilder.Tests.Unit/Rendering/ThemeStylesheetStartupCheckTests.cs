@@ -17,6 +17,7 @@ public sealed class ThemeStylesheetStartupCheckTests
     {
         ["themes/base.css"] = Encoding.UTF8.GetBytes(".jfb-form [hidden] { display: none; }"),
         ["themes/default.css"] = Encoding.UTF8.GetBytes(".jfb-form:where(.jfb-theme-default) { color: black; }"),
+        ["themes/bootstrap5.css"] = Encoding.UTF8.GetBytes(".jfb-form:where(.jfb-theme-bootstrap5) { color: black; }"),
         ["themes/calm.css"] = Encoding.UTF8.GetBytes(".jfb-form { color: teal; }"),
         ["themes/calm.css.br"] = [1, 2],
     });
@@ -24,7 +25,7 @@ public sealed class ThemeStylesheetStartupCheckTests
     [Test]
     public void ThemesWithoutAStylesheet_WithTheSitesOwn_OrWithOneTheAssemblyHolds_Pass()
     {
-        var check = Check(new DefaultTheme(), new UnstyledTheme(), new Theme("site", "/css/forms.css"), new Theme("calm", "/jfb/assets/themes/calm.css"), new Theme("shouting", "/JFB/Assets/themes/calm.css"));
+        var check = Check(new DefaultTheme(), new UnstyledTheme(), new Bootstrap5Theme(), new Theme("site", "/css/forms.css"), new Theme("calm", "/jfb/assets/themes/calm.css"), new Theme("shouting", "/JFB/Assets/themes/calm.css"));
 
         Assert.That(check.Validate(Options.DefaultName, new FormBuilderStartupChecks()).Succeeded, Is.True);
     }

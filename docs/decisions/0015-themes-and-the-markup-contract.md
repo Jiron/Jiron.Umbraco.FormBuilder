@@ -1,14 +1,16 @@
 # 0015. Themes and the markup contract
 
-- Status: accepted; the functional base rules and theme resolution amended in 1.8; the default view folder, its
-  views and the hooks they hold built in 6.2b (ADR-0093); the choice controls, one box's label and the copy of the
-  default button decided in 6.2d (ADR-0096); the controls with parts, dates and outputs, the captcha's place and a
-  site's own type's control in 6.2e (ADR-0097); a repeatable group's rows, their names and ids, and its Add and Remove
-  buttons in 6.2f (ADR-0098); the registry, a form's theme, the view order, the class map and the base rules built in
-  6.3a by [ADR-0105](0105-the-theme-registry-and-the-base-rules.md); the dark scheme's class on the form or on any
-  ancestor, and each theme's stylesheet scoped to its forms, in 6.3b ([ADR-0106](0106-the-default-theme-ships.md));
-  markup that reads without a theme (a rating's numbers, a scale along a line, a grid's column heads, a ranking's
-  arrows, the lists' roles) in 6.3c ([ADR-0107](0107-markup-that-reads-without-a-theme.md))
+- Status: accepted; the functional base rules and theme resolution amended in 1.8; the default view folder, its views
+  and the hooks they hold built in 6.2b (ADR-0093); the choice controls, one box's label and the copy of the default
+  button decided in 6.2d (ADR-0096); the controls with parts, dates and outputs, the captcha's place and a site's own
+  type's control in 6.2e (ADR-0097); a repeatable group's rows, their names and ids, and its Add and Remove buttons in
+  6.2f (ADR-0098); the registry, a form's theme, the view order, the class map and the base rules built in 6.3a by
+  [ADR-0105](0105-the-theme-registry-and-the-base-rules.md); the dark scheme's class on the form or on any ancestor,
+  and each theme's stylesheet scoped to its forms, in 6.3b ([ADR-0106](0106-the-default-theme-ships.md)); markup that
+  reads without a theme (a rating's numbers, a scale along a line, a grid's column heads, a ranking's arrows, the
+  lists' roles) in 6.3c ([ADR-0107](0107-markup-that-reads-without-a-theme.md)); `bootstrap5`'s stylesheet, its class
+  map's plain button and outcome, and the file input's theme classes in 6.3d
+  ([ADR-0108](0108-the-bootstrap5-theme.md))
 - Date: 2026-10-23
 - Roadmap step: 1.7b (decided); built in 2.3 (the visual design and its tokens), 6.2 (rendering), 6.3 (the themes),
   6.4 (the runtime), 6.6 (the headless element) and 12.2 (the theme editor)

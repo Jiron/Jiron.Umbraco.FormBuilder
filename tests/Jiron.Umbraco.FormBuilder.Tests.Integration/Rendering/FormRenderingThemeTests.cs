@@ -53,8 +53,10 @@ public sealed class FormRenderingThemeTests : RenderingTestBase
         _ = await PublishFormAsync("renderingPlain");
         _ = await PagesAsync("themed");
 
-        var boot = (await DocumentAsync("/themed/?form=renderingPlain&theme=bootstrap5")).QuerySelector("form.jfb-form")!;
-        var plain = (await DocumentAsync("/themed/?form=renderingPlain&theme=unstyled")).QuerySelector("form.jfb-form")!;
+        var bootPage = await DocumentAsync("/themed/?form=renderingPlain&theme=bootstrap5");
+        var plainPage = await DocumentAsync("/themed/?form=renderingPlain&theme=unstyled");
+        var boot = bootPage.QuerySelector("form.jfb-form")!;
+        var plain = plainPage.QuerySelector("form.jfb-form")!;
 
         Assert.Multiple(() =>
         {
@@ -65,6 +67,8 @@ public sealed class FormRenderingThemeTests : RenderingTestBase
             Assert.That(boot.QuerySelector("[data-jfb-field]")!.GetAttribute("class"), Is.EqualTo("jfb-field jfb-field-text mb-3"));
             Assert.That(plain.QuerySelector("input#jfb-1-name")!.GetAttribute("class"), Is.EqualTo("jfb-control"));
             Assert.That(plain.GetAttribute("class"), Is.EqualTo("jfb-form jfb-theme-unstyled"));
+            Assert.That(bootPage.QuerySelectorAll("link[rel=stylesheet][href^='/jfb/assets/themes/bootstrap5.css?v=']"), Has.Length.EqualTo(1), "bootstrap5 brings its stylesheet for what Bootstrap lacks, once");
+            Assert.That(plainPage.QuerySelectorAll("link[rel=stylesheet][href^='/jfb/assets/themes/']").Select(link => link.GetAttribute("href")!.Split('?')[0]), Is.EqualTo(new[] { "/jfb/assets/themes/base.css" }), "unstyled the base rules alone");
         });
     }
 

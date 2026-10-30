@@ -234,6 +234,7 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
             (".jfb-help", FormBuilderThemeSlots.Help, true),
             (".jfb-error", FormBuilderThemeSlots.Error, false),
             ("input.jfb-control, textarea.jfb-control", FormBuilderThemeSlots.Control, true),
+            ("input[type=file]", FormBuilderThemeSlots.Control, true),
             ("select.jfb-control", FormBuilderThemeSlots.Select, true),
             (".jfb-choices", FormBuilderThemeSlots.Choices, true),
             (".jfb-choice", FormBuilderThemeSlots.Choice, true),

@@ -91,6 +91,13 @@ system asks for dark; the demo keeps it in the cookie `jfb-demo-scheme`, and `?s
 layout puts the class `jfb-scheme-dark` or `jfb-scheme-auto` on the page's root, as a site would
 ([ADR-0106](../docs/decisions/0106-the-default-theme-ships.md)).
 
+A page whose forms show in `bootstrap5` loads Bootstrap, as a Bootstrap site loads its own: the demo's copy of
+Bootstrap 5.3.8 in `wwwroot/demo/vendor/bootstrap-5.3.8/` (MIT, kept byte for byte as published, with its licence and
+its right-to-left build), before the site's styles. That page is then a Bootstrap site: its ground and text are
+Bootstrap's body colours, and `?scheme=dark` puts Bootstrap in its dark mode (`data-bs-theme="dark"`); `?scheme=auto`
+leaves Bootstrap light, since its own "auto" needs a script
+([ADR-0108](../docs/decisions/0108-the-bootstrap5-theme.md)). Nothing of Bootstrap ships with the package.
+
 The specimen (`/en/specimen/`, `/de/muster/`), which the menu leaves out, holds a form with a field of every built-in
 type, on two pages, to look at a theme with: `http://127.0.0.1:5500/en/specimen/?theme=default&scheme=dark`. Its
 image field and picture choices show the demo's one picture (`Seeding/Media/picture.svg`, drawn for the demo), which

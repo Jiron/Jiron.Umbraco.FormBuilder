@@ -109,6 +109,9 @@ test.describe('without JavaScript', () => {
     test(`${theme}: a ranking's move without JavaScript opens the page with the option before the moved one in view`, async ({
       page,
     }) => {
+      // A site may scroll smoothly to the place (Bootstrap's reboot does, unless the visitor asks for less motion); the
+      // place is the same either way, so the check reads it without the animation.
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       const feedback = formPages().find((shown) => shown.form === 'feedback');
       expect(feedback, 'the demo has the feedback page').toBeDefined();
       await page.goto(`${pathOf(feedback!.texts.en, 'en')}?theme=${theme}`);

@@ -6,8 +6,9 @@
   [ADR-0015](0015-themes-and-the-markup-contract.md)'s dark scheme (the class may sit on an ancestor); hides a
   rating's numbers, which [ADR-0107](0107-markup-that-reads-without-a-theme.md) shows in 6.3c, behind its stars
 - Date: 2026-10-30
-- Roadmap step: 6.3b (decided and built); 6.3d gives `bootstrap5` its stylesheet under the same rules, 6.4 the ground
-  check and the error summary's punctuation, 12.2 the library themes built on `default`
+- Roadmap step: 6.3b (decided and built); 6.3d gives `bootstrap5` its stylesheet under the same rules
+  ([ADR-0108](0108-the-bootstrap5-theme.md)), 6.4 the ground check and the error summary's punctuation, 12.2 the
+  library themes built on `default`
 
 ## Context
 

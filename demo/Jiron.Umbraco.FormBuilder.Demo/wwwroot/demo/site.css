@@ -3,12 +3,14 @@
  * (docs/ux/website/assets/site.css), grown into a whole site. It stands for any customer's site, so it never styles
  * anything inside a form: the forms bring their theme, and inherit only this page's font and size. Its dark design
  * shows with ?scheme=dark, or with ?scheme=auto when the visitor's system asks for dark (DemoThemes.cs); the
- * layout then puts the same jfb-scheme-* class on the page's root, which gives the forms their dark scheme.
+ * layout then puts the same jfb-scheme-* class on the page's root, which gives the forms their dark scheme. A page whose
+ * forms show in bootstrap5 loads Bootstrap (DemoThemes.cs) and is then a Bootstrap site: its ground and text are
+ * Bootstrap's body colours, in Bootstrap's colour mode, which Bootstrap's form colours are made for.
  */
 :root {
-  --site-ink: #22262e;
+  --site-ink: var(--bs-body-color, #22262e);
   --site-muted: #545b67;
-  --site-bg: #f6f7f9;
+  --site-bg: var(--bs-body-bg, #f6f7f9);
   --site-head: #ffffff;
   --site-line: #dde1e7;
   --site-link: #7a2335;
@@ -20,9 +22,9 @@
 }
 
 html[data-demo-scheme="dark"] {
-  --site-ink: #e6e8ec;
+  --site-ink: var(--bs-body-color, #e6e8ec);
   --site-muted: #a7afbc;
-  --site-bg: #14181f;
+  --site-bg: var(--bs-body-bg, #14181f);
   --site-head: #0f1217;
   --site-line: #2a313c;
   --site-link: #f0a3b0;
@@ -35,9 +37,9 @@ html[data-demo-scheme="dark"] {
 
 @media (prefers-color-scheme: dark) {
   html[data-demo-scheme="auto"] {
-    --site-ink: #e6e8ec;
+    --site-ink: var(--bs-body-color, #e6e8ec);
     --site-muted: #a7afbc;
-    --site-bg: #14181f;
+    --site-bg: var(--bs-body-bg, #14181f);
     --site-head: #0f1217;
     --site-line: #2a313c;
     --site-link: #f0a3b0;

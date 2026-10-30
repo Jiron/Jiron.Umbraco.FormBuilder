@@ -57,7 +57,7 @@ public sealed class WebsiteAssetTests : ConfiguredTestServerTestBase
         Assert.Multiple(() =>
         {
             Assert.That(pending, Is.True, "the test host has not run the plan");
-            Assert.That(originals, Does.Contain("runtime/jfb-runtime.js").And.Contain("element/jfb-element.js").And.Contain("themes/base.css").And.Contain("themes/default.css"), "the client was built, the default theme's stylesheet with it");
+            Assert.That(originals, Does.Contain("runtime/jfb-runtime.js").And.Contain("element/jfb-element.js").And.Contain("themes/base.css").And.Contain("themes/default.css").And.Contain("themes/bootstrap5.css"), "the client was built, the default and bootstrap5 themes' stylesheets with it");
             Assert.That(assets.All.Select(asset => asset.Name), Is.EquivalentTo(originals), "the assembly holds exactly the built originals");
             Assert.That(originals.Where(name => assets.Find(name)?.Fingerprint != Convert.ToHexStringLower(SHA256.HashData(built[name]))[..12]), Is.Empty, "each fingerprint is of its original");
             Assert.That(originals.Where(name => !Decompressed(built, name)), Is.Empty, "each copy holds its original");

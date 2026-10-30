@@ -8,7 +8,8 @@
   [ADR-0104](0104-the-output-cache-rules-and-the-render-endpoint.md) (the render endpoint's `theme`); the honeypot's
   base rule clipped where it stands instead of moved off the page by [ADR-0106](0106-the-default-theme-ships.md) in
   6.3b; the base rules extended by [ADR-0107](0107-markup-that-reads-without-a-theme.md) in 6.3c (a scale along a
-  line, a grid's column heads, a ranking's arrows and places)
+  line, a grid's column heads, a ranking's arrows and places); `bootstrap5`'s class map changed and its stylesheet
+  built by [ADR-0108](0108-the-bootstrap5-theme.md) in 6.3d
 - Date: 2026-10-29
 - Roadmap step: 6.3a (decided and built); 6.3b gives `default` its stylesheet and tokens, 6.3c `unstyled` its review
   and the markup that reads without a theme, 6.3d `bootstrap5` its stylesheet, 6.6 the headless element's base rules,
@@ -82,9 +83,9 @@ Option 2, option 2 and option 3.
     declaration's or holds an address, or a view folder that is not a folder name below `Views/JironFormBuilder/`.
 - **The built-in themes:** `default` (its view folder `default`; the dark scheme; its stylesheet and tokens come with
   its look in 6.3b), `unstyled` (no stylesheet, no classes, no tokens, no dark scheme) and `bootstrap5` (its class map
-  now, onto Bootstrap 5's own classes; its small stylesheet for what Bootstrap lacks comes in 6.3d). Each built-in
-  theme's view folder is its alias; only `default` ships views, so the others render the default views with their
-  classes, and a site may still give them views of its own.
+  now, onto Bootstrap 5's own classes; its small stylesheet for what Bootstrap lacks came in 6.3d, ADR-0108). Each
+  built-in theme's view folder is its alias; only `default` ships views, so the others render the default views with
+  their classes, and a site may still give them views of its own.
 - **A form's theme**, first that is set: the placement's `theme` (`<jfb-render theme="…">`, the view component's
   `theme`, the render endpoint's `theme`, which is an alias, none when blank, and `400 invalid_request` for anything
   else, and the form picker's placement in 6.7), the form's `appearance.theme`, the General section's `theme` for the

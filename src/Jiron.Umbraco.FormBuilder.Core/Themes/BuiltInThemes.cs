@@ -108,11 +108,16 @@ public sealed class UnstyledTheme : IFormBuilderTheme
 }
 
 /// <summary>
-/// Bootstrap 5's own classes on the default markup, for a site that loads Bootstrap itself (ADR-0015); Jiron Form
-/// Builder never ships Bootstrap. Its small stylesheet for what Bootstrap lacks comes with its look (6.3d).
+/// Bootstrap 5's own classes on the default markup, for a site that loads Bootstrap itself (ADR-0015, ADR-0108); Jiron
+/// Form Builder never ships Bootstrap. Its stylesheet draws only what Bootstrap has no class for, from Bootstrap's own
+/// variables, so it follows the site's Bootstrap and its colour modes; it styles only the forms that carry
+/// <c>jfb-theme-bootstrap5</c>.
 /// </summary>
 public sealed class Bootstrap5Theme : IFormBuilderTheme
 {
+    /// <summary>The address of the stylesheet for what Bootstrap lacks, one of the package's website assets.</summary>
+    public const string StylesheetPath = "/jfb/assets/themes/bootstrap5.css";
+
     /// <inheritdoc />
     public string Name => "bootstrap5";
 
@@ -120,7 +125,7 @@ public sealed class Bootstrap5Theme : IFormBuilderTheme
     public string Label => "Bootstrap 5";
 
     /// <inheritdoc />
-    public string? Stylesheet => null;
+    public string? Stylesheet => StylesheetPath;
 
     /// <inheritdoc />
     public IReadOnlyDictionary<string, string> Classes { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -140,11 +145,12 @@ public sealed class Bootstrap5Theme : IFormBuilderTheme
         [FormBuilderThemeSlots.AffixText] = "input-group-text",
         [FormBuilderThemeSlots.Counter] = "form-text",
         [FormBuilderThemeSlots.Navigation] = "d-flex flex-wrap gap-2",
-        [FormBuilderThemeSlots.Button] = "btn btn-outline-secondary",
+        [FormBuilderThemeSlots.Button] = "btn btn-secondary",
         [FormBuilderThemeSlots.ButtonPrimary] = "btn btn-primary",
         [FormBuilderThemeSlots.ButtonLink] = "btn btn-link",
         [FormBuilderThemeSlots.ErrorSummary] = "alert alert-danger",
         [FormBuilderThemeSlots.Notice] = "alert alert-secondary",
+        [FormBuilderThemeSlots.Outcome] = "alert alert-success",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <inheritdoc />
