@@ -5,6 +5,8 @@
   (the runtime renders the server's summary and inline errors and moves the focus); amends
   [ADR-0015](0015-themes-and-the-markup-contract.md) (the runtime's templates)
 - Date: 2026-10-30
+- Amended in 6.4f: a passing send asks for the post in a task of its own, since a form ignores a submission asked
+  for while its submit event still runs
 - Roadmap step: 6.4e (decided and built); 6.4h sends with `fetch` and shows the server's errors in place, 6.5 moves
   between pages in the browser
 

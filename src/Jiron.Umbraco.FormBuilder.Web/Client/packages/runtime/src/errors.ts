@@ -233,11 +233,21 @@ export function pageErrorsOf(form: HTMLFormElement, model: FormModel, clock: () 
     event.preventDefault();
     if (checking) return;
     checking = true;
-    void validate(button.value === 'next' ? 'page' : 'send')
-      .then((passes) => {
-        if (passes) send(button);
-      })
-      .finally(() => (checking = false));
+    void validate(button.value === 'next' ? 'page' : 'send').then(
+      (passes) => {
+        if (!passes) {
+          checking = false;
+          return;
+        }
+        // The press's own submit event may still be running: the browser runs its listeners' microtasks before it
+        // ends, and a form ignores a submission asked for while it fires one. The post goes on in a task of its own.
+        setTimeout(() => {
+          checking = false;
+          send(button);
+        });
+      },
+      () => (checking = false),
+    );
   });
 
   const answered = (event: Event): void => {

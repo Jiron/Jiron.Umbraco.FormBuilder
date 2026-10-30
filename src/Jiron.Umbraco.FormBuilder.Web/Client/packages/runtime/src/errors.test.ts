@@ -321,6 +321,22 @@ describe('a send the page does not stop', () => {
     expect(sent).toEqual(['submit']);
   });
 
+  it("goes on in a task of its own, after the press's submit event, which ignores a submission asked for in it", async () => {
+    const { form, sent } = contact(ONE_PAGE, FIELDS);
+    type('jfb-1-name', 'Ada');
+    type('jfb-1-email', 'ada@example.com');
+    leave('jfb-1-email');
+    await settle();
+    press(form, 'send');
+    for (let turn = 0; turn < 50; turn++) await Promise.resolve();
+    expect(sent, 'the check is done, the words loaded, yet no post within the event').toEqual([]);
+    await settle();
+    expect(sent).toEqual(['submit']);
+    press(form, 'send');
+    await settle();
+    expect(sent, 'and a later press sends again').toEqual(['submit', 'submit']);
+  });
+
   it('goes to the server when its errors lie on a page the server has not shown', async () => {
     const pages: ModelPage[] = [
       { key: 'p1', groups: [{ key: 'g1', fields: [NAME] }] },

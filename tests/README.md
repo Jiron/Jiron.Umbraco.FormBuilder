@@ -930,7 +930,8 @@ visitor corrects and clears it on the input that fixes it; a refused send stops 
 summary from the form's templates before the note with its focus, and `jfb:invalid` without an answer; the summary
 is updated in place, goes once no error shows, and an empty submission's goes at the first answer; a field the rules
 hide loses its error; without a summary the focus goes to the first field; a second press and Back are left alone;
-a passing send goes on with its button, as does one whose errors are on a page the server has not shown; a summary
+a passing send goes on with its button, in a task of its own after the press's submit event (6.4f), as does one
+whose errors are on a page the server has not shown; a summary
 link moves the focus; and the server's errors stay while their field is unchanged and go when it changes or the
 rules hide it; `errors.offline.test.ts` sends as without JavaScript when the words cannot load; `jfb-runtime.test.ts`
 holds the global. In Edge,
