@@ -70,8 +70,14 @@ export interface FormModel {
     readonly validationRules?:
       | readonly (ProjectedRule & { readonly key: string; readonly field: string; readonly message?: string | null })[]
       | null;
-    /** The query values the rules and hidden fields may read, by name (ADR-0088). */
-    readonly settings?: { readonly queryValues?: readonly string[] | null } | null;
+    /**
+     * The query values the rules and hidden fields may read, by name (ADR-0088), and whether the error summary lists
+     * the fields' errors (ADR-0113).
+     */
+    readonly settings?: {
+      readonly queryValues?: readonly string[] | null;
+      readonly validationSummary?: boolean | null;
+    } | null;
   };
   /** By each field's key, a repeatable group's child fields too. */
   readonly fields: Readonly<Record<string, ModelFieldLogic>>;

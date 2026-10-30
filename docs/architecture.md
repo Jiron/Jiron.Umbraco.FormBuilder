@@ -162,7 +162,10 @@ flowchart LR
   answers (`validation.ts`): each shown field's errors in the pipeline's order (`checks.ts`), the shared logic's
   `checkField` over the answers and the rules' state, what only the server can decide left to it, and each field's
   first error worded as Web's render words it (`messages.ts`), in the words of the page's language, a file of its
-  own loaded the first time a message is needed ([ADR-0112](decisions/0112-checks-and-messages-on-the-page.md));
+  own loaded the first time a message is needed ([ADR-0112](decisions/0112-checks-and-messages-on-the-page.md)),
+  and shows the errors (`errors.ts`, `display.ts`) in the theme's markup from the form's templates: as the visitor
+  leaves a field, gone once fixed, and after a refused send with the summary, which takes the focus, and
+  `jfb:invalid`; a passing send goes on as without JavaScript ([ADR-0113](decisions/0113-errors-on-the-page.md));
 - `element`: `<jfb-form>`, the headless renderer, with the same markup and runtime;
 - `backoffice`: the Forms section in Lit and TypeScript with UUI, through the generated client.
 

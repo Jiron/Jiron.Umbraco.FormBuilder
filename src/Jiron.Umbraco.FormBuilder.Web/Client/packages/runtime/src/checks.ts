@@ -7,6 +7,7 @@
 import {
   BUILT_IN_TYPES,
   checkField,
+  clean,
   type CheckedField,
   type CheckedOption,
   type Context,
@@ -31,6 +32,8 @@ export interface PageError {
   readonly rule?: string;
   /** For a validation rule's message at a grid's row, the row's key. */
   readonly gridRow?: string;
+  /** For a name or an address, the parts the page marks invalid: the needed ones that are empty, else every part. */
+  readonly parts?: readonly string[];
 }
 
 /** Every field outside repeatable groups, in the order of the form's pages and groups. */
@@ -51,8 +54,11 @@ export function errorsOf(model: FormModel, reading: PageReading, state: FormStat
     if (hidden.has(field.key)) continue;
     const group = reading.groups.get(field.key);
     if (group === undefined) {
-      check(errors, model, field, reading.fields.get(field.key), null, required.has(field.key), others, context);
+      const from = errors.length;
+      const read = reading.fields.get(field.key);
+      check(errors, model, field, read, null, required.has(field.key), others, context);
       messages(errors, state.messages, field, null);
+      withParts(errors, from, model, field, read, required.has(field.key));
       continue;
     }
     for (const code of group.errors) errors.push({ field: field.key, row: null, code });
@@ -68,17 +74,11 @@ export function errorsOf(model: FormModel, reading: PageReading, state: FormStat
           : valuesOf(child.key, children.get(child.key), rowState.calculations);
       for (const child of field.fields ?? []) {
         if (rowState.hidden.includes(child.key)) continue;
-        check(
-          errors,
-          model,
-          child,
-          children.get(child.key),
-          row,
-          rowState.required.includes(child.key),
-          rowOthers,
-          context,
-        );
+        const from = errors.length;
+        const isRequired = rowState.required.includes(child.key);
+        check(errors, model, child, children.get(child.key), row, isRequired, rowOthers, context);
         messages(errors, rowState.messages, child, row);
+        withParts(errors, from, model, child, children.get(child.key), isRequired);
       }
     });
   }
@@ -142,6 +142,37 @@ function optionsOf(field: ModelField): { options?: readonly CheckedOption[]; par
     ...(options.parent == null ? {} : { parent: options.parent }),
   };
 }
+
+/**
+ * The parts of a built-in name or address its errors mark, as Web's render marks them: the parts it needs (those its
+ * settings list, else every part it asks for once it is required) that are empty, or every part when none is.
+ */
+function withParts(
+  errors: PageError[],
+  from: number,
+  model: FormModel,
+  field: ModelField,
+  read: FieldRead | undefined,
+  isRequired: boolean,
+): void {
+  if (errors.length === from || (field.type !== 'name' && field.type !== 'address')) return;
+  if (!Object.hasOwn(model.fields, field.key) || model.fields[field.key]?.builtIn !== true) return;
+  const asked = textsOf(field.settings?.['parts']);
+  const listed = textsOf(field.settings?.['requiredParts']).filter((part) => asked.includes(part));
+  const needed = listed.length > 0 ? listed : isRequired ? asked : [];
+  const given = read?.reading?.answers?.parts ?? {};
+  const empty = needed.filter((part) =>
+    (Object.hasOwn(given, part) ? (given[part] ?? []) : []).every((text) => clean(text).length === 0),
+  );
+  const parts = empty.length === 0 ? asked : empty;
+  for (let at = from; at < errors.length; at++) {
+    const error = errors[at];
+    if (error !== undefined) errors[at] = { ...error, parts };
+  }
+}
+
+const textsOf = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((each): each is string => typeof each === 'string') : [];
 
 /** The validation rules whose message shows at the field or at one of a grid's rows. */
 function messages(

@@ -29,6 +29,8 @@ export interface ShownError {
   readonly message: string;
   /** The summary link's text. */
   readonly link: string;
+  /** For a name or an address, the parts the page marks invalid. */
+  readonly parts?: readonly string[];
 }
 
 const LANGUAGES: Readonly<Record<string, () => Promise<MessageWords>>> = {
@@ -87,9 +89,10 @@ export function shownErrors(
     const prefix = row === null || group === null ? form.id : `${form.id}-${group.alias ?? ''}-${String(row)}`;
     const target = `${prefix}-${field.alias ?? field.key.replaceAll('-', '')}`;
     const element = elementOf(form, field.key, row, group?.key ?? null);
+    const parts = error.parts === undefined ? {} : { parts: error.parts };
     const own = ownMessage(model, field, error);
     if (own !== null) {
-      shown.push({ field: field.key, row, code: error.code, target, message: own, link: own });
+      shown.push({ field: field.key, row, code: error.code, target, message: own, link: own, ...parts });
       return;
     }
     const posted =
@@ -123,6 +126,7 @@ export function shownErrors(
       target,
       message: gridRow === null ? message : summaryEntry(message, gridRow, null, words),
       link: summaryEntry(message, label, legend, words),
+      ...parts,
     });
   };
   for (const field of fieldsOf(model)) {
@@ -181,7 +185,12 @@ function holdsValue(model: FormModel, field: ModelField): boolean {
 }
 
 /** A field's element on the page: outside any row, or in a repeatable group's row. */
-function elementOf(form: HTMLFormElement, key: string, row: number | null, group: string | null): HTMLElement | null {
+export function elementOf(
+  form: HTMLFormElement,
+  key: string,
+  row: number | null,
+  group: string | null,
+): HTMLElement | null {
   if (row === null || group === null)
     return (
       [...form.querySelectorAll<HTMLElement>(`[data-jfb-field="${key}"]`)].find(

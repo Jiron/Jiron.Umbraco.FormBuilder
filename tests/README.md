@@ -122,11 +122,15 @@ writes `tests/fixtures/definitions/logic.json` (the form endpoint's answer and C
 full definition fixture and each demo form; `JFB_UPDATE_SNAPSHOTS=1` writes it and fails), and
 `packages/logic/test/projection.test.ts` makes the same model from each answer with `logicFormOf`. The checks and
 messages on the page (6.4d, [ADR-0112](../docs/decisions/0112-checks-and-messages-on-the-page.md)) are held to the
-server's own pages: `Rendering/ErrorFixtureTests.cs` posts a form of every check the browser makes and a form of two
-pages as a browser without JavaScript does, in English and in German, and writes each page the server renders again
-with its errors to `tests/fixtures/rendering/errors-en.json` and `errors-de.json` (`JFB_UPDATE_SNAPSHOTS=1` writes
-them and fails); `packages/runtime/src/checks.fixture.test.ts` checks each page as the runtime does and expects the
-server's errors under the fields and the links of its summary, in its order.
+server's own pages: `Rendering/ErrorFixtureTests.cs` posts a form of every check the browser makes, in the default
+theme and, with asterisks, in `bootstrap5`, and a form of two pages, as a browser without JavaScript does, in English
+and in German, and writes each page the server renders again with its errors, with the page as it was first
+rendered, to `tests/fixtures/rendering/errors-en.json` and `errors-de.json` (`JFB_UPDATE_SNAPSHOTS=1` writes them
+and fails); `packages/runtime/src/checks.fixture.test.ts` checks each page as the runtime does and expects the
+server's errors under the fields and the links of its summary, in its order, and their display (6.4e,
+[ADR-0113](../docs/decisions/0113-errors-on-the-page.md)): taken away as the runtime takes them away, the page has
+the first render's `aria-invalid` and `aria-describedby`; shown again as the runtime shows them, it is the
+server's page, element for element.
 
 **The mutation check** proves the vectors. Each mutant in `vectors/mutants.mjs` changes one piece of the logic in one
 runtime, that runtime's vector runner runs, and the file is put back; the check fails on a mutant that nothing catches,
@@ -920,11 +924,24 @@ at once, a form without rules or with rules the engine refuses left as rendered;
 checks no post without JavaScript reaches (an answer over its type's limits alone, options a parent's answer
 filters, files, calculations, values the server resolves and a site's own type left to the server, an editor's
 empty message, Next's page with its rows, the empty submission's link past what the page hides, the words of a
-culture's language loaded once); `jfb-runtime.test.ts` holds the global. In Edge,
+culture's language loaded once); `errors.test.ts` shows errors as the visitor leaves a field they changed (none for
+one passed through or for focus moving inside a field), says a new one in the live region, keeps it while the
+visitor corrects and clears it on the input that fixes it; a refused send stops the post and shows every error, the
+summary from the form's templates before the note with its focus, and `jfb:invalid` without an answer; the summary
+is updated in place, goes once no error shows, and an empty submission's goes at the first answer; a field the rules
+hide loses its error; without a summary the focus goes to the first field; a second press and Back are left alone;
+a passing send goes on with its button, as does one whose errors are on a page the server has not shown; a summary
+link moves the focus; and the server's errors stay while their field is unchanged and go when it changes or the
+rules hide it; `errors.offline.test.ts` sends as without JavaScript when the words cannot load; `jfb-runtime.test.ts`
+holds the global. In Edge,
 `e2e/specs/website/runtime-frame.spec.ts` shows each demo form enhanced once with its `jfb:ready`, a form the page
 puts in later enhanced through `init(root)`, the chunk loaded only once a form is touched (by focus, or by a change
 without focus as autofill makes), and no error in the console; `e2e/specs/website/rules-on-the-page.spec.ts` shows
-the feedback form's rules on the page in English and German, as the visitor answers.
+the feedback form's rules on the page in English and German, as the visitor answers; and
+`e2e/specs/website/errors-on-the-page.spec.ts` shows, in English and German, the contact form's error as the
+visitor leaves a field and its fix, a refused send with the server's errors for the same answers, the summary's
+focus and links and `jfb:invalid`, axe clean with them shown, only the page's language file loading, and the
+feedback form sent although a required field the rules hide has no answer.
 
 ## Writing tests
 
