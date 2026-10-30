@@ -2098,7 +2098,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Playwright on the demo covers rules (a field shown, hidden and required as answers change) in English and German;
     - axe is clean on the demo's forms in the states the rules give them (added in this split);
     - the size check passes with every chunk.
-- [ ] **6.4d Checks and messages on the page** (6.4 split in nine, WORKLOG 2026-10-30; then 6.4a in two, WORKLOG 2026-10-30; then 6.4b in two, WORKLOG 2026-10-30; then 6.4c in two, WORKLOG 2026-10-30; then 6.4d in two, WORKLOG 2026-10-30)
+- [x] **6.4d Checks and messages on the page** (6.4 split in nine, WORKLOG 2026-10-30; then 6.4a in two, WORKLOG 2026-10-30; then 6.4b in two, WORKLOG 2026-10-30; then 6.4c in two, WORKLOG 2026-10-30; then 6.4d in two, WORKLOG 2026-10-30) (2026-10-30, 0c13eb6)
   - **Validation:** progressive enhancement, plus client validation from `packages/logic`, over the answers 6.4b reads and in the state 6.4c's rules give: each shown field's errors as Core's pipeline decides them, the checks that only the server can make (unique answers, uploads, options from a source the page does not hold) left to it.
     - **Messages:** the server's (6.2g), held to the same words by `tests/vectors/messages.json`; English and German now; 14.2 adds the other five languages. As the server shows them (added in this split): an editor's own message, the field's for the kind, the check's or the validation rule's, as written; otherwise the default, and in the error summary the field's label and a row's legend before it.
     - **Delivery:** one small file per language, loaded for the page's culture only, to keep the §4.12 budget.
