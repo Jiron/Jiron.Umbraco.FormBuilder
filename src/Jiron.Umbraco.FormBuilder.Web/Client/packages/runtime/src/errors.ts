@@ -5,7 +5,7 @@
  * JavaScript, until 6.4i sends it. The server's errors after a post without JavaScript stay while their field is
  * unchanged, the ones only the server can make among them.
  */
-import { fieldsOf } from './checks';
+import { fieldsOf } from './page';
 import {
   clearFieldError,
   errorIn,

@@ -135,7 +135,13 @@ server's page, element for element. The calculations on the page (6.4f,
 posts a form of calculations of every format and two sliders, in English and in German, and writes each page first
 rendered and rendered again to `tests/fixtures/rendering/calculations-en.json` and `calculations-de.json`;
 `packages/runtime/src/outputs.fixture.test.ts` blanks every result and slider text and shows them again as the
-runtime does: the server's page, element for element.
+runtime does: the server's page, element for element. So are the texts that recall answers (6.4g,
+[ADR-0115](../docs/decisions/0115-answer-recall-on-the-page.md)): `Rendering/RecallFixtureTests.cs` posts a form
+with such a text in every place the views mark, twice, as a visitor without JavaScript answers what the rules show
+only once the page comes back, in English and in German, and writes each page first rendered and rendered again to
+`tests/fixtures/rendering/recall-en.json` and `recall-de.json`; `packages/runtime/src/recall.fixture.test.ts`
+makes every marked text stale and renders them again as the runtime does: the server's page, element for element,
+empty texts hidden and a progress step without its title showing the page's number.
 
 **The mutation check** proves the vectors. Each mutant in `vectors/mutants.mjs` changes one piece of the logic in one
 runtime, that runtime's vector runner runs, and the file is put back; the check fails on a mutant that nothing catches,
@@ -943,9 +949,16 @@ rules hide it; `errors.offline.test.ts` sends as without JavaScript when the wor
 shows each calculation's result as the visitor types, in its format, none for an unreadable answer, a failed
 division or an empty date, nothing while the rules hide it, a row's in its row, written only when it changes, on a
 form without rules too and never for a site's own type, and a slider's value beside its thumb and in its
-`aria-valuetext`; `engine.test.ts` loads the calculation language only for a form with a calculation, once for the
-page, and leaves a form whose language cannot load to the post without JavaScript; `jfb-runtime.test.ts` holds the
-global. In Edge,
+`aria-valuetext`; `engine.test.ts` loads the calculation language only for a form with a calculation and the merge
+tags only for a form with a text that recalls answers, each once for the page, and leaves a form whose chunk cannot
+load to the post without JavaScript; `recall.test.ts` renders a label, a help text, a placeholder, a heading, a
+text block, a group's description and a later page's title as the visitor types, nothing of a field the rules hide
+or of a row's child they hide in its row, a value escaped in a rich text, a text without a field tag and a field
+after its text left as the server wrote them, and the error summary's link naming a label as it reads now, also
+for a box that shows its own text, and none while it renders empty; `texts.test.ts` writes a text as text, hidden
+while empty or showing its fallback, a placeholder as its attribute, a rich text by its texts and the attribute
+values its elements already have, never a node or an `on…` attribute and not at all when its elements differ, and
+each element only when its text changes; `jfb-runtime.test.ts` holds the global. In Edge,
 `e2e/specs/website/runtime-frame.spec.ts` shows each demo form enhanced once with its `jfb:ready`, a form the page
 puts in later enhanced through `init(root)`, the chunk loaded only once a form is touched (by focus, or by a change
 without focus as autofill makes), and no error in the console; `e2e/specs/website/rules-on-the-page.spec.ts` shows
@@ -957,7 +970,11 @@ feedback form sent although a required field the rules hide has no answer; and
 `e2e/specs/website/calculations-on-the-page.spec.ts` shows, in English and German, the room hire's cost following
 the room and the hours, none for a room the visitor describes, the slider's value following its thumb, the
 calculation language loaded once, axe clean, the cost the page showed stored with the entry, and the contact form
-never loading the calculation language.
+never loading the calculation language; and `e2e/specs/website/answer-recall-on-the-page.spec.ts` shows, in English
+and German and signed in as a member, the workshop booking's question naming the visitor as they type, the notes'
+help naming the workshop chosen, the closing text listing the guests and none once the rules hide them, the error
+summary's link naming the question as it reads now, the merge tags loaded once, axe clean, and the contact form
+never loading them.
 
 ## Writing tests
 

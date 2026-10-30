@@ -11,6 +11,8 @@
   texts taking merge tags, amended by [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) in
   6.1b; recall rendered on the server for a page's answers by [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md) in 6.2c
 - Date: 2026-10-26
+- Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): the runtime renders the texts that recall answers
+  again as the visitor types
 - Roadmap step: 5.3f (decided and built in both runtimes); 6.1 gives the browser what recall needs, 6.2 renders
   visitor texts on the server, 6.4 updates them as the visitor types, 10.x reports the problem in the form check
 

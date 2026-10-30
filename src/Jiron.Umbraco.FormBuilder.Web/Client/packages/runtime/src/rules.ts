@@ -5,15 +5,17 @@
  * `hidden` and `data-jfb-hidden` and its fields' controls are disabled, so they are never posted; the controls the
  * views mark `data-jfb-requires` take `required` while their field is required; a label's mark shows in the state its
  * `data-jfb-mark` names; and the note that explains the asterisk shows while one does. The same state gives each
- * calculation's result (6.4f, ADR-0114), shown for a form with a calculation and no rule too.
+ * calculation's result (6.4f, ADR-0114), and the same reading and state the visitor texts that recall answers (6.4g,
+ * ADR-0115), shown for a form with either and no rule too.
  */
 import { holdQuery, LogicError, type Context, type FormState, type LogicField, type LogicForm } from '@jfb/logic';
 import type { PageEngine } from './engine';
 import type { FormModel } from './model';
 import { showCalculations } from './outputs';
 import { readPage, type PageReading } from './page';
+import { showTexts } from './texts';
 
-/** The rules and calculations of an enhanced form. */
+/** The rules, calculations and texts that recall answers of an enhanced form. */
 export interface PageRules {
   /** What the rules decided last. */
   readonly state: FormState;
@@ -62,9 +64,10 @@ export function hasRules(form: LogicForm): boolean {
 }
 
 /**
- * The rules and calculations of a form, shown once now and again after each answer the visitor changes; null for a
- * form with neither, which the server renders as they leave it, or one whose rules the engine refuses, which keeps
- * the post's. A form without rules gets none of their hooks, only its calculations' results.
+ * The rules, calculations and texts that recall answers of a form, shown once now and again after each answer the
+ * visitor changes; null for a form with none of them, which the server renders as they leave it, or one whose rules
+ * the engine refuses, which keeps the post's. A form without rules gets none of their hooks, only its calculations'
+ * results and its texts.
  */
 export function rulesOf(
   form: HTMLFormElement,
@@ -73,20 +76,24 @@ export function rulesOf(
   clock: () => number = Date.now,
 ): PageRules | null {
   const ruled = hasRules(engine.logic);
-  if (!ruled && !engine.calculates) return null;
+  if (!ruled && !engine.calculates && engine.texts === null) return null;
   const current = form.querySelector('[data-jfb-page]:not([hidden])');
-  const decide = (): FormState => {
+  const decide = (): { reading: PageReading; state: FormState } => {
     const reading = readPage(form, model);
-    return engine.decide(reading.answers, contextOf(model, reading, clock(), form.ownerDocument.URL));
+    return {
+      reading,
+      state: engine.decide(reading.answers, contextOf(model, reading, clock(), form.ownerDocument.URL)),
+    };
   };
   // A field a rule shows again holds its answer once its controls are enabled, and an element that depends on that
   // answer is decided again with it, until nothing more is shown: at most once per element, as rules have no cycle.
   const rounds = form.querySelectorAll('[data-jfb-page], [data-jfb-group], [data-jfb-field]').length + 1;
   const settle = (): FormState => {
-    let state = decide();
-    for (let round = 1; ruled && show(form, state, current) && round < rounds; round++) state = decide();
-    showCalculations(form, model, state);
-    return state;
+    let decided = decide();
+    for (let round = 1; ruled && show(form, decided.state, current) && round < rounds; round++) decided = decide();
+    showCalculations(form, model, decided.state);
+    if (engine.texts !== null) showTexts(form, model, engine.texts(decided.reading, decided.state));
+    return decided.state;
   };
   let state: FormState;
   try {

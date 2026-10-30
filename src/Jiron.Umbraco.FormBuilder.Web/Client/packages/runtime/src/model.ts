@@ -3,7 +3,15 @@
  * `<script type="application/json" data-jfb-model>`. These are the parts the runtime reads; the endpoint's OpenAPI
  * document (docs/api/jfb-public.json) describes them all.
  */
-import type { CultureFormats, DisplayWords, ProjectedField, ProjectedRule } from '@jfb/logic';
+import type {
+  CultureFormats,
+  DisplayWords,
+  MergeValue,
+  ProjectedField,
+  ProjectedRule,
+  RecallForm,
+  TemplateContext,
+} from '@jfb/logic';
 
 /** A field of the public projection (ADR-0002, ADR-0035), as far as the runtime reads it: its rules too (ADR-0111). */
 export interface ModelField extends ProjectedField {
@@ -11,6 +19,9 @@ export interface ModelField extends ProjectedField {
   /** The label in the page's culture, and whether it is hidden from sight. */
   readonly label?: string | null;
   readonly hideLabel?: boolean;
+  /** Its help and placeholder in the page's culture, which merge tags may fill (ADR-0115). */
+  readonly help?: string | null;
+  readonly placeholder?: string | null;
   /** The editor's own messages by the kind of error. */
   readonly messages?: Readonly<Record<string, string>> | null;
   /** The field's own checks, each with the editor's own message. */
@@ -40,14 +51,37 @@ export interface ModelField extends ProjectedField {
 
 export interface ModelGroup {
   readonly key: string;
+  /** Its title and description in the page's culture, which merge tags may fill (ADR-0115). */
+  readonly title?: string | null;
+  readonly description?: string | null;
   readonly rules?: readonly ProjectedRule[] | null;
   readonly fields: readonly ModelField[];
 }
 
 export interface ModelPage {
   readonly key: string;
+  /** Its title and description in the page's culture, which merge tags may fill (ADR-0115). */
+  readonly title?: string | null;
+  readonly description?: string | null;
   readonly rules?: readonly ProjectedRule[] | null;
   readonly groups: readonly ModelGroup[];
+}
+
+/** A visitor text that holds merge tags (ADR-0085): its owner's key, the property it is, and its context. */
+export interface ModelText {
+  readonly owner: string;
+  /** `title`, `description`, `label`, `help`, `placeholder`, or `settings.` and a setting's path. */
+  readonly text: string;
+  readonly context: TemplateContext;
+}
+
+/** What the page renders its visitor texts with (ADR-0085, ADR-0115). */
+export interface ModelMergeTags {
+  readonly texts: readonly ModelText[];
+  /** By context, the values of the tags that are the same for every visitor of the page. */
+  readonly values: Readonly<Record<string, Readonly<Record<string, MergeValue>>>>;
+  /** The form answer recall reads: the texts' owners and the fields they recall, in the form's order. */
+  readonly recall: RecallForm;
 }
 
 /** What the browser decides a field by (ADR-0109). */
@@ -86,6 +120,8 @@ export interface FormModel {
   readonly formats: CultureFormats;
   /** The culture's words for yes and no. */
   readonly words: DisplayWords;
+  /** The visitor texts that hold merge tags, and what they render with; null for a form without one. */
+  readonly mergeTags?: ModelMergeTags | null;
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -104,6 +140,25 @@ function isField(value: unknown): boolean {
     (value['rows'] === undefined ||
       isArrayOf(value['rows'], (row) => isObject(row) && typeof row['key'] === 'string')) &&
     (value['fields'] === undefined || isArrayOf(value['fields'], isField))
+  );
+}
+
+/** Whether the merge tags are none, or the shape the runtime renders texts with. */
+function isMergeTags(value: unknown): boolean {
+  if (value === undefined || value === null) return true;
+  return (
+    isObject(value) &&
+    isArrayOf(
+      value['texts'],
+      (text) =>
+        isObject(text) &&
+        typeof text['owner'] === 'string' &&
+        typeof text['text'] === 'string' &&
+        typeof text['context'] === 'string',
+    ) &&
+    isObject(value['values']) &&
+    isObject(value['recall']) &&
+    Array.isArray(value['recall']['pages'])
   );
 }
 
@@ -133,5 +188,5 @@ export function parseModel(text: string): FormModel | null {
         (group) => isObject(group) && typeof group['key'] === 'string' && isArrayOf(group['fields'], isField),
       ),
   );
-  return fine ? (data as unknown as FormModel) : null;
+  return fine && isMergeTags(data['mergeTags']) ? (data as unknown as FormModel) : null;
 }

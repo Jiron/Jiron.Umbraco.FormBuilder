@@ -5,6 +5,8 @@
   [ADR-0109](0109-reading-answers-in-the-browser.md) (the table of the built-in types says which hold child fields and
   which the server resolves)
 - Date: 2026-10-30
+- Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): the merge tags leave the form chunk for one of their
+  own, and the logic's base modules stay in the form chunk
 - Roadmap step: 6.4b (decided and built); 6.4c applies the rules and 6.4d the checks to what the frame reads, 6.4i
   sends it, 6.4j swaps a changed form in, 6.4k adds `get(formEl)` and the other events
 

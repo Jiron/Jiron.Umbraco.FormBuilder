@@ -2,7 +2,8 @@
  * The page's messages (ROADMAP 6.4d, ADR-0112): each field's first error as the page shows it, as Web's render words it
  * (FormModels.Errors): the editor's own message as written, otherwise the default in the page's language with the
  * field's label, and in a row the row's legend, before it in the error summary. The words of each language are a file
- * of their own, loaded for the page's culture only.
+ * of their own, loaded for the page's culture only. A label that recalls answers is named as it renders for the
+ * answers checked (6.4g, ADR-0115).
  */
 import {
   BUILT_IN_TYPES,
@@ -13,9 +14,9 @@ import {
   type MessageWords,
   type VisitorError,
 } from '@jfb/logic';
-import { fieldsOf, type PageError } from './checks';
+import type { PageError } from './checks';
 import type { FormModel, ModelField } from './model';
-import type { PageReading } from './page';
+import { fieldsOf, type PageReading } from './page';
 
 /** An error as the page shows it. */
 export interface ShownError {
@@ -66,7 +67,8 @@ export function wordsFor(culture: string): Promise<MessageWords> {
 
 /**
  * Each field's first error, in the order the page shows them: the page's fields in its order, a repeatable group's
- * rows' children before the group's own, as the error summary lists them.
+ * rows' children before the group's own, as the error summary lists them. `texts` are the visitor texts that recall
+ * answers, rendered for the same answers, by `<owner> <name>`.
  */
 export function shownErrors(
   form: HTMLFormElement,
@@ -75,6 +77,7 @@ export function shownErrors(
   errors: readonly PageError[],
   context: Context,
   words: MessageWords,
+  texts: ReadonlyMap<string, string> = NO_TEXTS,
 ): ShownError[] {
   const first = new Map<string, PageError>();
   for (const error of errors) {
@@ -99,7 +102,7 @@ export function shownErrors(
       row === null ? reading.fields.get(field.key) : reading.groups.get(group?.key ?? '')?.rows[row]?.get(field.key);
     const check = error.check === undefined ? undefined : field.validation?.[error.check];
     const other =
-      check?.kind === 'matchesField' && check.field !== undefined ? labelOfKey(form, model, check.field) : null;
+      check?.kind === 'matchesField' && check.field !== undefined ? labelOfKey(form, model, check.field, texts) : null;
     const visitorError: VisitorError = {
       code: error.code,
       field: {
@@ -118,7 +121,7 @@ export function shownErrors(
     const gridRow =
       error.gridRow === undefined ? null : textOf(field.rows?.find((each) => each.key === error.gridRow)?.label);
     const legend = gridRow ?? (row === null ? null : legendOf(element));
-    const label = field.hideLabel === true || !holdsValue(model, field) ? null : labelOf(element, field);
+    const label = field.hideLabel === true || !holdsValue(model, field) ? null : labelOf(element, field, texts);
     shown.push({
       field: field.key,
       row,
@@ -162,6 +165,9 @@ export function emptyError(form: HTMLFormElement, model: FormModel, words: Messa
   return { field: '', row: null, code: 'empty', target, message: words.empty, link: words.empty };
 }
 
+/** No visitor text that recalls answers. */
+const NO_TEXTS: ReadonlyMap<string, string> = new Map();
+
 /** The check kinds the default messages name; any other says "Check this answer". */
 const CHECK_KINDS = new Set(['pattern', 'matchesField', 'uniquePerForm']);
 
@@ -201,20 +207,30 @@ export function elementOf(
   return rows?.querySelector<HTMLElement>(`[data-jfb-field="${key}"]`) ?? null;
 }
 
-/** A field's label as the page shows it, without its mark; a box's field label, which the page may not show, from the model. */
-function labelOf(element: HTMLElement | null, field: ModelField): string | null {
+/**
+ * A field's label: as it renders for the answers when it recalls them, an empty one as none; otherwise as the page
+ * shows it, without its mark; a box's field label, which the page may not show, from the model.
+ */
+function labelOf(element: HTMLElement | null, field: ModelField, texts: ReadonlyMap<string, string>): string | null {
+  const recalled = texts.get(`${field.key} label`);
+  if (recalled !== undefined) return textOf(recalled);
   const shown = element?.querySelector(':scope > label.jfb-label, :scope > fieldset > legend.jfb-label');
   if (shown == null) return textOf(field.label);
   return textOf(textWithout(shown, '.jfb-mark').trim());
 }
 
 /** The label of a field by its key, as `matchesField` names the other field. */
-function labelOfKey(form: HTMLFormElement, model: FormModel, key: string): string | null {
+function labelOfKey(
+  form: HTMLFormElement,
+  model: FormModel,
+  key: string,
+  texts: ReadonlyMap<string, string>,
+): string | null {
   const field = fieldsOf(model)
     .flatMap((each) => [each, ...(each.fields ?? [])])
     .find((each) => each.key === key);
   if (field === undefined) return null;
-  return labelOf(elementOf(form, key, null, null), field);
+  return labelOf(elementOf(form, key, null, null), field, texts);
 }
 
 /** The legend of the row a field is in. */

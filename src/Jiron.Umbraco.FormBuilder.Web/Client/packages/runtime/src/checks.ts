@@ -16,7 +16,7 @@ import {
   type Kind,
 } from '@jfb/logic';
 import type { FormModel, ModelField } from './model';
-import type { FieldRead, PageReading } from './page';
+import { fieldsOf, type FieldRead, type PageReading } from './page';
 
 /** An error at a field, as the pipeline reports it. */
 export interface PageError {
@@ -35,10 +35,6 @@ export interface PageError {
   /** For a name or an address, the parts the page marks invalid: the needed ones that are empty, else every part. */
   readonly parts?: readonly string[];
 }
-
-/** Every field outside repeatable groups, in the order of the form's pages and groups. */
-export const fieldsOf = (model: FormModel): readonly ModelField[] =>
-  model.form.pages.flatMap((page) => page.groups.flatMap((group) => group.fields));
 
 /**
  * The errors of the shown fields in the form's order, every one: a group's row count's and the validation rules' at

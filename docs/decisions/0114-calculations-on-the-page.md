@@ -9,6 +9,8 @@
   calculations again, as [ADR-0063](0063-the-calculation-language.md) decided it, in both runtimes) and
   [ADR-0113](0113-errors-on-the-page.md) (a passing send goes on in a task of its own)
 - Date: 2026-10-30
+- Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): the rules' pass also renders the texts that recall
+  answers, on a form with neither rules nor calculations too
 - Roadmap step: 6.4f (decided and built); 6.4g recalls answers in texts, 6.4h fills defaults with merge tags, 6.4i
   sends what passes
 

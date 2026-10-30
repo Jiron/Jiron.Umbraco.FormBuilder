@@ -4741,6 +4741,23 @@
                   }
                 },
                 {
+                  "key": "d0000000-0000-4000-8000-000000000207",
+                  "type": "yesno",
+                  "alias": "bringGuests",
+                  "span": 2,
+                  "label": "Is anyone coming with {{ field.name | default: \u0022you\u0022 }}?",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "style": "buttons"
+                  }
+                },
+                {
                   "key": "d0000000-0000-4000-8000-000000000203",
                   "type": "repeater",
                   "alias": "guests",
@@ -4751,7 +4768,20 @@
                   "required": false,
                   "messages": {},
                   "validation": [],
-                  "rules": [],
+                  "rules": [
+                    {
+                      "key": "d0000000-0000-4000-8000-000000000270",
+                      "effect": "show",
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "d0000000-0000-4000-8000-000000000207",
+                          "op": "equals",
+                          "value": "yes"
+                        }
+                      ]
+                    }
+                  ],
                   "rows": [],
                   "fields": [
                     {
@@ -4835,6 +4865,21 @@
                     "minLength": 0,
                     "rows": 4
                   }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000208",
+                  "type": "paragraph",
+                  "span": 2,
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "html": "\u003Cp\u003EGuests on this booking: {{ field.guests.guestName | default: \u0022none\u0022 }}. We hold every place until ten minutes before the start.\u003C/p\u003E"
+                  }
                 }
               ]
             }
@@ -4851,6 +4896,11 @@
       },
       "d0000000-0000-4000-8000-000000000202": {
         "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000207": {
+        "kind": "choice",
         "canBeRequired": true,
         "builtIn": true
       },
@@ -4871,6 +4921,10 @@
       "d0000000-0000-4000-8000-000000000204": {
         "kind": "text",
         "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000208": {
+        "canBeRequired": false,
         "builtIn": true
       }
     },
@@ -4907,13 +4961,37 @@
                   "rows": []
                 },
                 {
+                  "id": "d0000000-0000-4000-8000-000000000207",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "bringGuests",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
                   "id": "d0000000-0000-4000-8000-000000000203",
                   "kind": null,
                   "canBeRequired": false,
                   "alias": "guests",
                   "calculation": null,
                   "required": false,
-                  "rules": [],
+                  "rules": [
+                    {
+                      "effect": "show",
+                      "enabled": true,
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "d0000000-0000-4000-8000-000000000207",
+                          "op": "equals",
+                          "value": "yes"
+                        }
+                      ]
+                    }
+                  ],
                   "fields": [
                     {
                       "id": "d0000000-0000-4000-8000-000000000205",
@@ -4945,6 +5023,17 @@
                   "kind": "text",
                   "canBeRequired": true,
                   "alias": "notes",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000208",
+                  "kind": null,
+                  "canBeRequired": false,
+                  "alias": null,
                   "calculation": null,
                   "required": false,
                   "rules": [],

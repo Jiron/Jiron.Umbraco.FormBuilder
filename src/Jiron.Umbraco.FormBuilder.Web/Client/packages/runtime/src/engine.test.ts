@@ -1,11 +1,13 @@
 // The form engine as the page runs it (ROADMAP 6.4f, ADR-0114): the calculation language loads only for a form with a
-// calculation, once for the page; the form chunk enhances a form once its language is there, and leaves a form whose
-// language cannot load to the post without JavaScript.
+// calculation, and the merge tags only for a form with a text that recalls answers (6.4g, ADR-0115), each once for the
+// page; the form chunk enhances a form once they are there, and leaves a form whose chunk cannot load to the post
+// without JavaScript.
 import type { Context } from '@jfb/logic';
 import { FORMULAS } from '@jfb/logic/calc';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { engineOf, loadEngine, loadFormulas } from './engine';
-import type { FormModel, ModelField } from './model';
+import { engineOf, loadEngine, loadFormulas, loadTexts } from './engine';
+import type { FormModel, ModelField, ModelMergeTags } from './model';
+import { textsOf } from './recall';
 import { ENGLISH } from './testing';
 
 const NOW = '2026-10-30T09:00:00Z';
@@ -42,9 +44,57 @@ const FORM =
   '<div data-jfb-field="k-count"><input id="count" name="count" value="4"></div>' +
   '<div data-jfb-field="k-total"><output id="total" name="total"></output></div></div></section></form>';
 
+const NOTE: ModelField = {
+  key: 'k-note',
+  type: 'text',
+  alias: 'note',
+  label: 'Notes for {{ field.count }}',
+  settings: {},
+};
+
+/** Merge tags whose note's label recalls the count, or names no field when `recalled` is false. */
+const tagsOf = (recalled = true): ModelMergeTags => ({
+  texts: [{ owner: 'k-note', text: 'label', context: 'text' }],
+  values: {},
+  recall: {
+    pages: [
+      {
+        id: 'p1',
+        groups: [
+          {
+            id: 'g1',
+            fields: [
+              ...(recalled
+                ? [
+                    {
+                      id: 'k-count',
+                      type: 'number',
+                      holdsValue: true,
+                      builtIn: true,
+                      kind: 'number' as const,
+                      alias: 'count',
+                    },
+                  ]
+                : []),
+              { id: 'k-note', type: 'text', holdsValue: true },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+});
+
+const RECALLING =
+  '<form id="jfb-1" data-jfb-form="f" data-jfb-contract="1"><section data-jfb-page="p1"><div data-jfb-group="g1">' +
+  '<div data-jfb-field="k-count"><input id="count" name="count" value="4"></div>' +
+  '<div data-jfb-field="k-note"><label for="note"><span id="label" data-jfb-text="k-note label">Notes for 4</span></label>' +
+  '<input id="note" name="note"></div></div></section></form>';
+
 afterEach(() => {
   document.body.innerHTML = '';
   vi.doUnmock('@jfb/logic/calc');
+  vi.doUnmock('./recall');
   vi.resetModules();
 });
 
@@ -74,6 +124,38 @@ describe("a form's engine", () => {
     const first = loadFormulas();
     expect(loadFormulas()).toBe(first);
     expect(Object.keys(await first)).toEqual(['parse', 'check', 'calculate']);
+  });
+
+  it('loads the merge tags for a form with a text that recalls answers, and renders it with them', async () => {
+    const texts = vi.fn(() => Promise.resolve(textsOf));
+    const load = vi.fn(() => Promise.resolve(FORMULAS));
+    const engine = await loadEngine({ ...modelOf([COUNT, NOTE]), mergeTags: tagsOf() }, load, texts);
+    expect(texts).toHaveBeenCalledOnce();
+    expect(load, 'no calculation').not.toHaveBeenCalled();
+    expect(engine.texts).not.toBeNull();
+  });
+
+  it('never loads them for a form without merge tags, or whose texts recall no answer', async () => {
+    const texts = vi.fn(() => Promise.resolve(textsOf));
+    expect((await loadEngine(modelOf([COUNT, NOTE]), undefined, texts)).texts).toBeNull();
+    expect((await loadEngine({ ...modelOf([COUNT, NOTE]), mergeTags: null }, undefined, texts)).texts).toBeNull();
+    expect(
+      (await loadEngine({ ...modelOf([COUNT, NOTE]), mergeTags: tagsOf(false) }, undefined, texts)).texts,
+    ).toBeNull();
+    expect(texts).not.toHaveBeenCalled();
+  });
+
+  it('fails as the merge tags do, so the form is left to the post', async () => {
+    const offline = new Error('offline');
+    await expect(
+      loadEngine({ ...modelOf([COUNT, NOTE]), mergeTags: tagsOf() }, undefined, () => Promise.reject(offline)),
+    ).rejects.toBe(offline);
+  });
+
+  it('imports the merge tags once for the page', async () => {
+    const first = loadTexts();
+    expect(loadTexts()).toBe(first);
+    expect(typeof (await first)).toBe('function');
   });
 
   it("decides a form without a calculation without the language, and refuses to guess one's result", () => {
@@ -111,6 +193,31 @@ describe('the form chunk', () => {
     slider.dispatchEvent(new Event('input', { bubbles: true }));
     expect(slider.getAttribute('aria-valuetext')).toBe('6 hours');
     expect(form.querySelector('output')?.textContent).toBe('6 hours');
+  });
+
+  it('enhances a form whose only feature is a text that recalls answers, which then follows them', async () => {
+    document.body.innerHTML = RECALLING;
+    const form = document.querySelector('form');
+    if (form === null) throw new Error('no form');
+    const { attach } = await import('./form');
+    const session = await attach(form, { ...modelOf([COUNT, NOTE]), mergeTags: tagsOf() });
+    expect(session?.rules).not.toBeNull();
+    const count = document.getElementById('count') as HTMLInputElement;
+    count.value = '12';
+    count.dispatchEvent(new Event('input', { bubbles: true }));
+    await Promise.resolve();
+    expect(document.getElementById('label')?.textContent).toBe('Notes for 12');
+  });
+
+  it('leaves a form whose merge tags cannot load to the post without JavaScript', async () => {
+    vi.doMock('./recall', () => {
+      throw new Error('offline');
+    });
+    document.body.innerHTML = RECALLING;
+    const form = document.querySelector('form');
+    if (form === null) throw new Error('no form');
+    const { attach } = await import('./form');
+    expect(await attach(form, { ...modelOf([COUNT, NOTE]), mergeTags: tagsOf() })).toBeNull();
   });
 
   it('leaves a form whose calculation language cannot load to the post without JavaScript', async () => {

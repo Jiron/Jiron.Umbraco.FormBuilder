@@ -4,6 +4,8 @@
   [ADR-0099](0099-visitor-error-messages.md) (the messages both runtimes share) and
   [ADR-0111](0111-rules-on-the-page.md) (the state the checks run in)
 - Date: 2026-10-30
+- Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): a summary link names a label that recalls answers as
+  it renders for the answers checked, an empty one as none
 - Roadmap step: 6.4d (decided and built); 6.4e shows the errors on the page, 6.4g names a label that recalls answers
   as the page shows it, 6.4i sends what passes
 

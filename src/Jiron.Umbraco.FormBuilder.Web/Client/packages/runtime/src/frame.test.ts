@@ -132,10 +132,21 @@ describe('the frame', () => {
       model('x').replace('"pages":[', '"pages":[1,'),
       model('x').replace('"type":"text"', '"type":7'),
       model('x').replace('"fields":{', '"fields":[{'),
+      model('x').replace('"mergeTags":null', '"mergeTags":[]'),
+      model('x').replace('"mergeTags":null', '"mergeTags":{"texts":[],"values":{}}'),
+      model('x').replace('"mergeTags":null', '"mergeTags":{"texts":[{"owner":1}],"values":{},"recall":{"pages":[]}}'),
     ];
     shapes.forEach((data, at) => document.body.append(form(`jfb-${at + 1}`, { data })));
     createFrame(chunk().load).init();
     expect(heard).toEqual([]);
+  });
+
+  it('reads a form whose merge tags are the shape it renders its texts with', () => {
+    const heard = readies();
+    const tags = '{"texts":[{"owner":"k","text":"label","context":"text"}],"values":{},"recall":{"pages":[]}}';
+    document.body.append(form('jfb-1', { data: model('tagged').replace('"mergeTags":null', '"mergeTags":' + tags) }));
+    createFrame(chunk().load).init();
+    expect(heard).toEqual([{ key: 'key-jfb-1', alias: 'tagged' }]);
   });
 
   it('enhances only form elements, not an outcome or a notice in place of a form', () => {

@@ -170,7 +170,13 @@ flowchart LR
   logic's `@jfb/logic/calc`, a chunk of its own loaded before a form with a calculation is enhanced and never for one
   without, each result shown in its field's format as the server writes it, none for an answer its type cannot read
   in either runtime, and a slider's value kept with its thumb
-  ([ADR-0114](decisions/0114-calculations-on-the-page.md));
+  ([ADR-0114](decisions/0114-calculations-on-the-page.md)); and renders the visitor texts that recall answers
+  again as the visitor types (`recall.ts`, `texts.ts`): the merge tags are the shared logic's `@jfb/logic/template`
+  and `@jfb/logic/recall`, a chunk of their own loaded before a form whose recall form names a field is enhanced,
+  each text written on the element the views mark `data-jfb-text`, hidden while empty, a rich text by its texts
+  and attribute values only, and the error summary naming a label as it reads now
+  ([ADR-0115](decisions/0115-answer-recall-on-the-page.md)); its budget of every feature counts the largest
+  language's words, as a page loads one ([ADR-0116](decisions/0116-the-runtimes-budget-counts-one-language.md));
 - `element`: `<jfb-form>`, the headless renderer, with the same markup and runtime;
 - `backoffice`: the Forms section in Lit and TypeScript with UUI, through the generated client.
 

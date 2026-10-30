@@ -49,10 +49,30 @@
               "autocomplete": "name"
             },
             {
+              "key": "d0000000-0000-4000-8000-000000000207",
+              "type": "yesno",
+              "alias": "bringGuests",
+              "span": 2,
+              "label": {
+                "": "Is anyone coming with {{ field.name | default: \"you\" }}?",
+                "de": "Kommt jemand mit {{ field.name | default: \"Ihnen\" }}?"
+              },
+              "required": true
+            },
+            {
               "key": "d0000000-0000-4000-8000-000000000203",
               "type": "repeater",
               "alias": "guests",
               "span": 2,
+              "rules": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000270",
+                  "effect": "show",
+                  "enabled": true,
+                  "match": "all",
+                  "conditions": [{ "field": "d0000000-0000-4000-8000-000000000207", "op": "equals", "value": "yes" }]
+                }
+              ],
               "label": { "": "Who comes with you", "de": "Wer mit Ihnen kommt" },
               "help": { "": "Up to three guests per booking.", "de": "Bis zu drei Gäste pro Buchung." },
               "settings": {
@@ -94,6 +114,17 @@
                 "de": "Für {{ field.workshop | default: \"den Workshop\" }}: Barrierefreiheit, Allergien oder eine Frage."
               },
               "settings": { "rows": 4, "counter": true, "maxLength": 1000 }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000208",
+              "type": "paragraph",
+              "span": 2,
+              "settings": {
+                "html": {
+                  "": "<p>Guests on this booking: {{ field.guests.guestName | default: \"none\" }}. We hold every place until ten minutes before the start.</p>",
+                  "de": "<p>Gäste dieser Buchung: {{ field.guests.guestName | default: \"keine\" }}. Wir halten jeden Platz bis zehn Minuten vor Beginn frei.</p>"
+                }
+              }
             }
           ]
         }

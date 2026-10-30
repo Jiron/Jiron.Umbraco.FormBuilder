@@ -66,8 +66,10 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
   contact form, which the contact page shows through its `form` property, and the workshop booking on the events
   page, which is for members: a visitor sees a notice that asks them to sign in, a member the form, where the
   workshop is chosen from cards, a help text recalls its name
-  ([ADR-0095](../docs/decisions/0095-visitor-texts-members-only-forms-and-the-pending-note.md)) and the guests who
-  come along are the rows of a repeatable group ([ADR-0098](../docs/decisions/0098-the-repeaters-rows.md)); the feedback
+  ([ADR-0095](../docs/decisions/0095-visitor-texts-members-only-forms-and-the-pending-note.md)), the question whether
+  anyone comes along names the visitor, the guests who come along are the rows of a repeatable group the answer shows
+  ([ADR-0098](../docs/decisions/0098-the-repeaters-rows.md)), and a closing text lists them, each text following the
+  answers as the visitor types ([ADR-0115](../docs/decisions/0115-answer-recall-on-the-page.md)); the feedback
   form on the feedback page, with radio buttons side by side, checkboxes with "Other", a dropdown, a rating, a grid,
   a ranking, yes or no and a scale ([ADR-0096](../docs/decisions/0096-the-choice-controls.md)), and rules: the
   evenings that suit a visitor show once they would come in the evening, and the comments are required when they

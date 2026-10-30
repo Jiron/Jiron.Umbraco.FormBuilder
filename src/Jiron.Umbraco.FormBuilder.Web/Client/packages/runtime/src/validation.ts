@@ -2,7 +2,8 @@
  * Validation on the page (ROADMAP 6.4d, ADR-0112): the page's answers read (6.4b), its rules decided (6.4c), its
  * shown fields checked as the pipeline checks a post, and each field's first error worded as the server's render
  * words it. A send checks every page and refuses an empty submission; Next checks the page shown; the fields' own
- * check, as the visitor answers, leaves the empty submission to the send (6.4e).
+ * check, as the visitor answers, leaves the empty submission to the send (6.4e). A label that recalls answers is
+ * named as it renders for the answers checked (6.4g, ADR-0115).
  */
 import { isEmptyPost } from '@jfb/logic';
 import { errorsOf } from './checks';
@@ -59,5 +60,6 @@ async function check(
     );
     errors = errors.filter((error) => onPage.has(error.field));
   }
-  return shownErrors(form, model, reading, errors, context, words);
+  const texts = engine.texts === null ? undefined : engine.texts(reading, state);
+  return shownErrors(form, model, reading, errors, context, words, texts);
 }

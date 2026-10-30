@@ -107,7 +107,7 @@ export function readPage(form: HTMLFormElement, model: FormModel): PageReading {
 }
 
 /** Every field outside repeatable groups, in the order of the form's pages and groups. */
-const fieldsOf = (model: FormModel): readonly ModelField[] =>
+export const fieldsOf = (model: FormModel): readonly ModelField[] =>
   model.form.pages.flatMap((page) => page.groups.flatMap((group) => group.fields));
 
 /** A field as the post reader names it. */

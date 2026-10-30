@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '../../fixtures.ts';
-import { LANGUAGES, formPages, pageOf, pathOf, textOf } from '../../support/demo-content.ts';
+import { LANGUAGES, formPages, pathOf } from '../../support/demo-content.ts';
+import { signInMember } from '../../support/demo-members.ts';
 
 // The built-in themes at a phone's width (ROADMAP 6.3a, 6.3c, ADR-0105). The demo shows its forms in a theme of the
 // site's through `?theme=`, which it keeps in a cookie, so a post keeps it too. In every theme, `unstyled` included,
@@ -16,20 +17,6 @@ const WIDTH = 375;
 const HEIGHT = 812;
 
 const pageFormOn = (page: Page): Locator => page.locator('main form.jfb-form');
-
-/** Signs a member in through the demo's sign-in page, so the workshop booking shows its form. */
-async function signIn(page: Page, email: string, password: string): Promise<void> {
-  await page.goto('/en/');
-  await page
-    .getByRole('navigation')
-    .getByRole('link', { name: pageOf('demoMembers', 'en').name })
-    .click();
-  const main = page.getByRole('main');
-  await main.getByLabel(textOf('Demo.Login.Email', 'en')).fill(email);
-  await main.getByLabel(textOf('Demo.Login.Password', 'en'), { exact: true }).fill(password);
-  await main.getByRole('button', { name: textOf('Demo.Login.Submit', 'en') }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(pageOf('demoMembers', 'en').heading);
-}
 
 /** The elements whose box reaches past the window's right edge, by tag, id and class, for a page that scrolls sideways. */
 async function widerThanTheWindow(page: Page): Promise<string[]> {
@@ -91,7 +78,7 @@ for (const [javaScript, scripts] of [
         memberOf,
       }) => {
         const member = memberOf(0);
-        await signIn(page, member.email, member.password);
+        await signInMember(page, member.email, member.password);
         for (const language of LANGUAGES) {
           await checkPage(page, `/${language}/`, theme, 1);
           for (const shown of formPages()) {
