@@ -7,7 +7,7 @@
 - Date: 2026-10-30
 - Amended by [ADR-0114](0114-calculations-on-the-page.md): a passing send asks for the post in a task of its own,
   since a form ignores a submission asked for while its submit event still runs
-- Roadmap step: 6.4e (decided and built); 6.4h sends with `fetch` and shows the server's errors in place, 6.5 moves
+- Roadmap step: 6.4e (decided and built); 6.4i sends with `fetch` and shows the server's errors in place, 6.5 moves
   between pages in the browser
 
 ## Context
@@ -75,7 +75,7 @@ Option 3, 3, 3, 2 and 2.
   a microtask while any error shows; a message that changes waits for the visitor to leave the field.
 - **A refused send or Next** (`jfb-nav` `submit` or `next`, the hidden default button too) shows every error of its
   scope, the summary, and fires `jfb:invalid`. A passing check lets the post go on as without JavaScript, through
-  `requestSubmit` with the button pressed, until 6.4h sends it; a second press while a check runs does nothing; and when
+  `requestSubmit` with the button pressed, until 6.4i sends it; a second press while a check runs does nothing; and when
   the words cannot load, the post goes on and the server checks it.
 - **A send whose errors lie on another page** of a form the server pages goes on, and the server shows the first page
   that holds one, until 6.5.

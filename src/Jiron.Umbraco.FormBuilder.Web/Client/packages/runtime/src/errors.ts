@@ -2,7 +2,7 @@
  * When the page shows errors (ROADMAP 6.4e, ADR-0113): a field's as the visitor leaves it, once they changed it or
  * while it shows one; gone on the input that fixes it; and after a refused send or Next every error of its scope, with
  * the error summary, which takes the focus, and `jfb:invalid`. A passing check lets the post go on as without
- * JavaScript, until 6.4h sends it. The server's errors after a post without JavaScript stay while their field is
+ * JavaScript, until 6.4i sends it. The server's errors after a post without JavaScript stay while their field is
  * unchanged, the ones only the server can make among them.
  */
 import { fieldsOf } from './checks';

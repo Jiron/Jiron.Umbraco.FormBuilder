@@ -278,7 +278,7 @@ Ligata.Forms is at `C:\Code\Ligata.Forms`, version 0.3.2, commit `8f4b0c5`. It i
 | Anonymous endpoint security: Data Protection-signed challenge, honeypot, origin allowlist, no credentialed CORS, `NoStore` responses, no personal data in logs | `src/Services/RequestGuard.cs`, `src/Controllers/PublicFormsController.cs` | **Port.** Replace the in-memory counters with the ASP.NET Core rate limiter (see §3.2 for the bypass). |
 | reCAPTCHA v3 verification (success, score, action, hostname allowlist, token age, clock skew) | `src/Services/RecaptchaVerifier.cs` | **Port** as one `IFormBuilderCaptchaProvider` (7.2). |
 | Consent-aware, lazy captcha loading; Cookiebot categories and events | `JS`, `docs/CONSENT.md` | **Port** into §4.10. |
-| "The form changed while you were filling it in": fetch the new markup, keep the answers that still fit, reset changed consent texts, refuse when an answered field was removed | `JS` (render refresh) | **Port**, simplified for live sites (6.4i). |
+| "The form changed while you were filling it in": fetch the new markup, keep the answers that still fit, reset changed consent texts, refuse when an answered field was removed | `JS` (render refresh) | **Port**, simplified for live sites (6.4j). |
 | CSV export with BOM and the formula-injection guard (`=`, `+`, `-`, `@`, tab, CR) | `FormsManagementController.Export` | **Port** into every export (11.4). |
 | Several forms on one page: deterministic, per-request instance ids | `src/Rendering/LigataFormViewComponent.cs` | **Port** (6.2b). |
 | Static web assets in an RCL with `StaticWebAssetBasePath=/`; asset version taken from the assembly | the csproj, `src/Rendering/FormAssets.cs`, `tests/versions.test.mjs` | **Port.** The install test checks the assets after `dotnet publish` too (§3.2). |
@@ -2108,7 +2108,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the size check passes with every chunk, the language files among them.
 - [x] **6.4e Errors on the page** (6.4 split in nine, WORKLOG 2026-10-30; then 6.4a in two, WORKLOG 2026-10-30; then 6.4b in two, WORKLOG 2026-10-30; then 6.4c in two, WORKLOG 2026-10-30; then 6.4d in two, WORKLOG 2026-10-30) (2026-10-30, ef7dfd5)
   - **What the visitor sees:** the server's inline errors and error summary, in the server's markup with the theme's classes, from 6.4d's checks and messages; a refused send moves the focus to the summary, and an answer fixed clears its error. `jfb:invalid` fires with the field and the kind of error, never the answer.
-  - Until 6.4h, a form that passes the client's checks still sends through the no-JS post.
+  - Until 6.4i, a form that passes the client's checks still sends through the no-JS post.
   - Done when:
     - Vitest covers validation on the page (the errors shown, the summary and its focus, the event);
     - Playwright on the demo covers validation (inline errors as the visitor leaves a field, the summary and its focus after a refused send, an error cleared when fixed) and a hidden field never blocking the send, in English and German, and shows that only the page's language file loads;
@@ -2120,12 +2120,14 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **An unreadable answer in both runtimes:** an answer its type cannot read, or over its limits, leaves a calculation that reads it without a value on the server too, as §4.3.3 says, where the reading stage had made it count as unanswered (0); the shared vectors hold both runtimes to it (added in 6.4f, ADR-0114).
   - **A slider's value** beside its thumb and in its `aria-valuetext` follows the thumb as the server writes it (added in 6.4f: the room hire works its cost out of one, and no step kept them).
   - Done when: Vitest covers the runtime's part, and a fixture of the server's own pages holds its results and sliders to the server's, element for element (added in 6.4f); Playwright on the demo covers calculations (a value that follows its answers, an unreadable answer leaving it without a value, the value the server stores, and a form without a calculation never loading the calculation chunk, added in the split of 6.4f) and a slider's value following its thumb (added in 6.4f); axe is clean; the size check passes with every chunk.
-- [ ] **6.4g Answer recall and defaults with merge tags** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c and 6.4d split in two, WORKLOG 2026-10-30; then 6.4f in two, WORKLOG 2026-10-30)
+- [ ] **6.4g Answer recall** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c and 6.4d split in two, WORKLOG 2026-10-30; then 6.4f in two, WORKLOG 2026-10-30; then 6.4g in two, WORKLOG 2026-10-30)
   - **Answer recall:** texts that use earlier answers update as the visitor types (§4.3.3), through `recallAnswers` over the answers the runtime reads into the wire form as Core's types read them (ADR-0058, ADR-0068). The merge tags load on demand as their own chunk, only on a form that has such a text (added in the split of 6.4f).
-  - **A default value with merge tags** is filled in the browser from what the page knows, as ADR-0093 leaves it (added in the split of 6.4a).
   - **The error summary's links** name a label that recalls answers as the page shows it now (added in the split of 6.4d).
-  - Done when: Vitest covers the runtime's part; Playwright on the demo covers answer recall (a label, a help text and a text block that follow the answers, a hidden field recalled as empty) and a default with merge tags filled in; axe is clean; the size check passes with every chunk.
-- [ ] **6.4h Submitting** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d and 6.4f split in two, WORKLOG 2026-10-30)
+  - Done when: Vitest covers the runtime's part, and a fixture of the server's own pages holds the recalled texts to the server's, element for element (added in the split of 6.4g); Playwright on the demo covers answer recall (a label, a help text and a text block that follow the answers, a hidden field recalled as empty, and the error summary's link naming a recalled label, added in the split of 6.4g); axe is clean; the size check passes with every chunk.
+- [ ] **6.4h Defaults with merge tags** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c and 6.4d split in two, WORKLOG 2026-10-30; then 6.4f in two, WORKLOG 2026-10-30; then 6.4g in two, WORKLOG 2026-10-30)
+  - **A default value with merge tags** is filled in the browser from what the page knows, as ADR-0093 leaves it (added in the split of 6.4a): the form endpoint's answer gives each such default's template and the values of the tags the server knows, and the page fills in the rest (its query values) as the form is shown, before the visitor touches it (added in the split of 6.4g).
+  - Done when: Vitest covers the runtime's part; an integration test covers the form endpoint's answer for defaults with merge tags (added in the split of 6.4g); Playwright on the demo covers a default with merge tags filled in; axe is clean; the size check passes with every chunk.
+- [ ] **6.4i Submitting** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
   - **Submitting:**
     - fetch submission with an in-flight lock and a stable `submissionId`;
     - the error summary with focus management, and `aria-live` announcements;
@@ -2139,10 +2141,10 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Playwright on the demo covers submission (the outcome, the error summary from a `422` with its focus, the server's errors in place), and the send states (a second press during a slow send sends nothing; a `429` and a `500` show the notice above the buttons, move the focus to it and keep every answer; a redirect outcome with "Go now" and "Stay here");
     - Playwright shows a submission from a plain-HTTP origin, where `crypto.randomUUID()` does not exist;
     - axe is clean in every send state; the size check passes with every chunk.
-- [ ] **6.4i `form_changed`** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d and 6.4f split in two, WORKLOG 2026-10-30)
+- [ ] **6.4j `form_changed`** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
   - `form_changed` handling with answer restore (§3.1), through the `render` endpoint, leaving a consent whose wording changed unticked (ADR-0004).
   - Done when: Vitest covers the runtime's part; Playwright shows `form_changed` on a page served stale from the output cache (the published form swapped in, the answers kept, and a consent whose wording changed left unticked with a notice); axe is clean with the notice; the size check passes with every chunk.
-- [ ] **6.4j Fitting the page, the developer surface and CSP** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d and 6.4f split in two, WORKLOG 2026-10-30)
+- [ ] **6.4k Fitting the page, the developer surface and CSP** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
   - **Fitting the page** (ADR-0022, amended in 2.4): the ground check (a form without a scheme class, on itself or on an ancestor (ADR-0106), on a dark ground gets `jfb-scheme-dark`; a class the site set is never changed) and step folding (`data-jfb-compact` when a word of a step name is wider than its step, after layout and on every resize).
   - **The developer surface and constraints:** the JS API and DOM events (§4.9), the CSP nonce, no cookies, and chunk file names with a content hash (ADR-0004). The API's `next()` and `back()` and the `jfb:page` event come with the paging in 6.5, and `consent.grant('captcha')` and `withdraw()` with the captchas in 7.2 (moved in the split of 6.4).
   - Done when:
@@ -2151,21 +2153,21 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Playwright covers `init(root)`, `get(formEl)` with `validate()`, `submit()` and `values()`, and every DOM event of 6.4, and shows the page with no cookie set;
     - Playwright shows no CSP violation with `script-src 'self'` on a cached page and with a nonce on an uncached one, lazily loaded chunks included;
     - axe is clean; the size check passes with every chunk.
-- [ ] **6.4k Uploads** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d and 6.4f split in two, WORKLOG 2026-10-30)
+- [ ] **6.4l Uploads** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
   - **Uploads with progress,** loaded on demand: against `uploads`, the challenge part first; size and type are checked in the browser before sending, with signature test vectors shared with the server; a reset during an upload is a failed upload the visitor can retry (ADR-0006). The upload's own controls follow 2.4's design (`data-jfb-enhanced`, "Choose files", "Take a photo" on touch screens, a file dragged over, each file's progress and state).
   - **Design skills:** load the three skills before building the upload's controls (ADR-0019, ADR-0020).
   - Done when: Vitest passes the signature vectors, which NUnit passes against the server's checks too; Playwright shows an oversize file and a renamed `.exe` refused before any upload request is sent, an upload cut off by the server reported as a failed upload with a retry, and a file uploaded with its progress and sent with the entry; axe is clean; the size check passes with every chunk.
-- [ ] **6.4l The signature pad** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d and 6.4f split in two, WORKLOG 2026-10-30)
+- [ ] **6.4m The signature pad** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
   - **The signature pad,** loaded on demand, with the typed alternative, whose PNG carries the name typed in its `jfb:typed-name` text chunk as the server's does (ADR-0103, added in 6.2k); drawn by pointer, touch and pen, cleared and drawn again.
   - **Design skills:** load the three skills before building the pad (ADR-0019, ADR-0020).
   - Done when: Vitest shows the typed alternative's PNG reads back on the server as the server's own (its text chunk, its size and its pixels' limits); Playwright draws a signature, clears it, types one instead and sends each; axe is clean; the size check passes with every chunk.
-- [ ] **6.4m The other field behaviours** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d and 6.4f split in two, WORKLOG 2026-10-30)
+- [ ] **6.4n The other field behaviours** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
   - **Loaded on demand:** the repeater (rows added and removed in place, their names and ids as the server's, the focus kept), character counters, choice cards and the "Other" input.
   - **A cascading field's options** (ADR-0085, ADR-0086): asked of the `options` endpoint when its parent's answer changes, with the page's content key, which the markup then carries; an answer no longer offered is cleared (added in the split of 6.4a).
   - The ranking field's move buttons with live announcements, and the grid's stacked layout on phones.
   - **Design skills:** load the three skills before building these behaviours (ADR-0019, ADR-0020).
-  - Done when: Playwright on the demo covers every field type's interaction that 6.4b to 6.4l did not (the repeater's rows at their limits, a counter past its limit, a card chosen, "Other" with its text, a ranking moved by its buttons with the announcement, the grid answered on a phone, a cascading field's options following its parent), each sent and stored as the server reads it; axe is clean; the size check passes with every chunk.
-- [ ] **6.4n The kitchen sink by keyboard, and the runtime's review** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d and 6.4f split in two, WORKLOG 2026-10-30)
+  - Done when: Playwright on the demo covers every field type's interaction that 6.4b to 6.4m did not (the repeater's rows at their limits, a counter past its limit, a card chosen, "Other" with its text, a ranking moved by its buttons with the announcement, the grid answered on a phone, a cascading field's options following its parent), each sent and stored as the server reads it; axe is clean; the size check passes with every chunk.
+- [ ] **6.4o The kitchen sink by keyboard, and the runtime's review** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
   - **The review:** the three skills review the runtime's states on the demo (errors, busy, the notices, the redirect, `form_changed`, uploads, the signature, rows and moves) at 375 and 1440 px, light, dark and right to left, in `docs/ux/review-6.4.md` with a section per skill (ADR-0019, ADR-0020).
   - Done when:
     - `docs/ux/review-6.4.md` has a section per skill with its output, findings and what changed;

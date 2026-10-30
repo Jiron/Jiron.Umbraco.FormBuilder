@@ -5,7 +5,7 @@
   [ADR-0111](0111-rules-on-the-page.md) (the state the checks run in)
 - Date: 2026-10-30
 - Roadmap step: 6.4d (decided and built); 6.4e shows the errors on the page, 6.4g names a label that recalls answers
-  as the page shows it, 6.4h sends what passes
+  as the page shows it, 6.4i sends what passes
 
 ## Context
 
@@ -53,7 +53,7 @@ Option 2 each time.
   site's time zone and the other fields' values as the rules see them (in a row, the row's children's); then the
   validation rules whose message shows at the field or one of a grid's rows.
 - **Left to the server:** a calculation (its value is the server's), the `hidden` type (its value is resolved there), a
-  type that stores files (uploads and signatures, 6.4k and 6.4l), options from a list or a source (any answer is taken,
+  type that stores files (uploads and signatures, 6.4l and 6.4m), options from a list or a source (any answer is taken,
   as on the server when a source cannot give them), the checks that compare with other entries (`uniquePerForm`, the
   places an option has left) and a site's own type's check (only `required` is the browser's).
 - **What the page shows:** a field's first error, as the post handler keeps it; on Next, the errors of the page's
