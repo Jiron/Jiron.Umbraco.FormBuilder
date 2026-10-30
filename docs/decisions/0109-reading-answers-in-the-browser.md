@@ -7,13 +7,14 @@
   `fields`, `formats` and `words`, and `mergeTags` gives its words and formats up to them); amends
   [ADR-0099](0099-visitor-error-messages.md) (a label of only spaces counts as none in the summary)
 - Date: 2026-10-30
-- Roadmap step: 6.4a (decided and built); 6.4b reads the page's controls through it, 6.4c gives answer recall and
-  calculations what it read, 6.4g reads uploads into tokens before this stage sees them
+- Roadmap step: 6.4a (decided and built); 6.4b reads the page's controls through it, 6.4c's rules and checks take
+  what it read, 6.4d gives answer recall and calculations what it read, 6.4h reads uploads into tokens before this
+  stage sees them
 
 ## Context
 
 Step 6.4's runtime decides in the browser what the server decides after a post: which fields are hidden and
-required, which answers fail their checks, and the messages the visitor reads (ROADMAP 6.4b). `packages/logic`
+required, which answers fail their checks, and the messages the visitor reads (ROADMAP 6.4b and 6.4c). `packages/logic`
 already held the form engine, the checks, the messages and answer recall to Core's through the shared vectors
 (ADR-0005), but each of them starts where Core's pipeline has already read the answers: the texts cleaned, held to the
 longest answer the type takes, and turned by the type into values in the wire form (ADR-0058). Without that stage the
