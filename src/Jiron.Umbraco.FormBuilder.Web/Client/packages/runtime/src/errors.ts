@@ -2,8 +2,8 @@
  * When the page shows errors (ROADMAP 6.4e, ADR-0113): a field's as the visitor leaves it, once they changed it or
  * while it shows one; gone on the input that fixes it; and after a refused send or Next every error of its scope, with
  * the error summary, which takes the focus, and `jfb:invalid`. A passing check lets the post go on as without
- * JavaScript, until 6.4i sends it. The server's errors after a post without JavaScript stay while their field is
- * unchanged, the ones only the server can make among them.
+ * JavaScript, or the sender sends it (6.4i, ADR-0120), whose refusal the server's errors show as the page's own. The
+ * server's errors stay while their field is unchanged, the ones only the server can make among them.
  */
 import { fieldsOf } from './page';
 import {
@@ -15,10 +15,14 @@ import {
   showSummary,
   showsErrors,
 } from './display';
+import type { MessageWords } from '@jfb/logic';
 import type { PageEngine } from './engine';
 import { elementOf, wordsFor, type ShownError } from './messages';
 import type { FormModel } from './model';
-import { checkFields, checkPage, type CheckScope } from './validation';
+import type { Deliver } from './send';
+import { checkFields, checkPage, serverErrors, type CheckScope, type ServerProblem } from './validation';
+
+export type { ServerProblem } from './validation';
 
 /** What `jfb:invalid` tells: the form, the check's scope, and each error's field and kind; never an answer. */
 export interface InvalidDetail {
@@ -36,6 +40,11 @@ export interface PageErrors {
    * which leaves the post, and what only the server or another page can show, to the server.
    */
   validate(scope: CheckScope): Promise<boolean>;
+  /**
+   * Shows the server's errors of a refused send as a refused send shows the page's, kept while their field is
+   * unchanged; false when one is at a field of another page, or none is at a field, which leaves them to the post.
+   */
+  server(problems: readonly ServerProblem[]): Promise<boolean>;
 }
 
 const FIELD = '[data-jfb-field]';
@@ -51,12 +60,13 @@ interface Kept {
   readonly link: string;
 }
 
-/** Shows a form's errors as its visitor answers, leaves and sends. */
+/** Shows a form's errors as its visitor answers, leaves and sends; a send that passes goes to `deliver` first. */
 export function pageErrorsOf(
   form: HTMLFormElement,
   model: FormModel,
   engine: PageEngine,
   clock: () => number = Date.now,
+  deliver?: Deliver,
 ): PageErrors {
   const changed = new WeakSet<HTMLElement>();
   const kept = keptOf(form);
@@ -167,20 +177,38 @@ export function pageErrorsOf(
     return merged;
   };
 
-  async function validate(scope: CheckScope): Promise<boolean> {
-    const found = await safely(() => checkPage(form, model, engine, scope, clock));
-    const words = found === null ? null : await safely(() => wordsFor(model.culture));
-    if (found === null || words === null) return true;
-    // Until 6.5 pages in the browser, the server shows the first page that holds an error.
-    const elsewhere = found.some((error) => {
+  // Until 6.5 pages in the browser, the server shows the first page that holds an error.
+  const elsewhere = (errors: readonly ShownError[]): boolean =>
+    errors.some((error) => {
       if (error.code === 'empty') return false;
       const field = fieldAt(error);
       return field === null || offPage(field);
     });
-    if (elsewhere) return true;
+
+  async function validate(scope: CheckScope): Promise<boolean> {
+    const found = await safely(() => checkPage(form, model, engine, scope, clock));
+    const words = found === null ? null : await safely(() => wordsFor(model.culture));
+    if (found === null || words === null || elsewhere(found)) return true;
     const errors = withKept(found);
     if (errors.length === 0) return true;
+    present(errors, scope, words);
+    return false;
+  }
 
+  async function server(problems: readonly ServerProblem[]): Promise<boolean> {
+    const found = await safely(() => serverErrors(form, model, engine, problems, clock));
+    const words = found === null ? null : await safely(() => wordsFor(model.culture));
+    if (found === null || words === null || found.length === 0 || elsewhere(found)) return false;
+    present(found, 'send', words);
+    for (const error of found) {
+      const field = fieldAt(error);
+      if (field !== null) kept.set(field, { target: error.target, link: error.link });
+    }
+    return true;
+  }
+
+  /** The errors at their fields and in the summary, which takes the focus, and `jfb:invalid`. */
+  function present(errors: readonly ShownError[], scope: CheckScope, words: MessageWords): void {
     hush();
     const shown = byField(errors);
     for (const paragraph of [...form.querySelectorAll<HTMLElement>('[data-jfb-error]')]) {
@@ -210,7 +238,6 @@ export function pageErrorsOf(
         },
       }),
     );
-    return false;
   }
 
   /** The post goes on as without JavaScript, with the button the visitor pressed. */
@@ -239,21 +266,23 @@ export function pageErrorsOf(
     event.preventDefault();
     if (checking) return;
     checking = true;
-    void validate(button.value === 'next' ? 'page' : 'send').then(
-      (passes) => {
-        if (!passes) {
-          checking = false;
-          return;
-        }
-        // The press's own submit event may still be running: the browser runs its listeners' microtasks before it
-        // ends, and a form ignores a submission asked for while it fires one. The post goes on in a task of its own.
-        setTimeout(() => {
-          checking = false;
-          send(button);
-        });
-      },
-      () => (checking = false),
-    );
+    void validate(button.value === 'next' ? 'page' : 'send')
+      .then((passes) => !passes || (button.value === 'submit' && deliver !== undefined && deliver(button, errors)))
+      .then(
+        (answered) => {
+          if (answered) {
+            checking = false;
+            return;
+          }
+          // The press's own submit event may still be running: the browser runs its listeners' microtasks before it
+          // ends, and a form ignores a submission asked for while it fires one. The post goes on in a task of its own.
+          setTimeout(() => {
+            checking = false;
+            send(button);
+          });
+        },
+        () => (checking = false),
+      );
   });
 
   const answered = (event: Event): void => {
@@ -286,7 +315,8 @@ export function pageErrorsOf(
     if (focusTarget(form, (link.getAttribute('href') ?? '').slice(1))) event.preventDefault();
   });
 
-  return { validate };
+  const errors: PageErrors = { validate, server };
+  return errors;
 }
 
 /** The errors the server showed at fields after a post without JavaScript, with their summary links' texts. */
