@@ -4672,7 +4672,9 @@
         "requiredMarker": "optional",
         "validationSummary": true,
         "choiceLayout": "vertical",
-        "queryValues": []
+        "queryValues": [
+          "workshop"
+        ]
       },
       "pages": [
         {
@@ -4694,6 +4696,7 @@
                   "hideLabel": false,
                   "required": true,
                   "messages": {},
+                  "defaultValue": "{{ query.workshop }}",
                   "validation": [],
                   "rules": [],
                   "options": {

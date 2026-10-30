@@ -7,6 +7,9 @@
     },
     "availability": {
       "members": "members"
+    },
+    "developer": {
+      "queryValues": ["workshop"]
     }
   },
   "pages": [
@@ -24,6 +27,7 @@
               "span": 2,
               "label": { "": "Workshop", "de": "Workshop" },
               "required": true,
+              "defaultValue": "{{ query.workshop }}",
               "settings": { "layout": "cards" },
               "options": {
                 "items": [

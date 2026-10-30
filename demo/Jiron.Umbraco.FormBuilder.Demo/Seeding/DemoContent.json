@@ -95,11 +95,11 @@
           "type": "demoTextBlock",
           "en": {
             "heading": "Bike repair basics",
-            "text": "<p>Saturday, 10:00 to 12:00, in the workshop room. Learn to fix a puncture, adjust brakes and gears, and keep your chain running. Bring your own bike if you like.</p>"
+            "text": "<p>Saturday, 10:00 to 12:00, in the workshop room. Learn to fix a puncture, adjust brakes and gears, and keep your chain running. Bring your own bike if you like.</p><p><a href=\"?workshop=bikes#jfb-1\">Book a place at Bike repair basics</a></p>"
           },
           "de": {
             "heading": "Fahrrad-Reparatur für Einsteiger",
-            "text": "<p>Samstag, 10 bis 12 Uhr, im Werkraum. Lernen Sie, einen Platten zu flicken, Bremsen und Schaltung einzustellen und Ihre Kette zu pflegen. Bringen Sie gern Ihr eigenes Fahrrad mit.</p>"
+            "text": "<p>Samstag, 10 bis 12 Uhr, im Werkraum. Lernen Sie, einen Platten zu flicken, Bremsen und Schaltung einzustellen und Ihre Kette zu pflegen. Bringen Sie gern Ihr eigenes Fahrrad mit.</p><p><a href=\"?workshop=bikes#jfb-1\">Einen Platz bei Fahrrad-Reparatur für Einsteiger buchen</a></p>"
           }
         },
         {
@@ -117,11 +117,11 @@
           "type": "demoTextBlock",
           "en": {
             "heading": "Mending clothes",
-            "text": "<p>Saturday, 14:00 to 16:00. Sew on buttons, patch a hole and fix a zip with our volunteers.</p>"
+            "text": "<p>Saturday, 14:00 to 16:00. Sew on buttons, patch a hole and fix a zip with our volunteers.</p><p><a href=\"?workshop=mending#jfb-1\">Book a place at Mending clothes</a></p>"
           },
           "de": {
             "heading": "Kleidung flicken",
-            "text": "<p>Samstag, 14 bis 16 Uhr. Knöpfe annähen, Löcher flicken und Reißverschlüsse reparieren, mit unseren Ehrenamtlichen.</p>"
+            "text": "<p>Samstag, 14 bis 16 Uhr. Knöpfe annähen, Löcher flicken und Reißverschlüsse reparieren, mit unseren Ehrenamtlichen.</p><p><a href=\"?workshop=mending#jfb-1\">Einen Platz bei Kleidung flicken buchen</a></p>"
           }
         },
         {

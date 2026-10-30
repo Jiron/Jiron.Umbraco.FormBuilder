@@ -65,7 +65,9 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
   through the form service when their alias is missing ([ADR-0094](../docs/decisions/0094-demo-forms.md)): the
   contact form, which the contact page shows through its `form` property, and the workshop booking on the events
   page, which is for members: a visitor sees a notice that asks them to sign in, a member the form, where the
-  workshop is chosen from cards, a help text recalls its name
+  workshop is chosen from cards, already chosen when the visitor follows a workshop's link on the events page
+  (`?workshop=`, a default with merge tags, [ADR-0118](../docs/decisions/0118-defaults-with-merge-tags-on-the-page.md)),
+  a help text recalls its name
   ([ADR-0095](../docs/decisions/0095-visitor-texts-members-only-forms-and-the-pending-note.md)), the question whether
   anyone comes along names the visitor, the guests who come along are the rows of a repeatable group the answer shows
   ([ADR-0098](../docs/decisions/0098-the-repeaters-rows.md)), and a closing text lists them, each text following the

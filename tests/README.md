@@ -951,17 +951,23 @@ division or an empty date, nothing while the rules hide it, a row's in its row, 
 form without rules too and never for a site's own type, and a slider's value beside its thumb and in its
 `aria-valuetext`; `engine.test.ts` loads the calculation language only for a form with a calculation and the merge
 tags only for a form with a text that recalls answers, each once for the page, and leaves a form whose chunk cannot
-load to the post without JavaScript; `recall.test.ts` renders a label, a help text, a placeholder, a heading, a
+load to the post without JavaScript, fills a marked default in before the rules first decide and loads its filler
+only for a form the server marked (6.4h); `defaults.test.ts` fills the marked fields once from the query values the
+form allows and the endpoint's values, writes a refused tag as it stands and a default the endpoint does not list as
+it is written, ticks and selects the matching choices, and never touches a control the visitor changed or a hidden
+input; `recall.test.ts` renders a label, a help text, a placeholder, a heading, a
 text block, a group's description and a later page's title as the visitor types, nothing of a field the rules hide
 or of a row's child they hide in its row, a value escaped in a rich text, a text without a field tag and a field
 after its text left as the server wrote them, and the error summary's link naming a label as it reads now, also
-for a box that shows its own text, and none while it renders empty; `texts.test.ts` writes a text as text, hidden
+for a box that shows its own text, and none while it renders empty, a refused tag as it stands, and never a default
+as a visitor text; `texts.test.ts` writes a text as text, hidden
 while empty or showing its fallback, a placeholder as its attribute, a rich text by its texts and the attribute
 values its elements already have, never a node or an `on…` attribute and not at all when its elements differ, and
 each element only when its text changes; `jfb-runtime.test.ts` holds the global. In Edge,
 `e2e/specs/website/runtime-frame.spec.ts` shows each demo form enhanced once with its `jfb:ready`, a form the page
 puts in later enhanced through `init(root)`, the chunk loaded only once a form is touched (by focus, or by a change
-without focus as autofill makes), and no error in the console; `e2e/specs/website/rules-on-the-page.spec.ts` shows
+without focus as autofill makes), or at once for a form with a default the page fills in, and no error in the
+console; `e2e/specs/website/rules-on-the-page.spec.ts` shows
 the feedback form's rules on the page in English and German, as the visitor answers; and
 `e2e/specs/website/errors-on-the-page.spec.ts` shows, in English and German, the contact form's error as the
 visitor leaves a field and its fix, a refused send with the server's errors for the same answers, the summary's
@@ -974,7 +980,10 @@ never loading the calculation language; and `e2e/specs/website/answer-recall-on-
 and German and signed in as a member, the workshop booking's question naming the visitor as they type, the notes'
 help naming the workshop chosen, the closing text listing the guests and none once the rules hide them, the error
 summary's link naming the question as it reads now, the merge tags loaded once, axe clean, and the contact form
-never loading them.
+never loading them; and `e2e/specs/website/defaults-on-the-page.spec.ts` shows, in English and German, the events
+page's link opening the booking with its workshop chosen from the address before the visitor touches it, the help
+naming it at once, the server's markup leaving the choice empty, axe clean, and a value no option has, or none,
+choosing nothing.
 
 ## Writing tests
 
