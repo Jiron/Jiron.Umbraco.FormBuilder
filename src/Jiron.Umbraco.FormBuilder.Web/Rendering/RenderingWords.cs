@@ -85,6 +85,10 @@ internal sealed record RenderingWords
             Change = "Change",
             NotAnswered = "Not answered",
             HiddenAnswer = "Hidden for your privacy",
+            YourAnswers = "Your answers",
+            PrintAnswers = "Print your answers",
+            FillInAgain = "Fill in the form again",
+            CopyShown = "Your answers show only once, right after sending.",
         },
         ["de"] = new RenderingWords
         {
@@ -153,6 +157,10 @@ internal sealed record RenderingWords
             Change = CapitalAUmlaut + "ndern",
             NotAnswered = "Nicht beantwortet",
             HiddenAnswer = "Zum Schutz Ihrer Daten ausgeblendet",
+            YourAnswers = "Ihre Antworten",
+            PrintAnswers = "Ihre Antworten drucken",
+            FillInAgain = "Formular erneut ausf" + UUmlaut + "llen",
+            CopyShown = "Ihre Antworten werden nur einmal angezeigt, direkt nach dem Senden.",
         },
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
@@ -353,6 +361,18 @@ internal sealed record RenderingWords
 
     /// <summary>What a screen reader hears for a sensitive answer that the summary page masks.</summary>
     public required string HiddenAnswer { get; init; }
+
+    /// <summary>The heading of the copy of the answers when it is one untitled page (ADR-0123).</summary>
+    public required string YourAnswers { get; init; }
+
+    /// <summary>The button that prints the copy of the answers.</summary>
+    public required string PrintAnswers { get; init; }
+
+    /// <summary>The link below the copy of the answers to the form again.</summary>
+    public required string FillInAgain { get; init; }
+
+    /// <summary>The line in the copy's place on a later view of the page after sending.</summary>
+    public required string CopyShown { get; init; }
 
     /// <summary>The words of a culture, of its more general culture, or English.</summary>
     /// <param name="culture">The culture, such as <c>de-CH</c>.</param>

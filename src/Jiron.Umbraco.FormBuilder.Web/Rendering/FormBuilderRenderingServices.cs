@@ -35,6 +35,7 @@ internal static class FormBuilderRenderingServices
         builder.Services.TryAddSingleton<FormPostHandler>();
         builder.Services.TryAddSingleton<FormPostFilesMiddleware>();
         builder.Services.TryAddSingleton<SentTokens>();
+        builder.Services.TryAddSingleton<SentCopies>();
         builder.Services.TryAddSingleton<BackOfficeVisitors>();
         builder.Services.TryAddScoped<FormMembers>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IWebsiteOutputCacheVaryByProvider, SentVaryBy>());

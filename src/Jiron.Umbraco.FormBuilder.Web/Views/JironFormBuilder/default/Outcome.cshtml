@@ -15,3 +15,22 @@
         </div>
     }
 </div>
+@* The copy of the answers (ADR-0123): the answers once, as the summary page writes them without Change, or a line in their place on a later view; the runtime reveals the print button. *@
+@if (Model.Copy is { } copy)
+{
+    if (copy.Answers is { } answers)
+    {
+        @await Html.PartialAsync(Model.Views.Summary, answers)
+    }
+    else
+    {
+        <p class="@Model.Classes.Help" data-jfb-copy-shown>@copy.ShownText</p>
+    }
+    <div class="@Model.Classes.Navigation" data-jfb-copy>
+        @if (copy.Answers is not null)
+        {
+            <button type="button" class="@Model.Classes.Button" data-jfb-print hidden><span class="jfb-icon jfb-icon-print" aria-hidden="true"></span>@copy.PrintText</button>
+        }
+        <a class="@Model.Classes.ButtonLink" href="@copy.Again.Url">@copy.Again.Text</a>
+    </div>
+}

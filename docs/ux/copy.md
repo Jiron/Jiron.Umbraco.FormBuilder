@@ -391,6 +391,10 @@ it is the example form's own wording, and the default follows the same pattern w
 | an answer's button on the summary page (the label follows it for screen readers) | Change | Ändern |
 | an unanswered question on the summary page | Not answered | Nicht beantwortet |
 | a sensitive answer on the summary page, for screen readers (three bullets show) | Hidden for your privacy | Zum Schutz Ihrer Daten ausgeblendet |
+| the copy of the answers after sending, the heading of a form of one untitled page | Your answers | Ihre Antworten |
+| the copy of the answers, its print button | Print your answers | Ihre Antworten drucken |
+| the copy of the answers, its link back to the form | Fill in the form again | Formular erneut ausfüllen |
+| the page after sending seen again, in the copy's place | Your answers show only once, right after sending. | Ihre Antworten werden nur einmal angezeigt, direkt nach dem Senden. |
 | the outcome, while the address is unconfirmed | **Check your inbox, Mira** We have sent you a link. Open it within 7 days to confirm your email address; then your place is booked. | **Sehen Sie in Ihrem Postfach nach, Mira** Wir haben Ihnen einen Link geschickt. Öffnen Sie ihn innerhalb von 7 Tagen, um Ihre E-Mail-Adresse zu bestätigen; dann ist Ihr Platz gebucht. |
 | a redirect after the message (said once, not every second) | Taking you to the workshop programme in 8 seconds. [Go now] [Stay here] | In 8 Sekunden geht es weiter zum Workshop-Programm. [Jetzt weiter] [Hier bleiben] |
 | the verification page | **Confirm your email address** Confirm it to finish your booking for "Book a Saturday workshop". [Confirm my address] | **Bestätigen Sie Ihre E-Mail-Adresse** Bestätigen Sie sie, um Ihre Buchung für „Book a Saturday workshop“ abzuschließen. [Meine Adresse bestätigen] |

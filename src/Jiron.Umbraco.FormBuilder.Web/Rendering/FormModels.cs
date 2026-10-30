@@ -142,7 +142,7 @@ internal sealed partial class FormModels(
             classes);
         var model = display switch
         {
-            FormDisplay.Outcome => root.Model(outcome: Outcome(post!.Outcome!, words, classes)),
+            FormDisplay.Outcome => root.Model(outcome: Outcome(post!.Outcome!, words, classes, root.Views, await CopyAsync(render, root, post.Outcome!.Copy, words, culture, cancellationToken))),
             FormDisplay.Notice => root.Model(notice: render.Shown.Unavailable is not null ? Unavailable(render, words, culture, classes) : Gated(render.Gate!.Value, words, classes)),
             _ => await FormAsync(render, root, post, words, culture, cancellationToken),
         };
@@ -180,9 +180,11 @@ internal sealed partial class FormModels(
             : new NoticeViewModel { Classes = classes, CssClass = classes.Join("jfb-notice", FormBuilderThemeSlots.Notice), Kind = kind, Heading = full ? words.FullHeading : words.ClosedHeading, Text = Paragraph(full ? words.FullText : words.ClosedText) };
     }
 
-    private static OutcomeViewModel Outcome(FormPostOutcome outcome, RenderingWords words, ThemeClassesModel classes) => new()
+    private static OutcomeViewModel Outcome(FormPostOutcome outcome, RenderingWords words, ThemeClassesModel classes, FormViewPaths views, OutcomeCopyModel? copy) => new()
     {
         Classes = classes,
+        Views = views,
+        Copy = copy,
         Message = new HtmlString(outcome.Html),
         Reference = outcome.Reference is { Length: > 0 } reference ? WithMarkup(words.Reference, "<strong>" + WebUtility.HtmlEncode(reference) + "</strong>") : null,
         IsPending = outcome.IsPending,

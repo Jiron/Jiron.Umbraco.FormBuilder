@@ -1,7 +1,7 @@
 @* jfb-view: Summary 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.SummaryViewModel
 @using Jiron.Umbraco.FormBuilder.Web.Rendering
-@* The answers to check before sending (ADR-0122): a section per page, a row per answer, each with its Change, which opens its page at the field. A row's error shows after a send from this page. *@
+@* The answers to check before sending (ADR-0122): a section per page, a row per answer, each with its Change, which opens its page at the field. A row's error shows after a send from this page. The copy of the answers after sending writes the same rows without Change (ADR-0123). *@
 @{
     void Lines(IReadOnlyList<string> lines)
     {

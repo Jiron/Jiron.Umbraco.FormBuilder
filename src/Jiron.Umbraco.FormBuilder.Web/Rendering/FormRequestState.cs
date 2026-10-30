@@ -1,5 +1,6 @@
 using System.Globalization;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Microsoft.AspNetCore.Http;
 
 namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
@@ -86,7 +87,12 @@ internal sealed record FormPostNotice(string? Heading, string Text, string? Code
 /// <param name="Reference">The entry's reference, or null.</param>
 /// <param name="IsPending">Whether the visitor must still confirm their email address.</param>
 /// <param name="ContinueUrl">The redirect after the message, which the visitor follows by a link (ADR-0100); null for none.</param>
-internal sealed record FormPostOutcome(string Html, string? Reference, bool IsPending, string? ContinueUrl = null);
+/// <param name="Copy">The copy of the answers below a message that offers one (ADR-0123); null for a message that does not.</param>
+internal sealed record FormPostOutcome(string Html, string? Reference, bool IsPending, string? ContinueUrl = null, FormPostCopy? Copy = null);
+
+/// <summary>The copy of the answers below an outcome (ADR-0123).</summary>
+/// <param name="Entry">The entry's answers, on the one view that shows them; null on any later view, which says so.</param>
+internal sealed record FormPostCopy(EntryCopy? Entry);
 
 /// <summary>Where a post moves from its page (ADR-0100); the form's render works out the page with the rules.</summary>
 internal enum FormPostMove

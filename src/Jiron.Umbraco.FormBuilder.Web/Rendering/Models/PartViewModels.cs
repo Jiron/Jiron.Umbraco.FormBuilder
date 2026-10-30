@@ -163,6 +163,9 @@ public sealed class OutcomeViewModel
     /// <summary>The classes the views write, Jiron Form Builder's own with the form's theme's (ADR-0105).</summary>
     public ThemeClassesModel Classes { get; init; } = ThemeClassesModel.None;
 
+    /// <summary>The views the outcome writes its parts with: the copy of the answers takes <c>Summary.cshtml</c>.</summary>
+    public required FormViewPaths Views { get; init; }
+
     /// <summary>The message, sanitised.</summary>
     public required IHtmlContent Message { get; init; }
 
@@ -177,6 +180,28 @@ public sealed class OutcomeViewModel
     /// chooses (ADR-0100); null for a message without a redirect.
     /// </summary>
     public OutcomeLinkModel? Continue { get; init; }
+
+    /// <summary>The copy of the answers below the message, for a message that offers it (ADR-0123); null otherwise.</summary>
+    public OutcomeCopyModel? Copy { get; init; }
+}
+
+/// <summary>
+/// The copy of the answers below an outcome (ADR-0123): the entry's answers, shown once, as the summary page writes them
+/// without "Change", or on a later view a line in their place; then the print button and the link to the form again.
+/// </summary>
+public sealed class OutcomeCopyModel
+{
+    /// <summary>The answers, a section per page; null on a later view, which writes <see cref="ShownText"/> instead.</summary>
+    public SummaryViewModel? Answers { get; init; }
+
+    /// <summary>The print button's text, "Print your answers"; the runtime reveals the button.</summary>
+    public required string PrintText { get; init; }
+
+    /// <summary>The line in the answers' place on a later view: they show only once.</summary>
+    public required string ShownText { get; init; }
+
+    /// <summary>The link to the form again: the page without the sent token, at the form.</summary>
+    public required OutcomeLinkModel Again { get; init; }
 }
 
 /// <summary>A link of the outcome: where it goes and its text.</summary>

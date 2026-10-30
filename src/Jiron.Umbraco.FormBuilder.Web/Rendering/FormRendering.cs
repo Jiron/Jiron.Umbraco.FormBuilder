@@ -47,6 +47,7 @@ internal sealed record RenderedForm(string View, object Model, IFormBuilderTheme
 /// <param name="backOffice">Whether the request comes from a signed-in backoffice user, who sees that note.</param>
 /// <param name="submissions">The submission pipeline, whose receipt the page after a sent post shows.</param>
 /// <param name="sent">The tokens of the redirect after a sent post.</param>
+/// <param name="copies">The marks that let the copy of the answers show once (ADR-0123).</param>
 /// <param name="themes">The themes, which give the form's.</param>
 /// <param name="logger">Where a reference that names no form is logged.</param>
 internal sealed partial class FormRendering(
@@ -60,6 +61,7 @@ internal sealed partial class FormRendering(
     BackOfficeVisitors backOffice,
     FormSubmissions submissions,
     SentTokens sent,
+    SentCopies copies,
     FormBuilderThemes themes,
     ILogger<FormRendering> logger)
 {
@@ -139,6 +141,8 @@ internal sealed partial class FormRendering(
     // The outcome of the entry a post without JavaScript sent, on the page it redirected to (ADR-0100): the token in
     // jfb-sent names the form, the instance and the submission id, and the outcome is the receipt's; a token that names
     // nothing for this form and instance leaves the form as it is. The request carries jfb-sent, so the page is no-store.
+    // A message that offers the copy of the answers shows them to the one GET that takes the entry's mark, and a line
+    // in their place to any later view (ADR-0123).
     private async Task SentAsync(HttpContext httpContext, Guid form, string instance, string culture, CancellationToken cancellationToken)
     {
         if (FormPosts.Get(httpContext, form, instance) is not null
@@ -150,6 +154,13 @@ internal sealed partial class FormRendering(
             return;
         }
 
+        FormPostCopy? copy = null;
+        if (outcome is { Kind: OutcomeKind.Message, ShowAnswers: true })
+        {
+            var entry = HttpMethods.IsGet(httpContext.Request.Method) ? await submissions.CopyAsync(form, submissionId, cancellationToken) : null;
+            copy = new FormPostCopy(entry is not null && await copies.TakeAsync(form, submissionId, entry.Submitted, cancellationToken) ? entry : null);
+        }
+
         var words = RenderingWords.Of(culture);
         FormPosts.Set(httpContext, form, instance, new FormPostState
         {
@@ -157,7 +168,8 @@ internal sealed partial class FormRendering(
                 outcome.Html ?? "<p>" + WebUtility.HtmlEncode(words.ThankYou) + "</p>",
                 receipt.Reference,
                 IsPending: false,
-                outcome is { Kind: OutcomeKind.Message, Url: { } url } ? url : null),
+                outcome is { Kind: OutcomeKind.Message, Url: { } url } ? url : null,
+                copy),
         });
     }
 

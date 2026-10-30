@@ -141,7 +141,8 @@
       "message": {
         "": "<p>Thank you, {{ field.fullName.first }}. We reply within two weeks.</p>",
         "de": "<p>Danke, {{ field.fullName.first }}. Wir antworten innerhalb von zwei Wochen.</p>"
-      }
+      },
+      "showAnswers": true
     }
   ]
 }
