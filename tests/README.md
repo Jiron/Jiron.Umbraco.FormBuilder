@@ -98,6 +98,17 @@ an array; [ADR-0083](../docs/decisions/0083-merge-tags-and-the-two-runtimes-afte
 `Logic/RecallVector.cs` first holds the form to what the browser is given (each field's kind, parts, rows
 and recall mode are its type's, `builtIn` names the built-in types, countries are named and yes and no are worded as
 the server does) and renders over a site with its own types, whose displays the visitor texts must not use.
+`messages` (6.2g) holds the visitor messages ([ADR-0099](../docs/decisions/0099-visitor-error-messages.md)): a
+case's field as the form endpoint shows it, the error's kind, the answers, the culture and the site's today,
+expecting the text in English and German, and the error summary's entries after a label that ends in its own mark
+or is made only of spaces. `reading` (6.4a) holds the reading stage
+([ADR-0109](../docs/decisions/0109-reading-answers-in-the-browser.md)): a `read` case gives a field of a built-in
+type with its settings and grid rows and an answer as posted (its texts and named parts), expecting the limit it
+breaks or the values read (each a text, the row it answers and the text stored in its place) and whether it is
+unreadable; a `rowCount` case gives a repeatable group's settings and its number of rows. `Logic/ReadingVector.cs`
+runs both through Core's `SubmissionReader.Clean` and `FieldValues`. Beside it, `packages/logic/test/reading.test.ts`
+holds the browser's table of the built-in types to `docs/api/field-types.json` and reads no site's own type, and
+`FieldTypes/CountryCodesTests.cs` holds the browser's country codes (`countries.ts`) to Core's.
 
 **The mutation check** proves the vectors. Each mutant in `vectors/mutants.mjs` changes one piece of the logic in one
 runtime, that runtime's vector runner runs, and the file is put back; the check fails on a mutant that nothing catches,

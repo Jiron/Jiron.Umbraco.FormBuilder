@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -152,16 +153,20 @@ internal static class VisitorMessages
     /// <param name="culture">The page's culture.</param>
     public static string SummaryEntry(string message, string? label, string? row, string culture)
     {
-        if (string.IsNullOrWhiteSpace(label))
+        if (IsBlank(label))
         {
             return message;
         }
 
         var words = VisitorMessageWords.Of(culture);
-        return string.IsNullOrWhiteSpace(row)
+        return IsBlank(row)
             ? Fill(EndsWithMark(label) ? words.SummaryMarkedEntry : words.SummaryEntry, ("label", label), ("message", message))
             : Fill(words.SummaryRowEntry, ("label", label), ("row", row), ("message", message));
     }
+
+    // Whether a label or a row's legend shows nothing: every code unit one that cleaning trims (ADR-0005), the same set in
+    // both runtimes.
+    private static bool IsBlank([NotNullWhen(false)] string? text) => text is null || text.All(TextSemantics.IsTrimmed);
 
     /// <summary>Whether the label's last character that cleaning keeps (ADR-0005) closes it as a question mark, an exclamation mark, a full stop or a colon does.</summary>
     /// <param name="label">The label as the page shows it.</param>

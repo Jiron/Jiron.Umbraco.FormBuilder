@@ -5422,6 +5422,37 @@
       "expect": "Enter an answer"
     },
     {
+      "id": "entry-of-a-next-line-label-is-the-message",
+      "message": {
+        "entry": {
+          "message": "Enter an answer",
+          "label": "\u0085"
+        }
+      },
+      "expect": "Enter an answer"
+    },
+    {
+      "id": "entry-of-a-byte-order-mark-label-is-the-message",
+      "message": {
+        "entry": {
+          "message": "Enter an answer",
+          "label": "\ufeff"
+        }
+      },
+      "expect": "Enter an answer"
+    },
+    {
+      "id": "entry-of-a-next-line-row-names-no-row",
+      "message": {
+        "entry": {
+          "message": "Enter an answer",
+          "label": "Name",
+          "row": "\u0085"
+        }
+      },
+      "expect": "Name: Enter an answer"
+    },
+    {
       "id": "entry-of-a-label-with-braces-keeps-them",
       "message": {
         "entry": {

@@ -10,7 +10,9 @@
   of a field's rows added by [ADR-0071](0071-the-advanced-types-own-checks.md) in 5.4c; a checkbox's longest answer
   (5, for `false`) and part names held to the longest text amended by
   [ADR-0080](0080-reading-a-submission-after-the-phase-5-review.md) in 5.5f; the parts a page asks for and a
-  signature's typed part (`<alias>.typed`) added by [ADR-0097](0097-the-part-date-and-output-controls.md) in 6.2e
+  signature's typed part (`<alias>.typed`) added by [ADR-0097](0097-the-part-date-and-output-controls.md) in 6.2e;
+  the same cleaning, limits and readings in the browser, and what the rules see of an answer that is unreadable or
+  over its limits (no value) corrected, by [ADR-0109](0109-reading-answers-in-the-browser.md) in 6.4a
 - Date: 2026-10-25
 - Roadmap step: 5.1d (decided and built); 5.2 gives the built-in types their checks, 6.1 runs the pipeline on them,
   6.2 posts the answers without JavaScript
@@ -106,7 +108,7 @@ what their wire forms need. The texts a field takes follow its settings; the bui
 | `checkboxes` | 200, or 2,000 with `other` | 10,000, or 10,001 with `other` |
 | `grid` | 200 | 1 for each of its rows, or 10,000 each with `multiple` |
 | `ranking` | 200 | 10,000 |
-| `checkbox` | 4 (`true`) | 1 |
+| `checkbox` | 5 (`false`, which reads as unticked; ADR-0080) | 1 |
 | `yesno` | 3 (`yes`, `no`) | 1 |
 | `consent` | 64 (the wording's SHA-256 in hex) | 2 |
 | `country` | 2 | 1 |
@@ -152,7 +154,8 @@ contract: an error kind it does not declare, a grid row the field does not have,
 object of texts, or a value without a row of a type whose parts hold its values).
 
 The pipeline's order (6.1): the limits of every answer; each field read by its type; the rules over what was read (an
-unreadable answer is compared as posted, and an invalid value never matches, ADR-0005); hidden fields stripped; then,
+answer over its limits or unreadable gives them no value, and an invalid value never matches, ADR-0005, ADR-0109);
+hidden fields stripped; then,
 for each visible field, a read that failed as `invalid`, a missing required value, or its type's `Validate`.
 
 ### The columns

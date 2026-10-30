@@ -413,7 +413,8 @@ format; where a count changes the words, the singular comes first, then the plur
 message stands alone, but for a grid's row, which it names first ("Morning: Choose an answer in this row"); in the
 summary a default follows the field's label, and a row's legend or a grid's row after it in brackets; a label that
 already ends in a question mark, an exclamation mark, a full stop or a colon takes no colon after it ("Where would you
-like to sit? Choose an answer", ADR-0106).
+like to sit? Choose an answer", ADR-0106); a label made only of spaces counts as none, so the message
+stands alone, and a legend made only of spaces is left out (ADR-0109).
 
 | Case | English | German |
 | --- | --- | --- |

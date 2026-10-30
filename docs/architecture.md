@@ -146,7 +146,10 @@ flowchart LR
   `matchesField` checks as Core's `FieldValues` does, with the other fields' values
   ([ADR-0062](decisions/0062-the-built-in-types-checks.md)), a choice's answers held to its own options or those its
   list or another source resolved, a cascading field's to those of its parent's answers
-  ([ADR-0077](decisions/0077-answers-and-labels-from-resolved-options.md));
+  ([ADR-0077](decisions/0077-answers-and-labels-from-resolved-options.md)); its reading stage (`reading.ts`, Core's
+  `SubmissionReader.Clean` and `FieldTypes/FieldValues.cs`) cleans a field's answer, holds it to the longest answer
+  its built-in type takes and reads it into the wire form as the type's `Read` does, a site's own type left to the
+  server ([ADR-0109](decisions/0109-reading-answers-in-the-browser.md));
 - `runtime`: enhances Razor-rendered forms through the markup contract;
 - `element`: `<jfb-form>`, the headless renderer, with the same markup and runtime;
 - `backoffice`: the Forms section in Lit and TypeScript with UUI, through the generated client.

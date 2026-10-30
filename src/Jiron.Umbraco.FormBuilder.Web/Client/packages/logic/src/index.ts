@@ -5,8 +5,9 @@
  * and the lint refuses imports from anywhere else. Step 3.4b ported the modules of the 1.5 spike; 5.2a added
  * the form engine (ADR-0061), 5.2b and 5.2c the built-in types' checks (ADR-0062), 5.3a the calculation language
  * (ADR-0063), 5.3b and 5.3c the merge tags, 5.3f answer recall with the answers' display texts (ADR-0068), and 5.4a
- * the forms of an email address, a phone number and a web address (ADR-0069), and 6.2g the visitor messages
- * (ADR-0099), whose words are tables of their own in lang/.
+ * the forms of an email address, a phone number and a web address (ADR-0069), 6.2g the visitor messages
+ * (ADR-0099), whose words are tables of their own in lang/, and 6.4a the reading of answers before the rules and checks
+ * (ADR-0109).
  */
 export {
   calculate,
@@ -81,6 +82,18 @@ export {
   type VisitorError,
 } from './messages.ts';
 export { compilePattern, type Pattern } from './pattern.ts';
+export {
+  BUILT_IN_TYPES,
+  checkRows,
+  cleanAnswer,
+  postedNumber,
+  readField,
+  type DeclaredType,
+  type FieldReading,
+  type PostedAnswer,
+  type ReadField,
+  type ReadValue,
+} from './reading.ts';
 export {
   MASKED,
   recallAnswers,

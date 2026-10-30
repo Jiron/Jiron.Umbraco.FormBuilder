@@ -1,0 +1,3980 @@
+{
+  "format": "jfb-vectors/1",
+  "suite": "reading",
+  "defaults": {},
+  "fields": {},
+  "cases": [
+    {
+      "id": "cleaning-trims-each-text",
+      "read": {
+        "field": {
+          "type": "text",
+          "settings": {
+            "minLength": 0,
+            "maxLength": 255,
+            "counter": false
+          }
+        },
+        "answer": {
+          "values": [
+            "  Anna  "
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "Anna"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "cleaning-drops-empty-texts",
+      "read": {
+        "field": {
+          "type": "text",
+          "settings": {
+            "minLength": 0,
+            "maxLength": 255,
+            "counter": false
+          }
+        },
+        "answer": {
+          "values": [
+            "   ",
+            "Anna",
+            ""
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "Anna"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "cleaning-composes-to-nfc",
+      "read": {
+        "field": {
+          "type": "text",
+          "settings": {
+            "minLength": 0,
+            "maxLength": 255,
+            "counter": false
+          }
+        },
+        "answer": {
+          "values": [
+            "Jose\u0301"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "Jos\u00e9"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "cleaning-keeps-inner-spaces",
+      "read": {
+        "field": {
+          "type": "text",
+          "settings": {
+            "minLength": 0,
+            "maxLength": 255,
+            "counter": false
+          }
+        },
+        "answer": {
+          "values": [
+            "Anna  Muster"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "Anna  Muster"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "an-empty-answer-reads-nothing",
+      "read": {
+        "field": {
+          "type": "text",
+          "settings": {
+            "minLength": 0,
+            "maxLength": 255,
+            "counter": false
+          }
+        },
+        "answer": {
+          "values": []
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "ranking-a-part-without-a-name-is-left-out",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "a"
+          ],
+          "parts": [
+            [
+              "  ",
+              [
+                "1"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "ranking-a-part-without-texts-is-left-out",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "a"
+          ],
+          "parts": [
+            [
+              "b",
+              [
+                "  "
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "parts-whose-names-clean-alike-are-one-part",
+      "read": {
+        "field": {
+          "type": "name",
+          "settings": {
+            "parts": [
+              "first",
+              "last"
+            ]
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "first ",
+              [
+                "Anna"
+              ]
+            ],
+            [
+              "first",
+              [
+                "Bea"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "a-part-without-a-name-is-left-out",
+      "read": {
+        "field": {
+          "type": "name",
+          "settings": {
+            "parts": [
+              "first",
+              "last"
+            ]
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "  ",
+              [
+                "Anna"
+              ]
+            ],
+            [
+              "first",
+              [
+                "Bea"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "{\"first\":\"Bea\"}"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "a-part-whose-texts-are-empty-is-left-out",
+      "read": {
+        "field": {
+          "type": "email",
+          "settings": {
+            "confirm": false
+          }
+        },
+        "answer": {
+          "values": [
+            "anna@example.com"
+          ],
+          "parts": [
+            [
+              "confirm",
+              [
+                "  "
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "anna@example.com"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "text-at-its-longest",
+      "read": {
+        "field": {
+          "type": "text",
+          "settings": {
+            "minLength": 0,
+            "maxLength": 255,
+            "counter": false
+          }
+        },
+        "answer": {
+          "values": [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "text-too-long-is-max-length",
+      "read": {
+        "field": {
+          "type": "text",
+          "settings": {
+            "minLength": 0,
+            "maxLength": 255,
+            "counter": false
+          }
+        },
+        "answer": {
+          "values": [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "maxLength",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "text-given-twice-is-invalid",
+      "read": {
+        "field": {
+          "type": "text",
+          "settings": {
+            "minLength": 0,
+            "maxLength": 255,
+            "counter": false
+          }
+        },
+        "answer": {
+          "values": [
+            "Anna",
+            "Bea"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "textarea-long-is-read",
+      "read": {
+        "field": {
+          "type": "textarea",
+          "settings": {
+            "minLength": 0,
+            "maxLength": 4000,
+            "rows": 4,
+            "autoGrow": true,
+            "counter": false
+          }
+        },
+        "answer": {
+          "values": [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "email-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "email",
+          "settings": {
+            "confirm": false
+          }
+        },
+        "answer": {
+          "values": [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "email-typed-twice-as-two-answers-is-unreadable",
+      "read": {
+        "field": {
+          "type": "email",
+          "settings": {
+            "confirm": true
+          }
+        },
+        "answer": {
+          "values": [
+            "anna@example.com",
+            "bea@example.com"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "hidden-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "hidden",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "email-with-its-address-typed-again",
+      "read": {
+        "field": {
+          "type": "email",
+          "settings": {
+            "confirm": true
+          }
+        },
+        "answer": {
+          "values": [
+            "anna@example.com"
+          ],
+          "parts": [
+            [
+              "confirm",
+              [
+                "anna@example.com"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "anna@example.com"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "email-typed-again-without-the-setting-is-invalid",
+      "read": {
+        "field": {
+          "type": "email",
+          "settings": {
+            "confirm": false
+          }
+        },
+        "answer": {
+          "values": [
+            "anna@example.com"
+          ],
+          "parts": [
+            [
+              "confirm",
+              [
+                "anna@example.com"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "phone-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "phone",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "11111111111111111111111111111111111111111111111111111111111111111"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "url-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "url",
+          "settings": {
+            "schemes": [
+              "https"
+            ]
+          }
+        },
+        "answer": {
+          "values": [
+            "https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "url-at-its-longest",
+      "read": {
+        "field": {
+          "type": "url",
+          "settings": {
+            "schemes": [
+              "https"
+            ]
+          }
+        },
+        "answer": {
+          "values": [
+            "https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "a-part-name-counts-to-the-longest-text",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              [
+                "1"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-as-the-wire-form",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "12"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "12"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-with-leading-zeros",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "007"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "7"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-minus-zero",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "-0"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "0"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-trailing-zeros-dropped",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "1.50"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "1.5"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-negative-with-trailing-zeros",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "-12.340"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "-12.34"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-point-first",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            ".5"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "0.5"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-with-an-exponent",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "1e3"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "1000"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-with-a-plus-exponent",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "1e+2"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "100"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-with-a-negative-exponent",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "1.5E-3"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "0.0015"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-negative-with-an-exponent",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "-0.5e1"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "-5"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-zero-with-zeros",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "0.000"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "0"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-zero-with-a-huge-exponent",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "0e999999999"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "0"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-with-spaces-is-cleaned",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            " 12 "
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "12"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-with-a-plus-is-unreadable",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "+5"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "number-with-a-comma-is-unreadable",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "1,5"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "number-ending-in-a-point-is-unreadable",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "5."
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "number-of-only-an-exponent-is-unreadable",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "e3"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "number-with-an-empty-exponent-is-unreadable",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "1e"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "number-with-letters-is-unreadable",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "12abc"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "number-infinity-is-unreadable",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "Infinity"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "number-of-sixty-digits",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "100000000000000000000000000000000000000000000000000000000000"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "100000000000000000000000000000000000000000000000000000000000"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-of-sixty-one-digits-is-unreadable",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "1000000000000000000000000000000000000000000000000000000000000"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "number-sixty-places-after-the-point",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "1e-60"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "0.000000000000000000000000000000000000000000000000000000000001"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "number-sixty-one-places-is-unreadable",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "1e-61"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "number-huge-exponent-is-unreadable",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "1e999999999"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "number-too-long-as-posted-is-invalid",
+      "read": {
+        "field": {
+          "type": "number",
+          "settings": {
+            "decimals": 0
+          }
+        },
+        "answer": {
+          "values": [
+            "11111111111111111111111111111111111111111111111111111111111111111"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "rating-reads-as-a-number",
+      "read": {
+        "field": {
+          "type": "rating",
+          "settings": {
+            "count": 5,
+            "symbol": "star"
+          }
+        },
+        "answer": {
+          "values": [
+            "3"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "3"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "scale-reads-zero",
+      "read": {
+        "field": {
+          "type": "scale",
+          "settings": {
+            "from": 0,
+            "to": 10
+          }
+        },
+        "answer": {
+          "values": [
+            "0"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "0"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "slider-reads-as-a-number",
+      "read": {
+        "field": {
+          "type": "slider",
+          "settings": {
+            "min": "0",
+            "max": "100",
+            "step": "1",
+            "showValue": true
+          }
+        },
+        "answer": {
+          "values": [
+            "50.0"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "50"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "calculation-takes-no-answer",
+      "read": {
+        "field": {
+          "type": "calculation",
+          "settings": {
+            "visible": true,
+            "formula": "1"
+          }
+        },
+        "answer": {
+          "values": [
+            "12"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "date-as-the-wire-form",
+      "read": {
+        "field": {
+          "type": "date",
+          "settings": {
+            "defaultToday": false,
+            "weekdaysOnly": false
+          }
+        },
+        "answer": {
+          "values": [
+            "2026-06-15"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "2026-06-15"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "date-that-is-no-date-is-unreadable",
+      "read": {
+        "field": {
+          "type": "date",
+          "settings": {
+            "defaultToday": false,
+            "weekdaysOnly": false
+          }
+        },
+        "answer": {
+          "values": [
+            "2026-02-30"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "date-without-zeros-is-unreadable",
+      "read": {
+        "field": {
+          "type": "date",
+          "settings": {
+            "defaultToday": false,
+            "weekdaysOnly": false
+          }
+        },
+        "answer": {
+          "values": [
+            "2026-6-15"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "date-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "date",
+          "settings": {
+            "defaultToday": false,
+            "weekdaysOnly": false
+          }
+        },
+        "answer": {
+          "values": [
+            "2026-06-150"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "time-to-the-minute",
+      "read": {
+        "field": {
+          "type": "time",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "09:30"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "09:30"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "time-to-the-second",
+      "read": {
+        "field": {
+          "type": "time",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "09:30:15"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "09:30:15"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "time-past-midnight-is-unreadable",
+      "read": {
+        "field": {
+          "type": "time",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "24:00"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "time-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "time",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "09:30:150"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "datetime-as-the-wire-form",
+      "read": {
+        "field": {
+          "type": "datetime",
+          "settings": {
+            "defaultToday": false,
+            "weekdaysOnly": false
+          }
+        },
+        "answer": {
+          "values": [
+            "2026-06-15T09:30"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "2026-06-15T09:30"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "datetime-with-a-space-is-unreadable",
+      "read": {
+        "field": {
+          "type": "datetime",
+          "settings": {
+            "defaultToday": false,
+            "weekdaysOnly": false
+          }
+        },
+        "answer": {
+          "values": [
+            "2026-06-15 09:30"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "datetime-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "datetime",
+          "settings": {
+            "defaultToday": false,
+            "weekdaysOnly": false
+          }
+        },
+        "answer": {
+          "values": [
+            "2026-06-15T09:30:150"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "dropdown-one-option",
+      "read": {
+        "field": {
+          "type": "dropdown",
+          "settings": {
+            "multiple": false
+          }
+        },
+        "answer": {
+          "values": [
+            "a"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "dropdown-two-options-is-invalid",
+      "read": {
+        "field": {
+          "type": "dropdown",
+          "settings": {
+            "multiple": false
+          }
+        },
+        "answer": {
+          "values": [
+            "a",
+            "b"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "dropdown-of-several-reads-each",
+      "read": {
+        "field": {
+          "type": "dropdown",
+          "settings": {
+            "multiple": true
+          }
+        },
+        "answer": {
+          "values": [
+            "a",
+            "b"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          },
+          {
+            "text": "b"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "dropdown-of-several-one-twice-is-unreadable",
+      "read": {
+        "field": {
+          "type": "dropdown",
+          "settings": {
+            "multiple": true
+          }
+        },
+        "answer": {
+          "values": [
+            "a",
+            "a"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "dropdown-option-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "dropdown",
+          "settings": {
+            "multiple": false
+          }
+        },
+        "answer": {
+          "values": [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "radio-one-option",
+      "read": {
+        "field": {
+          "type": "radio",
+          "settings": {
+            "other": false,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [
+            "a"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "radio-other-without-the-setting-is-invalid",
+      "read": {
+        "field": {
+          "type": "radio",
+          "settings": {
+            "other": false,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [
+            "a"
+          ],
+          "parts": [
+            [
+              "other",
+              [
+                "Mine"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "radio-other-in-place-of-an-option",
+      "read": {
+        "field": {
+          "type": "radio",
+          "settings": {
+            "other": true,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "other",
+              [
+                "Mine"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "Mine"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "radio-other-beside-an-option-is-ignored",
+      "read": {
+        "field": {
+          "type": "radio",
+          "settings": {
+            "other": true,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [
+            "a"
+          ],
+          "parts": [
+            [
+              "other",
+              [
+                "Mine"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "radio-two-options-with-other-on-is-unreadable",
+      "read": {
+        "field": {
+          "type": "radio",
+          "settings": {
+            "other": true,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [
+            "a",
+            "b"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "radio-other-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "radio",
+          "settings": {
+            "other": true,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "other",
+              [
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "radio-other-longer-than-an-option",
+      "read": {
+        "field": {
+          "type": "radio",
+          "settings": {
+            "other": true,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "other",
+              [
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "checkboxes-other-longer-than-an-option",
+      "read": {
+        "field": {
+          "type": "checkboxes",
+          "settings": {
+            "other": true,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "other",
+              [
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "checkboxes-options-then-other",
+      "read": {
+        "field": {
+          "type": "checkboxes",
+          "settings": {
+            "other": true,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [
+            "a",
+            "b"
+          ],
+          "parts": [
+            [
+              "other",
+              [
+                "Mine"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          },
+          {
+            "text": "b"
+          },
+          {
+            "text": "Mine"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "checkboxes-other-repeating-an-option-is-ignored",
+      "read": {
+        "field": {
+          "type": "checkboxes",
+          "settings": {
+            "other": true,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [
+            "a"
+          ],
+          "parts": [
+            [
+              "other",
+              [
+                "a"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "checkboxes-other-without-the-setting-is-ignored",
+      "read": {
+        "field": {
+          "type": "checkboxes",
+          "settings": {
+            "other": false,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [
+            "a"
+          ],
+          "parts": [
+            [
+              "other",
+              [
+                "Mine"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "checkboxes-an-option-twice-is-unreadable",
+      "read": {
+        "field": {
+          "type": "checkboxes",
+          "settings": {
+            "other": false,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [
+            "a",
+            "a"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "checkboxes-two-other-texts-is-unreadable",
+      "read": {
+        "field": {
+          "type": "checkboxes",
+          "settings": {
+            "other": true,
+            "layout": "inherit"
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "other",
+              [
+                "Mine",
+                "Yours"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "grid-each-row-its-column",
+      "read": {
+        "field": {
+          "type": "grid",
+          "settings": {
+            "multiple": false
+          },
+          "rows": [
+            {
+              "id": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+            },
+            {
+              "id": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e12"
+            }
+          ]
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e12",
+              [
+                "2"
+              ]
+            ],
+            [
+              "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11",
+              [
+                "1"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "1",
+            "row": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+          },
+          {
+            "text": "2",
+            "row": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e12"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "grid-two-columns-in-a-row-is-unreadable",
+      "read": {
+        "field": {
+          "type": "grid",
+          "settings": {
+            "multiple": false
+          },
+          "rows": [
+            {
+              "id": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+            },
+            {
+              "id": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e12"
+            }
+          ]
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11",
+              [
+                "1",
+                "2"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "grid-of-several-reads-each-column",
+      "read": {
+        "field": {
+          "type": "grid",
+          "settings": {
+            "multiple": true
+          },
+          "rows": [
+            {
+              "id": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+            },
+            {
+              "id": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e12"
+            }
+          ]
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11",
+              [
+                "1",
+                "2"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "1",
+            "row": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+          },
+          {
+            "text": "2",
+            "row": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "grid-of-several-more-columns-than-rows",
+      "read": {
+        "field": {
+          "type": "grid",
+          "settings": {
+            "multiple": true
+          },
+          "rows": [
+            {
+              "id": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+            },
+            {
+              "id": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e12"
+            }
+          ]
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11",
+              [
+                "1",
+                "2",
+                "3"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "1",
+            "row": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+          },
+          {
+            "text": "2",
+            "row": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+          },
+          {
+            "text": "3",
+            "row": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "grid-of-several-a-column-twice-is-unreadable",
+      "read": {
+        "field": {
+          "type": "grid",
+          "settings": {
+            "multiple": true
+          },
+          "rows": [
+            {
+              "id": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+            }
+          ]
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11",
+              [
+                "1",
+                "1"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "grid-a-part-of-no-row-is-ignored",
+      "read": {
+        "field": {
+          "type": "grid",
+          "settings": {
+            "multiple": false
+          },
+          "rows": [
+            {
+              "id": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+            }
+          ]
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "other",
+              [
+                "1"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "grid-own-texts-are-ignored",
+      "read": {
+        "field": {
+          "type": "grid",
+          "settings": {
+            "multiple": false
+          },
+          "rows": [
+            {
+              "id": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e11"
+            },
+            {
+              "id": "3f6a1c2e-0b7d-4e5a-9c18-6d2f4b8a0e12"
+            }
+          ]
+        },
+        "answer": {
+          "values": [
+            "1"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "grid-without-rows-takes-no-answer",
+      "read": {
+        "field": {
+          "type": "grid",
+          "settings": {
+            "multiple": false
+          }
+        },
+        "answer": {
+          "values": [
+            "1"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "ranking-in-its-order",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "b",
+            "a",
+            "c"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "b"
+          },
+          {
+            "text": "a"
+          },
+          {
+            "text": "c"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "ranking-places-ordered",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "a",
+              [
+                "2"
+              ]
+            ],
+            [
+              "b",
+              [
+                "1"
+              ]
+            ],
+            [
+              "c",
+              [
+                "3"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "b"
+          },
+          {
+            "text": "a"
+          },
+          {
+            "text": "c"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "ranking-places-shared-keep-the-values-order",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "b",
+              [
+                "1"
+              ]
+            ],
+            [
+              "a",
+              [
+                "1"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          },
+          {
+            "text": "b"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "ranking-values-ordered-as-text",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "9",
+              [
+                "1"
+              ]
+            ],
+            [
+              "10",
+              [
+                "1"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "10"
+          },
+          {
+            "text": "9"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "ranking-place-with-leading-zeros",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "a",
+              [
+                "01"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "ranking-place-followed-by-nul",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "a",
+              [
+                "1\u0000"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "ranking-place-zero-is-unreadable",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "a",
+              [
+                "0"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "ranking-place-negative-is-unreadable",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "a",
+              [
+                "-1"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "ranking-place-at-the-largest",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "a",
+              [
+                "2147483647"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "ranking-place-at-the-largest-with-leading-zeros",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "a",
+              [
+                "002147483647"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "a"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "ranking-place-past-the-largest-is-unreadable",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "a",
+              [
+                "2147483648"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "ranking-place-of-letters-is-unreadable",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "a",
+              [
+                "first"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "ranking-place-of-digits-then-letters-is-unreadable",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "a",
+              [
+                "1st"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "ranking-place-with-a-point-is-unreadable",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "a",
+              [
+                "1.0"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "ranking-two-places-is-unreadable",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "a",
+              [
+                "1",
+                "2"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "ranking-order-and-places-at-once-is-unreadable",
+      "read": {
+        "field": {
+          "type": "ranking",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "a"
+          ],
+          "parts": [
+            [
+              "b",
+              [
+                "1"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "checkbox-ticked",
+      "read": {
+        "field": {
+          "type": "checkbox",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "true"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "true"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "checkbox-anything-else-is-unticked",
+      "read": {
+        "field": {
+          "type": "checkbox",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "false"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "checkbox-a-word-is-unticked",
+      "read": {
+        "field": {
+          "type": "checkbox",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "yes"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "checkbox-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "checkbox",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "truest"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "yesno-yes",
+      "read": {
+        "field": {
+          "type": "yesno",
+          "settings": {
+            "style": "buttons"
+          }
+        },
+        "answer": {
+          "values": [
+            "yes"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "yes"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "yesno-no",
+      "read": {
+        "field": {
+          "type": "yesno",
+          "settings": {
+            "style": "buttons"
+          }
+        },
+        "answer": {
+          "values": [
+            "no"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "no"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "yesno-another-word-is-unreadable",
+      "read": {
+        "field": {
+          "type": "yesno",
+          "settings": {
+            "style": "buttons"
+          }
+        },
+        "answer": {
+          "values": [
+            "ja"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "yesno-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "yesno",
+          "settings": {
+            "style": "buttons"
+          }
+        },
+        "answer": {
+          "values": [
+            "maybe"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "consent-ticked-with-its-wording",
+      "read": {
+        "field": {
+          "type": "consent",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "true"
+          ],
+          "parts": [
+            [
+              "wording",
+              [
+                "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "true",
+            "stored": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "consent-ticked-without-its-wording-is-unreadable",
+      "read": {
+        "field": {
+          "type": "consent",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "true"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "consent-wording-in-capitals-is-unreadable",
+      "read": {
+        "field": {
+          "type": "consent",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "true"
+          ],
+          "parts": [
+            [
+              "wording",
+              [
+                "9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "consent-not-ticked-with-its-wording",
+      "read": {
+        "field": {
+          "type": "consent",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "wording",
+              [
+                "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "consent-anything-but-a-tick",
+      "read": {
+        "field": {
+          "type": "consent",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "false"
+          ],
+          "parts": [
+            [
+              "wording",
+              [
+                "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "consent-two-answers-is-unreadable",
+      "read": {
+        "field": {
+          "type": "consent",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "false",
+            "true"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "consent-wording-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "consent",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "true"
+          ],
+          "parts": [
+            [
+              "wording",
+              [
+                "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a080"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "country-a-code",
+      "read": {
+        "field": {
+          "type": "country",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "CH"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "CH"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "country-kosovo",
+      "read": {
+        "field": {
+          "type": "country",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "XK"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "XK"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "country-in-small-letters-is-unreadable",
+      "read": {
+        "field": {
+          "type": "country",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "ch"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "country-a-reserved-code-is-unreadable",
+      "read": {
+        "field": {
+          "type": "country",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "EU"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "country-of-three-letters-is-invalid",
+      "read": {
+        "field": {
+          "type": "country",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "CHE"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "name-parts-in-the-types-order",
+      "read": {
+        "field": {
+          "type": "name",
+          "settings": {
+            "parts": [
+              "first",
+              "last"
+            ]
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "last",
+              [
+                "Muster"
+              ]
+            ],
+            [
+              "first",
+              [
+                "Anna"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "{\"first\":\"Anna\",\"last\":\"Muster\"}"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "name-a-part-not-asked-for-is-ignored",
+      "read": {
+        "field": {
+          "type": "name",
+          "settings": {
+            "parts": [
+              "first",
+              "last"
+            ]
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "title",
+              [
+                "Dr"
+              ]
+            ],
+            [
+              "first",
+              [
+                "Anna"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "{\"first\":\"Anna\"}"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "name-every-part",
+      "read": {
+        "field": {
+          "type": "name",
+          "settings": {
+            "parts": [
+              "last",
+              "middle",
+              "first",
+              "title"
+            ]
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "title",
+              [
+                "Dr"
+              ]
+            ],
+            [
+              "first",
+              [
+                "Anna"
+              ]
+            ],
+            [
+              "middle",
+              [
+                "Maria"
+              ]
+            ],
+            [
+              "last",
+              [
+                "Muster"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "{\"title\":\"Dr\",\"first\":\"Anna\",\"middle\":\"Maria\",\"last\":\"Muster\"}"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "name-a-part-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "name",
+          "settings": {
+            "parts": [
+              "first",
+              "last"
+            ]
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "first",
+              [
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "address-a-part-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "address",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "city",
+              [
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "name-without-parts-reads-nothing",
+      "read": {
+        "field": {
+          "type": "name",
+          "settings": {
+            "parts": [
+              "first",
+              "last"
+            ]
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": []
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "address-always-asks-street-postcode-and-city",
+      "read": {
+        "field": {
+          "type": "address",
+          "settings": {}
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "city",
+              [
+                "Z\u00fcrich"
+              ]
+            ],
+            [
+              "region",
+              [
+                "ZH"
+              ]
+            ],
+            [
+              "street",
+              [
+                "Main \"A\" \\ 1"
+              ]
+            ],
+            [
+              "postcode",
+              [
+                "8000"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "{\"street\":\"Main \\\"A\\\" \\\\ 1\",\"postcode\":\"8000\",\"city\":\"Z\u00fcrich\"}"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "address-with-the-parts-asked-for",
+      "read": {
+        "field": {
+          "type": "address",
+          "settings": {
+            "parts": [
+              "country",
+              "region"
+            ]
+          }
+        },
+        "answer": {
+          "values": [],
+          "parts": [
+            [
+              "country",
+              [
+                "CH"
+              ]
+            ],
+            [
+              "region",
+              [
+                "ZH"
+              ]
+            ],
+            [
+              "city",
+              [
+                "Bern"
+              ]
+            ]
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "{\"city\":\"Bern\",\"region\":\"ZH\",\"country\":\"CH\"}"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "file-each-token",
+      "read": {
+        "field": {
+          "type": "file",
+          "settings": {
+            "maxFiles": 3,
+            "dropZone": true,
+            "thumbnails": true,
+            "camera": false
+          }
+        },
+        "answer": {
+          "values": [
+            "t1",
+            "t2"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "t1"
+          },
+          {
+            "text": "t2"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "file-a-token-twice-is-unreadable",
+      "read": {
+        "field": {
+          "type": "file",
+          "settings": {
+            "maxFiles": 3,
+            "dropZone": true,
+            "thumbnails": true,
+            "camera": false
+          }
+        },
+        "answer": {
+          "values": [
+            "t1",
+            "t1"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": true
+      }
+    },
+    {
+      "id": "file-more-than-any-field-takes-is-invalid",
+      "read": {
+        "field": {
+          "type": "file",
+          "settings": {
+            "maxFiles": 1,
+            "dropZone": true,
+            "thumbnails": true,
+            "camera": false
+          }
+        },
+        "answer": {
+          "values": [
+            "t0",
+            "t1",
+            "t2",
+            "t3",
+            "t4",
+            "t5",
+            "t6",
+            "t7",
+            "t8",
+            "t9",
+            "t10",
+            "t11",
+            "t12",
+            "t13",
+            "t14",
+            "t15",
+            "t16",
+            "t17",
+            "t18",
+            "t19",
+            "t20"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "file-token-too-long-is-invalid",
+      "read": {
+        "field": {
+          "type": "file",
+          "settings": {
+            "maxFiles": 1,
+            "dropZone": true,
+            "thumbnails": true,
+            "camera": false
+          }
+        },
+        "answer": {
+          "values": [
+            "ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "signature-one-token",
+      "read": {
+        "field": {
+          "type": "signature",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "t1"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "t1"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "signature-two-tokens-is-invalid",
+      "read": {
+        "field": {
+          "type": "signature",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "t1",
+            "t2"
+          ]
+        }
+      },
+      "expect": {
+        "limit": "invalid",
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "hidden-reads-its-text",
+      "read": {
+        "field": {
+          "type": "hidden",
+          "settings": {}
+        },
+        "answer": {
+          "values": [
+            "web"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [
+          {
+            "text": "web"
+          }
+        ],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "heading-takes-no-answer",
+      "read": {
+        "field": {
+          "type": "heading",
+          "settings": {
+            "level": 2,
+            "text": {
+              "": "Hello"
+            }
+          }
+        },
+        "answer": {
+          "values": [
+            "x"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "heading-takes-no-answer-however-many",
+      "read": {
+        "field": {
+          "type": "heading",
+          "settings": {
+            "level": 2,
+            "text": {
+              "": "Hello"
+            }
+          }
+        },
+        "answer": {
+          "values": [
+            "x",
+            "y"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "repeater-takes-no-answer-of-its-own",
+      "read": {
+        "field": {
+          "type": "repeater",
+          "settings": {
+            "minRows": 0,
+            "maxRows": 10
+          }
+        },
+        "answer": {
+          "values": [
+            "x"
+          ]
+        }
+      },
+      "expect": {
+        "limit": null,
+        "values": [],
+        "unreadable": false
+      }
+    },
+    {
+      "id": "rows-fewer-than-the-least",
+      "rowCount": {
+        "field": {
+          "type": "repeater",
+          "settings": {
+            "minRows": 2,
+            "maxRows": 3
+          }
+        },
+        "count": 1
+      },
+      "expect": [
+        "rowCount"
+      ]
+    },
+    {
+      "id": "rows-at-the-least",
+      "rowCount": {
+        "field": {
+          "type": "repeater",
+          "settings": {
+            "minRows": 2,
+            "maxRows": 3
+          }
+        },
+        "count": 2
+      },
+      "expect": []
+    },
+    {
+      "id": "rows-at-the-most",
+      "rowCount": {
+        "field": {
+          "type": "repeater",
+          "settings": {
+            "minRows": 2,
+            "maxRows": 3
+          }
+        },
+        "count": 3
+      },
+      "expect": []
+    },
+    {
+      "id": "rows-more-than-the-most",
+      "rowCount": {
+        "field": {
+          "type": "repeater",
+          "settings": {
+            "minRows": 2,
+            "maxRows": 3
+          }
+        },
+        "count": 4
+      },
+      "expect": [
+        "rowCount"
+      ]
+    },
+    {
+      "id": "rows-none-by-default",
+      "rowCount": {
+        "field": {
+          "type": "repeater",
+          "settings": {
+            "minRows": 0,
+            "maxRows": 10
+          }
+        },
+        "count": 0
+      },
+      "expect": []
+    },
+    {
+      "id": "rows-past-the-default-most",
+      "rowCount": {
+        "field": {
+          "type": "repeater",
+          "settings": {
+            "minRows": 0,
+            "maxRows": 10
+          }
+        },
+        "count": 11
+      },
+      "expect": [
+        "rowCount"
+      ]
+    }
+  ]
+}

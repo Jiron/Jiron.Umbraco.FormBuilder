@@ -194,6 +194,13 @@ export const summaryHeading = (errors: number, words: MessageWords): string => p
 // question mark, the ideographic full stop, and the full-width forms of the four.
 const CLOSING_MARKS = new Set([0x3f, 0x21, 0x2e, 0x3a, 0x2026, 0x37e, 0x61f, 0x3002, 0xff01, 0xff0e, 0xff1a, 0xff1f]);
 
+/** Whether a label or a row's legend shows nothing: every code unit one that cleaning trims (ADR-0005), as Core's. */
+function isBlank(text: string | null | undefined): text is null | undefined {
+  if (text === null || text === undefined) return true;
+  for (let at = 0; at < text.length; at++) if (!isTrimmed(text.charCodeAt(at))) return false;
+  return true;
+}
+
 /** Whether the label's last code unit that cleaning keeps (ADR-0005) closes it as a question mark, an exclamation mark, a full stop or a colon does. */
 export function endsWithMark(label: string): boolean {
   for (let at = label.length - 1; at >= 0; at--) {
@@ -214,8 +221,8 @@ export function summaryEntry(
   row: string | null | undefined,
   words: MessageWords,
 ): string {
-  if (label === null || label === undefined || label.trim().length === 0) return message;
-  return row === null || row === undefined || row.trim().length === 0
+  if (isBlank(label)) return message;
+  return isBlank(row)
     ? fill(endsWithMark(label) ? words.summaryMarkedEntry : words.summaryEntry, { label, message })
     : fill(words.summaryRowEntry, { label, row, message });
 }

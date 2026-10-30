@@ -124,8 +124,8 @@ internal static class FieldVector
         };
     }
 
-    // The settings with a default that the field does not give, and those of an object it gives, by their paths.
-    private static IEnumerable<string> Leaned(IEnumerable<FieldSettingDescriptor> descriptors, JsonElement settings, string prefix)
+    /// <summary>The settings with a default that the field does not give, and those of an object it gives, by their paths.</summary>
+    internal static IEnumerable<string> Leaned(IEnumerable<FieldSettingDescriptor> descriptors, JsonElement settings, string prefix)
     {
         foreach (var setting in descriptors)
         {

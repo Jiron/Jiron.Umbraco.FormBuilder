@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   calculate,
   checkField,
+  checkRows,
   clean,
   defaultMessage,
   evaluateCondition,
@@ -16,6 +17,7 @@ import {
   LogicError,
   messageWordsOf,
   parseTemplate,
+  readField,
   recallAnswers,
   renderTemplate,
   storedNumber,
@@ -33,6 +35,8 @@ import {
   type Kind,
   type LogicForm,
   type MergeValue,
+  type PostedAnswer,
+  type ReadField,
   type RecallAnswers,
   type RecallField,
   type RecallForm,
@@ -64,6 +68,8 @@ interface VectorCase {
   readonly template?: VectorTemplate;
   readonly recall?: VectorRecall;
   readonly message?: VectorMessage;
+  readonly read?: { readonly field: ReadField; readonly answer: PostedAnswer };
+  readonly rowCount?: { readonly field: ReadField; readonly count: number };
   readonly expect: unknown;
 }
 
@@ -212,6 +218,8 @@ const RUNNABLE = [
   'template',
   'recall',
   'message',
+  'read',
+  'rowCount',
 ] as const;
 
 const folder = vectorsFolder();
@@ -307,6 +315,20 @@ function run(file: VectorFile, vector: VectorCase): unknown {
       const recall = recallAnswers(recallForm(read), owner, given, hidden, words, culture);
       return renderTemplate(parseTemplate(text, context, recall.pathProblem), recall.values, culture);
     }
+    if (vector.read !== undefined) {
+      const read = readField(vector.read.field, vector.read.answer);
+      if (read === null) throw new Error(`${vector.id}: ${vector.read.field.type} is no built-in type`);
+      return {
+        limit: read.limit,
+        values: read.values.map((value) => ({
+          text: value.text,
+          ...(value.row === undefined ? {} : { row: value.row }),
+          ...(value.stored === undefined ? {} : { stored: value.stored }),
+        })),
+        unreadable: read.unreadable,
+      };
+    }
+    if (vector.rowCount !== undefined) return checkRows(vector.rowCount.field, vector.rowCount.count);
     if (vector.message !== undefined) {
       const name = subject.context.culture;
       const words = messageWordsOf(name, MESSAGE_WORDS);

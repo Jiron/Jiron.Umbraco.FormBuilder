@@ -608,6 +608,23 @@ const summary = [
     expect: 'Name (Guest 2): Enter an answer',
   },
   { id: 'entry-without-a-label-is-the-message', message: { entry: { message: 'Enter an answer', label: ' ' } }, expect: 'Enter an answer' },
+  // A label or a legend of only the code units cleaning trims shows nothing, the same set in both runtimes: a next
+  // line (U+0085) and a byte order mark (U+FEFF) too.
+  {
+    id: 'entry-of-a-next-line-label-is-the-message',
+    message: { entry: { message: 'Enter an answer', label: x('{85}') } },
+    expect: 'Enter an answer',
+  },
+  {
+    id: 'entry-of-a-byte-order-mark-label-is-the-message',
+    message: { entry: { message: 'Enter an answer', label: x('{feff}') } },
+    expect: 'Enter an answer',
+  },
+  {
+    id: 'entry-of-a-next-line-row-names-no-row',
+    message: { entry: { message: 'Enter an answer', label: 'Name', row: x('{85}') } },
+    expect: 'Name: Enter an answer',
+  },
   {
     id: 'entry-of-a-label-with-braces-keeps-them',
     message: { entry: { message: 'Enter an answer', label: 'Code {message}' } },
