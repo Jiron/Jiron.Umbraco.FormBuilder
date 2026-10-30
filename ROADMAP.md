@@ -2190,21 +2190,29 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Playwright shows no CSP violation with `script-src 'self'` on a cached page and with a nonce on an uncached one with every chunk loaded;
     - the size check passes with every chunk;
     - the whole website suite passes in one run.
-- [ ] **6.5 Multi-page, summary and prefill**
-  - **Moving through pages:**
-    - per-page server validation (`validate`), back without losing answers;
-    - the JS API's `next()` and `back()` and the `jfb:page` event (§4.9), moved from 6.4 in its split;
-    - progress styles;
-    - the summary page with "change" links.
+- [ ] **6.5a The summary page and the journeys** (6.5 split in four, WORKLOG 2026-10-30)
+  - **Moving through pages** as a post moves (ADR-0100): back without losing answers, each page checked on the server before the next, and the progress styles (the steps, the bar, none) on every page the rules show.
+  - **The summary page** ("check your answers", §4.3.4): before sending, a page of every answer the rules leave shown, grouped by page, with a "Change" for each that opens its page with every answer kept, and the send from there.
+  - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before building the summary page (ADR-0019, ADR-0020).
+  - Done when: Playwright journeys pass for multi-page forms and the summary page; a three-page journey passes with `dir="rtl"`; axe is clean on every page of them.
+- [ ] **6.5b A copy of the answers** (6.5 split in four, WORKLOG 2026-10-30)
   - **Keep a copy** (added in 1.1): the outcome option of §4.3.4 shows the submitted answers with a print button and a "fill in again" link, reusing the summary page's rendering:
     - only in the response to the submission: after a no-JS post, the redirect carries a short-lived, single-use signed token, never answers in the URL;
     - never cached (`no-store`), sensitive values masked, print styles only.
+  - **Design skills:** load the three skills before building the copy and its print styles (ADR-0019, ADR-0020).
+  - Done when: Playwright shows the copy of the answers after a no-JS submission and in print media (`emulateMedia`), and a reused or expired token shows nothing; axe is clean on the copy.
+- [ ] **6.5c Prefill** (6.5 split in four, WORKLOG 2026-10-30)
   - **Prefill:**
     - from members, with "show" and the tamper-proof "hide" mode;
     - from allowed query values;
     - from context values.
   - Save and resume needs the email outbox, so it comes in 8.6.
-  - Done when: Playwright journeys pass for multi-page forms and the summary page, and a tamper test proves that a posted value for a hidden member-prefilled field is ignored. Playwright also shows the copy of the answers after a JS and a no-JS submission and in print media (`emulateMedia`), and a reused or expired token shows nothing; a three-page journey passes with `dir="rtl"`. Playwright moves through a three-page form with `next()` and `back()` and sees `jfb:page` on each move (added in the split of 6.4).
+  - Done when: a tamper test proves that a posted value for a hidden member-prefilled field is ignored; Playwright shows a field prefilled from the signed-in member, from an allowed query value and from a context value, and a query value the form does not allow left out.
+- [~] **6.5d Moving through pages in the browser** (6.5 split in four, WORKLOG 2026-10-30)
+  - **Blocked (2026-10-30):** paging in the browser adds to the website runtime past section 4.12's budget, which only the owner can change, and the copy after a JS submission comes from 6.4i's sending, which waits with it (ADR-0120, `docs/OWNER-TODO.md`).
+  - **Moving through pages in the browser:** each page checked on the server (`validate`) before the runtime moves on, the JS API's `next()` and `back()` and the `jfb:page` event (§4.9), moved from 6.4 in its split.
+  - **The copy of the answers after a JS submission,** in the outcome that 6.4i shows in the form's place.
+  - Done when: Playwright shows the copy of the answers after a JS submission; Playwright moves through a three-page form with `next()` and `back()` and sees `jfb:page` on each move (added in the split of 6.4); axe is clean; the size check passes with every chunk.
 - [ ] **6.6 Headless**
   - **The definition:** the endpoint with `ETag`, and TypeScript types for the public projection (generated from C# or the JSON schema and tested for drift), shipped in the package and in `schemas/`.
   - **The renderer:** `<jfb-form>` (packages/element) renders the default theme's markup from JSON with the same runtime.
