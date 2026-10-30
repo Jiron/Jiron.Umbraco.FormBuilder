@@ -5,7 +5,9 @@
  */
 import type { FormModel } from './model';
 import { readPage, type PageReading } from './page';
+import type { ShownError } from './messages';
 import { rulesOf, type PageRules } from './rules';
+import { checkPage, type CheckScope } from './validation';
 
 /** An enhanced form with its logic. */
 export interface FormSession {
@@ -15,9 +17,17 @@ export interface FormSession {
   read(): PageReading;
   /** The form's rules, shown on the page as the visitor answers; null for a form without rules. */
   readonly rules: PageRules | null;
+  /** The errors the page shows for its answers now (ADR-0112): a send's, or the page's that Next checks. */
+  check(scope: CheckScope): Promise<ShownError[]>;
 }
 
 /** Gives a form its logic; the frame calls it once per form. */
 export function attach(form: HTMLFormElement, model: FormModel): FormSession {
-  return { form, model, read: () => readPage(form, model), rules: rulesOf(form, model) };
+  return {
+    form,
+    model,
+    read: () => readPage(form, model),
+    rules: rulesOf(form, model),
+    check: (scope) => checkPage(form, model, scope),
+  };
 }

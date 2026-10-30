@@ -4,6 +4,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { FormModel, ModelField, ModelPage } from './model';
 import { readPage } from './page';
+import { ENGLISH } from './testing';
 import { contextOf, rulesOf } from './rules';
 
 const ROW_1 = '3f2b6c1e-0000-4000-8000-000000000011';
@@ -57,6 +58,7 @@ function modelOf(pages: ModelPage[], more: Partial<FormModel['form']> = {}): For
       ]),
     ),
     consents: {},
+    ...ENGLISH,
   };
 }
 

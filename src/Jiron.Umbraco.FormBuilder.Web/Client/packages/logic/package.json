@@ -4,7 +4,9 @@
   "type": "module",
   "description": "Rules, validation and merge tags in TypeScript (ROADMAP section 4.2, ADR-0005): no DOM, no dependencies. The runtime, the element and the backoffice bundle it from source, so it has no build of its own. Its sources import each other with the .ts extension, so Node runs the tables tool on them as they are.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./lang/en": "./src/lang/messages.en.ts",
+    "./lang/de": "./src/lang/messages.de.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.tools.json",

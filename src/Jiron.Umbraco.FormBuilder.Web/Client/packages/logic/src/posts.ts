@@ -5,6 +5,7 @@
 // shared vectors of tests/vectors/posts.json hold the two readers equal.
 import { own } from './errors.ts';
 import { BUILT_IN_TYPES, type PostedAnswer } from './reading.ts';
+import { clean } from './text.ts';
 
 /** A field as the page names it, from the form endpoint's projection and its `fields` (ADR-0084, ADR-0109). */
 export interface PostField {
@@ -286,6 +287,23 @@ export function holdQuery(
   }
   return held;
 }
+
+/**
+ * Whether a post holds no answer at all (ROADMAP 6.4d, ADR-0112), as Core's FormSubmissions refuses a submission as
+ * empty: every posted text of every field, and of every child of a repeatable group's rows, blank once cleaned, a
+ * consent's wording aside. A switch left off posts `no`, so a form with one is never empty.
+ */
+export function isEmptyPost(post: ReadPost): boolean {
+  const blank = (answer: PostAnswer): boolean =>
+    answer.values.every(isBlank) &&
+    (answer.parts ?? []).every(([part, texts]) => part === WORDING || texts.every(isBlank));
+  return (
+    [...post.fields.values()].every(blank) &&
+    [...post.rows.values()].every((rows) => rows.every((row) => [...row.values()].every(blank)))
+  );
+}
+
+const isBlank = (text: string): boolean => clean(text).length === 0;
 
 /**
  * A whole number as .NET reads one without styles: ASCII digits only, then any number of NUL characters, which .NET's

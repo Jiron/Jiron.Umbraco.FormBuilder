@@ -158,7 +158,11 @@ flowchart LR
   the server would take ([ADR-0110](decisions/0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md)),
   and applies the rules (`rules.ts`): the form engine over the model the shared logic's `logicFormOf` makes of the
   model data, as Core's `DefinitionLogic` makes it of the definition, in the render's context, shown through the
-  hooks the views write on a form with rules ([ADR-0111](decisions/0111-rules-on-the-page.md));
+  hooks the views write on a form with rules ([ADR-0111](decisions/0111-rules-on-the-page.md)), and checks the
+  answers (`validation.ts`): each shown field's errors in the pipeline's order (`checks.ts`), the shared logic's
+  `checkField` over the answers and the rules' state, what only the server can decide left to it, and each field's
+  first error worded as Web's render words it (`messages.ts`), in the words of the page's language, a file of its
+  own loaded the first time a message is needed ([ADR-0112](decisions/0112-checks-and-messages-on-the-page.md));
 - `element`: `<jfb-form>`, the headless renderer, with the same markup and runtime;
 - `backoffice`: the Forms section in Lit and TypeScript with UUI, through the generated client.
 
@@ -679,7 +683,7 @@ The budgets are §4.12's; the measured starting points come from the spikes.
 
 | Budget | Target | Measured so far |
 | --- | --- | --- |
-| Website runtime | ≤ 16 KB gzip core, ≤ 40 KB with everything; theme CSS ≤ 10 KB | core 0.99 KB, everything 17.42 KB (6.4c, ADR-0111); default theme 8.02 KB (6.3b) |
+| Website runtime | ≤ 16 KB gzip core, ≤ 40 KB with everything; theme CSS ≤ 10 KB | core 0.99 KB, everything 28.95 KB with both language files (6.4d, ADR-0112); default theme 8.02 KB (6.3b) |
 | Rendering a 50-field form | ≤ 20 ms from the cached definition | median 0.12 to 0.15 ms (ADR-0004) |
 | A submission | ≤ 150 ms at p95 with 10 at the same moment on SQLite | p95 59 to 115 ms with 10 at once (ADR-0003) |
 | The first page of 100,000 entries; a 10,000-entry CSV | ≤ 300 ms; ≤ 5 s | 7.9 to 16.7 ms by date; 0.77 to 1.09 s (ADR-0003) |

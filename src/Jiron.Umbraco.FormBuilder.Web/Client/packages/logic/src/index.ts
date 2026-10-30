@@ -7,8 +7,9 @@
  * (ADR-0063), 5.3b and 5.3c the merge tags, 5.3f answer recall with the answers' display texts (ADR-0068), and 5.4a
  * the forms of an email address, a phone number and a web address (ADR-0069), 6.2g the visitor messages
  * (ADR-0099), whose words are tables of their own in lang/, 6.4a the reading of answers before the rules and checks
- * (ADR-0109), 6.4b the reading of a page's post by its names, as the server reads one (ADR-0110), and 6.4c the form
- * engine's model made of the form endpoint's answer, as Core makes it of the definition (ADR-0111).
+ * (ADR-0109), 6.4b the reading of a page's post by its names, as the server reads one (ADR-0110), 6.4c the form
+ * engine's model made of the form endpoint's answer, as Core makes it of the definition (ADR-0111), and 6.4d the empty
+ * submission and the words of each language as a module of its own, `@jfb/logic/lang/<language>` (ADR-0112).
  */
 export {
   calculate,
@@ -26,6 +27,7 @@ export {
 export {
   checkField,
   type CheckedField,
+  type CheckedOption,
   type CheckedRow,
   type FieldAnswers,
   type FieldCheck,
@@ -44,6 +46,7 @@ export {
   type DatePatterns,
   type NumberFormat,
 } from './culture.ts';
+export { today } from './dates.ts';
 export { formatDecimal, parseDecimal, type Decimal } from './decimal.ts';
 export {
   displayAnswer,
@@ -93,6 +96,7 @@ export {
 } from './projection.ts';
 export {
   holdQuery,
+  isEmptyPost,
   LONGEST_QUERY_VALUE,
   MOST_QUERY_VALUES,
   MOST_ROWS,

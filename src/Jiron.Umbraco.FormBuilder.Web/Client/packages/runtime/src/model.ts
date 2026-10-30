@@ -3,13 +3,37 @@
  * `<script type="application/json" data-jfb-model>`. These are the parts the runtime reads; the endpoint's OpenAPI
  * document (docs/api/jfb-public.json) describes them all.
  */
-import type { ProjectedField, ProjectedRule } from '@jfb/logic';
+import type { CultureFormats, DisplayWords, ProjectedField, ProjectedRule } from '@jfb/logic';
 
 /** A field of the public projection (ADR-0002, ADR-0035), as far as the runtime reads it: its rules too (ADR-0111). */
 export interface ModelField extends ProjectedField {
   readonly prefill?: { readonly query?: string | null } | null;
+  /** The label in the page's culture, and whether it is hidden from sight. */
+  readonly label?: string | null;
+  readonly hideLabel?: boolean;
+  /** The editor's own messages by the kind of error. */
+  readonly messages?: Readonly<Record<string, string>> | null;
+  /** The field's own checks, each with the editor's own message. */
+  readonly validation?:
+    | readonly {
+        readonly kind: string;
+        readonly pattern?: string;
+        readonly field?: string;
+        readonly message?: string | null;
+      }[]
+    | null;
+  /** Its own options, or a list or source the server resolves; the field whose answers filter them. */
+  readonly options?: {
+    readonly items?: readonly {
+      readonly value: string;
+      readonly label?: string | null;
+      readonly parentValues?: readonly string[] | null;
+    }[];
+    readonly fromSource?: boolean;
+    readonly parent?: string | null;
+  } | null;
   /** A grid's rows. */
-  readonly rows?: readonly { readonly key: string }[];
+  readonly rows?: readonly { readonly key: string; readonly label?: string | null; readonly required?: boolean }[];
   /** A repeatable group's child fields. */
   readonly fields?: readonly ModelField[];
 }
@@ -43,13 +67,19 @@ export interface FormModel {
   readonly form: {
     readonly key: string;
     readonly pages: readonly ModelPage[];
-    readonly validationRules?: readonly (ProjectedRule & { readonly key: string; readonly field: string })[] | null;
+    readonly validationRules?:
+      | readonly (ProjectedRule & { readonly key: string; readonly field: string; readonly message?: string | null })[]
+      | null;
     /** The query values the rules and hidden fields may read, by name (ADR-0088). */
     readonly settings?: { readonly queryValues?: readonly string[] | null } | null;
   };
   /** By each field's key, a repeatable group's child fields too. */
   readonly fields: Readonly<Record<string, ModelFieldLogic>>;
   readonly consents: Readonly<Record<string, string>>;
+  /** The culture's formats, which the messages print values in (ADR-0109). */
+  readonly formats: CultureFormats;
+  /** The culture's words for yes and no. */
+  readonly words: DisplayWords;
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> =>

@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { FormModel, ModelField } from './model';
 import { entriesOf, readPage } from './page';
+import { ENGLISH } from './testing';
 
 const ROW_1 = '3f2b6c1e-0000-4000-8000-000000000001';
 const ROW_2 = '3f2b6c1e-0000-4000-8000-000000000002';
@@ -48,6 +49,7 @@ const model: FormModel = {
     ]),
   ),
   consents: {},
+  ...ENGLISH,
 };
 
 const hash = 'c'.repeat(64);

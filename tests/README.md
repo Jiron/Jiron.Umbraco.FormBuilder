@@ -120,7 +120,13 @@ and the most rows a group takes held to the served field types, and the query va
 is held by a fixture rather than vectors, since it is made from a whole form: `Forms/LogicModelFixtureTests.cs`
 writes `tests/fixtures/definitions/logic.json` (the form endpoint's answer and Core's `DefinitionLogic` model of the
 full definition fixture and each demo form; `JFB_UPDATE_SNAPSHOTS=1` writes it and fails), and
-`packages/logic/test/projection.test.ts` makes the same model from each answer with `logicFormOf`.
+`packages/logic/test/projection.test.ts` makes the same model from each answer with `logicFormOf`. The checks and
+messages on the page (6.4d, [ADR-0112](../docs/decisions/0112-checks-and-messages-on-the-page.md)) are held to the
+server's own pages: `Rendering/ErrorFixtureTests.cs` posts a form of every check the browser makes and a form of two
+pages as a browser without JavaScript does, in English and in German, and writes each page the server renders again
+with its errors to `tests/fixtures/rendering/errors-en.json` and `errors-de.json` (`JFB_UPDATE_SNAPSHOTS=1` writes
+them and fails); `packages/runtime/src/checks.fixture.test.ts` checks each page as the runtime does and expects the
+server's errors under the fields and the links of its summary, in its order.
 
 **The mutation check** proves the vectors. Each mutant in `vectors/mutants.mjs` changes one piece of the logic in one
 runtime, that runtime's vector runner runs, and the file is put back; the check fails on a mutant that nothing catches,
@@ -896,6 +902,7 @@ test refreshes the domain cache after assigning a culture.
 | `FormRenderingInputsTests` | The part, date and output controls (ADR-0097), each type empty, answered after a post, with errors and hidden by a rule (`inputs.cshtml`, the site in Auckland at half past midnight): a date starting on the site's today with its window from today to two weeks on, a time and a date and time with their windows and steps, a slider starting in its middle with its unit, a calculation worked out for the slider, a name, an address whose parts it does not need are marked "(optional)", a file field with the extensions it takes, a signature typed instead, and the captcha's place in a hidden group; each with ADR-0015's hooks (a fieldset and legend for parts, an id per control and part, `<alias>.<part>` names, a label for every control). Two calculations (`sums.cshtml`) equal to what the entries endpoint stores for the same answers, an empty number counting as zero and an empty date leaving none. Under the asterisk style (`parts.cshtml`): a name's required parts in the type's order and an address's needed ones marked, a name that needs no answer requiring no part, a required name that needs every part marked once on its legend, the error on the needed parts that are empty or on every part when all are given, a date and time starting now on its step, a step that does not divide the day left out, a limit beyond the calendar setting none, a slider that shows no value, files of several kinds with their own extensions after their groups' and each once, and a calculation visitors do not see and a captcha's place without a captcha rendering nothing. The page's answers (`rules.cshtml`): a rule reading a grid row's answer, and a hidden field's posted answer, prefilled from the query or not, shown nowhere. A site's own type (`MoodFieldType`, `custom.cshtml`) rendering its control from its own view (`fields/acme.mood.cshtml`) with its settings, a prompt recalling an answer and one without tags as written, and its answer's part. |
 | `FormRenderingRowsTests` | A repeatable group's rows (ADR-0098, `rows.cshtml`, `rowsde.cshtml`): a first render's least rows, each a fieldset numbered after its row label, with its fields' keys, paths, ids and names and their defaults, the group's columns, Add with its label and no Remove at the least, a group without a least starting with Add alone, and the default button first; a post's rows with their answers, Remove naming its row, no Add at the most, a calculation and rules that hide and require over each row's own answers, a row's options filtered by a parent in its row and by one outside the group (an answer for that parent posted in a row changing nothing), a row's error at its field and in the summary, and a recalled child listing the rows' answers but not where its row hides it; more rows than the most with the group's own error below them, linked to the rows' container, and no row state, and a post of more rows than any group may have showing that many; a hidden group with every row's controls and buttons disabled; a post without the group's rows showing its least; and on a German page under the optional style, the package's words and "(optional)" only on a group that needs no row. |
 | `FormRenderingKitchenTests` | The kitchen sink (ADR-0015, `sink.cshtml`): a field of every built-in type and of a site's own type (`MoodFieldType`, whose view `fields/acme.mood.cshtml` follows the contract), each empty, answered after a post, with errors and hidden by a rule, with the same checks on each: the wrapper's classes, type, alias and hidden state, disabled controls when hidden, the control's id, its label or legend, its names, its help, and after an error the error, `aria-invalid` and the summary's link; what each answer shows. The repeatable group's row holds a field of every type a row may hold, each with the same checks by the row's ids and path, and its fields in order, a part's and an "Other" text's names, a few answers, a consent's wording named by the path, and its errors linked from the summary in the row's order. |
+| `ErrorFixtureTests` | The server's errors the runtime is held to (ADR-0112, `errors.cshtml`, `errors-paged.cshtml`), on a site in English and on one in German: every required field left empty with one answer given, answers each check refuses (a hidden label, an editor's own message and a check's, a pattern, a match with another field and in a row, a number's range, a date's window from today, a phone, a web address, a text's longest, a grid row a validation rule refuses, a name in parts, a field a rule shows or requires, a validation rule's message), nothing at all, and Next on the first page of two; each page rendered again written to `fixtures/rendering/errors-<language>.json`, the same on every run. |
 | `FormRenderingPendingTests` | A site whose plan has not run: a page answers `200` with its own text and no form markup for a visitor, and exactly one note in the form's place, without the form's element or assets, for a signed-in backoffice user, in the page's culture (German). |
 
 **The website runtime** (`packages/runtime`, Vitest in jsdom, [ADR-0110](../docs/decisions/0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md)):
@@ -905,10 +912,19 @@ to the post without JavaScript, and loads the chunk with the logic on a form's f
 `input` or `change` only, once for the page, trying once when it cannot load; `page.test.ts` reads a page
 named as the views name it through `FormData` and the post reader (a switch left off, a consent's wording, a
 group's rows and their limits, a value the server resolves, a site's own type's cleaned texts, a disabled control
-and a file left out) into the rules' answers; `jfb-runtime.test.ts` holds the global. In Edge,
+and a file left out) into the rules' answers; `rules.test.ts` decides the rules in the render's context (its clock
+to the second, its time zone and culture, the query values the form lists) and shows them through the views' hooks:
+a field, group or page shown or hidden with its controls enabled or disabled, `required` and the marks as the rules
+require, the note while an asterisk shows, a row decided by its own answers, a shown field's answer decided again
+at once, a form without rules or with rules the engine refuses left as rendered; `validation.test.ts` covers the
+checks no post without JavaScript reaches (an answer over its type's limits alone, options a parent's answer
+filters, files, calculations, values the server resolves and a site's own type left to the server, an editor's
+empty message, Next's page with its rows, the empty submission's link past what the page hides, the words of a
+culture's language loaded once); `jfb-runtime.test.ts` holds the global. In Edge,
 `e2e/specs/website/runtime-frame.spec.ts` shows each demo form enhanced once with its `jfb:ready`, a form the page
 puts in later enhanced through `init(root)`, the chunk loaded only once a form is touched (by focus, or by a change
-without focus as autofill makes), and no error in the console.
+without focus as autofill makes), and no error in the console; `e2e/specs/website/rules-on-the-page.spec.ts` shows
+the feedback form's rules on the page in English and German, as the visitor answers.
 
 ## Writing tests
 

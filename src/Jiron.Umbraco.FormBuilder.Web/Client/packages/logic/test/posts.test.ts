@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   holdQuery,
+  isEmptyPost,
   LONGEST_QUERY_VALUE,
   MOST_QUERY_VALUES,
   MOST_ROWS,
@@ -144,5 +145,41 @@ describe('the query values a submission carries', () => {
       ref: many.slice(0, MOST_QUERY_VALUES),
     });
     expect(Object.getPrototypeOf(held)).toBeNull();
+  });
+});
+
+describe('an empty submission', () => {
+  const fields: PostField[] = [
+    { alias: 'name', type: 'text' },
+    { alias: 'full', type: 'name', settings: { parts: ['first', 'last'] } },
+    { alias: 'terms', type: 'consent' },
+    { alias: 'guests', type: 'repeater', settings: { minRows: 1 }, fields: [{ alias: 'guest', type: 'text' }] },
+  ];
+  const blanks = '  ' + String.fromCharCode(9, 13, 10) + ' ';
+  const empty = (entries: readonly (readonly [string, string])[]) => isEmptyPost(readPost(fields, entries));
+
+  it("holds no text but blanks, a consent's wording aside, as Core's FormSubmissions decides", () => {
+    expect(empty([])).toBe(true);
+    expect(
+      empty([
+        ['name', blanks],
+        ['full.first', ''],
+        ['jfb-consent-terms', 'f00d'],
+        ['jfb-rows-guests', '1'],
+        ['guests[0].guest', blanks],
+      ]),
+    ).toBe(true);
+  });
+
+  it('holds any text of an answer, a part or a row', () => {
+    expect(empty([['name', ' Ada ']])).toBe(false);
+    expect(empty([['full.last', 'Lovelace']])).toBe(false);
+    expect(empty([['terms', 'true']])).toBe(false);
+    expect(
+      empty([
+        ['jfb-rows-guests', '1'],
+        ['guests[0].guest', 'Bob'],
+      ]),
+    ).toBe(false);
   });
 });

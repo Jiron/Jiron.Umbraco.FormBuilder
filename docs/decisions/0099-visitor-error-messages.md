@@ -6,8 +6,9 @@
   row's legend of only spaces counts as none, and the form endpoint gives the formats, the words and whether a
   field's type is built in on every form, since 6.4a ([ADR-0109](0109-reading-answers-in-the-browser.md))
 - Date: 2026-10-29
-- Roadmap step: 6.2g (decided and built); 6.2h shows the messages after a post without JavaScript, 6.4 shows them in
-  the browser from the same words, 14.2 adds the other five languages
+- Roadmap step: 6.2g (decided and built); 6.2h shows the messages after a post without JavaScript, 6.4d words them in
+  the browser from the same words, a file per language ([ADR-0112](0112-checks-and-messages-on-the-page.md)), and
+  6.4e shows them there; 14.2 adds the other five languages
 
 ## Context
 
