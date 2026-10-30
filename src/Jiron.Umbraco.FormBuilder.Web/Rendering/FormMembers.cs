@@ -24,6 +24,9 @@ internal enum MemberGate
 /// <param name="groups">The member groups, by key.</param>
 internal sealed class FormMembers(IMemberManager members, IMemberGroupService groups)
 {
+    /// <summary>The key of the member signed in on the request, or null (ADR-0124).</summary>
+    public async Task<Guid?> KeyAsync() => (await members.GetCurrentMemberAsync())?.Key;
+
     /// <summary>Why the form shows its notice to the visitor, or null when it shows.</summary>
     /// <param name="availability">The form's availability, which says for whom it is.</param>
     public async Task<MemberGate?> GateAsync(FormAvailabilitySettings availability)

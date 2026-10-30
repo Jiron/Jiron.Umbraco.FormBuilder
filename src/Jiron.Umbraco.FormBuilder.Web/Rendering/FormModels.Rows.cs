@@ -64,7 +64,7 @@ internal sealed partial class FormModels
     // answers only, a row the visitor just added starting as on a first render (ADR-0100); and never fewer than the
     // group's least, each row added starting so, its fields as a field outside a group starts. A group a rule hid posts
     // no rows, as its controls are disabled, so once shown it shows its least as a first render does.
-    private List<Dictionary<Guid, FieldAnswers>> RowsOf(PublicField group, FormPostState? post, Dictionary<Guid, FormField> defined, DateTime local)
+    private List<Dictionary<Guid, FieldAnswers>> RowsOf(PublicField group, FormPostState? post, Dictionary<Guid, FormField> defined, DateTime local, FormPrefill prefill)
     {
         var children = group.Fields.Select(child => child.Key).ToHashSet();
         List<Dictionary<Guid, FieldAnswers>> rows = [.. (post?.Rows.GetValueOrDefault(group.Key) ?? []).Take(RepeaterFieldType.MostRows)
@@ -83,7 +83,7 @@ internal sealed partial class FormModels
             var answers = new Dictionary<Guid, FieldAnswers>();
             foreach (var child in group.Fields)
             {
-                if (StartOf(child, defined[child.Key], local) is { } start)
+                if (StartOf(child, defined[child.Key], local, prefill) is { } start)
                 {
                     answers[child.Key] = start;
                 }

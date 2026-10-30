@@ -41,6 +41,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// The path of the page the form posts to without JavaScript, as the render endpoint gives it (ADR-0104); null for the
 /// request's own.
 /// </param>
+/// <param name="Member">The key of the member signed in, for a form that takes values from the member (ADR-0124); null otherwise.</param>
 internal sealed record FormRender(
     HttpContext HttpContext,
     CachedForm Form,
@@ -50,7 +51,12 @@ internal sealed record FormRender(
     IReadOnlyDictionary<string, string?> Context,
     IFormBuilderTheme Theme,
     MemberGate? Gate = null,
-    string? Page = null);
+    string? Page = null,
+    Guid? Member = null)
+{
+    /// <summary>What the server prefills (ADR-0124), worked out as the form's page is built.</summary>
+    public FormPrefill Prefill { get; init; } = FormPrefill.None;
+}
 
 /// <summary>
 /// The view models of a form (ADR-0015, ADR-0093): its texts as the form endpoint shows them in the culture, a visitor
@@ -244,7 +250,9 @@ internal sealed partial class FormModels(
         var definition = render.Form.Published.Definition;
         var utc = DateTimeOffset.FromUnixTimeSeconds(time.GetUtcNow().ToUnixTimeSeconds());
         var now = utc.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
-        var answers = Answers(shown, definition, post, TimeZoneInfo.ConvertTime(utc, render.Shown.TimeZone).DateTime);
+        var local = TimeZoneInfo.ConvertTime(utc, render.Shown.TimeZone).DateTime;
+        render = render with { Prefill = await PrefillAsync(render, definition, DateOnly.FromDateTime(local), cancellationToken) };
+        var answers = Answers(shown, definition, post, local, render.Prefill);
         var read = Read(definition, answers);
         var state = FormRules.Evaluate(
             DefinitionLogic.From(definition, types),
@@ -471,7 +479,7 @@ internal sealed partial class FormModels(
     // Each field's answers and each repeatable group's rows (RowsOf): a post's; else what the controls start with
     // (ADR-0097): a field's default value when that holds no merge tag (a default with tags is the browser's to fill,
     // ADR-0014), or without a default a date's today, a date and time's now and a slider's middle (Start).
-    private PageAnswers Answers(PublicForm form, FormDefinition definition, FormPostState? post, DateTime local)
+    private PageAnswers Answers(PublicForm form, FormDefinition definition, FormPostState? post, DateTime local, FormPrefill prefill)
     {
         var defined = AllFields(definition).GroupBy(field => field.Key).ToDictionary(group => group.Key, group => group.First());
         var answers = new PageAnswers([], []);
@@ -479,9 +487,9 @@ internal sealed partial class FormModels(
         {
             if (types.FindType(field.Type)?.Declaration.Features.HasFlag(FieldFeatures.ChildFields) == true)
             {
-                answers.Rows[field.Key] = RowsOf(field, post, defined, local);
+                answers.Rows[field.Key] = RowsOf(field, post, defined, local, prefill);
             }
-            else if ((post is null ? StartOf(field, defined[field.Key], local) : post.Answers.GetValueOrDefault(field.Key)) is { } given)
+            else if ((post is null ? StartOf(field, defined[field.Key], local, prefill) : post.Answers.GetValueOrDefault(field.Key)) is { } given)
             {
                 answers.Fields[field.Key] = given;
             }
@@ -490,10 +498,15 @@ internal sealed partial class FormModels(
         return answers;
     }
 
-    // What a field's control starts with: its default value when that holds no merge tag, or without a default its
-    // type's start; none for a default with a tag.
-    private FieldAnswers? StartOf(PublicField field, FormField defined, DateTime local)
+    // What a field's control starts with: the server's prefill (the member's value or a context value, ADR-0124), else
+    // its default value when that holds no merge tag, or without a default its type's start; none for a default with a tag.
+    private FieldAnswers? StartOf(PublicField field, FormField defined, DateTime local, FormPrefill prefill)
     {
+        if (prefill.Values.GetValueOrDefault(field.Key) is { } prefilled)
+        {
+            return prefilled;
+        }
+
         var texts = field.DefaultValue is { } defaults ? Untagged(defaults.Values) : [];
         if (texts is { Count: > 0 })
         {
@@ -550,6 +563,7 @@ internal sealed partial class FormModels(
     private async Task<FieldViewModel?> FieldAsync(Build build, PublicField field, CancellationToken cancellationToken)
     {
         if (types.Find(field.Type) is not { } traits
+            || build.Render.Prefill.FromMember.Contains(field.Key)
             || traits.Type is HiddenFieldType
             || (traits.Type is CalculationFieldType calculation && !calculation.ReadSettings(build.Definition(field.Key).Settings).Visible)
             || (traits.Type is CaptchaFieldType && build.Render.Shown.Form.Settings.CaptchaProvider is null))
@@ -621,7 +635,8 @@ internal sealed partial class FormModels(
             Recalling = build.Recalling(field.Key),
             Autocomplete = field.Autocomplete ?? DefaultAutocomplete(field.Type),
             Values = answers.Values,
-            FillsDefault = build.Starts && field.DefaultValue is { } defaults && Untagged(defaults.Values) is null,
+            FillsDefault = build.Starts && !build.Render.Prefill.Values.ContainsKey(field.Key)
+                && ((field.DefaultValue is { } defaults && Untagged(defaults.Values) is null) || field.Prefill?.Query is not null),
             ControlView = await build.ControlViewAsync(views, field.Type, cancellationToken),
             Control = model,
         };

@@ -133,8 +133,17 @@ internal sealed partial class FormRendering(
             await SentAsync(httpContext, formKey, instance, culture, cancellationToken);
         }
 
+        // A form that takes values from the member renders them for the member signed in, so their page is theirs (ADR-0124).
+        Guid? member = null;
+        if (FormModels.TakesFromMember(cached.Published.Definition)
+            && await httpContext.RequestServices.GetRequiredService<FormMembers>().KeyAsync() is { } signedIn)
+        {
+            PageCaching.NoStore(httpContext);
+            member = signedIn;
+        }
+
         var formTheme = themes.Resolve(target is null ? theme : target.Theme, shown.Form.Settings.Theme);
-        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), formTheme, gate, target?.Page), cancellationToken);
+        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), formTheme, gate, target?.Page, member), cancellationToken);
         return new RenderedForm(view, model, formTheme);
     }
 

@@ -11,6 +11,7 @@ using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Umbraco.Cms.Web.Common.Routing;
 
@@ -142,6 +143,7 @@ internal sealed class FormPostHandler(
             Query = query,
             Context = reader.Context,
             Tokens = tokens,
+            Member = await http.RequestServices.GetRequiredService<FormMembers>().KeyAsync(),
         };
         var page = Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var pageKey) ? pageKey : (Guid?)null;
         var state = new Step(reader, definition, page, query);

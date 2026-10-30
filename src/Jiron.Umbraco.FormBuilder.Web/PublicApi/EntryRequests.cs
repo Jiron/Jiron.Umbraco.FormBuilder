@@ -4,8 +4,10 @@ using System.Text.Json.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Definitions.Serialization;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
+using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
 
 namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
@@ -48,7 +50,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         var invalid = new List<string>();
         return EntryBodies.Read(body.Bytes, formKey, invalid) is { } submission
-            ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens }, cancellationToken))
+            ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens, Member = await MemberAsync(http) }, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -66,9 +68,12 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         var invalid = new List<string>();
         return EntryBodies.ReadPage(body.Bytes, formKey, invalid) is ({ } submission, var page)
-            ? Answer(await submissions.ValidateAsync(submission with { Tokens = tokens }, page, cancellationToken))
+            ? Answer(await submissions.ValidateAsync(submission with { Tokens = tokens, Member = await MemberAsync(http) }, page, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
+
+    // The member signed in on the request, whose values a field prefilled from the member takes (ADR-0124).
+    private static Task<Guid?> MemberAsync(HttpContext http) => http.RequestServices.GetRequiredService<FormMembers>().KeyAsync();
 
     /// <summary>Reads a receipt's submission id and answers with its entry's receipt and outcome, or the refusal (ADR-0089).</summary>
     /// <param name="http">The request.</param>
