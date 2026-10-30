@@ -55,6 +55,7 @@ These tools build and test Jiron Form Builder. They are used unmodified and are 
 | `@hey-api/openapi-ts` | 0.99.0 | MIT | generating the management API client (`Client/`) |
 | `typescript` | 6.0.3 | Apache-2.0 | type checking (`Client/`, `tests/e2e/`) |
 | `vite` | 8.3.3 | MIT | the library builds (`Client/`) |
+| `terser` | 5.51.2 | BSD-2-Clause | a second minifying pass over the website runtime's build, besides the bundler's ([ADR-0119](docs/decisions/0119-a-terser-pass-for-the-website-runtime.md)) (`Client/`) |
 | `vitest` | 5.0.3 | MIT | the client tests (`Client/`) |
 | `jsdom` | 30.1.2 | MIT | the browser environment of the client tests (`Client/`) |
 | `eslint`, `@eslint/js` | 10.12.0, 10.0.1 | MIT | linting (`Client/`) |
