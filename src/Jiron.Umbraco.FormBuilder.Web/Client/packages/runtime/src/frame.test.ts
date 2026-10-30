@@ -1,6 +1,7 @@
 // The frame (ROADMAP 6.4b, ADR-0110): the forms of the markup contract found and enhanced once, later ones through
 // init(root), others left to the post without JavaScript, `jfb:ready` once per form, and the chunk with the logic
-// loaded on a form's first interaction only, or at once for a form with a default the page fills in (6.4h, ADR-0118).
+// loaded on a form's first interaction only, or at once for a form with a default the page fills in (6.4h, ADR-0118),
+// and the print button of the copy of the answers below an outcome revealed and bound once (6.5b, ADR-0123).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFrame, type Chunk, type ReadyDetail } from './frame';
 import type { FormModel } from './model';
@@ -43,6 +44,35 @@ function form(
   input.name = 'name';
   element.append(input);
   return element;
+}
+
+/** An outcome in a form's place with the copy of the answers below it, as Outcome.cshtml writes it. */
+function outcome(id: string, contract = '1'): HTMLDivElement {
+  const wrapper = document.createElement('div');
+  wrapper.id = id;
+  wrapper.dataset['jfbForm'] = `key-${id}`;
+  wrapper.dataset['jfbContract'] = contract;
+  const message = document.createElement('div');
+  message.dataset['jfbOutcome'] = '';
+  const copy = document.createElement('div');
+  copy.dataset['jfbCopy'] = '';
+  const print = document.createElement('button');
+  print.type = 'button';
+  print.dataset['jfbPrint'] = '';
+  print.hidden = true;
+  print.textContent = 'Print your answers';
+  const again = document.createElement('a');
+  again.href = `#${id}`;
+  copy.append(print, again);
+  wrapper.append(message, copy);
+  return wrapper;
+}
+
+/** The print button below an outcome. */
+function printOf(root: ParentNode): HTMLButtonElement {
+  const button = root.querySelector<HTMLButtonElement>('button[data-jfb-print]');
+  if (button === null) throw new Error('the outcome has no print button');
+  return button;
 }
 
 /** The `jfb:ready` events the document hears. */
@@ -216,6 +246,38 @@ describe('the frame', () => {
     inputOf(document).dispatchEvent(new Event(type, { bubbles: true }));
     await settled();
     expect(loaded.attached).toHaveLength(1);
+  });
+
+  it("reveals the copy's print button below an outcome and binds it to the browser's print once", () => {
+    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+    try {
+      document.body.append(outcome('jfb-1'));
+      const frame = createFrame(chunk().load);
+      frame.init();
+      frame.init(document);
+      const button = printOf(document);
+      expect(button.hidden).toBe(false);
+      button.click();
+      expect(print).toHaveBeenCalledTimes(1);
+    } finally {
+      print.mockRestore();
+    }
+  });
+
+  it('reveals the print button of an outcome added later through init(root), the root itself included', () => {
+    const frame = createFrame(chunk().load);
+    frame.init();
+    const later = outcome('jfb-2');
+    document.body.append(later);
+    expect(printOf(later).hidden).toBe(true);
+    frame.init(later);
+    expect(printOf(later).hidden).toBe(false);
+  });
+
+  it('leaves the print button of another contract version hidden, as a page without JavaScript has it', () => {
+    document.body.append(outcome('jfb-1', '2'));
+    createFrame(chunk().load).init();
+    expect(printOf(document).hidden).toBe(true);
   });
 
   // Vitest fails the run on an unhandled rejection, so a failed load that leaked one would fail here.

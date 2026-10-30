@@ -148,3 +148,21 @@
     background: ButtonText;
   }
 }
+
+/*
+ * Print (ADR-0123): what only works on screen stays there, the print button of the copy of the answers among it, and
+ * a row of answers, or a section's heading with its first row, keeps to one sheet. A theme adds its colours.
+ */
+@media print {
+  .jfb-form :is(.jfb-navigation, .jfb-progress, [data-jfb-print]) {
+    display: none !important;
+  }
+
+  .jfb-form .jfb-summary :is(h3, dl > div) {
+    break-inside: avoid;
+  }
+
+  .jfb-form .jfb-summary h3 {
+    break-after: avoid;
+  }
+}

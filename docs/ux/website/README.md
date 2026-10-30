@@ -91,6 +91,14 @@ should adopt:
 - **The outcome:** `jfb-outcome` takes the focus. The entry's reference is rendered by the view on its own line
   (`jfb-reference`, the value in `strong`), so an editor's message need not repeat it; the copy of the answers reuses
   `jfb-summary` without Change.
+- **The copy of the answers** (ADR-0123): after a message outcome that offers it, `Outcome.cshtml` writes, inside the
+  form's wrapper and after the outcome's element, the entry's answers as `jfb-summary` (a section per page the rules
+  showed, its heading id `<instance>-copy-<page key>`, rows without the Change `dd`), then a `jfb-navigation` with
+  `data-jfb-copy`: the print button (`button[data-jfb-print]`, `hidden` until the runtime reveals it and binds it to
+  the browser's print) and "Fill in the form again" (`jfb-button jfb-button-link`, the page at the form). It shows once,
+  to the first `GET` of the page after sending; any later view writes `<p class="jfb-help" data-jfb-copy-shown>` in the
+  answers' place and keeps the link. In print media the base rules hide the navigation, the progress and the print
+  button and keep each row, and a heading with its first row, on one sheet; the default theme prints its light scheme.
 - **Page changes:** the runtime sets `data-jfb-direction` (`next` or `back`) on the form while a new page comes in,
   so the page slides in 8 px from that side (mirrored right to left; with reduced motion it only fades).
 - **Step names that do not fit:** after layout and on every resize, the runtime checks whether a word of a step name

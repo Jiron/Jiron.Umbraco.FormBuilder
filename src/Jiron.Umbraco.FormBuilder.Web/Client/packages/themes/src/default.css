@@ -118,24 +118,27 @@
 
   /*
    * The opt-in dark scheme: jfb-scheme-dark always, jfb-scheme-auto when the visitor's system asks for it, each on
-   * the form or on any ancestor, as the tokens are (ADR-0106).
+   * the form or on any ancestor, as the tokens are (ADR-0106). On screen only: paper takes the light scheme, since
+   * light ink would vanish on white (ADR-0123).
    */
-  &.jfb-scheme-dark,
-  .jfb-scheme-dark & {
-    --_ink: var(--jfb-color-text, #e8eaee);
-    --_muted: var(--jfb-color-text-muted, #aab2bf);
-    --_surface: var(--jfb-color-surface, #1d232d);
-    --_border: var(--jfb-color-border, #8b95a5);
-    --_rule: var(--jfb-color-rule, #343c49);
-    --_accent: var(--jfb-color-accent, #5fd0b8);
-    --_on-accent: var(--jfb-color-on-accent, #0b1a17);
-    --_focus: var(--jfb-color-focus, #8ab4f8);
-    --_error: var(--jfb-color-error, #f2a59e);
-    --_shade: var(--jfb-shade, 0 1px 2px rgb(5 7 10 / 0.4), 0 8px 24px -4px rgb(5 7 10 / 0.5));
-    color-scheme: dark;
+  @media screen {
+    &.jfb-scheme-dark,
+    .jfb-scheme-dark & {
+      --_ink: var(--jfb-color-text, #e8eaee);
+      --_muted: var(--jfb-color-text-muted, #aab2bf);
+      --_surface: var(--jfb-color-surface, #1d232d);
+      --_border: var(--jfb-color-border, #8b95a5);
+      --_rule: var(--jfb-color-rule, #343c49);
+      --_accent: var(--jfb-color-accent, #5fd0b8);
+      --_on-accent: var(--jfb-color-on-accent, #0b1a17);
+      --_focus: var(--jfb-color-focus, #8ab4f8);
+      --_error: var(--jfb-color-error, #f2a59e);
+      --_shade: var(--jfb-shade, 0 1px 2px rgb(5 7 10 / 0.4), 0 8px 24px -4px rgb(5 7 10 / 0.5));
+      color-scheme: dark;
+    }
   }
 
-  @media (prefers-color-scheme: dark) {
+  @media screen and (prefers-color-scheme: dark) {
     &.jfb-scheme-auto,
     .jfb-scheme-auto & {
       --_ink: var(--jfb-color-text, #e8eaee);
@@ -1974,6 +1977,11 @@
     border-block-end: 1px solid var(--_rule);
   }
 
+  /* One rule between two sections: the section's own, not its last row's as well. */
+  & .jfb-summary > section:not(:last-child) dl > div:last-child {
+    border-block-end: 0;
+  }
+
   & .jfb-summary dt {
     font-weight: var(--_bold);
   }
@@ -2217,8 +2225,9 @@
     }
   }
 
+  /* Print: the buttons stay on screen; the base rules keep the rest of the controls there and the rows whole. */
   @media print {
-    & :is(.jfb-navigation, .jfb-button, .jfb-progress) {
+    & .jfb-button {
       display: none;
     }
   }

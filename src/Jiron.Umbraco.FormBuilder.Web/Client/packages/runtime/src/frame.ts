@@ -3,7 +3,8 @@
  * model data and enhances it once, and loads the chunk with the logic on a form's first interaction, so a page whose
  * visitor never touches a form loads the frame alone; a form with a default value for the page to fill in loads it at
  * once, so the default is there before the visitor touches the form (ADR-0118). A form of another contract version,
- * with model data this runtime cannot read, or whose chunk cannot load, is left to the post without JavaScript.
+ * with model data this runtime cannot read, or whose chunk cannot load, is left to the post without JavaScript. Below
+ * an outcome, it reveals the print button of the copy of the answers and binds it to the browser's print (ADR-0123).
  */
 import { parseModel, type FormModel } from './model';
 
@@ -25,13 +26,16 @@ export interface ReadyDetail {
 }
 
 export interface Frame {
-  /** Enhances the forms in the root (the document by default), the root itself when it is one; a form once only. */
+  /**
+   * Enhances the forms in the root (the document by default), the root itself when it is one, and reveals the print
+   * buttons of the copies of the answers in it; each once only.
+   */
   init(root?: ParentNode): void;
 }
 
 /** A frame that loads its chunk through `load`, once for every form of the page. */
 export function createFrame(load: () => Promise<Chunk>): Frame {
-  const enhanced = new WeakSet<HTMLFormElement>();
+  const enhanced = new WeakSet<Element>();
   let chunk: Promise<Chunk | null> | undefined;
 
   function enhance(form: HTMLFormElement): void {
@@ -59,6 +63,14 @@ export function createFrame(load: () => Promise<Chunk>): Frame {
     init(root: ParentNode = document): void {
       if (root instanceof HTMLFormElement && root.matches('[data-jfb-form]')) enhance(root);
       for (const form of root.querySelectorAll<HTMLFormElement>('form[data-jfb-form]')) enhance(form);
+      for (const button of root.querySelectorAll<HTMLButtonElement>(
+        `[data-jfb-contract="${CONTRACT}"] [data-jfb-print]`,
+      )) {
+        if (enhanced.has(button)) continue;
+        enhanced.add(button);
+        button.addEventListener('click', () => window.print());
+        button.hidden = false;
+      }
     },
   };
 }
