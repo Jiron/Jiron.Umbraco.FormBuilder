@@ -2190,7 +2190,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - Playwright shows no CSP violation with `script-src 'self'` on a cached page and with a nonce on an uncached one with every chunk loaded;
     - the size check passes with every chunk;
     - the whole website suite passes in one run.
-- [ ] **6.5a The summary page and the journeys** (6.5 split in four, WORKLOG 2026-10-30)
+- [x] **6.5a The summary page and the journeys** (6.5 split in four, WORKLOG 2026-10-30) (2026-10-30, e8eb6f5)
   - **Moving through pages** as a post moves (ADR-0100): back without losing answers, each page checked on the server before the next, and the progress styles (the steps, the bar, none) on every page the rules show.
   - **The summary page** ("check your answers", §4.3.4): before sending, a page of every answer the rules leave shown, grouped by page, with a "Change" for each that opens its page with every answer kept, and the send from there.
   - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before building the summary page (ADR-0019, ADR-0020).
