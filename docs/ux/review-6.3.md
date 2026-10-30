@@ -190,3 +190,117 @@ The base rules add no motion; the review checked that the default theme's moveme
 | No motion in the base rules | unchanged: none | Every theme and every site takes the base rules; motion there is motion each would have to undo |
 | The base rules give a rating's points a gap, which would have spread the default theme's stars | `gap: 0` in the default theme | The base rules must not move a theme's pixels; the default's specimen stays as 6.3b shot it |
 | The default theme's press and hover on a scale's points and a rating's stars | unchanged | The end points' labels hold two spans now, and the label stays the one box that moves and colours |
+
+## 6.3d The bootstrap5 theme, and the review of the themes
+
+`bootstrap5` takes Bootstrap 5's classes through its class map, and a small stylesheet draws what Bootstrap has no
+class for, from Bootstrap's own variables (ADR-0108). This part built that stylesheet on the demo's specimen, then
+looked at the three themes together.
+
+### What was looked at
+
+The demo's specimen (`/en/specimen/?theme=bootstrap5`), as in 6.3b and 6.3c: Edge through Playwright with reduced
+motion, JavaScript on for axe and the runtime blocked. The demo loads its copy of Bootstrap 5.3.8 on a page whose forms
+show in `bootstrap5`, as a Bootstrap site loads its own.
+
+| Shot | Light | Dark | Right to left |
+| --- | --- | --- | --- |
+| 375 px, empty | [shot](review-6.3/specimen-bootstrap5-light-375-empty.png) | | |
+| 375 px, errors | [shot](review-6.3/specimen-bootstrap5-light-375-errors.png) | [shot](review-6.3/specimen-bootstrap5-dark-375-errors.png) | [shot](review-6.3/specimen-bootstrap5-rtl-375-errors.png) |
+| 1440 px, empty | [shot](review-6.3/specimen-bootstrap5-light-1440-empty.png) | | |
+| 1440 px, errors | [shot](review-6.3/specimen-bootstrap5-light-1440-errors.png) | [shot](review-6.3/specimen-bootstrap5-dark-1440-errors.png) | [shot](review-6.3/specimen-bootstrap5-rtl-1440-errors.png) |
+
+- **Twelve looked at, eight kept:** the dark and right-to-left pages were looked at empty too; their shots with errors
+  hold every control the empty ones do, and the marks besides.
+- **Dark:** `?scheme=dark`, which puts Bootstrap in its dark colour mode (`data-bs-theme="dark"`).
+- **Right to left:** the page's root and the form right to left, with Bootstrap's right-to-left build in place of the
+  other, as on a right-to-left Bootstrap site.
+
+Axe (WCAG 2.2 A and AA) found nothing on any of the twelve, and none scrolls sideways;
+`specs/website/bootstrap5-theme.spec.ts` keeps both checks, and one for each fix below but finding 6's spacing,
+which the shots show. The first round found the defects below and the second confirmed them fixed.
+
+**The three themes together**, after this part's changes to the class map, the file input and the demo's layout:
+
+| | `default` | `unstyled` | `bootstrap5` |
+| --- | --- | --- | --- |
+| Shots | 6.3b's twelve | 6.3c's eight | the eight above |
+| Against its own review | the empty shots the same pixel for pixel | every shot the same pixel for pixel | this review |
+| Specimen: axe, nothing sideways | `default-theme.spec.ts` | `unstyled-theme.spec.ts` | `bootstrap5-theme.spec.ts` |
+| Stylesheet, gzip, of 10 KB | 8.02 KB | none of its own | 3.84 KB |
+
+Every theme takes the base rules (1.42 KB gzip). The size check holds each stylesheet to its budget and refuses a rule
+outside its theme's scope or a physical `left` or `right`. `specs/website/themes.spec.ts` checks, in each theme: every
+demo form at 375 px in English and German, with and without JavaScript, fits without scrolling sideways; each form's
+honeypot is no bigger than a pixel, clipped to nothing and out of the accessibility tree; and a ranking's move
+without JavaScript opens the page with the option before the moved one in view.
+
+### design-taste-frontend
+
+**The read:** a form set into a site built on Bootstrap 5.3, for any member of the public, mostly on a phone:
+trust-first and accessibility-critical, with the site's Bootstrap as the design system. The skill maps a Bootstrap
+brief to Bootstrap 5.3 itself, and its honesty rule (use the real system, do not rebuild its CSS by hand, one system
+per page) is this theme's design: Bootstrap draws all it has a class for, and the stylesheet only the rest, from
+Bootstrap's variables, with no palette of its own.
+
+**The dials:** variance 3, motion 2, density 5: the skill's trust-first row, as for the default theme.
+
+| Check | Result |
+| --- | --- |
+| Brief inference and dials declared | yes, above |
+| Design system | Bootstrap 5.3, the site's own; nothing of it ships, and the demo's copy is the published files byte for byte |
+| No hand-rebuilt system CSS | controls, selects, checks, the range, buttons and alerts are Bootstrap's classes through the class map; the stylesheet draws cards, buttons of choices, stars, a grid's columns, the ranking, the progress and the marks of an answer that needs a change |
+| No em or en dash | none in the stylesheet or the views' texts |
+| One accent | Bootstrap's primary: chosen buttons and cards, filled stars, the progress, the focus ring; red only marks an answer that needs a change |
+| One corner system | Bootstrap's radii (`--bs-border-radius` and its large step) |
+| Icons from a library, none drawn by hand | Lucide's star, as in the default theme, and the base rules' chevrons |
+| Button and form contrast | axe clean on all twelve; the plain button changed for Bootstrap's dark mode (finding 8) |
+| Dark mode tested | yes: Bootstrap's dark colour mode, both widths |
+| Theme lock | Bootstrap's colour mode on the page's root, which the form follows |
+| Empty, loading and error states | errors in Bootstrap's invalid colour on the field and as a danger alert above; a pending outcome as an info alert; loading is the runtime's (6.4) |
+| Cards only where they earn it | picture choices, where the picture is the answer; the card group is an editor's choice |
+| No button label wraps at desktop | yes ("Next", "Add a guest", "Subscribe") |
+
+### impeccable
+
+- **Mode and context:** Operate, with the bundled engine only; the command `polish`. Bootstrap's look is the brief, so
+  impeccable's "the brief wins" keeps Bootstrap's palette, radii and type rather than the default theme's. The craft
+  floor, read before the first edit, asks for every state to work and refuses a side stripe or a glyph icon.
+- **`impeccable detect --json`** on `bootstrap5.css`, `base.css` and `default.css`: `[]`. On the demo's `site.css`,
+  which this part changed: two side-border warnings (`border-inline-start: 4px solid`, lines 215 and 291), the demo
+  site's pull quote and its sign-in error since the demo was built. Kept: the demo stands in for a customer's site,
+  whose look is not the package's, and neither rule is on a page with a form.
+- **The polish pass:**
+
+| # | Finding | Kind | Fix |
+| --- | --- | --- | --- |
+| 1 | Every field's legend (a group of choices, a grid's rows) took a heading's size, since Bootstrap sizes a legend as a heading | hierarchy | a field's legend reads at a label's size, a group's as a heading in Bootstrap's heading weight |
+| 2 | Picture choices were 600 px pictures beside small radio buttons | broken path | cards in a grid, the picture full bleed at 3:2, the whole card the target, the chosen one in Bootstrap's primary colours |
+| 3 | Yes or no, a scale and a rating were plain radio buttons | affordance | yes or no and a scale as Bootstrap-shaped buttons in its emphasis colours; a rating as Lucide's stars in its primary colour, the numbers for screen readers (ADR-0107) |
+| 4 | A grid's rows had no columns, a ranking was a bare list, and groups of two or three columns were one column | layout | a grid's columns under their heads, stacked on a phone where each answer names its column; the ranking a bordered list; the groups' columns, whose fields share their rows so the controls line up |
+| 5 | An answer that needs a change showed only its message: Bootstrap marks `.is-invalid`, the markup `aria-invalid` | state | Bootstrap's invalid border and ring from `aria-invalid`, on controls, cards, buttons and stars |
+| 6 | Help, counters and errors sat a paragraph's margin away from their field | spacing | each sits close to its field |
+| 7 | The error summary's heading was as large as the page's | hierarchy | an alert's heading at a form's size |
+| 8 | The plain buttons (Back, Add a guest, a ranking's moves) were `btn-outline-secondary`, 3.3:1 in Bootstrap's dark mode | contrast (WCAG 1.4.3) | `btn btn-secondary` in the class map, and the ranking's moves quiet through Bootstrap's `--bs-btn-*` variables |
+| 9 | The file input was the browser's own, since it has no class of the package's for the map to join | consistency | the file input takes the theme's classes for a control, so Bootstrap's `form-control` |
+| 10 | On the demo's tinted ground, Bootstrap's red (4.22:1) and its pink inline code (4.19:1) fell below 4.5:1 | contrast, the demo | a page that loads Bootstrap takes Bootstrap's body colours, on which both reach 4.5:1 |
+| 11 | A scale of eleven points wrapped nine and two on a phone | layout | on a narrow form its points share even rows |
+| 12 | Bootstrap's reboot scrolls smoothly, so the test of a ranking's move without JavaScript measured mid-scroll | test | the place is the same; the test reads it with reduced motion (ADR-0108) |
+
+- **Kept as designed:** the range is Bootstrap's `form-range`; `?scheme=auto` leaves Bootstrap light, since its own
+  "auto" needs a script the demo does not add; a form whose direction differs from its page's follows the build the
+  site loads, since a Bootstrap build has one direction.
+
+### emil-design-eng
+
+The stylesheet moves nothing; it answers a hover, a press and the keyboard with colour and ring, as Bootstrap's own
+controls do.
+
+| Before | After | Why |
+| --- | --- | --- |
+| Yes or no and a scale: Bootstrap's radio, with no press of a button | hover and press tint the point in Bootstrap's subtle primary; the chosen one fills with the primary | Bootstrap's buttons answer a press with colour, not movement; a choice drawn as a button presses like the site's buttons beside it |
+| Colour, border and ring changes | over 150 ms `ease-in-out`, Bootstrap's own timing; none under reduced motion | The same tempo as the site's inputs; nothing animates layout |
+| The focus ring | Bootstrap's ring, over Bootstrap's 150 ms | The default theme shows its ring at once; here the site's own inputs fade theirs in, and a drawn control that answered faster would be the odd one out |
+| Stars | fill up to the hovered one, inside `@media (hover: hover)`; no growth | A rating is hovered on every visit; colour says which star is meant, and a tap leaves no hover behind |
+| Picture cards | border and tint change when chosen; no lift or shadow | Bootstrap's cards do not lift, and a lifting card would jog the grid around it |
+| A ranking's moves | Bootstrap's own button press, quiet colours | The arrows are pressed many times in a row; a press that only colours keeps up |
