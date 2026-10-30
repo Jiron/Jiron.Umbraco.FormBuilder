@@ -278,7 +278,7 @@ Ligata.Forms is at `C:\Code\Ligata.Forms`, version 0.3.2, commit `8f4b0c5`. It i
 | Anonymous endpoint security: Data Protection-signed challenge, honeypot, origin allowlist, no credentialed CORS, `NoStore` responses, no personal data in logs | `src/Services/RequestGuard.cs`, `src/Controllers/PublicFormsController.cs` | **Port.** Replace the in-memory counters with the ASP.NET Core rate limiter (see §3.2 for the bypass). |
 | reCAPTCHA v3 verification (success, score, action, hostname allowlist, token age, clock skew) | `src/Services/RecaptchaVerifier.cs` | **Port** as one `IFormBuilderCaptchaProvider` (7.2). |
 | Consent-aware, lazy captcha loading; Cookiebot categories and events | `JS`, `docs/CONSENT.md` | **Port** into §4.10. |
-| "The form changed while you were filling it in": fetch the new markup, keep the answers that still fit, reset changed consent texts, refuse when an answered field was removed | `JS` (render refresh) | **Port**, simplified for live sites (6.4). |
+| "The form changed while you were filling it in": fetch the new markup, keep the answers that still fit, reset changed consent texts, refuse when an answered field was removed | `JS` (render refresh) | **Port**, simplified for live sites (6.4d). |
 | CSV export with BOM and the formula-injection guard (`=`, `+`, `-`, `@`, tab, CR) | `FormsManagementController.Export` | **Port** into every export (11.4). |
 | Several forms on one page: deterministic, per-request instance ids | `src/Rendering/LigataFormViewComponent.cs` | **Port** (6.2b). |
 | Static web assets in an RCL with `StaticWebAssetBasePath=/`; asset version taken from the assembly | the csproj, `src/Rendering/FormAssets.cs`, `tests/versions.test.mjs` | **Port.** The install test checks the assets after `dotnet publish` too (§3.2). |
@@ -2019,7 +2019,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when: a contract test renders a kitchen-sink form (every built-in field type, each empty, answered, with an error and hidden by a rule) and checks ADR-0015's hooks on each; a custom type's control renders from its own view; axe finds no violation on the rendered page in Edge, which is looked at.
 - [x] **6.2g Visitor error messages** (6.2 split in six, WORKLOG 2026-10-28; then 6.2b in two, WORKLOG 2026-10-28; then 6.2d in two, WORKLOG 2026-10-29; then 6.2e in two, WORKLOG 2026-10-29; then 6.2g in three, WORKLOG 2026-10-29) (2026-10-29, d23add7)
   - **The message a visitor sees for each error** (§4.3.3, D10, `docs/ux/copy.md`): a field's own message for the kind of error (`messages`), a check's own message, a validation rule's message, and otherwise the package's default for the kind and the field's type, in the page's culture, with the values the field's settings give (lengths, words, limits, steps, a date window relative to the site's today, choices, file types, sizes and counts, rows) in the culture's formats as merge tags show numbers and dates (ADR-0066); and the form-level message of an empty submission. English and German now; 14.2 adds the other five languages.
-  - **One set of words for both runtimes:** `tests/vectors/messages.json` holds the defaults and how they take their values, and Core and the runtime's shared logic (`packages/logic`) pass it now; 6.4 shows the runtime's messages on the page (strengthened in this split), so the browser and the server never disagree about a message (D10).
+  - **One set of words for both runtimes:** `tests/vectors/messages.json` holds the defaults and how they take their values, and Core and the runtime's shared logic (`packages/logic`) pass it now; 6.4a shows the runtime's messages on the page (strengthened in this split), so the browser and the server never disagree about a message (D10).
   - **The error summary** (ADR-0022): its heading says whether one answer or several need a change (`docs/ux/copy.md`), and a link to a default message names its field, so every link says which question it is (WCAG 2.4.4); an editor's own message shows as written. The no-JS post of 6.2h shows these messages.
   - Done when: Core passes `tests/vectors/messages.json`, whose cases cover every error kind each built-in type declares in English and in German, with values in each culture's formats, a plural, a date window relative to today and a list of file types; a test finds a default in both languages for every kind every built-in type declares, and fails for one left out. Tests show a field's own message, a check's own message and a validation rule's message shown instead of the defaults, the empty submission's message, the summary's heading for one answer and for several, and a summary link to a default message naming its field.
 - [x] **6.2h The no-JS post** (6.2 split in six, WORKLOG 2026-10-28; then 6.2b in two, WORKLOG 2026-10-28; then 6.2d in two, WORKLOG 2026-10-29; then 6.2e in two, WORKLOG 2026-10-29; then 6.2g in three, WORKLOG 2026-10-29) (2026-10-29, 6c22fd8)
@@ -2072,35 +2072,75 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Right to left**, as in 6.3b (added in the split of 6.3).
   - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` again before styling this theme and reviewing all three (ADR-0019, ADR-0020, added in the split of 6.3).
   - Done when: Playwright screenshots of a kitchen-sink form (every field type) per theme at 375 and 1440 px, and once with `dir="rtl"`, are reviewed in `docs/ux/review-6.3.md`, which has a section per skill with its output and findings; axe is clean; in every theme, `unstyled` included, the honeypot is out of view and out of the accessibility tree; the CSS is within budget; a lint check refuses physical `left`/`right` properties in the theme CSS. In every theme at 375 px without JavaScript, a ranking's move opens the page with the option before the moved one in view (added in 6.2i). No demo form scrolls sideways at 375 px in English or German, with or without JavaScript, in any theme (added in 6.2k).
-- [ ] **6.4 The website runtime**
+- [ ] **6.4a The runtime's frame, validation and rules** (6.4 split in nine, WORKLOG 2026-10-30)
+  - **The frame:** the module finds every form of the markup contract on the page (ADR-0015), reads its model data, and enhances each once; `JironFormBuilder.init(root)` enhances forms injected later (§4.9). A form whose contract version the runtime does not know is left to the no-JS post. `jfb:ready` fires once per form.
   - **Validation and rules:** progressive enhancement, plus client validation and rules from `packages/logic`. Values are cleaned with the same functions before they are sent, and numbers sent in the wire form (ADR-0005).
+    - **What the visitor sees:** the server's inline errors and error summary, in the server's markup; a refused send moves the focus to the summary, and an answer fixed clears its error. `jfb:invalid` fires with the field and the kind of error, never the answer.
     - **Messages:** the server's (6.2g), held to the same words by `tests/vectors/messages.json`; English and German now; 14.2 adds the other five languages.
     - **The error summary after a question** (added in 6.3b, ADR-0106): an entry whose label already ends in a question mark, an exclamation mark, a full stop or a colon takes no colon after it ("Where would you like to sit? Choose an answer"), in the server's words, the runtime's and the vectors alike, in every visitor language.
     - **Delivery:** one small file per language, loaded for the page's culture only, to keep the §4.12 budget.
+  - Until 6.4c, a form that passes the client's checks still sends through the no-JS post.
+  - Done when:
+    - Vitest covers the frame, the reading of answers, validation and rules, and passes `tests/vectors/messages.json` (added in 6.2g's split), whose vectors include an error summary entry after a label that ends in a question mark (added in 6.3b); NUnit passes the same vectors;
+    - Playwright on the demo covers validation (inline errors as the visitor leaves a field, the summary and its focus after a refused send, an error cleared when fixed) and rules (a field shown, hidden and required as answers change, a hidden field never blocking the send), in English and German, and shows that only the page's language file loads;
+    - axe is clean on the demo's forms with errors shown by the runtime;
+    - the size check passes with every chunk.
+- [ ] **6.4b Live calculations and answer recall** (6.4 split in nine, WORKLOG 2026-10-30)
   - **Live calculations and answer recall:** texts that use earlier answers update as the visitor types (§4.3.3), through `recallAnswers` over the answers the runtime reads into the wire form as Core's types read them (ADR-0058, ADR-0068).
+  - Calculations load on demand as their own chunk (§4.12), only on a form that has one.
+  - Done when: Vitest covers the runtime's part; Playwright on the demo covers calculations (a value that follows its answers, an unreadable answer leaving it without a value, the value the server stores) and answer recall (a label, a help text and a text block that follow the answers, a hidden field recalled as empty); axe is clean; the size check passes with every chunk.
+- [ ] **6.4c Submitting** (6.4 split in nine, WORKLOG 2026-10-30)
   - **Submitting:**
     - fetch submission with an in-flight lock and a stable `submissionId`;
     - the error summary with focus management, and `aria-live` announcements;
-    - `form_changed` handling with answer restore (§3.1), through the `render` endpoint, leaving a consent whose wording changed unticked (ADR-0004);
-    - a submission id that does not depend on `crypto.randomUUID()`, which exists only in secure contexts, and chunk file names with a content hash (ADR-0004);
-    - the send states of ADR-0022's amendment: the busy primary button (`data-jfb-busy`, `aria-disabled`, "Sending your answers" in the live region), the error notice just above the buttons that takes the focus after a refused or failed send (`rate_limited`, `server_error`, `timeout`) with every answer kept, and the redirect notice with "Go now" and "Stay here".
-  - **Fitting the page** (ADR-0022, amended in 2.4): the ground check (a form without a scheme class, on itself or on an ancestor (ADR-0106), on a dark ground gets `jfb-scheme-dark`; a class the site set is never changed) and step folding (`data-jfb-compact` when a word of a step name is wider than its step, after layout and on every resize).
-  - **The developer surface and constraints:** the JS API and DOM events (§4.9), the CSP nonce, no cookies.
-  - **Field behaviours:**
-    - Loaded on demand: uploads with progress (against `uploads`, the challenge part first; size and type are checked in the browser before sending, with signature test vectors shared with the server; a reset during an upload is a failed upload the visitor can retry, ADR-0006), the repeater, the signature pad (with the typed alternative, whose PNG carries the name typed in its `jfb:typed-name` text chunk as the server's does, ADR-0103, added in 6.2k), character counters, choice cards and the "Other" input.
-    - The ranking field's move buttons with live announcements, and the grid's stacked layout on phones.
+    - a submission id that does not depend on `crypto.randomUUID()`, which exists only in secure contexts (ADR-0004);
+    - the send states of ADR-0022's amendment: the busy primary button (`data-jfb-busy`, `aria-disabled`, "Sending your answers" in the live region), the error notice just above the buttons that takes the focus after a refused or failed send (`rate_limited`, `server_error`, `timeout`) with every answer kept, and the redirect notice with "Go now" and "Stay here";
+    - the outcome in place of the form (the challenge, and `receipt` for a send whose answer never came, come with 7.1);
+    - `jfb:submitting`, `jfb:submitted` and `jfb:error` (§4.9).
+  - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before building the send states (ADR-0019, ADR-0020).
   - Done when:
-    - Vitest covers the runtime and passes `tests/vectors/messages.json` (added in 6.2g's split), whose vectors include an error summary entry after a label that ends in a question mark (added in 6.3b);
-    - Playwright on the demo covers validation, rules, calculations, answer recall, submission, `form_changed` and every field type's interaction, with `form_changed` on a page served stale from the output cache (the published form swapped in, the answers kept, and a consent whose wording changed left unticked with a notice);
-    - Playwright shows no CSP violation with `script-src 'self'` on a cached page and with a nonce on an uncached one, lazily loaded chunks included, and a submission from a plain-HTTP origin;
+    - Vitest covers the runtime's part, the submission id included;
+    - Playwright on the demo covers submission (the outcome, the error summary from a `422` with its focus, the server's errors in place), and the send states (a second press during a slow send sends nothing; a `429` and a `500` show the notice above the buttons, move the focus to it and keep every answer; a redirect outcome with "Go now" and "Stay here");
+    - Playwright shows a submission from a plain-HTTP origin, where `crypto.randomUUID()` does not exist;
+    - axe is clean in every send state; the size check passes with every chunk.
+- [ ] **6.4d `form_changed`** (6.4 split in nine, WORKLOG 2026-10-30)
+  - `form_changed` handling with answer restore (§3.1), through the `render` endpoint, leaving a consent whose wording changed unticked (ADR-0004).
+  - Done when: Vitest covers the runtime's part; Playwright shows `form_changed` on a page served stale from the output cache (the published form swapped in, the answers kept, and a consent whose wording changed left unticked with a notice); axe is clean with the notice; the size check passes with every chunk.
+- [ ] **6.4e Fitting the page, the developer surface and CSP** (6.4 split in nine, WORKLOG 2026-10-30)
+  - **Fitting the page** (ADR-0022, amended in 2.4): the ground check (a form without a scheme class, on itself or on an ancestor (ADR-0106), on a dark ground gets `jfb-scheme-dark`; a class the site set is never changed) and step folding (`data-jfb-compact` when a word of a step name is wider than its step, after layout and on every resize).
+  - **The developer surface and constraints:** the JS API and DOM events (§4.9), the CSP nonce, no cookies, and chunk file names with a content hash (ADR-0004). The API's `next()` and `back()` and the `jfb:page` event come with the paging in 6.5, and `consent.grant('captcha')` and `withdraw()` with the captchas in 7.2 (moved in the split of 6.4).
+  - Done when:
+    - Vitest covers the API, the events, the ground check and step folding;
+    - Playwright shows the ground check (an unclassed form on a dark page gets `jfb-scheme-dark` and passes contrast, a form the site set to light stays light, and a light page changes nothing) and step folding (a six-step German form folds where a name would break inside a word and unfolds when the window grows);
+    - Playwright covers `init(root)`, `get(formEl)` with `validate()`, `submit()` and `values()`, and every DOM event of 6.4, and shows the page with no cookie set;
+    - Playwright shows no CSP violation with `script-src 'self'` on a cached page and with a nonce on an uncached one, lazily loaded chunks included;
+    - axe is clean; the size check passes with every chunk.
+- [ ] **6.4f Uploads** (6.4 split in nine, WORKLOG 2026-10-30)
+  - **Uploads with progress,** loaded on demand: against `uploads`, the challenge part first; size and type are checked in the browser before sending, with signature test vectors shared with the server; a reset during an upload is a failed upload the visitor can retry (ADR-0006). The upload's own controls follow 2.4's design (`data-jfb-enhanced`, "Choose files", "Take a photo" on touch screens, a file dragged over, each file's progress and state).
+  - **Design skills:** load the three skills before building the upload's controls (ADR-0019, ADR-0020).
+  - Done when: Vitest passes the signature vectors, which NUnit passes against the server's checks too; Playwright shows an oversize file and a renamed `.exe` refused before any upload request is sent, an upload cut off by the server reported as a failed upload with a retry, and a file uploaded with its progress and sent with the entry; axe is clean; the size check passes with every chunk.
+- [ ] **6.4g The signature pad** (6.4 split in nine, WORKLOG 2026-10-30)
+  - **The signature pad,** loaded on demand, with the typed alternative, whose PNG carries the name typed in its `jfb:typed-name` text chunk as the server's does (ADR-0103, added in 6.2k); drawn by pointer, touch and pen, cleared and drawn again.
+  - **Design skills:** load the three skills before building the pad (ADR-0019, ADR-0020).
+  - Done when: Vitest shows the typed alternative's PNG reads back on the server as the server's own (its text chunk, its size and its pixels' limits); Playwright draws a signature, clears it, types one instead and sends each; axe is clean; the size check passes with every chunk.
+- [ ] **6.4h The other field behaviours** (6.4 split in nine, WORKLOG 2026-10-30)
+  - **Loaded on demand:** the repeater (rows added and removed in place, their names and ids as the server's, the focus kept), character counters, choice cards and the "Other" input.
+  - The ranking field's move buttons with live announcements, and the grid's stacked layout on phones.
+  - **Design skills:** load the three skills before building these behaviours (ADR-0019, ADR-0020).
+  - Done when: Playwright on the demo covers every field type's interaction that 6.4a to 6.4g did not (the repeater's rows at their limits, a counter past its limit, a card chosen, "Other" with its text, a ranking moved by its buttons with the announcement, the grid answered on a phone), each sent and stored as the server reads it; axe is clean; the size check passes with every chunk.
+- [ ] **6.4i The kitchen sink by keyboard, and the runtime's review** (6.4 split in nine, WORKLOG 2026-10-30)
+  - **The review:** the three skills review the runtime's states on the demo (errors, busy, the notices, the redirect, `form_changed`, uploads, the signature, rows and moves) at 375 and 1440 px, light, dark and right to left, in `docs/ux/review-6.4.md` with a section per skill (ADR-0019, ADR-0020).
+  - Done when:
+    - `docs/ux/review-6.4.md` has a section per skill with its output, findings and what changed;
     - a **keyboard-only** run completes the kitchen-sink form;
-    - Playwright shows the ground check (an unclassed form on a dark page gets `jfb-scheme-dark` and passes contrast, a form the site set to light stays light, and a light page changes nothing), step folding (a six-step German form folds where a name would break inside a word and unfolds when the window grows), and the send states (a second press during a slow send sends nothing; a `429` and a `500` show the notice above the buttons, move the focus to it and keep every answer);
-    - Playwright shows an oversize file and a renamed `.exe` refused before any upload request is sent, and an upload cut off by the server reported as a failed upload with a retry;
-    - axe is clean;
-    - the size check passes with every chunk.
+    - axe is clean in every state the review shows;
+    - Playwright shows no CSP violation with `script-src 'self'` on a cached page and with a nonce on an uncached one with every chunk loaded;
+    - the size check passes with every chunk;
+    - the whole website suite passes in one run.
 - [ ] **6.5 Multi-page, summary and prefill**
   - **Moving through pages:**
     - per-page server validation (`validate`), back without losing answers;
+    - the JS API's `next()` and `back()` and the `jfb:page` event (§4.9), moved from 6.4 in its split;
     - progress styles;
     - the summary page with "change" links.
   - **Keep a copy** (added in 1.1): the outcome option of §4.3.4 shows the submitted answers with a print button and a "fill in again" link, reusing the summary page's rendering:
@@ -2111,7 +2151,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - from allowed query values;
     - from context values.
   - Save and resume needs the email outbox, so it comes in 8.6.
-  - Done when: Playwright journeys pass for multi-page forms and the summary page, and a tamper test proves that a posted value for a hidden member-prefilled field is ignored. Playwright also shows the copy of the answers after a JS and a no-JS submission and in print media (`emulateMedia`), and a reused or expired token shows nothing; a three-page journey passes with `dir="rtl"`.
+  - Done when: Playwright journeys pass for multi-page forms and the summary page, and a tamper test proves that a posted value for a hidden member-prefilled field is ignored. Playwright also shows the copy of the answers after a JS and a no-JS submission and in print media (`emulateMedia`), and a reused or expired token shows nothing; a three-page journey passes with `dir="rtl"`. Playwright moves through a three-page form with `next()` and `back()` and sees `jfb:page` on each move (added in the split of 6.4).
 - [ ] **6.6 Headless**
   - **The definition:** the endpoint with `ETag`, and TypeScript types for the public projection (generated from C# or the JSON schema and tested for drift), shipped in the package and in `schemas/`.
   - **The renderer:** `<jfb-form>` (packages/element) renders the default theme's markup from JSON with the same runtime.
@@ -2154,13 +2194,14 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a submission the protection puts into `Spam` is answered as accepted though its option is full and its unique answer is taken, and holds neither (ADR-0090, ADR-0091).
 - [ ] **7.2 Proof of work and captcha providers**
   - **Proof of work:** a SHA-256 puzzle with difficulty per level, a signed and expiring nonce, solved in a Web Worker with a progress hint for slow devices.
-  - **Third-party providers:** reCAPTCHA v2 and v3 (ported from Ligata.Forms) and hCaptcha. Providers are greyed out without keys. The consent modes of §4.10 apply. Publishing refuses a provider the site lacks (`unknown_type` at `settings.protection.captcha.provider`, ADR-0035).
+  - **Third-party providers:** reCAPTCHA v2 and v3 (ported from Ligata.Forms) and hCaptcha. Providers are greyed out without keys. The consent modes of §4.10 apply, with the JS API's `consent.grant('captcha')` and `withdraw()` for the `cmp` mode (§4.9, moved from 6.4 in its split). Publishing refuses a provider the site lacks (`unknown_type` at `settings.protection.captcha.provider`, ADR-0035).
   - **The captcha placement** (added in 5.1b): the `captcha` field type is not configured (5.1c's availability, "not configured: …") while no captcha provider has its keys, since it marks where a provider's captcha renders.
   - Done when:
     - the field types the designer reads give the captcha placement as not configured, with its reason, on a site where no provider has keys, and as available once one has;
     - unit tests pass against the HTTP stub;
     - Playwright, with the provider hosts routed to a local stub (`page.route`, so no real third-party request ever happens, D22), shows **zero requests to them before consent** and the script loading after;
-    - proof of work completes in under 2 s at the default level on the demo machine.
+    - proof of work completes in under 2 s at the default level on the demo machine;
+    - Playwright shows `consent.grant('captcha')` loading the provider's script on a form in the `cmp` mode, and none on the next page after `withdraw()` (added in the split of 6.4).
 - [ ] **7.3 File security**
   - **Upload checks:**
     - streaming limits;
@@ -2581,7 +2622,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - Playwright runs a form end to end in en and de, including the emails;
     - a lint rule that fails on hard-coded UI strings passes, and the German screenshots are reviewed in `docs/ux/review-14.1.md`.
 - [ ] **14.2 Visitor texts in seven languages**
-  - Add French, Italian, Dutch, Spanish and Danish to the runtime and server messages, the words merge tags show yes and no as (ADR-0066), and the option presets (English and German came with 6.2g, 6.4, 5.3d and 5.5). All seven are overridable per site and per form.
+  - Add French, Italian, Dutch, Spanish and Danish to the runtime and server messages, the words merge tags show yes and no as (ADR-0066), and the option presets (English and German came with 6.2g, 6.4a, 5.3d and 5.5). All seven are overridable per site and per form.
   - Done when:
     - a test fails when any key is missing in any language, and both runtimes pass `tests/vectors/messages.json` in all seven (added in 6.2g's split);
     - a review subagent per language reads the texts in context (screenshots) and its fixes are applied.
