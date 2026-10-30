@@ -1,0 +1,13 @@
+@* The hooks of a form with rules under the asterisk style (Rendering/FormRenderingChoicesTests.cs): the first render, or ?state=posted, a post whose answers require what the first render does not. *@
+@using Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@inject Jiron.Umbraco.FormBuilder.Web.PublicApi.FormRequests Requests
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var key = (await Requests.KeyOfAsync("renderingHooks", Context.RequestAborted))!.Value;
+    if (FormRenderingChoicesTests.HooksState(Context.Request.Query["state"].ToString()) is { } state)
+    {
+        FormPosts.Set(Context, key, "jfb-1", state);
+    }
+}
+<jfb-render form="renderingHooks" />

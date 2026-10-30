@@ -1,5 +1,6 @@
 @* jfb-view: fields/grid 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
 @* The columns show once above the rows for sight; each row is a fieldset whose inputs carry their column in a label. *@
 @{
@@ -24,19 +25,12 @@ else
         @foreach (var row in control.Rows)
         {
             <fieldset>
-                @if (row.Mark == FieldMark.Required)
-                {
-                    <legend>@row.Label <span class="jfb-mark" aria-hidden="true">@row.MarkText</span></legend>
-                }
-                else
-                {
-                    <legend>@row.Label</legend>
-                }
+                <legend>@row.Label@FormBuilderHtml.Mark(row)</legend>
                 <div class="@Model.Classes.Choices">
                     @foreach (var choice in row.Choices)
                     {
                         <div class="@Model.Classes.Choice">
-                            <input class="@Model.Classes.ChoiceInput" type="@control.InputType" id="@choice.Id" name="@row.Name" value="@choice.Value" checked="@choice.IsChecked" required="@(row.IsRequired && control.InputType == "radio")" disabled="@Model.IsDisabled">
+                            <input class="@Model.Classes.ChoiceInput" type="@control.InputType" id="@choice.Id" name="@row.Name" value="@choice.Value" checked="@choice.IsChecked" required="@(row.IsRequired && control.InputType == "radio")" @FormBuilderHtml.Flag("data-jfb-requires", row.FollowsRequired) disabled="@Model.IsDisabled">
                             <label class="@Model.Classes.ChoiceLabel" for="@choice.Id"><span>@choice.Label</span></label>
                         </div>
                     }

@@ -47,6 +47,11 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
     private static readonly Guid Agree = K(0x65);
     private static readonly Guid Toggle = K(0x66);
     private static readonly Guid RowC = K(0x32);
+    private static readonly Guid When = K(0x67);
+    private static readonly Guid HideGrid = K(0x68);
+    private static readonly Guid Rate = K(0x69);
+    private static readonly Guid Extra = K(0x6a);
+    private static readonly Guid Room = K(0x6b);
 
     // Each choice field: its key, alias and type, and whether it is a group of choices in a fieldset.
     private static readonly (Guid Key, string Alias, string Type, bool Grouped)[] Choices =
@@ -124,6 +129,44 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
         ? new FormPostState { Answers = new Dictionary<Guid, FieldAnswers> { [Way] = new FieldAnswers(["b"], Parts(("other", "By boat"))) } }
         : null;
 
+    /// <summary>The state the view <c>hooks</c> leaves for its form: none, or a post whose answers show the grid and require it and the extra field.</summary>
+    /// <param name="state">The state's name: posted, or anything else for none.</param>
+    internal static FormPostState? HooksState(string state) => state == "posted"
+        ? new FormPostState { Answers = new Dictionary<Guid, FieldAnswers> { [When] = new FieldAnswers(["no"]), [HideGrid] = new FieldAnswers(["no"]) } }
+        : null;
+
+    [Test]
+    public async Task AFormWithRules_WritesTheHooksTheRuntimeShowsThemBy_InTheStateItsAnswersGive()
+    {
+        _ = await PublishFormAsync("renderingHooks", HooksForm);
+        _ = await PagesAsync("hooks");
+        var first = (await DocumentAsync("/hooks/")).QuerySelector("form.jfb-form")!;
+        var posted = (await DocumentAsync("/hooks/?state=posted")).QuerySelector("form.jfb-form")!;
+        var food = "rate." + RowA.ToString("D");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(first.QuerySelector("p.jfb-help")!.OuterHtml, Does.StartWith("""<p class="jfb-help" hidden="hidden" data-jfb-required-note="">"""), "no asterisk shows yet, so the note waits hidden");
+            Assert.That(Field(first, "extra").QuerySelector("label")!.InnerHtml, Is.EqualTo("""Extra <span class="jfb-mark" aria-hidden="true" data-jfb-mark="required" hidden="">*</span>"""), "the asterisk it shows while a rule requires it");
+            Assert.That(ShownText(Field(first, "extra").QuerySelector("label")!), Is.EqualTo("Extra"));
+            Assert.That(first.QuerySelector("#jfb-1-extra")!.OuterHtml, Is.EqualTo("""<input class="jfb-control" type="text" id="jfb-1-extra" name="extra" data-jfb-requires="">"""), "required once a rule requires it");
+            var rate = Field(first, "rate");
+            Assert.That((rate.HasAttribute("hidden"), rate.HasAttribute("data-jfb-hidden")), Is.EqualTo((true, true)), "a rule hides the grid");
+            Assert.That(rate.QuerySelector("legend.jfb-label")!.InnerHtml, Is.EqualTo("""Rate <span class="jfb-mark" aria-hidden="true" data-jfb-mark="required" hidden="">*</span>"""));
+            Assert.That(rate.QuerySelectorAll(".jfb-matrix > fieldset > legend").Select(legend => legend.InnerHtml), Is.EqualTo(new[] { """Food <span class="jfb-mark" aria-hidden="true" data-jfb-mark="optional">*</span>""", "Music" }), "a row required by itself shows its asterisk while the grid is not required; a hidden grid's asks for no note");
+            Assert.That(rate.QuerySelectorAll("input[type=radio]").Select(input => (input.GetAttribute("name") == food, input.HasAttribute("required"), input.HasAttribute("data-jfb-requires"))).Distinct(), Is.EqualTo(new[] { (true, true, false), (false, false, true) }), "a row required by itself is required whatever the grid is");
+            Assert.That(Field(first, "room").QuerySelector("select")!.OuterHtml, Does.Contain(""" disabled="disabled" data-jfb-disabled="">"""), "a list without options stays disabled when its field shows");
+
+            Assert.That((posted.QuerySelector("p.jfb-help")!.HasAttribute("hidden"), posted.QuerySelector("p.jfb-help")!.HasAttribute("data-jfb-required-note")), Is.EqualTo((false, true)), "an asterisk shows, so does the note");
+            Assert.That(Field(posted, "extra").QuerySelector("label")!.InnerHtml, Is.EqualTo("""Extra <span class="jfb-mark" aria-hidden="true" data-jfb-mark="required">*</span>"""));
+            Assert.That(posted.QuerySelector("#jfb-1-extra")!.HasAttribute("required"), Is.True);
+            Assert.That(Field(posted, "rate").HasAttribute("hidden"), Is.False);
+            Assert.That(ShownText(Field(posted, "rate").QuerySelector("legend.jfb-label")!), Is.EqualTo("Rate *"));
+            Assert.That(Field(posted, "rate").QuerySelectorAll(".jfb-matrix > fieldset > legend").Select(ShownText), Is.EqualTo(new[] { "Food", "Music" }), "the grid is required, so its rows show no asterisk of their own");
+            Assert.That(Field(posted, "rate").QuerySelectorAll("input[type=radio]").All(input => input.HasAttribute("required")), Is.True);
+        });
+    }
+
     [Test]
     public async Task EveryChoiceType_EmptyAnsweredWithAnErrorAndHidden_CarriesTheMarkupContractsHooks()
     {
@@ -163,7 +206,7 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
             var cards = Field(empty, "radioCards");
             Assert.That(cards.QuerySelector(".jfb-choices")!.GetAttribute("class"), Is.EqualTo("jfb-choices jfb-choices-cards"));
             Assert.That(Compact(cards.QuerySelector(".jfb-choice")!.InnerHtml), Is.EqualTo(
-                """<img src="/media/jfb/card.png" alt="" width="600" height="400"><input type="radio" id="jfb-1-radioCards" name="radioCards" value="a" aria-describedby="jfb-1-radioCards-text"><label for="jfb-1-radioCards">A</label><p class="jfb-help" id="jfb-1-radioCards-text">The first card</p>"""),
+                """<img src="/media/jfb/card.png" alt="" width="600" height="400"><input type="radio" id="jfb-1-radioCards" name="radioCards" value="a" data-jfb-requires="" aria-describedby="jfb-1-radioCards-text"><label for="jfb-1-radioCards">A</label><p class="jfb-help" id="jfb-1-radioCards-text">The first card</p>"""),
                 "a card shows its image, which adds nothing to the label, and its description");
             Assert.That(cards.QuerySelectorAll(".jfb-choice img"), Has.Length.EqualTo(1), "an option whose media item is gone has no image");
 
@@ -180,6 +223,7 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
                 ["name"] = "picks",
                 ["multiple"] = "multiple",
                 ["size"] = "3",
+                ["data-jfb-requires"] = string.Empty,
                 ["aria-describedby"] = "jfb-1-picks-hint",
             }));
             Assert.That(Text(picks, "#jfb-1-picks-hint"), Is.EqualTo("To choose more than one, hold Ctrl (Cmd on a Mac) while you click."));
@@ -237,9 +281,9 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
             }), "each move opens the page at the option's new place, one at an end at its own");
 
             var box = Field(empty, "box");
-            Assert.That(Compact(box.InnerHtml), Is.EqualTo("""<div class="jfb-choice"><input type="checkbox" id="jfb-1-box" name="box" value="true"><label for="jfb-1-box">Send me <a href="/news">the newsletter</a></label></div>"""), "one box takes its text as its label, unmarked");
+            Assert.That(Compact(box.InnerHtml), Is.EqualTo("""<div class="jfb-choice"><input type="checkbox" id="jfb-1-box" name="box" value="true" data-jfb-requires=""><label for="jfb-1-box">Send me <a href="/news">the newsletter</a></label></div>"""), "one box takes its text as its label, unmarked");
             var consent = Field(empty, "consent");
-            Assert.That(consent.QuerySelector("input[type=checkbox]")!.OuterHtml, Is.EqualTo("""<input type="checkbox" id="jfb-1-consent" name="consent" value="true" required="required">"""));
+            Assert.That(consent.QuerySelector("input[type=checkbox]")!.OuterHtml, Is.EqualTo("""<input type="checkbox" id="jfb-1-consent" name="consent" value="true" required="required" data-jfb-requires="">"""));
             Assert.That(consent.QuerySelector("label")!.InnerHtml, Is.EqualTo("""I agree to the <a href="/privacy">privacy notice</a>."""));
 
             var country = Field(empty, "country");
@@ -337,6 +381,7 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
             Assert.That(Compact(Field(first, "city").QuerySelector("select")!.OuterHtml), Is.EqualTo(
                 """<select class="jfb-control" id="jfb-1-city" name="city" disabled="disabled"><option value="">There is nothing to choose from yet.</option></select>"""),
                 "a list below a parent not answered yet offers nothing, and posts nothing");
+            Assert.That(first.QuerySelectorAll("[data-jfb-requires], [data-jfb-mark], [data-jfb-disabled], [data-jfb-required-note]").Select(element => element.OuterHtml), Is.Empty, "a form without rules carries no hooks for them");
 
             Assert.That(Selected(Field(first, "home")), Is.EqualTo(new[] { "DE" }), "the field's default country on a first render");
             Assert.That(Selected(Field(posted, "home")), Is.Empty, "after a post, only the visitor's answer");
@@ -358,9 +403,9 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
         {
             var grid = Field(first, "scaleGrid");
             Assert.That(grid.QuerySelectorAll(".jfb-matrix-head > div > span").Select(span => span.TextContent), Is.EqualTo(new[] { "0", "1", "2" }), "a grid on a scale takes its numbers as columns");
-            Assert.That(grid.QuerySelectorAll(".jfb-matrix > fieldset > legend").Select(legend => legend.InnerHtml), Is.EqualTo(new[] { "Booking", """The room <span class="jfb-mark" aria-hidden="true">*</span>""", "Row 3" }), "a required row of a grid that needs no answer carries the asterisk; a row without a label is numbered");
+            Assert.That(grid.QuerySelectorAll(".jfb-matrix > fieldset > legend").Select(legend => legend.InnerHtml), Is.EqualTo(new[] { "Booking", """The room <span class="jfb-mark" aria-hidden="true" data-jfb-mark="optional">*</span>""", "Row 3" }), "a required row of a grid that needs no answer carries the asterisk; a row without a label is numbered");
             Assert.That(Text(grid, "legend.jfb-label"), Is.EqualTo("Scale grid"));
-            Assert.That(Field(first, "agree").QuerySelector("label")!.InnerHtml, Is.EqualTo("""Agree <span class="jfb-mark" aria-hidden="true">*</span>"""), "a required box carries the asterisk");
+            Assert.That(Field(first, "agree").QuerySelector("label")!.InnerHtml, Is.EqualTo("""Agree <span class="jfb-mark" aria-hidden="true" data-jfb-mark="required">*</span>"""), "a required box carries the asterisk");
             Assert.That(Field(first, "toggle").QuerySelector("[data-test-mark]")?.GetAttribute("data-test-mark"), Is.EqualTo(nameof(FieldMark.None)), "a required switch is never marked, as off is an answer; the form's own view sees no mark");
             Assert.That(Labelled(Field(first, "child")), Is.EqualTo(new[] { "z: Z" }), "a parent a rule hides answers nothing, so its default filters nothing");
             Assert.That(Labelled(Field(first, "way")), Is.EqualTo(new[] { "a: A", "b: b", ": Other" }), "an option without a label shows its value");
@@ -496,6 +541,42 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
         ],
     };
 
+    // Under the asterisk style, with rules: a choice that requires a grid and a text, a text that hides the grid, the
+    // grid with a row required by itself, and a list from a source that offers nothing below its parent.
+    private static FormDefinition HooksForm(FormDefinition definition) => definition with
+    {
+        Settings = definition.Settings with { Appearance = definition.Settings.Appearance with { RequiredMarker = RequiredMarker.Required } },
+        Pages =
+        [
+            new FormPage
+            {
+                Key = K(0x08),
+                Groups =
+                [
+                    new FormGroup
+                    {
+                        Key = K(0x09),
+                        Fields =
+                        [
+                            Field(When, "when", "radio", "{}", Items("yes", "no"), rules: false),
+                            Field(HideGrid, "hideGrid", "text", "{}", rules: false) with { DefaultValue = FieldDefaultValue.Of("yes") },
+                            Field(Rate, "rate", "grid", "{}", Items("good", "poor"), rules: false) with
+                            {
+                                Rows = [new GridRow { Key = RowA, Label = new LocalizedText("Food"), Required = true }, new GridRow { Key = RowB, Label = new LocalizedText("Music") }],
+                                Rules = [RuleOf(K(0x171), RuleEffect.Hide, HideGrid, "yes"), RuleOf(K(0x172), RuleEffect.Require, When, "no")],
+                            },
+                            Field(Extra, "extra", "text", "{}", rules: false) with { Rules = [RuleOf(K(0x173), RuleEffect.Require, When, "no")] },
+                            Field(Room, "room", "dropdown", "{}", new FieldOptions { Source = OptionSource.Code, Config = SettingsObject.Parse("""{"source":"cities"}"""), Parent = When }, rules: false),
+                        ],
+                    },
+                ],
+            },
+        ],
+    };
+
+    private static FormRule RuleOf(Guid key, RuleEffect effect, Guid field, string value) =>
+        new() { Key = key, Effect = effect, Conditions = [new RuleCondition { Field = field, Operator = "equals", Value = new ConditionOperand.Text(value) }] };
+
     // Under the asterisk style: a grid on a scale with a required row and a row without a label, a required box and a
     // required switch, a parent a rule hides on the first render with the field below it, a radio with an option
     // without a label and the Other choice.
@@ -630,7 +711,7 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
 
     private static IElement Control(IElement form, string alias) => form.QuerySelector($"#jfb-1-{alias}") ?? throw new AssertionException($"no control {alias}");
 
-    private static string Text(IElement element, string selector) => (element.QuerySelector(selector) ?? throw new AssertionException($"no {selector}")).TextContent;
+    private static string Text(IElement element, string selector) => ShownText(element.QuerySelector(selector) ?? throw new AssertionException($"no {selector}"));
 
     private static Dictionary<string, string> Attributes(IElement element) => element.Attributes.ToDictionary(attribute => attribute.Name, attribute => attribute.Value);
 

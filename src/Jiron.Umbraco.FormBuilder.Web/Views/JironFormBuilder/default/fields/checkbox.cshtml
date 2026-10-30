@@ -1,18 +1,12 @@
 @* jfb-view: fields/checkbox 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
 @* One box with its text, or the field's label; a required box must be ticked. *@
 @{
     var control = (SingleChoiceControlModel)Model.Control!;
 }
 <div class="@Model.Classes.Choice">
-    <input class="@Model.Classes.ChoiceInput" type="checkbox" id="@Model.Id" name="@Model.Name" value="@control.Value" checked="@control.IsChecked" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
-    @if (Model.Mark == FieldMark.Required)
-    {
-        <label class="@Model.Classes.ChoiceLabel" for="@Model.Id">@control.Label <span class="jfb-mark" aria-hidden="true">@Model.MarkText</span></label>
-    }
-    else
-    {
-        <label class="@Model.Classes.ChoiceLabel" for="@Model.Id">@control.Label</label>
-    }
+    <input class="@Model.Classes.ChoiceInput" type="checkbox" id="@Model.Id" name="@Model.Name" value="@control.Value" checked="@control.IsChecked" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+    <label class="@Model.Classes.ChoiceLabel" for="@Model.Id">@control.Label@FormBuilderHtml.Mark(Model)</label>
 </div>

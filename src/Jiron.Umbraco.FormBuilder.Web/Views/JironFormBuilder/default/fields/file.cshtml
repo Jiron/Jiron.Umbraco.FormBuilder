@@ -24,6 +24,6 @@
 <div class="jfb-upload" @FormBuilderHtml.Flag("data-jfb-dropzone", control.DropZone)>
     <span class="jfb-icon jfb-icon-upload" aria-hidden="true"></span>
     <div class="jfb-upload-actions">
-        <input class="@Model.Classes.FileInput" type="file" id="@Model.Id" name="@Model.Name" accept="@control.Accept" multiple="@control.Multiple" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+        <input class="@Model.Classes.FileInput" type="file" id="@Model.Id" name="@Model.Name" accept="@control.Accept" multiple="@control.Multiple" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
     </div>
 </div>

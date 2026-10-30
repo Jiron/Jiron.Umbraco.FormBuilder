@@ -1,5 +1,6 @@
 @* jfb-view: fields/scale 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
 @*
     The words at the ends show below the numbers; screen readers hear them with the first and the last number, whose
@@ -14,7 +15,7 @@
         @foreach (var choice in control.Choices)
         {
             <div class="@Model.Classes.Choice">
-                <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" disabled="@Model.IsDisabled">
+                <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled">
                 @if (choice.HiddenText is { } hidden)
                 {
                     <label class="@Model.Classes.ChoiceLabel" for="@choice.Id"><span aria-hidden="true">@choice.Label</span><span class="jfb-visually-hidden">@choice.Label@hidden</span></label>

@@ -2,15 +2,9 @@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
 @using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
-@using Microsoft.AspNetCore.Html
 @{
     var labelClass = Model.HideLabel ? Model.Classes.Label + " jfb-visually-hidden" : Model.Classes.Label;
-    IHtmlContent? mark = Model.Mark switch
-    {
-        FieldMark.Optional => new HtmlContentBuilder().AppendHtml(" <span class=\"jfb-mark\">").Append(Model.MarkText).AppendHtml("</span>"),
-        FieldMark.Required => new HtmlContentBuilder().AppendHtml(" <span class=\"jfb-mark\" aria-hidden=\"true\">").Append(Model.MarkText).AppendHtml("</span>"),
-        _ => null,
-    };
+    var mark = FormBuilderHtml.Mark(Model);
     void Help()
     {
         if (Model.Help is not null)

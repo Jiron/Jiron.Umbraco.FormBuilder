@@ -1,5 +1,6 @@
 @* jfb-view: fields/yesno 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
 @* Two buttons in the field's fieldset, or one switch with its own label, which posts nothing while it is off. *@
 @if (Model.Control is SingleChoiceControlModel box)
@@ -16,7 +17,7 @@ else
         @foreach (var choice in control.Choices)
         {
             <div class="@Model.Classes.Choice">
-                <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" disabled="@Model.IsDisabled">
+                <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled">
                 <label class="@Model.Classes.ChoiceLabel" for="@choice.Id">@choice.Label</label>
             </div>
         }

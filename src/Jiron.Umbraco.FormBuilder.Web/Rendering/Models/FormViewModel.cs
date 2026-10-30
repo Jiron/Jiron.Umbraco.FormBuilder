@@ -83,8 +83,20 @@ public sealed class FormViewModel
     /// <summary>The buttons below the current page; null unless the form shows itself.</summary>
     public NavigationViewModel? Navigation { get; init; }
 
-    /// <summary>The sentence above the first page that says what the asterisk means; null unless required fields are marked.</summary>
+    /// <summary>
+    /// The sentence above the first page that says what the asterisk means; null unless required fields are marked, or
+    /// on a form with rules unless a label carries an asterisk the rules may show.
+    /// </summary>
     public IHtmlContent? RequiredNote { get; init; }
+
+    /// <summary>Whether the note is written <c>hidden</c>: a form with rules carries it while no asterisk shows now.</summary>
+    public bool IsRequiredNoteHidden { get; init; }
+
+    /// <summary>
+    /// Whether the form has rules, so the views write the hooks the runtime applies them by (ADR-0111), the note's
+    /// <c>data-jfb-required-note</c> among them.
+    /// </summary>
+    public bool Hooks { get; init; }
 
     /// <summary>A notice in place of the form, or above it (such as "the form has changed"); null for none.</summary>
     public NoticeViewModel? Notice { get; init; }

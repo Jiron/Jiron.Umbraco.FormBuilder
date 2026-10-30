@@ -135,11 +135,26 @@ public sealed class GridRowModel
     /// <summary>Whether the row needs an answer, by the grid or by the row itself.</summary>
     public bool IsRequired { get; init; }
 
-    /// <summary>How the statement is marked: the asterisk on a required row of a grid that is not itself required.</summary>
+    /// <summary>
+    /// On a form with rules, whether the row's radios' <c>required</c> follows the grid's (<c>data-jfb-requires</c>): a
+    /// row of choices that one answers, which the grid alone requires (ADR-0111).
+    /// </summary>
+    public bool FollowsRequired { get; init; }
+
+    /// <summary>
+    /// How the statement is marked: the asterisk on a required row of a grid that is not itself required. On a form with
+    /// rules, a required row carries it whether or not it shows now (<see cref="IsMarkShown"/>).
+    /// </summary>
     public FieldMark Mark { get; init; }
 
     /// <summary>The words of the mark, or empty.</summary>
     public string MarkText { get; init; } = string.Empty;
+
+    /// <summary>Whether the mark shows now; a mark a form with rules carries for another state is written <c>hidden</c>.</summary>
+    public bool IsMarkShown { get; init; } = true;
+
+    /// <summary>On a form with rules, <see cref="MarkWhile.Optional"/> for a row that carries the asterisk (<c>data-jfb-mark</c>); null otherwise.</summary>
+    public string? MarkShownWhile { get; init; }
 
     /// <summary>A choice per column, in order.</summary>
     public required IReadOnlyList<ChoiceModel> Choices { get; init; }

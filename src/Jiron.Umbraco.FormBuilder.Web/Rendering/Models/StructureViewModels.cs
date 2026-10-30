@@ -83,6 +83,20 @@ public enum FieldLabelElement
     Choice,
 }
 
+/// <summary>
+/// The states of a field in which a label's mark shows, as <c>data-jfb-mark</c> names them on a form with rules
+/// (ADR-0111): a part's mark and a required field's asterisk show while the field is required, "(optional)" and a grid's
+/// own required row's asterisk while it is not.
+/// </summary>
+public static class MarkWhile
+{
+    /// <summary>The mark shows while the field is required.</summary>
+    public const string Required = "required";
+
+    /// <summary>The mark shows while the field is not required.</summary>
+    public const string Optional = "optional";
+}
+
 /// <summary>How a field's label is marked (the form's required-marker style, ADR-0093).</summary>
 public enum FieldMark
 {
@@ -133,11 +147,30 @@ public sealed class FieldViewModel
     /// <summary>Whether the label is hidden from sight; it stays for screen readers.</summary>
     public bool HideLabel { get; init; }
 
-    /// <summary>How the label is marked.</summary>
+    /// <summary>
+    /// How the label is marked: the mark it shows, or on a form with rules the mark it carries whether or not it shows
+    /// now (<see cref="IsMarkShown"/>).
+    /// </summary>
     public FieldMark Mark { get; init; }
 
     /// <summary>The words of the mark: "(optional)", or the asterisk; empty for none.</summary>
     public string MarkText { get; init; } = string.Empty;
+
+    /// <summary>Whether the mark shows now; a mark a form with rules carries for another state is written <c>hidden</c>.</summary>
+    public bool IsMarkShown { get; init; } = true;
+
+    /// <summary>
+    /// On a form with rules, the field's state in which the mark shows (<c>data-jfb-mark</c>, a <see cref="MarkWhile"/>
+    /// value), so the runtime shows it as the rules change whether the field is required; null otherwise (ADR-0111).
+    /// </summary>
+    public string? MarkShownWhile { get; init; }
+
+    /// <summary>
+    /// Whether the form has rules, so the views write the hooks the runtime applies them by (ADR-0111): the controls whose
+    /// <c>required</c> follows the field's (<c>data-jfb-requires</c>) and a control that stays disabled when the field
+    /// shows (<c>data-jfb-disabled</c>).
+    /// </summary>
+    public bool Hooks { get; init; }
 
     /// <summary>The help text below the label, or null.</summary>
     public string? Help { get; init; }

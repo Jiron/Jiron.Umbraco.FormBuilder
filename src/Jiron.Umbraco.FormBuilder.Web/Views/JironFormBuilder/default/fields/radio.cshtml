@@ -1,5 +1,6 @@
 @* jfb-view: fields/radio 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
 @{
     var control = (ChoicesControlModel)Model.Control!;
@@ -10,7 +11,7 @@
             {
                 <img src="@image.Url" alt="" width="@image.Width" height="@image.Height">
             }
-            <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-describedby="@(choice.Description is null ? null : choice.DescriptionId)">
+            <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-describedby="@(choice.Description is null ? null : choice.DescriptionId)">
             <label class="@Model.Classes.ChoiceLabel" for="@choice.Id">@choice.Label</label>
             @if (choice.Description is not null)
             {

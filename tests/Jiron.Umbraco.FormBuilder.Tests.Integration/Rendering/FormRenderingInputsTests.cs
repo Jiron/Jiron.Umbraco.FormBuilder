@@ -192,9 +192,9 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
         var empty = (await DocumentAsync("/inputs/")).QuerySelector("form.jfb-form")!;
         Assert.Multiple(() =>
         {
-            Assert.That(Control(empty, "visit").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="date" id="jfb-1-visit" name="visit" value="2026-11-01" min="2026-11-01" max="2026-11-15" required="required" aria-describedby="jfb-1-visit-help">"""), "the site's today, not UTC's, starts the date and its window");
-            Assert.That(Control(empty, "start").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="time" id="jfb-1-start" name="start" min="09:00" max="17:30" step="1800">"""));
-            Assert.That(Control(empty, "pickup").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="datetime-local" id="jfb-1-pickup" name="pickup" min="2026-11-02T00:00" max="2026-12-31T23:59" step="900">"""), "a date and time's window is that of its dates");
+            Assert.That(Control(empty, "visit").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="date" id="jfb-1-visit" name="visit" value="2026-11-01" min="2026-11-01" max="2026-11-15" required="required" data-jfb-requires="" aria-describedby="jfb-1-visit-help">"""), "the site's today, not UTC's, starts the date and its window");
+            Assert.That(Control(empty, "start").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="time" id="jfb-1-start" name="start" min="09:00" max="17:30" step="1800" data-jfb-requires="">"""));
+            Assert.That(Control(empty, "pickup").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="datetime-local" id="jfb-1-pickup" name="pickup" min="2026-11-02T00:00" max="2026-12-31T23:59" step="900" data-jfb-requires="">"""), "a date and time's window is that of its dates");
             Assert.That(Text(Field(empty, "start"), "label.jfb-label"), Is.EqualTo("Start (optional)"));
 
             var hours = Field(empty, "hours");
@@ -211,18 +211,18 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
             Assert.That(Text(contact, "legend.jfb-label"), Is.EqualTo("Contact"));
             Assert.That(contact.QuerySelector("fieldset")!.GetAttribute("aria-describedby"), Is.Null);
             Assert.That(Compact(contact.QuerySelector(".jfb-parts")!.InnerHtml), Is.EqualTo(
-                """<div class="jfb-part"><label for="jfb-1-contact">First name</label><input class="jfb-control" id="jfb-1-contact" name="contact.first" autocomplete="given-name" autocapitalize="words" spellcheck="false" required="required"></div>"""
-                + """<div class="jfb-part"><label for="jfb-1-contact-last">Last name</label><input class="jfb-control" id="jfb-1-contact-last" name="contact.last" autocomplete="family-name" autocapitalize="words" spellcheck="false" required="required"></div>"""),
+                """<div class="jfb-part"><label for="jfb-1-contact">First name</label><input class="jfb-control" id="jfb-1-contact" name="contact.first" autocomplete="given-name" autocapitalize="words" spellcheck="false" required="required" data-jfb-requires=""></div>"""
+                + """<div class="jfb-part"><label for="jfb-1-contact-last">Last name</label><input class="jfb-control" id="jfb-1-contact-last" name="contact.last" autocomplete="family-name" autocapitalize="words" spellcheck="false" required="required" data-jfb-requires=""></div>"""),
                 "a required name needs every part it asks for, and the legend says so once");
 
             var billing = Field(empty, "billing");
             Assert.That(billing.QuerySelectorAll(".jfb-part").Select(part => (part.ClassName, part.QuerySelector("label")!.InnerHtml, (part.QuerySelector("input, select") as IElement)!.GetAttribute("name"), part.QuerySelector("input, select")!.GetAttribute("autocomplete"), part.QuerySelector("input, select")!.HasAttribute("required"))), Is.EqualTo(new[]
             {
                 ("jfb-part jfb-part-wide", "Street and number", "billing.street", "address-line1", true),
-                ("jfb-part jfb-part-wide", """Address line 2 <span class="jfb-mark">(optional)</span>""", "billing.street2", "address-line2", false),
-                ("jfb-part", """Postcode <span class="jfb-mark">(optional)</span>""", "billing.postcode", "postal-code", false),
+                ("jfb-part jfb-part-wide", """Address line 2 <span class="jfb-mark" data-jfb-mark="required">(optional)</span>""", "billing.street2", "address-line2", false),
+                ("jfb-part", """Postcode <span class="jfb-mark" data-jfb-mark="required">(optional)</span>""", "billing.postcode", "postal-code", false),
                 ("jfb-part", "Town", "billing.city", "address-level2", true),
-                ("jfb-part jfb-part-wide", """Country <span class="jfb-mark">(optional)</span>""", "billing.country", "country", false),
+                ("jfb-part jfb-part-wide", """Country <span class="jfb-mark" data-jfb-mark="required">(optional)</span>""", "billing.country", "country", false),
             }), "the parts it asks for in its type's order; with some parts required, the others are marked in the form's style");
             Assert.That(Text(billing, "legend.jfb-label"), Is.EqualTo("Billing"), "a required address is not optional");
             Assert.That(billing.QuerySelector(".jfb-part-wide > .jfb-select > select")!.GetAttribute("id"), Is.EqualTo("jfb-1-billing-country"));
@@ -231,14 +231,14 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
 
             var plan = Field(empty, "plan");
             Assert.That(Compact(plan.InnerHtml), Does.EndWith(
-                """<div class="jfb-upload" data-jfb-dropzone=""><span class="jfb-icon jfb-icon-upload" aria-hidden="true"></span><div class="jfb-upload-actions"><input type="file" id="jfb-1-plan" name="plan" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.avif,.heic,.heif"></div></div>"""),
+                """<div class="jfb-upload" data-jfb-dropzone=""><span class="jfb-icon jfb-icon-upload" aria-hidden="true"></span><div class="jfb-upload-actions"><input type="file" id="jfb-1-plan" name="plan" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.avif,.heic,.heif" data-jfb-requires=""></div></div>"""),
                 "the native input with the extensions it takes, in the order of its groups");
             Assert.That(plan.QuerySelector("label.jfb-label")!.GetAttribute("for"), Is.EqualTo("jfb-1-plan"));
 
             var signature = Field(empty, "signature");
             Assert.That(Text(signature, "legend.jfb-label"), Is.EqualTo("Signature"));
             Assert.That(Compact(signature.QuerySelector(".jfb-signature")!.InnerHtml), Is.EqualTo(
-                """<p class="jfb-help" id="jfb-1-signature-typed-help">Type your full name. It counts as your signature.</p><label class="jfb-visually-hidden" for="jfb-1-signature">Your full name</label><input class="jfb-control" id="jfb-1-signature" name="signature.typed" maxlength="100" autocomplete="name" autocapitalize="words" spellcheck="false" required="required" aria-describedby="jfb-1-signature-typed-help">"""),
+                """<p class="jfb-help" id="jfb-1-signature-typed-help">Type your full name. It counts as your signature.</p><label class="jfb-visually-hidden" for="jfb-1-signature">Your full name</label><input class="jfb-control" id="jfb-1-signature" name="signature.typed" maxlength="100" autocomplete="name" autocapitalize="words" spellcheck="false" required="required" data-jfb-requires="" aria-describedby="jfb-1-signature-typed-help">"""),
                 "without JavaScript, the name typed instead; the legend is the only label that shows");
 
             Assert.That(Captchas(empty).OuterHtml, Is.EqualTo($"""<div class="jfb-captcha" id="jfb-1-{Captcha:N}" data-jfb-captcha="hcaptcha"></div>"""), "the form's captcha's place, which its provider fills");
@@ -652,7 +652,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
 
     private static IElement Control(IElement form, string alias) => form.QuerySelector($"#jfb-1-{alias}") ?? throw new AssertionException($"no control {alias}");
 
-    private static string Text(IElement element, string selector) => (element.QuerySelector(selector) ?? throw new AssertionException($"no {selector}")).TextContent;
+    private static string Text(IElement element, string selector) => ShownText(element.QuerySelector(selector) ?? throw new AssertionException($"no {selector}"));
 
     // Markup without the line breaks and indentation the views write between elements.
     private static string Compact(string html) => string.Concat(html.Split('\n').Select(line => line.Trim()));

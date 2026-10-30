@@ -1,3 +1,5 @@
+using System.Text;
+using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
@@ -40,6 +42,40 @@ public abstract class RenderingTestBase : PublicApiTestBase
 
     /// <summary>The content service.</summary>
     private protected IContentService Contents => GetRequiredService<IContentService>();
+
+    /// <summary>
+    /// The text an element shows: its text without that of the descendants written <c>hidden</c>, such as a mark a form
+    /// with rules carries for the other state (ADR-0111), and without the space the views write before such a mark.
+    /// </summary>
+    private protected static string ShownText(IElement element)
+    {
+        var shown = new StringBuilder();
+        Add(element);
+        return shown.ToString();
+
+        void Add(INode node)
+        {
+            foreach (var child in node.ChildNodes)
+            {
+                switch (child)
+                {
+                    case IElement hidden when hidden.HasAttribute("hidden"):
+                        while (shown.Length > 0 && shown[shown.Length - 1] == ' ')
+                        {
+                            shown.Length--;
+                        }
+
+                        break;
+                    case IText text:
+                        shown.Append(text.Data);
+                        break;
+                    default:
+                        Add(child);
+                        break;
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Creates a form with this alias and publishes it with <paramref name="fields"/> in its first group, after

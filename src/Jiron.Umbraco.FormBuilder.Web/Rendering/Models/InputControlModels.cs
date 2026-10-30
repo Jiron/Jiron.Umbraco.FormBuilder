@@ -93,17 +93,30 @@ public sealed class PartModel
     /// <summary>Whether the part needs a text now (<c>required</c>): the field is required and the part is one it needs.</summary>
     public bool IsRequired { get; init; }
 
+    /// <summary>
+    /// On a form with rules, whether the part's <c>required</c> follows the field's (<c>data-jfb-requires</c>): it is one
+    /// the field needs once it is required (ADR-0111).
+    /// </summary>
+    public bool FollowsRequired { get; init; }
+
     /// <summary>Whether the part carries the field's error (<c>aria-invalid</c>): a part it needs that is empty, or every part when none is.</summary>
     public bool IsInvalid { get; init; }
 
     /// <summary>
     /// How the part's label is marked: only when the field is required and needs some of its parts but not all, the
-    /// parts it needs with the asterisk or the others as optional, in the form's style.
+    /// parts it needs with the asterisk or the others as optional, in the form's style. On a form with rules, the mark
+    /// the part carries for while the field is required, whether or not it shows now (<see cref="IsMarkShown"/>).
     /// </summary>
     public FieldMark Mark { get; init; }
 
     /// <summary>The words of the mark: "(optional)", or the asterisk; empty for none.</summary>
     public string MarkText { get; init; } = string.Empty;
+
+    /// <summary>Whether the mark shows now; a mark a form with rules carries for another state is written <c>hidden</c>.</summary>
+    public bool IsMarkShown { get; init; } = true;
+
+    /// <summary>On a form with rules, <see cref="MarkWhile.Required"/> for a part that carries a mark (<c>data-jfb-mark</c>); null otherwise.</summary>
+    public string? MarkShownWhile { get; init; }
 
     /// <summary>For an address's country, the countries named in the page's culture, the answer selected; null for a text.</summary>
     public SelectControlModel? Countries { get; init; }

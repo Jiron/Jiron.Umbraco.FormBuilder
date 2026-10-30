@@ -1,11 +1,12 @@
 @* jfb-view: fields/number 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
 @{
     var control = (NumberControlModel)Model.Control!;
     void Input()
     {
-        <input class="@Model.Classes.Control" type="@control.InputType" id="@Model.Id" name="@Model.Name" value="@(Model.Value.Length == 0 ? null : Model.Value)" inputmode="@control.InputMode" min="@control.Min" max="@control.Max" step="@control.Step" placeholder="@Model.Placeholder" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+        <input class="@Model.Classes.Control" type="@control.InputType" id="@Model.Id" name="@Model.Name" value="@(Model.Value.Length == 0 ? null : Model.Value)" inputmode="@control.InputMode" min="@control.Min" max="@control.Max" step="@control.Step" placeholder="@Model.Placeholder" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
     }
 }
 @if (control.Prefix is null && control.Suffix is null)

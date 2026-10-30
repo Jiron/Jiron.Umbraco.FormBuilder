@@ -122,8 +122,8 @@ public sealed class FormRenderingRowsTests : RenderingTestBase
                 (Meal.ToString("D"), "guests[0].meal"),
                 (Room.ToString("D"), "guests[0].room"),
             }), "each row's field carries the child's key and its path");
-            Assert.That(row.QuerySelector("[data-jfb-alias='guests[0].name'] label")!.OuterHtml, Is.EqualTo("""<label class="jfb-label" for="jfb-1-guests-0-name">Name <span class="jfb-mark" aria-hidden="true">*</span></label>"""));
-            Assert.That(form.QuerySelector("#jfb-1-guests-0-name")!.OuterHtml, Is.EqualTo("""<input class="jfb-control" type="text" id="jfb-1-guests-0-name" name="guests[0].name" required="required">"""));
+            Assert.That(row.QuerySelector("[data-jfb-alias='guests[0].name'] label")!.OuterHtml, Is.EqualTo("""<label class="jfb-label" for="jfb-1-guests-0-name">Name <span class="jfb-mark" aria-hidden="true" data-jfb-mark="required">*</span></label>"""));
+            Assert.That(form.QuerySelector("#jfb-1-guests-0-name")!.OuterHtml, Is.EqualTo("""<input class="jfb-control" type="text" id="jfb-1-guests-0-name" name="guests[0].name" required="required" data-jfb-requires="">"""));
             Assert.That(form.QuerySelector("#jfb-1-guests-0-age")!.GetAttribute("name"), Is.EqualTo("guests[0].age"));
             Assert.That(form.QuerySelector("#jfb-1-guests-0-cost")!.TextContent, Is.EqualTo("EUR 0.00"), "a row's calculation over its row's answers, an empty number counting as zero");
             Assert.That(form.QuerySelector("#jfb-1-guests-0-diet")!.GetAttribute("value"), Is.EqualTo("Any"), "a least row's field starts with its default");

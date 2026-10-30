@@ -50,6 +50,20 @@ internal sealed partial class FormModels
         };
     }
 
+    // The mark a label carries on a form with rules (ADR-0111): the one the form's style gives it while the field is
+    // required, or else while it is not, with that state (data-jfb-mark), so the runtime shows it as rules change it.
+    private static (FieldMark Mark, string? ShownWhile) Carried(FieldMark whileRequired, FieldMark whileOptional) =>
+        whileRequired != FieldMark.None ? (whileRequired, MarkWhile.Required)
+        : whileOptional != FieldMark.None ? (whileOptional, MarkWhile.Optional)
+        : (FieldMark.None, null);
+
+    private static string MarkText(Build build, FieldMark mark) => mark switch
+    {
+        FieldMark.Optional => build.Words.Optional,
+        FieldMark.Required => "*",
+        _ => string.Empty,
+    };
+
     private static bool IsSwitch(ShownSettings settings) => settings.Text("style") == "switch";
 
     // The control of a choice type and the ids of its parts its control names; null for any other type.
@@ -297,6 +311,7 @@ internal sealed partial class FormModels
 
         var multiple = settings.Bool("multiple", false);
         var gridRequired = build.Required.Contains(Id(field.Key));
+        var gridHidden = build.Hidden.Contains(Id(field.Key));
         var rows = new List<GridRowModel>();
         if (columns.Count > 0)
         {
@@ -305,16 +320,23 @@ internal sealed partial class FormModels
                 var index = rows.Count;
                 var part = GridFieldType.RowPart(row.Key);
                 var chosen = answers.Part(part).ToHashSet(StringComparer.Ordinal);
+                // A row the grid does not require by itself shows its asterisk while the grid is not required; on a
+                // form with rules it carries it hidden while the grid is (ADR-0111). Only a shown grid's asks for the note.
                 var marked = build.Marker == RequiredMarker.Required && !gridRequired && row.Required;
-                build.MarksRequired |= marked;
+                var carried = build.Marker == RequiredMarker.Required && row.Required && (build.Hooks || marked);
+                build.MarksRequired |= marked && !gridHidden;
+                build.WritesMarks |= carried;
                 rows.Add(new GridRowModel
                 {
                     Key = row.Key,
                     Label = Text(row.Label) ?? string.Format(build.Culture, build.Words.Row, index + 1),
                     Name = build.Name(field) + "." + part,
                     IsRequired = gridRequired || row.Required,
-                    Mark = marked ? FieldMark.Required : FieldMark.None,
-                    MarkText = marked ? "*" : string.Empty,
+                    FollowsRequired = build.Hooks && !row.Required && !multiple,
+                    Mark = carried ? FieldMark.Required : FieldMark.None,
+                    MarkText = carried ? "*" : string.Empty,
+                    IsMarkShown = marked,
+                    MarkShownWhile = carried && build.Hooks ? MarkWhile.Optional : null,
                     Choices =
                     [
                         .. columns.Select((column, at) => new ChoiceModel

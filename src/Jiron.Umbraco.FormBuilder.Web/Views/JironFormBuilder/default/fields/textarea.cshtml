@@ -1,11 +1,12 @@
 @* jfb-view: fields/textarea 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
 @{
     var control = (TextAreaControlModel)Model.Control!;
 }
 @* The line break after the start tag is the parser's, so a text that starts with one keeps it. *@
-<textarea class="@Model.Classes.Control" id="@Model.Id" name="@Model.Name" rows="@control.Rows" placeholder="@Model.Placeholder" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
+<textarea class="@Model.Classes.Control" id="@Model.Id" name="@Model.Name" rows="@control.Rows" placeholder="@Model.Placeholder" autocomplete="@Model.Autocomplete" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-invalid="@(Model.Error is null ? null : "true")" aria-describedby="@Model.DescribedBy">
 @Model.Value</textarea>
 @if (control.Counter is { } counter)
 {

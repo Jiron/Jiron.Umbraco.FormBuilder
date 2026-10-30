@@ -238,12 +238,14 @@ internal sealed partial class FormModels
     // A name's or an address's parts the field asks for, in its type's order, the first carrying the field's id. The parts
     // it needs (those its settings list, or with none listed the unlisted ones once it is required, as its type checks
     // them, ADR-0062) are required while the field is, and marked in the form's style when it needs some but not all.
-    // With an error, the parts it needs that are empty carry it, or every part when none is.
+    // With an error, the parts it needs that are empty carry it, or every part when none is. On a form with rules, a part
+    // carries the mark it shows while the field is required, and says when its own requirement follows the field's (ADR-0111).
     private static PartsControlModel Parts(Build build, PublicField field, string id, FieldAnswers answers, List<PartSpec> asked, string[] listed, string[] unlisted)
     {
         var required = build.Required.Contains(Id(field.Key));
         var needed = (listed.Length > 0 ? listed : required ? unlisted : []).Where(part => asked.Any(spec => spec.Name == part)).ToHashSet(StringComparer.Ordinal);
-        var some = required && needed.Count < asked.Count;
+        var neededIfRequired = (listed.Length > 0 ? listed : unlisted).Where(part => asked.Any(spec => spec.Name == part)).ToHashSet(StringComparer.Ordinal);
+        var someIfRequired = neededIfRequired.Count < asked.Count;
         var empty = needed.Where(part => answers.Part(part).IsEmpty).ToHashSet(StringComparer.Ordinal);
         var failed = build.Error(field.Key) is not null;
         return new PartsControlModel
@@ -251,12 +253,14 @@ internal sealed partial class FormModels
             Parts = [.. asked.Select((spec, at) =>
             {
                 var isRequired = required && needed.Contains(spec.Name);
-                var mark = !some ? FieldMark.None : build.Marker switch
+                var markIfRequired = !someIfRequired ? FieldMark.None : build.Marker switch
                 {
-                    RequiredMarker.Required when isRequired => FieldMark.Required,
-                    RequiredMarker.Optional when !isRequired => FieldMark.Optional,
+                    RequiredMarker.Required when neededIfRequired.Contains(spec.Name) => FieldMark.Required,
+                    RequiredMarker.Optional when !neededIfRequired.Contains(spec.Name) => FieldMark.Optional,
                     _ => FieldMark.None,
                 };
+                var mark = required ? markIfRequired : FieldMark.None;
+                var carried = build.Hooks ? markIfRequired : mark;
                 var value = answers.Part(spec.Name) is [var text, ..] ? text : string.Empty;
                 return new PartModel
                 {
@@ -268,14 +272,12 @@ internal sealed partial class FormModels
                     Autocomplete = spec.Token,
                     IsWide = spec.Wide,
                     IsRequired = isRequired,
+                    FollowsRequired = build.Hooks && neededIfRequired.Contains(spec.Name),
                     IsInvalid = failed && (empty.Count == 0 || empty.Contains(spec.Name)),
-                    Mark = mark,
-                    MarkText = mark switch
-                    {
-                        FieldMark.Optional => build.Words.Optional,
-                        FieldMark.Required => "*",
-                        _ => string.Empty,
-                    },
+                    Mark = carried,
+                    MarkText = MarkText(build, carried),
+                    IsMarkShown = mark != FieldMark.None,
+                    MarkShownWhile = build.Hooks && carried != FieldMark.None ? MarkWhile.Required : null,
                     Countries = spec.Name == "country" ? Countries(build, BuiltInChecks.CountryCodes, [], value.Length > 0 ? [value] : []) : null,
                 };
             })],

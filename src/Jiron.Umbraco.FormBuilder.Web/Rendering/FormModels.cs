@@ -245,7 +245,7 @@ internal sealed partial class FormModels(
         var current = CurrentOf(shown.Pages, shownPages, post);
         var recalled = await RecalledAsync(render, read, hidden, state, cancellationToken);
         var facts = new PageFacts(DateOnly.FromDayNumber(CalendarValues.Today(now, render.Shown.TimeZone.Id)), state.Calculations, state.Rows, cultures.For(render.Culture));
-        var build = new Build(render, root, post, words, culture, answers, hidden, required, MarkerOf(settings.RequiredMarker), recalled, settings.ChoiceLayout, facts);
+        var build = new Build(render, root, post, words, culture, answers, hidden, required, MarkerOf(settings.RequiredMarker), recalled, settings.ChoiceLayout, facts, HasRules(shown));
         var pages = new List<PageViewModel>();
         foreach (var page in shown.Pages)
         {
@@ -303,9 +303,11 @@ internal sealed partial class FormModels(
                 ? new ErrorSummaryViewModel { Classes = root.Classes, Heading = VisitorMessages.SummaryHeading(errors.Count, render.Culture), HeadingId = root.Id + "-summary", Errors = errors }
                 : null,
             navigation: navigation,
-            requiredNote: build.MarksRequired
+            requiredNote: build.MarksRequired || (build.Hooks && build.Marker == RequiredMarker.Required && build.WritesMarks)
                 ? WithMarkup(words.RequiredNote, "<span aria-hidden=\"true\">*</span><span class=\"jfb-visually-hidden\">" + WebUtility.HtmlEncode(words.Asterisk) + "</span>")
                 : null,
+            isRequiredNoteHidden: !build.MarksRequired,
+            hooks: build.Hooks,
             notice: post?.Notice is { } notice
                 ? new NoticeViewModel { Classes = root.Classes, Kind = NoticeKind.Message, Heading = notice.Heading, Text = Paragraph(notice.Text), Code = notice.Code, HeadingId = notice.Code is null ? null : root.Id + "-notice", CssClass = root.Classes.Join(notice.Code is FormPostHandler.NotSentCode or FormPostHandler.TooLargeCode ? "jfb-notice jfb-notice-error" : "jfb-notice", FormBuilderThemeSlots.Notice) }
                 : null,
@@ -525,7 +527,11 @@ internal sealed partial class FormModels(
         var shownSettings = new ShownSettings(field.Settings, build.Settings(field.Key));
         var element = traits.HoldsValue ? LabelElementOf(traits.Type, shownSettings) : FieldLabelElement.None;
         var mark = MarkOf(build, field, traits.Type, element, isRequired);
+        var (carried, shownWhile) = build.Hooks
+            ? Carried(MarkOf(build, field, traits.Type, element, true), MarkOf(build, field, traits.Type, element, false))
+            : (mark, null);
         build.MarksRequired |= mark == FieldMark.Required;
+        build.WritesMarks |= carried != FieldMark.None;
         var label = traits.HoldsValue ? build.Text(field.Key, "label", field.Label) : null;
         (string Message, string Link)? error = build.Error(field.Key) is { } posted ? ErrorOf(build, field, traits.Type, shownSettings, posted, field.HideLabel ? null : label) : null;
         var answers = build.Answers.GetValueOrDefault(field.Key) ?? FieldAnswers.None;
@@ -561,13 +567,11 @@ internal sealed partial class FormModels(
             LabelElement = element,
             Label = label,
             HideLabel = field.HideLabel,
-            Mark = mark,
-            MarkText = mark switch
-            {
-                FieldMark.Optional => build.Words.Optional,
-                FieldMark.Required => "*",
-                _ => string.Empty,
-            },
+            Mark = carried,
+            MarkText = MarkText(build, carried),
+            IsMarkShown = mark != FieldMark.None,
+            MarkShownWhile = shownWhile,
+            Hooks = build.Hooks,
             Help = help,
             HelpId = control + "-help",
             Error = error?.Message,
@@ -789,6 +793,13 @@ internal sealed partial class FormModels(
 
     private static RequiredMarker MarkerOf(RequiredMarker marker) => marker == RequiredMarker.Inherit ? RequiredMarker.Optional : marker;
 
+    // Whether a page, a group or a field, a repeatable group's child included, has a rule; the projection holds only
+    // the switched-on ones. Validation rules change no element, so they need no hooks.
+    private static bool HasRules(PublicForm form) =>
+        form.Pages.Any(page => page.Rules.Count > 0 || page.Groups.Any(group => group.Rules.Count > 0 || group.Fields.Any(HasRules)));
+
+    private static bool HasRules(PublicField field) => field.Rules.Count > 0 || field.Fields.Any(HasRules);
+
     private static string? DefaultAutocomplete(string type) => type switch
     {
         "email" => "email",
@@ -856,6 +867,8 @@ internal sealed partial class FormModels(
             ErrorSummaryViewModel? errors = null,
             NavigationViewModel? navigation = null,
             IHtmlContent? requiredNote = null,
+            bool isRequiredNoteHidden = false,
+            bool hooks = false,
             NoticeViewModel? notice = null,
             OutcomeViewModel? outcome = null,
             IReadOnlyList<HiddenInputModel>? context = null,
@@ -882,6 +895,8 @@ internal sealed partial class FormModels(
                 ErrorSummary = errors,
                 Navigation = navigation,
                 RequiredNote = requiredNote,
+                IsRequiredNoteHidden = requiredNote is not null && isRequiredNoteHidden,
+                Hooks = hooks,
                 Notice = notice,
                 Outcome = outcome,
                 ContextValues = context ?? [],
@@ -917,7 +932,8 @@ internal sealed partial class FormModels(
         RequiredMarker marker,
         Dictionary<(Guid Owner, string Name), string> recalled,
         ChoiceLayout layout,
-        PageFacts facts)
+        PageFacts facts,
+        bool hooks)
     {
         // The prefix of a visitor text that is a field's setting, such as settings.text.
         private const string SettingPrefix = "settings.";
@@ -935,6 +951,8 @@ internal sealed partial class FormModels(
         private Dictionary<Guid, FormField>? _fields;
 
         private bool _marksRequired;
+
+        private bool _writesMarks;
 
         public FormRender Render => render;
 
@@ -984,6 +1002,7 @@ internal sealed partial class FormModels(
         // The error summary's links, which a row's fields add to the page's.
         public List<ErrorLinkModel> Errors => Outer?.Errors ?? _errors;
 
+        // Whether an asterisk shows now, so the form shows the note that explains it.
         public bool MarksRequired
         {
             get => Outer?.MarksRequired ?? _marksRequired;
@@ -996,6 +1015,27 @@ internal sealed partial class FormModels(
                 else
                 {
                     _marksRequired = value;
+                }
+            }
+        }
+
+        // Whether the views write the hooks the runtime applies the rules by (ADR-0111): the form has a switched-on rule
+        // on a page, a group or a field, so its marks are written in both states and its controls say what follows them.
+        public bool Hooks => hooks;
+
+        // Whether a label carries a mark, shown or not, so a form with rules writes the note it may need.
+        public bool WritesMarks
+        {
+            get => Outer?.WritesMarks ?? _writesMarks;
+            set
+            {
+                if (Outer is { } outer)
+                {
+                    outer.WritesMarks = value;
+                }
+                else
+                {
+                    _writesMarks = value;
                 }
             }
         }
@@ -1045,7 +1085,7 @@ internal sealed partial class FormModels(
             }
 
             var left = post?.Rows.GetValueOrDefault(group.Key) is { } posted && row < posted.Count ? posted[row] : null;
-            return new Build(render, root, post, words, culture, answers with { Fields = inRow }, rowHidden, rowRequired, marker, recalled, layout, facts with { Calculations = calculations })
+            return new Build(render, root, post, words, culture, answers with { Fields = inRow }, rowHidden, rowRequired, marker, recalled, layout, facts with { Calculations = calculations }, hooks)
             {
                 Outer = this,
                 Place = new RowPlace(group.Alias ?? string.Empty, row, legend, left?.Errors ?? NoErrors, left?.Orders ?? NoOrders, left?.Files ?? NoFiles),

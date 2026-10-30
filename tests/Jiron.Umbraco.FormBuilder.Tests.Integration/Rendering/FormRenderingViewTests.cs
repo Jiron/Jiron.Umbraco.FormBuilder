@@ -65,25 +65,26 @@ public sealed class FormRenderingViewTests : RenderingTestBase
         Assert.Multiple(() =>
         {
             Assert.That(first.GetAttribute("class"), Is.EqualTo("jfb-field jfb-field-text jfb-span-2 vip"));
-            Assert.That(first.QuerySelector("label")!.OuterHtml, Is.EqualTo("""<label class="jfb-label" for="jfb-1-firstName">First name <span class="jfb-mark" aria-hidden="true">*</span></label>"""));
+            Assert.That(first.QuerySelector("label")!.OuterHtml, Is.EqualTo("""<label class="jfb-label" for="jfb-1-firstName">First name <span class="jfb-mark" aria-hidden="true" data-jfb-mark="required">*</span></label>"""));
             Assert.That(first.QuerySelector("#jfb-1-firstName-help")!.TextContent, Is.EqualTo("As on your card"));
             Assert.That(first.QuerySelector(".jfb-affix")!.InnerHtml.Replace("\n", string.Empty, StringComparison.Ordinal).Replace("  ", string.Empty, StringComparison.Ordinal), Is.EqualTo(
-                """<span id="jfb-1-firstName-prefix">Dr</span><input class="jfb-control" type="text" id="jfb-1-firstName" name="firstName" value="Ada" placeholder="Your first name" autocomplete="given-name" required="required" aria-describedby="jfb-1-firstName-help jfb-1-firstName-prefix jfb-1-firstName-suffix jfb-1-firstName-count"><span id="jfb-1-firstName-suffix">(given)</span>"""));
+                """<span id="jfb-1-firstName-prefix">Dr</span><input class="jfb-control" type="text" id="jfb-1-firstName" name="firstName" value="Ada" placeholder="Your first name" autocomplete="given-name" required="required" data-jfb-requires="" aria-describedby="jfb-1-firstName-help jfb-1-firstName-prefix jfb-1-firstName-suffix jfb-1-firstName-count"><span id="jfb-1-firstName-suffix">(given)</span>"""));
             Assert.That(first.QuerySelector("p.jfb-counter")!.OuterHtml, Is.EqualTo("""<p class="jfb-counter" id="jfb-1-firstName-count">Up to 40 characters</p>"""));
             Assert.That(Control(form, "nickname").HasAttribute("value"), Is.False, "a default with a merge tag is the browser's to fill");
-            Assert.That(Control(form, "email").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="email" id="jfb-1-email" name="email" autocomplete="email" spellcheck="false" required="required">"""));
+            Assert.That(Control(form, "email").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="email" id="jfb-1-email" name="email" autocomplete="email" spellcheck="false" required="required" data-jfb-requires="">"""));
             Assert.That(Field(form, "email").QuerySelector("label[for=jfb-1-email-confirm]")!.TextContent, Is.EqualTo("Email again *"));
-            Assert.That(form.QuerySelector("#jfb-1-email-confirm")!.OuterHtml, Is.EqualTo("""<input class="jfb-control" type="email" id="jfb-1-email-confirm" name="email.confirm" autocomplete="email" spellcheck="false" required="required">"""));
-            Assert.That(Control(form, "phone").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="tel" id="jfb-1-phone" name="phone" autocomplete="tel">"""));
-            Assert.That(Field(form, "phone").QuerySelector("label")!.TextContent, Is.EqualTo("Phone"), "the asterisk style marks only required fields");
-            Assert.That(Control(form, "website").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="url" id="jfb-1-website" name="website" autocomplete="url" spellcheck="false">"""));
-            Assert.That(Control(form, "about").OuterHtml, Is.EqualTo("""<textarea class="jfb-control" id="jfb-1-about" name="about" rows="3" aria-describedby="jfb-1-about-count">First line</textarea>"""));
+            Assert.That(form.QuerySelector("#jfb-1-email-confirm")!.OuterHtml, Is.EqualTo("""<input class="jfb-control" type="email" id="jfb-1-email-confirm" name="email.confirm" autocomplete="email" spellcheck="false" required="required" data-jfb-requires="">"""));
+            Assert.That(Control(form, "phone").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="tel" id="jfb-1-phone" name="phone" autocomplete="tel" data-jfb-requires="">"""));
+            Assert.That(ShownText(Field(form, "phone").QuerySelector("label")!), Is.EqualTo("Phone"), "the asterisk style marks only required fields");
+            Assert.That(Field(form, "phone").QuerySelector("label .jfb-mark")!.OuterHtml, Is.EqualTo("""<span class="jfb-mark" aria-hidden="true" data-jfb-mark="required" hidden="">*</span>"""), "a form with rules carries it hidden for while a rule requires the field");
+            Assert.That(Control(form, "website").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="url" id="jfb-1-website" name="website" autocomplete="url" spellcheck="false" data-jfb-requires="">"""));
+            Assert.That(Control(form, "about").OuterHtml, Is.EqualTo("""<textarea class="jfb-control" id="jfb-1-about" name="about" rows="3" data-jfb-requires="" aria-describedby="jfb-1-about-count">First line</textarea>"""));
             Assert.That(Text(Field(form, "about"), "p.jfb-counter"), Is.EqualTo("Up to 200 characters"));
-            Assert.That(Control(form, "guests").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="number" id="jfb-1-guests" name="guests" inputmode="numeric" min="1" max="40" step="1" aria-describedby="jfb-1-guests-suffix">"""));
+            Assert.That(Control(form, "guests").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="number" id="jfb-1-guests" name="guests" inputmode="numeric" min="1" max="40" step="1" data-jfb-requires="" aria-describedby="jfb-1-guests-suffix">"""));
             Assert.That(Text(Field(form, "guests"), "#jfb-1-guests-suffix"), Is.EqualTo("people"));
-            Assert.That(Control(form, "budget").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="text" id="jfb-1-budget" name="budget" inputmode="decimal" aria-describedby="jfb-1-budget-prefix">"""), "a number with places is typed as text");
-            Assert.That(Control(form, "temperature").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="number" id="jfb-1-temperature" name="temperature">"""), "a number below zero needs the full keyboard");
-            Assert.That(Control(form, "floor").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="number" id="jfb-1-floor" name="floor" min="-2" max="12">"""), "so does one whose least is below zero");
+            Assert.That(Control(form, "budget").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="text" id="jfb-1-budget" name="budget" inputmode="decimal" data-jfb-requires="" aria-describedby="jfb-1-budget-prefix">"""), "a number with places is typed as text");
+            Assert.That(Control(form, "temperature").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="number" id="jfb-1-temperature" name="temperature" data-jfb-requires="">"""), "a number below zero needs the full keyboard");
+            Assert.That(Control(form, "floor").OuterHtml, Is.EqualTo("""<input class="jfb-control" type="number" id="jfb-1-floor" name="floor" min="-2" max="12" data-jfb-requires="">"""), "so does one whose least is below zero");
         });
 
         var content = pages[1];
@@ -388,7 +389,7 @@ public sealed class FormRenderingViewTests : RenderingTestBase
 
     private static IElement Control(IElement form, string alias) => form.QuerySelector($"#jfb-1-{alias}") ?? throw new AssertionException($"no control {alias}");
 
-    private static string Text(IElement element, string selector) => (element.QuerySelector(selector) ?? throw new AssertionException($"no {selector}")).TextContent;
+    private static string Text(IElement element, string selector) => ShownText(element.QuerySelector(selector) ?? throw new AssertionException($"no {selector}"));
 
     private static Dictionary<string, string> Attributes(IElement element) => element.Attributes.ToDictionary(attribute => attribute.Name, attribute => attribute.Value);
 
