@@ -1450,7 +1450,9 @@
         "requiredMarker": "optional",
         "validationSummary": true,
         "choiceLayout": "vertical",
-        "queryValues": []
+        "queryValues": [
+          "source"
+        ]
       },
       "pages": [
         {
@@ -1472,6 +1474,10 @@
                   "hideLabel": false,
                   "required": true,
                   "messages": {},
+                  "prefill": {
+                    "fromMember": true,
+                    "memberMode": "show"
+                  },
                   "autocomplete": "name",
                   "validation": [],
                   "rules": [],
@@ -1493,6 +1499,10 @@
                   "help": "We use it only to answer you.",
                   "required": true,
                   "messages": {},
+                  "prefill": {
+                    "fromMember": true,
+                    "memberMode": "hide"
+                  },
                   "autocomplete": "email",
                   "validation": [],
                   "rules": [],
@@ -1500,6 +1510,77 @@
                   "fields": [],
                   "settings": {
                     "confirm": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000105",
+                  "type": "dropdown",
+                  "alias": "topic",
+                  "span": 1,
+                  "label": "What is it about?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "prefill": {
+                    "context": "topic",
+                    "fromMember": false,
+                    "memberMode": "show"
+                  },
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "general",
+                        "label": "A general question",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "account",
+                        "label": "Your account",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "booking",
+                        "label": "A booking",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "collection",
+                        "label": "Our collection",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "multiple": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000106",
+                  "type": "text",
+                  "alias": "source",
+                  "span": 1,
+                  "label": "Where did you hear about us?",
+                  "hideLabel": false,
+                  "required": false,
+                  "messages": {},
+                  "prefill": {
+                    "query": "source",
+                    "fromMember": false,
+                    "memberMode": "show"
+                  },
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "counter": false,
+                    "maxLength": 255,
+                    "minLength": 0
                   }
                 },
                 {
@@ -1557,6 +1638,16 @@
         "canBeRequired": true,
         "builtIn": true
       },
+      "d0000000-0000-4000-8000-000000000105": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000106": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
       "d0000000-0000-4000-8000-000000000103": {
         "kind": "text",
         "canBeRequired": true,
@@ -1596,6 +1687,28 @@
                   "alias": "email",
                   "calculation": null,
                   "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000105",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "topic",
+                  "calculation": null,
+                  "required": false,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000106",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "source",
+                  "calculation": null,
+                  "required": false,
                   "rules": [],
                   "fields": [],
                   "rows": []
