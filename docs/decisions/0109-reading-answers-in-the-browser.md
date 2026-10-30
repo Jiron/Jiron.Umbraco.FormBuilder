@@ -9,7 +9,7 @@
   built-in types says which hold child fields and which the server resolves since 6.4b ([ADR-0110](0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md))
 - Date: 2026-10-30
 - Roadmap step: 6.4a (decided and built); 6.4b reads the page's controls through it, 6.4c's rules and 6.4d's checks
-  take what it read, 6.4e gives answer recall and calculations what it read, 6.4i reads uploads into tokens before this
+  take what it read, 6.4f gives answer recall and calculations what it read, 6.4j reads uploads into tokens before this
   stage sees them
 
 ## Context

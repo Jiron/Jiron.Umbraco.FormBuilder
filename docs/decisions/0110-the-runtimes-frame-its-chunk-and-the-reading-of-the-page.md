@@ -5,8 +5,8 @@
   [ADR-0109](0109-reading-answers-in-the-browser.md) (the table of the built-in types says which hold child fields and
   which the server resolves)
 - Date: 2026-10-30
-- Roadmap step: 6.4b (decided and built); 6.4c applies the rules and 6.4d the checks to what the frame reads, 6.4f
-  sends it, 6.4g swaps a changed form in, 6.4h adds `get(formEl)` and the other events
+- Roadmap step: 6.4b (decided and built); 6.4c applies the rules and 6.4d the checks to what the frame reads, 6.4g
+  sends it, 6.4h swaps a changed form in, 6.4i adds `get(formEl)` and the other events
 
 ## Context
 
@@ -67,11 +67,11 @@ Option 4 for the logic, option 2 for the page, and the reader in `packages/logic
   `pointerdown`, `input` or `change`: a field reached, pressed or changed, a browser's autofill included, which changes
   fields without focusing them. It loads once for the page, and the frame then gives it each form once
   (`attach(form, model)`). When it cannot load, the frame does not try again and the forms stay with the post without
-  JavaScript. In 6.4b the chunk reads the page (6.28 KB gzip); 6.4c and 6.4d add what the visitor sees.
+  JavaScript. In 6.4b the chunk reads the page (6.28 KB gzip); 6.4c to 6.4e add what the visitor sees.
 
 ### Reading the page
 
-- `entriesOf(form)` is `new FormData(form)` with its texts: a file is the upload's to read (6.4i), a disabled control
+- `entriesOf(form)` is `new FormData(form)` with its texts: a file is the upload's to read (6.4j), a disabled control
   (one a rule hides) and a button are left out, as a browser's post leaves them out.
 - `readPost(fields, entries)` (`packages/logic/src/posts.ts`) reads them as `FormPostReader` does, over the fields'
   aliases in the projection (the page and its model data are one published version, so a former alias never names a
@@ -111,7 +111,7 @@ Option 4 for the logic, option 2 for the page, and the reader in `packages/logic
   read from the controls when the chunk is there.
 - A change to the names the views give controls, or to how the no-JS post reads them, is a change to the vectors,
   which both readers then fail until they agree.
-- `jfb:ready` fires before the scripts that run after the runtime, so they miss it; from 6.4h, `get(formEl)` answers
+- `jfb:ready` fires before the scripts that run after the runtime, so they miss it; from 6.4i, `get(formEl)` answers
   for a form that is already enhanced.
 - **Revisit** if the chunk with the logic grows past what a first touch should wait for, or if browsers give a way to
   load a module when a form is first seen that costs nothing before then.

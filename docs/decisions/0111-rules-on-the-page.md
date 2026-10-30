@@ -5,8 +5,8 @@
   applies the rules to what it reads); keeps [ADR-0093](0093-the-razor-rendering.md)'s note, which now asks only for an
   asterisk that shows
 - Date: 2026-10-30
-- Roadmap step: 6.4c (decided and built); 6.4d checks the answers in the state the rules give, 6.5 moves through the
-  pages, 6.4e shows the calculations' results as the visitor types
+- Roadmap step: 6.4c (decided and built); 6.4d and 6.4e check the answers in the state the rules give, 6.5 moves
+  through the pages, 6.4f shows the calculations' results as the visitor types
 
 ## Context
 
@@ -111,7 +111,7 @@ rule hides is hidden like any other; moving to the next shown page is 6.5's.
   hooks; a site's override of a view keeps working with rules once it writes the hooks, which its upgrade notes say.
 - A form with rules carries its other marks `hidden` in its markup, a few bytes per label; a form without rules is
   unchanged.
-- Each change reads and decides the whole form, which is cheap for the forms the designer builds; 6.4l measures it on
+- Each change reads and decides the whole form, which is cheap for the forms the designer builds; 6.4m measures it on
   the kitchen sink.
 - **Revisit** if a field type needs a hook the table lacks, or if reading the whole form on each change shows in the
   kitchen sink's timings.

@@ -53,7 +53,7 @@ export interface PageReading {
   readonly answers: FormAnswers;
 }
 
-/** The page's names and texts as the browser posts them; a file is the upload's to read (6.4i). */
+/** The page's names and texts as the browser posts them; a file is the upload's to read (6.4j). */
 export function entriesOf(form: HTMLFormElement): [string, string][] {
   const entries: [string, string][] = [];
   for (const [name, value] of new FormData(form)) if (typeof value === 'string') entries.push([name, value]);
