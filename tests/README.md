@@ -108,7 +108,14 @@ breaks or the values read (each a text, the row it answers and the text stored i
 unreadable; a `rowCount` case gives a repeatable group's settings and its number of rows. `Logic/ReadingVector.cs`
 runs both through Core's `SubmissionReader.Clean` and `FieldValues`. Beside it, `packages/logic/test/reading.test.ts`
 holds the browser's table of the built-in types to `docs/api/field-types.json` and reads no site's own type, and
-`FieldTypes/CountryCodesTests.cs` holds the browser's country codes (`countries.ts`) to Core's.
+`FieldTypes/CountryCodesTests.cs` holds the browser's country codes (`countries.ts`) to Core's. `posts` (6.4b)
+holds the reading of a page's post by its names ([ADR-0110](../docs/decisions/0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md)): a `post`
+case gives the form's fields as the page names them (alias, type, settings, a repeatable group's children) and the
+names and values in the order a browser posts them, expecting each field's answer by its alias (texts, and parts
+in the order first posted), each group's rows, and the context and query values. `Logic/PostVector.cs` runs it
+through the no-JS post's `FormPostReader`, `packages/logic/test/vectors.test.ts` through `readPost`, and
+`packages/logic/test/posts.test.ts` holds what only the browser decides: a site's own type under a built-in alias,
+and the most rows a group takes held to the served field types.
 
 **The mutation check** proves the vectors. Each mutant in `vectors/mutants.mjs` changes one piece of the logic in one
 runtime, that runtime's vector runner runs, and the file is put back; the check fails on a mutant that nothing catches,

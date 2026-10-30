@@ -14,6 +14,8 @@ interface ServedType {
   readonly ruleKind: string | null;
   readonly multipleSetting: boolean;
   readonly messages: readonly string[];
+  readonly features: readonly string[];
+  readonly serverOnlyDefault: boolean;
 }
 
 const served = (
@@ -35,6 +37,8 @@ describe('the built-in types the reading stage knows', () => {
         kind: type.ruleKind,
         multipleSetting: type.multipleSetting,
         maxLength: type.messages.includes('maxLength'),
+        childFields: type.features.includes('childFields'),
+        serverOnly: type.serverOnlyDefault,
       });
     }
   });

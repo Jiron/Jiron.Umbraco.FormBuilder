@@ -1,0 +1,8768 @@
+{
+  "format": "jfb-vectors/1",
+  "suite": "posts",
+  "defaults": {},
+  "fields": {},
+  "cases": [
+    {
+      "id": "a-text-by-its-alias",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "name",
+            "Ada"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "name": {
+            "values": [
+              "Ada"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "several-texts-in-the-order-posted",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "topics",
+            "b"
+          ],
+          [
+            "topics",
+            "a"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "topics": {
+            "values": [
+              "b",
+              "a"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "two-fields-texts-interleaved",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "topics",
+            "a"
+          ],
+          [
+            "name",
+            "Ada"
+          ],
+          [
+            "topics",
+            "b"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "topics": {
+            "values": [
+              "a",
+              "b"
+            ]
+          },
+          "name": {
+            "values": [
+              "Ada"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "an-empty-text-is-posted-for-the-pipeline-to-clean",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "name",
+            ""
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "name": {
+            "values": [
+              ""
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-text-twice-is-kept-twice",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "name",
+            "Ada"
+          ],
+          [
+            "name",
+            "Ada"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "name": {
+            "values": [
+              "Ada",
+              "Ada"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "spaces-are-kept-for-the-pipeline-to-clean",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "name",
+            "  Ada  "
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "name": {
+            "values": [
+              "  Ada  "
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "each-crlf-is-sent-as-lf",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "story",
+            "One\r\ntwo\r\n\r\nthree"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "story": {
+            "values": [
+              "One\ntwo\n\nthree"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-lone-cr-and-a-lone-lf-are-kept",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "story",
+            "a\rb\nc"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "story": {
+            "values": [
+              "a\rb\nc"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-cr-after-a-crlf-is-kept",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "story",
+            "a\r\r\nb"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "story": {
+            "values": [
+              "a\r\nb"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "other-characters-are-kept",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "name",
+            "Zo\u00eb \ud83d\ude00"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "name": {
+            "values": [
+              "Zo\u00eb \ud83d\ude00"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "parts-by-their-names-in-the-order-posted",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "fullName.last",
+            "Lovelace"
+          ],
+          [
+            "fullName.first",
+            "Ada"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "fullName": {
+            "values": [],
+            "parts": [
+              [
+                "last",
+                [
+                  "Lovelace"
+                ]
+              ],
+              [
+                "first",
+                [
+                  "Ada"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-part-twice-is-kept-twice",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "fullName.first",
+            "A"
+          ],
+          [
+            "fullName.first",
+            "B"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "fullName": {
+            "values": [],
+            "parts": [
+              [
+                "first",
+                [
+                  "A",
+                  "B"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-part-after-the-first-dot-keeps-its-dots",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "fullName.a.b",
+            "x"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "fullName": {
+            "values": [],
+            "parts": [
+              [
+                "a.b",
+                [
+                  "x"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-name-ending-in-a-dot-is-the-fields-own-text",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "fullName.",
+            "dot"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "fullName": {
+            "values": [
+              "dot"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "texts-and-parts-together",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "fullName",
+            "own"
+          ],
+          [
+            "fullName.first",
+            "Ada"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "fullName": {
+            "values": [
+              "own"
+            ],
+            "parts": [
+              [
+                "first",
+                [
+                  "Ada"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-part-name-is-case-sensitive",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "fullName.First",
+            "Ada"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "fullName": {
+            "values": [],
+            "parts": [
+              [
+                "First",
+                [
+                  "Ada"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "crlf-in-a-part-is-sent-as-lf",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "fullName.first",
+            "a\r\nb"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "fullName": {
+            "values": [],
+            "parts": [
+              [
+                "first",
+                [
+                  "a\nb"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-sites-own-type-takes-its-texts-and-parts",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "fav",
+            "red"
+          ],
+          [
+            "fav.shade",
+            "dark"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "fav": {
+            "values": [
+              "red"
+            ],
+            "parts": [
+              [
+                "shade",
+                [
+                  "dark"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-name-of-no-field-is-left-out",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "newsletter",
+            "yes"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "an-alias-is-case-sensitive",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "Name",
+            "Ada"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-name-starting-with-a-dot-is-no-field",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            ".first",
+            "x"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "an-empty-name-is-no-field",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "",
+            "x"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "the-packages-other-names-are-left-out",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-form",
+            "k"
+          ],
+          [
+            "jfb-nav",
+            "submit"
+          ],
+          [
+            "jfb-revision",
+            "3"
+          ],
+          [
+            "jfb-unknown",
+            "x"
+          ],
+          [
+            "jfb-",
+            "x"
+          ],
+          [
+            "ufprt",
+            "token"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-repeatable-groups-own-alias-names-nothing",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "guests",
+            "x"
+          ],
+          [
+            "guests.guest",
+            "y"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-child-outside-its-group-is-no-field",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "guest",
+            "Bob"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-field-without-an-alias-posts-nothing",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "heading",
+            "x"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-field-as-a-group-names-nothing",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "name[0].guest",
+            "x"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "rows-as-many-as-the-page-shows",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "2"
+          ],
+          [
+            "guests[0].guest",
+            "Ann"
+          ],
+          [
+            "guests[1].guest",
+            "Bob"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {
+              "guest": {
+                "values": [
+                  "Ann"
+                ]
+              }
+            },
+            {
+              "guest": {
+                "values": [
+                  "Bob"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "rows-without-answers-keep-their-places",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "3"
+          ],
+          [
+            "guests[2].guest",
+            "Cy"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {},
+            {
+              "guest": {
+                "values": [
+                  "Cy"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "rows-shown-without-answers-are-empty",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "2"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {}
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-row-past-the-count-is-left-out",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "1"
+          ],
+          [
+            "guests[0].guest",
+            "Ann"
+          ],
+          [
+            "guests[1].guest",
+            "Bob"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {
+              "guest": {
+                "values": [
+                  "Ann"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "without-a-count-rows-as-far-as-one-is-named",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "guests[2].guest",
+            "Cy"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {},
+            {
+              "guest": {
+                "values": [
+                  "Cy"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-count-of-none-leaves-every-row-out",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "0"
+          ],
+          [
+            "guests[0].guest",
+            "Ann"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-count-past-the-most-is-the-most",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "250"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "the-last-count-says-even-when-it-is-no-number",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "2"
+          ],
+          [
+            "jfb-rows-guests",
+            "two"
+          ],
+          [
+            "guests[0].guest",
+            "Ann"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {
+              "guest": {
+                "values": [
+                  "Ann"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "the-last-count-says",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "two"
+          ],
+          [
+            "jfb-rows-guests",
+            "2"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {}
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-count-must-be-digits-alone",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "-1"
+          ],
+          [
+            "jfb-rows-guests",
+            " 2"
+          ],
+          [
+            "jfb-rows-guests",
+            "2 "
+          ],
+          [
+            "jfb-rows-guests",
+            "+2"
+          ],
+          [
+            "guests[0].guest",
+            "Ann"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {
+              "guest": {
+                "values": [
+                  "Ann"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "an-empty-count-is-none",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            ""
+          ],
+          [
+            "guests[1].guest",
+            "Bob"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {
+              "guest": {
+                "values": [
+                  "Bob"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-count-in-other-digits-is-none",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "\u0662"
+          ],
+          [
+            "guests[0].guest",
+            "Ann"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {
+              "guest": {
+                "values": [
+                  "Ann"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-count-with-leading-zeros",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "002"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {}
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-count-with-a-trailing-nul-as-dotnet-reads-it",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "2\u0000\u0000"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {}
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-count-too-large-for-a-whole-number-is-none",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "2147483648"
+          ],
+          [
+            "guests[0].guest",
+            "Ann"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {
+              "guest": {
+                "values": [
+                  "Ann"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "the-largest-whole-number-is-the-most",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "2147483647"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-count-of-a-field-that-is-no-group-is-nothing",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-name",
+            "2"
+          ],
+          [
+            "jfb-rows-nobody",
+            "2"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-row-with-leading-zeros",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "2"
+          ],
+          [
+            "guests[01].guest",
+            "Bob"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {
+              "guest": {
+                "values": [
+                  "Bob"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-row-with-a-trailing-nul",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "guests[1\u0000].guest",
+            "Bob"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {
+              "guest": {
+                "values": [
+                  "Bob"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-row-at-the-most-is-no-row",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "guests[100].guest",
+            "x"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-row-below-the-most-is-one",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "guests[99].guest",
+            "x"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {
+              "guest": {
+                "values": [
+                  "x"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "malformed-row-names-are-left-out",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "guests[0]guest",
+            "a"
+          ],
+          [
+            "guests[0",
+            "b"
+          ],
+          [
+            "[0].guest",
+            "c"
+          ],
+          [
+            "guests[].guest",
+            "d"
+          ],
+          [
+            "guests[a].guest",
+            "e"
+          ],
+          [
+            "guests[-1].guest",
+            "f"
+          ],
+          [
+            "guests[ 1].guest",
+            "g"
+          ],
+          [
+            "guests[0].",
+            "h"
+          ],
+          [
+            "guests[0]",
+            "i"
+          ],
+          [
+            "guests[0][1].guest",
+            "j"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-childs-name-ending-in-a-dot-is-its-own-text",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "1"
+          ],
+          [
+            "guests[0].guest.",
+            "Ann"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {
+              "guest": {
+                "values": [
+                  "Ann"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-childs-parts-in-a-row",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "1"
+          ],
+          [
+            "guests[0].who.first",
+            "Ada"
+          ],
+          [
+            "guests[0].who.last",
+            "King"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {
+              "who": {
+                "values": [],
+                "parts": [
+                  [
+                    "first",
+                    [
+                      "Ada"
+                    ]
+                  ],
+                  [
+                    "last",
+                    [
+                      "King"
+                    ]
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-name-of-no-child-makes-no-row",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "guests[3].nobody",
+            "x"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-group-name-of-no-group-is-nothing",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "story[0].guest",
+            "x"
+          ],
+          [
+            "nobody[0].guest",
+            "y"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-row-of-crlf-texts",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "1"
+          ],
+          [
+            "guests[0].guest",
+            "a\r\nb"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {
+              "guest": {
+                "values": [
+                  "a\nb"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-consent-ticked-with-its-wording",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "terms",
+            "true"
+          ],
+          [
+            "jfb-consent-terms",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "terms": {
+            "values": [
+              "true"
+            ],
+            "parts": [
+              [
+                "wording",
+                [
+                  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-consents-wording-without-a-tick",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-consent-terms",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "terms": {
+            "values": [],
+            "parts": [
+              [
+                "wording",
+                [
+                  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-consents-wording-twice-is-kept-twice",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-consent-terms",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "jfb-consent-terms",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "terms": {
+            "values": [],
+            "parts": [
+              [
+                "wording",
+                [
+                  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-consents-wording-with-a-part-is-nothing",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-consent-terms.x",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-consents-wording-of-no-field-is-nothing",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-consent-nobody",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-wordings-crlf-is-sent-as-lf",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-consent-terms",
+            "a\r\nb"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "terms": {
+            "values": [],
+            "parts": [
+              [
+                "wording",
+                [
+                  "a\nb"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-consent-in-a-row",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "1"
+          ],
+          [
+            "guests[0].agree",
+            "true"
+          ],
+          [
+            "jfb-consent-guests[0].agree",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {
+              "agree": {
+                "values": [
+                  "true"
+                ],
+                "parts": [
+                  [
+                    "wording",
+                    [
+                      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    ]
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-consents-wording-names-its-row",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-consent-guests[1].agree",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {
+              "agree": {
+                "values": [],
+                "parts": [
+                  [
+                    "wording",
+                    [
+                      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    ]
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-switch-left-off-is-no",
+      "post": {
+        "fields": [
+          {
+            "alias": "updates",
+            "type": "yesno",
+            "settings": {
+              "style": "switch"
+            }
+          }
+        ],
+        "entries": []
+      },
+      "expect": {
+        "fields": {
+          "updates": {
+            "values": [
+              "no"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-switch-turned-on",
+      "post": {
+        "fields": [
+          {
+            "alias": "updates",
+            "type": "yesno",
+            "settings": {
+              "style": "switch"
+            }
+          }
+        ],
+        "entries": [
+          [
+            "updates",
+            "yes"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "updates": {
+            "values": [
+              "yes"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-switch-with-an-empty-text-is-no",
+      "post": {
+        "fields": [
+          {
+            "alias": "updates",
+            "type": "yesno",
+            "settings": {
+              "style": "switch"
+            }
+          }
+        ],
+        "entries": [
+          [
+            "updates",
+            ""
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "updates": {
+            "values": [
+              "no"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-switch-with-an-empty-text-and-yes-keeps-both",
+      "post": {
+        "fields": [
+          {
+            "alias": "updates",
+            "type": "yesno",
+            "settings": {
+              "style": "switch"
+            }
+          }
+        ],
+        "entries": [
+          [
+            "updates",
+            ""
+          ],
+          [
+            "updates",
+            "yes"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "updates": {
+            "values": [
+              "",
+              "yes"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-switch-left-off-keeps-its-parts",
+      "post": {
+        "fields": [
+          {
+            "alias": "updates",
+            "type": "yesno",
+            "settings": {
+              "style": "switch"
+            }
+          }
+        ],
+        "entries": [
+          [
+            "updates.x",
+            "1"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "updates": {
+            "values": [
+              "no"
+            ],
+            "parts": [
+              [
+                "x",
+                [
+                  "1"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "yes-or-no-buttons-that-post-nothing-are-nothing",
+      "post": {
+        "fields": [
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          }
+        ],
+        "entries": []
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-switch-in-each-row-the-page-shows",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "updates",
+            "type": "yesno",
+            "settings": {
+              "style": "switch"
+            }
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "vegan",
+                "type": "yesno",
+                "settings": {
+                  "style": "switch"
+                }
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "2"
+          ],
+          [
+            "guests[0].vegan",
+            "yes"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "updates": {
+            "values": [
+              "no"
+            ]
+          }
+        },
+        "rows": {
+          "guests": [
+            {
+              "vegan": {
+                "values": [
+                  "yes"
+                ]
+              }
+            },
+            {
+              "vegan": {
+                "values": [
+                  "no"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-switch-in-a-group-without-rows-is-nothing",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "updates",
+            "type": "yesno",
+            "settings": {
+              "style": "switch"
+            }
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "vegan",
+                "type": "yesno",
+                "settings": {
+                  "style": "switch"
+                }
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": []
+      },
+      "expect": {
+        "fields": {
+          "updates": {
+            "values": [
+              "no"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-switch-in-rows-named-without-a-count",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "updates",
+            "type": "yesno",
+            "settings": {
+              "style": "switch"
+            }
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "vegan",
+                "type": "yesno",
+                "settings": {
+                  "style": "switch"
+                }
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "guests[1].guest",
+            "Bob"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "updates": {
+            "values": [
+              "no"
+            ]
+          }
+        },
+        "rows": {
+          "guests": [
+            {
+              "vegan": {
+                "values": [
+                  "no"
+                ]
+              }
+            },
+            {
+              "guest": {
+                "values": [
+                  "Bob"
+                ]
+              },
+              "vegan": {
+                "values": [
+                  "no"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-switch-without-an-alias-posts-nothing",
+      "post": {
+        "fields": [
+          {
+            "alias": null,
+            "type": "yesno",
+            "settings": {
+              "style": "switch"
+            }
+          }
+        ],
+        "entries": []
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "the-context-values-as-posted",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-context-campaign",
+            "spring"
+          ],
+          [
+            "jfb-context-ref",
+            "a\r\nb"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {
+          "campaign": "spring",
+          "ref": "a\r\nb"
+        },
+        "query": {}
+      }
+    },
+    {
+      "id": "the-last-context-value-says",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-context-campaign",
+            "spring"
+          ],
+          [
+            "jfb-context-campaign",
+            "autumn"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {
+          "campaign": "autumn"
+        },
+        "query": {}
+      }
+    },
+    {
+      "id": "a-context-value-may-be-empty",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-context-campaign",
+            ""
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {
+          "campaign": ""
+        },
+        "query": {}
+      }
+    },
+    {
+      "id": "a-context-value-without-a-name",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-context-",
+            "x"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {
+          "": "x"
+        },
+        "query": {}
+      }
+    },
+    {
+      "id": "the-query-values-each-in-order",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-query-utm",
+            "a"
+          ],
+          [
+            "jfb-query-x",
+            ""
+          ],
+          [
+            "jfb-query-utm",
+            "b"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {
+          "utm": [
+            "a",
+            "b"
+          ],
+          "x": [
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "id": "a-query-values-crlf-is-kept",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-query-q",
+            "a\r\nb"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {
+          "q": [
+            "a\r\nb"
+          ]
+        }
+      }
+    },
+    {
+      "id": "a-rankings-order-is-no-answer",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-order-rank",
+            "a"
+          ],
+          [
+            "jfb-order-rank",
+            "b"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-rankings-order-in-a-row-names-the-row",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-order-guests[1].pick",
+            "a"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {},
+            {}
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-rankings-order-with-a-part-is-nothing",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-order-guests[1].pick.x",
+            "a"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-signatures-typed-name-is-left-out",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "sign",
+            "token"
+          ],
+          [
+            "sign.typed",
+            "Ada"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "sign": {
+            "values": [
+              "token"
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-typed-name-alone-is-nothing",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "sign.typed",
+            "Ada"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-signatures-other-parts-are-kept",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "sign.other",
+            "x"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {
+          "sign": {
+            "values": [],
+            "parts": [
+              [
+                "other",
+                [
+                  "x"
+                ]
+              ]
+            ]
+          }
+        },
+        "rows": {},
+        "context": {},
+        "query": {}
+      }
+    },
+    {
+      "id": "a-typed-name-in-a-row-is-left-out",
+      "post": {
+        "fields": [
+          {
+            "alias": "name",
+            "type": "text"
+          },
+          {
+            "alias": "story",
+            "type": "textarea"
+          },
+          {
+            "alias": "topics",
+            "type": "checkboxes"
+          },
+          {
+            "alias": "fullName",
+            "type": "name"
+          },
+          {
+            "alias": "answer",
+            "type": "yesno",
+            "settings": {
+              "style": "buttons"
+            }
+          },
+          {
+            "alias": "terms",
+            "type": "consent"
+          },
+          {
+            "alias": "sign",
+            "type": "signature"
+          },
+          {
+            "alias": "rank",
+            "type": "ranking"
+          },
+          {
+            "alias": "fav",
+            "type": "colour"
+          },
+          {
+            "alias": null,
+            "type": "heading",
+            "settings": {
+              "level": 2
+            }
+          },
+          {
+            "alias": "guests",
+            "type": "repeater",
+            "settings": {
+              "minRows": 0,
+              "maxRows": 10
+            },
+            "fields": [
+              {
+                "alias": "guest",
+                "type": "text"
+              },
+              {
+                "alias": "who",
+                "type": "name"
+              },
+              {
+                "alias": "agree",
+                "type": "consent"
+              },
+              {
+                "alias": "pick",
+                "type": "ranking"
+              },
+              {
+                "alias": "sketch",
+                "type": "signature"
+              }
+            ]
+          }
+        ],
+        "entries": [
+          [
+            "jfb-rows-guests",
+            "1"
+          ],
+          [
+            "guests[0].sketch",
+            "token"
+          ],
+          [
+            "guests[0].sketch.typed",
+            "Ada"
+          ]
+        ]
+      },
+      "expect": {
+        "fields": {},
+        "rows": {
+          "guests": [
+            {
+              "sketch": {
+                "values": [
+                  "token"
+                ]
+              }
+            }
+          ]
+        },
+        "context": {},
+        "query": {}
+      }
+    }
+  ]
+}

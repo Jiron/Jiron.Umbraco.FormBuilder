@@ -18,6 +18,7 @@ import {
   messageWordsOf,
   parseTemplate,
   readField,
+  readPost,
   recallAnswers,
   renderTemplate,
   storedNumber,
@@ -35,7 +36,9 @@ import {
   type Kind,
   type LogicForm,
   type MergeValue,
+  type PostAnswer,
   type PostedAnswer,
+  type PostField,
   type ReadField,
   type RecallAnswers,
   type RecallField,
@@ -70,6 +73,7 @@ interface VectorCase {
   readonly message?: VectorMessage;
   readonly read?: { readonly field: ReadField; readonly answer: PostedAnswer };
   readonly rowCount?: { readonly field: ReadField; readonly count: number };
+  readonly post?: { readonly fields: readonly PostField[]; readonly entries: readonly (readonly [string, string])[] };
   readonly expect: unknown;
 }
 
@@ -220,6 +224,7 @@ const RUNNABLE = [
   'message',
   'read',
   'rowCount',
+  'post',
 ] as const;
 
 const folder = vectorsFolder();
@@ -329,6 +334,22 @@ function run(file: VectorFile, vector: VectorCase): unknown {
       };
     }
     if (vector.rowCount !== undefined) return checkRows(vector.rowCount.field, vector.rowCount.count);
+    if (vector.post !== undefined) {
+      const read = readPost(vector.post.fields, vector.post.entries);
+      const answers = (map: ReadonlyMap<string, PostAnswer>) =>
+        Object.fromEntries(
+          [...map].map(([alias, answer]) => [
+            alias,
+            { values: answer.values, ...(answer.parts === undefined ? {} : { parts: answer.parts }) },
+          ]),
+        );
+      return {
+        fields: answers(read.fields),
+        rows: Object.fromEntries([...read.rows].map(([alias, rows]) => [alias, rows.map(answers)])),
+        context: Object.fromEntries(read.context),
+        query: Object.fromEntries(read.query),
+      };
+    }
     if (vector.message !== undefined) {
       const name = subject.context.culture;
       const words = messageWordsOf(name, MESSAGE_WORDS);

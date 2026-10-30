@@ -43,6 +43,11 @@ const cs = (name, file, from, to, more = {}) => ({ runtime: 'cs', name, file: CO
 /** A mutant of the reading stage (6.4a, ADR-0109): in TypeScript, and in Core by its path under the project. */
 const tsr = (name, from, to, more = {}) => ts(`read-${name}`, 'reading.ts', from, to, more);
 const csr = (name, file, from, to, more = {}) => ({ runtime: 'cs', name: `cs-read-${name}`, file: 'src/Jiron.Umbraco.FormBuilder.Core/' + file, from, to, ...more });
+/** A mutant of the post reader (6.4b, ADR-0110): in TypeScript, and in Web's reader of the no-JS post. */
+const tsp = (name, from, to, more = {}) => ts(`post-${name}`, 'posts.ts', from, to, more);
+const csp = (name, from, to, more = {}) => ({ runtime: 'cs', name: `cs-post-${name}`, file: 'src/Jiron.Umbraco.FormBuilder.Web/Rendering/FormPostReader.cs', from, to, ...more });
+/** What only the browser decides of a post (a site's own type under a built-in alias) is posts.test.ts's. */
+const POSTS_TS = [...VECTORS_TS, 'test/posts.test.ts'];
 const negated = (op, body) => [
   ts(`op-${op}`, 'rules.ts', `    case '${op}':${NL}      return ${body}`, `    case '${op}':${NL}      return !${body}`),
 ];
@@ -1562,6 +1567,43 @@ const mutants = [
   csr('token-longer', 'FieldTypes/FieldAnswerDefaults.cs', 'public const int TokenLength = 1024;', 'public const int TokenLength = 1025;'),
   csr('rows-fewer-pass', 'FieldTypes/BuiltIn/StructureAndContentFieldTypes.cs', 'if (validation.Rows < settings.MinRows || validation.Rows > settings.MaxRows)', 'if (validation.Rows > settings.MaxRows)'),
   csr('rows-more-pass', 'FieldTypes/BuiltIn/StructureAndContentFieldTypes.cs', 'if (validation.Rows < settings.MinRows || validation.Rows > settings.MaxRows)', 'if (validation.Rows < settings.MinRows)'),
+  // The reading of a page's post by its names (6.4b, ADR-0110): the runtime's reader and the no-JS post's, held equal by
+  // tests/vectors/posts.json.
+  tsp("crlf-kept", "const texts = (value: string): string => value.replaceAll(POSTED_BREAK, BREAK);", "const texts = (value: string): string => value;"),
+  tsp("switch-left-off-is-nothing", "if (isSwitch(field)) made(this.answers, field).switchedOff();", ""),
+  tsp("switch-in-rows-left-off-is-nothing", "for (let row = 0; row < count; row++) made(this.row(field, row), child).switchedOff();", ""),
+  tsp("switch-with-an-empty-text-is-on", "if (!this.values.some((value) => value.length > 0)) this.values = [NO];", "if (this.values.length === 0) this.values = [NO];"),
+  tsp("typed-name-kept", "const parts = [...this.parts].filter(([name]) => !signature || name !== TYPED);", "const parts = [...this.parts];"),
+  tsp("site-signature-drops-its-typed-name", "const isSignature = (field: PostField): boolean => field.type === 'signature' && declaredOf(field) !== undefined;", "const isSignature = (field: PostField): boolean => field.type === 'signature';", { tests: POSTS_TS }),
+  tsp("buttons-left-off-are-no", "declaredOf(field) !== undefined && field.settings?.['style'] === 'switch';", "declaredOf(field) !== undefined;"),
+  tsp("count-past-the-most", "else this.counts.set(group, Math.min(count, MOST_ROWS));", "else this.counts.set(group, Math.min(count, MOST_ROWS + 1));"),
+  tsp("count-not-the-last", "if (count === null) this.counts.delete(group);", "if (count === null) return;"),
+  tsp("count-ignored", "this.counts.get(group) ?? (posted === undefined", "(posted === undefined"),
+  tsp("rows-without-a-count-none", "(posted === undefined || posted.size === 0 ? 0 : Math.max(...posted.keys()) + 1)", "0"),
+  tsp("row-at-the-most", "if (row === null || row >= MOST_ROWS) return null;", "if (row === null || row > MOST_ROWS) return null;"),
+  tsp("wording-as-its-own-text", "this.answerOf(path)?.take(WORDING, texts(text));", "this.answerOf(path)?.take(null, texts(text));"),
+  tsp("wording-crlf-kept", "this.answerOf(path)?.take(WORDING, texts(text));", "this.answerOf(path)?.take(WORDING, text);"),
+  tsp("order-names-no-row", "if (path !== null && path.part === null) this.answerOf(path);", ""),
+  tsp("context-first-value", "this.context.set(name.slice(CONTEXT.length), text);", "if (!this.context.has(name.slice(CONTEXT.length))) this.context.set(name.slice(CONTEXT.length), text);"),
+  tsp("query-last-value", "      else given.push(text);", "      else this.query.set(key, [text]);"),
+  tsp("empty-part-kept", "dot < name.length - 1 ? name.slice(dot + 1) : null", "name.slice(dot + 1)"),
+  tsp("part-after-the-last-dot", "const dot = name.indexOf('.');", "const dot = name.lastIndexOf('.');"),
+  tsp("nul-not-passed-over", "while (end > 0 && text[end - 1] === NUL) end--;", ""),
+  tsp("number-past-int", "if (digits.length > 10 || (digits.length === 10 && digits > '2147483647')) return null;", "if (digits.length > 10) return null;"),
+  tsp("site-group-no-group", "declared === undefined ? field.builtIn === false && (field.fields?.length ?? 0) > 0 : declared.childFields", "declared === undefined ? false : declared.childFields", { tests: POSTS_TS }),
+  tsp("parts-as-texts", "    if (part === null) {", "    if (part !== undefined) {"),
+  tsp("parts-alone-dropped", "if (this.values.length === 0 && parts.length === 0) return null;", "if (this.values.length === 0) return null;"),
+  csp("crlf-kept", "private static readonly string PostedBreak = new([(char)13, (char)10]);", "private static readonly string PostedBreak = new([(char)13, (char)11]);"),
+  csp("switch-left-off-is-nothing", "                Made(_fields, field.Key).SwitchedOff();", "                Made(_fields, field.Key);"),
+  csp("switch-with-an-empty-text-is-on", "if (!_values.Any(value => !string.IsNullOrEmpty(value)))", "if (_values.Count == 0)"),
+  csp("typed-name-kept", "var parts = _parts.Where(pair => !signature || pair.Key != SignatureFieldType.TypedPart).ToList();", "_ = signature; var parts = _parts.ToList();"),
+  csp("count-past-the-most", "_counts[group.Key] = Math.Min(count, RepeaterFieldType.MostRows);", "_counts[group.Key] = count;"),
+  csp("row-at-the-most", "|| row >= RepeaterFieldType.MostRows)", "|| row > RepeaterFieldType.MostRows)"),
+  csp("empty-part-kept", "dot < name.Length - 1 ? name[(dot + 1)..] : null", "name[(dot + 1)..]"),
+  csp("context-first-value", "= values.LastOrDefault() ?? string.Empty;", "= values.FirstOrDefault() ?? string.Empty;"),
+  csp("query-last-value", "= [.. values.OfType<string>()];", "= [.. values.OfType<string>().TakeLast(1)];"),
+  csp("rows-without-a-count-none", "posted is { Count: > 0 } ? posted.Keys.Max() + 1 : 0", "0"),
+  csp("wording-crlf-kept", "answer.Take(ConsentFieldType.WordingPart, Texts(values));", "answer.Take(ConsentFieldType.WordingPart, [.. values]);"),
 ];
 
 // ---- Running ----

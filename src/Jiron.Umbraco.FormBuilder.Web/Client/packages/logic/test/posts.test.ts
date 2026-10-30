@@ -1,0 +1,104 @@
+// The post reader's own decisions (ROADMAP 6.4b, ADR-0110), which the shared vectors of tests/vectors/posts.json cannot
+// hold, since the server knows a site's own types by its registry: the browser knows them by the form endpoint's
+// `builtIn` and the projection's child fields. The most rows any group takes is held to the served field types.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { MOST_ROWS, readPost, type PostField } from '../src/index.ts';
+import { repositoryRoot } from '../tools/repository.ts';
+
+interface ServedSetting {
+  readonly name: string;
+  readonly rules: { readonly maximum: string | null };
+}
+
+const served = (
+  JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'field-types.json'), 'utf8')) as {
+    readonly types: readonly { readonly alias: string; readonly settings: readonly ServedSetting[] }[];
+  }
+).types;
+
+const answers = (fields: readonly PostField[], entries: readonly (readonly [string, string])[]) => {
+  const read = readPost(fields, entries);
+  return {
+    fields: Object.fromEntries(read.fields),
+    rows: Object.fromEntries(
+      [...read.rows].map(([alias, rows]) => [alias, rows.map((row) => Object.fromEntries(row))]),
+    ),
+  };
+};
+
+describe('the post reader', () => {
+  it('takes as many rows as a repeatable group may have at most', () => {
+    const maxRows = served
+      .find((type) => type.alias === 'repeater')
+      ?.settings.find((setting) => setting.name === 'maxRows');
+    expect(maxRows?.rules.maximum).toBe(String(MOST_ROWS));
+  });
+
+  it("reads a site's own type under a built-in alias as the site's: no switch, no signature, no repeatable group", () => {
+    const own = (field: PostField): PostField => ({ ...field, builtIn: false });
+    expect(answers([own({ alias: 'updates', type: 'yesno', settings: { style: 'switch' } })], [])).toEqual({
+      fields: {},
+      rows: {},
+    });
+    expect(answers([own({ alias: 'sign', type: 'signature' })], [['sign.typed', 'Ada']])).toEqual({
+      fields: { sign: { values: [], parts: [['typed', ['Ada']]] } },
+      rows: {},
+    });
+    expect(
+      answers(
+        [own({ alias: 'guests', type: 'repeater' })],
+        [
+          ['guests', 'x'],
+          ['jfb-rows-guests', '2'],
+        ],
+      ),
+    ).toEqual({
+      fields: { guests: { values: ['x'] } },
+      rows: {},
+    });
+  });
+
+  it("reads a site's own type that holds fields as a repeatable group", () => {
+    const team: PostField = {
+      alias: 'team',
+      type: 'crew',
+      builtIn: false,
+      fields: [{ alias: 'member', type: 'text' }],
+    };
+    expect(
+      answers(
+        [team],
+        [
+          ['jfb-rows-team', '2'],
+          ['team[1].member', 'Ada'],
+          ['team', 'x'],
+        ],
+      ),
+    ).toEqual({
+      fields: {},
+      rows: { team: [{}, { member: { values: ['Ada'] } }] },
+    });
+  });
+
+  it('never takes a name of an object of its own for a field', () => {
+    expect(
+      answers(
+        [{ alias: 'name', type: 'text' }],
+        [
+          ['constructor', 'x'],
+          ['toString', 'y'],
+          ['__proto__', 'z'],
+        ],
+      ),
+    ).toEqual({
+      fields: {},
+      rows: {},
+    });
+    expect(answers([{ alias: 'constructor', type: 'text' }], [['constructor', 'x']])).toEqual({
+      fields: { constructor: { values: ['x'] } },
+      rows: {},
+    });
+  });
+});

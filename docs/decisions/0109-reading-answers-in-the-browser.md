@@ -5,7 +5,8 @@
   extends [ADR-0084](0084-the-public-apis-frame-and-the-form-endpoint.md) and amends
   [ADR-0085](0085-visitor-texts-and-consent-wordings-on-the-form-endpoint.md) (the form endpoint's answer gains
   `fields`, `formats` and `words`, and `mergeTags` gives its words and formats up to them); amends
-  [ADR-0099](0099-visitor-error-messages.md) (a label of only spaces counts as none in the summary)
+  [ADR-0099](0099-visitor-error-messages.md) (a label of only spaces counts as none in the summary); the table of the
+  built-in types says which hold child fields and which the server resolves since 6.4b ([ADR-0110](0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md))
 - Date: 2026-10-30
 - Roadmap step: 6.4a (decided and built); 6.4b reads the page's controls through it, 6.4c's rules and checks take
   what it read, 6.4d gives answer recall and calculations what it read, 6.4h reads uploads into tokens before this

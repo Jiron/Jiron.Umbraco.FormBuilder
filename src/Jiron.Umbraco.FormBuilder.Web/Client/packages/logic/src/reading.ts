@@ -52,13 +52,26 @@ export interface DeclaredType {
   readonly multipleSetting: boolean;
   /** Whether a text too long is `maxLength` rather than `invalid`. */
   readonly maxLength: boolean;
+  /** Whether the type holds child fields, so a field of it is a repeatable group. */
+  readonly childFields: boolean;
+  /** Whether the server resolves the value, so the page posts none for it unless it is prefilled from the query. */
+  readonly serverOnly: boolean;
 }
 
 const declared = (
   storage: DeclaredType['storage'],
   kind: Kind | null,
-  more: Partial<Pick<DeclaredType, 'holdsValue' | 'multipleSetting' | 'maxLength'>> = {},
-): DeclaredType => ({ holdsValue: true, multipleSetting: false, maxLength: false, ...more, storage, kind });
+  more: Partial<Pick<DeclaredType, 'holdsValue' | 'multipleSetting' | 'maxLength' | 'childFields' | 'serverOnly'>> = {},
+): DeclaredType => ({
+  holdsValue: true,
+  multipleSetting: false,
+  maxLength: false,
+  childFields: false,
+  serverOnly: false,
+  ...more,
+  storage,
+  kind,
+});
 const content = declared('none', null, { holdsValue: false });
 
 /** The built-in types by alias. */
@@ -89,8 +102,8 @@ export const BUILT_IN_TYPES: Readonly<Record<string, DeclaredType>> = {
   address: declared('json', null),
   file: declared('file', 'files'),
   signature: declared('file', 'files'),
-  repeater: declared('none', null),
-  hidden: declared('text', 'text'),
+  repeater: declared('none', null, { childFields: true }),
+  hidden: declared('text', 'text', { serverOnly: true }),
   heading: content,
   paragraph: content,
   divider: content,
