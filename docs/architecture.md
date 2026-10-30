@@ -166,6 +166,11 @@ flowchart LR
   and shows the errors (`errors.ts`, `display.ts`) in the theme's markup from the form's templates: as the visitor
   leaves a field, gone once fixed, and after a refused send with the summary, which takes the focus, and
   `jfb:invalid`; a passing send goes on as without JavaScript ([ADR-0113](decisions/0113-errors-on-the-page.md));
+  and works the calculations out with the rules (`engine.ts`, `outputs.ts`): the calculation language is the shared
+  logic's `@jfb/logic/calc`, a chunk of its own loaded before a form with a calculation is enhanced and never for one
+  without, each result shown in its field's format as the server writes it, none for an answer its type cannot read
+  in either runtime, and a slider's value kept with its thumb
+  ([ADR-0114](decisions/0114-calculations-on-the-page.md));
 - `element`: `<jfb-form>`, the headless renderer, with the same markup and runtime;
 - `backoffice`: the Forms section in Lit and TypeScript with UUI, through the generated client.
 

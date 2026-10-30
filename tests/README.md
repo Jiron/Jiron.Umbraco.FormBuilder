@@ -130,7 +130,12 @@ and fails); `packages/runtime/src/checks.fixture.test.ts` checks each page as th
 server's errors under the fields and the links of its summary, in its order, and their display (6.4e,
 [ADR-0113](../docs/decisions/0113-errors-on-the-page.md)): taken away as the runtime takes them away, the page has
 the first render's `aria-invalid` and `aria-describedby`; shown again as the runtime shows them, it is the
-server's page, element for element.
+server's page, element for element. The calculations on the page (6.4f,
+[ADR-0114](../docs/decisions/0114-calculations-on-the-page.md)) are held so too: `Rendering/CalculationFixtureTests.cs`
+posts a form of calculations of every format and two sliders, in English and in German, and writes each page first
+rendered and rendered again to `tests/fixtures/rendering/calculations-en.json` and `calculations-de.json`;
+`packages/runtime/src/outputs.fixture.test.ts` blanks every result and slider text and shows them again as the
+runtime does: the server's page, element for element.
 
 **The mutation check** proves the vectors. Each mutant in `vectors/mutants.mjs` changes one piece of the logic in one
 runtime, that runtime's vector runner runs, and the file is put back; the check fails on a mutant that nothing catches,
@@ -907,6 +912,7 @@ test refreshes the domain cache after assigning a culture.
 | `FormRenderingRowsTests` | A repeatable group's rows (ADR-0098, `rows.cshtml`, `rowsde.cshtml`): a first render's least rows, each a fieldset numbered after its row label, with its fields' keys, paths, ids and names and their defaults, the group's columns, Add with its label and no Remove at the least, a group without a least starting with Add alone, and the default button first; a post's rows with their answers, Remove naming its row, no Add at the most, a calculation and rules that hide and require over each row's own answers, a row's options filtered by a parent in its row and by one outside the group (an answer for that parent posted in a row changing nothing), a row's error at its field and in the summary, and a recalled child listing the rows' answers but not where its row hides it; more rows than the most with the group's own error below them, linked to the rows' container, and no row state, and a post of more rows than any group may have showing that many; a hidden group with every row's controls and buttons disabled; a post without the group's rows showing its least; and on a German page under the optional style, the package's words and "(optional)" only on a group that needs no row. |
 | `FormRenderingKitchenTests` | The kitchen sink (ADR-0015, `sink.cshtml`): a field of every built-in type and of a site's own type (`MoodFieldType`, whose view `fields/acme.mood.cshtml` follows the contract), each empty, answered after a post, with errors and hidden by a rule, with the same checks on each: the wrapper's classes, type, alias and hidden state, disabled controls when hidden, the control's id, its label or legend, its names, its help, and after an error the error, `aria-invalid` and the summary's link; what each answer shows. The repeatable group's row holds a field of every type a row may hold, each with the same checks by the row's ids and path, and its fields in order, a part's and an "Other" text's names, a few answers, a consent's wording named by the path, and its errors linked from the summary in the row's order. |
 | `ErrorFixtureTests` | The server's errors the runtime is held to (ADR-0112, `errors.cshtml`, `errors-paged.cshtml`), on a site in English and on one in German: every required field left empty with one answer given, answers each check refuses (a hidden label, an editor's own message and a check's, a pattern, a match with another field and in a row, a number's range, a date's window from today, a phone, a web address, a text's longest, a grid row a validation rule refuses, a name in parts, a field a rule shows or requires, a validation rule's message), nothing at all, and Next on the first page of two; each page rendered again written to `fixtures/rendering/errors-<language>.json`, the same on every run. |
+| `CalculationFixtureTests` | The server's calculations and sliders the runtime is held to (ADR-0114, `calculations.cshtml`), on a site in English and on one in German: a prefix and its places, a suffix and no places, the default places, a calculation of a calculation, the days between two dates, a choice's number times a slider's, one a rule shows and one per row, and sliders with and without their unit and value; every calculation answered, an unreadable price, an empty date and a row's unreadable cost, and a price of nothing that a division fails on; each page first rendered and rendered again written to `fixtures/rendering/calculations-<language>.json`, the same on every run. |
 | `FormRenderingPendingTests` | A site whose plan has not run: a page answers `200` with its own text and no form markup for a visitor, and exactly one note in the form's place, without the form's element or assets, for a signed-in backoffice user, in the page's culture (German). |
 
 **The website runtime** (`packages/runtime`, Vitest in jsdom, [ADR-0110](../docs/decisions/0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md)):
@@ -933,8 +939,13 @@ hide loses its error; without a summary the focus goes to the first field; a sec
 a passing send goes on with its button, in a task of its own after the press's submit event (6.4f), as does one
 whose errors are on a page the server has not shown; a summary
 link moves the focus; and the server's errors stay while their field is unchanged and go when it changes or the
-rules hide it; `errors.offline.test.ts` sends as without JavaScript when the words cannot load; `jfb-runtime.test.ts`
-holds the global. In Edge,
+rules hide it; `errors.offline.test.ts` sends as without JavaScript when the words cannot load; `outputs.test.ts`
+shows each calculation's result as the visitor types, in its format, none for an unreadable answer, a failed
+division or an empty date, nothing while the rules hide it, a row's in its row, written only when it changes, on a
+form without rules too and never for a site's own type, and a slider's value beside its thumb and in its
+`aria-valuetext`; `engine.test.ts` loads the calculation language only for a form with a calculation, once for the
+page, and leaves a form whose language cannot load to the post without JavaScript; `jfb-runtime.test.ts` holds the
+global. In Edge,
 `e2e/specs/website/runtime-frame.spec.ts` shows each demo form enhanced once with its `jfb:ready`, a form the page
 puts in later enhanced through `init(root)`, the chunk loaded only once a form is touched (by focus, or by a change
 without focus as autofill makes), and no error in the console; `e2e/specs/website/rules-on-the-page.spec.ts` shows
@@ -942,7 +953,11 @@ the feedback form's rules on the page in English and German, as the visitor answ
 `e2e/specs/website/errors-on-the-page.spec.ts` shows, in English and German, the contact form's error as the
 visitor leaves a field and its fix, a refused send with the server's errors for the same answers, the summary's
 focus and links and `jfb:invalid`, axe clean with them shown, only the page's language file loading, and the
-feedback form sent although a required field the rules hide has no answer.
+feedback form sent although a required field the rules hide has no answer; and
+`e2e/specs/website/calculations-on-the-page.spec.ts` shows, in English and German, the room hire's cost following
+the room and the hours, none for a room the visitor describes, the slider's value following its thumb, the
+calculation language loaded once, axe clean, the cost the page showed stored with the entry, and the contact form
+never loading the calculation language.
 
 ## Writing tests
 

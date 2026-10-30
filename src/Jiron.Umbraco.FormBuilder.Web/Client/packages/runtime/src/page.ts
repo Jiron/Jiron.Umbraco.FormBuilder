@@ -49,7 +49,10 @@ export interface PageReading {
   readonly fields: ReadonlyMap<string, FieldRead>;
   /** Each repeatable group's, by its key. */
   readonly groups: ReadonlyMap<string, GroupRead>;
-  /** The answers as the rules see them: each field's and grid row's values by key, and each group's rows. */
+  /**
+   * The answers as the rules see them: each field's and grid row's values by key, and each group's rows; and the
+   * fields whose answers their types could not read, which leave a calculation that reads them without a value.
+   */
   readonly answers: FormAnswers;
 }
 
@@ -74,6 +77,8 @@ export function readPage(form: HTMLFormElement, model: FormModel): PageReading {
     string,
     Record<string, string[]>[]
   >;
+  const unreadable: string[] = [];
+  const unreadableRows: Record<string, string[][]> = Object.create(null) as Record<string, string[][]>;
   for (const field of fields) {
     if (isGroup(model, field)) {
       const posted = typeof field.alias === 'string' ? (post.rows.get(field.alias) ?? []) : [];
@@ -88,13 +93,17 @@ export function readPage(form: HTMLFormElement, model: FormModel): PageReading {
         for (const child of row.values()) put(texts, child);
         return texts;
       });
+      unreadableRows[field.key] = childRows.map((row) =>
+        [...row.values()].filter(isUnreadable).map((child) => child.field.key),
+      );
       continue;
     }
     const one = readOne(model, field, post.fields);
     read.set(field.key, one);
     put(values, one);
+    if (isUnreadable(one)) unreadable.push(field.key);
   }
-  return { post, fields: read, groups, answers: { values, rows } };
+  return { post, fields: read, groups, answers: { values, rows, unreadable, unreadableRows } };
 }
 
 /** Every field outside repeatable groups, in the order of the form's pages and groups. */
@@ -147,6 +156,10 @@ function put(texts: Record<string, string[]>, read: FieldRead): void {
     (texts[value.row] ??= []).push(value.text);
   }
 }
+
+/** Whether the reading stage found an answer over its type's limits, or one its type could not read (ADR-0114). */
+const isUnreadable = (read: FieldRead): boolean =>
+  read.reading !== null && (read.reading.limit !== null || read.reading.unreadable);
 
 const builtIn = (model: FormModel, field: ModelField): boolean =>
   Object.hasOwn(model.fields, field.key) && model.fields[field.key]?.builtIn === true;

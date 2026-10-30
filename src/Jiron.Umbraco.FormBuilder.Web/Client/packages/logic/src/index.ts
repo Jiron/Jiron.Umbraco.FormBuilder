@@ -9,21 +9,11 @@
  * (ADR-0099), whose words are tables of their own in lang/, 6.4a the reading of answers before the rules and checks
  * (ADR-0109), 6.4b the reading of a page's post by its names, as the server reads one (ADR-0110), 6.4c the form
  * engine's model made of the form endpoint's answer, as Core makes it of the definition (ADR-0111), and 6.4d the empty
- * submission and the words of each language as a module of its own, `@jfb/logic/lang/<language>` (ADR-0112).
+ * submission and the words of each language as a module of its own, `@jfb/logic/lang/<language>` (ADR-0112), and
+ * 6.4f the calculation language as one, `@jfb/logic/calc`, which the form engine takes (ADR-0114).
  */
-export {
-  calculate,
-  checkFormula,
-  evaluateFormula,
-  MAX_FORMULA_DEPTH,
-  MAX_FORMULA_LENGTH,
-  parseFormula,
-  storedNumber,
-  type Calculation,
-  type FieldReference,
-  type FormulaScope,
-  type Operation,
-} from './calc.ts';
+// The calculation language is a module of its own, `@jfb/logic/calc`, that only a form with a calculation loads.
+export type { Calculation, FieldReference, Formulas, FormulaScope, Operation } from './calc.ts';
 export {
   checkField,
   type CheckedField,
@@ -49,7 +39,9 @@ export {
 export { today } from './dates.ts';
 export { formatDecimal, parseDecimal, type Decimal } from './decimal.ts';
 export {
+  calculationText,
   displayAnswer,
+  sliderText,
   type AnswerValue,
   type DisplayedField,
   type DisplayOption,
@@ -59,6 +51,7 @@ export {
 export { LogicError, type LogicErrorCode } from './errors.ts';
 export {
   evaluateForm,
+  hasCalculations,
   type FormAnswers,
   type FormState,
   type LogicAction,

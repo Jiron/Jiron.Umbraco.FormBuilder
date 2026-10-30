@@ -4,8 +4,9 @@
  * words it. A send checks every page and refuses an empty submission; Next checks the page shown; the fields' own
  * check, as the visitor answers, leaves the empty submission to the send (6.4e).
  */
-import { evaluateForm, isEmptyPost, logicFormOf } from '@jfb/logic';
+import { isEmptyPost } from '@jfb/logic';
 import { errorsOf } from './checks';
+import type { PageEngine } from './engine';
 import { emptyError, shownErrors, wordsFor, type ShownError } from './messages';
 import type { FormModel } from './model';
 import { readPage } from './page';
@@ -18,30 +19,33 @@ export type CheckScope = 'send' | 'page';
 export function checkPage(
   form: HTMLFormElement,
   model: FormModel,
+  engine: PageEngine,
   scope: CheckScope,
   clock: () => number = Date.now,
 ): Promise<ShownError[]> {
-  return check(form, model, scope, clock);
+  return check(form, model, engine, scope, clock);
 }
 
 /** Every shown field's error for the answers now, without the empty submission's, which only a send has. */
 export function checkFields(
   form: HTMLFormElement,
   model: FormModel,
+  engine: PageEngine,
   clock: () => number = Date.now,
 ): Promise<ShownError[]> {
-  return check(form, model, 'fields', clock);
+  return check(form, model, engine, 'fields', clock);
 }
 
 async function check(
   form: HTMLFormElement,
   model: FormModel,
+  engine: PageEngine,
   scope: CheckScope | 'fields',
   clock: () => number,
 ): Promise<ShownError[]> {
   const reading = readPage(form, model);
   const context = contextOf(model, reading, clock(), form.ownerDocument.URL);
-  const state = evaluateForm(logicFormOf(model.form, model.fields), reading.answers, context);
+  const state = engine.decide(reading.answers, context);
   const words = await wordsFor(model.culture);
   if (scope === 'send' && isEmptyPost(reading.post)) return [emptyError(form, model, words)];
   let errors = errorsOf(model, reading, state, context);

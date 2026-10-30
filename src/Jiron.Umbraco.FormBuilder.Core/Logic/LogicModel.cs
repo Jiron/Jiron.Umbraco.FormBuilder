@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+
 namespace Jiron.Umbraco.FormBuilder.Logic;
 
 /// <summary>
@@ -148,7 +150,20 @@ internal sealed record LogicForm(IReadOnlyList<LogicPage> Pages, IReadOnlyList<L
 /// <summary>The answers: each field's and grid row's texts by id, and each repeatable group's rows of its child fields' texts.</summary>
 internal sealed record FormAnswers(
     IReadOnlyDictionary<string, IReadOnlyList<string>> Values,
-    IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>>> Rows);
+    IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>>> Rows)
+{
+    private static readonly IReadOnlySet<string> NoFields = FrozenSet<string>.Empty;
+
+    /// <summary>
+    /// The fields outside repeatable groups whose answers their type could not read or found over its limits: the rules
+    /// see them as unanswered, and a calculation that reads one has no value (ADR-0063, ADR-0114).
+    /// </summary>
+    public IReadOnlySet<string> Unreadable { get; init; } = NoFields;
+
+    /// <summary>The same for each repeatable group's rows: by the group's id, each row's child fields.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<IReadOnlySet<string>>> UnreadableRows { get; init; } =
+        new Dictionary<string, IReadOnlyList<IReadOnlySet<string>>>(StringComparer.Ordinal);
+}
 
 /// <summary>One row of a repeatable group: its child fields that are hidden or required, its messages and its calculations.</summary>
 internal sealed record RowState(
@@ -193,4 +208,8 @@ internal sealed record Operation(string Op, IReadOnlyList<Calculation> Args, int
 /// <param name="Kind">The kind of the field with the alias; null when the form has no such field or the browser cannot read it.</param>
 /// <param name="Answers">The field's answers as given, not yet cleaned; null for a hidden field.</param>
 /// <param name="Today">The site's date as a day number, read from the context only when a formula asks for it.</param>
-internal sealed record FormulaScope(Func<string, FieldKind?> Kind, Func<string, IReadOnlyList<string>?> Answers, Func<int> Today);
+/// <param name="Unreadable">
+/// Whether the field's answers are ones its type could not read or found over its limits, which leave a calculation
+/// that reads them without a value (ADR-0114); none are when null.
+/// </param>
+internal sealed record FormulaScope(Func<string, FieldKind?> Kind, Func<string, IReadOnlyList<string>?> Answers, Func<int> Today, Func<string, bool>? Unreadable = null);

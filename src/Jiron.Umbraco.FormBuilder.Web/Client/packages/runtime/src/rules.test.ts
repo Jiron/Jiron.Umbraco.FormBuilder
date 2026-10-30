@@ -1,7 +1,9 @@
 // Rules on the page (ROADMAP 6.4c, ADR-0111): the form engine over the page's answers, in the context of a render, and
 // the state it decides shown in the hooks the views write: hidden elements and their disabled controls, `required`
 // on the controls that follow their field, the marks in the state they name, and the note while an asterisk shows.
+import { FORMULAS } from '@jfb/logic/calc';
 import { afterEach, describe, expect, it } from 'vitest';
+import { engineOf } from './engine';
 import type { FormModel, ModelField, ModelPage } from './model';
 import { readPage } from './page';
 import { ENGLISH } from './testing';
@@ -248,7 +250,7 @@ describe('the rules on the page', () => {
     const changes: MutationRecord[] = [];
     const observer = new MutationObserver((records) => changes.push(...records));
     observer.observe(form, { attributes: true, subtree: true });
-    const rules = rulesOf(form, course, () => NOW);
+    const rules = rulesOf(form, course, engineOf(course, FORMULAS), () => NOW);
     expect([...(rules?.state.hidden ?? [])].sort()).toEqual([
       'g3',
       'g4',
@@ -266,7 +268,7 @@ describe('the rules on the page', () => {
 
   it('shows a field a rule shows, with its controls enabled and required, its asterisk and the note', async () => {
     const form = formOf(COURSE);
-    rulesOf(form, course, () => NOW);
+    rulesOf(form, course, engineOf(course, FORMULAS), () => NOW);
     await choose('evenings-yes');
     expect(stateOf(fieldOf('k-days'))).toEqual({ hidden: false, ruled: false });
     expect(byId('days').hasAttribute('disabled')).toBe(false);
@@ -278,7 +280,7 @@ describe('the rules on the page', () => {
 
   it("decides again with a shown field's answer, so what depends on it shows at once", async () => {
     const form = formOf(COURSE);
-    const rules = rulesOf(form, course, () => NOW);
+    const rules = rulesOf(form, course, engineOf(course, FORMULAS), () => NOW);
     await choose('evenings-yes');
     expect(stateOf(fieldOf('k-late'))).toEqual({ hidden: false, ruled: false });
     expect(byId('late').hasAttribute('disabled')).toBe(false);
@@ -288,7 +290,7 @@ describe('the rules on the page', () => {
 
   it('hides a field a rule hides again, disables its controls and takes back its asterisk and the note', async () => {
     const form = formOf(COURSE);
-    rulesOf(form, course, () => NOW);
+    rulesOf(form, course, engineOf(course, FORMULAS), () => NOW);
     await choose('evenings-yes');
     await choose('evenings-no');
     expect(stateOf(fieldOf('k-days'))).toEqual({ hidden: true, ruled: true });
@@ -301,7 +303,7 @@ describe('the rules on the page', () => {
 
   it('requires a field a rule requires, with its asterisk, which brings the note', async () => {
     const form = formOf(COURSE);
-    rulesOf(form, course, () => NOW);
+    rulesOf(form, course, engineOf(course, FORMULAS), () => NOW);
     await choose('evenings-no');
     expect(byId('comments').hasAttribute('required')).toBe(true);
     expect(markOf('k-comments').hasAttribute('hidden')).toBe(false);
@@ -313,7 +315,7 @@ describe('the rules on the page', () => {
 
   it('hides a group with its fields, and keeps disabled a control the server disables by itself', async () => {
     const form = formOf(COURSE);
-    rulesOf(form, course, () => NOW);
+    rulesOf(form, course, engineOf(course, FORMULAS), () => NOW);
     const group = document.querySelector('[data-jfb-group="g2"]');
     if (group === null) throw new Error('no group');
     await choose('evenings-no');
@@ -327,7 +329,7 @@ describe('the rules on the page', () => {
 
   it('keeps a page that is not the current one hidden, and says when a rule hides it', async () => {
     const form = formOf(COURSE);
-    rulesOf(form, course, () => NOW);
+    rulesOf(form, course, engineOf(course, FORMULAS), () => NOW);
     const page = (key: string): Element => {
       const element = document.querySelector(`[data-jfb-page="${key}"]`);
       if (element === null) throw new Error('no page ' + key);
@@ -345,7 +347,7 @@ describe('the rules on the page', () => {
 
   it("decides each row of a repeatable group by its own answers, and leaves the group's own controls", async () => {
     const form = formOf(COURSE);
-    rulesOf(form, course, () => NOW);
+    rulesOf(form, course, engineOf(course, FORMULAS), () => NOW);
     await type('guest-1', 'Cy');
     expect(stateOf(fieldOf('k-diet', 1))).toEqual({ hidden: false, ruled: false });
     expect(byId('diet-1').hasAttribute('disabled')).toBe(false);
@@ -358,7 +360,7 @@ describe('the rules on the page', () => {
 
   it('works out the answers of one turn once', async () => {
     const form = formOf(COURSE);
-    const rules = rulesOf(form, course, () => NOW);
+    const rules = rulesOf(form, course, engineOf(course, FORMULAS), () => NOW);
     const states: unknown[] = [];
     const apply = rules?.apply.bind(rules);
     if (rules === null || apply === undefined) throw new Error('no rules');
@@ -377,7 +379,7 @@ describe('the rules on the page', () => {
 
   it('leaves a form without rules, and one whose rules the engine refuses, as the server rendered it', async () => {
     const plain = modelOf([{ key: 'p1', groups: [{ key: 'g1', fields: [field('k-evenings', 'radio', 'evenings')] }] }]);
-    expect(rulesOf(formOf(COURSE), plain, () => NOW)).toBeNull();
+    expect(rulesOf(formOf(COURSE), plain, engineOf(plain, FORMULAS), () => NOW)).toBeNull();
 
     const refused = modelOf([
       {
@@ -389,7 +391,7 @@ describe('the rules on the page', () => {
     ]);
     const form = formOf(COURSE);
     const before = form.outerHTML;
-    expect(rulesOf(form, refused, () => NOW)).toBeNull();
+    expect(rulesOf(form, refused, engineOf(refused, FORMULAS), () => NOW)).toBeNull();
     await choose('evenings-yes');
     expect(form.outerHTML).toBe(before);
   });
@@ -436,7 +438,7 @@ describe('the marks the rules change', () => {
           </div>
         </div></section>
       </form>`);
-    rulesOf(form, grid, () => NOW);
+    rulesOf(form, grid, engineOf(grid, FORMULAS), () => NOW);
     expect(note().hasAttribute('hidden')).toBe(false);
     await choose('evenings-no');
     expect(byId('grid-mark').hasAttribute('hidden')).toBe(false);
@@ -484,7 +486,7 @@ describe('the marks the rules change', () => {
           </div>
         </div></section>
       </form>`);
-    rulesOf(form, optional, () => NOW);
+    rulesOf(form, optional, engineOf(optional, FORMULAS), () => NOW);
     await choose('evenings-no');
     expect(byId('field-mark').hasAttribute('hidden')).toBe(true);
     expect(byId('part-mark').hasAttribute('hidden')).toBe(false);

@@ -1,10 +1,16 @@
+using System.Globalization;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.PublicApi;
+using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
@@ -113,6 +119,82 @@ public abstract class RenderingTestBase : PublicApiTestBase
                     break;
             }
         }
+    }
+
+    // JSON whose markup stays readable in a diff and whose other characters are escaped, as the repository's fixtures
+    // keep them: outside ASCII only in strings, where an escape means the same.
+    private protected static string Ascii(string json)
+    {
+        var ascii = new StringBuilder(json.Length);
+        foreach (var character in json)
+        {
+            if (character > (char)126)
+            {
+                ascii.Append((char)92).Append('u').Append(((int)character).ToString("X4", CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                ascii.Append(character);
+            }
+        }
+
+        return ascii.ToString();
+    }
+
+    // A copy of a form element as the fixture keeps it: without its route token, which changes with every render, and
+    // its honeypot, whose name follows the form's key, and with each form's key fixed.
+    private protected static string Normalised(IElement shown, params (Guid Key, Guid Fixed)[] keys)
+    {
+        var form = (IElement)shown.Clone(deep: true);
+        foreach (var varying in form.QuerySelectorAll($"input[name='{FormPostFields.RouteToken}'], .jfb-hp").ToList())
+        {
+            varying.Remove();
+        }
+
+        var html = form.OuterHtml;
+        foreach (var (key, fixedKey) in keys)
+        {
+            html = html.Replace(key.ToString("D"), fixedKey.ToString("D"), StringComparison.Ordinal).Replace(key.ToString("N"), fixedKey.ToString("N"), StringComparison.Ordinal);
+        }
+
+        return html;
+    }
+
+    private protected async Task<IElement> FormAtAsync(string path)
+    {
+        using var response = await GetAsync(path);
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.That(Succeeded(response), Is.True, $"{path} answers {(int)response.StatusCode}: {html}");
+        return (await new HtmlParser().ParseDocumentAsync(html)).QuerySelector("form.jfb-form") ?? throw new AssertionException($"no form at {path}");
+    }
+
+    // Posts the form as a browser without JavaScript does: to its action, from the site's own origin, the page as the referrer.
+    private protected async Task<HttpResponseMessage> PostAsync(IElement form, string nav, string page) =>
+        await SendAsync(HttpMethod.Post, form.GetAttribute("action")!.Split('#')[0], request =>
+        {
+            request.Content = new FormUrlEncodedContent(Posted(form, nav));
+            request.Headers.TryAddWithoutValidation("Origin", Client.BaseAddress!.GetLeftPart(UriPartial.Authority));
+            request.Headers.Referrer = new Uri(Client.BaseAddress!, page);
+        });
+
+    /// <summary>
+    /// Holds the cases a fixture of the server's own pages wrote to the reviewed file in <c>tests/fixtures/rendering/</c>,
+    /// which the runtime's tests load; with <c>JFB_UPDATE_SNAPSHOTS=1</c> it writes the file and fails, so the diff
+    /// gets reviewed.
+    /// </summary>
+    private protected static async Task MatchFixtureAsync(string name, JsonArray cases, string changed)
+    {
+        var fixture = RepositoryRoot.Path(typeof(RenderingTestBase).Assembly, "tests", "fixtures", "rendering", name);
+        var written = Ascii(new JsonObject { ["cases"] = cases }.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping })).ReplaceLineEndings("\n") + "\n";
+        if (Environment.GetEnvironmentVariable("JFB_UPDATE_SNAPSHOTS") == "1")
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(fixture)!);
+            await System.IO.File.WriteAllTextAsync(fixture, written, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            Assert.Fail($"JFB_UPDATE_SNAPSHOTS=1: wrote {fixture}. Review the diff, commit it, and run again without the variable.");
+        }
+
+        Assert.That(System.IO.File.Exists(fixture), Is.True, $"the reviewed fixture {fixture}; run with JFB_UPDATE_SNAPSHOTS=1");
+        Assert.That((await System.IO.File.ReadAllTextAsync(fixture)).ReplaceLineEndings("\n"), Is.EqualTo(written), $"{changed}: run with JFB_UPDATE_SNAPSHOTS=1 and review the diff");
     }
 
     /// <summary>The content service.</summary>

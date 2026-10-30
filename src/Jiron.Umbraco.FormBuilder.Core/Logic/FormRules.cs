@@ -112,6 +112,21 @@ internal static class FormRules
             return all;
         }
 
+        // Whether a field's answers, as a calculation in a row (or outside the rows, -1) reads them, are ones its type could
+        // not read: a shown field's, a child field's in the row, or in any row where it is shown from outside them.
+        bool UnreadableIn(string id, Node? repeater, int row)
+        {
+            var owner = subjects[id].Owner;
+            if (owner.Repeater is null)
+            {
+                return !owner.Hidden && answers.Unreadable.Contains(id);
+            }
+
+            var rows = answers.UnreadableRows.TryGetValue(owner.Repeater.Id, out var found) ? found : [];
+            bool In(int r) => r < rows.Count && !owner.HiddenIn[r] && rows[r].Contains(id);
+            return owner.Repeater == repeater ? In(row) : Enumerable.Range(0, owner.HiddenIn.Length).Any(In);
+        }
+
         var global = new Subject(kinds, NoValues, context) { Lookup = id => AnswersOf(id, null, -1) };
         Subject ScopeOf(Node? repeater, int row) =>
             repeater is null ? global : new Subject(kinds, NoValues, context) { Lookup = id => AnswersOf(id, repeater, row) };
@@ -121,10 +136,16 @@ internal static class FormRules
         int? day = null;
         int SiteToday() => day ??= CalendarValues.Today(context.Now, context.TimeZone);
 
-        // A shown calculation over its scope, rounded to its places; a failure of the arithmetic leaves it without a value.
-        string? Work(Formula formula, Subject scope)
+        // A shown calculation in a row (or outside the rows, -1), rounded to its places; an answer its type could not read
+        // or a failure of the arithmetic leaves it without a value.
+        string? Work(Formula formula, Node? repeater, int row)
         {
-            var reads = new FormulaScope(KindOf, alias => aliases.TryGetValue(alias, out var id) ? scope.Lookup!(id) : null, SiteToday);
+            var scope = ScopeOf(repeater, row);
+            var reads = new FormulaScope(
+                KindOf,
+                alias => aliases.TryGetValue(alias, out var id) ? scope.Lookup!(id) : null,
+                SiteToday,
+                alias => aliases.TryGetValue(alias, out var id) && UnreadableIn(id, repeater, row));
             try
             {
                 return Calculations.Calculate(formula.Tree, reads) is { } result ? ExactDecimal.Round(result, formula.Decimals).ToString() : null;
@@ -152,7 +173,7 @@ internal static class FormRules
                     var valueIn = new string?[count];
                     for (var row = 0; row < count; row++)
                     {
-                        valueIn[row] = hiddenIn[row] ? null : Work(formula, ScopeOf(repeater, row));
+                        valueIn[row] = hiddenIn[row] ? null : Work(formula, repeater, row);
                     }
 
                     element.ValueIn = valueIn;
@@ -163,7 +184,7 @@ internal static class FormRules
                 element.Hidden = element.Container?.Hidden == true || !Shown(element, global);
                 if (element.Formula is { } formula && !element.Hidden)
                 {
-                    element.Value = Work(formula, global);
+                    element.Value = Work(formula, null, -1);
                 }
             }
         }

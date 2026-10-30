@@ -32,6 +32,22 @@
               "settings": { "min": "09:00", "max": "17:00", "stepMinutes": 30 }
             },
             {
+              "key": "d0000000-0000-4000-8000-000000000411",
+              "type": "radio",
+              "alias": "room",
+              "label": { "": "Which room?", "de": "Welcher Raum?" },
+              "help": { "": "Need another room? Tell us what you need, and we send you the cost.", "de": "Brauchen Sie einen anderen Raum? Sagen Sie uns, was Sie brauchen, und wir nennen Ihnen die Kosten." },
+              "required": true,
+              "defaultValue": "15",
+              "settings": { "other": true },
+              "options": {
+                "items": [
+                  { "value": "15", "label": { "": "The reading room, 15 euros an hour", "de": "Der Lesesaal, 15 Euro pro Stunde" } },
+                  { "value": "25", "label": { "": "The hall, 25 euros an hour", "de": "Der Saal, 25 Euro pro Stunde" } }
+                ]
+              }
+            },
+            {
               "key": "d0000000-0000-4000-8000-000000000403",
               "type": "slider",
               "alias": "hours",
@@ -43,8 +59,8 @@
               "type": "calculation",
               "alias": "cost",
               "label": { "": "Room hire", "de": "Raummiete" },
-              "help": { "": "15 euros an hour.", "de": "15 Euro pro Stunde." },
-              "settings": { "formula": "hours * 15", "format": { "decimals": 2, "prefix": { "": "EUR", "de": "EUR" } } }
+              "help": { "": "The room's rate times the hours.", "de": "Der Stundensatz des Raums mal die Stunden." },
+              "settings": { "formula": "room * hours", "format": { "decimals": 2, "prefix": { "": "EUR", "de": "EUR" } } }
             },
             {
               "key": "d0000000-0000-4000-8000-000000000405",

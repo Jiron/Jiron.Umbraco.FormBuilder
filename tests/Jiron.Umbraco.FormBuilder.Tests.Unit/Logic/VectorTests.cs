@@ -138,11 +138,16 @@ public sealed class VectorTests
         return MergeTagEngine.Render(parsed, path => sources.GetValueOrDefault(path), VectorReader.Formats(formats));
     }
 
-    // A subject as a formula reads it: the fields' kinds and answers by alias, a hidden field without answers.
-    private static FormulaScope FormulaScope(Subject subject) => new(
+    // A subject as a formula reads it: the fields' kinds and answers by alias, a hidden field without answers, and the
+    // aliases whose answers their types could not read.
+    private static FormulaScope FormulaScope(Subject subject, IReadOnlySet<string> unreadable) => new(
         alias => subject.Fields.TryGetValue(alias, out var kind) ? kind : null,
         alias => subject.Context.Hidden.Contains(alias, StringComparer.Ordinal) ? null : subject.Values.GetValueOrDefault(alias),
-        () => CalendarValues.Today(subject.Context.Now, subject.Context.TimeZone));
+        () => CalendarValues.Today(subject.Context.Now, subject.Context.TimeZone),
+        unreadable.Contains);
+
+    // The ids or aliases a case lists, as a set.
+    private static HashSet<string> Names(JsonElement list) => list.EnumerateArray().Select(name => name.GetString()!).ToHashSet(StringComparer.Ordinal);
 
     private static JsonNode? Run(JsonElement root, JsonElement vector)
     {
@@ -156,6 +161,7 @@ public sealed class VectorTests
         }
 
         var defaults = VectorReader.Context(root.GetProperty("defaults").GetProperty("context"));
+        var unreadable = vector.TryGetProperty("unreadable", out var unread) ? Names(unread) : [];
         var subject = new Subject(
             fields,
             vector.TryGetProperty("values", out var values) ? VectorReader.Values(values) : [],
@@ -184,13 +190,19 @@ public sealed class VectorTests
 
             if (vector.TryGetProperty("form", out var form))
             {
-                var answers = new FormAnswers(subject.Values, vector.TryGetProperty("rows", out var rows) ? VectorReader.Rows(rows) : []);
+                var answers = new FormAnswers(subject.Values, vector.TryGetProperty("rows", out var rows) ? VectorReader.Rows(rows) : [])
+                {
+                    Unreadable = unreadable,
+                    UnreadableRows = vector.TryGetProperty("unreadableRows", out var unreadRows)
+                        ? unreadRows.EnumerateObject().ToDictionary(group => group.Name, group => (IReadOnlyList<IReadOnlySet<string>>)[.. group.Value.EnumerateArray().Select(Names)], StringComparer.Ordinal)
+                        : new Dictionary<string, IReadOnlyList<IReadOnlySet<string>>>(StringComparer.Ordinal),
+                };
                 return Json(FormRules.Evaluate(VectorReader.Form(form), answers, subject.Context));
             }
 
             if (vector.TryGetProperty("formula", out var formula))
             {
-                return Calculations.Evaluate(formula.GetString()!, FormulaScope(subject));
+                return Calculations.Evaluate(formula.GetString()!, FormulaScope(subject, unreadable));
             }
 
             if (vector.TryGetProperty("template", out var template))
@@ -198,7 +210,7 @@ public sealed class VectorTests
                 return Json(RenderTemplate(root, template, subject.Context.Culture));
             }
 
-            return Calculations.Calculate(VectorReader.Calculation(vector.GetProperty("calc")), FormulaScope(subject))?.ToString();
+            return Calculations.Calculate(VectorReader.Calculation(vector.GetProperty("calc")), FormulaScope(subject, unreadable))?.ToString();
         }
         catch (LogicException exception)
         {

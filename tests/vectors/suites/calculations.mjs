@@ -33,15 +33,19 @@ const fields = {
   until: 'dateTime',
 };
 
-/** A formula case. `more` adds a description, a context or field kinds. */
+/**
+ * A formula case. `more` adds a description, a context, field kinds, or the aliases whose answers their types could not
+ * read (`unreadable`, ADR-0114).
+ */
 function c(id, formula, values, expect, more = {}) {
-  const { description, context, kinds } = more;
+  const { description, context, kinds, unreadable } = more;
   return {
     id,
     ...(description === undefined ? {} : { description }),
     ...(context === undefined ? {} : { context }),
     ...(kinds === undefined ? {} : { fields: kinds }),
     values,
+    ...(unreadable === undefined ? {} : { unreadable }),
     formula,
     expect,
   };
@@ -350,6 +354,18 @@ const hide = (...conditions) => [rule('hide', conditions)];
 const nights = [n('fn', 'nights'), calc('fc', 'cost', 'nights * rate', 0)];
 const trips = (more = {}) => f('trips', null, { fields: nights, ...more });
 
+// An answer its type could not read, or found over its limits, leaves a calculation that reads it without a value; a
+// formula's mistakes still come first, and an answer it never reads counts for nothing (ADR-0063, ADR-0114).
+const unreadable = [
+  c('an-unreadable-answer-has-no-value', 'qty + 1', {}, null, { unreadable: ['qty'] }),
+  c('an-unreadable-answer-has-no-value-whatever-it-holds', 'qty + 1', { qty: ['2'] }, null, { unreadable: ['qty'] }),
+  c('an-unreadable-choice-has-no-value', 'plan * 2', {}, null, { unreadable: ['plan'] }),
+  c('an-unreadable-checkbox-has-no-value', 'insured + 1', {}, null, { unreadable: ['insured'] }),
+  c('an-unreadable-date-has-no-value', 'daysBetween(arrival, departure)', { arrival: ['2026-06-20'], departure: ['2026-06-22'] }, null, { unreadable: ['departure'] }),
+  c('an-unreadable-answer-the-formula-never-reads', 'if(price > 0, price, qty)', { price: ['3'] }, '3', { unreadable: ['qty'] }),
+  c('an-unreadable-answer-of-the-wrong-kind-is-still-a-mistake', 'name * 2', {}, at('operator_not_for_kind', 'name * 2', 'name'), { unreadable: ['name'] }),
+];
+
 const forms = [
   { id: 'form-a-calculation-rounded-to-its-places', values: { fq: ['3'], fp: ['0.3333'] }, form: form([n('fq', 'qty'), n('fp', 'price'), calc('ft', 'total', 'qty * price', 2)]), expect: state({ calculations: { ft: '1' } }), description: '0.9999 to two places' },
   { id: 'form-two-places-when-unset', values: { fq: ['1'] }, form: form([n('fq', 'qty'), calc('ft', 'third', 'qty / 3')]), expect: state({ calculations: { ft: '0.33' } }) },
@@ -367,6 +383,19 @@ const forms = [
   { id: 'form-a-division-by-zero-has-no-value', values: { fq: ['0'], fp: ['5'] }, form: form([n('fq', 'qty'), n('fp', 'price'), calc('ft', 'each', 'price / qty', 2), f('notice', 'text', { rules: show(cond('ft', 'isEmpty')) })]), expect: state({ calculations: { ft: null } }) },
   { id: 'form-out-of-range-has-no-value', values: { fq: [FIFTEEN_NINES] }, form: form([n('fq', 'qty'), calc('ft', 'huge', pow('qty', 5), 0)]), expect: state({ calculations: { ft: null } }) },
   { id: 'form-an-empty-date-has-no-value', values: { fa: ['2026-06-20'] }, form: form([f('fa', 'date', { alias: 'arrival' }), f('fd', 'date', { alias: 'departure' }), calc('ft', 'nights', 'daysBetween(arrival, departure)', 0)]), expect: state({ calculations: { ft: null } }) },
+  { id: 'form-an-unreadable-answer-has-no-value', unreadable: ['fq'], values: { fp: ['5'] }, form: form([n('fq', 'qty'), n('fp', 'price'), calc('ft', 'total', 'qty + price', 0), f('notice', 'text', { rules: show(cond('fq', 'isEmpty')) })]), expect: state({ calculations: { ft: null } }), description: 'the rules see it unanswered, as they read what its type read' },
+  { id: 'form-an-unreadable-answer-the-formula-never-reads', unreadable: ['fq'], values: { fp: ['5'] }, form: form([n('fq', 'qty'), n('fp', 'price'), calc('ft', 'total', 'if(price > 0, price, qty)', 0)]), expect: state({ calculations: { ft: '5' } }) },
+  { id: 'form-an-unreadable-hidden-answer-reads-as-zero', unreadable: ['fq'], values: { flag: ['true'] }, form: form([f('flag', 'checkbox'), n('fq', 'qty', { rules: hide(cond('flag', 'isChecked')) }), calc('ft', 'total', 'qty + 1', 0)]), expect: state({ hidden: ['fq'], calculations: { ft: '1' } }), description: 'a hidden field loses its answers' },
+  { id: 'form-an-unreadable-answer-in-a-row', values: { fr: ['100'] }, rows: { trips: [{ fn: ['2'] }, {}] }, unreadableRows: { trips: [[], ['fn']] }, form: form([n('fr', 'rate'), trips()]), expect: state({ rows: { trips: [row({ calculations: { fc: '200' } }), row({ calculations: { fc: null } })] } }) },
+  { id: 'form-an-unreadable-row-answer-read-from-outside-the-rows', values: { fr: ['100'] }, rows: { trips: [{ fn: ['2'] }, {}] }, unreadableRows: { trips: [[], ['fn']] }, form: form([n('fr', 'rate'), trips(), calc('ft', 'total', 'nights * 10', 0)]), expect: state({ calculations: { ft: null }, rows: { trips: [row({ calculations: { fc: '200' } }), row({ calculations: { fc: null } })] } }) },
+  {
+    id: 'form-an-unreadable-row-answer-hidden-in-its-row-is-left-out',
+    values: { fr: ['100'] },
+    rows: { trips: [{ fn: ['2'] }, { skip: ['true'] }] },
+    unreadableRows: { trips: [[], ['fn']] },
+    form: form([n('fr', 'rate'), f('trips', null, { fields: [f('skip', 'checkbox'), n('fn', 'nights', { rules: hide(cond('skip', 'isChecked')) }), calc('fc', 'cost', 'nights * rate', 0)] }), calc('ft', 'total', 'nights', 0)]),
+    expect: state({ calculations: { ft: '2' }, rows: { trips: [row({ calculations: { fc: '200' } }), row({ hidden: ['fn'], calculations: { fc: '0' } })] } }),
+  },
   { id: 'form-an-age-from-today', values: { fb: ['2000-06-16'] }, form: form([f('fb', 'date', { alias: 'birth' }), calc('ft', 'age', 'yearsBetween(birth, today())', 0), f('adult', 'text', { rules: show(cond('ft', 'greaterThan', '17')) })]), expect: state({ calculations: { ft: '25' } }) },
   { id: 'form-a-calculation-required-by-a-rule', values: { fq: ['20'] }, form: form([n('fq', 'qty'), calc('ft', 'total', 'qty * 2', 0, { rules: [rule('require', [cond('ft', 'greaterThan', '10')])] })]), expect: state({ required: ['ft'], calculations: { ft: '40' } }) },
   { id: 'form-a-validation-rule-reads-a-calculation', values: { fq: ['20'] }, form: form([n('fq', 'qty'), calc('ft', 'total', 'qty * 2', 0)], { validationRules: [{ id: 'v1', field: 'fq', enabled: true, match: 'all', conditions: [cond('ft', 'greaterThan', '30')] }] }), expect: state({ messages: { fq: ['v1'] }, calculations: { ft: '40' } }) },
@@ -410,5 +439,5 @@ export default {
   suite: 'calculations',
   defaults,
   fields,
-  cases: [...grammar, ...mistakes, ...functions, ...kinds, ...dates, ...arithmetic, ...forms],
+  cases: [...grammar, ...mistakes, ...functions, ...kinds, ...dates, ...arithmetic, ...unreadable, ...forms],
 };

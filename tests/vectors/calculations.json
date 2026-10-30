@@ -2646,6 +2646,87 @@
       }
     },
     {
+      "id": "an-unreadable-answer-has-no-value",
+      "values": {},
+      "unreadable": [
+        "qty"
+      ],
+      "formula": "qty + 1",
+      "expect": null
+    },
+    {
+      "id": "an-unreadable-answer-has-no-value-whatever-it-holds",
+      "values": {
+        "qty": [
+          "2"
+        ]
+      },
+      "unreadable": [
+        "qty"
+      ],
+      "formula": "qty + 1",
+      "expect": null
+    },
+    {
+      "id": "an-unreadable-choice-has-no-value",
+      "values": {},
+      "unreadable": [
+        "plan"
+      ],
+      "formula": "plan * 2",
+      "expect": null
+    },
+    {
+      "id": "an-unreadable-checkbox-has-no-value",
+      "values": {},
+      "unreadable": [
+        "insured"
+      ],
+      "formula": "insured + 1",
+      "expect": null
+    },
+    {
+      "id": "an-unreadable-date-has-no-value",
+      "values": {
+        "arrival": [
+          "2026-06-20"
+        ],
+        "departure": [
+          "2026-06-22"
+        ]
+      },
+      "unreadable": [
+        "departure"
+      ],
+      "formula": "daysBetween(arrival, departure)",
+      "expect": null
+    },
+    {
+      "id": "an-unreadable-answer-the-formula-never-reads",
+      "values": {
+        "price": [
+          "3"
+        ]
+      },
+      "unreadable": [
+        "qty"
+      ],
+      "formula": "if(price > 0, price, qty)",
+      "expect": "3"
+    },
+    {
+      "id": "an-unreadable-answer-of-the-wrong-kind-is-still-a-mistake",
+      "values": {},
+      "unreadable": [
+        "name"
+      ],
+      "formula": "name * 2",
+      "expect": {
+        "error": "operator_not_for_kind",
+        "at": 0
+      }
+    },
+    {
       "id": "form-a-calculation-rounded-to-its-places",
       "values": {
         "fq": [
@@ -3612,6 +3693,525 @@
           "ft": null
         },
         "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-an-unreadable-answer-has-no-value",
+      "unreadable": [
+        "fq"
+      ],
+      "values": {
+        "fp": [
+          "5"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "fp",
+                    "kind": "number",
+                    "alias": "price"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty + price",
+                      "decimals": 0
+                    }
+                  },
+                  {
+                    "id": "notice",
+                    "kind": "text",
+                    "rules": [
+                      {
+                        "effect": "show",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "fq",
+                            "op": "isEmpty"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": null
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      },
+      "description": "the rules see it unanswered, as they read what its type read"
+    },
+    {
+      "id": "form-an-unreadable-answer-the-formula-never-reads",
+      "unreadable": [
+        "fq"
+      ],
+      "values": {
+        "fp": [
+          "5"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty"
+                  },
+                  {
+                    "id": "fp",
+                    "kind": "number",
+                    "alias": "price"
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "if(price > 0, price, qty)",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "5"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-an-unreadable-hidden-answer-reads-as-zero",
+      "unreadable": [
+        "fq"
+      ],
+      "values": {
+        "flag": [
+          "true"
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "flag",
+                    "kind": "checkbox"
+                  },
+                  {
+                    "id": "fq",
+                    "kind": "number",
+                    "alias": "qty",
+                    "rules": [
+                      {
+                        "effect": "hide",
+                        "enabled": true,
+                        "match": "all",
+                        "conditions": [
+                          {
+                            "field": "flag",
+                            "op": "isChecked"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "qty + 1",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [
+          "fq"
+        ],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "1"
+        },
+        "rows": {},
+        "actions": [],
+        "outcome": null
+      },
+      "description": "a hidden field loses its answers"
+    },
+    {
+      "id": "form-an-unreadable-answer-in-a-row",
+      "values": {
+        "fr": [
+          "100"
+        ]
+      },
+      "rows": {
+        "trips": [
+          {
+            "fn": [
+              "2"
+            ]
+          },
+          {}
+        ]
+      },
+      "unreadableRows": {
+        "trips": [
+          [],
+          [
+            "fn"
+          ]
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fr",
+                    "kind": "number",
+                    "alias": "rate"
+                  },
+                  {
+                    "id": "trips",
+                    "fields": [
+                      {
+                        "id": "fn",
+                        "kind": "number",
+                        "alias": "nights"
+                      },
+                      {
+                        "id": "fc",
+                        "kind": "number",
+                        "alias": "cost",
+                        "calculation": {
+                          "formula": "nights * rate",
+                          "decimals": 0
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {},
+        "rows": {
+          "trips": [
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": "200"
+              }
+            },
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": null
+              }
+            }
+          ]
+        },
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-an-unreadable-row-answer-read-from-outside-the-rows",
+      "values": {
+        "fr": [
+          "100"
+        ]
+      },
+      "rows": {
+        "trips": [
+          {
+            "fn": [
+              "2"
+            ]
+          },
+          {}
+        ]
+      },
+      "unreadableRows": {
+        "trips": [
+          [],
+          [
+            "fn"
+          ]
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fr",
+                    "kind": "number",
+                    "alias": "rate"
+                  },
+                  {
+                    "id": "trips",
+                    "fields": [
+                      {
+                        "id": "fn",
+                        "kind": "number",
+                        "alias": "nights"
+                      },
+                      {
+                        "id": "fc",
+                        "kind": "number",
+                        "alias": "cost",
+                        "calculation": {
+                          "formula": "nights * rate",
+                          "decimals": 0
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "nights * 10",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": null
+        },
+        "rows": {
+          "trips": [
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": "200"
+              }
+            },
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": null
+              }
+            }
+          ]
+        },
+        "actions": [],
+        "outcome": null
+      }
+    },
+    {
+      "id": "form-an-unreadable-row-answer-hidden-in-its-row-is-left-out",
+      "values": {
+        "fr": [
+          "100"
+        ]
+      },
+      "rows": {
+        "trips": [
+          {
+            "fn": [
+              "2"
+            ]
+          },
+          {
+            "skip": [
+              "true"
+            ]
+          }
+        ]
+      },
+      "unreadableRows": {
+        "trips": [
+          [],
+          [
+            "fn"
+          ]
+        ]
+      },
+      "form": {
+        "pages": [
+          {
+            "id": "p1",
+            "groups": [
+              {
+                "id": "g1",
+                "fields": [
+                  {
+                    "id": "fr",
+                    "kind": "number",
+                    "alias": "rate"
+                  },
+                  {
+                    "id": "trips",
+                    "fields": [
+                      {
+                        "id": "skip",
+                        "kind": "checkbox"
+                      },
+                      {
+                        "id": "fn",
+                        "kind": "number",
+                        "alias": "nights",
+                        "rules": [
+                          {
+                            "effect": "hide",
+                            "enabled": true,
+                            "match": "all",
+                            "conditions": [
+                              {
+                                "field": "skip",
+                                "op": "isChecked"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "id": "fc",
+                        "kind": "number",
+                        "alias": "cost",
+                        "calculation": {
+                          "formula": "nights * rate",
+                          "decimals": 0
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "ft",
+                    "kind": "number",
+                    "alias": "total",
+                    "calculation": {
+                      "formula": "nights",
+                      "decimals": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": {
+        "hidden": [],
+        "required": [],
+        "messages": {},
+        "calculations": {
+          "ft": "2"
+        },
+        "rows": {
+          "trips": [
+            {
+              "hidden": [],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": "200"
+              }
+            },
+            {
+              "hidden": [
+                "fn"
+              ],
+              "required": [],
+              "messages": {},
+              "calculations": {
+                "fc": "0"
+              }
+            }
+          ]
+        },
         "actions": [],
         "outcome": null
       }

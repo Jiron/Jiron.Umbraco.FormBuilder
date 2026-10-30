@@ -73,6 +73,15 @@
 }
 
 /*
+ * A calculation's result keeps its line while it has no value (ADR-0114), so what follows stays where it is as the
+ * runtime writes the result and takes it away.
+ */
+.jfb-form output.jfb-output {
+  display: block;
+  min-block-size: 1lh;
+}
+
+/*
  * A phone's width: a fieldset shrinks below its widest control, and no control or picture is wider than its field; a
  * picture keeps its shape as it shrinks.
  */

@@ -133,6 +133,24 @@ public sealed class SubmissionReaderTests
         });
     }
 
+    [Test]
+    public async Task AnAnswerItsTypeCannotRead_LeavesTheCalculationsThatReadIt_WithoutAValue()
+    {
+        var post = Valid() with
+        {
+            Fields = Valid().Fields.With(Quantity, "two"),
+            Rows = Rows(Guests, Row((GuestName, "Bob"), (Age, "thirty")), Row((GuestName, "Carol"), (Age, "40"))),
+        };
+
+        var read = await ReadAsync(post);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Errors(read), Is.EqualTo(new[] { "quantity: invalid", "age@0: invalid" }));
+            Assert.That(Stored(read).Where(answer => answer.StartsWith("total", StringComparison.Ordinal) || answer.StartsWith("fare", StringComparison.Ordinal)), Is.EqualTo(new[] { "fare@1: 80" }), "no total of 12 times nothing, and no fare for an age of nothing (ADR-0114)");
+        });
+    }
+
     [TestCase(0, "rowCount")]
     [TestCase(1)]
     [TestCase(3)]

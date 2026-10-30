@@ -2493,6 +2493,41 @@
                   }
                 },
                 {
+                  "key": "d0000000-0000-4000-8000-000000000411",
+                  "type": "radio",
+                  "alias": "room",
+                  "span": 1,
+                  "label": "Which room?",
+                  "hideLabel": false,
+                  "help": "Need another room? Tell us what you need, and we send you the cost.",
+                  "required": true,
+                  "messages": {},
+                  "defaultValue": "15",
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "15",
+                        "label": "The reading room, 15 euros an hour",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "25",
+                        "label": "The hall, 25 euros an hour",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "inherit",
+                    "other": true
+                  }
+                },
+                {
                   "key": "d0000000-0000-4000-8000-000000000403",
                   "type": "slider",
                   "alias": "hours",
@@ -2520,7 +2555,7 @@
                   "span": 1,
                   "label": "Room hire",
                   "hideLabel": false,
-                  "help": "15 euros an hour.",
+                  "help": "The room\u0027s rate times the hours.",
                   "required": false,
                   "messages": {},
                   "validation": [],
@@ -2532,7 +2567,7 @@
                       "decimals": 2,
                       "prefix": "EUR"
                     },
-                    "formula": "hours * 15",
+                    "formula": "room * hours",
                     "visible": true
                   }
                 },
@@ -2692,6 +2727,11 @@
         "canBeRequired": true,
         "builtIn": true
       },
+      "d0000000-0000-4000-8000-000000000411": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
       "d0000000-0000-4000-8000-000000000403": {
         "kind": "number",
         "canBeRequired": true,
@@ -2764,6 +2804,17 @@
                   "rows": []
                 },
                 {
+                  "id": "d0000000-0000-4000-8000-000000000411",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "room",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
                   "id": "d0000000-0000-4000-8000-000000000403",
                   "kind": "number",
                   "canBeRequired": true,
@@ -2780,7 +2831,7 @@
                   "canBeRequired": false,
                   "alias": "cost",
                   "calculation": {
-                    "formula": "hours * 15",
+                    "formula": "room * hours",
                     "decimals": 2
                   },
                   "required": false,

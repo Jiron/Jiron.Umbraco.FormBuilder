@@ -1,6 +1,7 @@
 // When the page's words cannot load (ROADMAP 6.4e, ADR-0113): a send goes on as without JavaScript and the server
 // checks it, and leaving a field shows nothing, so a visitor is never stopped by what the browser cannot say.
 import { describe, expect, it, vi } from 'vitest';
+import { engineOf } from './engine';
 import { pageErrorsOf } from './errors';
 import type { FormModel } from './model';
 import { ENGLISH } from './testing';
@@ -39,7 +40,7 @@ describe('a page whose words do not load', () => {
     form.requestSubmit = (button?: HTMLElement | null) => {
       sent.push(button instanceof HTMLButtonElement ? button.value : '');
     };
-    pageErrorsOf(form, model);
+    pageErrorsOf(form, model, engineOf(model, null));
     const name = document.getElementById('jfb-1-name');
     name?.dispatchEvent(new Event('input', { bubbles: true }));
     name?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));

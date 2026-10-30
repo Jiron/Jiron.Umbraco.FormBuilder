@@ -365,34 +365,39 @@ internal sealed partial class FormModels(
 
             if (!type.Declaration.Features.HasFlag(FieldFeatures.ChildFields))
             {
-                ReadInto(read.Fields, field, type, answers.Fields);
+                ReadInto(read.Fields, read.Unreadable, field, type, answers.Fields);
                 continue;
             }
 
             var rows = answers.Rows.GetValueOrDefault(field.Key) ?? [];
             if (FieldValues.CheckRows(type, field, rows.Count).IsEmpty)
             {
+                var unreadable = new List<HashSet<Guid>>();
                 read.Rows[field.Key] = [.. rows.Select(row =>
                 {
                     var inRow = new Dictionary<Guid, ImmutableArray<FieldValue>>();
+                    var unread = new HashSet<Guid>();
                     foreach (var child in field.Fields)
                     {
                         if (types.FindType(child.Type) is { } childType)
                         {
-                            ReadInto(inRow, child, childType, row);
+                            ReadInto(inRow, unread, child, childType, row);
                         }
                     }
 
+                    unreadable.Add(unread);
                     return inRow;
                 })];
+                read.UnreadableRows[field.Key] = unreadable;
             }
         }
 
         return read;
     }
 
-    // One field's answer read as the pipeline reads it, when it has one its limits and its type take.
-    private static void ReadInto(Dictionary<Guid, ImmutableArray<FieldValue>> read, FormField field, IFormBuilderFieldType type, Dictionary<Guid, FieldAnswers> answers)
+    // One field's answer read as the pipeline reads it, when it has one its limits and its type take; one over its limits
+    // or that its type cannot read is unreadable (ADR-0114).
+    private static void ReadInto(Dictionary<Guid, ImmutableArray<FieldValue>> read, HashSet<Guid> unreadable, FormField field, IFormBuilderFieldType type, Dictionary<Guid, FieldAnswers> answers)
     {
         if (!answers.TryGetValue(field.Key, out var given))
         {
@@ -402,9 +407,14 @@ internal sealed partial class FormModels(
         var cleaned = SubmissionReader.Clean(new PostedAnswer(
             [.. given.Values],
             given.Parts.ToDictionary(part => part.Key, part => (IReadOnlyList<string?>)[.. part.Value], StringComparer.Ordinal)));
-        if (FieldValues.CheckLimits(type, field, cleaned) is null && FieldValues.Read(type, field, cleaned) is { IsUnreadable: false, Values: { Length: > 0 } values })
+        var reading = FieldValues.CheckLimits(type, field, cleaned) is null ? FieldValues.Read(type, field, cleaned) : null;
+        if (reading is null or { IsUnreadable: true })
         {
-            read[field.Key] = values;
+            unreadable.Add(field.Key);
+        }
+        else if (reading.Values.Length > 0)
+        {
+            read[field.Key] = reading.Values;
         }
     }
 
@@ -426,9 +436,15 @@ internal sealed partial class FormModels(
             return texts;
         }
 
+        static IReadOnlySet<string> Ids(HashSet<Guid> keys) => keys.Select(Id).ToHashSet(StringComparer.Ordinal);
+
         return new FormAnswers(
             Texts(read.Fields),
-            read.Rows.ToDictionary(group => Id(group.Key), group => (IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>>)[.. group.Value.Select(Texts)], StringComparer.Ordinal));
+            read.Rows.ToDictionary(group => Id(group.Key), group => (IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>>)[.. group.Value.Select(Texts)], StringComparer.Ordinal))
+        {
+            Unreadable = Ids(read.Unreadable),
+            UnreadableRows = read.UnreadableRows.ToDictionary(group => Id(group.Key), group => (IReadOnlyList<IReadOnlySet<string>>)[.. group.Value.Select(Ids)], StringComparer.Ordinal),
+        };
     }
 
     // Each field's answers and each repeatable group's rows (RowsOf): a post's; else what the controls start with
@@ -916,7 +932,13 @@ internal sealed partial class FormModels(
     private sealed record PageAnswers(Dictionary<Guid, FieldAnswers> Fields, Dictionary<Guid, List<Dictionary<Guid, FieldAnswers>>> Rows);
 
     // The page's answers as their types read them: each field's, and each repeatable group's rows within its limits.
-    private sealed record PageRead(Dictionary<Guid, ImmutableArray<FieldValue>> Fields, Dictionary<Guid, List<Dictionary<Guid, ImmutableArray<FieldValue>>>> Rows);
+    private sealed record PageRead(Dictionary<Guid, ImmutableArray<FieldValue>> Fields, Dictionary<Guid, List<Dictionary<Guid, ImmutableArray<FieldValue>>>> Rows)
+    {
+        // The fields whose answers their types could not read or found over their limits, and so in each group's rows.
+        public HashSet<Guid> Unreadable { get; } = [];
+
+        public Dictionary<Guid, List<HashSet<Guid>>> UnreadableRows { get; } = [];
+    }
 
     // Where a repeatable group's row stands: the group's alias, the row from 0, its legend, and the errors, the rankings'
     // orders and the kept files a post left in it.

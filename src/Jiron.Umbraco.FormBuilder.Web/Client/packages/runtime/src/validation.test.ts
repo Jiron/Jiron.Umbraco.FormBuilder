@@ -4,18 +4,23 @@
 // limits; and what only the server decides: files, calculations, options from a list or a source, a site's own type.
 import { de } from '@jfb/logic/lang/de';
 import { en } from '@jfb/logic/lang/en';
-import { evaluateForm, logicFormOf } from '@jfb/logic';
+import { FORMULAS } from '@jfb/logic/calc';
 import { afterEach, describe, expect, it } from 'vitest';
 import { errorsOf } from './checks';
+import { engineOf } from './engine';
 import { languageOf, wordsFor } from './messages';
 import type { FormModel, ModelField, ModelPage } from './model';
 import { readPage } from './page';
 import { contextOf } from './rules';
 import { ENGLISH } from './testing';
-import { checkPage } from './validation';
+import { checkPage, type CheckScope } from './validation';
 
 const NOW = Date.UTC(2026, 9, 30, 9, 15, 0);
 const clock = (): number => NOW;
+
+/** The errors a send or Next finds on a form, with the calculation language. */
+const checked = (form: HTMLFormElement, model: FormModel, scope: CheckScope) =>
+  checkPage(form, model, engineOf(model, FORMULAS), scope, clock);
 
 const field = (key: string, type: string, alias: string, more: Partial<ModelField> = {}): ModelField => ({
   key,
@@ -131,7 +136,7 @@ describe('an empty submission', () => {
           ${text('k-name', 'name', 'Name')}
         </div>
       </section>`);
-    expect(await checkPage(form, modelOf(pages), 'send', clock)).toEqual([
+    expect(await checked(form, modelOf(pages), 'send')).toEqual([
       { field: '', row: null, code: 'empty', target: 'jfb-1-name', message: en.empty, link: en.empty },
     ]);
   });
@@ -144,7 +149,7 @@ describe('an empty submission', () => {
     const form = formOf(`
       <section data-jfb-page="p1"><div data-jfb-group="g1"><div data-jfb-field="k-heading"><h2>Hi</h2></div></div></section>
       <section data-jfb-page="p2" hidden data-jfb-hidden><div data-jfb-group="g2">${text('k-name', 'name', 'Name')}</div></section>`);
-    expect((await checkPage(form, modelOf(intro), 'send', clock)).map((error) => error.target)).toEqual(['jfb-1']);
+    expect((await checked(form, modelOf(intro), 'send')).map((error) => error.target)).toEqual(['jfb-1']);
   });
 
   it("is no error of Next's, which checks the page's fields", async () => {
@@ -154,7 +159,7 @@ describe('an empty submission', () => {
     const required = [
       { key: 'p1', groups: [{ key: 'g2', fields: [field('k-name', 'text', 'name', { required: true })] }] },
     ];
-    expect((await checkPage(form, modelOf(required), 'page', clock)).map((error) => error.code)).toEqual(['required']);
+    expect((await checked(form, modelOf(required), 'page')).map((error) => error.code)).toEqual(['required']);
   });
 });
 
@@ -187,10 +192,10 @@ describe("Next's check", () => {
       </div></section>
       <section data-jfb-page="p2" hidden data-jfb-hidden><div data-jfb-group="g2">${text('k-later', 'later', 'Later')}</div></section>`);
     const model = modelOf(pages);
-    expect((await checkPage(form, model, 'page', clock)).map(({ target, link }) => ({ target, link }))).toEqual([
+    expect((await checked(form, model, 'page')).map(({ target, link }) => ({ target, link }))).toEqual([
       { target: 'jfb-1-guests-0-guest', link: 'Guest name (Guest 1): Enter an answer' },
     ]);
-    expect((await checkPage(form, model, 'send', clock)).map((error) => error.field)).toEqual(['k-guest', 'k-later']);
+    expect((await checked(form, model, 'send')).map((error) => error.field)).toEqual(['k-guest', 'k-later']);
   });
 });
 
@@ -207,7 +212,7 @@ describe('the messages', () => {
     const form = formOf(`<section data-jfb-page="p1"><div data-jfb-group="g1">
       ${text('k-name', 'name', 'Your <em>full</em> name <span class="jfb-mark" data-jfb-mark="required">*</span>', ' ')}
     </div></section>`);
-    expect(await checkPage(form, modelOf(pages), 'page', clock)).toEqual([
+    expect(await checked(form, modelOf(pages), 'page')).toEqual([
       {
         field: 'k-name',
         row: null,
@@ -226,12 +231,7 @@ describe('the checks', () => {
     const model = modelOf(pages, own);
     const reading = readPage(form, model);
     const context = contextOf(model, reading, NOW, form.ownerDocument.URL);
-    return errorsOf(
-      model,
-      reading,
-      evaluateForm(logicFormOf(model.form, model.fields), reading.answers, context),
-      context,
-    );
+    return errorsOf(model, reading, engineOf(model, FORMULAS).decide(reading.answers, context), context);
   };
   const page = (...fields: ModelField[]): ModelPage[] => [{ key: 'p1', groups: [{ key: 'g1', fields }] }];
 

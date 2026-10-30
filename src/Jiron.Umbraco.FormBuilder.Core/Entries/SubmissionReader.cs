@@ -164,15 +164,23 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
     // The answers as rules see them: each field's texts by its id, a grid's by its rows' ids, and a repeatable group's
     // rows; a calculation has none of its own, as the form engine works it out.
+    // The answers as the rules see them, and the fields whose answers their types could not read (ADR-0114).
     private static FormAnswers Answers(List<Slot> slots)
     {
         var values = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
         var rows = new Dictionary<string, IReadOnlyList<IReadOnlyDictionary<string, IReadOnlyList<string>>>>(StringComparer.Ordinal);
+        var unreadable = new HashSet<string>(StringComparer.Ordinal);
+        var unreadableRows = new Dictionary<string, IReadOnlyList<IReadOnlySet<string>>>(StringComparer.Ordinal);
         foreach (var slot in slots)
         {
             if (!slot.IsGroup)
             {
                 Put(values, slot);
+                if (slot.IsUnreadable)
+                {
+                    unreadable.Add(DefinitionLogic.Id(slot.Field.Key));
+                }
+
                 continue;
             }
 
@@ -186,9 +194,11 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
 
                 return (IReadOnlyDictionary<string, IReadOnlyList<string>>)texts;
             })];
+            unreadableRows[DefinitionLogic.Id(slot.Field.Key)] = [.. slot.Rows.Select(row =>
+                (IReadOnlySet<string>)row.Where(child => child.IsUnreadable).Select(child => DefinitionLogic.Id(child.Field.Key)).ToHashSet(StringComparer.Ordinal))];
         }
 
-        return new FormAnswers(values, rows);
+        return new FormAnswers(values, rows) { Unreadable = unreadable, UnreadableRows = unreadableRows };
     }
 
     private static void Put(Dictionary<string, IReadOnlyList<string>> texts, Slot slot)
@@ -738,6 +748,9 @@ internal sealed partial class SubmissionReader(FieldTypeRegistry types, IFormBui
         public FieldRead Read { get; set; } = Nothing;
 
         public ImmutableArray<FieldValue> Values => Read.IsUnreadable ? [] : Read.Values;
+
+        /// <summary>Whether the answer was over its type's limits, or one its type could not read.</summary>
+        public bool IsUnreadable => OverLimit is not null || Read.IsUnreadable;
 
         public ImmutableArray<FieldMessageKinds> RowErrors { get; set; } = [];
 

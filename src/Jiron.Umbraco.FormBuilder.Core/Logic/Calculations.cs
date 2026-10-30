@@ -294,13 +294,18 @@ internal static class Calculations
         }
     }
 
-    // A field's answers as a number: their sum, none being 0; null when one does not read.
+    // A field's answers as a number: their sum, none being 0; null when one does not read, or its type could not read them.
     private static ExactDecimal? NumberOf(FieldReference reference, FormulaScope scope)
     {
         var kind = scope.Kind(reference.Alias) ?? throw Mistake(LogicErrors.UnknownField, reference.At);
         if (!Numbers.Contains(kind))
         {
             throw Mistake(LogicErrors.OperatorNotForKind, reference.At);
+        }
+
+        if (scope.Unreadable?.Invoke(reference.Alias) == true)
+        {
+            return null;
         }
 
         var sum = Zero;
@@ -341,6 +346,11 @@ internal static class Calculations
         if (!Dates.Contains(kind))
         {
             throw Mistake(LogicErrors.OperatorNotForKind, reference.At);
+        }
+
+        if (scope.Unreadable?.Invoke(reference.Alias) == true)
+        {
+            return null;
         }
 
         var answers = (scope.Answers(reference.Alias) ?? []).Select(TextSemantics.Clean).Where(text => text.Length > 0).ToList();

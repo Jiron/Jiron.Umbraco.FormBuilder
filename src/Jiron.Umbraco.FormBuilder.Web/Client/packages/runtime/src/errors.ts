@@ -15,6 +15,7 @@ import {
   showSummary,
   showsErrors,
 } from './display';
+import type { PageEngine } from './engine';
 import { elementOf, wordsFor, type ShownError } from './messages';
 import type { FormModel } from './model';
 import { checkFields, checkPage, type CheckScope } from './validation';
@@ -51,7 +52,12 @@ interface Kept {
 }
 
 /** Shows a form's errors as its visitor answers, leaves and sends. */
-export function pageErrorsOf(form: HTMLFormElement, model: FormModel, clock: () => number = Date.now): PageErrors {
+export function pageErrorsOf(
+  form: HTMLFormElement,
+  model: FormModel,
+  engine: PageEngine,
+  clock: () => number = Date.now,
+): PageErrors {
   const changed = new WeakSet<HTMLElement>();
   const kept = keptOf(form);
   let checking = false;
@@ -105,7 +111,7 @@ export function pageErrorsOf(form: HTMLFormElement, model: FormModel, clock: () 
 
   /** Each error the form shows that is gone now, or at a field the rules hide, is taken away. */
   async function recheck(): Promise<void> {
-    const errors = await safely(() => checkFields(form, model, clock));
+    const errors = await safely(() => checkFields(form, model, engine, clock));
     if (errors === null) return;
     const now = byField(errors);
     for (const paragraph of [...form.querySelectorAll<HTMLElement>('[data-jfb-error]')]) {
@@ -121,7 +127,7 @@ export function pageErrorsOf(form: HTMLFormElement, model: FormModel, clock: () 
 
   /** A field the visitor leaves shows its error now, said once in the live region, or none. */
   async function leave(field: HTMLElement): Promise<void> {
-    const errors = await safely(() => checkFields(form, model, clock));
+    const errors = await safely(() => checkFields(form, model, engine, clock));
     if (errors === null) return;
     const error = byField(errors).get(field);
     if (error !== undefined && !ruledOut(field)) {
@@ -162,7 +168,7 @@ export function pageErrorsOf(form: HTMLFormElement, model: FormModel, clock: () 
   };
 
   async function validate(scope: CheckScope): Promise<boolean> {
-    const found = await safely(() => checkPage(form, model, scope, clock));
+    const found = await safely(() => checkPage(form, model, engine, scope, clock));
     const words = found === null ? null : await safely(() => wordsFor(model.culture));
     if (found === null || words === null) return true;
     // Until 6.5 pages in the browser, the server shows the first page that holds an error.

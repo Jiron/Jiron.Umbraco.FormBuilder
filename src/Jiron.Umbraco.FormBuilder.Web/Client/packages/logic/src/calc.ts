@@ -1,7 +1,8 @@
 // Calculations (ROADMAP section 4.3.3, ADR-0063), the same in C# (Core's Calculations): a formula an editor types,
 // parsed into a tree of numbers, fields' aliases and the language's operations, and worked out over the exact decimals
 // of ADR-0005. Nothing in a formula runs as code. The spike's vectors write the same trees by hand, with `store` for a
-// number as a field stores it.
+// number as a field stores it. It is a module of its own, `@jfb/logic/calc`, which the form engine takes as `FORMULAS`
+// for a form with a calculation, so the website runtime loads it only for such a form (ADR-0114).
 import { civil, parseDate, parseDateTime } from './dates.ts';
 import {
   add,
@@ -49,6 +50,11 @@ export interface FormulaScope {
   readonly answers: (alias: string) => readonly string[] | undefined;
   /** The site's date as a day number, read from the context only when a formula asks for it. */
   readonly today: () => number;
+  /**
+   * Whether the field's answers are ones its type could not read or found over its limits, which leave a calculation
+   * that reads them without a value (ADR-0114); none are when absent.
+   */
+  readonly unreadable?: (alias: string) => boolean;
 }
 
 /** The longest formula, in UTF-16 code units. */
@@ -342,11 +348,12 @@ export function checkFormula(calculation: Calculation, kind: (alias: string) => 
 
 // ---- Working it out ----
 
-/** A field's answers as a number: their sum, none being 0; null when one does not read. */
+/** A field's answers as a number: their sum, none being 0; null when one does not read, or its type could not read them. */
 function numberOf(reference: FieldReference, scope: FormulaScope): Decimal | null {
   const kind = scope.kind(reference.field);
   if (kind === undefined) throw new LogicError('unknown_field', reference.at);
   if (!NUMBERS.has(kind)) throw new LogicError('operator_not_for_kind', reference.at);
+  if (scope.unreadable?.(reference.field) === true) return null;
   let sum = ZERO;
   for (const answer of scope.answers(reference.field) ?? []) {
     const text = clean(answer);
@@ -365,6 +372,7 @@ function dateOf(calculation: Calculation, scope: FormulaScope): number | null {
   const kind = scope.kind(calculation.field);
   if (kind === undefined) throw new LogicError('unknown_field', calculation.at);
   if (!DATES.has(kind)) throw new LogicError('operator_not_for_kind', calculation.at);
+  if (scope.unreadable?.(calculation.field) === true) return null;
   const answers = (scope.answers(calculation.field) ?? []).map(clean).filter((text) => text.length > 0);
   const [text] = answers;
   if (answers.length !== 1 || text === undefined) return null;
@@ -482,3 +490,13 @@ export function storedNumber(text: string): string {
   if (d === null) throw new LogicError('not_a_number');
   return formatDecimal(stored(d));
 }
+
+/** The language as the form engine takes it (ADR-0114): reading a formula, checking it and working it out. */
+export interface Formulas {
+  readonly parse: (formula: string) => Calculation;
+  readonly check: (calculation: Calculation, kind: (alias: string) => Kind | undefined) => string[];
+  readonly calculate: (calculation: Calculation, scope: FormulaScope) => Decimal | null;
+}
+
+/** The calculation language, which the website runtime loads as a chunk of its own for a form with a calculation. */
+export const FORMULAS: Formulas = { parse: parseFormula, check: checkFormula, calculate };

@@ -4,14 +4,8 @@
 // most 50 ms: the fastest of three runs, so that a garbage collection or the first compilation of a path does not count
 // against the formula.
 import { describe, expect, it } from 'vitest';
-import {
-  evaluateFormula,
-  LogicError,
-  MAX_FORMULA_DEPTH,
-  MAX_FORMULA_LENGTH,
-  type FormulaScope,
-  type Kind,
-} from '../src/index.ts';
+import { LogicError, type FormulaScope, type Kind } from '../src/index.ts';
+import { evaluateFormula, MAX_FORMULA_DEPTH, MAX_FORMULA_LENGTH } from '../src/calc.ts';
 import { today } from '../src/dates.ts';
 import { Random, show } from './fuzzing.ts';
 

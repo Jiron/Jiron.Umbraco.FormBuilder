@@ -3,8 +3,9 @@
 // dependency order (an element after what holds it and after every field its show or hide rule looks at), a hidden
 // field's answers are gone for every condition, and a repeatable group's child fields are decided row by row. What is
 // required, the validation rules' messages, the actions that run and the outcome follow from the final visibility.
-// Calculations are worked out in the same order, after the fields they read (ADR-0063).
-import { calculate, checkFormula, parseFormula, type Calculation, type FormulaScope } from './calc.ts';
+// Calculations are worked out in the same order, after the fields they read (ADR-0063), in the calculation language
+// the caller gives, so a form without one never needs it (ADR-0114).
+import type { Calculation, Formulas, FormulaScope } from './calc.ts';
 import { today } from './dates.ts';
 import { formatDecimal, round } from './decimal.ts';
 import { LogicError, own } from './errors.ts';
@@ -102,6 +103,13 @@ export interface LogicForm {
 export interface FormAnswers {
   readonly values?: Readonly<Record<string, readonly string[]>>;
   readonly rows?: Readonly<Record<string, readonly Readonly<Record<string, readonly string[]>>[]>>;
+  /**
+   * The fields outside repeatable groups whose answers their type could not read or found over its limits: the rules
+   * see them as unanswered, and a calculation that reads one has no value (ADR-0063, ADR-0114).
+   */
+  readonly unreadable?: readonly string[];
+  /** The same for each repeatable group's rows: by the group's id, each row's child fields. */
+  readonly unreadableRows?: Readonly<Record<string, readonly (readonly string[])[]>>;
 }
 
 /** One row of a repeatable group: its child fields that are hidden or required, its messages and its calculations. */
@@ -353,8 +361,24 @@ const push = (map: Map<string, string[]>, key: string, value: string): void => {
   else list.push(value);
 };
 
-/** Checks the whole form, then decides what its rules decide (ADR-0061). */
-export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Context): FormState {
+/** Whether a form has a calculation, which only the calculation language works out. */
+export function hasCalculations(form: LogicForm): boolean {
+  const calculates = (field: LogicField): boolean =>
+    (field.calculation ?? null) !== null || (field.fields ?? []).some(calculates);
+  return form.pages.some((page) => (page.groups ?? []).some((group) => (group.fields ?? []).some(calculates)));
+}
+
+/**
+ * Checks the whole form, then decides what its rules decide (ADR-0061), working its calculations out in the
+ * calculation language (`@jfb/logic/calc`), which a form without a calculation does without (null). A form with one
+ * and no language is the caller's mistake, an error rather than a refusal of the form (ADR-0114).
+ */
+export function evaluateForm(
+  form: LogicForm,
+  answers: FormAnswers,
+  context: Context,
+  formulas: Formulas | null,
+): FormState {
   const { nodes, subjects, aliases } = index(form);
   const kinds: Readonly<Record<string, Kind>> = Object.fromEntries([...subjects].map(([id, s]) => [id, s.kind]));
   const kindOf = (alias: string): Kind | undefined => subjects.get(aliases.get(alias) ?? '')?.kind;
@@ -371,8 +395,9 @@ export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Con
   for (const outcome of form.outcomes ?? []) checkRules(outcome.rules ?? [], ['use'], false, kinds, patterns);
   for (const element of nodes) {
     if (element.calculation === null) continue;
-    const tree = parseFormula(element.calculation.formula);
-    element.formula = { tree, named: checkFormula(tree, kindOf), decimals: decimalsOf(element.calculation) };
+    if (formulas === null) throw new Error('A form with a calculation needs the calculation language.');
+    const tree = formulas.parse(element.calculation.formula);
+    element.formula = { tree, named: formulas.check(tree, kindOf), decimals: decimalsOf(element.calculation) };
   }
   const sequence = order(nodes, subjects, aliases);
 
@@ -396,6 +421,17 @@ export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Con
     if (owner.repeater === repeater) return owner.hiddenIn[row] === true ? undefined : given(owner, id, row);
     return rows.flatMap((_, r) => (owner.hiddenIn[r] === true ? [] : (given(owner, id, r) ?? [])));
   };
+  // Whether a field's answers, as a calculation in a row (or outside the rows, -1) reads them, are ones its type could
+  // not read: a shown field's, a child field's in the row, or in any row where it is shown from outside them.
+  const unreadable = new Set(answers.unreadable ?? []);
+  const unreadableIn = (id: string, repeater: Node | null, row: number): boolean => {
+    const owner = subjects.get(id)?.owner;
+    if (owner === undefined) return false;
+    if (owner.repeater === null) return !owner.hidden && unreadable.has(id);
+    const rows = own(answers.unreadableRows ?? {}, owner.repeater.id) ?? [];
+    const inRow = (r: number): boolean => owner.hiddenIn[r] === false && rows[r]?.includes(id) === true;
+    return owner.repeater === repeater ? inRow(row) : owner.hiddenIn.some((_, r) => inRow(r));
+  };
   const global: Scope = { fields: kinds, context, answers: (id) => answersOf(id, null, -1) };
   const scopeOf = (repeater: Node | null, row: number): Scope =>
     repeater === null ? global : { fields: kinds, context, answers: (id) => answersOf(id, repeater, row) };
@@ -406,8 +442,10 @@ export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Con
   };
   let day: number | undefined;
   const siteToday = (): number => (day ??= today(context.now, context.timeZone));
-  // A shown calculation over its scope, rounded to its places; a failure of the arithmetic leaves it without a value.
-  const work = (formula: Formula, scope: Scope): string | null => {
+  // A shown calculation in a row (or outside the rows, -1), rounded to its places; an answer its type could not read or
+  // a failure of the arithmetic leaves it without a value.
+  const work = (formula: Formula, repeater: Node | null, row: number): string | null => {
+    const scope = scopeOf(repeater, row);
     const reads: FormulaScope = {
       kind: kindOf,
       answers: (alias) => {
@@ -415,9 +453,13 @@ export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Con
         return id === undefined ? undefined : scope.answers(id);
       },
       today: siteToday,
+      unreadable: (alias) => {
+        const id = aliases.get(alias);
+        return id !== undefined && unreadableIn(id, repeater, row);
+      },
     };
     try {
-      const result = calculate(formula.tree, reads);
+      const result = formulas?.calculate(formula.tree, reads) ?? null;
       return result === null ? null : formatDecimal(round(result, formula.decimals));
     } catch (error) {
       if (error instanceof LogicError && (error.code === 'division_by_zero' || error.code === 'out_of_range'))
@@ -431,12 +473,10 @@ export function evaluateForm(form: LogicForm, answers: FormAnswers, context: Con
     if (repeater !== null) {
       element.hiddenIn = rowsOf(repeater).map((_, row) => repeater.hidden || !shown(element, scopeOf(repeater, row)));
       if (formula !== null)
-        element.valueIn = element.hiddenIn.map((hidden, row) =>
-          hidden ? null : work(formula, scopeOf(repeater, row)),
-        );
+        element.valueIn = element.hiddenIn.map((hidden, row) => (hidden ? null : work(formula, repeater, row)));
     } else {
       element.hidden = element.container?.hidden === true || !shown(element, global);
-      if (formula !== null && !element.hidden) element.value = work(formula, global);
+      if (formula !== null && !element.hidden) element.value = work(formula, null, -1);
     }
   }
 

@@ -3,6 +3,7 @@
 // the focus, and `jfb:invalid` without an answer; a passing check lets the post go on with the button pressed; the
 // server's errors stay while their field is unchanged; and a send whose errors are on another page goes to the server.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { engineOf } from './engine';
 import { pageErrorsOf, type InvalidDetail } from './errors';
 import type { FormModel, ModelField, ModelPage } from './model';
 import { ENGLISH } from './testing';
@@ -85,7 +86,7 @@ function contact(model: FormModel, fields: string, before = '') {
   };
   const invalid: InvalidDetail[] = [];
   form.addEventListener('jfb:invalid', (event) => invalid.push((event as CustomEvent<InvalidDetail>).detail));
-  const errors = pageErrorsOf(form, model, () => NOW);
+  const errors = pageErrorsOf(form, model, engineOf(model, null), () => NOW);
   return { form, sent, invalid, errors };
 }
 

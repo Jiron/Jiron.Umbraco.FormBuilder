@@ -108,6 +108,38 @@ const around = (prefix: string, text: string, suffix: string): string =>
   [trim(prefix), text, trim(suffix)].filter((piece) => piece.length > 0).join(' ');
 
 /**
+ * A slider's value as its field shows it, among the answers as beside the thumb and in its `aria-valuetext` (ADR-0114):
+ * the number as the culture writes it, then the unit.
+ */
+export function sliderText(
+  settings: Readonly<Record<string, unknown>> | null | undefined,
+  value: string,
+  culture: CultureFormats,
+): string {
+  return around('', formatNumber(value, null, culture) ?? value, textSetting(settings ?? {}, 'unit'));
+}
+
+/**
+ * A calculation's result as its field shows it, among the answers as on the page (ADR-0114): the number as the culture
+ * writes it with the field's places (2 unless its format sets them, 0 to 15), between its prefix and its suffix.
+ */
+export function calculationText(
+  settings: Readonly<Record<string, unknown>> | null | undefined,
+  value: string,
+  culture: CultureFormats,
+): string {
+  const format = own(settings ?? {}, 'format');
+  const shown: Settings = typeof format === 'object' && format !== null ? (format as Settings) : {};
+  const decimals = own(shown, 'decimals');
+  const places = Math.min(Math.max(typeof decimals === 'number' ? decimals : 2, 0), 15);
+  return around(
+    textSetting(shown, 'prefix'),
+    formatNumber(value, places, culture) ?? value,
+    textSetting(shown, 'suffix'),
+  );
+}
+
+/**
  * The parts of a value with parts in the order the text writes them, as Core's FieldPartsJson.Read reads them: null
  * unless the text is a JSON object of at least one part, each with a name and a text that are not empty, no name twice
  * and no lone surrogate. The members are read from the text itself, since JSON.parse keeps a name's last text and puts
@@ -216,22 +248,11 @@ const BUILT_IN: Readonly<Record<string, (display: Display, values: readonly Answ
     }
   },
   slider: (display, values) => {
-    const unit = textSetting(settingsOf(display.field), 'unit');
-    for (const { text } of values) addNumber(display, around('', number(display, text), unit), text);
+    for (const { text } of values) addNumber(display, sliderText(display.field.settings, text, display.culture), text);
   },
   calculation: (display, values) => {
-    const format = own(settingsOf(display.field), 'format');
-    const settings: Settings = typeof format === 'object' && format !== null ? (format as Settings) : {};
-    const decimals = own(settings, 'decimals');
-    const places = typeof decimals === 'number' ? decimals : 2;
-    for (const { text } of values) {
-      const shown = around(
-        textSetting(settings, 'prefix'),
-        number(display, text, places),
-        textSetting(settings, 'suffix'),
-      );
-      addNumber(display, shown, text);
-    }
+    for (const { text } of values)
+      addNumber(display, calculationText(display.field.settings, text, display.culture), text);
   },
   grid: (display, values) => {
     const scale = own(settingsOf(display.field), 'scale');

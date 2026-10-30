@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import german from '../../../../../../tests/fixtures/rendering/errors-de.json';
 import english from '../../../../../../tests/fixtures/rendering/errors-en.json';
 import { clearFieldError, removeSummary, showFieldError, showSummary } from './display';
+import { engineOf } from './engine';
 import { wordsFor } from './messages';
 import { parseModel } from './model';
 import { checkPage, type CheckScope } from './validation';
@@ -38,7 +39,9 @@ async function load(page: ServerPage) {
   const form = document.querySelector('form');
   const model = parseModel(form?.querySelector('script[type="application/json"][data-jfb-model]')?.textContent ?? '');
   if (form === null || model === null || !SCOPES.has(page.scope)) throw new Error(`${page.name}: not a form page`);
-  const errors = await checkPage(form, model, page.scope as CheckScope, () => Date.parse(page.now));
+  const errors = await checkPage(form, model, engineOf(model, null), page.scope as CheckScope, () =>
+    Date.parse(page.now),
+  );
   return { form, model, errors };
 }
 

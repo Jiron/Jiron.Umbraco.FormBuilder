@@ -4,14 +4,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  calculate,
   checkField,
   checkRows,
   clean,
   defaultMessage,
   evaluateCondition,
   evaluateForm,
-  evaluateFormula,
   evaluateRule,
   formatDecimal,
   LogicError,
@@ -21,7 +19,6 @@ import {
   readPost,
   recallAnswers,
   renderTemplate,
-  storedNumber,
   summaryEntry,
   summaryHeading,
   type Calculation,
@@ -48,6 +45,7 @@ import {
   type TemplateContext,
   type VisitorError,
 } from '../src/index.ts';
+import { calculate, evaluateFormula, FORMULAS, storedNumber } from '../src/calc.ts';
 import { today } from '../src/dates.ts';
 import { de } from '../src/lang/messages.de.ts';
 import { en } from '../src/lang/messages.en.ts';
@@ -60,6 +58,8 @@ interface VectorCase {
   readonly fields?: Readonly<Record<string, Kind>>;
   readonly values?: Readonly<Record<string, readonly string[]>>;
   readonly rows?: FormAnswers['rows'];
+  readonly unreadable?: readonly string[];
+  readonly unreadableRows?: FormAnswers['unreadableRows'];
   readonly condition?: Condition;
   readonly rule?: Rule;
   readonly number?: string;
@@ -233,13 +233,14 @@ const names = readdirSync(folder)
   .sort();
 
 /** A subject as a formula reads it: the fields' kinds and answers by alias, a hidden field without answers. */
-function formulaScope(subject: Subject): FormulaScope {
+function formulaScope(subject: Subject, unreadable: readonly string[] = []): FormulaScope {
   const own = <T>(record: Readonly<Record<string, T>>, key: string): T | undefined =>
     Object.hasOwn(record, key) ? record[key] : undefined;
   return {
     kind: (alias) => own(subject.fields, alias),
     answers: (alias) => (subject.context.hidden.includes(alias) ? undefined : own(subject.values, alias)),
     today: () => today(subject.context.now, subject.context.timeZone),
+    unreadable: (alias) => unreadable.includes(alias),
   };
 }
 
@@ -287,18 +288,23 @@ function run(file: VectorFile, vector: VectorCase): unknown {
     if (vector.rule !== undefined) return evaluateRule(vector.rule, subject);
     if (vector.number !== undefined) return storedNumber(vector.number);
     if (vector.calc !== undefined) {
-      const result = calculate(vector.calc, formulaScope(subject));
+      const result = calculate(vector.calc, formulaScope(subject, vector.unreadable));
       return result === null ? null : formatDecimal(result);
     }
-    if (vector.formula !== undefined) return evaluateFormula(vector.formula, formulaScope(subject));
+    if (vector.formula !== undefined) return evaluateFormula(vector.formula, formulaScope(subject, vector.unreadable));
     if (vector.field !== undefined) {
       const answers = vector.answers ?? { values: [] };
       heldToItsType(vector.id, vector.field, answers);
       return checkField(vector.field, answers, subject.context, vector.values ?? {});
     }
     if (vector.form !== undefined) {
-      const answers: FormAnswers = { values: vector.values ?? {}, rows: vector.rows ?? {} };
-      return evaluateForm(vector.form, answers, subject.context);
+      const answers: FormAnswers = {
+        values: vector.values ?? {},
+        rows: vector.rows ?? {},
+        unreadable: vector.unreadable ?? [],
+        unreadableRows: vector.unreadableRows ?? {},
+      };
+      return evaluateForm(vector.form, answers, subject.context, FORMULAS);
     }
     if (vector.template !== undefined) {
       const { text, context, sources } = vector.template;
