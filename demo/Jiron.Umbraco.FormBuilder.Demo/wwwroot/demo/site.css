@@ -1,7 +1,9 @@
 /*
  * The demo site's own design (ROADMAP 3.3): the public library's website from the Phase 2 mocks
  * (docs/ux/website/assets/site.css), grown into a whole site. It stands for any customer's site, so it never styles
- * anything inside a form: the forms bring their theme, and inherit only this page's font and size.
+ * anything inside a form: the forms bring their theme, and inherit only this page's font and size. Its dark design
+ * shows with ?scheme=dark, or with ?scheme=auto when the visitor's system asks for dark (DemoThemes.cs); the
+ * layout then puts the same jfb-scheme-* class on the page's root, which gives the forms their dark scheme.
  */
 :root {
   --site-ink: #22262e;
@@ -10,9 +12,41 @@
   --site-head: #ffffff;
   --site-line: #dde1e7;
   --site-link: #7a2335;
+  --site-link-strong: #5e1a29;
+  --site-on-link: #ffffff;
   --site-focus: #1b5fc1;
   --site-error: #a3221b;
   color-scheme: light;
+}
+
+html[data-demo-scheme="dark"] {
+  --site-ink: #e6e8ec;
+  --site-muted: #a7afbc;
+  --site-bg: #14181f;
+  --site-head: #0f1217;
+  --site-line: #2a313c;
+  --site-link: #f0a3b0;
+  --site-link-strong: #f7c6cf;
+  --site-on-link: #14181f;
+  --site-focus: #8ab4f8;
+  --site-error: #f2a59e;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-demo-scheme="auto"] {
+    --site-ink: #e6e8ec;
+    --site-muted: #a7afbc;
+    --site-bg: #14181f;
+    --site-head: #0f1217;
+    --site-line: #2a313c;
+    --site-link: #f0a3b0;
+    --site-link-strong: #f7c6cf;
+    --site-on-link: #14181f;
+    --site-focus: #8ab4f8;
+    --site-error: #f2a59e;
+    color-scheme: dark;
+  }
 }
 
 *,
@@ -35,6 +69,11 @@ body {
 
 a {
   color: var(--site-link);
+}
+
+/* A code sample in a text, such as ?theme=unstyled, stays on one line. */
+code {
+  white-space: nowrap;
 }
 
 :focus-visible {
@@ -225,7 +264,7 @@ main:focus {
   padding: 8px 20px;
   font: inherit;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--site-on-link);
   background: var(--site-link);
   border: 0;
   border-radius: 4px;
@@ -238,7 +277,7 @@ main:focus {
 }
 
 .site-button:hover {
-  background: #5e1a29;
+  background: var(--site-link-strong);
 }
 
 .site-error {

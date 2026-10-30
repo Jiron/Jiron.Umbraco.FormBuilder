@@ -15,7 +15,8 @@ namespace Jiron.Umbraco.FormBuilder.Demo.Seeding;
 /// <summary>
 /// Seeds the demo site once it has started (ROADMAP 3.3): the German language, the dictionary items of the views, the
 /// templates, a block list with two element types, the document types, the English and German pages with their
-/// domains, the members area (<see cref="DemoMemberSeeder"/>) and the demo forms (<see cref="DemoFormSeeder"/>).
+/// domains, the members area (<see cref="DemoMemberSeeder"/>), the picture the specimen form shows
+/// (<see cref="DemoMediaSeeder"/>) and the demo forms (<see cref="DemoFormSeeder"/>).
 /// Idempotent: every item is created only when it is missing, so a restart changes nothing, and a later step adds a
 /// page by adding it to <c>DemoContent.json</c>. The feature steps add their demo forms as the features arrive.
 /// </summary>
@@ -33,6 +34,7 @@ internal sealed partial class DemoSeeder(
     IDomainService domains,
     IWebHostEnvironment environment,
     DemoMemberSeeder members,
+    DemoMediaSeeder media,
     DemoFormSeeder demoForms,
     ILogger<DemoSeeder> logger) : INotificationAsyncHandler<UmbracoApplicationStartedNotification>
 {
@@ -51,6 +53,7 @@ internal sealed partial class DemoSeeder(
             var content = DemoContent.Load();
             var created = await SeedAsync(content);
             created |= await members.SeedAsync(content);
+            created |= media.Seed();
             created |= await demoForms.SeedAsync(cancellationToken);
             LogSeeded(logger, created);
         }
@@ -89,16 +92,18 @@ internal sealed partial class DemoSeeder(
 
         var page = await EnsureDocumentTypeAsync(DemoContent.PageType, "Demo page", "icon-document", [pageTemplate], properties);
         var legal = await EnsureDocumentTypeAsync(DemoContent.LegalType, "Demo legal page", "icon-script", [pageTemplate], properties);
+        var specimen = await EnsureDocumentTypeAsync(DemoContent.SpecimenType, "Demo specimen", "icon-layout", [pageTemplate], properties);
         var membersArea = await EnsureDocumentTypeAsync(DemoContent.MembersType, "Demo members area", "icon-lock", [membersTemplate], properties);
         var login = await EnsureDocumentTypeAsync(DemoContent.LoginType, "Demo sign-in page", "icon-key", [loginTemplate], properties);
         var home = await EnsureDocumentTypeAsync(DemoContent.HomeType, "Demo home", "icon-home", [homeTemplate], properties, isRoot: true);
-        await EnsureAllowedChildrenAsync(home, [page, membersArea, login, legal]);
+        await EnsureAllowedChildrenAsync(home, [page, membersArea, login, legal, specimen]);
 
         var types = new Dictionary<string, (IContentType Type, ITemplate Template)>
         {
             [DemoContent.HomeType] = (home, homeTemplate),
             [DemoContent.PageType] = (page, pageTemplate),
             [DemoContent.LegalType] = (legal, pageTemplate),
+            [DemoContent.SpecimenType] = (specimen, pageTemplate),
             [DemoContent.MembersType] = (membersArea, membersTemplate),
             [DemoContent.LoginType] = (login, loginTemplate),
         };

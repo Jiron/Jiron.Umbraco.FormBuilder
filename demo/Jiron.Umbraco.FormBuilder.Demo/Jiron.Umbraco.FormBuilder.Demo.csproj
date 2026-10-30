@@ -38,6 +38,7 @@
     <None Remove="Seeding\**" />
     <EmbeddedResource Include="Seeding\DemoContent.json" LogicalName="Jiron.Umbraco.FormBuilder.Demo.DemoContent.json" />
     <EmbeddedResource Include="Seeding\Forms\*.json" LogicalName="Jiron.Umbraco.FormBuilder.Demo.Forms.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Seeding\Media\*.svg" LogicalName="Jiron.Umbraco.FormBuilder.Demo.Media.%(Filename)%(Extension)" />
     <!-- Keep a local settings override out of the publish output (the template's rule). -->
     <Content Update="appsettings.Local.json" CopyToPublishDirectory="Never" />
   </ItemGroup>

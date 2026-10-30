@@ -17,6 +17,7 @@ internal sealed record DemoContent(
     public const string MembersType = "demoMembers";
     public const string LoginType = "demoLogin";
     public const string LegalType = "demoLegalPage";
+    public const string SpecimenType = "demoSpecimen";
     public const string TextBlockType = "demoTextBlock";
     public const string HighlightBlockType = "demoHighlightBlock";
 

@@ -86,6 +86,16 @@ the site registers counts (`Jiron.Umbraco.FormBuilder.Demo/DemoThemes.cs`; ROADM
 theme in the form, in the General settings or where it places the form
 ([ADR-0105](../docs/decisions/0105-the-theme-registry-and-the-base-rules.md)).
 
+`?scheme=dark` gives the site its dark design and the forms the dark scheme, and `?scheme=auto` does when the
+system asks for dark; the demo keeps it in the cookie `jfb-demo-scheme`, and `?scheme=` alone goes back to light. The
+layout puts the class `jfb-scheme-dark` or `jfb-scheme-auto` on the page's root, as a site would
+([ADR-0106](../docs/decisions/0106-the-default-theme-ships.md)).
+
+The specimen (`/en/specimen/`, `/de/muster/`), which the menu leaves out, holds a form with a field of every built-in
+type, on two pages, to look at a theme with: `http://127.0.0.1:5500/en/specimen/?theme=default&scheme=dark`. Its
+image field and picture choices show the demo's one picture (`Seeding/Media/picture.svg`, drawn for the demo), which
+the seeder adds to the media library.
+
 To add a page, add it to `DemoContent.json` with a new fixed key. Texts the views show belong in its `dictionary`.
 To add a form, add its definition to `Seeding/Forms/` and its alias to `DemoFormSeeder`, and name it in a page's
 `form`. The seeder never changes a page, a type or a form that exists, so after changing texts or types, run `reset`.

@@ -300,6 +300,24 @@
         "body": "<p>Bibliothek Lindenhall<br>Marktstraße 12<br>12345 Lindenhall</p><p>Eine erfundene Bibliothek, die Jiron Form Builder vorführt.</p>"
       },
       "blocks": []
+    },
+    {
+      "key": "5a1f0c8e-3d47-4b29-9e6a-7c2d1b8f4e03",
+      "type": "demoSpecimen",
+      "en": {
+        "name": "Specimen",
+        "heading": "Form specimen",
+        "lede": "A form with a field of every type, for looking at the themes.",
+        "body": "<p>Add <code>?theme=unstyled</code> or <code>?theme=bootstrap5</code> to the address for another theme, and <code>?scheme=dark</code> or <code>?scheme=auto</code> for the dark scheme. The demo remembers both until you change them.</p>"
+      },
+      "de": {
+        "name": "Muster",
+        "heading": "Formularmuster",
+        "lede": "Ein Formular mit einem Feld jeder Art, um die Themes anzusehen.",
+        "body": "<p>Hängen Sie <code>?theme=unstyled</code> oder <code>?theme=bootstrap5</code> an die Adresse für ein anderes Theme an, und <code>?scheme=dark</code> oder <code>?scheme=auto</code> für das dunkle Farbschema. Die Demo merkt sich beides, bis Sie es ändern.</p>"
+      },
+      "blocks": [],
+      "form": "specimen"
     }
   ]
 }

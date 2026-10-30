@@ -16,9 +16,11 @@
     // The current page by address: the sign-in page is shown at the address of the protected page it guards.
     var path = (Context.Request.Path.Value ?? "/").TrimEnd('/');
     string? Current(IPublishedContent item) => item.Url().TrimEnd('/') == path ? "page" : null;
+    // The scheme the demo was asked for: the site's dark design, and the forms' dark scheme through the class.
+    var scheme = Jiron.Umbraco.FormBuilder.Demo.DemoThemes.SchemeOf(Context);
 }
 <!doctype html>
-<html lang="@(german ? "de" : "en")">
+<html lang="@(german ? "de" : "en")" class="@(scheme is null ? null : "jfb-scheme-" + scheme)" data-demo-scheme="@scheme">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

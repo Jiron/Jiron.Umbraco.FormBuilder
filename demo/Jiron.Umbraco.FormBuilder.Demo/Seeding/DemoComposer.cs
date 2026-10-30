@@ -11,6 +11,7 @@ public sealed class DemoComposer : IComposer
     {
         builder.Services.Configure<DemoOptions>(builder.Config.GetSection(DemoOptions.Section));
         builder.Services.AddTransient<DemoMemberSeeder>();
+        builder.Services.AddTransient<DemoMediaSeeder>();
         builder.Services.AddTransient<DemoFormSeeder>();
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, DemoSeeder>();
     }

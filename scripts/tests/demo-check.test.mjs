@@ -57,7 +57,7 @@ describe("the demo's accounts", () => {
 });
 
 describe("the seeder's texts (DemoContent.json)", () => {
-  const types = new Set(['demoPage', 'demoMembers', 'demoLogin', 'demoLegalPage']);
+  const types = new Set(['demoPage', 'demoMembers', 'demoLogin', 'demoLegalPage', 'demoSpecimen']);
   const blockTypes = new Set(['demoTextBlock', 'demoHighlightBlock']);
   const pages = [content.home, ...content.pages];
 
@@ -82,6 +82,9 @@ describe("the seeder's texts (DemoContent.json)", () => {
   test('have exactly one members area and one sign-in page, and the dictionary item of every view text', () => {
     assert.equal(content.pages.filter((page) => page.type === 'demoMembers').length, 1);
     assert.equal(content.pages.filter((page) => page.type === 'demoLogin').length, 1);
+    const specimen = content.pages.filter((page) => page.type === 'demoSpecimen');
+    assert.deepEqual(specimen.map((page) => page.form), ['specimen'], 'one specimen, with the form of every field type');
+    for (const language of ['en', 'de']) assert.ok(!expectations(content)[language].menu.includes(specimen[0][language].name), 'the menu leaves the specimen out');
     const views = ['Shared/_DemoLayout.cshtml', 'demoLogin.cshtml', 'demoMembers.cshtml'].map((view) =>
       readFileSync(join(root, DEMO, 'Views', view), 'utf8'),
     );

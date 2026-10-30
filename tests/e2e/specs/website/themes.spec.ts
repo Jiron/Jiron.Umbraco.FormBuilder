@@ -56,7 +56,11 @@ async function checkPage(page: Page, path: string, theme: string, forms: number)
     await expect(honeypot, `${path}: one honeypot per form`).toHaveCount(1);
     const box = await honeypot.boundingBox();
     expect(box, `${path}: the honeypot has a box`).not.toBeNull();
-    expect(box!.x + box!.width, `${path}: the honeypot is out of view`).toBeLessThanOrEqual(0);
+    expect(box!.width * box!.height, `${path}: the honeypot is no bigger than a pixel`).toBeLessThanOrEqual(1);
+    expect(
+      await honeypot.evaluate((element) => getComputedStyle(element).clipPath),
+      `${path}: and clipped to nothing, so it is out of view`,
+    ).toBe('inset(50%)');
     const label = (await honeypot.locator('label').textContent())?.trim() ?? '';
     expect(label.length, `${path}: the honeypot has its label`).toBeGreaterThan(0);
     expect(await form.ariaSnapshot(), `${path}: the honeypot is out of the accessibility tree`).not.toContain(label);

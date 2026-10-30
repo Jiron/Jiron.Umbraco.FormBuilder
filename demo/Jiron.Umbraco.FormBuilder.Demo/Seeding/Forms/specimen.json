@@ -1,0 +1,420 @@
+{
+  "schemaVersion": 1,
+  "key": "d0000000-0000-4000-8000-000000000007",
+  "settings": {
+    "submission": {
+      "submitLabel": { "": "Send the sample", "de": "Muster senden" }
+    }
+  },
+  "pages": [
+    {
+      "key": "d0000000-0000-4000-8000-000000000070",
+      "title": { "": "Every field type", "de": "Alle Feldtypen" },
+      "description": { "": "<p>Sample answers are fine: the demo keeps them only until it is reset.</p>", "de": "<p>Beispielantworten genügen: Die Demo behält sie nur bis zum Zurücksetzen.</p>" },
+      "groups": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000071",
+          "title": { "": "Words and numbers", "de": "Wörter und Zahlen" },
+          "description": { "": "<p>Text, numbers and addresses on the web.</p>", "de": "<p>Text, Zahlen und Adressen im Web.</p>" },
+          "columns": 2,
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000701",
+              "type": "text",
+              "alias": "displayName",
+              "label": { "": "Name on your library card", "de": "Name auf Ihrem Bibliotheksausweis" },
+              "help": { "": "As it should be printed.", "de": "So, wie er gedruckt werden soll." },
+              "required": true,
+              "autocomplete": "name",
+              "settings": { "maxLength": 40, "counter": true }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000702",
+              "type": "email",
+              "alias": "email",
+              "label": { "": "Email address", "de": "E-Mail-Adresse" },
+              "required": true,
+              "autocomplete": "email"
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000703",
+              "type": "text",
+              "alias": "cardNumber",
+              "label": { "": "Library card number", "de": "Ausweisnummer" },
+              "help": { "": "The six digits on the back of your card.", "de": "Die sechs Ziffern auf der Rückseite Ihres Ausweises." },
+              "settings": { "maxLength": 6, "prefix": { "": "LIB", "de": "BIB" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000704",
+              "type": "number",
+              "alias": "copies",
+              "label": { "": "How many copies?", "de": "Wie viele Exemplare?" },
+              "settings": { "min": "1", "max": "10", "step": "1", "suffix": { "": "copies", "de": "Exemplare" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000705",
+              "type": "phone",
+              "alias": "phone",
+              "label": { "": "Phone number", "de": "Telefonnummer" },
+              "autocomplete": "tel"
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000706",
+              "type": "url",
+              "alias": "website",
+              "label": { "": "Your website", "de": "Ihre Website" },
+              "autocomplete": "url"
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000707",
+              "type": "textarea",
+              "alias": "message",
+              "span": 2,
+              "label": { "": "Your message", "de": "Ihre Nachricht" },
+              "settings": { "rows": 4, "counter": true, "maxLength": 500 }
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000072",
+          "title": { "": "Dates and times", "de": "Daten und Zeiten" },
+          "columns": 3,
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000708",
+              "type": "date",
+              "alias": "visitDay",
+              "label": { "": "Day of your visit", "de": "Tag Ihres Besuchs" },
+              "settings": { "min": { "today": "" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000709",
+              "type": "time",
+              "alias": "visitTime",
+              "label": { "": "Time", "de": "Uhrzeit" },
+              "settings": { "min": "09:00", "max": "18:00", "stepMinutes": 30 }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000710",
+              "type": "datetime",
+              "alias": "returnAt",
+              "label": { "": "Return by", "de": "Rückgabe bis" },
+              "settings": { "stepMinutes": 15 }
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000073",
+          "title": { "": "Choices", "de": "Auswahl" },
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000711",
+              "type": "dropdown",
+              "alias": "branch",
+              "label": { "": "Branch", "de": "Zweigstelle" },
+              "required": true,
+              "options": {
+                "items": [
+                  { "value": "market", "label": { "": "Market Street", "de": "Marktstraße" } },
+                  { "value": "riverside", "label": { "": "Riverside", "de": "Am Fluss" } },
+                  { "value": "oldTown", "label": { "": "Old Town", "de": "Altstadt" } }
+                ]
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000712",
+              "type": "dropdown",
+              "alias": "topics",
+              "label": { "": "Topics you read about", "de": "Themen, über die Sie lesen" },
+              "settings": { "multiple": true },
+              "options": {
+                "items": [
+                  { "value": "history", "label": { "": "History", "de": "Geschichte" } },
+                  { "value": "nature", "label": { "": "Nature", "de": "Natur" } },
+                  { "value": "travel", "label": { "": "Travel", "de": "Reisen" } },
+                  { "value": "cooking", "label": { "": "Cooking", "de": "Kochen" } }
+                ]
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000713",
+              "type": "radio",
+              "alias": "format",
+              "label": { "": "Which format?", "de": "Welches Format?" },
+              "settings": { "layout": "horizontal" },
+              "options": {
+                "items": [
+                  { "value": "print", "label": { "": "In print", "de": "Gedruckt" } },
+                  { "value": "ebook", "label": { "": "E-book", "de": "E-Book" } },
+                  { "value": "audio", "label": { "": "Audiobook", "de": "Hörbuch" } }
+                ]
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000714",
+              "type": "radio",
+              "alias": "room",
+              "label": { "": "Where would you like to sit?", "de": "Wo möchten Sie sitzen?" },
+              "required": true,
+              "settings": { "layout": "cards" },
+              "options": {
+                "items": [
+                  { "value": "reading", "label": { "": "The reading room", "de": "Der Lesesaal" }, "description": { "": "Quiet, with 40 seats.", "de": "Ruhig, mit 40 Plätzen." }, "image": "d0000000-0000-4000-8000-0000000000f1" },
+                  { "value": "booth", "label": { "": "A study booth", "de": "Eine Lernkabine" }, "description": { "": "For one, with a door.", "de": "Für eine Person, mit Tür." }, "image": "d0000000-0000-4000-8000-0000000000f1" },
+                  { "value": "cafe", "label": { "": "The café corner", "de": "Die Café-Ecke" }, "description": { "": "Talking is fine.", "de": "Reden ist erlaubt." }, "image": "d0000000-0000-4000-8000-0000000000f1" }
+                ]
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000715",
+              "type": "checkboxes",
+              "alias": "interests",
+              "label": { "": "What else interests you?", "de": "Was interessiert Sie noch?" },
+              "settings": { "other": true },
+              "options": {
+                "items": [
+                  { "value": "readings", "label": { "": "Author readings", "de": "Lesungen" }, "description": { "": "Usually on Thursday evenings.", "de": "Meist donnerstagabends." } },
+                  { "value": "courses", "label": { "": "Computer courses", "de": "Computerkurse" } },
+                  { "value": "games", "label": { "": "Board game afternoons", "de": "Spielenachmittage" } }
+                ]
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000716",
+              "type": "checkbox",
+              "alias": "reminder",
+              "label": { "": "Reminder", "de": "Erinnerung" },
+              "help": { "": "We write once, the day before.", "de": "Wir schreiben einmal, am Tag davor." },
+              "settings": { "text": { "": "Send me a reminder", "de": "Schicken Sie mir eine Erinnerung" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000717",
+              "type": "yesno",
+              "alias": "firstVisit",
+              "label": { "": "Is this your first visit?", "de": "Ist dies Ihr erster Besuch?" }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000718",
+              "type": "yesno",
+              "alias": "newsletter",
+              "label": { "": "Get the monthly newsletter", "de": "Den monatlichen Newsletter erhalten" },
+              "settings": { "style": "switch" }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000719",
+              "type": "country",
+              "alias": "country",
+              "label": { "": "Country", "de": "Land" },
+              "autocomplete": "country",
+              "settings": { "top": ["DE", "CH", "AT"] }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000720",
+              "type": "consent",
+              "alias": "privacy",
+              "label": { "": "Privacy", "de": "Datenschutz" },
+              "required": true,
+              "settings": { "text": { "": "I agree that the library keeps my answers for six months.", "de": "Ich bin einverstanden, dass die Bibliothek meine Antworten sechs Monate aufbewahrt." } }
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000074",
+          "title": { "": "Scales and lists", "de": "Skalen und Listen" },
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000721",
+              "type": "rating",
+              "alias": "rating",
+              "label": { "": "How was your last visit?", "de": "Wie war Ihr letzter Besuch?" },
+              "settings": { "count": 5, "lowLabel": { "": "Poor", "de": "Schlecht" }, "highLabel": { "": "Excellent", "de": "Ausgezeichnet" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000722",
+              "type": "scale",
+              "alias": "recommend",
+              "label": { "": "Would you recommend us?", "de": "Würden Sie uns empfehlen?" },
+              "settings": { "from": 0, "to": 10, "lowLabel": { "": "Not likely", "de": "Unwahrscheinlich" }, "highLabel": { "": "Very likely", "de": "Sehr wahrscheinlich" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000723",
+              "type": "slider",
+              "alias": "hours",
+              "label": { "": "Hours a week you read", "de": "Stunden pro Woche, die Sie lesen" },
+              "settings": { "min": "0", "max": "20", "step": "1", "unit": { "": "hours", "de": "Stunden" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000724",
+              "type": "grid",
+              "alias": "opinions",
+              "label": { "": "How happy are you with these?", "de": "Wie zufrieden sind Sie damit?" },
+              "options": {
+                "items": [
+                  { "value": "1", "label": { "": "Not happy", "de": "Unzufrieden" } },
+                  { "value": "2", "label": { "": "Fine", "de": "In Ordnung" } },
+                  { "value": "3", "label": { "": "Happy", "de": "Zufrieden" } }
+                ]
+              },
+              "rows": [
+                { "key": "d0000000-0000-4000-8000-000000000781", "label": { "": "The opening hours", "de": "Die Öffnungszeiten" } },
+                { "key": "d0000000-0000-4000-8000-000000000782", "label": { "": "The choice of books", "de": "Die Auswahl an Büchern" } }
+              ]
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000725",
+              "type": "ranking",
+              "alias": "priorities",
+              "label": { "": "What matters most to you?", "de": "Was ist Ihnen am wichtigsten?" },
+              "help": { "": "Put the most important first.", "de": "Das Wichtigste zuerst." },
+              "options": {
+                "items": [
+                  { "value": "hours", "label": { "": "Opening hours", "de": "Öffnungszeiten" } },
+                  { "value": "quiet", "label": { "": "Quiet", "de": "Ruhe" } },
+                  { "value": "books", "label": { "": "New books", "de": "Neue Bücher" } }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000075",
+          "title": { "": "People and files", "de": "Personen und Dateien" },
+          "description": { "": "<p>A group in the card style.</p>", "de": "<p>Eine Gruppe im Kartenstil.</p>" },
+          "style": "card",
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000726",
+              "type": "name",
+              "alias": "contact",
+              "label": { "": "Your name", "de": "Ihr Name" },
+              "required": true
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000727",
+              "type": "address",
+              "alias": "address",
+              "label": { "": "Address", "de": "Adresse" },
+              "settings": { "parts": ["street2", "country"] }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000728",
+              "type": "file",
+              "alias": "attachments",
+              "label": { "": "Attachments", "de": "Anhänge" },
+              "help": { "": "PDFs or pictures, up to three.", "de": "PDFs oder Bilder, bis zu drei." },
+              "settings": { "types": ["pdf", "images"], "maxFiles": 3 }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000729",
+              "type": "signature",
+              "alias": "signature",
+              "label": { "": "Your signature", "de": "Ihre Unterschrift" }
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000076",
+          "title": { "": "Content and calculations", "de": "Inhalte und Berechnungen" },
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000731",
+              "type": "paragraph",
+              "settings": { "html": { "": "<p>A paragraph an editor writes, with <strong>bold words</strong> and <a href=\"/\">a link</a>.</p>", "de": "<p>Ein Absatz der Redaktion, mit <strong>fetten Wörtern</strong> und <a href=\"/\">einem Link</a>.</p>" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000732",
+              "type": "image",
+              "settings": { "media": "d0000000-0000-4000-8000-0000000000f1", "alt": { "": "Shelves of books under a window", "de": "Bücherregale unter einem Fenster" }, "size": "medium" }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000733",
+              "type": "divider"
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000730",
+              "type": "heading",
+              "settings": { "level": 3, "text": { "": "What it costs", "de": "Was es kostet" } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000734",
+              "type": "calculation",
+              "alias": "deposit",
+              "label": { "": "Deposit", "de": "Pfand" },
+              "help": { "": "Two euros a copy.", "de": "Zwei Euro pro Exemplar." },
+              "settings": { "formula": "copies * 2", "format": { "decimals": 2, "prefix": { "": "EUR", "de": "EUR" } } }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000735",
+              "type": "hidden",
+              "alias": "source",
+              "label": { "": "Source", "de": "Quelle" },
+              "defaultValue": "specimen"
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000736",
+              "type": "captcha"
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000077",
+          "title": { "": "A repeatable group", "de": "Eine wiederholbare Gruppe" },
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000737",
+              "type": "repeater",
+              "alias": "guests",
+              "label": { "": "Who comes with you", "de": "Wer mit Ihnen kommt" },
+              "help": { "": "Up to three guests.", "de": "Bis zu drei Gäste." },
+              "settings": {
+                "maxRows": 3,
+                "rowLabel": { "": "Guest", "de": "Gast" },
+                "addLabel": { "": "Add a guest", "de": "Gast hinzufügen" }
+              },
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000738",
+                  "type": "text",
+                  "alias": "guestName",
+                  "label": { "": "Name", "de": "Name" },
+                  "required": true
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000739",
+                  "type": "radio",
+                  "alias": "guestAge",
+                  "label": { "": "Age", "de": "Alter" },
+                  "settings": { "layout": "horizontal" },
+                  "options": {
+                    "items": [
+                      { "value": "under16", "label": { "": "Under 16", "de": "Unter 16" } },
+                      { "value": "adult", "label": { "": "16 or over", "de": "16 oder älter" } }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "d0000000-0000-4000-8000-000000000078",
+      "title": { "": "One more thing", "de": "Noch etwas" },
+      "groups": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000079",
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000740",
+              "type": "textarea",
+              "alias": "anythingElse",
+              "label": { "": "Anything else?", "de": "Sonst noch etwas?" },
+              "settings": { "rows": 3 }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
