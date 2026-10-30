@@ -114,6 +114,22 @@ async function entriesOf(request: APIRequestContext, alias: string): Promise<Sto
   return ((await response.json()) as { entries: { values: StoredValue[] }[] }).entries.map((entry) => entry.values);
 }
 
+/**
+ * The entries of a demo form stored since a count that hold an answer only this spec gives: its own, whichever entries
+ * other specs send to the same form meanwhile, since the specs run in parallel.
+ */
+async function ownEntries(
+  request: APIRequestContext,
+  alias: string,
+  before: number,
+  field: string | undefined,
+  answer: string,
+): Promise<StoredValue[][]> {
+  return (await entriesOf(request, alias))
+    .slice(before)
+    .filter((entry) => entry.some((value) => value.field === field && value.text === answer));
+}
+
 /** Each entry of a demo form, oldest first, with its stored files. */
 async function filesOf(request: APIRequestContext, alias: string): Promise<StoredFile[][]> {
   const response = await request.get('/jfb-testing/entries', { params: { form: alias } });
@@ -214,7 +230,7 @@ test('the newsletter beside the contact form: refused with its errors and answer
   await postAsTheRuntime(request, newsletterOn(page), { email: 'ada@visitor.jfb.test', children: 'no', agree: true }, [
     'agree',
   ]);
-  const entries = (await entriesOf(request, 'newsletter')).slice(before);
+  const entries = await ownEntries(request, 'newsletter', before, keys.email, 'ada@visitor.jfb.test');
   expect(entries).toHaveLength(2);
   expect(entries[0]).toEqual(entries[1]);
   expect(entries[0]!.filter((value) => value.field === keys.children)).toHaveLength(1);
@@ -295,7 +311,7 @@ test('the job application moves through its three pages with Next and Back, keep
     },
     ['privacy'],
   );
-  const entries = (await entriesOf(request, 'application')).slice(before);
+  const entries = await ownEntries(request, 'application', before, keys.letter, letter);
   expect(entries).toHaveLength(2);
   expect(entries[0]).toEqual(entries[1]);
   const stored = entries[0]!;
@@ -391,7 +407,7 @@ test('the feedback ranking moves options up and down and into its top three with
 
   const sent = await submitForm(pageFormOn(page));
   expect(outcomeOf(sent).message.length).toBeGreaterThan(0);
-  const entries = (await entriesOf(request, 'feedback')).slice(before);
+  const entries = await ownEntries(request, 'feedback', before, keys.comments, 'More quiet, please.');
   expect(entries).toHaveLength(1);
   const improve = entries[0]!.filter((value) => value.field === keys.improve).sort((a, b) => a.index - b.index);
   expect(improve.map((value) => value.text)).toEqual(['seats', 'hours', 'wifi']);
