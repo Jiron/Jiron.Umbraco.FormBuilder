@@ -843,6 +843,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 | Route | Purpose |
 | --- | --- |
 | `GET forms/{keyOrAlias}?culture=&contentKey=` | The public projection for headless rendering, when the form allows it. `ETag` from the response itself, so it follows the public revision, the culture and dictionary changes (ADR-0002). |
+| `GET forms/{key}/element?instance=&culture=&contentKey=&theme=` | The published form's first render as the headless element writes it (ADR-0128): the view model the render endpoint renders, as JSON with a `contract` number and the definition endpoint's answer as the model data's text, without what only a post without JavaScript uses. `no-store`. |
 | `GET forms/{key}/render?instance=&page=&contentKey=&culture=&theme=` | The published form as HTML in the page's theme and culture, for a runtime that got `form_changed` on a page that may come from a cache (ADR-0004). `page` must be a local path; `theme`, the placement's theme if the page named one, is a theme's alias (ADR-0105). `no-store`. |
 | `POST forms/{key}/challenge` | A signed challenge (form, time, and optionally a proof-of-work puzzle). Fetched on first interaction, so cached pages stay cacheable. The response also carries what cached markup cannot: the places left per option, and the member values that rules use (§4.3.3). |
 | `POST forms/{key}/uploads` | Upload one file before submitting (progress per file): `multipart/form-data` with the `challenge` part first, then the `file` part, streamed and checked on its first bytes (ADR-0006). Returns a signed upload token. Limits per form, file and IP; `413 payload_too_large` and `415 unsupported_media_type` close the connection. |
@@ -2223,9 +2224,19 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **6.6c The Content Delivery API** (6.6 split in four, WORKLOG 2026-10-31) (2026-10-31, 5a64ea7)
   - **The Content Delivery API:** the form picker returns `{key, alias, name}`, and with expansion, the projection. This step builds the picker's property editor on the server, its value converters and its Delivery API output; 6.7 builds its data type's settings, its backoffice picker, blocks and "used on".
   - Done when: the Delivery API test passes (a page that picks a form answers `{key, alias, name}`, with expansion the projection in the request's culture, a form not published or not headless answers none).
-- [ ] **6.6d The renderer** (6.6 split in four, WORKLOG 2026-10-31)
-  - **The renderer:** `<jfb-form>` (packages/element) renders the default theme's markup from JSON with the same runtime: the same markup as the server's views for the same form (a fixture of whole forms that the integration tests write and the element's tests read), its pages moved through in the browser with each page checked on the server (`validate`) before the next.
-  - Done when: a static page on 5521 (cross-origin, allowlisted) renders and submits a multi-page form through the element, with the honeypot out of view and out of the accessibility tree; the element's markup matches the server's for every form of the fixture; axe is clean.
+- [ ] **6.6d The element endpoint** (6.6 split in four, WORKLOG 2026-10-31; then 6.6d in four, WORKLOG 2026-10-31)
+  - **The renderer's JSON** (ADR-0128): `GET forms/{key}/element` (§4.6) answers the view model of the published form's first render, as the render endpoint renders it, as JSON with a `contract` number and the definition endpoint's answer as the exact text of the model data, without what only a post without JavaScript uses (the action, the encoding, the route token and post values, a button's `formaction`); `no-store`. Its JSON schema comes from the view models' own serializer metadata and the element's TypeScript types from the schema, both drift-tested (as ADR-0125).
+  - Done when: integration tests cover the endpoint's answer for a multi-page form and for a field of every built-in type (each control's `kind`, the ids below the instance asked for, the model data equal to the definition endpoint's answer, no post-only part), a form for members (its notice for a visitor, the form for a member), a closed form's notice, the culture and the theme asked for, `400` for each malformed parameter, `404` for a form the site lacks and `no-store`; the OpenAPI snapshot holds the endpoint with its limits; the schema and the types pass their drift tests.
+- [ ] **6.6e The element's markup** (6.6 split in four, WORKLOG 2026-10-31; then 6.6d in four, WORKLOG 2026-10-31)
+  - **The renderer:** `<jfb-form>` (packages/element, with `api`, `form`, `culture`, `content`, `theme` and `context-<name>` attributes) fetches the element endpoint and writes the built-in views' markup from it in the light DOM, the same markup as the server's views for the same form (a fixture of whole forms that the integration tests write and the element's tests read), adds the theme's stylesheets and the runtime once per document, and dispatches `jfb:rendered`.
+  - Done when: the element's markup matches the server's for every form of the fixture (a field of every built-in type, a multi-page form, the notices, in the default and `bootstrap5` themes, in English and German), compared as DOM trees without the server's post-only parts; ADR-0015's contract test passes on the element's output; Vitest covers the attributes, the instance ids, the contract check and the assets added once.
+- [ ] **6.6f The element on a headless page** (6.6 split in four, WORKLOG 2026-10-31; then 6.6d in four, WORKLOG 2026-10-31)
+  - **The static site on 5521** (ADR-0011, ADR-0031): the browser harness serves a static page there, cross-origin to the host and allowlisted, that loads the element from the host.
+  - Done when: a static page on 5521 (cross-origin, allowlisted) renders a multi-page form through the element, with the honeypot out of view and out of the accessibility tree, and the runtime enhances it as on a Razor page (a rule shows a field, a check shows its error); a page on an origin that is not allowlisted renders nothing and says why in the console; axe is clean.
+- [~] **6.6g The element's pages and sending** (6.6 split in four, WORKLOG 2026-10-31; then 6.6d in four, WORKLOG 2026-10-31)
+  - **Blocked (2026-10-31):** the element's form moves through its pages and is sent by the runtime's paging (6.5d) and sending (6.4i), which wait for section 4.12's budget, which only the owner can change (ADR-0120, ADR-0128, `docs/OWNER-TODO.md`).
+  - **Through the runtime:** the element's form is moved through its pages in the browser, each page checked on the server (`validate`) before the next, and sent, by the runtime's paging (6.5d) and sending (6.4i).
+  - Done when: a static page on 5521 (cross-origin, allowlisted) renders and submits a multi-page form through the element, each page checked with `validate` before the next; axe is clean.
 - [ ] **6.7 The form picker, blocks and "used on"**
   - **The data type "Jiron Form Builder form picker":** single or multiple, allowed folders or forms, optional theme override and redirect override. Plus the value converters and the UFM block-label component.
   - **"Create a form block for me":** an idempotent service that creates a "Form" element type and data type, and never changes existing types.
@@ -2718,6 +2729,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Complete the services and notifications of §4.9, including `IFormBuilderEntryReader`. Write `docs/extending.md`.
   - **Backoffice extension points:**
     - **Manifests:** `jfbSettingEditor` (a custom editor for one setting) and `jfbFieldPreview` (the designer preview of a custom field type).
+    - **The headless element:** a site's own field type registers the control `<jfb-form>` writes for it, from the type's part of the element endpoint's answer (ADR-0128).
     - **Slots:** extra workspace views on the form workspace.
     - **Types:** TypeScript declarations for extension authors.
   - Done when:
@@ -2725,7 +2737,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - a sample extension registers a custom setting editor and a preview, and Playwright shows both working.
 - [ ] **15.2 Samples**
   - `samples/Jiron.Umbraco.FormBuilder.Samples`:
-    - a custom field type (a colour choice with swatches);
+    - a custom field type (a colour choice with swatches), rendered on a Razor page and through `<jfb-form>`;
     - a custom action (a CRM stub);
     - an option source (a fake product API);
     - an export format (iCalendar for event registrations);
