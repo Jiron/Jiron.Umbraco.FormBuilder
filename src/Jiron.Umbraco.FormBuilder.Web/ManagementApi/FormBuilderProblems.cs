@@ -74,6 +74,14 @@ internal static class FormBuilderProblems
         return problem;
     }
 
+    /// <summary>The user holds the permissions but lacks a section of Umbraco's own, which the answer names.</summary>
+    public static FormBuilderProblemResult MissingSection(string section)
+    {
+        var problem = Problem(StatusCodes.Status403Forbidden, ForbiddenCode, "You do not have the permission to do this.", $"It needs Umbraco's section '{section}'.");
+        problem.Problem.Extensions["section"] = section;
+        return problem;
+    }
+
     /// <summary>The answer to a failed check of one of Jiron Form Builder's policies, by the denial it gave (ADR-0049).</summary>
     public static FormBuilderProblemResult Refused(AuthorizationResult result, FormBuilderAccessResourceKind kind)
     {

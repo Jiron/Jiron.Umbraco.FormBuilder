@@ -144,6 +144,17 @@ export type FolderResponseModel = {
     permissions: Array<string>;
 };
 
+export type FormBlockPartResponseModel = {
+    key: string;
+    name: string;
+    created: boolean;
+};
+
+export type FormBlockTypesResponseModel = {
+    elementType: FormBlockPartResponseModel;
+    dataType: FormBlockPartResponseModel;
+};
+
 export type FormChangeRequestModel = {
     concurrencyVersion: number;
 };
@@ -1093,6 +1104,33 @@ export type FormSearchResponses = {
 };
 
 export type FormSearchResponse = FormSearchResponses[keyof FormSearchResponses];
+
+export type SetupCreateFormBlockData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/setup/form-block';
+};
+
+export type SetupCreateFormBlockErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type SetupCreateFormBlockResponses = {
+    /**
+     * OK
+     */
+    200: FormBlockTypesResponseModel;
+};
+
+export type SetupCreateFormBlockResponse = SetupCreateFormBlockResponses[keyof SetupCreateFormBlockResponses];
 
 export type TrashEmptyData = {
     body?: never;

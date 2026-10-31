@@ -1889,6 +1889,41 @@
         ]
       }
     },
+    "/umbraco/jfb/management/api/v1/setup/form-block": {
+      "post": {
+        "tags": [
+          "Setup"
+        ],
+        "operationId": "SetupCreateFormBlock",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FormBlockTypesResponseModel"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The resource is protected and requires an authentication token"
+          },
+          "403": {
+            "description": "The authenticated user does not have access to this resource"
+          }
+        },
+        "security": [
+          {
+            "Backoffice-User": []
+          }
+        ]
+      }
+    },
     "/umbraco/jfb/management/api/v1/trash": {
       "delete": {
         "tags": [
@@ -3395,6 +3430,51 @@
         },
         "additionalProperties": false
       },
+      "FormBlockPartResponseModel": {
+        "required": [
+          "created",
+          "key",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "created": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FormBlockTypesResponseModel": {
+        "required": [
+          "dataType",
+          "elementType"
+        ],
+        "type": "object",
+        "properties": {
+          "elementType": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FormBlockPartResponseModel"
+              }
+            ]
+          },
+          "dataType": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FormBlockPartResponseModel"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "FormChangeRequestModel": {
         "required": [
           "concurrencyVersion"
@@ -4070,6 +4150,9 @@
     },
     {
       "name": "Form"
+    },
+    {
+      "name": "Setup"
     },
     {
       "name": "Trash"

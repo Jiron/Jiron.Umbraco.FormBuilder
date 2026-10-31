@@ -17,7 +17,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
 /// Checks every action of the management API against its declaration (ADR-0050), before the request's body is
 /// validated: the Forms section (<c>403 no_section</c>), then the migration state (<c>503 migrations_pending</c>), then
 /// the folder or form the declaration names (<c>404</c> when it does not exist or the user does not see it), then each
-/// permission through its policy (<c>403 forbidden</c> naming it), and last the request itself
+/// permission through its policy (<c>403 forbidden</c> naming it), then a section of Umbraco's own the declaration names
+/// (<c>403 forbidden</c> naming it), and last the request itself
 /// (<c>400 invalid_request</c>). A body that holds the key but cannot be read answers <c>400 invalid_request</c> before
 /// any check of the folder or form, which it would otherwise make in the wrong place. An action without exactly one
 /// declaration, or with a key that names nothing, is refused.
@@ -158,6 +159,11 @@ internal sealed partial class FormBuilderAccessFilter(
             {
                 return FormBuilderProblems.Refused(result, resource.Kind);
             }
+        }
+
+        if (declaration.UmbracoSection is { } section && !umbracoUser.AllowedSections.Contains(section, StringComparer.OrdinalIgnoreCase))
+        {
+            return FormBuilderProblems.MissingSection(section);
         }
 
         if (!context.ModelState.IsValid)

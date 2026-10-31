@@ -26,6 +26,12 @@ internal abstract class FormBuilderAccessAttribute : Attribute
     /// query, or a property of the request's body. An empty or missing folder key is the root.
     /// </summary>
     public string? Key { get; set; }
+
+    /// <summary>
+    /// A section of Umbraco's own the user needs besides the permissions, such as <c>settings</c> for an action that
+    /// creates Umbraco's types; none by default.
+    /// </summary>
+    public string? UmbracoSection { get; set; }
 }
 
 /// <summary>The action needs every permission given, globally or on the folder or form that <see cref="FormBuilderAccessAttribute.Key"/> names.</summary>
