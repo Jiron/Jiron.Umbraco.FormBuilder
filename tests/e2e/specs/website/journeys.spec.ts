@@ -129,6 +129,9 @@ async function toSummary(page: Page): Promise<Locator> {
   await choose(form, 'room', 'reading');
   await choose(form, 'rating', '4');
   await choose(form, 'recommend', '8');
+  for (const row of await form.locator('[data-jfb-alias="opinions"] fieldset fieldset').all()) {
+    await row.locator('label').first().click();
+  }
   await form.locator('[name="contact.first"]').fill('Mira');
   await form.locator('[name="contact.last"]').fill('Okafor');
   await press(form, 'next');

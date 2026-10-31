@@ -68,7 +68,8 @@ And Bootstrap had to reach the demo and the tests without being shipped.
   the visitor asks for less motion; in forced colours the stars and the chosen buttons take the system's.
 - **Bootstrap's own controls** (6.8h) take the same outline in place of their focus shadow: the shadow stays below 3:1
   on any ground, and the theme claims WCAG 2.2 AA for what it renders, so a site's Bootstrap keeps its colours here and
-  gives up that one shadow inside a form.
+  gives up that one shadow inside a form, a refused control's red one too. A card's radio button stands inside the
+  card's own outline, so it takes none.
 - **The focus of what the theme draws** (6.8d): a rating, a scale, yes or no as buttons, a choice card and a ranking's
   move show a 2 px outline in `--bs-primary-text-emphasis`, 2 px outside. Bootstrap's own focus shadow is about 1.4:1
   and forced colours drop it; the emphasis colour is the one Bootstrap derives from the site's primary for each colour

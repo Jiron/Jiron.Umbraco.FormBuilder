@@ -112,7 +112,7 @@ const changedPixels = (page: Page, one: Buffer, other: Buffer): Promise<number> 
         return context.getImageData(0, 0, bitmap.width, bitmap.height).data;
       };
       const [a, b] = await Promise.all([pixels(first), pixels(second)]);
-      if (a.length !== b.length) return Number.MAX_SAFE_INTEGER;
+      if (a.length !== b.length) throw new Error('The region changed its size, so its pixels say nothing.');
       let changed = 0;
       for (let at = 0; at < a.length; at += 4) {
         if (a[at] !== b[at] || a[at + 1] !== b[at + 1] || a[at + 2] !== b[at + 2]) changed += 1;
@@ -263,6 +263,9 @@ async function answerFirstPage(form: Locator): Promise<void> {
   ] as const) {
     const input = form.locator(`input[name="${name}"][value="${value}"]`);
     await form.locator(`label[for="${(await input.getAttribute('id')) ?? ''}"]`).click();
+  }
+  for (const row of await field(form, 'opinions').locator('fieldset fieldset').all()) {
+    await row.locator('label').first().click();
   }
   await form.locator('[name="contact.first"]').fill('Mira');
   await form.locator('[name="contact.last"]').fill('Okafor');

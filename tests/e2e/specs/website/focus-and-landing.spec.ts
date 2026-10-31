@@ -62,11 +62,14 @@ const BOOTSTRAPS_OWN = [
   ['the main button', '.jfb-navigation .jfb-button-primary'],
 ] as const;
 
-/** What the focus draws for a control, read while it has the focus: itself, or a drawn radio button's card or label. */
-const ringOf = (control: Locator) =>
-  control.evaluate((element) => {
+/**
+ * What the focus draws for a control, read while it has the focus: itself when the control is its own, or the card or
+ * label a drawn radio button shows it on.
+ */
+const ringOf = (control: Locator, own = false) =>
+  control.evaluate((element, isOwn) => {
     const drawn =
-      (getComputedStyle(element).outlineStyle === 'solid' ? element : null) ??
+      (isOwn ? element : null) ??
       element.closest('.jfb-choices-cards > .jfb-choice') ??
       (element.matches('[type="radio"]') ? element.ownerDocument.querySelector(`label[for="${element.id}"]`) : null) ??
       element;
@@ -85,7 +88,7 @@ const ringOf = (control: Locator) =>
       colour: style.outlineColor,
       ground: ground === null ? 'rgb(255, 255, 255)' : colour,
     };
-  });
+  }, own);
 
 /** Moves the focus to a control the way the keyboard leaves it, so it shows as focus. */
 async function focusOn(page: Page, control: Locator): Promise<void> {
@@ -99,10 +102,14 @@ for (const theme of THEMES) {
       page,
     }) => {
       await page.goto(urlOf(theme, scheme));
-      for (const [what, selector] of [...DRAWN, ...(theme === 'bootstrap5' ? BOOTSTRAPS_OWN : [])]) {
+      const own = theme === 'bootstrap5' ? BOOTSTRAPS_OWN : [];
+      for (const [what, selector] of [...DRAWN, ...own]) {
         const control = formOn(page).locator(selector).first();
         await focusOn(page, control);
-        const ring = await ringOf(control);
+        const ring = await ringOf(
+          control,
+          own.some(([, ownSelector]) => ownSelector === selector),
+        );
         expect(ring.focused, `${what}: the focus shows`).toBe(true);
         expect([ring.style, ring.width], `${what}: a solid outline, not a shadow`).toEqual(['solid', 2]);
         expect(channels(ring.colour).length, `${what}: an opaque colour, ${ring.colour}`).toBe(3);
@@ -189,6 +196,13 @@ for (const theme of THEMES) {
   test.describe(`${theme} without JavaScript`, () => {
     test.use({ javaScriptEnabled: false, contextOptions: { reducedMotion: 'reduce' } });
 
+    test("a card's radio button shows no ring of its own inside the card's", async ({ page }) => {
+      await page.goto(urlOf(theme, ''));
+      const radio = formOn(page).locator('[data-jfb-alias="room"] input').first();
+      await focusOn(page, radio);
+      expect(await radio.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('solid');
+    });
+
     test("a refused rating's stars leave the error's colour once one is chosen", async ({ page }) => {
       await page.goto(urlOf(theme, ''));
       const form = formOn(page);
@@ -271,7 +285,7 @@ for (const theme of [...THEMES, 'unstyled'] as const) {
           await send(page).click();
           await expect(form.locator('.jfb-error-summary')).toBeVisible();
 
-          for (const alias of ['room', 'rating', 'recommend', 'contact']) {
+          for (const alias of ['room', 'rating', 'recommend', 'opinions', 'contact']) {
             const label = form.locator(
               `[data-jfb-alias="${alias}"] > label, [data-jfb-alias="${alias}"] > fieldset > legend`,
             );
@@ -288,4 +302,30 @@ for (const theme of [...THEMES, 'unstyled'] as const) {
       });
     }
   }
+
+  test.describe(`${theme} with JavaScript, a long legend`, () => {
+    test.use({ viewport: { width: 1280, height: 800 }, contextOptions: { reducedMotion: 'reduce' } });
+
+    // A control's own margin clears a short legend, so only one taller than that margin tells the two landings apart.
+    test("a summary's link lands at a long legend's start, not at its control", async ({ page }) => {
+      await page.goto(urlOf(theme, ''));
+      const form = formOn(page);
+      await form.locator('[name="displayName"]').fill('Mira Okafor');
+      await send(page).click();
+      await expect(form.locator('.jfb-error-summary')).toBeVisible();
+      const legend = form.locator('[data-jfb-alias="recommend"] > fieldset > legend');
+      await legend.evaluate((element: HTMLElement) => {
+        element.style.display = 'block';
+        element.style.minHeight = '16rem';
+      });
+
+      await form.locator('.jfb-error-summary a[href="#jfb-1-recommend"]').focus();
+      await page.keyboard.press('Enter');
+
+      await expect
+        .poll(() => legend.evaluate((element) => element.getBoundingClientRect().top), "the legend's start, below 5rem")
+        .toBeGreaterThanOrEqual(80);
+      await expect(form.locator('[data-jfb-alias="recommend"] input').first()).toBeFocused();
+    });
+  });
 }

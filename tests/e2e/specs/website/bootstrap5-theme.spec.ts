@@ -163,6 +163,16 @@ test("the theme reads Bootstrap's own variables, in its colour modes", async ({ 
     heading: '20px',
   });
   await expect(pageForm(page).locator('input[type=file]')).toHaveClass(/(^| )form-control( |$)/);
+
+  // One mark for one state: a refused text box under focus has the outline, and no red shadow beside it.
+  const refused = pageForm(page).locator('#jfb-1-email');
+  await page.keyboard.press('Tab');
+  await refused.focus();
+  await expect
+    .poll(() =>
+      refused.evaluate((element) => [getComputedStyle(element).outlineStyle, getComputedStyle(element).boxShadow]),
+    )
+    .toEqual(['solid', 'none']);
 });
 
 test('cards, buttons and stars choose as drawn, fields side by side line up, and a grid shows its columns once', async ({

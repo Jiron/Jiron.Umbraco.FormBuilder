@@ -252,6 +252,7 @@
               "key": "d0000000-0000-4000-8000-000000000724",
               "type": "grid",
               "alias": "opinions",
+              "required": true,
               "label": { "": "How happy are you with these?", "de": "Wie zufrieden sind Sie damit?" },
               "options": {
                 "items": [

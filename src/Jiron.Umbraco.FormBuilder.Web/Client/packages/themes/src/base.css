@@ -79,6 +79,11 @@
   scroll-margin-block-start: calc(var(--jfb-scroll-margin, 6rem) + 4rem);
 }
 
+/* A grid's first cell stands below its legend and its columns' heads. */
+.jfb-form .jfb-matrix input {
+  scroll-margin-block-start: calc(var(--jfb-scroll-margin, 6rem) + 8rem);
+}
+
 /*
  * A picture's choice stands below its picture, at most a card as wide as the form at the themes' 3:2, which on a wide
  * form or a short window is more than the window: the control that takes the focus always stays in it.

@@ -184,7 +184,7 @@
 
   & .jfb-control[aria-invalid='true']:focus {
     border-color: var(--bs-form-invalid-border-color);
-    box-shadow: 0 0 0 var(--bs-focus-ring-width, 0.25rem) rgba(var(--bs-danger-rgb), 0.25);
+    box-shadow: none;
   }
 
   /* A refused group's choices carry its invalid state, as its fieldset's role takes none (6.8c). */
@@ -817,15 +817,16 @@
     box-shadow: none;
   }
 
+  /* A card's radio button stands inside the card's own outline. */
+  & .jfb-choices-cards > .jfb-choice > input:focus-visible {
+    outline: 0;
+  }
+
   /* Forced colours (Windows contrast themes): the stars take the system's colours, and the outline the system's. */
 
   @media (forced-colors: active) {
     & :is(.form-control, .form-select, .form-check-input, .form-range, .btn):focus-visible {
       outline-color: Highlight;
-    }
-
-    & .jfb-choices-cards > .jfb-choice > input:focus-visible {
-      outline: 0;
     }
 
     & .jfb-choices-rating > .jfb-choice > label::before,

@@ -3651,7 +3651,7 @@
                   "span": 1,
                   "label": "How happy are you with these?",
                   "hideLabel": false,
-                  "required": false,
+                  "required": true,
                   "messages": {},
                   "validation": [],
                   "rules": [],
@@ -4541,7 +4541,7 @@
                   "canBeRequired": true,
                   "alias": "opinions",
                   "calculation": null,
-                  "required": false,
+                  "required": true,
                   "rules": [],
                   "fields": [],
                   "rows": [

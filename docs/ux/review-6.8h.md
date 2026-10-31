@@ -11,7 +11,7 @@ answers no questions during the run (CLAUDE.md rule 8), so every choice a skill 
 | --- | --- | --- |
 | A picture choice's scroll margin | up to a card as wide as the form, which on a wide form or a short window pushed the control below the window | never more than the window less the control's room (`100svh - 4rem`) |
 | The form itself | no scroll margin, so a post without JavaScript put its summary, title or outcome under a sticky header | the same margin as what is inside it |
-| A summary's link with JavaScript | scrolled to the label, which left the control below a picture taller than the window (found by the new test, in `unstyled`) | scrolls to the control, as a link without JavaScript lands, its margin keeping the label in view; about 30 bytes smaller |
+| A summary's link with JavaScript | scrolled to the label, which left the control below a picture taller than the window (found by the new test, in `unstyled`) | still scrolls to the label, whatever stands between them, and a plain focus brings a control still out of view in (6.8i: scrolling to the control alone put a long legend or a grid's under a sticky header) |
 | A refused rating without JavaScript | the stars after the chosen one stayed in the error's colour until the next post | the error's colour only until a star is chosen |
 | `bootstrap5`'s own controls | Bootstrap's focus shadow, about 1.4:1, below WCAG 1.4.11 | the theme's 2 px outline (ADR-0108) |
 
@@ -60,5 +60,4 @@ one state has one mark, and a site's Bootstrap keeps every other colour.
 | Before | After | Why |
 | --- | --- | --- |
 | A shadow and, in forced colours, an outline on Bootstrap's controls | one outline, whose colour forced colours replace | one state, one property, nothing to keep in step |
-| Two kinds of landing, by label with JavaScript and by control without | one, by control | what a visitor gets does not depend on whether a script ran |
 | A margin that assumes the widest card | a margin capped by the window | a focused control off the screen is worse than a legend off it |

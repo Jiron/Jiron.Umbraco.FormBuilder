@@ -13,9 +13,9 @@ import { pageOf, pathOf } from '../../support/demo-content.ts';
 // held to what the markup says: no `aria-invalid` anywhere. After a refusal that same report would hold for the five
 // controls it covers whatever the markup wrote, so the markup's own mark is read beside the tree's.
 //
-// A grid's cells, an address's parts, the "Other" input and a signature's typed name are optional on the specimen, so
-// here they show role and name only; `FormRenderingChoicesTests` and `FormRenderingInputsTests` hold their required and
-// invalid marks on forms that refuse them.
+// An address's parts, the "Other" input and a signature's typed name are optional on the specimen, so here they show
+// role and name only; `FormRenderingChoicesTests` and `FormRenderingInputsTests` hold their required and invalid marks
+// on forms that refuse them.
 
 const SPECIMEN = pathOf(pageOf('demoSpecimen', 'en'), 'en');
 const THEMES = ['default', 'unstyled', 'bootstrap5'] as const;
@@ -71,7 +71,7 @@ const FIRST_RENDER: readonly Expected[] = [
   [fieldset('recommend'), 'group', 'Would you recommend us?'],
   ['[name="recommend"]', 'radio', '0, Not likely'],
   ['[name="hours"]', 'slider', 'Hours a week you read'],
-  [fieldset('opinions'), 'group', 'How happy are you with these? (optional)'],
+  [fieldset('opinions'), 'group', 'How happy are you with these?'],
   [`${fieldset('opinions')} fieldset`, 'group', 'The opening hours'],
   ['[name^="opinions."]', 'radio', 'Not happy'],
   [fieldset('priorities'), 'group', 'What matters most to you? (optional)', 'Put the most important first.'],
@@ -113,6 +113,7 @@ const REFUSED: readonly Expected[] = [
   ],
   ['[name="rating"]', 'radio', '1, Poor', 'Choose a rating'],
   ['[name="recommend"]', 'radio', '0, Not likely', 'Choose a point on the scale'],
+  ['[name^="opinions."]', 'radio', 'Not happy', 'Choose an answer in each row'],
   ['[name="contact.first"]', 'textbox', 'First name'],
   ['[name="contact.last"]', 'textbox', 'Last name'],
 ];
@@ -194,7 +195,7 @@ for (const theme of THEMES) {
         .locator('input[required], select[required], textarea[required]')
         .evaluateAll((controls) => [...new Set(controls.map((control) => (control as HTMLInputElement).name))]);
       expect(
-        required.filter((name) => !name.startsWith('guests')).sort(),
+        required.filter((name) => !name.startsWith('guests') && !name.startsWith('opinions.')).sort(),
         'exactly the required controls say so',
       ).toEqual([...REQUIRED].sort());
 
@@ -251,6 +252,7 @@ for (const theme of THEMES) {
             'Privacy: Tick the box to agree',
             'How was your last visit? Choose a rating',
             'Would you recommend us? Choose a point on the scale',
+            'How happy are you with these? Choose an answer in each row',
             'Your name: Enter the name in full',
           ]);
         });
