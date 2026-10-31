@@ -50,7 +50,8 @@ internal interface IFormBuilderPickerService
 
     /// <summary>
     /// The folders of these keys the user may see outside the trash, in the order asked, whether or not they lead to a form
-    /// the picker may pick: the allowed folders a picker's settings name (ADR-0135). A key it may not show is left out.
+    /// the picker may pick, and those that lead to one, which a grant on a form inside reaches: the allowed folders a
+    /// picker's settings name (ADR-0135). A key it may not show is left out.
     /// </summary>
     Task<IReadOnlyList<PickerItem>> ListFoldersAsync(AccessUser user, IReadOnlyCollection<Guid> keys, CancellationToken cancellationToken = default);
 }
@@ -128,7 +129,7 @@ internal sealed class FormBuilderPickerService(IFolderRepository folders, IFormR
         }
 
         var reach = await ReachAsync(user, PickerScope.Everything, cancellationToken);
-        return [.. keys.Distinct().Select(reach.Folder).OfType<StoredFolder>().Where(reach.Sees).Select(folder => new PickerItem(LibraryItemKind.Folder, folder.Key, folder.Name, null, reach.LeadsToForms(folder.Id)))];
+        return [.. keys.Distinct().Select(reach.Folder).OfType<StoredFolder>().Where(folder => reach.Sees(folder) || reach.LeadsToForms(folder.Id)).Select(folder => new PickerItem(LibraryItemKind.Folder, folder.Key, folder.Name, null, reach.LeadsToForms(folder.Id)))];
     }
 
     private static PickerItem FormItem(StoredForm form) => new(LibraryItemKind.Form, form.Key, form.Name, form.Alias, false);

@@ -2,8 +2,8 @@
 
 - Status: accepted; extends [ADR-0017](0017-references.md) (how the rebuild runs, and what the endpoint answers)
 - Date: 2026-10-31
-- Roadmap step: 6.7c (decided and built); the health check's rebuild action (9.1), the Info view and the trash and
-  delete confirmations (9.2) use it
+- Roadmap step: 6.7c (decided and built), amended by 6.8f (what asks for a rebuild, and how the walk writes); the health
+  check's rebuild action (9.1), the Info view and the trash and delete confirmations (9.2) use it
 
 ## Context
 
@@ -37,13 +37,30 @@ questions ADR-0017 left open:
 - **The request:** a `jfbKeyValue` row `references-rebuild` whose value is where the walk goes on: `0` from the first
   document, the last document id done, or `orphans` once every document is done. Step 4 of the plan,
   `jfb-004-request-reference-rebuild` (`RequestReferenceRebuildV1`), adds it with `0` where it is missing, so a
-  fresh install, an upgrade and a replay of the plan ask for one, and a walk under way goes on where it was. The
-  health check's action (9.1) asks the same way, from the first document.
+  fresh install, an upgrade and a replay of the plan ask for one, and a walk under way goes on where it was. A request
+  made later, by the handler below or the health check's action (9.1), writes a value of its own (`0-` and a new
+  key), which reads as no place, so the walk starts from the first document and can tell the request from its own.
+- **What asks for one** (`FormReferenceTypeHandler`, 6.8f): stored values can change, or come to name a form, with no
+  content notification. So a document or element type changed or deleted asks, as removing a picker property or giving
+  a property the picker's data type does; a data type deleted, which takes its properties away; and a data type given
+  another editor. A type's change is any but a new type's: Umbraco counts a property's data type as a change of the
+  type's "other" details, so narrowing it to structural changes would miss it. A new type or data type has no content,
+  and a data type's other settings leave what its values name as it was, so neither asks. Many changes in a row cost
+  one walk, as each only sets the row. A request that fails is logged as a warning and never fails the change; the
+  health check's rebuild repairs it.
 - **The walk** (`FormReferenceRebuild`): batches of 100 documents, the recycle bin's included and neither blueprints
-  nor media, each item's rows written anew as a save writes them; the place is stored after each batch, and a value
-  it cannot read starts the walk again. Then the rows of content that has gone are deleted and the request removed.
-  Content saved meanwhile is kept current by the handlers; a batch that writes an item a moment after a handler did
-  writes the same rows.
+  nor media, each item's rows written anew as a save writes them. Then the rows of content that has gone are deleted
+  and the request removed. Content saved meanwhile is kept current by the handlers.
+- **A page is written only while its copy is current** (6.8f). A batch reads the documents' current versions from
+  `umbracoContentVersion` (its `id`, `nodeId`, `versionDate` and `current` columns, unchanged since Umbraco 8) before
+  it reads their copies. A save moves a version's date and a publish starts a new version, so a page whose copy is not
+  of the version read, or whose version has changed by the time its rows are written, is skipped: a save's handler
+  writes those rows. The write unit reads the version's row with a locking read first, so a save either shows there
+  or waits for the unit and writes its own rows after it. The unit holds that row for one item's few statements and
+  waits for nothing Umbraco holds. Rows alone could not tell, since a save that removes the last pick leaves none.
+- **The place moves on only from the value read** (6.8f): after a batch the value is replaced only if it is still the
+  one read, and the request is removed only if it is still `orphans`; a value it cannot read starts the walk again. A
+  request made meanwhile stands, and the next round starts from it.
 - **The job** (`FormReferenceRebuildJob`, `Jiron.FormBuilder.References`): a distributed job every minute, so one
   server of a cluster walks at a time, within 8 seconds a run, only while Umbraco runs and no migration is pending.
   With nothing requested a run reads one row. A failure is logged as an error and the next run goes on.
@@ -65,8 +82,14 @@ questions ADR-0017 left open:
 
 - Right after an install or an upgrade the list can lack pages for a minute or so on a large site, until the job has
   walked them; pages saved meanwhile are there at once.
-- The rebuild reads `umbracoNode` directly. A change of those three columns in a later Umbraco shows in
-  `ReferenceRepositoryTests`, which walk real documents, media and a blueprint.
+- The rebuild reads `umbracoNode` and `umbracoContentVersion` directly. A change of those columns in a later Umbraco
+  shows in `ReferenceRepositoryTests`, which walk real documents, media and a blueprint, and save and publish them.
+- Saving any document type starts a walk, which on a large site takes minutes in the background at 8 seconds a minute.
+  Changing types is rare, and a wrong "used on" costs more: an editor would trust it when deleting a form.
+- In a cluster, a server whose cache has not yet heard of a plain save, for the few seconds until it does, could read
+  the older copy of the same version. The walk would then write that copy's rows over the handler's. This needs a walk
+  and a save of that page within those seconds on different servers; the next save or rebuild repairs it. A publish
+  does not have the gap, as its copy's version differs.
 - What is not covered: a form named in a Razor view, a controller or a template, in a member's or a media item's
   properties, or outside Umbraco. The UI says "used on pages".
 - The rows keep the property and the culture; the "Used on" sidebar's "where on each page" (Phase 9) reads them,

@@ -10,5 +10,7 @@ export default {
     notAllowed:
       'Diese Auswahl erlaubt ein ausgewähltes Formular nicht. Wählen Sie eines aus ihren Ordnern oder Formularen.',
     noSuchTheme: 'Die Website hat kein Theme mit diesem Namen.',
+    tooMany:
+      'Eine Auswahl kann höchstens 1.000 davon erlauben. Entfernen Sie einige, oder erlauben Sie einen Ordner, der sie enthält.',
   },
 } satisfies { [Area in keyof typeof pickerEn]: Record<keyof (typeof pickerEn)[Area], string> };

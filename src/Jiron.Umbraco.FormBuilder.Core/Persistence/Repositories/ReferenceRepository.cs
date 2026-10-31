@@ -1,3 +1,5 @@
+using NPoco;
+using Umbraco.Cms.Infrastructure.Persistence;
 using UmbracoConstants = Umbraco.Cms.Core.Constants;
 
 namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
@@ -7,6 +9,14 @@ namespace Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 /// <param name="PropertyAlias">The content's property that names it, a block list's own alias for a pick inside a block.</param>
 /// <param name="Culture">The culture of the value, or empty for an invariant one.</param>
 internal sealed record ContentFormReference(Guid FormKey, string PropertyAlias, string Culture);
+
+/// <summary>
+/// A document's current version as Umbraco's table holds it: what a save or a publish changes (a save its date, a publish
+/// its id), so that the rebuild can tell whether a copy it read is still the document's values (ADR-0131).
+/// </summary>
+/// <param name="Id">The version's id.</param>
+/// <param name="Date">The version's date, as read; only ever compared with another read.</param>
+internal sealed record DocumentVersion(int Id, DateTime Date);
 
 /// <summary>
 /// The references of content to forms in <c>jfbReference</c>: which property of which content names a form, per culture
@@ -24,6 +34,14 @@ internal interface IReferenceRepository
     /// </summary>
     Task<int> ReplaceContentAsync(Guid contentKey, IReadOnlyCollection<ContentFormReference> references, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Replaces a document's references as <see cref="ReplaceContentAsync"/> does, but only while its current version is
+    /// still the one read before its values were: a locking read of the version comes first, so a save either shows here
+    /// or waits, and its own write comes later. Returns how many were written, or null when the document has changed or
+    /// gone and nothing was.
+    /// </summary>
+    Task<int?> ReplaceUnchangedContentAsync(int documentId, DocumentVersion read, Guid contentKey, IReadOnlyCollection<ContentFormReference> references, CancellationToken cancellationToken = default);
+
     /// <summary>Deletes a content item's references; how many went.</summary>
     Task<int> DeleteContentAsync(Guid contentKey, CancellationToken cancellationToken = default);
 
@@ -36,6 +54,9 @@ internal interface IReferenceRepository
     /// document never makes skip one.
     /// </summary>
     Task<IReadOnlyList<int>> DocumentsAfterAsync(int afterId, int take, CancellationToken cancellationToken = default);
+
+    /// <summary>The current versions of these documents, by node id; a document Umbraco no longer holds is left out.</summary>
+    Task<IReadOnlyDictionary<int, DocumentVersion>> VersionsOfAsync(IReadOnlyCollection<int> documentIds, CancellationToken cancellationToken = default);
 
     /// <summary>Deletes the references of content items Umbraco no longer holds; how many went.</summary>
     Task<int> DeleteOrphansAsync(CancellationToken cancellationToken = default);
@@ -64,45 +85,33 @@ internal sealed class ReferenceRepository(FormBuilderDatabase database) : IRefer
     /// <inheritdoc />
     public Task<int> ReplaceContentAsync(Guid contentKey, IReadOnlyCollection<ContentFormReference> references, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(references);
-        var rows = references.Distinct().ToList();
-        if (rows.Any(row => row.PropertyAlias.Length is 0 or > MaxPropertyAliasLength || row.Culture.Length > MaxCultureLength))
-        {
-            throw new ArgumentException($"A reference's property alias is 1 to {MaxPropertyAliasLength} characters and its culture at most {MaxCultureLength}.", nameof(references));
-        }
+        var rows = Checked(references);
+        return database.WriteAsync(db => ReplaceAsync(db, new SqlNames(db), contentKey, rows), cancellationToken);
+    }
 
-        return database.WriteAsync(
+    /// <inheritdoc />
+    /// <remarks>
+    /// It reads <c>umbracoContentVersion</c>, whose id, node id, date and current columns Umbraco has kept since version 8.
+    /// The version's row comes before the forms' rows, and nothing that holds a form's row waits for a version's, so this
+    /// unit and a save, or a form's delete, wait in one order (ADR-0038).
+    /// </remarks>
+    public Task<int?> ReplaceUnchangedContentAsync(int documentId, DocumentVersion read, Guid contentKey, IReadOnlyCollection<ContentFormReference> references, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+        var rows = Checked(references);
+        return database.WriteAsync<int?>(
             async db =>
             {
                 var n = new SqlNames(db);
-                var table = n.T(FormBuilderTables.Reference);
-
-                // The forms' rows first, each with a locking read and in key order (ADR-0038): a form deleted meanwhile gets
-                // no reference (ADR-0047), and its delete, which takes the form's row before its references, waits for this
-                // unit or this unit for it, never each for the other.
-                var ids = new Dictionary<Guid, int>();
-                foreach (var formKey in rows.Select(row => row.FormKey).Distinct().Order())
+                var current = await db.FirstOrNullAsync<VersionDto>(
+                    $"SELECT {n.C("id")}, {n.C("nodeId")}, {n.C("versionDate")} FROM {n.T(ContentVersionTable)}{n.LockingRead} WHERE {n.C("nodeId")} = @0 AND {n.C("current")} = 1",
+                    documentId);
+                if (current is null || current.Id != read.Id || current.Date != read.Date)
                 {
-                    if (await db.ScalarAsync<int?>($"SELECT {n.C("id")} FROM {n.T(FormBuilderTables.Form)}{n.LockingRead} WHERE {n.C("key")} = @0", formKey) is { } id)
-                    {
-                        ids[formKey] = id;
-                    }
+                    return null;
                 }
 
-                await db.ExecAsync($"DELETE FROM {table} WHERE {n.C("contentKey")} = @0", contentKey);
-                var written = 0;
-                foreach (var row in rows.Where(row => ids.ContainsKey(row.FormKey)))
-                {
-                    written += await db.ExecAsync(
-                        $"INSERT INTO {table} ({n.C("formId")}, {n.C("contentKey")}, {n.C("propertyAlias")}, {n.C("culture")}, {n.C("updatedUtc")}) VALUES (@0, @1, @2, @3, @4)",
-                        ids[row.FormKey],
-                        contentKey,
-                        row.PropertyAlias,
-                        row.Culture,
-                        database.UtcNow);
-                }
-
-                return written;
+                return await ReplaceAsync(db, n, contentKey, rows);
             },
             cancellationToken);
     }
@@ -149,6 +158,29 @@ internal sealed class ReferenceRepository(FormBuilderDatabase database) : IRefer
     }
 
     /// <inheritdoc />
+    public Task<IReadOnlyDictionary<int, DocumentVersion>> VersionsOfAsync(IReadOnlyCollection<int> documentIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(documentIds);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(documentIds.Count, SqlArgs.MaxListLength);
+        return database.ReadAsync<IReadOnlyDictionary<int, DocumentVersion>>(
+            async db =>
+            {
+                if (documentIds.Count == 0)
+                {
+                    return new Dictionary<int, DocumentVersion>();
+                }
+
+                var n = new SqlNames(db);
+                var args = new SqlArgs();
+                var rows = await db.FetchListAsync<VersionDto>(
+                    $"SELECT {n.C("id")}, {n.C("nodeId")}, {n.C("versionDate")} FROM {n.T(ContentVersionTable)} WHERE {n.C("current")} = 1 AND {n.C("nodeId")} IN ({args.List(documentIds.Select(id => (object?)id))})",
+                    args.Values);
+                return rows.ToDictionary(row => row.NodeId, row => new DocumentVersion(row.Id, row.Date));
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<int> DeleteOrphansAsync(CancellationToken cancellationToken = default) =>
         database.WriteAsync(
             db =>
@@ -163,4 +195,64 @@ internal sealed class ReferenceRepository(FormBuilderDatabase database) : IRefer
             cancellationToken);
 
     private const string UmbracoNodeTable = UmbracoConstants.DatabaseSchema.Tables.Node;
+
+    private const string ContentVersionTable = UmbracoConstants.DatabaseSchema.Tables.ContentVersion;
+
+    // The rows, each once, once their aliases and cultures fit the columns.
+    private static List<ContentFormReference> Checked(IReadOnlyCollection<ContentFormReference> references)
+    {
+        ArgumentNullException.ThrowIfNull(references);
+        var rows = references.Distinct().ToList();
+        if (rows.Any(row => row.PropertyAlias.Length is 0 or > MaxPropertyAliasLength || row.Culture.Length > MaxCultureLength))
+        {
+            throw new ArgumentException($"A reference's property alias is 1 to {MaxPropertyAliasLength} characters and its culture at most {MaxCultureLength}.", nameof(references));
+        }
+
+        return rows;
+    }
+
+    private async Task<int> ReplaceAsync(IUmbracoDatabase db, SqlNames n, Guid contentKey, List<ContentFormReference> rows)
+    {
+        var table = n.T(FormBuilderTables.Reference);
+
+        // The forms' rows first, each with a locking read and in key order (ADR-0038): a form deleted meanwhile gets
+        // no reference (ADR-0047), and its delete, which takes the form's row before its references, waits for this
+        // unit or this unit for it, never each for the other.
+        var ids = new Dictionary<Guid, int>();
+        foreach (var formKey in rows.Select(row => row.FormKey).Distinct().Order())
+        {
+            if (await db.ScalarAsync<int?>($"SELECT {n.C("id")} FROM {n.T(FormBuilderTables.Form)}{n.LockingRead} WHERE {n.C("key")} = @0", formKey) is { } id)
+            {
+                ids[formKey] = id;
+            }
+        }
+
+        await db.ExecAsync($"DELETE FROM {table} WHERE {n.C("contentKey")} = @0", contentKey);
+        var written = 0;
+        foreach (var row in rows.Where(row => ids.ContainsKey(row.FormKey)))
+        {
+            written += await db.ExecAsync(
+                $"INSERT INTO {table} ({n.C("formId")}, {n.C("contentKey")}, {n.C("propertyAlias")}, {n.C("culture")}, {n.C("updatedUtc")}) VALUES (@0, @1, @2, @3, @4)",
+                ids[row.FormKey],
+                contentKey,
+                row.PropertyAlias,
+                row.Culture,
+                database.UtcNow);
+        }
+
+        return written;
+    }
+
+    [ExplicitColumns]
+    private sealed class VersionDto
+    {
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("nodeId")]
+        public int NodeId { get; set; }
+
+        [Column("versionDate")]
+        public DateTime Date { get; set; }
+    }
 }

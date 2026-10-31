@@ -29,7 +29,7 @@ vi.mock('@umbraco-cms/backoffice/modal', async (original) => ({
   umbOpenModal: sidebar.open,
 }));
 
-await import('./form-picker-allowed.element');
+const { MAX_ALLOWED } = await import('./form-picker-allowed.element');
 
 const folder = (key: string, name: string, hasChildren = true): PickerItem => ({
   key,
@@ -216,6 +216,45 @@ describe("the form picker's allowed folders", () => {
 
     expect(reads.folders).toHaveBeenCalledWith(['f-events']);
     expect(names(element)).toEqual(['Events']);
+  });
+});
+
+describe('the allowed keys written in another format', () => {
+  it('are named, count once, and are written hyphenated', async () => {
+    const key = '7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f';
+    const other = folder('1f2e3d4c-5b6a-4978-8695-a4b3c2d1e0f9', 'Other');
+    reads.folders.mockImplementation(answer([folder(key, 'Written otherwise'), other]));
+    const element = await setting({
+      value: [key.replaceAll('-', ''), `{${key.toUpperCase()}}`, other.key],
+    });
+
+    expect(reads.folders).toHaveBeenCalledWith([key, other.key]);
+    expect(all(element, 'uui-ref-node').map((node) => node.getAttribute('name'))).toEqual([
+      'Written otherwise',
+      'Other',
+    ]);
+
+    must(all(element, 'uui-button.remove')[1], 'the second Remove').click();
+    await settle(element);
+    expect(element.value).toEqual([key]);
+  });
+});
+
+describe('the most a setting holds', () => {
+  const keys = (count: number) => Array.from({ length: count }, (_, index) => `k-${index}`);
+
+  it('says nothing at the most the queries carry, and says so past it, once', async () => {
+    // A failed lookup leaves the rows out, which a thousand of would take this test's whole time to render.
+    reads.folders.mockResolvedValue(undefined);
+    const message = 'A picker can allow up to 1,000 of these. Remove some, or allow a folder that holds them.';
+    const said = (element: Element) => all(element, '[role="alert"] span').map((alert) => text(alert));
+
+    expect(said(await setting({ value: keys(MAX_ALLOWED) }))).not.toContain(message);
+    expect(said(await setting({ value: keys(MAX_ALLOWED + 1) })).filter((alert) => alert === message)).toHaveLength(1);
+  });
+
+  it('is the number the server refuses past', () => {
+    expect(MAX_ALLOWED).toBe(1000);
   });
 });
 

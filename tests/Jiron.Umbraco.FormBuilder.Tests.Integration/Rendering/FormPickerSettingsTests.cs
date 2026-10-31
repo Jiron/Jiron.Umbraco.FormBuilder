@@ -1,5 +1,6 @@
 using System.Net;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Web.Picker;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
@@ -131,6 +132,24 @@ public sealed class FormPickerSettingsTests : RenderingTestBase
             Assert.That(refused.Status, Is.EqualTo(DataTypeOperationStatus.InvalidConfiguration));
             Assert.That((notKeys.Status, notAPage.Status), Is.EqualTo((DataTypeOperationStatus.InvalidConfiguration, DataTypeOperationStatus.InvalidConfiguration)));
             Assert.That(kept.Success, Is.True);
+        });
+    }
+
+    [TestCase("allowedForms")]
+    [TestCase("allowedFolders")]
+    public async Task APickerAllowingMoreThanItsQueriesCarry_IsRefused(string setting)
+    {
+        var types = GetRequiredService<IDataTypeService>();
+        string[] Keys(int count) => [.. Enumerable.Range(0, count).Select(_ => Guid.NewGuid().ToString("D"))];
+
+        var most = await types.CreateAsync(NewDataType("As many as it carries", new Dictionary<string, object> { [setting] = Keys(SqlArgs.MaxListLength) }), Constants.Security.SuperUserKey);
+        var tooMany = await types.CreateAsync(NewDataType("One too many", new Dictionary<string, object> { [setting] = Keys(SqlArgs.MaxListLength + 1) }), Constants.Security.SuperUserKey);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(SqlArgs.MaxListLength, Is.EqualTo(1000));
+            Assert.That(most.Success, Is.True, most.Status.ToString());
+            Assert.That((tooMany.Success, tooMany.Status), Is.EqualTo((false, DataTypeOperationStatus.InvalidConfiguration)));
         });
     }
 

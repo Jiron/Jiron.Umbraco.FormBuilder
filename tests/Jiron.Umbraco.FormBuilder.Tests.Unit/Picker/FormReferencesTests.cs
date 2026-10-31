@@ -118,7 +118,7 @@ public sealed class FormReferencesTests
     [Test]
     public async Task TheRebuild_WalksTheDocumentsBatchByBatch_ThenRemovesTheRowsOfDeletedContent_AndEnds()
     {
-        var pages = new[] { Content(), Content(), Content() };
+        var pages = new[] { Content(3), Content(7), Content(9) };
         Walk((0, [3, 7]), (7, [9]), (9, []));
         _contents.GetByIds(Arg.Is<IEnumerable<int>>(ids => ids.SequenceEqual(new[] { 3, 7 }))).Returns([pages[0], pages[1]]);
         _contents.GetByIds(Arg.Is<IEnumerable<int>>(ids => ids.SequenceEqual(new[] { 9 }))).Returns([pages[2]]);
@@ -133,11 +133,14 @@ public sealed class FormReferencesTests
         {
             Assert.That((due, done), Is.EqualTo((true, true)));
             Assert.That(await rebuild.IsDueAsync(), Is.False, "the request is gone");
-            Assert.That(_values.Written, Is.EqualTo(new[] { "0", "7", "9", FormReferenceRebuild.OrphansNext }), "where the walk goes on, after each batch");
+            Assert.That(_values.Written[0], Does.StartWith("0-"), "a request's own value");
+            Assert.That(_values.Written.Skip(1), Is.EqualTo(new[] { "7", "9", FormReferenceRebuild.OrphansNext }), "where the walk goes on, after each batch");
             foreach (var page in pages)
             {
-                await _references.Received(1).ReplaceContentAsync(page.Key, Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>());
+                await _references.Received(1).ReplaceUnchangedContentAsync(page.Id, Version(page.Id), page.Key, Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>());
             }
+
+            await _references.DidNotReceive().ReplaceContentAsync(Arg.Any<Guid>(), Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>());
 
             await _references.Received(1).DeleteOrphansAsync(Arg.Any<CancellationToken>());
             Assert.That(await rebuild.ContinueAsync(DateTimeOffset.MaxValue), Is.True, "nothing left to do");
@@ -148,7 +151,7 @@ public sealed class FormReferencesTests
     public async Task ARebuildPastItsDeadline_StopsAfterABatch_AndGoesOnFromThereNextTime()
     {
         Walk((0, [3]), (3, []));
-        var page = Content();
+        var page = Content(3);
         _contents.GetByIds(Arg.Any<IEnumerable<int>>()).Returns([page]);
         var rebuild = Rebuild();
         await rebuild.RequestAsync();
@@ -175,6 +178,48 @@ public sealed class FormReferencesTests
 
         Assert.That(await Rebuild().ContinueAsync(DateTimeOffset.MaxValue), Is.True);
         await _references.Received(1).DocumentsAfterAsync(0, FormReferenceRebuild.BatchSize, Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task ACopyOfAnotherVersion_OrOfADocumentWithNoVersionLeft_IsNotWritten()
+    {
+        Walk((0, [3, 7]), (7, []));
+        var older = Content(3);
+        older.VersionId.Returns(999);
+        var deleted = Content(7);
+        _contents.GetByIds(Arg.Any<IEnumerable<int>>()).Returns([older, deleted]);
+        _references.VersionsOfAsync(Arg.Any<IReadOnlyCollection<int>>(), Arg.Any<CancellationToken>()).Returns(new Dictionary<int, DocumentVersion> { [3] = Version(3) });
+        await _values.SetAsync(RequestReferenceRebuildV1.RebuildKey, "0");
+
+        Assert.That(await Rebuild().ContinueAsync(DateTimeOffset.MaxValue), Is.True);
+        await _references.DidNotReceive().ReplaceUnchangedContentAsync(Arg.Any<int>(), Arg.Any<DocumentVersion>(), Arg.Any<Guid>(), Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task TwoRequests_HoldValuesOfTheirOwn_WhichReadAsNoPlace()
+    {
+        Walk((0, []));
+        var rebuild = Rebuild();
+
+        await rebuild.RequestAsync();
+        await rebuild.RequestAsync();
+
+        Assert.That(_values.Written[0], Is.Not.EqualTo(_values.Written[1]), "a walk at its start tells a new request from its own");
+        Assert.That(await rebuild.ContinueAsync(DateTimeOffset.MaxValue), Is.True);
+        await _references.Received(1).DocumentsAfterAsync(0, FormReferenceRebuild.BatchSize, Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public void AFailedRequestAfterATypeChange_IsLogged_AndNeverFailsTheChange()
+    {
+        var values = Substitute.For<IKeyValueRepository>();
+        var broken = new InvalidOperationException("JFB_TEST: the database is gone");
+        values.SetAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>()).ThrowsAsync(broken);
+        var logger = new RecordingLogger<FormReferenceTypeHandler>();
+        var handler = new FormReferenceTypeHandler(new FormReferenceRebuild(_references, values, _contents, Index(), _clock, NullLogger<FormReferenceRebuild>.Instance), logger);
+
+        Assert.DoesNotThrowAsync(() => handler.HandleAsync(new DataTypeDeletedNotification(Substitute.For<IDataType>(), new EventMessages()), CancellationToken.None));
+        Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Exception)), Is.EqualTo(new[] { (LogLevel.Warning, (Exception?)broken) }));
     }
 
     [TestCase(RuntimeLevel.Install, false)]
@@ -207,21 +252,29 @@ public sealed class FormReferencesTests
         });
     }
 
-    private static IContent Content()
+    private static IContent Content(int id = 0)
     {
         var content = Substitute.For<IContent>();
+        content.Id.Returns(id);
+        content.VersionId.Returns(Version(id).Id);
         content.Key.Returns(Guid.NewGuid());
         content.Properties.Returns(new PropertyCollection());
         return content;
     }
 
-    // The batches of document ids the walk reads after each id.
+    // The version a document's id stands for here.
+    private static DocumentVersion Version(int id) => new(id + 1000, new DateTime(2026, 10, 31, 12, 0, id % 60, DateTimeKind.Utc));
+
+    // The batches of document ids the walk reads after each id, and each document's version.
     private void Walk(params (int After, int[] Ids)[] batches)
     {
         foreach (var (after, ids) in batches)
         {
             _references.DocumentsAfterAsync(after, FormReferenceRebuild.BatchSize, Arg.Any<CancellationToken>()).Returns(ids);
         }
+
+        _references.VersionsOfAsync(Arg.Any<IReadOnlyCollection<int>>(), Arg.Any<CancellationToken>())
+            .Returns(call => call.Arg<IReadOnlyCollection<int>>().ToDictionary(id => id, Version));
     }
 
     private FormReferenceIndex Index() =>
@@ -271,6 +324,20 @@ public sealed class FormReferencesTests
         public Task<bool> DeleteAsync(string key, CancellationToken cancellationToken = default) => Task.FromResult(_stored.Remove(key));
 
         public Task<int> DeleteOlderAsync(string prefix, DateTime before, CancellationToken cancellationToken = default) => Task.FromResult(0);
+
+        public async Task<bool> TryReplaceAsync(string key, string expected, string? value, CancellationToken cancellationToken = default)
+        {
+            if (_stored.GetValueOrDefault(key) != expected)
+            {
+                return false;
+            }
+
+            await SetAsync(key, value, cancellationToken);
+            return true;
+        }
+
+        public Task<bool> TryDeleteAsync(string key, string expected, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_stored.GetValueOrDefault(key) == expected && _stored.Remove(key));
     }
 
     private sealed class RecordingLogger<T> : ILogger<T>

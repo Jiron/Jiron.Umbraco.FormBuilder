@@ -9,5 +9,6 @@ export default {
     noSuchForm: 'A picked form no longer exists or is in the trash. Pick another one.',
     notAllowed: 'This picker does not allow a picked form. Pick one from its folders or forms.',
     noSuchTheme: 'The site has no theme with this name.',
+    tooMany: 'A picker can allow up to 1,000 of these. Remove some, or allow a folder that holds them.',
   },
 } satisfies UmbLocalizationDictionary;

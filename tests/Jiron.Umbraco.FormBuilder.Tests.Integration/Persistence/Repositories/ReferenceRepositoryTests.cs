@@ -12,7 +12,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Persistence.Repositories;
 /// The "used on" rows in <c>jfbReference</c> (ADR-0017, ADR-0131): a content item's rows replaced in one unit, each once
 /// and none to a form the library lacks; the deletes by content and by form; the content of a form by its key; the
 /// rebuild's walk over Umbraco's documents in id order, the recycle bin's included and neither blueprints nor media;
-/// and the delete of rows whose content has gone.
+/// its write, which holds only while a document's version is the one it read; and the delete of rows whose content has
+/// gone.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
@@ -119,6 +120,74 @@ public sealed class ReferenceRepositoryTests : RepositoryTestBase
             Assert.That(none, Is.Empty);
             Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => References.DocumentsAfterAsync(0, 0));
             Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => References.DocumentsAfterAsync(0, PageRequest.MaxTake + 1));
+        });
+    }
+
+    [Test]
+    public async Task VersionsOf_NamesEachDocumentsCurrentVersion_AndASaveOrAPublishChangesIt()
+    {
+        var type = await ContentTypeAsync();
+        var contents = GetRequiredService<IContentService>();
+        var saved = contents.Create("Saved", Constants.System.Root, type.Alias);
+        var published = contents.Create("Published", Constants.System.Root, type.Alias);
+        var deleted = contents.Create("Deleted", Constants.System.Root, type.Alias);
+        Assert.That(contents.Save([saved, published, deleted]).Success, Is.True);
+        int[] ids = [saved.Id, published.Id, deleted.Id];
+
+        var before = await References.VersionsOfAsync(ids);
+        var unchanged = await References.VersionsOfAsync(ids);
+        saved.Name = "Saved again";
+        Assert.That(contents.Save(saved).Success, Is.True);
+        Assert.That(contents.Publish(published, ["*"]).Success, Is.True);
+        Assert.That(contents.Delete(deleted).Success, Is.True);
+        var after = await References.VersionsOfAsync(ids);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(before.Keys, Is.EquivalentTo(ids));
+            Assert.That(before[saved.Id].Id, Is.Not.EqualTo(before[published.Id].Id), "each its own");
+            Assert.That(unchanged, Is.EquivalentTo(before), "two reads of an unchanged document agree");
+            Assert.That(after.Keys, Is.EquivalentTo(new[] { saved.Id, published.Id }), "a deleted document is left out");
+            Assert.That(after[saved.Id].Id, Is.EqualTo(before[saved.Id].Id), "a save keeps the version");
+            Assert.That(after[saved.Id].Date, Is.Not.EqualTo(before[saved.Id].Date), "and moves its date");
+            Assert.That(after[published.Id].Id, Is.Not.EqualTo(before[published.Id].Id), "a publish starts a new one");
+            Assert.That(after[saved.Id].Id, Is.EqualTo(saved.VersionId), "the copy's own version");
+            Assert.That(await References.VersionsOfAsync([]), Is.Empty);
+            Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => References.VersionsOfAsync(new int[SqlArgs.MaxListLength + 1]));
+        });
+    }
+
+    [Test]
+    public async Task ReplaceUnchanged_WritesWhileTheVersionIsTheOneRead_AndOtherwiseLeavesTheRowsAsTheyAre()
+    {
+        var form = await CreateFormAsync("contact");
+        var other = await CreateFormAsync("newsletter");
+        var type = await ContentTypeAsync();
+        var contents = GetRequiredService<IContentService>();
+        var page = contents.Create("Page", Constants.System.Root, type.Alias);
+        Assert.That(contents.Save(page).Success, Is.True);
+        await References.ReplaceContentAsync(page.Key, [new ContentFormReference(form.Key, "form", string.Empty)]);
+        var read = (await References.VersionsOfAsync([page.Id]))[page.Id];
+
+        var unchanged = await References.ReplaceUnchangedContentAsync(page.Id, read, page.Key, [new ContentFormReference(other.Key, "form", string.Empty), new ContentFormReference(Guid.NewGuid(), "form", string.Empty)]);
+        var afterUnchanged = await References.ContentOfAsync(other.Key);
+        var otherVersion = await References.ReplaceUnchangedContentAsync(page.Id, read with { Id = read.Id + 1 }, page.Key, []);
+        var otherDate = await References.ReplaceUnchangedContentAsync(page.Id, read with { Date = read.Date.AddSeconds(1) }, page.Key, []);
+        var afterRefused = await References.ContentOfAsync(other.Key);
+        page.Name = "Saved";
+        Assert.That(contents.Save(page).Success, Is.True);
+        var saved = await References.ReplaceUnchangedContentAsync(page.Id, read, page.Key, []);
+        var deletedKey = Guid.NewGuid();
+        var deleted = await References.ReplaceUnchangedContentAsync(-999_999, read, deletedKey, [new ContentFormReference(form.Key, "form", string.Empty)]);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(unchanged, Is.EqualTo(1), "each row, none to a form the library lacks");
+            Assert.That(afterUnchanged, Is.EqualTo(new[] { page.Key }));
+            Assert.That((otherVersion, otherDate, saved, deleted), Is.EqualTo(((int?)null, (int?)null, (int?)null, (int?)null)), "another version, another date, a save, no document");
+            Assert.That(afterRefused, Is.EqualTo(new[] { page.Key }), "the rows left as they were");
+            Assert.That(await References.ContentOfAsync(form.Key), Is.Empty, "and none for a document that is gone");
+            Assert.ThrowsAsync<ArgumentException>(() => References.ReplaceUnchangedContentAsync(page.Id, read, page.Key, [new ContentFormReference(form.Key, string.Empty, string.Empty)]));
         });
     }
 

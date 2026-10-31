@@ -112,8 +112,8 @@ internal sealed class PickerController(IFormBuilderPickerService picker, IDataTy
     }
 
     /// <summary>
-    /// The folders of these keys the user may see outside the trash, in the order asked: what a picker's settings show for
-    /// their allowed folders (ADR-0135), also one that leads to no published form.
+    /// The folders of these keys outside the trash that the user may see or that lead to a form they may pick, in the order
+    /// asked: what a picker's settings show for their allowed folders (ADR-0135), also one that leads to no published form.
     /// </summary>
     /// <param name="keys">The folders' keys, at most 100.</param>
     /// <param name="cancellationToken">The request's cancellation.</param>

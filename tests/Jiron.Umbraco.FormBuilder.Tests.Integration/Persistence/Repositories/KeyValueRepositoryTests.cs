@@ -32,6 +32,34 @@ public sealed class KeyValueRepositoryTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task TryReplaceAndTryDelete_HoldOnlyWhileTheKeyHoldsTheValueRead()
+    {
+        await KeyValues.SetAsync("walk", "Place");
+        var otherCase = await KeyValues.TryReplaceAsync("walk", "place", "next");
+        var otherValue = await KeyValues.TryReplaceAsync("walk", "elsewhere", "next");
+        var missing = await KeyValues.TryReplaceAsync("none", "Place", "next");
+        var kept = await KeyValues.GetAsync("walk");
+        Clock.Advance(TimeSpan.FromMinutes(1));
+        var replaced = await KeyValues.TryReplaceAsync("walk", "Place", "Next");
+        var row = Query(db => db.Single<KeyValueDto>($"SELECT * FROM {T(FormBuilderTables.KeyValue)} WHERE {Q("key")} = @0", "walk"));
+        var deleteOther = await KeyValues.TryDeleteAsync("walk", "Place");
+        var afterOther = await KeyValues.GetAsync("walk");
+        var deleted = await KeyValues.TryDeleteAsync("walk", "Next");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That((otherCase, otherValue, missing), Is.EqualTo((false, false, false)), "another case, another value, no key");
+            Assert.That(kept, Is.EqualTo("Place"));
+            Assert.That(await KeyValues.GetAsync("none"), Is.Null, "a replace adds no key");
+            Assert.That(replaced, Is.True);
+            Assert.That((row.Value, FormBuilderDbTime.Read(row.UpdatedUtc)), Is.EqualTo(("Next", Now.AddMinutes(1))));
+            Assert.That((deleteOther, afterOther), Is.EqualTo((false, "Next")));
+            Assert.That(deleted, Is.True);
+            Assert.That(await KeyValues.GetAsync("walk"), Is.Null);
+        });
+    }
+
+    [Test]
     public async Task TryAdd_StoresAKeyOnce_TheFirstWriterWins()
     {
         var first = await KeyValues.TryAddAsync("mirror:forms/contact.json", "hash-1");

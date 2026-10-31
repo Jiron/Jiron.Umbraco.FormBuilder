@@ -198,6 +198,30 @@ public sealed class PickerApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task AGroupWithAGrantOnAFormOnly_GetsThatFormsRestrictedFolder_FromTheFoldersOfKeys()
+    {
+        var below = await FolderAsync("Below HR", _hr);
+        var inside = await PublishedAsync("Inside", below);
+        var other = await FolderAsync("Other HR", _hr);
+        await PublishedAsync("Not granted", other);
+        var group = await GroupAsync("jfbInsideEditors", Constants.Applications.Content, AccessPersonas.Section);
+        await GrantAsync(group, PermissionTarget.Form, inside, FormBuilderPermissions.ViewEntries);
+        var caller = new ManagementApiCaller(Client, Services, _ => ["jfbInsideEditors"]);
+
+        var offered = await caller.CallAsync("insideEditor", HttpMethod.Get, "picker/children");
+        var named = await caller.CallAsync("insideEditor", HttpMethod.Get, Folders(_hr, below, other, _events));
+        var noGrant = await CallAsync(Editor, HttpMethod.Get, Folders(_hr, below));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Items(offered), Does.Contain("folder HR +"), "the sidebar offers it");
+            Assert.That(named.Status, Is.EqualTo(HttpStatusCode.OK), named.Text);
+            Assert.That(Items(named), Is.EqualTo(new[] { "folder HR +", "folder Below HR +", "folder Events +" }), "the folders that lead to the form, never the restricted folder beside them");
+            Assert.That(Items(noGrant), Is.Empty, "without the grant, neither");
+        });
+    }
+
+    [Test]
     public async Task AUserWithNoneOfTheFourSections_IsRefused_AndOneWithTheSettingsSectionOnlyIsAnswered()
     {
         await GroupAsync("jfbSettingsOnly", Constants.Applications.Settings);

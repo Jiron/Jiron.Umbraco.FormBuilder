@@ -7,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Testing.People;
 using Jiron.Umbraco.FormBuilder.Web.Picker;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.PropertyEditors;
@@ -25,7 +26,10 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 /// <c>GET form/{key}/referenced-by</c> in the shape of Umbraco's document reference, a draft's pick counts, and the page
 /// goes once the pick is removed and published; a form picked in a block is listed; a page saved with a form deleted
 /// meanwhile writes no reference; a page outside the user's content start nodes is counted but not named; and the
-/// rebuild finds every page that picks a form, the recycle bin's included, and drops the rows of deleted content.
+/// rebuild finds every page that picks a form, the recycle bin's included, and drops the rows of deleted content. A
+/// change of a document, element or data type that changes what stored values name asks for a rebuild, which leaves
+/// the list right; a save between the rebuild's read and its write keeps its rows, and a rebuild asked for meanwhile
+/// still runs.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -245,6 +249,315 @@ public sealed class FormReferenceApiTests : ManagementApiTestBase
         });
     }
 
+    [Test]
+    public async Task APickerPropertyRemovedFromADocumentType_LeavesUsedOnRight_AfterTheRebuild()
+    {
+        var form = await FormAsync("Removed");
+        var type = await PageTypeAsync();
+        var page = Page(type, "Page", form: form, publish: true);
+        await SettledAsync();
+        var before = await References(form);
+        var due = await AfterAsync(async () =>
+        {
+            type.RemovePropertyType("form");
+            Assert.That((await GetRequiredService<IContentTypeService>().UpdateAsync(type, Constants.Security.SuperUserKey)).Success, Is.True);
+        });
+
+        await GetRequiredService<FormReferenceRebuild>().ContinueAsync(DateTimeOffset.MaxValue);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(before, Is.EqualTo(new[] { page.Key }));
+            Assert.That(due, Is.True, "the change asked for a rebuild");
+            Assert.That(await References(form), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task APickerPropertyRemovedFromAnElementType_LeavesUsedOnRight_AfterTheRebuild()
+    {
+        var form = await FormAsync("In a block");
+        var type = await PageTypeAsync();
+        var page = Page(type, "Page", form: null, publish: true, blockForm: form);
+        await SettledAsync();
+        var before = await References(form);
+        var types = GetRequiredService<IContentTypeService>();
+        var due = await AfterAsync(async () =>
+        {
+            var element = types.Get(FormBlockTypes.ElementTypeAlias)!;
+            element.RemovePropertyType(FormBlockTypes.PropertyAlias);
+            Assert.That((await types.UpdateAsync(element, Constants.Security.SuperUserKey)).Success, Is.True);
+        });
+
+        await GetRequiredService<FormReferenceRebuild>().ContinueAsync(DateTimeOffset.MaxValue);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(before, Is.EqualTo(new[] { page.Key }));
+            Assert.That(due, Is.True);
+            Assert.That(await References(form), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task ADataTypeChangedIntoThePicker_LeavesUsedOnRight_AfterTheRebuild()
+    {
+        var form = await FormAsync("Was text");
+        var dataTypes = GetRequiredService<IDataTypeService>();
+        var editors = GetRequiredService<PropertyEditorCollection>();
+        var created = await dataTypes.CreateAsync(new DataType(editors[Constants.PropertyEditors.Aliases.TextBox]!, GetRequiredService<IConfigurationEditorJsonSerializer>()) { Name = "Plain text", DatabaseType = ValueStorageType.Nvarchar }, Constants.Security.SuperUserKey);
+        Assert.That(created.Success, Is.True, created.Status.ToString());
+        var page = TextPage(await TextTypeAsync(created.Result!), form);
+        await SettledAsync();
+        var before = await References(form);
+        var due = await AfterAsync(async () =>
+        {
+            var dataType = (await dataTypes.GetAsync(created.Result!.Key))!;
+            dataType.Editor = editors[FormPickerPropertyEditor.EditorAlias]!;
+            var changed = await dataTypes.UpdateAsync(dataType, Constants.Security.SuperUserKey);
+            Assert.That(changed.Success, Is.True, changed.Status.ToString());
+        });
+
+        await GetRequiredService<FormReferenceRebuild>().ContinueAsync(DateTimeOffset.MaxValue);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(before, Is.Empty, "text names no form");
+            Assert.That(due, Is.True, "another editor asked for a rebuild");
+            Assert.That(await References(form), Is.EqualTo(new[] { page.Key }));
+        });
+    }
+
+    [Test]
+    public async Task ATextPropertyTurnedIntoAPicker_LeavesUsedOnRight_AfterTheRebuild()
+    {
+        var form = await FormAsync("Was a text property");
+        var dataTypes = GetRequiredService<IDataTypeService>();
+        await GetRequiredService<FormBlockTypes>().CreateAsync(Constants.Security.SuperUserKey);
+        var type = await TextTypeAsync((await dataTypes.GetAsync(Constants.DataTypes.Guids.TextstringGuid))!);
+        var page = TextPage(type, form);
+        await SettledAsync();
+        var before = await References(form);
+        var due = await AfterAsync(async () =>
+        {
+            var property = type.PropertyTypes.Single();
+            var pickerType = (await dataTypes.GetAsync(FormBlockTypes.DataTypeKey))!;
+            property.DataTypeId = pickerType.Id;
+            property.DataTypeKey = pickerType.Key;
+            Assert.That((await GetRequiredService<IContentTypeService>().UpdateAsync(type, Constants.Security.SuperUserKey)).Success, Is.True);
+        });
+
+        await GetRequiredService<FormReferenceRebuild>().ContinueAsync(DateTimeOffset.MaxValue);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(before, Is.Empty);
+            Assert.That(due, Is.True, "a property's data type is no structural change, and still asks");
+            Assert.That(await References(form), Is.EqualTo(new[] { page.Key }));
+        });
+    }
+
+    [Test]
+    public async Task ADeletedDataType_LeavesUsedOnRight_AfterTheRebuild_AndAChangeThatNamesNothingNewAsksForNoRebuild()
+    {
+        var form = await FormAsync("Deleted with its property");
+        var dataTypes = GetRequiredService<IDataTypeService>();
+        var editors = GetRequiredService<PropertyEditorCollection>();
+        var serializer = GetRequiredService<IConfigurationEditorJsonSerializer>();
+        var pickerType = await dataTypes.CreateAsync(new DataType(editors[FormPickerPropertyEditor.EditorAlias]!, serializer) { Name = "Own picker", DatabaseType = ValueStorageType.Nvarchar }, Constants.Security.SuperUserKey);
+        Assert.That(pickerType.Success, Is.True, pickerType.Status.ToString());
+        var page = TextPage(await TextTypeAsync(pickerType.Result!), form);
+        await SettledAsync();
+        var before = await References(form);
+
+        var newType = await AfterAsync(async () => await TextTypeAsync((await dataTypes.GetAsync(Constants.DataTypes.Guids.TextstringGuid))!, "jfbUsedOnNewType"));
+        var newDataType = await AfterAsync(async () => Assert.That((await dataTypes.CreateAsync(new DataType(editors[FormPickerPropertyEditor.EditorAlias]!, serializer) { Name = "Another picker", DatabaseType = ValueStorageType.Nvarchar }, Constants.Security.SuperUserKey)).Success, Is.True));
+        var settings = await AfterAsync(async () =>
+        {
+            var dataType = (await dataTypes.GetAsync(pickerType.Result!.Key))!;
+            dataType.ConfigurationData = new Dictionary<string, object> { ["multiple"] = true };
+            Assert.That((await dataTypes.UpdateAsync(dataType, Constants.Security.SuperUserKey)).Success, Is.True);
+        });
+        var deleted = await AfterAsync(async () => Assert.That((await dataTypes.DeleteAsync(pickerType.Result!.Key, Constants.Security.SuperUserKey)).Success, Is.True));
+        await GetRequiredService<FormReferenceRebuild>().ContinueAsync(DateTimeOffset.MaxValue);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(before, Is.EqualTo(new[] { page.Key }));
+            Assert.That((newType, newDataType, settings), Is.EqualTo((false, false, false)), "a new type, a new data type and a data type's other settings");
+            Assert.That(deleted, Is.True);
+            Assert.That(await References(form), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task ASaveBetweenTheRebuildsReadAndItsWrite_KeepsTheSavesRows()
+    {
+        var picked = await FormAsync("Picked before");
+        var later = await FormAsync("Picked later");
+        var type = await PageTypeAsync();
+        var page = Page(type, "Page", form: picked, publish: false);
+        await SettledAsync();
+        var (rebuild, between) = Interposed();
+        between.BeforeWrite = () =>
+        {
+            page.SetValue("form", later.ToString("D"));
+            Assert.That(Contents.Save(page).Success, Is.True);
+            return Task.CompletedTask;
+        };
+
+        await rebuild.RequestAsync();
+        var done = await rebuild.ContinueAsync(DateTimeOffset.MaxValue);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That((done, between.Writes), Is.EqualTo((true, 1)), "the walk reached the page");
+            Assert.That(await References(later), Is.EqualTo(new[] { page.Key }), "the save's rows");
+            Assert.That(await References(picked), Is.Empty, "not the older copy's");
+        });
+    }
+
+    [Test]
+    public async Task APublishBetweenTheRebuildsReadAndItsWrite_KeepsItsRows_AndAPageDeletedMeanwhileGetsNone()
+    {
+        var picked = await FormAsync("Picked before");
+        var later = await FormAsync("Picked later");
+        var type = await PageTypeAsync();
+        var published = Page(type, "Published", form: picked, publish: false);
+        var deleted = Page(type, "Deleted", form: picked, publish: false);
+        await SettledAsync();
+        var (rebuild, between) = Interposed();
+        between.BeforeWrite = () =>
+        {
+            if (between.Writes == 1)
+            {
+                published.SetValue("form", later.ToString("D"));
+                Assert.That(Contents.Save(published).Success, Is.True);
+                Assert.That(Contents.Publish(published, ["*"]).Success, Is.True);
+            }
+            else
+            {
+                Assert.That(Contents.Delete(deleted).Success, Is.True);
+            }
+
+            return Task.CompletedTask;
+        };
+
+        await rebuild.RequestAsync();
+        await rebuild.ContinueAsync(DateTimeOffset.MaxValue);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(between.Writes, Is.EqualTo(2));
+            Assert.That(await References(later), Is.EqualTo(new[] { published.Key }));
+            Assert.That(await References(picked), Is.Empty);
+            Assert.That(Rows(deleted.Key), Is.Zero);
+        });
+    }
+
+    [Test]
+    public async Task ARebuildAskedForDuringABatch_StillRuns_FromTheFirstDocument()
+    {
+        var form = await FormAsync("Walked again");
+        var type = await PageTypeAsync();
+        var page = Page(type, "Page", form: form, publish: false);
+        await SettledAsync();
+        var (rebuild, between) = Interposed();
+        await rebuild.RequestAsync();
+        var values = GetRequiredService<IKeyValueRepository>();
+        string? asked = null;
+        between.BeforeWrite = async () =>
+        {
+            await rebuild.RequestAsync();
+            asked = await values.GetAsync(Core.Persistence.Migrations.RequestReferenceRebuildV1.RebuildKey);
+            between.BeforeWrite = null;
+        };
+
+        var firstPart = await rebuild.ContinueAsync(DateTimeOffset.MinValue);
+        var stands = await values.GetAsync(Core.Persistence.Migrations.RequestReferenceRebuildV1.RebuildKey);
+        Write($"DELETE FROM {{0}} WHERE {{1}} = @0", page.Key);
+        var done = await rebuild.ContinueAsync(DateTimeOffset.MaxValue);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(firstPart, Is.False);
+            Assert.That(stands, Is.EqualTo(asked).And.Not.Null, "the place did not move on over the new request");
+            Assert.That(done, Is.True);
+            Assert.That(await References(form), Is.EqualTo(new[] { page.Key }), "the walk went through the first document again");
+            Assert.That(await rebuild.IsDueAsync(), Is.False);
+        });
+    }
+
+    [Test]
+    public async Task ARebuildAskedForWhileTheLastRowsGo_StillRuns()
+    {
+        var form = await FormAsync("Walked once more");
+        var type = await PageTypeAsync();
+        var page = Page(type, "Page", form: form, publish: false);
+        await SettledAsync();
+        var (rebuild, between) = Interposed();
+        between.BeforeOrphans = async () =>
+        {
+            between.BeforeOrphans = null;
+            await rebuild.RequestAsync();
+            Write($"DELETE FROM {{0}} WHERE {{1}} = @0", page.Key);
+        };
+
+        await rebuild.RequestAsync();
+        var done = await rebuild.ContinueAsync(DateTimeOffset.MaxValue);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That((done, between.Writes), Is.EqualTo((true, 2)), "the page written twice: the walk ran again");
+            Assert.That(await References(form), Is.EqualTo(new[] { page.Key }));
+            Assert.That(await rebuild.IsDueAsync(), Is.False);
+        });
+    }
+
+    // A rebuild whose reference rows call the test back at the moments between its read and its write.
+    private (FormReferenceRebuild Rebuild, BetweenReadAndWrite Between) Interposed()
+    {
+        var between = new BetweenReadAndWrite(GetRequiredService<IReferenceRepository>());
+        var index = new FormReferenceIndex(GetRequiredService<DataValueReferenceFactoryCollection>(), GetRequiredService<PropertyEditorCollection>(), between);
+        return (new FormReferenceRebuild(between, GetRequiredService<IKeyValueRepository>(), Contents, index, TimeProvider.System, NullLogger<FormReferenceRebuild>.Instance), between);
+    }
+
+    // Finishes what is asked for, as the job would, so that a test starts with nothing due.
+    private async Task SettledAsync()
+    {
+        var rebuild = GetRequiredService<FormReferenceRebuild>();
+        Assert.That(await rebuild.ContinueAsync(DateTimeOffset.MaxValue), Is.True);
+    }
+
+    // Whether a rebuild is due after a change, from nothing due.
+    private async Task<bool> AfterAsync(Func<Task> change)
+    {
+        await SettledAsync();
+        await change();
+        return await GetRequiredService<FormReferenceRebuild>().IsDueAsync();
+    }
+
+    private Task<IReadOnlyList<Guid>> References(Guid form) => GetRequiredService<IReferenceRepository>().ContentOfAsync(form);
+
+    // A page type with one property "form" of this data type.
+    private async Task<IContentType> TextTypeAsync(IDataType dataType, string alias = "jfbUsedOnText")
+    {
+        var shortStrings = GetRequiredService<IShortStringHelper>();
+        var type = new ContentType(shortStrings, -1) { Alias = alias, Name = alias, Icon = "icon-document", AllowedAsRoot = true };
+        type.AddPropertyType(new PropertyType(shortStrings, dataType, "form") { Name = "Form" });
+        Assert.That((await GetRequiredService<IContentTypeService>().CreateAsync(type, Constants.Security.SuperUserKey)).Success, Is.True);
+        return type;
+    }
+
+    // A page whose property "form" holds a form's key as its text.
+    private IContent TextPage(IContentType type, Guid form)
+    {
+        var page = Contents.Create("Text page", Constants.System.Root, type.Alias);
+        page.SetValue("form", form.ToString("D"));
+        Assert.That(Contents.Save(page).Success, Is.True);
+        return page;
+    }
+
     // The element type and the picker's data type from setup, a block list that allows the element type, and a page
     // type with a picker property "form" and a block list property "blocks".
     private async Task<IContentType> PageTypeAsync()
@@ -337,4 +650,49 @@ public sealed class FormReferenceApiTests : ManagementApiTestBase
     // The statement with {0} the reference table and {1} its content key column, quoted for the database.
     private static string Sql(string sql, IUmbracoDatabase db) =>
         string.Format(System.Globalization.CultureInfo.InvariantCulture, sql, db.SqlContext.SqlSyntax.GetQuotedTableName(FormBuilderTables.Reference), db.SqlContext.SqlSyntax.GetQuotedColumnName("contentKey"));
+
+    // The reference rows, with a call back at the moment the rebuild has read a page and is about to write it, and before
+    // its last statement.
+    private sealed class BetweenReadAndWrite(IReferenceRepository inner) : IReferenceRepository
+    {
+        public Func<Task>? BeforeWrite { get; set; }
+
+        public Func<Task>? BeforeOrphans { get; set; }
+
+        public int Writes { get; private set; }
+
+        public Task<int> DeleteFormAsync(int formId, CancellationToken cancellationToken = default) => inner.DeleteFormAsync(formId, cancellationToken);
+
+        public Task<int> ReplaceContentAsync(Guid contentKey, IReadOnlyCollection<ContentFormReference> references, CancellationToken cancellationToken = default) =>
+            inner.ReplaceContentAsync(contentKey, references, cancellationToken);
+
+        public async Task<int?> ReplaceUnchangedContentAsync(int documentId, DocumentVersion read, Guid contentKey, IReadOnlyCollection<ContentFormReference> references, CancellationToken cancellationToken = default)
+        {
+            Writes++;
+            if (BeforeWrite is { } before)
+            {
+                await before();
+            }
+
+            return await inner.ReplaceUnchangedContentAsync(documentId, read, contentKey, references, cancellationToken);
+        }
+
+        public Task<int> DeleteContentAsync(Guid contentKey, CancellationToken cancellationToken = default) => inner.DeleteContentAsync(contentKey, cancellationToken);
+
+        public Task<IReadOnlyList<Guid>> ContentOfAsync(Guid formKey, CancellationToken cancellationToken = default) => inner.ContentOfAsync(formKey, cancellationToken);
+
+        public Task<IReadOnlyList<int>> DocumentsAfterAsync(int afterId, int take, CancellationToken cancellationToken = default) => inner.DocumentsAfterAsync(afterId, take, cancellationToken);
+
+        public Task<IReadOnlyDictionary<int, DocumentVersion>> VersionsOfAsync(IReadOnlyCollection<int> documentIds, CancellationToken cancellationToken = default) => inner.VersionsOfAsync(documentIds, cancellationToken);
+
+        public async Task<int> DeleteOrphansAsync(CancellationToken cancellationToken = default)
+        {
+            if (BeforeOrphans is { } before)
+            {
+                await before();
+            }
+
+            return await inner.DeleteOrphansAsync(cancellationToken);
+        }
+    }
 }

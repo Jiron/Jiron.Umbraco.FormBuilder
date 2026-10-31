@@ -40,9 +40,17 @@ Three questions follow from the settings:
 - **The settings** (`FormPickerConfiguration`): `multiple` (one form or several, default one); `allowedFolders` and
   `allowedForms` (keys; a form is allowed when both are empty, when it is listed, or when it lies in or below a
   listed folder); `theme` (a theme's alias, which must be a theme of the site); `redirect` (a content key). The
-  configuration editor refuses a theme the site lacks and keys that are not keys.
+  configuration editor refuses a theme the site lacks, keys that are not keys, and more than 1,000 allowed folders or
+  1,000 allowed forms (`#jfbPicker_tooMany`, 6.8f): the picker's queries name the allowed forms in one list, which
+  carries `SqlArgs.MaxListLength` values, and past it every call of that picker would fail. Folders are held to the same
+  number, so both lists read alike; a folder also takes in everything below it, which is the way out the message names.
+  Umbraco's data type endpoint answers a refused save with a general message ("Invalid data type configuration") and
+  only logs the reasons, so the setting's element shows that message itself once it holds more (ADR-0135); the other
+  settings cannot reach a refusal from their own screens, as they offer only valid values.
 - **The value** stays text: the picked forms' keys with hyphens, separated by commas, in the editor's order. A
-  value of 6.6c, one key, reads the same.
+  value of 6.6c, one key, reads the same. The server reads a key in any format .NET does; the backoffice reads the same
+  formats, keeps the hyphenated one and writes that (`picked-keys.ts`, 6.8f), so a value imported in another format is
+  named and marked chosen, and cannot be picked twice.
 - **The check on save:** the value editor reports, as Umbraco reports its own properties' problems when a page is
   saved, and Umbraco then never publishes the value: a value that is not keys, several keys in a single picker, a key
   that names no form of the library or a trashed one, and a form the settings do not allow, each as a

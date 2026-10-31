@@ -25,6 +25,12 @@ internal interface IKeyValueRepository
     /// <summary>Removes a key. True when it was stored.</summary>
     Task<bool> DeleteAsync(string key, CancellationToken cancellationToken = default);
 
+    /// <summary>Stores a value only while the key still holds exactly <paramref name="expected"/>. True when this call stored it: a writer that came between wins.</summary>
+    Task<bool> TryReplaceAsync(string key, string expected, string? value, CancellationToken cancellationToken = default);
+
+    /// <summary>Removes a key only while it still holds exactly <paramref name="expected"/>. True when this call removed it: a writer that came between wins.</summary>
+    Task<bool> TryDeleteAsync(string key, string expected, CancellationToken cancellationToken = default);
+
     /// <summary>Removes every key that starts with <paramref name="prefix"/> and was last stored before <paramref name="before"/> (UTC). The number removed.</summary>
     Task<int> DeleteOlderAsync(string prefix, DateTime before, CancellationToken cancellationToken = default);
 }
@@ -105,6 +111,39 @@ internal sealed class KeyValueRepository(FormBuilderDatabase database) : IKeyVal
             {
                 var n = new SqlNames(db);
                 return await db.ExecAsync($"DELETE FROM {n.T(FormBuilderTables.KeyValue)} WHERE {n.C("key")} = @0", key) == 1;
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<bool> TryReplaceAsync(string key, string expected, string? value, CancellationToken cancellationToken = default)
+    {
+        CheckKey(key, nameof(key));
+        ArgumentNullException.ThrowIfNull(expected);
+        return database.WriteAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                return await db.ExecAsync(
+                    $"UPDATE {n.T(FormBuilderTables.KeyValue)} SET {n.C("value")} = @0, {n.C("updatedUtc")} = @1 WHERE {n.C("key")} = @2 AND {n.C("value")}{n.BinaryCollation} = @3",
+                    value,
+                    database.UtcNow,
+                    key,
+                    expected) == 1;
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<bool> TryDeleteAsync(string key, string expected, CancellationToken cancellationToken = default)
+    {
+        CheckKey(key, nameof(key));
+        ArgumentNullException.ThrowIfNull(expected);
+        return database.WriteAsync(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                return await db.ExecAsync($"DELETE FROM {n.T(FormBuilderTables.KeyValue)} WHERE {n.C("key")} = @0 AND {n.C("value")}{n.BinaryCollation} = @1", key, expected) == 1;
             },
             cancellationToken);
     }

@@ -5,6 +5,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { all, deferred, must, registerEnglish, settle, shadow, text } from '../testing';
 import { SEARCH_DELAY, type FormPickerModalElement } from './form-picker-modal.element';
 import type { FormPickerModalData, FormPickerModalValue } from './form-picker-modal.token';
+import { readKeys } from './picked-keys';
 import type { PickerItem, PickerPage } from './picker-data';
 
 const reads = vi.hoisted(() => ({
@@ -174,6 +175,21 @@ describe('the form picker sidebar', () => {
     await settle(element);
     expect(context.getValue().selection).toEqual([]);
     expect(choose(element).disabled).toBe(true);
+  });
+
+  it('marks a form chosen whose picked key was written in another format, and chooses it once', async () => {
+    const key = '7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f';
+    const written = form(key, 'Written otherwise', 'otherwise');
+    reads.children.mockResolvedValueOnce(page([written, contact]));
+    const element = await open(
+      { multiple: true },
+      { selection: readKeys(`${key.replaceAll('-', '').toUpperCase()},{${key.toUpperCase()}}`), items: [written] },
+    );
+
+    expect(row(element, 'Written otherwise').getAttribute('aria-pressed')).toBe('true');
+    row(element, 'Contact us').click();
+    await settle(element);
+    expect(context.getValue().selection).toEqual([key, 'a-contact']);
   });
 
   it("toggles each form when the picker takes several, in the order picked, keeping the property's picks", async () => {

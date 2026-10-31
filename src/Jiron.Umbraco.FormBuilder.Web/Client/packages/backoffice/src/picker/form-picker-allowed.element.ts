@@ -1,7 +1,8 @@
 // The allowed folders or forms of a form picker's settings (ADR-0135): the chosen ones as the property shows its forms,
 // Umbraco's reference rows with Remove and a dashed Choose, which opens the picker's own sidebar, for folders in its
 // folder mode. The value is the keys in the order chosen, none written as no value. No data type limits what the
-// sidebar offers, and a folder or form the user cannot see any more is marked as not available.
+// sidebar offers, and a folder or form the user cannot see any more is marked as not available. Past the most the
+// picker's queries carry it says so here, as Umbraco answers the save that the server refuses with a general message.
 import { UmbChangeEvent } from '@umbraco-cms/backoffice/event';
 import { html, nothing, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
@@ -22,13 +23,17 @@ import {
   renderPickedFailure,
   renderPickedRows,
 } from './picked-rows';
+import { normalKey } from './picked-keys';
 import { formPickerData } from './picker-data';
 
-/** The keys a setting holds, each once and in order; anything else counts as none. */
+/** The most folders or forms a setting holds (`SqlArgs.MaxListLength`), past which the server refuses the settings. */
+export const MAX_ALLOWED = 1000;
+
+/** The keys a setting holds, each once and in order, in the hyphenated format; anything else counts as none. */
 function keysOf(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   const keys = value.filter((key): key is string => typeof key === 'string' && key.trim() !== '');
-  return [...new Set(keys.map((key) => key.trim().toLowerCase()))];
+  return [...new Set(keys.map(normalKey))];
 }
 
 export class FormPickerAllowedElement extends UmbLitElement implements UmbPropertyEditorUiElement {
@@ -110,7 +115,12 @@ export class FormPickerAllowedElement extends UmbLitElement implements UmbProper
       this,
       this.#lookup,
       folders ? 'jfbFormPicker_allowedFoldersFailed' : 'jfbFormPicker_allowedFormsFailed',
-    )}${this.readonly ? nothing : renderChoose(this, () => void this.#choose())}`;
+    )}${this.#renderTooMany()}${this.readonly ? nothing : renderChoose(this, () => void this.#choose())}`;
+  }
+
+  #renderTooMany() {
+    if ((this.value?.length ?? 0) <= MAX_ALLOWED) return nothing;
+    return html`<div class="failure" role="alert"><span>${this.localize.term('jfbPicker_tooMany')}</span></div>`;
   }
 
   static override styles = [jfbBackofficeTokens, pickedRowsStyles];

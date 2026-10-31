@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
+using Jiron.Umbraco.FormBuilder.Core.Persistence;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Core.Models.Validation;
@@ -11,8 +12,9 @@ using Umbraco.Cms.Core.Strings;
 namespace Jiron.Umbraco.FormBuilder.Web.Picker;
 
 /// <summary>
-/// The form picker's configuration editor (ADR-0129): it refuses a theme the site lacks and a folder, form or page that
-/// is not a key, each with a message the backoffice puts in the editor's language.
+/// The form picker's configuration editor (ADR-0129): it refuses a theme the site lacks, a folder, form or page that is
+/// not a key, and more allowed folders or forms than the picker's queries can carry. Umbraco logs the messages and answers
+/// the save with a general refusal, so the settings' own elements say what they can in the editor's language (ADR-0129).
 /// </summary>
 /// <param name="ioHelper">Umbraco's paths, which the base class takes.</param>
 /// <param name="themes">The site's themes.</param>
@@ -36,9 +38,15 @@ internal sealed class FormPickerConfigurationEditor(IIOHelper ioHelper, FormBuil
 
         foreach (var name in new[] { "allowedFolders", "allowedForms" })
         {
-            if (!Texts(configuration, name).All(text => Guid.TryParse(text, out _)))
+            var texts = Texts(configuration, name).ToList();
+            if (!texts.All(text => Guid.TryParse(text, out _)))
             {
                 yield return new ValidationResult("#jfbPicker_notAKey", [name]);
+            }
+
+            if (texts.Count > SqlArgs.MaxListLength)
+            {
+                yield return new ValidationResult("#jfbPicker_tooMany", [name]);
             }
         }
     }

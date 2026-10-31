@@ -31,7 +31,9 @@ endpoint names a folder by key.
   forms.
 - **Which folders a user may choose:** the levels are those of 6.7e, so a folder shows once it leads to a published
   form the user may pick. A folder named earlier stays shown by name, also when it leads to no published form any
-  more, through the new endpoint, which names any folder the user may see outside the trash.
+  more, through the new endpoint, which names any folder the user may see outside the trash, and any that leads to a
+  form they may pick (6.8f): a grant on a form inside a restricted folder shows that folder in the sidebar, so the
+  settings must name it too.
 - **The theme:** (a) Umbraco's dropdown UI with fixed items: the site's themes are known only at run time; (b) a
   select of our own over `GET picker/themes`, first "The form's own theme". (b) is chosen. A theme the settings name
   that the site no longer has is shown as such and kept until the editor changes it; the server refuses it on save
@@ -44,8 +46,8 @@ endpoint names a folder by key.
 - **The endpoint:** `GET picker/folders?keys` (up to 100 keys, §4.7 "Content"), declared `FormBuilderContentAccess`
   like the four of 6.7e and listed in the permission matrix's exception: the folders of those keys that are outside the
   trash and that the user may see (not restricted and below no restricted folder, or covered by a grant of a group of
-  theirs, ADR-0048), in the order asked, each as `key`, `kind`, `name` and `hasChildren` (whether it leads to a form
-  the picker may pick); the others are left out.
+  theirs, ADR-0048) or that lead to a form they may pick, in the order asked, each as `key`, `kind`, `name` and
+  `hasChildren` (whether it leads to a form the picker may pick); the others are left out.
 - **The settings,** on the schema in the server's order, each with an English and a German label and help:
   - `multiple`: Umbraco's toggle, off by default, "Allow several forms";
   - `allowedFolders` and `allowedForms`: `Jiron.FormBuilder.PropertyEditorUi.FormPickerAllowed` with `pick` set to

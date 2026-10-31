@@ -144,6 +144,23 @@ describe('the form picker property', () => {
     expect(removes(element)[0]?.getAttribute('label')).toBe("Remove the form that isn't available");
   });
 
+  it('names a value in another key format, offers it to the sidebar as chosen, and writes the hyphenated format', async () => {
+    const key = '7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f';
+    const picked = form(key, 'Written otherwise', 'otherwise');
+    reads.forms.mockImplementation(answer([picked, contact]));
+    const element = await picker({ value: `${key.replaceAll('-', '').toUpperCase()},{${key}}`, multiple: true });
+
+    expect(reads.forms).toHaveBeenCalledWith([key]);
+    expect(names(element)).toEqual(['Written otherwise']);
+    expect(removes(element)).toHaveLength(1);
+
+    sidebar.open.mockResolvedValueOnce({ selection: [key, 'a-contact'], items: [picked, contact] });
+    chooseButton(element).click();
+    await settle(element);
+    expect(sidebar.open.mock.calls[0]?.[2]).toMatchObject({ value: { selection: [key], items: [picked] } });
+    expect(element.value).toBe(`${key},a-contact`);
+  });
+
   it('holds rows in their shape while the names load', async () => {
     const lookup = deferred<PickerItem[] | undefined>();
     reads.forms.mockReturnValueOnce(lookup.promise);

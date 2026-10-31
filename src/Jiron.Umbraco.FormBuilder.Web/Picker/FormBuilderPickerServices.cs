@@ -10,7 +10,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.Picker;
 
 /// <summary>
 /// The registrations of "used on" (ADR-0017, ADR-0131), which the web composer makes: the form's UDI type, the picker's
-/// reference factory, the index with its content handlers, the reader, the rebuild with its job, and the output cache's
+/// reference factory, the index with its content handlers, the reader, the rebuild with its job and the handler of type
+/// changes that asks for it, and the output cache's
 /// tags of the pages that use a form with their eviction (ADR-0132). The picker's data editor and value converter are
 /// found by Umbraco itself.
 /// </summary>
@@ -37,6 +38,9 @@ internal static class FormBuilderPickerServices
         builder.AddNotificationAsyncHandler<ContentMovedNotification, FormReferenceHandler>();
         builder.AddNotificationAsyncHandler<ContentCopiedNotification, FormReferenceHandler>();
         builder.AddNotificationAsyncHandler<ContentDeletedNotification, FormReferenceHandler>();
+        builder.AddNotificationAsyncHandler<ContentTypeChangedNotification, FormReferenceTypeHandler>();
+        builder.AddNotificationAsyncHandler<DataTypeSavedNotification, FormReferenceTypeHandler>();
+        builder.AddNotificationAsyncHandler<DataTypeDeletedNotification, FormReferenceTypeHandler>();
         builder.Services.TryAddSingleton<PageForms>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IWebsiteOutputCacheTagProvider, FormCacheTags>());
         builder.AddNotificationAsyncHandler<FormBuilderFormCacheRefresherNotification, FormCacheEviction>();
