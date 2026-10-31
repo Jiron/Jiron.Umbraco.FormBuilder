@@ -108,7 +108,8 @@ breaks or the values read (each a text, the row it answers and the text stored i
 unreadable; a `rowCount` case gives a repeatable group's settings and its number of rows. `Logic/ReadingVector.cs`
 runs both through Core's `SubmissionReader.Clean` and `FieldValues`. Beside it, `packages/logic/test/reading.test.ts`
 holds the browser's table of the built-in types to `docs/api/field-types.json` and reads no site's own type, and
-`FieldTypes/CountryCodesTests.cs` holds the browser's country codes (`countries.ts`) to Core's. `posts` (6.4b)
+`FieldTypes/CountryCodesTests.cs` holds the browser's country codes (`countries.ts`, written as their letters two by
+two) to Core's. `posts` (6.4b)
 holds the reading of a page's post by its names ([ADR-0110](../docs/decisions/0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md)): a `post`
 case gives the form's fields as the page names them (alias, type, settings, a repeatable group's children) and the
 names and values in the order a browser posts them, expecting each field's answer by its alias (texts, and parts
@@ -993,18 +994,21 @@ is updated in place, goes once no error shows, and an empty submission's goes at
 hide loses its error; without a summary the focus goes to the first field; a second press and Back are left alone;
 a passing send goes on with its button, in a task of its own after the press's submit event (6.4f), as does one
 whose errors are on a page the server has not shown; a summary
-link moves the focus; and the server's errors stay while their field is unchanged and go when it changes or the
-rules hide it; `errors.offline.test.ts` sends as without JavaScript when the words cannot load; `outputs.test.ts`
+link moves the focus; the server's errors stay while their field is unchanged and go when it changes or the
+rules hide it, and join only a send the page's own checks refuse; and a field the page leaves out (a member's own
+value standing in) is the server's to check, the send refused for the other fields' errors alone (6.8b); `errors.offline.test.ts` sends as without JavaScript when the words cannot load; `outputs.test.ts`
 shows each calculation's result as the visitor types, in its format, none for an unreadable answer, a failed
 division or an empty date, nothing while the rules hide it, a row's in its row, written only when it changes, on a
-form without rules too and never for a site's own type, and a slider's value beside its thumb and in its
-`aria-valuetext`; `engine.test.ts` loads the calculation language only for a form with a calculation and the merge
+form without rules too and never for a site's own type, said once the visitor pauses (fake timers, keystrokes closer
+than the pause), in one line in the order of the page and never for the first pass (6.8b), and a slider's value
+beside its thumb and in its `aria-valuetext`; `engine.test.ts` loads the calculation language only for a form with a calculation and the merge
 tags only for a form with a text that recalls answers, each once for the page, and leaves a form whose chunk cannot
 load to the post without JavaScript, fills a marked default in before the rules first decide and loads its filler
 only for a form the server marked (6.4h); `defaults.test.ts` fills the marked fields once from the query values the
 form allows and the endpoint's values, writes a refused tag as it stands and a default the endpoint does not list as
 it is written, ticks and selects the matching choices, and never touches a control the visitor changed or a hidden
-input, and fills a field prefilled from the query from its own query name before its default, a list for several
+input, fills only the control named as the field (an "Other" text, a name's parts and an email's repeat stay empty,
+6.8b), and fills a field prefilled from the query from its own query name before its default, a list for several
 choices, nothing from a name the form does not allow or one an object inherits (6.5c); `recall.test.ts` renders a label, a help text, a placeholder, a heading, a
 text block, a group's description and a later page's title as the visitor types, nothing of a field the rules hide
 or of a row's child they hide in its row, a value escaped in a rich text, a text without a field tag and a field
@@ -1012,8 +1016,9 @@ after its text left as the server wrote them, and the error summary's link namin
 for a box that shows its own text, and none while it renders empty, a refused tag as it stands, and never a default
 as a visitor text; `texts.test.ts` writes a text as text, hidden
 while empty or showing its fallback, a placeholder as its attribute, a rich text by its texts and the attribute
-values its elements already have, never a node or an `on…` attribute and not at all when its elements differ, and
-each element only when its text changes; `jfb-runtime.test.ts` holds the global. In Edge,
+values its elements already have, never a node or an `on…` attribute and not at all when its elements differ, a
+recalled answer as it gains and loses line breaks with each break made anew (6.8b), and each element only when its
+text changes; `jfb-runtime.test.ts` holds the global. In Edge,
 `e2e/specs/website/runtime-frame.spec.ts` shows each demo form enhanced once with its `jfb:ready`, a form the page
 puts in later enhanced through `init(root)`, the chunk loaded only once a form is touched (by focus, or by a change
 without focus as autofill makes), or at once for a form with a default the page fills in, and no error in the

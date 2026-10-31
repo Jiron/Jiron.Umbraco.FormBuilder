@@ -1,7 +1,8 @@
 // Errors on the page (ROADMAP 6.4e, ADR-0113): shown as the visitor leaves a field they changed, said once in the live
 // region, gone on the input that fixes them; after a refused send or Next every error with the summary, which takes
 // the focus, and `jfb:invalid` without an answer; a passing check lets the post go on with the button pressed; the
-// server's errors stay while their field is unchanged; and a send whose errors are on another page goes to the server.
+// server's errors stay while their field is unchanged and join only a refused send; a field the page leaves out is the
+// server's to check; and a send whose errors are on another page goes to the server.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { engineOf } from './engine';
 import { pageErrorsOf, type InvalidDetail } from './errors';
@@ -361,6 +362,27 @@ describe('a send the page does not stop', () => {
   });
 });
 
+describe('a field the page leaves out', () => {
+  it("is the server's to check: a send is refused for the other fields' errors alone (6.8b)", async () => {
+    // As for a member whose own address stands in for the email field, which their page leaves out (ADR-0124).
+    const both = modelOf([{ key: 'p1', groups: [{ key: 'g1', fields: [NAME, EMAIL, WAY] }] }]);
+    const { form, sent, invalid } = contact(both, text('k-name', 'name', 'Name') + WAY_HTML);
+    pick('jfb-1-way');
+    press(form, 'send');
+    await settle();
+    expect(sent).toEqual([]);
+    expect(shownOf(form)).toEqual({
+      inline: ['jfb-1-name-error: Enter an answer'],
+      summary: ['#jfb-1-name Name: Enter an answer'],
+    });
+    expect(invalid[0]?.errors).toEqual([{ field: 'name', kind: 'required' }]);
+    type('jfb-1-name', 'Ada');
+    press(form, 'send');
+    await settle();
+    expect(sent, 'and the send goes on once the others pass').toEqual(['submit']);
+  });
+});
+
 describe('the summary', () => {
   it("links move the focus to their field's control", async () => {
     const { form } = contact(ONE_PAGE, FIELDS);
@@ -411,6 +433,18 @@ describe("the server's errors after a post without JavaScript", () => {
     type('jfb-1-email', 'lin@example.com');
     await settle();
     expect(shownOf(form).inline).toEqual(['jfb-1-name-error: Enter an answer']);
+  });
+
+  it("let a send go on when the page's own checks pass, as the server checks it again (6.8b)", async () => {
+    const { form, sent, invalid } = contact(model, served, summary);
+    type('jfb-1-name', 'Ada');
+    press(form, 'send');
+    await settle();
+    expect(sent).toEqual(['submit']);
+    expect(invalid).toEqual([]);
+    expect(shownOf(form).inline, 'still shown until the server answers').toEqual([
+      'jfb-1-email-error: This address has sent the form already',
+    ]);
   });
 
   it('go when the rules hide their field', async () => {

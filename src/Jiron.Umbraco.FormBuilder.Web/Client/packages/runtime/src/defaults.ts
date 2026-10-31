@@ -5,11 +5,13 @@
  * address that the form allows and the form endpoint's values for its other tags, writes a tag its place refuses as it
  * stands, and gives the result to the controls the visitor has not changed yet, before the rules first decide. A
  * default the endpoint does not list renders as it is written. A field prefilled from the query takes the address's
- * value, where it has one, before its default (ADR-0124).
+ * value, where it has one, before its default (ADR-0124). Only the control named as the field takes it, as on the
+ * server: a choice's "Other" text, a name's or an address's parts and an email's repeat stay empty (6.8b).
  */
 import type { Context } from '@jfb/logic';
 import { parseTemplate, renderTemplate, type MergeValue } from '@jfb/logic/template';
-import type { FormModel, ModelField } from './model';
+import type { FormModel } from './model';
+import { allFieldsOf } from './page';
 
 type Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
@@ -29,9 +31,7 @@ export function fillDefaults(form: HTMLFormElement, model: FormModel, context: C
     const found = own(context.query, path.slice(6)) ?? [];
     return found.length === 1 ? found[0] : found.length === 0 ? '' : found;
   };
-  const fields = (list: readonly ModelField[]): ModelField[] =>
-    list.flatMap((field) => [field, ...fields(field.fields ?? [])]);
-  const all = fields(model.form.pages.flatMap((page) => page.groups.flatMap((group) => group.fields)));
+  const all = allFieldsOf(model);
   for (const element of form.querySelectorAll<HTMLElement>('[data-jfb-default]')) {
     element.removeAttribute('data-jfb-default');
     const field = all.find((each) => each.key === element.dataset['jfbField']);
@@ -52,17 +52,20 @@ export function fillDefaults(form: HTMLFormElement, model: FormModel, context: C
     const asked = field?.prefill?.query;
     const prefilled =
       typeof asked === 'string' ? [own(context.query, asked) ?? []].flat().filter((text) => text.length > 0) : [];
-    fill(element, prefilled.length > 0 ? prefilled : texts);
+    fill(element, field?.alias, prefilled.length > 0 ? prefilled : texts);
   }
 }
 
-/** Gives a field's controls its default's texts, unless it has none or the visitor changed one of them already. */
-function fill(element: HTMLElement, texts: readonly string[]): void {
+/**
+ * Gives the field's own controls, named as the field (a row's by its row's path), its default's texts, unless it has
+ * none or the visitor changed one of the field's controls already.
+ */
+function fill(element: HTMLElement, alias: string | null | undefined, texts: readonly string[]): void {
   const controls = [...element.querySelectorAll<Control>('input, select, textarea')].filter(
     (control) => control.type !== 'hidden',
   );
   if (texts.length === 0 || controls.some(changed)) return;
-  for (const control of controls) {
+  for (const control of controls.filter((each) => each.name.replace(/^.*\]\./, '') === alias)) {
     if (control instanceof HTMLSelectElement) {
       const options = [...control.options];
       if (!options.some((option) => texts.includes(option.value))) continue;

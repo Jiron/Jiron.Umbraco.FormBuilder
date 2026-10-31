@@ -6,7 +6,7 @@
   (a field the page cannot know is kept out of its rules), [ADR-0080](0080-reading-a-submission-after-the-phase-5-review.md)
   (a hidden field's server-side values) and [ADR-0104](0104-the-output-cache-rules-and-the-render-endpoint.md) (one
   more render per visitor)
-- Date: 2026-10-30
+- Date: 2026-10-30; amended 2026-10-31 (6.8b: the page's checks leave a field the page left out to the server)
 - Roadmap step: 6.5c (decided and built); 14.3 binds members to the page's rules and adds the member link on entries
 
 ## Context
@@ -58,7 +58,8 @@ visitor adds; after a post the posted answers stand, as for a default.
     the member's value whatever is posted, so no post can put another value there. The value stands in where it is not
     empty, keeps the field's limits, its type reads a value from it and it passes the type's checks and the field's
     own (`FieldValues.StandsIn`, one rule for the page and the reader): an entry never fails on a value the member can
-    neither see nor change. Where it does not stand in, and for any other visitor, the field shows and is answered as
+    neither see nor change. The page's own checks drop an error at the field it left out and still refuse a send for
+    the others (6.8b, ADR-0113). Where it does not stand in, and for any other visitor, the field shows and is answered as
     usual. The structure check refuses what the page could then not decide: a repeatable group's child that hides
     (every row would hold the same value); a hiding field with a check against another field or the other entries
     (`matchesField`, `uniquePerForm`); a page's rule, calculation, field check or form-level validation rule that

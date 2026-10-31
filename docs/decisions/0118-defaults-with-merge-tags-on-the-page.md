@@ -8,7 +8,7 @@
   [ADR-0110](0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md) (the frame loads a marked form's
   logic at once) and ADR-0115 (a refused tag is written as it stands on the page too, and the chunk holds the
   defaults' filler)
-- Date: 2026-10-30
+- Date: 2026-10-30; amended 2026-10-31 (6.8b: only the control named as the field takes the default)
 - Roadmap step: 6.4h (decided and built); 6.4o adds rows in place, whose new rows start from their defaults too; 6.5
   builds prefill, which wins over a default
 
@@ -92,7 +92,9 @@ Open were:
   each marked field it renders each text of its default (the template as written when the endpoint does not list it),
   with the query values of `contextOf` (one text, a list of several, or the empty text, as the server's source gives
   them), the endpoint's other values, and a refused path written as it stands; drops the mark; and, unless the
-  visitor changed one of its controls, writes the first text into a text control, ticks the boxes and radio buttons
+  visitor changed one of its controls, fills only the controls named as the field (a row's by its row's path), as the
+  server does: a choice's "Other" text, a name's or an address's parts and an email's repeat stay empty (6.8b). It
+  writes the first text into a text control, ticks the boxes and radio buttons
   whose values it holds, and selects the matching options, leaving a choice whose rendering no option has as it was
   and never touching a hidden input. A form whose filler cannot load is left to the post without JavaScript.
 - **Answer recall** writes a visitor text's refused tags as they stand, as the server writes them, and never takes a

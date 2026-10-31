@@ -2,7 +2,7 @@
 
 - Status: accepted; amends [ADR-0026](0026-client-workspace-and-asset-delivery.md) (how the website runtime is
   minified); [ADR-0116](0116-the-runtimes-budget-counts-one-language.md)'s measure of the budget stays
-- Date: 2026-10-30
+- Date: 2026-10-30; amended 2026-10-31 (6.8b: the room its fixes needed)
 - Roadmap step: 6.4h (decided and built); every later step of 6.4 is held to the same budget
 
 ## Context
@@ -44,3 +44,12 @@ banner and runs as before, and a build with source maps skips it. The size check
 - It is a one-time gain: the features 6.4i to 6.4o add still need room or the owner's answer on section 4.12's budget
   (`docs/OWNER-TODO.md`).
 - **Revisit** when the bundler's own minifier closes the gap: then the pass costs build time for nothing.
+
+## The room 6.8b made (2026-10-31)
+
+6.8b's fixes came to 40.21 KB. Terser's other options (more passes, `unsafe_arrows`, `pure_getters` and the like) took
+off about 30 bytes, so they stay as they are. The room came from the code: the runtime's own copies of a walk over every
+field and of the built-in test are one each in `page.ts` (`allFieldsOf`, `builtIn`); `wordsFor` drops a throw no
+culture reaches; and the country codes are written as their letters two by two (`.match(/../g)`), about 90 bytes, which
+`CountryCodesTests` still holds to Core's list. A generic element maker for the error summary's fallback gzipped worse
+than the calls it replaced and was left out. The runtime is at 39.94 KB.

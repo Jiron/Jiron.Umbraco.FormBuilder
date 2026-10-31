@@ -110,6 +110,13 @@ export function readPage(form: HTMLFormElement, model: FormModel): PageReading {
 export const fieldsOf = (model: FormModel): readonly ModelField[] =>
   model.form.pages.flatMap((page) => page.groups.flatMap((group) => group.fields));
 
+/** Fields with the fields they hold after each, at any depth. */
+const withChildren = (fields: readonly ModelField[]): ModelField[] =>
+  fields.flatMap((field) => [field, ...withChildren(field.fields ?? [])]);
+
+/** Every field of the form, a repeatable group's child fields after their group. */
+export const allFieldsOf = (model: FormModel): ModelField[] => withChildren(fieldsOf(model));
+
 /** A field as the post reader names it. */
 function postField(model: FormModel, field: ModelField): PostField {
   return {
@@ -161,7 +168,8 @@ function put(texts: Record<string, string[]>, read: FieldRead): void {
 const isUnreadable = (read: FieldRead): boolean =>
   read.reading !== null && (read.reading.limit !== null || read.reading.unreadable);
 
-const builtIn = (model: FormModel, field: ModelField): boolean =>
+/** Whether a field is of a built-in type, which the page reads and checks; a site's own type only the server reads. */
+export const builtIn = (model: FormModel, field: ModelField): boolean =>
   Object.hasOwn(model.fields, field.key) && model.fields[field.key]?.builtIn === true;
 
 /** A repeatable group: a built-in type that holds fields, or a site's own type that does. */

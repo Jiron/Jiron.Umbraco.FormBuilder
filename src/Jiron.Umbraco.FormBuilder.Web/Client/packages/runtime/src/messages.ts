@@ -16,7 +16,7 @@ import {
 } from '@jfb/logic';
 import type { PageError } from './checks';
 import type { FormModel, ModelField } from './model';
-import { fieldsOf, type PageReading } from './page';
+import { allFieldsOf, builtIn, fieldsOf, type PageReading } from './page';
 
 /** An error as the page shows it. */
 export interface ShownError {
@@ -34,18 +34,21 @@ export interface ShownError {
   readonly parts?: readonly string[];
 }
 
-const LANGUAGES: Readonly<Record<string, () => Promise<MessageWords>>> = {
+const LANGUAGES = {
   en: () => import('@jfb/logic/lang/en').then((module) => module.en),
   de: () => import('@jfb/logic/lang/de').then((module) => module.de),
-};
+} as const satisfies Readonly<Record<string, () => Promise<MessageWords>>>;
+
+/** A language whose words the runtime has. */
+type Language = keyof typeof LANGUAGES;
 
 const loaded = new Map<string, Promise<MessageWords>>();
 
 /** The language whose words a culture reads: its own, its more general culture's, else English, as Core's. */
-export function languageOf(culture: string): string {
+export function languageOf(culture: string): Language {
   let candidate = culture.toLowerCase();
   while (candidate.length > 0) {
-    if (Object.hasOwn(LANGUAGES, candidate)) return candidate;
+    if (Object.hasOwn(LANGUAGES, candidate)) return candidate as Language;
     const dash = candidate.lastIndexOf('-');
     candidate = dash < 0 ? '' : candidate.slice(0, dash);
   }
@@ -57,9 +60,7 @@ export function wordsFor(culture: string): Promise<MessageWords> {
   const language = languageOf(culture);
   let words = loaded.get(language);
   if (words === undefined) {
-    const load = LANGUAGES[language];
-    if (load === undefined) throw new Error(`No words for ${language}`);
-    words = load();
+    words = LANGUAGES[language]();
     loaded.set(language, words);
   }
   return words;
@@ -107,7 +108,7 @@ export function shownErrors(
       code: error.code,
       field: {
         type: field.type,
-        builtIn: Object.hasOwn(model.fields, field.key) && model.fields[field.key]?.builtIn === true,
+        builtIn: builtIn(model, field),
         settings: field.settings ?? {},
         options: (field.options?.items ?? []).map((item) => ({ value: item.value, label: item.label ?? '' })),
       },
@@ -185,8 +186,7 @@ const textOf = (text: string | null | undefined): string | null => (text == null
 
 /** Whether a field takes an answer, so it has a label; a site's own type is taken to. */
 function holdsValue(model: FormModel, field: ModelField): boolean {
-  const builtIn = Object.hasOwn(model.fields, field.key) && model.fields[field.key]?.builtIn === true;
-  if (!builtIn) return true;
+  if (!builtIn(model, field)) return true;
   return !Object.hasOwn(BUILT_IN_TYPES, field.type) || BUILT_IN_TYPES[field.type]?.holdsValue !== false;
 }
 
@@ -226,9 +226,7 @@ function labelOfKey(
   key: string,
   texts: ReadonlyMap<string, string>,
 ): string | null {
-  const field = fieldsOf(model)
-    .flatMap((each) => [each, ...(each.fields ?? [])])
-    .find((each) => each.key === key);
+  const field = allFieldsOf(model).find((each) => each.key === key);
   if (field === undefined) return null;
   return labelOf(elementOf(form, key, null, null), field, texts);
 }

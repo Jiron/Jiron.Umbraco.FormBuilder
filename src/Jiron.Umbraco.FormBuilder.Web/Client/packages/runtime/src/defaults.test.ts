@@ -194,6 +194,25 @@ describe('a default value with merge tags', () => {
     expect([value('kids[1].kid'), value('jfb-order-kid'), value('other')]).toEqual(['Library guest', '', '']);
   });
 
+  it("fills only the control named as the field: an Other text, a name's parts and an email's repeat stay empty (6.8b)", () => {
+    const form = formOf({
+      plan: '<input type="radio" name="plan" value="day"><input type="radio" name="plan" value="other"><input name="plan.other">',
+      who: '<input name="who.first"><input name="who.last">',
+      email: '<input type="email" name="email"><input type="email" name="email.confirm">',
+    });
+    const model = modelOf(
+      [
+        field('plan', 'radio', '{{ query.plan }}'),
+        field('who', 'name', '{{ query.who }}'),
+        field('email', 'email', '{{ query.email }}'),
+      ],
+      [listed('plan'), listed('who'), listed('email')],
+    );
+    fillDefaults(form, model, context({ plan: ['day'], who: ['Ada'], email: ['ada@example.com'] }));
+    expect([ticked('plan'), value('plan.other'), value('who.first'), value('who.last')]).toEqual([['day'], '', '', '']);
+    expect([value('email'), value('email.confirm')]).toEqual(['ada@example.com', '']);
+  });
+
   it('fills a field once: a second pass finds no mark', () => {
     const form = formOf({ source: '<input name="source">' });
     const model = modelOf([field('source', 'text', '{{ site.name }}')], [listed('source')]);

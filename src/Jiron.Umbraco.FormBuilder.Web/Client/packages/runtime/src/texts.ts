@@ -30,26 +30,33 @@ export function showTexts(form: HTMLFormElement, model: FormModel, texts: Readon
   }
 }
 
-/** A tree's elements, nested as they stand, whatever their texts. */
+/** Whether a node is a line break, which the `html` filter writes for each break in an answer. */
+const isBreak = (node: Node): boolean => node.nodeName === 'BR';
+
+/** A tree's elements but its line breaks, nested as they stand, whatever their texts. */
 const skeleton = (node: ParentNode): string =>
-  [...node.children].map((child) => `<${child.localName}>${skeleton(child)}`).join('') + '/';
+  [...node.children]
+    .filter((child) => !isBreak(child))
+    .map((child) => `<${child.localName}>${skeleton(child)}`)
+    .join('') + '/';
 
 /** A node's texts and elements, in order; comments left out. */
 const partsOf = (node: Node): ChildNode[] =>
   [...node.childNodes].filter((child) => child.nodeType === Node.TEXT_NODE || child instanceof Element);
 
-/** A node's texts and the places of its elements, in order. */
+/** A node's texts and the places of its line breaks and other elements, in order. */
 const textsOf = (node: Node): string =>
   partsOf(node)
-    .map((child) => (child.nodeType === Node.TEXT_NODE ? `t${child.textContent}` : 'e'))
+    .map((child) => (child.nodeType === Node.TEXT_NODE ? `t${child.textContent}` : isBreak(child) ? 'b' : 'e'))
     .join('\n');
 
 /**
  * Brings an element's rich text to a rendering of its template without letting markup from a string into the page
  * (ROADMAP section 4.10): the rendering is parsed in an inert `<template>`, where nothing runs or loads, and only its
  * texts and the values of the attributes the page's elements already have are copied over, never a node. A rendering
- * differs from the page's markup only there, as every value is escaped for HTML; one whose elements differ, which no
- * template renders, is left as the page has it.
+ * differs from the page's markup only there, as every value is escaped for HTML, and in the line breaks an answer
+ * recalled through `| html` brings, which are made anew, bare (6.8b); one whose other elements differ,
+ * which no template renders, is left as the page has it.
  */
 function writeHtml(element: HTMLElement, markup: string): void {
   const parsed = element.ownerDocument.createElement('template');
@@ -57,8 +64,8 @@ function writeHtml(element: HTMLElement, markup: string): void {
   parsed.innerHTML = markup;
   const given = parsed.content;
   if (skeleton(element) !== skeleton(given)) return;
-  const theirs = [given, ...given.querySelectorAll('*')];
-  [element, ...element.querySelectorAll('*')].forEach((own, at) => {
+  const theirs = [given, ...given.querySelectorAll(':not(br)')];
+  [element, ...element.querySelectorAll(':not(br)')].forEach((own, at) => {
     const other = theirs[at];
     if (other === undefined) return;
     if (at > 0)
@@ -67,12 +74,14 @@ function writeHtml(element: HTMLElement, markup: string): void {
         if (wanted !== null && wanted !== value && !name.startsWith('on')) own.setAttribute(name, wanted);
       }
     if (textsOf(own) === textsOf(other)) return;
-    const kept = [...own.children];
+    const kept = [...own.children].filter((child) => !isBreak(child));
     own.replaceChildren(
       ...partsOf(other).map((child) =>
         child.nodeType === Node.TEXT_NODE
           ? own.ownerDocument.createTextNode(child.textContent ?? '')
-          : (kept.shift() ?? ''),
+          : isBreak(child)
+            ? own.ownerDocument.createElement('br')
+            : (kept.shift() ?? ''),
       ),
     );
   });

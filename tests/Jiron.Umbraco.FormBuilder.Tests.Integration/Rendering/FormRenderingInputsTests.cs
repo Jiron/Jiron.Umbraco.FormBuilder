@@ -205,7 +205,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
             var cost = Field(empty, "cost");
             Assert.That(Text(cost, "label.jfb-label"), Is.EqualTo("Cost"), "a calculation is never optional: the visitor gives it no answer");
             Assert.That(cost.QuerySelector("label")!.GetAttribute("for"), Is.EqualTo("jfb-1-cost"));
-            Assert.That(cost.QuerySelector("output")!.OuterHtml, Is.EqualTo("""<output class="jfb-output" id="jfb-1-cost" name="cost" aria-describedby="jfb-1-cost-help">EUR 75.00</output>"""), "worked out for the slider's start");
+            Assert.That(cost.QuerySelector("output")!.OuterHtml, Is.EqualTo("""<output class="jfb-output" id="jfb-1-cost" name="cost" aria-live="off" aria-describedby="jfb-1-cost-help">EUR 75.00</output>"""), "worked out for the slider's start");
 
             var contact = Field(empty, "contact");
             Assert.That(Text(contact, "legend.jfb-label"), Is.EqualTo("Contact"));

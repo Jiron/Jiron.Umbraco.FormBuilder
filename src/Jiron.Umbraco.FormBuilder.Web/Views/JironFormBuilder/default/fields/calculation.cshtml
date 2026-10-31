@@ -1,8 +1,9 @@
 @* jfb-view: fields/calculation 1 *@
 @model Jiron.Umbraco.FormBuilder.Web.Rendering.Models.FieldViewModel
 @using Jiron.Umbraco.FormBuilder.Web.Rendering.Models
-@* The result as the server works it out for the page's answers; the runtime works it out again as the visitor answers. *@
+@* The result as the server works it out for the page's answers; the runtime works it out again as the visitor answers.
+   It keeps quiet, a status that would speak on every key: the runtime says the results once the visitor pauses (6.8b). *@
 @{
     var control = (CalculationControlModel)Model.Control!;
 }
-<output class="jfb-output" id="@Model.Id" name="@Model.Name" aria-describedby="@Model.DescribedBy">@control.Text</output>
+<output class="jfb-output" id="@Model.Id" name="@Model.Name" aria-live="off" aria-describedby="@Model.DescribedBy">@control.Text</output>

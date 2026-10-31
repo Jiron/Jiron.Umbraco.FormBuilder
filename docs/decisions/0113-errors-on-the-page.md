@@ -4,7 +4,7 @@
   [ADR-0022](0022-default-theme-and-tokens.md) (the error summary) and [ADR-0004](0004-rendering-and-submission-paths.md)
   (the runtime renders the server's summary and inline errors and moves the focus); amends
   [ADR-0015](0015-themes-and-the-markup-contract.md) (the runtime's templates)
-- Date: 2026-10-30
+- Date: 2026-10-30; amended 2026-10-31 (6.8b: the server's errors join only a refused send; a field the page leaves out is the server's)
 - Amended by [ADR-0114](0114-calculations-on-the-page.md): a passing send asks for the post in a task of its own,
   since a form ignores a submission asked for while its submit event still runs
 - Roadmap step: 6.4e (decided and built); 6.4i sends with `fetch` and shows the server's errors in place, 6.5 moves
@@ -81,6 +81,11 @@ Option 3, 3, 3, 2 and 2.
   that holds one, until 6.5.
 - **The server's errors** after a post without JavaScript stay while their field is unchanged, also the ones only the
   server can make (an answer used before, files, options from a source), and a refused send keeps them in its summary.
+  They join only a send the page's own checks refuse (6.8b): a send they alone would stop goes on, and the server checks
+  it again, so an optional upload the server refused and the visitor has since emptied can be sent.
+- **A field the page leaves out**, as one a member's own value stands in for (ADR-0124), is the server's to check: an
+  error the page's checks find at a field with no element on the page is dropped, and the others still refuse the send
+  (6.8b). Before, such an error let every send through unchecked.
 - **The summary** stays until no error shows on the form, then goes; the empty submission's goes at the first answer.
 
 ### `jfb:invalid`

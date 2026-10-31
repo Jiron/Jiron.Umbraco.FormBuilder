@@ -8,7 +8,7 @@
   form chunk), [ADR-0109](0109-reading-answers-in-the-browser.md) (an unreadable answer's no value reaches the
   calculations again, as [ADR-0063](0063-the-calculation-language.md) decided it, in both runtimes) and
   [ADR-0113](0113-errors-on-the-page.md) (a passing send goes on in a task of its own)
-- Date: 2026-10-30
+- Date: 2026-10-30; amended 2026-10-31 (6.8b: a result is said once the visitor pauses, in one line, its own output quiet)
 - Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): the rules' pass also renders the texts that recall
   answers, on a form with neither rules nor calculations too
 - Roadmap step: 6.4f (decided and built); 6.4g recalls answers in texts, 6.4h fills defaults with merge tags, 6.4i
@@ -78,8 +78,15 @@ Option 2, 2, 1, 2 and 2.
   show a result with (ADR-0066), the culture's format with the field's places (2 unless its format sets 0 to 15),
   between its prefix and its suffix, each apart by a space. A calculation the rules hide, or without a value, shows
   nothing, as the server renders it. The rules' hooks stay what they were: a form without rules gets none of them.
-- **A screen reader** hears the `<output>`, a polite status, when the result changes: the text is written only when it
-  differs, so an answer elsewhere says nothing, and typing over the same result says it once.
+- **A screen reader** hears the results once the visitor pauses (6.8b): the `<output>` keeps quiet
+  (`aria-live="off"`, as the view and the element write it), and a second after the last change the form's live region
+  says the results that changed, in one line in the order of the page, each after its label ("Total: EUR 37.50;
+  Share: 4.17"); an empty result is not said, nor the first pass, which follows what the server wrote. The text is still
+  written only when it differs, so an answer elsewhere says nothing.
+
+  *Why (6.8b):* option (1) held for a result that changes once, but typing changes it on every key, and a polite status
+  queues each one, so "1", "12" and "123" are read one after the other. Option (2) waited for the visitor to leave the
+  field; a pause says the result while they still look at it, once.
 - **A slider's value** follows the thumb on every `input`: its text beside the thumb when the field shows it, and its
   `aria-valuetext`, set when the text differs from the bare value and removed when not, as the server writes them
   (`sliderText`, the merge tags' display of a slider's value). It needs no rules and no language.
@@ -123,7 +130,7 @@ press waits until then; `errors.test.ts` holds it.
 | --- | --- | --- |
 | An empty result collapses its line | `output.jfb-output` keeps one line (`min-block-size: 1lh`) | The fields below stay put while the visitor types; layout shift reads as a glitch |
 | The result could fade or count up to its new value | It changes at once | A value the keyboard drives changes dozens of times a minute; motion there is delay |
-| Every answer rewrote the result | Only a changed result is written | The `<output>` is a polite status: it speaks only when the value changes |
+| Every answer rewrote the result | Only a changed result is written, and said once the visitor pauses | Typing changes a result on every key; one line after a pause is one fact said once |
 | The slider's text beside it kept the server's value | It follows the thumb, the same text in `aria-valuetext` | One fact, said once, the same for sight and for a screen reader |
 
 ### The proof

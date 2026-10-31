@@ -1,7 +1,8 @@
 // The visitor texts that recall answers, written on the page (ROADMAP 6.4g, ADR-0115): a text as text, hidden while
 // empty or showing its fallback; a placeholder as its control's attribute; a rich text by copying the texts and the
 // values of the attributes its elements already have from an inert parse, never a node and never an `on...` attribute,
-// and not at all when its elements differ; each element only when its text changes.
+// and not at all when its elements differ, but for the line breaks a recalled answer brings; each element only when its
+// text changes.
 import { afterEach, describe, expect, it } from 'vitest';
 import type { FormModel } from './model';
 import { showTexts } from './texts';
@@ -130,6 +131,29 @@ describe('a rich text on the page', () => {
       'a rendering whose elements differ is left as the page has it',
     ).toBeNull();
     expect(byId('html').querySelector('a')).not.toBeNull();
+  });
+
+  it('follows a recalled answer as it gains and loses line breaks, and takes no other element (6.8b)', () => {
+    const form = formOf();
+    const link = byId('html').querySelector('a');
+    const shown = (): string => byId('html').innerHTML;
+    show(form, { 'k settings.html': '<p title="old">One<br>two <a href="/a">link</a> after</p>' });
+    expect(shown()).toBe('<p title="old" onclick="first()">One<br>two <a href="/a">link</a> after</p>');
+    show(form, {
+      'k settings.html': '<p title="old">One<br>two<br class="x" onclick="x()">three <a href="/a">link</a> after</p>',
+    });
+    expect(shown(), "a break made anew, nothing of the rendering's").toBe(
+      '<p title="old" onclick="first()">One<br>two<br>three <a href="/a">link</a> after</p>',
+    );
+    show(form, { 'k settings.html': '<p title="old">Just one <a href="/a">link</a> after</p>' });
+    expect(shown()).toBe('<p title="old" onclick="first()">Just one <a href="/a">link</a> after</p>');
+    expect(byId('html').querySelector('a'), 'the same link throughout').toBe(link);
+    show(form, {
+      'k settings.html': '<p title="old">One<br><img src="x" onerror="alert(1)"> <a href="/a">link</a> after</p>',
+    });
+    expect(shown(), 'another element: left as the page has it').toBe(
+      '<p title="old" onclick="first()">Just one <a href="/a">link</a> after</p>',
+    );
   });
 
   it('is hidden while it renders empty', () => {

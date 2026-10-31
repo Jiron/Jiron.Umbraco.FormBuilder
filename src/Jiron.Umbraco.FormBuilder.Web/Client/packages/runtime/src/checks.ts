@@ -16,7 +16,7 @@ import {
   type Kind,
 } from '@jfb/logic';
 import type { FormModel, ModelField } from './model';
-import { fieldsOf, type FieldRead, type PageReading } from './page';
+import { builtIn, fieldsOf, type FieldRead, type PageReading } from './page';
 
 /** An error at a field, as the pipeline reports it. */
 export interface PageError {
@@ -152,7 +152,7 @@ function withParts(
   isRequired: boolean,
 ): void {
   if (errors.length === from || (field.type !== 'name' && field.type !== 'address')) return;
-  if (!Object.hasOwn(model.fields, field.key) || model.fields[field.key]?.builtIn !== true) return;
+  if (!builtIn(model, field)) return;
   const asked = textsOf(field.settings?.['parts']);
   const listed = textsOf(field.settings?.['requiredParts']).filter((part) => asked.includes(part));
   const needed = listed.length > 0 ? listed : isRequired ? asked : [];

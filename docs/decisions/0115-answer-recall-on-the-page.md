@@ -13,7 +13,7 @@
 - Amended in 6.4h by [ADR-0118](0118-defaults-with-merge-tags-on-the-page.md): a tag of a source the text's place
   refuses is written as it stands on the page too, as the endpoint lists it, and the merge tags' chunk holds the
   defaults' filler
-- Date: 2026-10-30
+- Date: 2026-10-30; amended 2026-10-31 (6.8b: a recalled answer's line breaks follow it)
 - Roadmap step: 6.4g (decided and built); 6.4h fills defaults with merge tags, 6.4o adds and removes rows in place,
   6.5 moves through pages in the browser
 
@@ -103,7 +103,9 @@ Open were:
   `<template>`, where nothing runs or loads, and only its texts and the values of the attributes the page's elements
   already have (never an `on…` one) are copied into the page's elements, never a node. A rendering differs from the
   server's markup only there, since the template is the editor's sanitised text and every value is escaped for HTML
-  (ADR-0064, ADR-0085); one whose elements differ is left as the page has it. This is the second reviewed use of an
+  (ADR-0064, ADR-0085), and in the line breaks an answer recalled through `| html` brings (6.8b): a `<br>` is the one
+  element a rendering may add or drop, made anew and bare, never taken from it, so the text follows an answer that
+  gains or loses a line; one whose other elements differ is left as the page has it. This is the second reviewed use of an
   inert `<template>` in website code, after form_changed's (ADR-0004), and the lint names both. The rules' pass, now
   also on a form with neither rules nor calculations, renders the texts after the results, so a calculation a text
   recalls is the one shown.

@@ -3,7 +3,9 @@
  * while it shows one; gone on the input that fixes it; and after a refused send or Next every error of its scope, with
  * the error summary, which takes the focus, and `jfb:invalid`. A passing check lets the post go on as without
  * JavaScript, until 6.4i sends it. The server's errors after a post without JavaScript stay while their field is
- * unchanged, the ones only the server can make among them.
+ * unchanged, the ones only the server can make among them, and join a send the page's own checks refuse; a send they
+ * alone would stop goes on, and the server checks it again. A field the page leaves out, as one a member's own value
+ * stands in for (ADR-0124), is the server's to check (6.8b).
  */
 import { fieldsOf } from './page';
 import {
@@ -68,7 +70,7 @@ export function pageErrorsOf(
   const fieldOf = (node: EventTarget | null): HTMLElement | null =>
     node instanceof Element ? node.closest<HTMLElement>(FIELD) : null;
   const ruledOut = (field: HTMLElement): boolean => field.closest('[data-jfb-hidden]') !== null;
-  const offPage = (field: HTMLElement): boolean => field.closest('[data-jfb-page][hidden]') !== null;
+  const offPage = (field: HTMLElement | null): boolean => field?.closest('[data-jfb-page][hidden]') != null;
 
   /** The field an error shows at: the one that holds the control it names, else the field by its key. */
   const fieldAt = (error: ShownError): HTMLElement | null => {
@@ -171,15 +173,10 @@ export function pageErrorsOf(
     const found = await safely(() => checkPage(form, model, engine, scope, clock));
     const words = found === null ? null : await safely(() => wordsFor(model.culture));
     if (found === null || words === null) return true;
+    const here = found.filter((error) => error.code === 'empty' || fieldAt(error) !== null);
     // Until 6.5 pages in the browser, the server shows the first page that holds an error.
-    const elsewhere = found.some((error) => {
-      if (error.code === 'empty') return false;
-      const field = fieldAt(error);
-      return field === null || offPage(field);
-    });
-    if (elsewhere) return true;
-    const errors = withKept(found);
-    if (errors.length === 0) return true;
+    if (here.length === 0 || here.some((error) => offPage(fieldAt(error)))) return true;
+    const errors = withKept(here);
 
     hush();
     const shown = byField(errors);

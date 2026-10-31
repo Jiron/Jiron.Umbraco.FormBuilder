@@ -1,9 +1,10 @@
 // The values the page shows beside its answers (ROADMAP 6.4f, ADR-0114): each calculation's result as the visitor
 // answers, in its field's format, a row's in its row, nothing without a value or while the rules hide it, written only
-// when it changes; and a slider's value beside its thumb and in its `aria-valuetext`. The server's own pages hold the
+// when it changes and said once the visitor pauses, in one line; and a slider's value beside its thumb and in its
+// `aria-valuetext`. The server's own pages hold the
 // texts to the server's in outputs.fixture.test.ts.
 import { FORMULAS } from '@jfb/logic/calc';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { engineOf } from './engine';
 import type { FormModel, ModelField } from './model';
 import { followSliders } from './outputs';
@@ -81,7 +82,7 @@ const BOOKING = [
 
 const output = (key: string, id: string, text = '') =>
   `<div class="jfb-field" data-jfb-field="${key}"><label for="${id}">Result</label>` +
-  `<output class="jfb-output" id="${id}" name="${id}">${text}</output></div>`;
+  `<output class="jfb-output" id="${id}" name="${id}" aria-live="off">${text}</output></div>`;
 const number = (key: string, name: string, value = '') =>
   `<div class="jfb-field" data-jfb-field="${key}"><input id="${name}" name="${name}" value="${value}"></div>`;
 
@@ -141,6 +142,7 @@ async function choose(id: string): Promise<void> {
 
 afterEach(() => {
   document.body.innerHTML = '';
+  vi.useRealTimers();
 });
 
 describe("a calculation's result", () => {
@@ -218,6 +220,36 @@ describe("a calculation's result", () => {
     expect(textOf('total')).toBe('EUR 15.00');
   });
 
+  it('is said once the visitor pauses, in one line, in place of its own quiet <output> (6.8b)', async () => {
+    vi.useFakeTimers();
+    const form = formOf(FORM);
+    form.insertAdjacentHTML('beforeend', '<div data-jfb-live aria-live="polite"></div>');
+    attach(form);
+    const live = form.querySelector(':scope > [data-jfb-live]');
+    const said: string[] = [];
+    const observer = new MutationObserver(() => said.push(live?.textContent ?? ''));
+    if (live !== null) observer.observe(live, { childList: true, characterData: true, subtree: true });
+    await type('price', '12.5');
+    for (const typed of ['1', '12', '123']) {
+      await type('quantity', typed);
+      // Closer than the pause each time, so a pause that is not taken up again would speak while the visitor types.
+      vi.advanceTimersByTime(600);
+      await Promise.resolve();
+    }
+    await Promise.resolve();
+    expect(said, 'nothing while the visitor types, nor for the first pass').toEqual([]);
+    vi.advanceTimersByTime(1000);
+    await Promise.resolve();
+    expect(said, 'the results that changed, once, in the order of the page').toEqual([
+      'Result: EUR 1,537.50; Result: 0.10',
+    ]);
+    await type('from', '2026-11-02');
+    vi.advanceTimersByTime(2000);
+    await Promise.resolve();
+    expect(said, 'an answer that changes no result says nothing').toHaveLength(1);
+    observer.disconnect();
+  });
+
   it("follows its answers on a form without rules, whose controls keep the server's state", async () => {
     const plain = modelOf(BOOKING.filter((each) => each.key !== 'k-cover'));
     const form = formOf(
@@ -242,7 +274,7 @@ describe("a calculation's result", () => {
     };
     const form = formOf(
       FORM.replace(
-        '<output class="jfb-output" id="share" name="share"></output>',
+        '<output class="jfb-output" id="share" name="share" aria-live="off"></output>',
         '<output id="share">By the site</output>',
       ),
     );

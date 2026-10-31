@@ -461,7 +461,13 @@ function writeControl(context: ViewContext, classes: ThemeClassesModel, field: F
       return el(
         d,
         'output',
-        { class: 'jfb-output', id: field.id, name: field.name, 'aria-describedby': field.describedBy },
+        {
+          class: 'jfb-output',
+          id: field.id,
+          name: field.name,
+          'aria-live': 'off',
+          'aria-describedby': field.describedBy,
+        },
         control.text,
       );
     case 'captcha':
