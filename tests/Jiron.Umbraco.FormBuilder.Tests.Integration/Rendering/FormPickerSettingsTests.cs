@@ -68,7 +68,7 @@ public sealed class FormPickerSettingsTests : RenderingTestBase
         Assert.Multiple(() =>
         {
             Assert.That(sent.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
-            Assert.That(sent.Headers.Location?.ToString(), Does.EndWith("/picker-thanks/"), "the picker's page");
+            Assert.That(sent.Headers.Location?.ToString(), Does.EndWith("/picker-thanks/#"), "the picker's page, opened at its top, not at the post's #jfb-1");
             Assert.That(outcome.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
             Assert.That(outcome.Headers.Location?.ToString(), Does.Contain("/picker-direct/").And.Contain("jfb-sent="), "the form's own outcome");
             Assert.That(picked.QuerySelector("input[name='ufprt']")?.GetAttribute("value"), Is.Not.EqualTo(direct.QuerySelector("input[name='ufprt']")?.GetAttribute("value")), "the page rides in the token");

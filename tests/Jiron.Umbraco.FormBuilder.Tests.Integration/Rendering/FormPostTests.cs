@@ -283,7 +283,7 @@ public sealed partial class FormPostTests : RenderingTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That((redirect.StatusCode, redirect.Headers.Location?.OriginalString), Is.EqualTo((HttpStatusCode.Redirect, "https://example.com/thanks")), "a redirect at once");
+            Assert.That((redirect.StatusCode, redirect.Headers.Location?.OriginalString), Is.EqualTo((HttpStatusCode.Redirect, "https://example.com/thanks#")), "a redirect at once, with a fragment of its own, so the browser does not carry the post's #jfb-1 there");
             Assert.That(Header(redirect, "Cache-Control"), Is.EqualTo("no-store"));
             Assert.That(message.Headers.Location!.OriginalString, Does.StartWith("/post-ways/?jfb-sent=jfb-1."));
             Assert.That(messagePage.QuerySelector("[data-jfb-outcome] p")!.TextContent, Is.EqualTo("Thank you, message."));

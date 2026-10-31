@@ -179,7 +179,7 @@ internal sealed class FormPostHandler(
                 if (result is { Receipt: { } receipt, Outcome: { } outcome })
                 {
                     return new FormPostAnswer(FormPostAnswerKind.Redirect, outcome is { Kind: OutcomeKind.Redirect, Url: { } url }
-                        ? url
+                        ? AwayFromTheForm(url)
                         : SentAddress(http.Request, sent.Issue(formKey, receipt.SubmissionId, instance), instance));
                 }
 
@@ -400,6 +400,11 @@ internal sealed class FormPostHandler(
                 return false;
         }
     }
+
+    // An outcome's or a placement's page after a send (ADR-0129, ADR-0136) with a fragment of its own. The post's address
+    // ends in the form's #<instance>, which a redirect without a fragment carries on (RFC 9110, 10.2.2), so the visitor
+    // would land at whatever bears that id on the other page, such as another form; an empty fragment opens it at its top.
+    private static string AwayFromTheForm(string url) => url.Contains('#', StringComparison.Ordinal) ? url : url + "#";
 
     // The page's address with the sent token, at the form (ADR-0004): the post's own address, which holds no query.
     private static string SentAddress(HttpRequest request, string token, string instance)
