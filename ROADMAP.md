@@ -2243,7 +2243,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **6.7b "Create a form block for me"** (6.7 split in five, WORKLOG 2026-10-31) (2026-10-31, a4ff7f2)
   - **"Create a form block for me":** an idempotent service that creates a "Form" element type and data type, and never changes existing types; its endpoint is "Setup and health" in §4.7.
   - Done when: integration tests pass: the element type and the data type created on the first call, a second call changing nothing, an existing type or data type with the same alias left as it is, and "creating a form block type is refused with `403` for a user who has `manageSettings` and the Forms section but not Umbraco's Settings section", a user seeded in that test.
-- [ ] **6.7c "Used on"** (6.7 split in five, WORKLOG 2026-10-31)
+- [x] **6.7c "Used on"** (6.7 split in five, WORKLOG 2026-10-31) (2026-10-31, 6543134)
   - **"Used on":** reference tracking per ADR-0017, with the references endpoint of §4.7, so that trash and delete can name the pages that use a form (9.2). References name a form without a foreign key (ADR-0033), so a reference write skips a form that no longer exists (ADR-0047).
   - Done when: integration tests pass, including "a page that picks the form is listed as a reference, and stops being listed after the pick is removed", "saving a page that picks a form deleted meanwhile writes no reference to it", a form picked in a block listed, a page outside the user's start nodes counted but not named, and the rebuild finding every page that picks a form.
 - [ ] **6.7d Eviction** (6.7 split in five, WORKLOG 2026-10-31)
