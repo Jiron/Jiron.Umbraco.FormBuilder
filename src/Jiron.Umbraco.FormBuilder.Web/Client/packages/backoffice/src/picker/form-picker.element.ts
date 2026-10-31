@@ -193,10 +193,10 @@ export class FormPickerElement
         readonly
         ?standalone=${standalone}
         class="not-available"
-        name=${this.localize.term('jfbFormPicker_notAvailable')}
         detail=${this.localize.term('jfbFormPicker_notAvailableDetail')}
       >
         <umb-icon slot="icon" name="icon-alert"></umb-icon>
+        <span slot="name">${this.localize.term('jfbFormPicker_notAvailable')}</span>
         ${this.#renderRemove(key, this.localize.term('jfbFormPicker_removeNotAvailable'))}
       </uui-ref-node>`;
     }
@@ -255,7 +255,9 @@ export class FormPickerElement
         margin-top: var(--uui-size-space-2);
       }
 
-      .not-available {
+      /* The name and the icon carry the state; the reason stays in the detail's own colour, which keeps its contrast. */
+      .not-available umb-icon,
+      .not-available [slot='name'] {
         color: var(--uui-color-danger);
       }
 

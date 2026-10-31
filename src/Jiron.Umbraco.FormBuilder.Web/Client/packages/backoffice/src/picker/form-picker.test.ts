@@ -82,7 +82,8 @@ async function picker(options: Options = {}) {
 }
 
 const nodes = (element: Element) => all(element, 'uui-ref-node');
-const names = (element: Element) => nodes(element).map((node) => node.getAttribute('name'));
+const names = (element: Element) =>
+  nodes(element).map((node) => node.getAttribute('name') ?? text(node.querySelector('[slot="name"]')));
 const choose = (element: Element) => shadow(element).querySelector<HTMLElement>('#choose');
 const chooseButton = (element: Element) => must(choose(element), 'Choose');
 const removes = (element: Element) => all(element, 'uui-button.remove');
@@ -138,9 +139,7 @@ describe('the form picker property', () => {
     expect(names(element)).toEqual(['Form not available', 'Newsletter']);
     const gone = must(nodes(element)[0], 'the first row');
     expect(gone.classList.contains('not-available')).toBe(true);
-    expect(gone.getAttribute('detail')).toBe(
-      "It may have been deleted or unpublished, or it isn't one you can pick here. Remove it, or choose another form.",
-    );
+    expect(gone.getAttribute('detail')).toBe('Deleted, unpublished or not one you can pick here');
     expect(gone.querySelector('umb-icon')?.getAttribute('name')).toBe('icon-alert');
     expect(removes(element)[0]?.getAttribute('label')).toBe("Remove the form that isn't available");
   });

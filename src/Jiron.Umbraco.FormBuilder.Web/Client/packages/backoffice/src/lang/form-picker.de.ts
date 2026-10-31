@@ -5,8 +5,7 @@ import type formPickerEn from './form-picker.en';
 export default {
   jfbFormPicker: {
     notAvailable: 'Formular nicht verfügbar',
-    notAvailableDetail:
-      'Es wurde vielleicht gelöscht oder ist nicht mehr veröffentlicht, oder Sie können es hier nicht wählen. Entfernen Sie es, oder wählen Sie ein anderes Formular.',
+    notAvailableDetail: 'Gelöscht, nicht veröffentlicht oder hier nicht wählbar',
     remove: (name: string) => `${name} entfernen`,
     removeNotAvailable: 'Das nicht verfügbare Formular entfernen',
     pickedFailed: 'Die gewählten Formulare konnten nicht geladen werden.',

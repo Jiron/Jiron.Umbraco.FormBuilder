@@ -6,8 +6,7 @@ import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localiza
 export default {
   jfbFormPicker: {
     notAvailable: 'Form not available',
-    notAvailableDetail:
-      "It may have been deleted or unpublished, or it isn't one you can pick here. Remove it, or choose another form.",
+    notAvailableDetail: 'Deleted, unpublished or not one you can pick here',
     remove: (name: string) => `Remove ${name}`,
     removeNotAvailable: "Remove the form that isn't available",
     pickedFailed: "The picked forms couldn't be loaded.",

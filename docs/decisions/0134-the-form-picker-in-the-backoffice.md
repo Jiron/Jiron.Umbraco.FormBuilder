@@ -44,9 +44,10 @@ Reading Umbraco's code (the 17.5 package) showed three things that bear on the c
   row's Remove, or to Choose when none is left, so a keyboard user is never left on nothing.
 - **A picked form the picker cannot show** (deleted, in the trash, unpublished, outside the data type's limits, or
   restricted for this editor; the endpoint does not say which, ADR-0013): (a) hide it: the page would still render
-  it, unseen; (b) show it as Umbraco shows an item it cannot read: the alert icon in the danger colour, "Form not
-  available" and one sentence on what to do, with Remove. (b) is chosen. The page's own check (ADR-0129) refuses it
-  when the page is saved only where it is gone or not allowed; a restricted form stays valid.
+  it, unseen; (b) show it as Umbraco shows an item it cannot read: the alert icon and "Form not available" in the
+  danger colour, the possible reasons in the row's detail line in its own colour (one line, which keeps its contrast
+  and is never cut short at the backoffice's narrowest), with Remove. (b) is chosen. The page's own check (ADR-0129)
+  refuses it when the page is saved only where it is gone or not allowed; a restricted form stays valid.
 
 ## Decision
 
