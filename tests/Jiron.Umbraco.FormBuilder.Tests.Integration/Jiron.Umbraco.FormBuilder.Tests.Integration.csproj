@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Tests.Integration" />
+    <PackageReference Include="JsonSchema.Net" />
   </ItemGroup>
 
   <ItemGroup>

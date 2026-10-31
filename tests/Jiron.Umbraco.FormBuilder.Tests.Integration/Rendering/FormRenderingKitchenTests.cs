@@ -387,7 +387,7 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
 
     // A field of each type with help where its type takes one and a rule that hides it, after a trigger; the captcha's
     // place in a group of its own that a rule hides; the form uses a captcha.
-    private static FormDefinition SinkForm(FormDefinition definition) => definition with
+    internal static FormDefinition SinkForm(FormDefinition definition) => definition with
     {
         Settings = definition.Settings with { Protection = new FormProtectionSettings { Level = ProtectionLevel.Captcha, Captcha = new CaptchaChoice { Provider = "hcaptcha" } } },
         Pages =

@@ -1,15 +1,24 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
-// The visitor form's published types (ADR-0125): the committed types are the ones the committed schema makes, a
-// changed schema changes them, and a schema the generator cannot say fails instead of becoming a loose type.
+// The types made from the server's schemas (ADR-0125, ADR-0128): the committed types are the ones the committed schemas
+// make, a changed schema changes them, and a schema the generator cannot say fails instead of becoming a loose type.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { schemaPath, typesOf, typesPath } from '../generate-public-types.mjs';
+import { schemaPath, targets, typesOf, typesPath } from '../generate-public-types.mjs';
 
 const committed = () => JSON.parse(readFileSync(schemaPath, 'utf8'));
 
 test('the committed types are the ones the committed schema makes: run node scripts/generate-public-types.mjs', () => {
   assert.equal(readFileSync(typesPath, 'utf8').replaceAll('\r\n', '\n'), typesOf(committed()));
+});
+
+test("the element answer's committed types are the ones its committed schema makes", () => {
+  const target = targets[1];
+  const types = typesOf(JSON.parse(readFileSync(target.schemaPath, 'utf8')), target);
+  assert.equal(readFileSync(target.typesPath, 'utf8').replaceAll('\r\n', '\n'), types);
+  assert.match(types, /^\/\/ Made by scripts\/generate-public-types\.mjs from answer\.schema\.json; do not edit \(ADR-0128\)\.$/m);
+  assert.match(types, /^export type JfbElementAnswer = ElementAnswer;$/m);
+  assert.match(types, /^ {2}kind: "text";$/m);
 });
 
 test('a record is an object type, a property that may be left out optional, one of several kinds a union', () => {
