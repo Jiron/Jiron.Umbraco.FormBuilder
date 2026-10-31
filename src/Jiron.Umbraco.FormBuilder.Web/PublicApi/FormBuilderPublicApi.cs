@@ -56,6 +56,19 @@ internal abstract class FormBuilderPublicApiController : ControllerBase;
 /// <summary>The rate-limit policies of the public API (ADR-0012): which partitions count an endpoint's requests.</summary>
 internal static class FormBuilderRateLimitPolicies
 {
+    /// <summary>
+    /// The client a request counts for in the per-client partitions, which the limiter 7.1 builds applies: the server key
+    /// that signed it (<c>key:&lt;name&gt;</c>, ADR-0126), otherwise its address (<c>address:&lt;ip&gt;</c>, from the
+    /// connection only, ADR-0012).
+    /// </summary>
+    public static string ClientOf(HttpContext http)
+    {
+        ArgumentNullException.ThrowIfNull(http);
+        return ServerKeyRequest.NameOf(http) is { } key
+            ? "key:" + key
+            : "address:" + (http.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+    }
+
     /// <summary>Reading a form, its markup and its options.</summary>
     public const string Read = "read";
 

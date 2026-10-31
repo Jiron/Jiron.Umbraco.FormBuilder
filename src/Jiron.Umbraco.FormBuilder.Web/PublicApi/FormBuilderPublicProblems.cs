@@ -42,6 +42,9 @@ internal static class FormBuilderPublicProblems
     /// <summary>A browser on another site asked, and that site may not call the API.</summary>
     public const string OriginDeniedCode = "origin_denied";
 
+    /// <summary>A request with the <c>Jfb-Key</c> scheme whose key is malformed or matches none (ADR-0126).</summary>
+    public const string ServerKeyInvalidCode = "server_key_invalid";
+
     /// <summary>The body is larger than the endpoint takes.</summary>
     public const string PayloadTooLargeCode = "payload_too_large";
 
@@ -93,6 +96,10 @@ internal static class FormBuilderPublicProblems
             extensions: new Dictionary<string, object?> { ["errors"] = fields.Select(field => new FormBuilderProblemError("invalid_value", field, "This value is not valid.")).ToList() });
 
     /// <summary>A browser on a site that may not call the API.</summary>
+    public static FormBuilderProblemResult ServerKeyInvalid() =>
+        FormBuilderProblems.Problem(StatusCodes.Status401Unauthorized, ServerKeyInvalidCode, "The server key is not one this site knows.");
+
+    /// <summary>A request from a site that may not send requests here.</summary>
     public static FormBuilderProblemResult OriginDenied() =>
         FormBuilderProblems.Problem(StatusCodes.Status403Forbidden, OriginDeniedCode, "This site may not send requests here.");
 

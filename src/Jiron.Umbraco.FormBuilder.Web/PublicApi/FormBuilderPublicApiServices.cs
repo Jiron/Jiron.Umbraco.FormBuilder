@@ -40,6 +40,7 @@ internal static class FormBuilderPublicApiServices
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<MvcOptions>, FormBuilderPublicApiRoutes>());
         builder.Services.TryAddSingleton<FormBuilderPublicApiPaths>();
         builder.Services.TryAddScoped<FormBuilderPublicApiFilter>();
+        builder.Services.TryAddSingleton<ServerKeys>();
         builder.Services.TryAddSingleton<FormBuilderPublicApiMiddleware>();
         builder.Services.TryAddSingleton<FormRequests>();
         builder.Services.TryAddSingleton<UploadTokens>();

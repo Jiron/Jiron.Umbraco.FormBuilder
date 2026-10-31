@@ -24,7 +24,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// </summary>
 /// <param name="paths">The public API's paths.</param>
 /// <param name="logger">Logs what went wrong unexpectedly.</param>
-internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicApiPaths paths, ILogger<FormBuilderPublicApiMiddleware> logger) : IMiddleware
+/// <param name="serverKeys">The server keys a headless server signs with (ADR-0126); none in a test that leaves them out.</param>
+internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicApiPaths paths, ILogger<FormBuilderPublicApiMiddleware> logger, ServerKeys? serverKeys = null) : IMiddleware
 {
     /// <summary>How long a browser keeps a preflight's answer.</summary>
     public const int PreflightSeconds = 600;
@@ -68,6 +69,20 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
                 await FormBuilderPublicProblems.OriginDenied().WriteAsync(context);
                 return;
             }
+        }
+
+        // A server key signs the request, or the request is refused: a revoked key is never taken for an anonymous call.
+        if (serverKeys?.Check(request) is { } signed && signed.Status != ServerKeyStatus.None)
+        {
+            if (signed.Status == ServerKeyStatus.Invalid)
+            {
+                LogServerKeyInvalid(logger, request.Path.Value ?? string.Empty);
+                response.Headers.WWWAuthenticate = ServerKeys.Scheme;
+                await FormBuilderPublicProblems.ServerKeyInvalid().WriteAsync(context);
+                return;
+            }
+
+            context.Features.Set(new ServerKeyRequest(signed.Name!));
         }
 
         var left = context.RequestAborted;
@@ -140,6 +155,7 @@ internal sealed partial class FormBuilderPublicApiMiddleware(FormBuilderPublicAp
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The public API's endpoint {Endpoint} failed unexpectedly; the visitor got server_error.")]
     private static partial void LogUnexpected(ILogger logger, string endpoint, Exception exception);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A request to {Path} carried a server key that matches none; it got server_key_invalid.")] private static partial void LogServerKeyInvalid(ILogger logger, string path);
 
     private sealed record RequestOrigin(string Value, bool Same, bool Allowed);
 }

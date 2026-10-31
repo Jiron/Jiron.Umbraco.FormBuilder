@@ -26,11 +26,40 @@ public sealed class FormBuilderPublicApiOptions
     /// nothing after them. The site's own pages may always call it. None by default.
     /// </summary>
     public IList<string> AllowedOrigins { get; } = [];
+
+    /// <summary>
+    /// The keys headless servers submit with, sending <c>Authorization: Jfb-Key &lt;key&gt;</c> (ADR-0012, ADR-0126): a
+    /// name and the SHA-256 of each key, never the key. None by default.
+    /// </summary>
+    public IList<ServerKeyOptions> ServerKeys { get; } = [];
+}
+
+/// <summary>A headless server's key, by its name and the SHA-256 of the key (ADR-0126).</summary>
+public sealed class ServerKeyOptions
+{
+    /// <summary>
+    /// The key's name, which an entry the key submits records as its context value <c>jfbServerKey</c>: 1 to 64
+    /// letters, digits, hyphens and underscores, each name once.
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The SHA-256 of the key's UTF-8 bytes as 64 hexadecimal digits, each hash once; <c>scripts/server-key.mjs</c>
+    /// makes a key and its hash.
+    /// </summary>
+    public string Sha256 { get; set; } = string.Empty;
 }
 
 /// <summary>The rules of the public API's host configuration (ADR-0084), which the start-up check and the API share.</summary>
 internal static partial class PublicApiRules
 {
+    /// <summary>Whether a server key's name is one (ADR-0126): 1 to 64 letters, digits, hyphens and underscores.</summary>
+    public static bool IsServerKeyName(string? name) => name is { Length: > 0 and <= 64 } && name.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_');
+
+    /// <summary>The 32 bytes of a server key's hash written as 64 hexadecimal digits, or null for anything else.</summary>
+    public static byte[]? ServerKeyHash(string? hex) =>
+        hex is { Length: 64 } && hex.All(char.IsAsciiHexDigit) ? Convert.FromHexString(hex) : null;
+
     /// <summary>The longest base path.</summary>
     public const int MaxBasePathLength = 100;
 

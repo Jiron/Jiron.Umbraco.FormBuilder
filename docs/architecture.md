@@ -463,6 +463,10 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
 - **Origins:** the same origin always, and an `https` origin on the host of a request that came over `http` (a proxy
   ended TLS); others only from `AllowedOrigins`. Another origin's requests other than `GET` and `HEAD`, and its
   preflights, answer `403 origin_denied` before anything runs. The preview's opaque origin only with a preview ticket.
+  A headless server signs with `Authorization: Jfb-Key <key>` against `PublicApi:ServerKeys` (names and SHA-256 hashes,
+  compared in fixed time); a key that matches none answers `401 server_key_invalid`, a signed request counts in its
+  key's partition, its entry records the key's name as `jfbServerKey`, and only that key gets its receipt
+  ([ADR-0126](decisions/0126-server-key-submissions.md)).
 - **Each action declares** its rate-limit policy, body limit and time limit (`x-jfb-*` in the document), applied
   before the body is read: a body above the limit, or any for an action that takes none, answers `413`; the time
   limit `504 timeout`; pending migrations `503 migrations_pending` with `Retry-After: 10`. Anything unexpected answers

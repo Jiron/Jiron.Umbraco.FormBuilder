@@ -50,7 +50,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         var invalid = new List<string>();
         return EntryBodies.Read(body.Bytes, formKey, invalid) is { } submission
-            ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens, Member = await MemberAsync(http) }, cancellationToken))
+            ? Answer(await submissions.SubmitAsync(submission with { Tokens = tokens, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -68,7 +68,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         var invalid = new List<string>();
         return EntryBodies.ReadPage(body.Bytes, formKey, invalid) is ({ } submission, var page)
-            ? Answer(await submissions.ValidateAsync(submission with { Tokens = tokens, Member = await MemberAsync(http) }, page, cancellationToken))
+            ? Answer(await submissions.ValidateAsync(submission with { Tokens = tokens, Member = await MemberAsync(http), ServerKey = ServerKeyRequest.NameOf(http) }, page, cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 
@@ -89,7 +89,7 @@ internal sealed class EntryRequests(FormSubmissions submissions, UploadTokens to
 
         var invalid = new List<string>();
         return EntryBodies.ReadReceipt(body.Bytes, invalid) is { } submissionId
-            ? Answer(await submissions.ReceiptAsync(formKey, submissionId, cancellationToken))
+            ? Answer(await submissions.ReceiptAsync(formKey, submissionId, ServerKeyRequest.NameOf(http), cancellationToken))
             : FormBuilderPublicProblems.InvalidRequest([.. invalid]);
     }
 

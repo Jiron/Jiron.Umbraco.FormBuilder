@@ -246,6 +246,37 @@ internal sealed class FormBuilderOptionsValidator(IHostFolders folders, IConfigu
                 failures.Add(string.Create(CultureInfo.InvariantCulture, $"{key} ('{api.AllowedOrigins[i]}') names an origin again; {Root}:PublicApi:AllowedOrigins:{seen[origin]} names it already. Keep one."));
             }
         }
+
+        CheckServerKeys(api.ServerKeys, failures);
+    }
+
+    // Each server key a name once and a hash once (ADR-0126); a message names the entry, never its hash.
+    private static void CheckServerKeys(IList<ServerKeyOptions> keys, List<string> failures)
+    {
+        var names = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var hashes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < keys.Count; i++)
+        {
+            var key = string.Create(CultureInfo.InvariantCulture, $"{Root}:PublicApi:ServerKeys:{i}");
+            var entry = keys[i];
+            if (!PublicApiRules.IsServerKeyName(entry.Name))
+            {
+                failures.Add($"{key}:Name must have 1 to 64 letters, digits, hyphens and underscores.");
+            }
+            else if (!names.TryAdd(entry.Name, i))
+            {
+                failures.Add(string.Create(CultureInfo.InvariantCulture, $"{key}:Name ('{entry.Name}') names a key again; {Root}:PublicApi:ServerKeys:{names[entry.Name]} has that name already."));
+            }
+
+            if (PublicApiRules.ServerKeyHash(entry.Sha256) is null)
+            {
+                failures.Add($"{key}:Sha256 must be the SHA-256 of the key as 64 hexadecimal digits (scripts/server-key.mjs makes a key and its hash), never the key itself.");
+            }
+            else if (!hashes.TryAdd(entry.Sha256, i))
+            {
+                failures.Add(string.Create(CultureInfo.InvariantCulture, $"{key}:Sha256 is the hash of {Root}:PublicApi:ServerKeys:{hashes[entry.Sha256]} again; give each server its own key."));
+            }
+        }
     }
 
     private static void CheckLockedSections(IList<string> sections, List<string> failures)
