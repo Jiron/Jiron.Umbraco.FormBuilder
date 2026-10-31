@@ -150,6 +150,15 @@ public sealed class GridRowModel
     /// <summary>The words of the mark, or empty.</summary>
     public string MarkText { get; init; } = string.Empty;
 
+    /// <summary>What a screen reader hears for the asterisk of a required row of boxes, which cannot carry <c>required</c> (6.8c); null otherwise.</summary>
+    public string? MarkSpoken { get; init; }
+
+    /// <summary>
+    /// The error's id the row's choices name, beside <c>aria-invalid</c>, when the field's error is the row's or the
+    /// whole grid's (6.8c); null otherwise.
+    /// </summary>
+    public string? ErrorId { get; init; }
+
     /// <summary>Whether the mark shows now; a mark a form with rules carries for another state is written <c>hidden</c>.</summary>
     public bool IsMarkShown { get; init; } = true;
 

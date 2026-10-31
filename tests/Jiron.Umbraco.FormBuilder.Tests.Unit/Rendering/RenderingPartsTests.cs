@@ -69,6 +69,18 @@ public sealed class RenderingPartsTests
     }
 
     [Test]
+    public void TheIdsADescriptionNames_AreTheGivenOnesApartBySpaces_AndNoneForNone()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(FormBuilderHtml.Ids("jfb-1-way-2-text", "jfb-1-way-error"), Is.EqualTo("jfb-1-way-2-text jfb-1-way-error"));
+            Assert.That(FormBuilderHtml.Ids(null, "jfb-1-way-error", string.Empty), Is.EqualTo("jfb-1-way-error"), "a missing id is left out");
+            Assert.That(FormBuilderHtml.Ids(null, string.Empty), Is.Null, "no attribute for none");
+            Assert.That(FormBuilderHtml.Ids(), Is.Null);
+        });
+    }
+
+    [Test]
     public void ATextsHook_NamesItsOwnerAndItsName_OnlyForATextThatHoldsMergeTags()
     {
         var field = FieldWith("Anna & co", recalling: ["help", "settings.text"]);

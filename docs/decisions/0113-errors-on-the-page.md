@@ -4,7 +4,7 @@
   [ADR-0022](0022-default-theme-and-tokens.md) (the error summary) and [ADR-0004](0004-rendering-and-submission-paths.md)
   (the runtime renders the server's summary and inline errors and moves the focus); amends
   [ADR-0015](0015-themes-and-the-markup-contract.md) (the runtime's templates)
-- Date: 2026-10-30; amended 2026-10-31 (6.8b: the server's errors join only a refused send; a field the page leaves out is the server's)
+- Date: 2026-10-30; amended 2026-10-31 (6.8b: the server's errors join only a refused send; a field the page leaves out is the server's; 6.8c: a group's choices carry its error, not its fieldset)
 - Amended by [ADR-0114](0114-calculations-on-the-page.md): a passing send asks for the post in a task of its own,
   since a form ignores a submission asked for while its submit event still runs
 - Roadmap step: 6.4e (decided and built); 6.4i sends with `fetch` and shows the server's errors in place, 6.5 moves
@@ -54,10 +54,12 @@ Option 3, 3, 3, 2 and 2.
   accessibility tree, its ids clash with nothing. A site's own form view without it gets the contract's markup with the
   package's classes.
 - **An inline error** goes last in the field's fieldset when a legend labels the field, otherwise last in the field;
-  its id is `<target>-error`. `aria-invalid="true"` goes on the control the target names (the fieldset for a field
-  labelled by a legend), and the error's id last in its `aria-describedby`; an email address's repeat input gets both
-  too, and a name's or an address's parts get `aria-invalid` as the server sets it (the needed parts that are empty, or
-  every part when none is). Clearing undoes exactly that.
+  its id is `<target>-error`. `aria-invalid="true"` goes on the control the target names, and the error's id last in
+  its `aria-describedby`; an email address's repeat input gets both too. A fieldset's role takes no invalid state
+  (6.8c): a group of choices gives both to each of its own radio buttons and boxes instead (a grid's to the row the
+  error names, or to every row), after an option's description, and another group's fieldset names the error in its
+  `aria-describedby` alone, while a name's or an address's parts get `aria-invalid` as the server sets it (the needed
+  parts that are empty, or every part when none is). Clearing undoes exactly that.
 - **The summary** takes the place of a summary already there, or goes after the progress and a notice, before the
   required note and the pages, as the form view places it. Its heading counts its links (`summaryHeading`), its links
   follow the page's order, and it takes the focus. With the form's `validationSummary` off it shows only the empty
@@ -128,3 +130,17 @@ row's index) or null for the empty submission, and the kind of error (`required`
   themes.
 - Every form's markup grows by its templates, a few hundred bytes, the same for every visitor and cacheable.
 - **Revisit** in 6.5, when Send on the last page can show an earlier page's errors in the browser.
+
+## A group's choices carry its error (6.8c, 2026-10-31)
+
+The phase review found a group's error state on its fieldset only, where the group role does not support
+`aria-invalid`, so a screen reader on a radio button or a box of a refused group heard nothing of it. Now the views
+write no `aria-invalid` on any fieldset: a group of choices (radio buttons, boxes, yes or no as buttons, a scale, a
+rating, a grid) gives `aria-invalid` and the error's id to each of its choices, a grid's only to the row a row's error
+names; a ranking, whose moves are buttons, and a group of parts or rows keep the error's id on the fieldset, and a
+name's or an address's parts carry `aria-invalid` as before. The element's templates write the same, and the runtime
+marks and clears the same controls (a page error's `gridRow` says which row). `checks.fixture.test.ts` holds the
+runtime's marks to the server's page, whose form gained a required group of boxes for it. The themes' error borders key
+on the choices' own mark (`default.css`, `bootstrap5.css`). In Edge the refused choices read as invalid, each
+described by the error; a signature's typed name keeps its own mark on the server, and the runtime's goes with the pad
+(6.4n).

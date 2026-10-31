@@ -2,7 +2,7 @@
 
 - Status: accepted; amends [ADR-0026](0026-client-workspace-and-asset-delivery.md) (how the website runtime is
   minified); [ADR-0116](0116-the-runtimes-budget-counts-one-language.md)'s measure of the budget stays
-- Date: 2026-10-30; amended 2026-10-31 (6.8b: the room its fixes needed)
+- Date: 2026-10-30; amended 2026-10-31 (6.8b: the room its fixes needed; 6.8c: its marks within the budget)
 - Roadmap step: 6.4h (decided and built); every later step of 6.4 is held to the same budget
 
 ## Context
@@ -53,3 +53,6 @@ field and of the built-in test are one each in `page.ts` (`allFieldsOf`, `builtI
 culture reaches; and the country codes are written as their letters two by two (`.match(/../g)`), about 90 bytes, which
 `CountryCodesTests` still holds to Core's list. A generic element maker for the error summary's fallback gzipped worse
 than the calls it replaced and was left out. The runtime is at 39.94 KB.
+
+6.8c's marks on a group's choices came to 39.99 KB, within the budget; one look-up of a field's fieldset instead of two
+brought it to 39.98 KB. Twenty bytes are left, so the next step that adds to the runtime makes its room first.

@@ -177,6 +177,12 @@ public sealed class FieldViewModel
     /// <summary>The words of the mark: "(optional)", or the asterisk; empty for none.</summary>
     public string MarkText { get; init; } = string.Empty;
 
+    /// <summary>
+    /// What a screen reader hears for the asterisk, which it does not read, where the field's controls cannot carry
+    /// <c>required</c>: a required group of boxes or ranking (6.8c); null elsewhere, as a control's own state says it.
+    /// </summary>
+    public string? MarkSpoken { get; init; }
+
     /// <summary>Whether the mark shows now; a mark a form with rules carries for another state is written <c>hidden</c>.</summary>
     public bool IsMarkShown { get; init; } = true;
 
@@ -206,10 +212,17 @@ public sealed class FieldViewModel
     public required string ErrorId { get; init; }
 
     /// <summary>
-    /// The ids the control names in <c>aria-describedby</c>, or the fieldset of a group of choices: its help, its
-    /// control's parts and its error; null for none.
+    /// The ids the control names in <c>aria-describedby</c>, or the fieldset of a group: its help, its control's parts
+    /// and its error, which a group of choices leaves to its choices (<see cref="ChoiceErrorId"/>); null for none.
     /// </summary>
     public string? DescribedBy { get; init; }
+
+    /// <summary>
+    /// The error's id that each choice of a refused group of choices names, beside <c>aria-invalid</c>, as a fieldset's
+    /// role takes no invalid state (6.8c): radio buttons, boxes, a scale, a rating and yes or no as two choices; null for
+    /// no error and for any other field. A grid's rows say it each (<see cref="GridRowModel.ErrorId"/>).
+    /// </summary>
+    public string? ChoiceErrorId { get; init; }
 
     /// <summary>Whether an answer is required now, by the field or a rule (<c>required</c>).</summary>
     public bool IsRequired { get; init; }

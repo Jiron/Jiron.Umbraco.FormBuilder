@@ -271,7 +271,7 @@ public sealed class FormRenderingInputsTests : RenderingTestBase
                 var error = field.QuerySelector($"p.jfb-error#jfb-1-{alias}-error[data-jfb-error]");
                 Assert.That(error?.TextContent, Is.EqualTo(Required[alias]), alias);
                 var described = grouped ? field.QuerySelector("fieldset")! : Control(errors, alias);
-                Assert.That(described.GetAttribute("aria-invalid"), Is.EqualTo("true"), alias);
+                Assert.That(described.GetAttribute("aria-invalid"), Is.EqualTo(grouped ? null : "true"), $"{alias}: a fieldset's role takes no invalid state, which its parts carry (6.8c)");
                 Assert.That(described.GetAttribute("aria-describedby")?.Split(' '), Does.Contain($"jfb-1-{alias}-error"), alias);
             }
 

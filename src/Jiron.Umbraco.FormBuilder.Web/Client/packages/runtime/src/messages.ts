@@ -32,6 +32,8 @@ export interface ShownError {
   readonly link: string;
   /** For a name or an address, the parts the page marks invalid. */
   readonly parts?: readonly string[];
+  /** For a grid's row, the row's key: its choices carry the error (6.8c). */
+  readonly gridRow?: string | undefined;
 }
 
 const LANGUAGES = {
@@ -93,7 +95,7 @@ export function shownErrors(
     const prefix = row === null || group === null ? form.id : `${form.id}-${group.alias ?? ''}-${String(row)}`;
     const target = `${prefix}-${field.alias ?? field.key.replaceAll('-', '')}`;
     const element = elementOf(form, field.key, row, group?.key ?? null);
-    const parts = error.parts === undefined ? {} : { parts: error.parts };
+    const parts = { ...(error.parts === undefined ? {} : { parts: error.parts }), gridRow: error.gridRow };
     const own = ownMessage(model, field, error);
     if (own !== null) {
       shown.push({ field: field.key, row, code: error.code, target, message: own, link: own, ...parts });

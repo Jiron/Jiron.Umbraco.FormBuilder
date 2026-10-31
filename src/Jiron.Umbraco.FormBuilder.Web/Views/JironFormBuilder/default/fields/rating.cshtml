@@ -16,7 +16,7 @@
             @foreach (var choice in control.Choices)
             {
                 <div class="@Model.Classes.Choice">
-                    <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled">
+                    <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-invalid="@(Model.ChoiceErrorId is null ? null : "true")" aria-describedby="@Model.ChoiceErrorId">
                     @if (choice.HiddenText is { } hidden)
                     {
                         <label class="@Model.Classes.ChoiceLabel" for="@choice.Id"><span class="jfb-rating-value" aria-hidden="true">@choice.Label</span><span class="jfb-visually-hidden">@choice.Label@hidden</span></label>

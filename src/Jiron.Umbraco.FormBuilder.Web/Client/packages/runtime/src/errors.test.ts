@@ -236,6 +236,37 @@ describe('a refused send', () => {
     expect(JSON.stringify(invalid)).not.toContain('ada@');
   });
 
+  it("marks a refused group's choices, not its fieldset, and clears the marks once it is answered (6.8c)", async () => {
+    const required = modelOf([{ key: 'p1', groups: [{ key: 'g1', fields: [NAME, { ...WAY, required: true }] }] }]);
+    const described = WAY_HTML.replace('value="email">', 'value="email" aria-describedby="jfb-1-way-email-text">');
+    const { form } = contact(required, text('k-name', 'name', 'Name') + described);
+    type('jfb-1-name', 'Ada');
+    const marks = () =>
+      [...form.querySelectorAll('fieldset, [type="radio"]')].map((each) => [
+        each.getAttribute('aria-invalid'),
+        each.getAttribute('aria-describedby'),
+      ]);
+    press(form, 'send');
+    await settle();
+    expect(shownOf(form).inline).toEqual(['jfb-1-way-error: Choose an answer']);
+    expect(
+      marks(),
+      "a fieldset's role takes no invalid state, so each choice says it, after its own description",
+    ).toEqual([
+      [null, null],
+      ['true', 'jfb-1-way-error'],
+      ['true', 'jfb-1-way-email-text jfb-1-way-error'],
+    ]);
+    pick('jfb-1-way-email');
+    await settle();
+    expect(shownOf(form).inline).toEqual([]);
+    expect(marks()).toEqual([
+      [null, null],
+      [null, null],
+      [null, 'jfb-1-way-email-text'],
+    ]);
+  });
+
   it('updates the summary in its place on the next refusal, and takes it away once no error shows', async () => {
     const { form } = contact(ONE_PAGE, FIELDS);
     type('jfb-1-email', 'x');

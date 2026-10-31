@@ -250,7 +250,7 @@ function writeField(context: ViewContext, classes: ThemeClassesModel, field: Fie
         el(
           d,
           'fieldset',
-          { 'aria-describedby': field.describedBy, 'aria-invalid': field.error === undefined ? null : 'true' },
+          { 'aria-describedby': field.describedBy },
           el(d, 'legend', { class: labelClass }, label()),
           help,
           control,
@@ -649,6 +649,8 @@ function writeControl(context: ViewContext, classes: ThemeClassesModel, field: F
                     required: row.isRequired && control.inputType === 'radio',
                     'data-jfb-requires': flag(row.followsRequired),
                     disabled: field.isDisabled,
+                    'aria-invalid': row.errorId === undefined ? null : 'true',
+                    'aria-describedby': row.errorId,
                   }),
                   el(d, 'label', { class: classes.choiceLabel, for: choice.id }, el(d, 'span', {}, choice.label)),
                 ),
@@ -878,7 +880,17 @@ const radio = (d: Document, classes: ThemeClassesModel, field: FieldViewModel, c
     required: field.isRequired,
     'data-jfb-requires': flag(field.hooks),
     disabled: field.isDisabled,
+    ...choiceMarks(field),
   });
+
+/** A refused group of choices' marks on each choice, beside the ids it names already (6.8c). */
+const choiceMarks = (field: FieldViewModel, ...ids: (string | null)[]): Record<string, string | null> => {
+  const named = [...ids, field.choiceErrorId ?? null].filter((id) => id !== null);
+  return {
+    'aria-invalid': field.choiceErrorId === undefined ? null : 'true',
+    'aria-describedby': named.length === 0 ? null : named.join(' '),
+  };
+};
 
 /** The words at a scale's ends, hidden from assistive technology. */
 const ends = (d: Document, low: string, high: string): HTMLElement =>
@@ -909,7 +921,7 @@ function choices(
         required: single && field.isRequired,
         'data-jfb-requires': flag(single && field.hooks),
         disabled: field.isDisabled,
-        'aria-describedby': each.description === undefined ? null : each.descriptionId,
+        ...choiceMarks(field, each.description === undefined ? null : each.descriptionId),
       }),
       el(d, 'label', { class: classes.choiceLabel, for: each.id }, each.label),
       each.description !== undefined && el(d, 'p', { class: classes.help, id: each.descriptionId }, each.description),

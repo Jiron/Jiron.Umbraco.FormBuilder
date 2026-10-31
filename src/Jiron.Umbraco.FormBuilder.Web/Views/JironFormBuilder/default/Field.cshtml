@@ -25,8 +25,9 @@
     @switch (Model.LabelElement)
     {
         case FieldLabelElement.Legend:
-            @* A group of choices: the fieldset carries the description and the error state. *@
-            <fieldset aria-describedby="@Model.DescribedBy" aria-invalid="@(Model.Error is null ? null : "true")">
+            @* A group: the fieldset carries the description; its role takes no invalid state, which a group of choices'
+               choices carry with the error, and the parts of a name or an address as the error marks them (6.8c). *@
+            <fieldset aria-describedby="@Model.DescribedBy">
                 <legend class="@labelClass">@FormBuilderHtml.Label(Model)@mark</legend>
                 @{ Help(); }
                 @await Html.PartialAsync(Model.ControlView, Model)

@@ -17,7 +17,7 @@ else
         @foreach (var choice in control.Choices)
         {
             <div class="@Model.Classes.Choice">
-                <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled">
+                <input class="@Model.Classes.ChoiceInput" type="radio" id="@choice.Id" name="@Model.Name" value="@choice.Value" checked="@choice.IsChecked" required="@Model.IsRequired" @FormBuilderHtml.Flag("data-jfb-requires", Model.Hooks) disabled="@Model.IsDisabled" aria-invalid="@(Model.ChoiceErrorId is null ? null : "true")" aria-describedby="@Model.ChoiceErrorId">
                 <label class="@Model.Classes.ChoiceLabel" for="@choice.Id">@choice.Label</label>
             </div>
         }

@@ -8,7 +8,7 @@
   amended by [ADR-0101](0101-rows-and-moves-without-javascript.md) in 6.2i; a rating's numbers shown, which a theme
   that draws its symbols hides, the first and the last point named in one span, and the ranking's list role, by
   [ADR-0107](0107-markup-that-reads-without-a-theme.md) in 6.3c
-- Date: 2026-10-29
+- Date: 2026-10-29; amended 2026-10-31 (6.8c: a refused group's choices carry its error)
 - Roadmap step: 6.2d (decided and built); 6.2e and 6.2f render the other types, 6.2h reads the switch and 6.2i the moves
   of a post without JavaScript, 6.3 styles the classes, 6.4 enhances the controls, 7.1 shows the places left
 
@@ -61,9 +61,10 @@ Options 2 for each.
 
 - **A group of choices** (radio buttons, checkboxes, yes or no as buttons, a scale, a rating, a grid and a ranking):
   `Field.cshtml` writes a `fieldset` in the field's `div`, with the label (and its mark) as the `legend`
-  (`jfb-label`), then the help, the control and the error, so the fieldset names the help, the control's parts and
-  the error in `aria-describedby` and carries `aria-invalid`. The inputs carry no `aria-describedby` of their own but
-  an option's description. `FieldLabelElement.Legend` says so in the model.
+  (`jfb-label`), then the help, the control and the error, so the fieldset names the help and the control's parts in
+  `aria-describedby`. A refused group's choices carry `aria-invalid` and the error's id, after an option's
+  description, as a fieldset's role takes no invalid state (6.8c, ADR-0113); a ranking's fieldset names the error.
+  `FieldLabelElement.Legend` says so in the model.
 - **One box** (a single checkbox, a consent, yes or no as a switch): the box with its own label, then the help, then
   the error, as the README asks; the box names them. The label is the type's text when it has one (a checkbox's
   text, a consent's wording, both sanitised) and otherwise the field's label, so a question is never said twice;

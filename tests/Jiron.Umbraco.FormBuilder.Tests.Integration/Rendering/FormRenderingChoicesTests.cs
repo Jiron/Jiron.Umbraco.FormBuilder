@@ -52,6 +52,12 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
     private static readonly Guid Rate = K(0x69);
     private static readonly Guid Extra = K(0x6a);
     private static readonly Guid Room = K(0x6b);
+    private static readonly Guid Boxes = K(0x6c);
+    private static readonly Guid BoxGrid = K(0x6d);
+    private static readonly Guid Ranked = K(0x6e);
+    private static readonly Guid Must = K(0x6f);
+    private static readonly Guid RowD = K(0x33);
+    private static readonly Guid RowE = K(0x34);
 
     // Each choice field: its key, alias and type, and whether it is a group of choices in a fieldset.
     private static readonly (Guid Key, string Alias, string Type, bool Grouped)[] Choices =
@@ -94,7 +100,7 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
     };
 
     /// <summary>The state the view <c>choices</c> leaves for the form: none, or a post's answers, errors or the rules' trigger.</summary>
-    /// <param name="state">The state's name: answered, errors or hidden.</param>
+    /// <param name="state">The state's name: answered, errors, row (an error of one grid row) or hidden.</param>
     internal static FormPostState? State(string state) => state switch
     {
         "answered" => new FormPostState
@@ -119,6 +125,7 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
             },
         },
         "errors" => new FormPostState { Errors = Choices.ToDictionary(choice => choice.Key, _ => new FormPostError("required")) },
+        "row" => new FormPostState { Errors = new Dictionary<Guid, FormPostError> { [Of("grid")] = new FormPostError("required", GridRow: RowB) } },
         "hidden" => new FormPostState { Answers = new Dictionary<Guid, FieldAnswers> { [Trigger] = new FieldAnswers(["yes"]) } },
         _ => null,
     };
@@ -318,19 +325,37 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
         Assert.Multiple(() =>
         {
             Assert.That(errors.QuerySelectorAll(".jfb-error-summary a").Select(link => link.GetAttribute("href")), Is.EqualTo(Choices.Select(choice => "#jfb-1-" + choice.Alias)));
-            foreach (var (_, alias, _, grouped) in Choices)
+            foreach (var (_, alias, type, grouped) in Choices)
             {
                 var field = Field(errors, alias);
                 var error = field.QuerySelector($"p.jfb-error#jfb-1-{alias}-error[data-jfb-error]");
                 Assert.That(error?.TextContent, Is.EqualTo(Required[alias]), alias);
-                var described = grouped ? field.QuerySelector(":scope > fieldset")! : Control(errors, alias);
-                Assert.That(described.GetAttribute("aria-invalid"), Is.EqualTo("true"), alias);
-                Assert.That(described.GetAttribute("aria-describedby")?.Split(' '), Does.Contain($"jfb-1-{alias}-error"), alias);
+                var fieldset = field.QuerySelector(":scope > fieldset");
+                // A fieldset's role takes no invalid state (6.8c): a group of choices' choices carry it with the error,
+                // and a ranking, whose moves are buttons, names its error on its fieldset alone.
+                IElement[] marked = !grouped ? [Control(errors, alias)] : type == "ranking" ? [] : Inputs(field);
+                Assert.That(marked.Select(each => (each.GetAttribute("aria-invalid"), each.GetAttribute("aria-describedby")?.Split(' ').Contains($"jfb-1-{alias}-error"))).Distinct(), Is.EqualTo(marked.Length == 0 ? [] : new[] { ("true", (bool?)true) }), alias);
                 if (grouped)
                 {
-                    Assert.That(error?.ParentElement, Is.SameAs(described), $"{alias}: the error is in the fieldset");
+                    Assert.That(error?.ParentElement, Is.SameAs(fieldset), $"{alias}: the error is in the fieldset");
+                    Assert.That(fieldset!.HasAttribute("aria-invalid"), Is.False, $"{alias}: a group is never invalid itself");
+                    Assert.That(fieldset.GetAttribute("aria-describedby")?.Split(' ').Contains($"jfb-1-{alias}-error") ?? false, Is.EqualTo(type == "ranking"), $"{alias}: the fieldset names the error only when no choices do");
                 }
             }
+
+            Assert.That(Field(errors, "radioCards").QuerySelector("#jfb-1-radioCards")!.GetAttribute("aria-describedby"), Is.EqualTo("jfb-1-radioCards-text jfb-1-radioCards-error"), "a card's description, then the error");
+            Assert.That(Field(errors, "radioList").QuerySelector("#jfb-1-radioList-other")!.HasAttribute("aria-invalid"), Is.False, "the Other text is not the choice the error names");
+            Assert.That(Field(errors, "radioList").QuerySelector("fieldset")!.GetAttribute("aria-describedby"), Is.EqualTo("jfb-1-radioList-help"), "the help stays on the fieldset");
+        });
+
+        var row = (await ChoicesAsync("row")).QuerySelector("form.jfb-form")!;
+        Assert.Multiple(() =>
+        {
+            var grid = Field(row, "grid");
+            Assert.That(Inputs(grid).Select(input => (input.Name, input.GetAttribute("aria-invalid"), input.GetAttribute("aria-describedby"))).Distinct(), Is.EqualTo(new[]
+            {
+                ($"grid.{RowA:D}", (string?)null, (string?)null), ($"grid.{RowB:D}", "true", "jfb-1-grid-error"),
+            }), "an error of one row marks that row's choices alone");
         });
 
         var hidden = (await ChoicesAsync("hidden")).QuerySelector("form.jfb-form")!;
@@ -411,6 +436,26 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
             Assert.That(Labelled(Field(first, "way")), Is.EqualTo(new[] { "a: A", "b: b", ": Other" }), "an option without a label shows its value");
             Assert.That(Checked(Field(posted, "way")), Is.EqualTo(new[] { "b" }), "a radio's Other text is its answer only when no option is chosen");
             Assert.That(Field(posted, "way").QuerySelector("#jfb-1-way-other")?.GetAttribute("value"), Is.EqualTo("By boat"));
+        });
+    }
+
+    [Test]
+    public async Task UnderTheAsteriskStyle_AGroupWhoseControlsCannotCarryRequired_SaysItsAsteriskInWords()
+    {
+        _ = await PublishFormAsync("renderingRare", RareForm);
+        _ = await PagesAsync("rare");
+        var form = (await DocumentAsync("/rare/")).QuerySelector("form.jfb-form")!;
+        const string Spoken = """<span aria-hidden="true">*</span><span class="jfb-visually-hidden">required</span></span>""";
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Field(form, "boxes").QuerySelector("legend.jfb-label")!.InnerHtml, Is.EqualTo("""Boxes <span class="jfb-mark" data-jfb-mark="required">""" + Spoken), "no box of a group can be required, so a screen reader hears the word, not the asterisk");
+            Assert.That(Field(form, "boxes").QuerySelectorAll("input[required]"), Is.Empty);
+            Assert.That(Field(form, "ranked").QuerySelector("legend.jfb-label")!.InnerHtml, Is.EqualTo("""Ranked <span class="jfb-mark" data-jfb-mark="required">""" + Spoken), "nor a ranking's moves, which are buttons");
+            Assert.That(Field(form, "boxGrid").QuerySelectorAll(".jfb-matrix > fieldset > legend").Select(legend => legend.InnerHtml), Is.EqualTo(new[] { """Food <span class="jfb-mark" data-jfb-mark="optional">""" + Spoken, "Music" }), "nor a required row of boxes");
+            Assert.That(Text(Field(form, "boxGrid"), "legend.jfb-label"), Is.EqualTo("Box grid"));
+            Assert.That(Field(form, "must").QuerySelector("legend.jfb-label")!.InnerHtml, Is.EqualTo("""Must <span class="jfb-mark" aria-hidden="true" data-jfb-mark="required">*</span>"""), "radio buttons carry required themselves, so their asterisk stays silent");
+            Assert.That(Field(form, "scaleGrid").QuerySelectorAll(".jfb-matrix > fieldset > legend")[1].InnerHtml, Is.EqualTo("""The room <span class="jfb-mark" aria-hidden="true" data-jfb-mark="optional">*</span>"""), "as do a row's radio buttons");
         });
     }
 
@@ -579,7 +624,8 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
 
     // Under the asterisk style: a grid on a scale with a required row and a row without a label, a required box and a
     // required switch, a parent a rule hides on the first render with the field below it, a radio with an option
-    // without a label and the Other choice.
+    // without a label and the Other choice; and the groups whose controls cannot carry required (a group of boxes, a
+    // grid of boxes with a required row and a ranking), beside a required radio, which can.
     private static FormDefinition RareForm(FormDefinition definition) => definition with
     {
         Settings = definition.Settings with { Appearance = definition.Settings.Appearance with { RequiredMarker = RequiredMarker.Required } },
@@ -621,6 +667,13 @@ public sealed class FormRenderingChoicesTests : RenderingTestBase
                             {
                                 Items = [new FieldOption { Value = "a", Label = new LocalizedText("A") }, new FieldOption { Value = "b" }],
                             }, rules: false),
+                            Field(Boxes, "boxes", "checkboxes", "{}", Items("a", "b"), rules: false) with { Required = true },
+                            Field(BoxGrid, "boxGrid", "grid", """{"multiple":true}""", Items("good", "poor"), rules: false) with
+                            {
+                                Rows = [new GridRow { Key = RowD, Label = new LocalizedText("Food"), Required = true }, new GridRow { Key = RowE, Label = new LocalizedText("Music") }],
+                            },
+                            Field(Ranked, "ranked", "ranking", "{}", Items("x", "y"), rules: false) with { Required = true },
+                            Field(Must, "must", "radio", "{}", Items("a", "b"), rules: false) with { Required = true },
                         ],
                     },
                 ],

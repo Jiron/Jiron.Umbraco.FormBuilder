@@ -124,9 +124,9 @@ public sealed class ErrorFixtureTests : RenderingTestBase
     // A field of every kind the browser checks: required texts, one with its label hidden, an email address asked twice
     // with its own message;
     // checks with and without their message, one that names another field; a number's range and a date's window; a
-    // phone and a web address; a text's longest; choices a rule requires and a radio; a grid with a row required by
-    // itself and a row a validation rule without a message refuses; a consent; a name in parts; a field a rule shows;
-    // a company a validation rule refuses; guests in rows, each with a name, the name again and a diet.
+    // phone and a web address; a text's longest; choices a rule requires, a radio and boxes; a grid with a row
+    // required by itself and a row a validation rule without a message refuses; a consent; a name in parts; a field a
+    // rule shows; a company a validation rule refuses; guests in rows, each with a name, the name again and a diet.
     private static FormDefinition Checks(FormDefinition definition) => definition with
     {
         Pages =
@@ -154,6 +154,7 @@ public sealed class ErrorFixtureTests : RenderingTestBase
                             Field(K(0x1b), "story", "text", "Story", """{"maxLength":5}"""),
                             Field(Topic, "topic", "dropdown", "Topic") with { Required = true, Options = Options(("a", "A"), ("b", "B")) },
                             Field(K(0x1c), "way", "radio", "Way") with { Required = true, Options = Options(("a", "By post"), ("b", "By email")) },
+                            Field(K(0x27), "extras", "checkboxes", "Extras") with { Required = true, Options = Options(("tea", "Tea"), ("cake", "Cake")) },
                             Field(K(0x1d), "rate", "grid", "Rate") with
                             {
                                 Options = Options(("good", "Good"), ("poor", "Poor")),

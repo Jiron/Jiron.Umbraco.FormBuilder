@@ -795,14 +795,14 @@
     outline-offset: 2px;
   }
 
-  & input:is([type='checkbox'], [type='radio'])[aria-invalid='true']:not(:checked),
-  & [aria-invalid='true'] > .jfb-choices input:not(:checked, :disabled) {
+  /* A refused group's choices carry its invalid state, as its fieldset's role takes none (6.8c). */
+  & input:is([type='checkbox'], [type='radio'])[aria-invalid='true']:not(:checked, :disabled) {
     border-color: var(--_error);
   }
 
-  & [aria-invalid='true'] > :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > label,
-  & [aria-invalid='true'] > .jfb-choices-cards > .jfb-choice:not(:has(> :disabled)),
-  & [aria-invalid='true'] .jfb-signature-pad {
+  & :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > [aria-invalid='true'] + label,
+  & .jfb-choices-cards > .jfb-choice:has(> [aria-invalid='true']):not(:has(> :disabled)),
+  & .jfb-signature:has([aria-invalid='true']) .jfb-signature-pad {
     border-color: var(--_error);
     box-shadow: inset 0 0 0 1px var(--_error);
   }

@@ -360,6 +360,9 @@
         "markText": {
           "type": "string"
         },
+        "markSpoken": {
+          "type": "string"
+        },
         "isMarkShown": {
           "type": "boolean"
         },
@@ -382,6 +385,9 @@
           "type": "string"
         },
         "describedBy": {
+          "type": "string"
+        },
+        "choiceErrorId": {
           "type": "string"
         },
         "isRequired": {
@@ -703,6 +709,12 @@
           ]
         },
         "markText": {
+          "type": "string"
+        },
+        "markSpoken": {
+          "type": "string"
+        },
+        "errorId": {
           "type": "string"
         },
         "isMarkShown": {

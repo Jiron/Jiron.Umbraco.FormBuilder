@@ -605,7 +605,10 @@ internal sealed partial class FormModels(
         }
 
         describedBy.AddRange(described);
-        if (error is not null)
+        // A refused group of choices names its error on each choice, as a fieldset's role takes no invalid state (6.8c).
+        var choicesCarry = error is not null && element == FieldLabelElement.Legend
+            && model is ChoicesControlModel { Empty: null } or GridControlModel { Rows.Count: > 0 };
+        if (error is not null && !choicesCarry)
         {
             describedBy.Add(control + "-error");
         }
@@ -624,6 +627,7 @@ internal sealed partial class FormModels(
             HideLabel = field.HideLabel,
             Mark = carried,
             MarkText = MarkText(build, carried),
+            MarkSpoken = carried == FieldMark.Required && SpeaksMark(traits.Type, shownSettings) ? build.Words.Required : null,
             IsMarkShown = mark != FieldMark.None,
             MarkShownWhile = shownWhile,
             Hooks = build.Hooks,
@@ -632,6 +636,7 @@ internal sealed partial class FormModels(
             Error = error?.Message,
             ErrorId = control + "-error",
             DescribedBy = describedBy.Count > 0 ? string.Join(' ', describedBy) : null,
+            ChoiceErrorId = choicesCarry && model is ChoicesControlModel ? control + "-error" : null,
             IsRequired = isRequired,
             IsHidden = isHidden,
             IsDisabled = isHidden,

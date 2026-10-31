@@ -163,7 +163,8 @@ flowchart LR
   `checkField` over the answers and the rules' state, what only the server can decide left to it, and each field's
   first error worded as Web's render words it (`messages.ts`), in the words of the page's language, a file of its
   own loaded the first time a message is needed ([ADR-0112](decisions/0112-checks-and-messages-on-the-page.md)),
-  and shows the errors (`errors.ts`, `display.ts`) in the theme's markup from the form's templates: as the visitor
+  and shows the errors (`errors.ts`, `display.ts`) in the theme's markup from the form's templates, each marked on its
+  control or on a group's own choices: as the visitor
   leaves a field, gone once fixed, and after a refused send with the summary, which takes the focus, and
   `jfb:invalid`; a passing send goes on as without JavaScript ([ADR-0113](decisions/0113-errors-on-the-page.md));
   and works the calculations out with the rules (`engine.ts`, `outputs.ts`): the calculation language is the shared

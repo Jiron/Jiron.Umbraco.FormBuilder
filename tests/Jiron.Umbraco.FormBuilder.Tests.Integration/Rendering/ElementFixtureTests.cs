@@ -178,7 +178,9 @@ public sealed class ElementFixtureTests : RenderingTestBase
     };
 
     // Three pages with their steps and asterisks: a titled card group of two columns with help, a placeholder, affixes, a
-    // counter and the email again; then numbers and a text area; then a required choice and a consent.
+    // counter and the email again; then numbers and a text area; then a required choice, the groups whose asterisk a
+    // screen reader hears in words (a required group of boxes, a grid of boxes with a required row and a required
+    // ranking, 6.8c) and a consent.
     private static FormDefinition Paged(FormDefinition definition) => definition with
     {
         Settings = definition.Settings with
@@ -240,6 +242,13 @@ public sealed class ElementFixtureTests : RenderingTestBase
                         Fields =
                         [
                             Field(K(0x4c), "radio", "room", "Room", null) with { Required = true, Options = new FieldOptions { Items = [new FieldOption { Value = "single", Label = new LocalizedText("Single") }, new FieldOption { Value = "double", Label = new LocalizedText("Double"), Description = new LocalizedText("For two") }] } },
+                            Field(K(0x4e), "checkboxes", "extras", "Extras", null) with { Required = true, Options = new FieldOptions { Items = [new FieldOption { Value = "breakfast", Label = new LocalizedText("Breakfast") }, new FieldOption { Value = "parking", Label = new LocalizedText("Parking") }] } },
+                            Field(K(0x4f), "grid", "rate", "Rate", """{"multiple":true}""") with
+                            {
+                                Options = new FieldOptions { Items = [new FieldOption { Value = "good", Label = new LocalizedText("Good") }, new FieldOption { Value = "poor", Label = new LocalizedText("Poor") }] },
+                                Rows = [new GridRow { Key = K(0x55), Label = new LocalizedText("Food"), Required = true }, new GridRow { Key = K(0x56), Label = new LocalizedText("Music") }],
+                            },
+                            Field(K(0x57), "ranking", "order", "Order", null) with { Required = true, Options = new FieldOptions { Items = [new FieldOption { Value = "quiet", Label = new LocalizedText("Quiet") }, new FieldOption { Value = "view", Label = new LocalizedText("View") }] } },
                             Field(K(0x4d), "consent", "terms", "Terms", """{"text":{"":"<p>I agree to the terms.</p>"}}""") with { Required = true },
                         ],
                     },

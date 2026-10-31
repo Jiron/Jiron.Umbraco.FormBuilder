@@ -185,7 +185,7 @@
     box-shadow: 0 0 0 var(--bs-focus-ring-width, 0.25rem) rgba(var(--bs-danger-rgb), 0.25);
   }
 
-  & [aria-invalid='true'] > .jfb-choices .jfb-choice > input:not(:checked),
+  /* A refused group's choices carry its invalid state, as its fieldset's role takes none (6.8c). */
   & .jfb-choice > input[aria-invalid='true']:not(:checked) {
     border-color: var(--bs-form-invalid-border-color);
   }
@@ -288,7 +288,7 @@
     border-style: dashed;
   }
 
-  & [aria-invalid='true'] > .jfb-choices-cards > .jfb-choice:not(:has(> :checked, > :disabled)) {
+  & .jfb-choices-cards > .jfb-choice:has(> [aria-invalid='true']):not(:has(> :checked, > :disabled)) {
     border-color: var(--bs-form-invalid-border-color);
   }
 
@@ -398,7 +398,7 @@
     opacity: 0.65;
   }
 
-  & [aria-invalid='true'] > :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > :not(:checked) + label {
+  & :is(.jfb-choices-buttons, .jfb-choices-scale) > .jfb-choice > [aria-invalid='true']:not(:checked) + label {
     border-color: var(--bs-form-invalid-border-color);
   }
 
@@ -447,7 +447,7 @@
     }
   }
 
-  & [aria-invalid='true'] .jfb-choices-rating > .jfb-choice > label::before {
+  & .jfb-choices-rating > .jfb-choice > [aria-invalid='true'] + label::before {
     background: var(--bs-form-invalid-color);
   }
 

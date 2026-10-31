@@ -29,8 +29,18 @@ public static class FormBuilderHtml
         return value is null ? HtmlString.Empty : new HtmlString(name + "=\"" + WebUtility.HtmlEncode(value) + "\"");
     }
 
+    /// <summary>The ids an <c>aria-describedby</c> names, apart by spaces, the missing ones left out; null for none.</summary>
+    /// <param name="ids">The ids, each or null.</param>
+    public static string? Ids(params string?[] ids)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+        var given = ids.Where(id => !string.IsNullOrEmpty(id)).ToList();
+        return given.Count == 0 ? null : string.Join(' ', given);
+    }
+
     /// <summary>
-    /// A field's label's mark after a space (ADR-0093): "(optional)", or the asterisk hidden from assistive technology;
+    /// A field's label's mark after a space (ADR-0093): "(optional)", or the asterisk hidden from assistive technology,
+    /// with the words a screen reader hears in its place where the field's controls cannot carry <c>required</c> (6.8c);
     /// on a form with rules also a mark that does not show now, <c>hidden</c>, with <c>data-jfb-mark</c> naming the
     /// field's state it shows in (ADR-0111); nothing for none.
     /// </summary>
@@ -38,7 +48,7 @@ public static class FormBuilderHtml
     public static IHtmlContent Mark(FieldViewModel field)
     {
         ArgumentNullException.ThrowIfNull(field);
-        return Mark(field.Mark, field.MarkText, field.MarkShownWhile, field.IsMarkShown);
+        return Mark(field.Mark, field.MarkText, field.MarkShownWhile, field.IsMarkShown, field.MarkSpoken);
     }
 
     /// <summary>A part's label's mark after a space, as <see cref="Mark(FieldViewModel)"/> writes a field's.</summary>
@@ -54,7 +64,7 @@ public static class FormBuilderHtml
     public static IHtmlContent Mark(GridRowModel row)
     {
         ArgumentNullException.ThrowIfNull(row);
-        return Mark(row.Mark, row.MarkText, row.MarkShownWhile, row.IsMarkShown);
+        return Mark(row.Mark, row.MarkText, row.MarkShownWhile, row.IsMarkShown, row.MarkSpoken);
     }
 
     /// <summary>
@@ -146,7 +156,9 @@ public static class FormBuilderHtml
     private static string HookOf(Guid owner, string name) =>
         "data-jfb-text=\"" + WebUtility.HtmlEncode(owner.ToString("D") + " " + name) + "\"";
 
-    private static IHtmlContent Mark(FieldMark mark, string text, string? shownWhile, bool shown)
+    // An asterisk is hidden from screen readers, which hear a control's own required state; where the controls cannot
+    // carry one, the words they hear in its place stand beside it, in the same mark (6.8c).
+    private static IHtmlContent Mark(FieldMark mark, string text, string? shownWhile, bool shown, string? spoken = null)
     {
         if (mark == FieldMark.None)
         {
@@ -154,10 +166,13 @@ public static class FormBuilderHtml
         }
 
         var start = " <span class=\"jfb-mark\""
-            + (mark == FieldMark.Required ? " aria-hidden=\"true\"" : string.Empty)
+            + (mark == FieldMark.Required && spoken is null ? " aria-hidden=\"true\"" : string.Empty)
             + (shownWhile is null ? string.Empty : " data-jfb-mark=\"" + WebUtility.HtmlEncode(shownWhile) + "\"")
             + (shown ? string.Empty : " hidden")
             + ">";
-        return new HtmlContentBuilder().AppendHtml(start).Append(text).AppendHtml("</span>");
+        var content = new HtmlContentBuilder().AppendHtml(start);
+        return spoken is null
+            ? content.Append(text).AppendHtml("</span>")
+            : content.AppendHtml("<span aria-hidden=\"true\">").Append(text).AppendHtml("</span><span class=\"jfb-visually-hidden\">").Append(spoken).AppendHtml("</span></span>");
     }
 }

@@ -171,8 +171,8 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
 
     // ADR-0015's hooks on one field in one state: its wrapper, and hidden with disabled controls when a rule hides it or
     // its row's group; for a built-in field with an alias, its control's id, its label or legend, its names and its
-    // help; after an error, the error, aria-invalid on what it describes and the summary's link to the control. A row's
-    // field has its row's ids and is named by the row's path (ADR-0098).
+    // help; after an error, the error, aria-invalid on the control or a group's choices, and the summary's link to the
+    // control. A row's field has its row's ids and is named by the row's path (ADR-0098).
     private static void Hooks(IElement form, string state, (Guid Key, string Alias, string Type) field, bool inRow, string error)
     {
         var (key, sinkAlias, type) = field;
@@ -194,14 +194,18 @@ public sealed class FormRenderingKitchenTests : RenderingTestBase
             var target = wrapper.QuerySelector($"[id='{control}']") ?? throw new AssertionException($"{at}: no control with the field's id");
             var fieldset = wrapper.QuerySelector(":scope > fieldset");
             var described = fieldset ?? target;
+            // A fieldset's role takes no invalid state (6.8c): a group of choices' own choices carry the error instead.
+            var choices = fieldset is null ? [] : wrapper.QuerySelectorAll("input[type=radio], input[type=checkbox]").Where(input => input.Closest("[data-jfb-field]") == wrapper).ToArray();
+            var refused = state == "errors" && Fails(type);
             Assert.Multiple(() =>
             {
                 Assert.That(fieldset?.QuerySelector(":scope > legend") ?? wrapper.QuerySelector($"label[for='{control}']"), Is.Not.Null, $"{at}: a legend for a fieldset, otherwise a label for the control");
                 Assert.That(wrapper.QuerySelectorAll("[name]").Select(named => named.GetAttribute("name")!).Where(name => !Named(name, path)), Is.Empty, $"{at}: named by the alias or the row's path, a part or a row after it");
                 Assert.That(wrapper.QuerySelector($"[id='{control}-help']")?.TextContent, Is.EqualTo(Helped.Contains(type) ? "Help for " + alias : null), at);
                 Assert.That(Ids(described, "aria-describedby").Contains($"{control}-help"), Is.EqualTo(Helped.Contains(type)), $"{at}: the help described");
-                Assert.That(described.GetAttribute("aria-invalid"), Is.EqualTo(state == "errors" && Fails(type) ? "true" : null), at);
-                Assert.That(Ids(described, "aria-describedby").Contains($"{control}-error"), Is.EqualTo(state == "errors" && Fails(type)), $"{at}: the error described");
+                Assert.That(described.GetAttribute("aria-invalid"), Is.EqualTo(refused && fieldset is null ? "true" : null), at);
+                Assert.That(Ids(described, "aria-describedby").Contains($"{control}-error"), Is.EqualTo(refused && choices.Length == 0), $"{at}: the error described");
+                Assert.That(choices.Select(choice => (choice.GetAttribute("aria-invalid"), Ids(choice, "aria-describedby").Contains($"{control}-error"))), Is.All.EqualTo(refused ? ("true", true) : ((string?)null, false)), $"{at}: a group's choices carry its error");
             });
         }
 

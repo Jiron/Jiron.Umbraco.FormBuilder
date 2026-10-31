@@ -112,6 +112,7 @@ export type FieldViewModel = {
   hideLabel: boolean;
   mark: "none" | "optional" | "required";
   markText: string;
+  markSpoken?: string;
   isMarkShown: boolean;
   markShownWhile?: string;
   hooks: boolean;
@@ -120,6 +121,7 @@ export type FieldViewModel = {
   error?: string;
   errorId: string;
   describedBy?: string;
+  choiceErrorId?: string;
   isRequired: boolean;
   isHidden: boolean;
   isDisabled: boolean;
@@ -183,6 +185,8 @@ export type GridRowModel = {
   followsRequired: boolean;
   mark: "none" | "optional" | "required";
   markText: string;
+  markSpoken?: string;
+  errorId?: string;
   isMarkShown: boolean;
   markShownWhile?: string;
   choices: ChoiceModel[];

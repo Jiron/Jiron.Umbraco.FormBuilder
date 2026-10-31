@@ -26,6 +26,7 @@ internal sealed record RenderingWords
             Optional = "(optional)",
             RequiredNote = "Questions marked {0} need an answer.",
             Asterisk = "with an asterisk",
+            Required = "required",
             Step = "Step {0} of {1}",
             Progress = "Progress",
             Page = "Page {0}",
@@ -98,6 +99,7 @@ internal sealed record RenderingWords
             Optional = "(optional)",
             RequiredNote = "Fragen mit {0} m" + UUmlaut + "ssen beantwortet werden.",
             Asterisk = "Sternchen",
+            Required = "erforderlich",
             Step = "Schritt {0} von {1}",
             Progress = "Fortschritt",
             Page = "Seite {0}",
@@ -184,6 +186,12 @@ internal sealed record RenderingWords
 
     /// <summary>What a screen reader says for the asterisk in <see cref="RequiredNote"/>.</summary>
     public required string Asterisk { get; init; }
+
+    /// <summary>
+    /// What a screen reader hears for the asterisk of a required group whose controls cannot carry <c>required</c>: a
+    /// group of boxes, a grid's row of boxes and a ranking (6.8c).
+    /// </summary>
+    public required string Required { get; init; }
 
     /// <summary>The progress in words; <c>{0}</c> is the current page's number, <c>{1}</c> the number of pages.</summary>
     public required string Step { get; init; }

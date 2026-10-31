@@ -57,6 +57,11 @@ internal sealed partial class FormModels
         : whileOptional != FieldMark.None ? (whileOptional, MarkWhile.Optional)
         : (FieldMark.None, null);
 
+    // Whether a type's controls cannot carry required, so a screen reader hears its asterisk in words (6.8c): a group of
+    // boxes, a grid of boxes and a ranking, whose moves are buttons.
+    private static bool SpeaksMark(IFormBuilderFieldType type, ShownSettings settings) =>
+        type is CheckboxesFieldType or RankingFieldType || (type is GridFieldType && settings.Bool("multiple", false));
+
     private static string MarkText(Build build, FieldMark mark) => mark switch
     {
         FieldMark.Optional => build.Words.Optional,
@@ -310,6 +315,7 @@ internal sealed partial class FormModels
         }
 
         var multiple = settings.Bool("multiple", false);
+        var refused = build.Error(field.Key);
         var gridRequired = build.Required.Contains(Id(field.Key));
         var gridHidden = build.Hidden.Contains(Id(field.Key));
         var rows = new List<GridRowModel>();
@@ -335,6 +341,8 @@ internal sealed partial class FormModels
                     FollowsRequired = build.Hooks && !row.Required && !multiple,
                     Mark = carried ? FieldMark.Required : FieldMark.None,
                     MarkText = carried ? "*" : string.Empty,
+                    MarkSpoken = carried && multiple ? build.Words.Required : null,
+                    ErrorId = refused is not null && (refused.GridRow is null || refused.GridRow == row.Key) ? id + "-error" : null,
                     IsMarkShown = marked,
                     MarkShownWhile = carried && build.Hooks ? MarkWhile.Optional : null,
                     Choices =

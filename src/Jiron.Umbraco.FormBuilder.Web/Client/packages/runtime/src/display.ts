@@ -1,7 +1,8 @@
 /**
  * Errors written on the page (ROADMAP 6.4e, ADR-0113) as Web's views write them: an inline error last in its field
  * (in the field's fieldset when a legend labels it), `aria-invalid` and the error's id in `aria-describedby` on the
- * control the error names, and the error summary before the required note and the pages, each from the form's
+ * control the error names, or on a group of choices' boxes and radio buttons, as a fieldset's role takes no invalid
+ * state (6.8c), and the error summary before the required note and the pages, each from the form's
  * templates, which the theme's views render, or the markup contract's when a site's own form view has none.
  */
 import { summaryHeading, type MessageWords } from '@jfb/logic';
@@ -46,16 +47,17 @@ function removeId(element: Element, name: string, id: string): void {
 
 /**
  * Shows a field's error, or changes the text of the one it shows: the paragraph, `aria-invalid` and the paragraph's
- * id on the control the error names (the fieldset of a field a legend labels), on an email address's repeat input,
- * and `aria-invalid` on a name's or an address's parts as the error marks them.
+ * id on the control the error names, on each box and radio button of a group of choices (a grid's of the row the
+ * error names), on an email address's repeat input; the paragraph's id on another group's fieldset, and
+ * `aria-invalid` on a name's or an address's parts as the error marks them.
  */
 export function showFieldError(form: HTMLFormElement, field: HTMLElement, error: ShownError): void {
   const id = `${error.target}-error`;
+  const fieldset = field.querySelector<HTMLElement>(':scope > fieldset');
   let paragraph = errorIn(field);
   if (paragraph === null) {
     const template = templateOf(form, '[data-jfb-error]');
     paragraph = template === null ? fallbackError(form) : copyOf(form, template);
-    const fieldset = field.querySelector<HTMLElement>(':scope > fieldset');
     (fieldset ?? field).append(paragraph);
   } else if (paragraph.id !== id) {
     clearFieldError(field);
@@ -65,13 +67,21 @@ export function showFieldError(form: HTMLFormElement, field: HTMLElement, error:
   paragraph.id = id;
   if (paragraph.textContent !== error.message) paragraph.textContent = error.message;
 
-  const fieldset = field.querySelector<HTMLElement>(':scope > fieldset');
   const control = form.ownerDocument.getElementById(error.target);
-  const described = fieldset ?? (control !== null && field.contains(control) ? control : null);
-  if (described !== null) {
-    described.setAttribute('aria-invalid', 'true');
-    addId(described, 'aria-describedby', id);
+  const choices = ownOf(field, 'input[type="radio"], input[type="checkbox"]');
+  const marked =
+    fieldset === null
+      ? control !== null && field.contains(control)
+        ? [control]
+        : []
+      : choices.filter(
+          (each) => error.gridRow === undefined || (each.getAttribute('name') ?? '').endsWith(`.${error.gridRow}`),
+        );
+  for (const each of marked) {
+    each.setAttribute('aria-invalid', 'true');
+    addId(each, 'aria-describedby', id);
   }
+  if (fieldset !== null && choices.length === 0) addId(fieldset, 'aria-describedby', id);
   const alias = field.dataset['jfbAlias'];
   if (alias === undefined) return;
   const named = ownOf(field, 'input, select, textarea').filter((each) =>

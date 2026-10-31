@@ -182,7 +182,7 @@ public sealed class FormRenderingRowsTests : RenderingTestBase
         Assert.Multiple(() =>
         {
             Assert.That(guests.QuerySelectorAll(".jfb-row"), Has.Length.EqualTo(4), "the rows the visitor posted, to remove one from");
-            Assert.That(fieldset.GetAttribute("aria-invalid"), Is.EqualTo("true"));
+            Assert.That(fieldset.HasAttribute("aria-invalid"), Is.False, "a fieldset's role takes no invalid state (6.8c); it names its error");
             Assert.That(fieldset.GetAttribute("aria-describedby"), Is.EqualTo("jfb-1-guests-help jfb-1-guests-error"));
             Assert.That(fieldset.Children[fieldset.Children.Length - 1].OuterHtml, Is.EqualTo("""<p class="jfb-error" id="jfb-1-guests-error" data-jfb-error="">Remove rows to keep at most 3</p>"""), "below the rows");
             Assert.That(form.QuerySelectorAll(".jfb-error-summary a").Select(link => link.GetAttribute("href")), Is.EqualTo(new[] { "#jfb-1-guests-0-nights", "#jfb-1-guests" }), "a row's error first, then the group's own to the rows' container, in the page's order");

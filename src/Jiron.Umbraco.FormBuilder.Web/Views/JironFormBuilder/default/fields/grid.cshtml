@@ -30,7 +30,7 @@ else
                     @foreach (var choice in row.Choices)
                     {
                         <div class="@Model.Classes.Choice">
-                            <input class="@Model.Classes.ChoiceInput" type="@control.InputType" id="@choice.Id" name="@row.Name" value="@choice.Value" checked="@choice.IsChecked" required="@(row.IsRequired && control.InputType == "radio")" @FormBuilderHtml.Flag("data-jfb-requires", row.FollowsRequired) disabled="@Model.IsDisabled">
+                            <input class="@Model.Classes.ChoiceInput" type="@control.InputType" id="@choice.Id" name="@row.Name" value="@choice.Value" checked="@choice.IsChecked" required="@(row.IsRequired && control.InputType == "radio")" @FormBuilderHtml.Flag("data-jfb-requires", row.FollowsRequired) disabled="@Model.IsDisabled" aria-invalid="@(row.ErrorId is null ? null : "true")" aria-describedby="@row.ErrorId">
                             <label class="@Model.Classes.ChoiceLabel" for="@choice.Id"><span>@choice.Label</span></label>
                         </div>
                     }

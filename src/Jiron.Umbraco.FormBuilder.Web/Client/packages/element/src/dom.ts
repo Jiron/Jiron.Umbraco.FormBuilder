@@ -78,6 +78,8 @@ export interface Marked {
   markText: string;
   isMarkShown: boolean;
   markShownWhile?: string;
+  /** What a screen reader hears in the asterisk's place, where the controls cannot carry `required` (6.8c). */
+  markSpoken?: string;
 }
 
 /**
@@ -93,11 +95,16 @@ export function mark(document: Document, marked: Marked): Child {
       'span',
       {
         class: 'jfb-mark',
-        'aria-hidden': marked.mark === 'required' ? 'true' : null,
+        'aria-hidden': marked.mark === 'required' && marked.markSpoken === undefined ? 'true' : null,
         'data-jfb-mark': marked.markShownWhile,
         hidden: flag(!marked.isMarkShown),
       },
-      marked.markText,
+      marked.markSpoken === undefined
+        ? marked.markText
+        : [
+            el(document, 'span', { 'aria-hidden': 'true' }, marked.markText),
+            el(document, 'span', { class: 'jfb-visually-hidden' }, marked.markSpoken),
+          ],
     ),
   ];
 }

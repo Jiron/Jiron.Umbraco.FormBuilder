@@ -11,7 +11,7 @@
   rows in 6.2f by [ADR-0098](0098-the-repeaters-rows.md); the hidden inputs a post carries, the page a post moves to
   and the page after a sent post in 6.2h by [ADR-0100](0100-the-post-without-javascript.md); the `theme` attribute, the
   views of a form's theme and the classes they write in 6.3a by [ADR-0105](0105-the-theme-registry-and-the-base-rules.md)
-- Date: 2026-10-28; amended 2026-10-31 (6.8a: the host's default for a placement's assets)
+- Date: 2026-10-28; amended 2026-10-31 (6.8a: the host's default for a placement's assets; 6.8c: the word "required" where no control carries it)
 - Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): a visitor text that holds merge tags carries its
   hook, and one that renders empty keeps its element, hidden
 - Amended in 6.4h by [ADR-0118](0118-defaults-with-merge-tags-on-the-page.md): a field whose controls start from a
@@ -134,13 +134,15 @@ layout; and what a hidden field and the `context-…` values put into the page.
 - **Answers, errors, notices and outcomes after a post** reach the component through `HttpContext.Items`, keyed by the
   form's key and the instance, as ADR-0004 decides; 6.2h's surface action fills them. The post's page shows when the
   rules show it, else the first page they show. Errors render inline, each with `aria-invalid` and its message in
-  `aria-describedby`, and, while the form's validation summary is on, in the error summary with a link per error.
+  `aria-describedby` on its control or a group's choices (6.8c, ADR-0113), and, while the form's validation summary is on, in the error summary with a link per error.
 - **The package's words** (Back, Next, Send, "(optional)", the summary's heading, "Step 1 of 3", the notices, the
   repeated email's label) come in English and German, by the culture and then its parent, else English; section 14.2
   adds five languages. A form's own labels and messages win, then the site's labels (ADR-0095).
 - **The required marker:** `optional` adds "(optional)" to each field that holds a value and is not required;
   `required` marks required fields with an asterisk hidden from assistive technology (the `required` attribute says
-  it), and says once, above the first page, what the asterisk means; `none` marks nothing. `inherit` takes the General
+  it), and says once, above the first page, what the asterisk means; where no control can carry `required` (a group
+  of boxes, a grid's row of boxes, a ranking), the mark holds the word "required" for screen readers beside the
+  asterisk (6.8c); `none` marks nothing. `inherit` takes the General
   section's style, by default `optional` (ADR-0095).
 - **The automatic assets** (amends ADR-0092): the form's inclusion is content that decides when the page is written,
   not when the form renders. `<jfb-assets>` writes its tags as it runs and marks the request; the form's inclusion,
@@ -168,3 +170,19 @@ layout; and what a hidden field and the `context-…` values put into the page.
 - The integration tests render pages through the full Umbraco pipeline: the test project compiles its own views, and a
   route-hijacking controller shows them for a test page type.
 - **Revisit** when Umbraco offers its own way to put a package's tags into a page's head.
+
+## The word "required" where no control carries it (6.8c, 2026-10-31)
+
+The phase review found that under the asterisk style a required group of boxes, a grid's row of boxes and a ranking
+tell a screen reader nothing: the asterisk is hidden from it, and none of their controls carries `required` (a box of
+a group cannot, as it would ask for every box; a ranking's moves are buttons). There the mark now holds the asterisk,
+hidden from assistive technology, and the word for screen readers only:
+`<span class="jfb-mark"><span aria-hidden="true">*</span><span class="jfb-visually-hidden">required</span></span>`, so
+the group's name ends in "required". The word comes from the package's words (`RenderingWords.Required`, "required"
+and "erforderlich"); the model carries it as `MarkSpoken` on the field and on a grid's row, and the element's template
+writes the same. The rules show and hide the outer mark as before (ADR-0111).
+
+Everywhere else the control's own `required` says it. The look in Edge checked that through Windows UI Automation:
+Edge passes `required` on to screen readers for text boxes, selects, dates, files, single boxes and radio buttons
+(DevTools' accessibility pane lists it for text boxes only, which is no guide here), and not for a group's boxes, which
+carry none; a refused group of boxes reads as "Extras required".
