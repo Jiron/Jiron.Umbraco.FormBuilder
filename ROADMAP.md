@@ -2680,7 +2680,8 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
   - Done when: Playwright passes, creating a list of every kind through the UI (a URL list against a local stub host the test site allows), and axe is clean on the list editor.
 - [ ] **12.2 Themes and email layouts**
   - **The editor:** a theme list, and a visual token editor:
-    - light and dark colours;
+    - the tokens a base theme declares (`IFormBuilderTheme.Tokens`), with their defaults, which nothing else reads yet (ADR-0105, added in 6.8d);
+    - light and dark colours, the dark ones only for a base theme whose `IFormBuilderTheme.DarkScheme` is true (ADR-0105, added in 6.8d);
     - the font family (system stacks or "use the site's font");
     - type scale, spacing, corners, borders, the focus ring, button style.
   - **The preview:** a live kitchen-sink form, with WCAG contrast checks shown in place.
@@ -2691,6 +2692,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - Logo (media picker), colours, header and footer per culture, preview with a sample entry in light and dark, and a test send.
   - Done when:
     - Playwright and contrast unit tests pass;
+    - a test shows the editor listing a site's own base theme's `Tokens` with their defaults, and offering dark colours only where its `DarkScheme` is true;
     - Playwright covers the email layout editor, and its test email arrives in the pickup folder.
 - [ ] **12.3 Templates**
   - **Built-in templates,** in en and de:
