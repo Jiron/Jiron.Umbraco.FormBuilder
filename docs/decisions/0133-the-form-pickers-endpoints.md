@@ -3,7 +3,7 @@
 - Status: accepted; builds the picker rule of [ADR-0013](0013-permissions.md), and adds a third access declaration to
   [ADR-0050](0050-management-api-base.md)
 - Date: 2026-10-31
-- Roadmap step: 6.7e (decided and built); the picker and its settings in the backoffice use them (6.7f)
+- Roadmap step: 6.7e (decided and built); the picker (6.7f) and its settings (6.7g) in the backoffice use them
 
 ## Context
 
