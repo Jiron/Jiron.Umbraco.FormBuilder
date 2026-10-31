@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 // Unit tests for scripts/demo-check.mjs, the demo's texts and scripts/demo.ps1. Run: node --test "scripts/tests/*.test.mjs"
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, test } from 'node:test';
@@ -31,7 +31,7 @@ describe('what the pages must show', () => {
     assert.deepEqual(Object.keys(want), ['en', 'de']);
     assert.equal(want.en.heading, content.home.en.heading);
     assert.equal(want.de.path, '/de/');
-    assert.deepEqual(want.en.menu, ['Events', 'Careers', 'Feedback', 'Room hire', 'Contact', 'Members']);
+    assert.deepEqual(want.en.menu, ['Events', 'Careers', 'Feedback', 'Room hire', 'Contact', 'Members', 'Volunteer']);
     assert.deepEqual(want.en.legal, ['Privacy', 'Imprint']);
     assert.equal(want.en.blocks.length, content.home.blocks.length);
     assert.equal(want.de.text('Demo.Login.Failed'), content.dictionary['Demo.Login.Failed'].de);
@@ -57,8 +57,14 @@ describe("the demo's accounts", () => {
 });
 
 describe("the seeder's texts (DemoContent.json)", () => {
-  const types = new Set(['demoPage', 'demoMembers', 'demoLogin', 'demoLegalPage', 'demoSpecimen']);
-  const blockTypes = new Set(['demoTextBlock', 'demoHighlightBlock']);
+  const types = new Set(['demoPage', 'demoMembers', 'demoLogin', 'demoLegalPage', 'demoSpecimen', 'demoThanks']);
+  const blockTypes = new Set(['demoTextBlock', 'demoHighlightBlock', 'jfbFormBlock']);
+  // The demo forms' definitions, by alias (Seeding/Forms/<alias>.json, ADR-0094).
+  const formAliases = new Set(
+    readdirSync(join(root, DEMO, 'Seeding', 'Forms'))
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => file.slice(0, -'.json'.length)),
+  );
   const pages = [content.home, ...content.pages];
 
   test('give every page a unique fixed key, a known type and every text in English and German', () => {
@@ -73,6 +79,13 @@ describe("the seeder's texts (DemoContent.json)", () => {
       }
       for (const block of page.blocks) {
         assert.ok(blockTypes.has(block.type), block.type);
+        if (block.type === 'jfbFormBlock') {
+          // The form block of "Create a form block for me" picks a demo form by its alias, and has no texts (ADR-0136).
+          assert.ok(formAliases.has(block.form), `${page.en.name}: the form block's form ${block.form}`);
+          assert.equal(block.en ?? block.de, undefined, `${page.en.name}: a form block has no texts`);
+          continue;
+        }
+        assert.equal(block.form, undefined, `${page.en.name}: only a form block picks a form`);
         for (const language of ['en', 'de']) assert.ok(block[language].heading && block[language].text, `${block.en.heading} ${language}`);
       }
     }
@@ -85,6 +98,10 @@ describe("the seeder's texts (DemoContent.json)", () => {
     const specimen = content.pages.filter((page) => page.type === 'demoSpecimen');
     assert.deepEqual(specimen.map((page) => page.form), ['specimen'], 'one specimen, with the form of every field type');
     for (const language of ['en', 'de']) assert.ok(!expectations(content)[language].menu.includes(specimen[0][language].name), 'the menu leaves the specimen out');
+    const thanks = content.pages.filter((page) => page.type === 'demoThanks');
+    assert.equal(thanks.length, 1, 'one thanks page, the form block picker\'s page after a send (ADR-0136)');
+    for (const language of ['en', 'de']) assert.ok(!expectations(content)[language].menu.includes(thanks[0][language].name), 'the menu leaves the thanks page out');
+    assert.ok(content.pages.some((page) => page.blocks.some((block) => block.type === 'jfbFormBlock')), 'a page shows a form block');
     const views = ['Shared/_DemoLayout.cshtml', 'demoLogin.cshtml', 'demoMembers.cshtml'].map((view) =>
       readFileSync(join(root, DEMO, 'Views', view), 'utf8'),
     );
