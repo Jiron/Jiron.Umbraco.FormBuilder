@@ -837,8 +837,23 @@ one and fails on any difference: after a change to the API, run the snapshot tes
 `npm run generate-client -w @jfb/backoffice`, and commit both. `packages/backoffice/src/hey-api.test.ts` shows that
 the generated client starts from the backoffice's own HTTP client, whose settings win. `packages/backoffice/src/lang/lang.test.ts`
 holds the English and German dictionaries to the same keys, each a text, to every `#` key of `docs/api/field-types.json`,
-and the field types' areas to no key nothing serves; `bundle.manifests.test.ts` shows a `localization` manifest for
-each of the two languages loading its dictionary.
+and the field types' areas to no key nothing serves, a function's text given sample values; it holds the form picker's
+screens (`jfbFormPicker`) to exactly the keys their elements use. `bundle.manifests.test.ts` shows a `localization`
+manifest for each of the two languages loading its dictionary, and the form picker's schema named after the server's
+property editor (read from `FormPickerPropertyEditor.cs`) with its own UI as the default, its sidebar under the token's
+alias and the block label's `jfbFormName`, each loading its module.
+
+**The form picker** (`packages/backoffice/src/picker`, Vitest in jsdom with Umbraco's packages transformed by Vite and
+`src/test-setup.ts` adding what jsdom lacks: constraint validation on `ElementInternals`, `SVGAElement` and
+`ResizeObserver`; ADR-0134). Each test replaces the reads of `picker-data.ts` with hand-answered fakes and registers
+the English dictionary (`src/testing.ts`):
+
+| File | What it holds |
+| --- | --- |
+| `form-picker.test.ts` | the property: the picked form by name and alias, looked up with the data type's key from the content editor's property context (none outside it); several forms in their order with Choose, one form without it, Choose alone while empty; a form the picker cannot show in Umbraco's not-found look with its own Remove label; rows in their final shape while the names load; read-only with neither Remove nor Choose; Remove at once, the value written, the change event, and the focus asked of the next Remove and then of Choose (jsdom keeps no focus inside UUI's slotted buttons, so the review follows it in Edge); Choose opening the sidebar with the settings (several, limited, the data type) and the picks, and writing its answer without a second lookup; Close keeping the value; a failed lookup with Try again; a mandatory picker invalid while empty |
+| `form-picker-modal.test.ts` | the sidebar, through a modal context as Umbraco's holds the value: the top level within the data type's limits, rows in their shape while it loads, the search focused; a folder opened in place (`aria-expanded`, its level nested and indented), loaded once, closed and opened again; one form at a time (`aria-pressed`, the check mark, Choose enabled, pressed again for none) and several in the order picked with the property's picks kept, Choose submitting; the search after its pause with the loader in the field, an older answer dropped, the count announced, a search that finds nothing with Clear search bringing the levels back and the focus to the field; Show more with the focus on the first form it brought; a failed level with Try again; an empty library told from a data type whose allowed forms are not published; no data type, and Close rejecting |
+| `form-name.ufm.test.ts` | the block label: the picked form's name without a data type's limits, several names joined as English joins a list with "(not available)" for one that is gone, the label following the block's value, nothing for no value or a failed lookup, and the component rendering its element with the token's alias when Umbraco calls `render` without the instance |
+| `picked-keys.test.ts` | the stored value: keys in order, each once, in lower case; none for no value; written as the server reads them |
 
 ## The public API tests
 

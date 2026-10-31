@@ -212,7 +212,9 @@ depth is used; a box on the page is a border, not a shade.
 | `--jfb-bo-type-display` | 20 px | workspace and dialog titles |
 
 UUI names no 16 or 20 px type size, so the backoffice package declares these two on its own elements.
-Merge tags, aliases and configuration keys use a monospace stack (`Consolas, "Cascadia Mono", Menlo, monospace`).
+Merge tags, aliases and configuration keys use a monospace stack (`Consolas, "Cascadia Mono", Menlo, monospace`),
+`--jfb-bo-font-mono`. The package declares its own tokens once, in `packages/backoffice/src/styles/tokens.ts`, and each
+element adds them to its styles.
 
 ### Colour
 

@@ -90,7 +90,8 @@ export default defineConfig(
           ],
           patterns: [
             {
-              group: ['lit', 'lit/*', 'lit-html', 'lit-html/*'],
+              // A regex, not a group: gitignore patterns would match the lit at the end of the backoffice's own path.
+              regex: '^lit(-html)?(/|$)',
               message: 'Import Lit from @umbraco-cms/backoffice/external/lit, which the backoffice provides.',
             },
           ],

@@ -9,7 +9,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.Picker;
 /// with the settings of its data type (<see cref="FormPickerConfiguration"/>): one form or several, the folders and
 /// forms it may pick, and a theme and a page after a send for every form it places. Its value converters give the
 /// Razor views a <see cref="Rendering.FormBuilderFormReference"/> (or a list of them) and the Content Delivery API the
-/// forms' key, alias and name, or the forms themselves when the property is expanded. 6.7e adds its backoffice screens.
+/// forms' key, alias and name, or the forms themselves when the property is expanded. The backoffice package holds its
+/// client half under the same alias (ADR-0134).
 /// </summary>
 /// <param name="dataValueEditorFactory">Umbraco's factory of value editors.</param>
 /// <param name="services">The site's services, which the editors take theirs from.</param>

@@ -1,6 +1,11 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import umbracoPackage from '../public/umbraco-package.json';
 import { manifests } from './bundle.manifests';
+import { FORM_PICKER_MODAL } from './picker/form-picker-modal.token';
+import { must } from './testing';
 
 interface PackageManifest {
   id: string;
@@ -51,5 +56,64 @@ describe('the bundle', () => {
     expect(english).toEqual((await import('./lang/en')).default);
     expect(german).toEqual((await import('./lang/de')).default);
     expect(german).not.toEqual(english);
+  });
+});
+
+/** The server's form picker alias, read from its property editor. */
+function serverPickerAlias(): string | undefined {
+  let folder = dirname(fileURLToPath(import.meta.url));
+  while (!existsSync(join(folder, 'Jiron.Umbraco.FormBuilder.slnx'))) folder = dirname(folder);
+  const source = readFileSync(
+    join(folder, 'src', 'Jiron.Umbraco.FormBuilder.Web', 'Picker', 'FormPickerPropertyEditor.cs'),
+    'utf8',
+  );
+  return /EditorAlias = "([^"]+)"/.exec(source)?.[1];
+}
+
+interface Loadable {
+  type: string;
+  alias: string;
+  meta?: Record<string, unknown>;
+  element?: () => Promise<Record<string, unknown>>;
+  api?: () => Promise<Record<string, unknown>>;
+}
+
+const byType = (type: string) => (manifests as unknown as Loadable[]).filter((manifest) => manifest.type === type);
+
+describe('the form picker (ADR-0134)', () => {
+  it("names its schema after the server's property editor, with the picker's own UI as the default", () => {
+    const [schema] = byType('propertyEditorSchema');
+    const [ui] = byType('propertyEditorUi');
+
+    expect(serverPickerAlias()).toBe('Jiron.FormBuilder.FormPicker');
+    expect(schema?.alias).toBe(serverPickerAlias());
+    expect(schema?.meta?.['defaultPropertyEditorUiAlias']).toBe(ui?.alias);
+    expect(ui?.meta).toMatchObject({
+      propertyEditorSchemaAlias: schema?.alias,
+      group: 'pickers',
+      supportsReadOnly: true,
+    });
+  });
+
+  it("registers the sidebar under its token's alias and the block label's component as jfbFormName", () => {
+    const [modal] = byType('modal');
+    const [ufm] = byType('ufmComponent');
+
+    expect(modal?.alias).toBe(FORM_PICKER_MODAL.toString());
+    expect(ufm?.meta).toEqual({ alias: 'jfbFormName' });
+  });
+
+  it('loads each element and the component from its own module', { timeout: 60_000 }, async () => {
+    const [ui] = byType('propertyEditorUi');
+    const [modal] = byType('modal');
+    const [ufm] = byType('ufmComponent');
+
+    const load = (loader: (() => Promise<Record<string, unknown>>) | undefined, what: string) => must(loader, what)();
+    expect(typeof (await load(ui?.element, "the picker's element"))['element']).toBe('function');
+    expect(typeof (await load(modal?.element, "the sidebar's element"))['element']).toBe('function');
+    expect(typeof (await load(ufm?.api, "the label's component"))['api']).toBe('function');
+    expect(customElements.get('jfb-form-picker')).toBeDefined();
+    expect(customElements.get('jfb-form-picker-modal')).toBeDefined();
+    expect(customElements.get('ufm-jfb-form-name')).toBeDefined();
   });
 });

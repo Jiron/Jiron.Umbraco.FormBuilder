@@ -16,5 +16,8 @@ export default defineConfig({
   test: {
     name: 'backoffice',
     environment: 'jsdom',
+    // Umbraco's packages hold directory imports that Node's resolver refuses, so Vite transforms them (ADR-0134).
+    server: { deps: { inline: [/@umbraco-cms[/]/, /@umbraco-ui[/]/] } },
+    setupFiles: ['src/test-setup.ts'],
   },
 });
