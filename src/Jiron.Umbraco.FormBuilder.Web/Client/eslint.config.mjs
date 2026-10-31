@@ -5,7 +5,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 const noHtmlStrings =
-  'Build the DOM with createElement and textContent: website code sets no HTML from strings (ROADMAP section 4.10). The reviewed exceptions parse in an inert <template>: the rich texts that recall answers, whose nodes never enter the page (ADR-0115), and form_changed (ADR-0004), which comes with 6.4j.';
+  'Build the DOM with createElement and textContent: website code sets no HTML from strings (ROADMAP section 4.10). The reviewed exceptions parse in an inert <template>: the rich texts that recall answers, whose nodes never enter the page (ADR-0115), the rich texts the server sanitised that the headless element writes as the Razor views do (ADR-0128), and form_changed (ADR-0004), which comes with 6.4j.';
 const noUnsafeDirectives =
   'No unsafe directives in the backoffice: Lit templates escape everything (ROADMAP section 4.10).';
 

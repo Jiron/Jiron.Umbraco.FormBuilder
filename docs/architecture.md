@@ -184,8 +184,11 @@ flowchart LR
   ([ADR-0116](decisions/0116-the-runtimes-budget-counts-one-language.md)), and its build takes a terser pass besides
   the bundler's minifier ([ADR-0119](decisions/0119-a-terser-pass-for-the-website-runtime.md));
 - `element`: `<jfb-form>`, the headless renderer, with the same markup and runtime: it writes the built-in views from
-  the element endpoint's answer, whose types (`src/answer.d.ts`) `scripts/generate-public-types.mjs` makes from the
-  schema the unit tests write (`src/answer.schema.json`, ADR-0128);
+  the element endpoint's answer (`src/views.ts` with `src/dom.ts`, view for view as the Razor views), whose types
+  (`src/answer.d.ts`) `scripts/generate-public-types.mjs` makes from the schema the unit tests write
+  (`src/answer.schema.json`); the element (`src/jfb-element.ts`) keeps its instance id, adds the theme's
+  stylesheets and the runtime once per document, shows the form once its stylesheets loaded, and never posts it as a
+  page would (ADR-0128);
 - `backoffice`: the Forms section in Lit and TypeScript with UUI, through the generated client.
 
 ## 2. The definition model

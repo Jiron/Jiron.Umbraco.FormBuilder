@@ -58,6 +58,17 @@ classes, the marks or the navigation.
   and dispatches `jfb:rendered`. It writes the built-in views only: a site's own views (a theme's folder, a form's
   `_forms/<alias>` overrides) apply to Razor pages, and a field of a site's own type gets its control from a renderer
   the site registers with the element (15.1), the field's frame without one.
+- **The element's life** (decided in 6.6e): it takes its instance id on its first render and keeps it, so a render
+  again keeps its ids; it renders when it first joins a document and again when `api`, `form`, `culture`,
+  `content` or `theme` changes (after a change of a `context-` attribute the page calls `render()`); moved to
+  another place it keeps its form and what the visitor typed; an answer, or a failure, that comes after a newer render
+  started is dropped. It adds each stylesheet once per document and shows the form once they loaded or failed, or
+  after three seconds, so the form never shows unstyled and then jumps; the runtime's module loads beside them and
+  enhances the form once it is written. `jfb:error` carries the problem's `code`, else `network_error` (the API
+  not reachable, or not allowing the page's origin), `server_error`, `contract_mismatch` or `invalid_request`.
+- **No post as a page would make it:** the element's form has no address, which only a post without JavaScript uses,
+  so the browser would post the visitor's answers to the page's own address. The element stops every native post of
+  its form; the runtime sends it once it can (6.4i).
 - **Parity:** the fixture holds, for each form, the endpoint's answer and the server's markup for the same request;
   the element's tests write the answer and compare the two as DOM trees (elements, attributes as sets, text with its
   white space collapsed), the server's markup without its post-only parts.

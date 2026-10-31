@@ -980,8 +980,8 @@ A settings change raises a notification and a cache refresher: the saving server
   - `window.JironFormBuilder.init(root)` for forms injected later;
   - `get(formEl)` → `{ validate(), next(), back(), submit(), values() }`;
   - `consent.grant('captcha')`/`withdraw()`.
-- **DOM events:** `jfb:ready`, `jfb:page`, `jfb:invalid`, `jfb:submitting`, `jfb:submitted`, `jfb:error`. They are for the site's own analytics; Jiron Form Builder tracks nothing itself.
-- **Headless:** the TypeScript types and JSON schema of the public projection, and `<jfb-form>` with `api`, `form` and `culture` attributes.
+- **DOM events:** `jfb:ready`, `jfb:page`, `jfb:invalid`, `jfb:submitting`, `jfb:submitted`, `jfb:error`; `<jfb-form>` adds `jfb:rendered` once it shows its form, and `jfb:error` when it cannot (ADR-0128, added in 6.6e). They are for the site's own analytics; Jiron Form Builder tracks nothing itself.
+- **Headless:** the TypeScript types and JSON schema of the public projection, and `<jfb-form>` with `api`, `form`, `culture`, `content`, `theme` and `context-<name>` attributes (ADR-0128).
 
 ### 4.10 Security and privacy by design
 
