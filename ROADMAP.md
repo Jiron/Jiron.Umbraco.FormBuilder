@@ -2220,7 +2220,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **6.6b Server-key submissions** (6.6 split in four, WORKLOG 2026-10-31) (2026-10-31, 6db4e41)
   - **Server-key submissions** (§4.6, ADR-0012): `Authorization: Jfb-Key <key>` against the configured names and SHA-256 hashes, compared in fixed time; such a submission skips the browser challenge, the captcha and the honeypot (each as it arrives in 7.1 and 7.2), never validation, the content rules or the domain limits; it is limited per key, records the key's name as `jfbServerKey`, which `developer.contextValues` cannot list, and the receipt endpoint accepts the key that submitted.
   - Done when: server-key tests pass (a right key, a wrong one, a key for a hash of another length, the fixed-time comparison, the partition a key's requests count in, which 7.1's limiter applies, the recorded name, the receipt, a context name starting with `jfb` refused, a key never logged).
-- [ ] **6.6c The Content Delivery API** (6.6 split in four, WORKLOG 2026-10-31)
+- [x] **6.6c The Content Delivery API** (6.6 split in four, WORKLOG 2026-10-31) (2026-10-31, 5a64ea7)
   - **The Content Delivery API:** the form picker returns `{key, alias, name}`, and with expansion, the projection. This step builds the picker's property editor on the server, its value converters and its Delivery API output; 6.7 builds its data type's settings, its backoffice picker, blocks and "used on".
   - Done when: the Delivery API test passes (a page that picks a form answers `{key, alias, name}`, with expansion the projection in the request's culture, a form not published or not headless answers none).
 - [ ] **6.6d The renderer** (6.6 split in four, WORKLOG 2026-10-31)
