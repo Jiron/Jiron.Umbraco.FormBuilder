@@ -462,13 +462,11 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
         outline-offset: -2px;
       }
 
-      .row[aria-pressed='true'] {
-        background-color: var(--uui-color-selected);
-        color: var(--uui-color-selected-contrast);
-      }
-
+      /* UUI's selected colours fall short of AA in its dark theme (docs/ux/tokens.md); a chosen row keeps one colour. */
+      .row[aria-pressed='true'],
       .row[aria-pressed='true']:hover {
-        background-color: var(--uui-color-selected-emphasis);
+        background-color: var(--jfb-bo-color-selected);
+        color: var(--uui-color-selected-contrast);
       }
 
       .expand {

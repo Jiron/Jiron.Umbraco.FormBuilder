@@ -258,7 +258,7 @@ export class FormPickerElement
       /* The name and the icon carry the state; the reason stays in the detail's own colour, which keeps its contrast. */
       .not-available umb-icon,
       .not-available [slot='name'] {
-        color: var(--uui-color-danger);
+        color: var(--jfb-bo-color-danger-text);
       }
 
       /* The shape of uui-ref-node: a pixel around a padded box with a line of name and a line of detail. */
@@ -314,7 +314,7 @@ export class FormPickerElement
         align-items: center;
         gap: var(--uui-size-space-3);
         padding-block: var(--uui-size-space-2);
-        color: var(--uui-color-danger);
+        color: var(--jfb-bo-color-danger-text);
       }
     `,
   ];
