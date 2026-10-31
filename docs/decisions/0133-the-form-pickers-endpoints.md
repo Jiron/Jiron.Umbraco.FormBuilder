@@ -1,7 +1,8 @@
 # 0133. The form picker's endpoints
 
 - Status: accepted; builds the picker rule of [ADR-0013](0013-permissions.md), and adds a third access declaration to
-  [ADR-0050](0050-management-api-base.md)
+  [ADR-0050](0050-management-api-base.md); a fifth endpoint, the folders of given keys, added in 6.7g
+  ([ADR-0135](0135-the-form-pickers-settings-in-the-backoffice.md))
 - Date: 2026-10-31
 - Roadmap step: 6.7e (decided and built); the picker (6.7f) and its settings (6.7g) in the backoffice use them
 

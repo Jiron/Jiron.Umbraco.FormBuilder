@@ -14,11 +14,12 @@ using Umbraco.Cms.Web.Common.Routing;
 namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Content;
 
 /// <summary>
-/// The form picker's endpoints (section 4.7 "Content", ADR-0013, ADR-0133): the library's folders and forms level by level, a
-/// search, the forms of given keys and the site's themes, for the picker in the content editor and for its data type's
-/// settings. They are authorised by content access, not by Jiron Form Builder's permissions, and answer names and keys
-/// only: published forms outside the trash that are not restricted, the restricted ones the user sees, and the folders
-/// that lead to them; with <c>dataTypeKey</c>, only what that picker's settings allow.
+/// The form picker's endpoints (section 4.7 "Content", ADR-0013, ADR-0133, ADR-0135): the library's folders and forms
+/// level by level, a search, the forms and the folders of given keys and the site's themes, for the picker in the
+/// content editor and for its data type's settings. They are authorised by content access, not by Jiron Form Builder's
+/// permissions, and answer names and keys only: published forms outside the trash that are not restricted, the
+/// restricted ones the user sees, and the folders that lead to them (by key, every folder the user sees); with
+/// <c>dataTypeKey</c>, only what that picker's settings allow.
 /// </summary>
 [ApiVersion("1.0")]
 [BackOfficeRoute(FormBuilderManagementApi.Route + "/picker")]
@@ -107,6 +108,25 @@ internal sealed class PickerController(IFormBuilderPickerService picker, IDataTy
         }
 
         var found = await picker.ListFormsAsync(RequestAccess.User, scope, keys ?? [], cancellationToken);
+        return Ok(found.Select(PickerItemResponseModel.Of).ToList());
+    }
+
+    /// <summary>
+    /// The folders of these keys the user may see outside the trash, in the order asked: what a picker's settings show for
+    /// their allowed folders (ADR-0135), also one that leads to no published form.
+    /// </summary>
+    /// <param name="keys">The folders' keys, at most 100.</param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
+    [HttpGet("folders")]
+    [MapToApiVersion("1.0")]
+    [FormBuilderContentAccess]
+    [ProducesResponseType(typeof(IReadOnlyList<PickerItemResponseModel>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Folders(
+        [FromQuery, MaxLength(FormBuilderPickerService.MaxKeys)] Guid[]? keys = null,
+        CancellationToken cancellationToken = default)
+    {
+        var found = await picker.ListFoldersAsync(RequestAccess.User, keys ?? [], cancellationToken);
         return Ok(found.Select(PickerItemResponseModel.Of).ToList());
     }
 

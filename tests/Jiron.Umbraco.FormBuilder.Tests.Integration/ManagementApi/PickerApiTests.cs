@@ -43,6 +43,7 @@ public sealed class PickerApiTests : ManagementApiTestBase
     private Guid _secret;
     private Guid _draft;
     private Guid _old;
+    private Guid _planned;
 
     // Events (Archive below it), News and HR (restricted) at the root, and Planned, which holds only a draft. Published:
     // Contact and Secret (restricted) at the root, Spring in Events, Autumn in Archive, Weekly in News, Payroll in HR;
@@ -55,7 +56,7 @@ public sealed class PickerApiTests : ManagementApiTestBase
         _news = await FolderAsync("News");
         _hr = await FolderAsync("HR");
         await RestrictAsync(_hr, "hr", FormBuilderPermissions.ViewEntries);
-        var planned = await FolderAsync("Planned");
+        _planned = await FolderAsync("Planned");
         _contact = await PublishedAsync("Contact");
         _spring = await PublishedAsync("Spring", _events);
         _autumn = await PublishedAsync("Autumn", _archive);
@@ -65,7 +66,7 @@ public sealed class PickerApiTests : ManagementApiTestBase
         var forms = GetRequiredService<IFormBuilderFormService>();
         Assert.That(await GetRequiredService<IFormBuilderAccessService>().RestrictFormAsync(_secret, (await forms.GetAsync(_secret))!.ConcurrencyVersion, true, null), Is.Not.Null);
         _draft = await FormAsync("Draft");
-        await FormAsync("Unannounced", planned);
+        await FormAsync("Unannounced", _planned);
         _old = await PublishedAsync("Old");
         await TrashFormAsync(_old);
     }
@@ -173,11 +174,35 @@ public sealed class PickerApiTests : ManagementApiTestBase
     }
 
     [Test]
+    public async Task TheFoldersOfKeys_AreThoseTheUserSeesOutsideTheTrash_AlsoWithoutAPublishedForm_InTheOrderAsked()
+    {
+        var gone = await FolderAsync("Gone");
+        var below = await FolderAsync("Below", gone);
+        await TrashFolderAsync(gone);
+        var group = await GroupAsync("jfbHrEditors", Constants.Applications.Content, AccessPersonas.Section);
+        await GrantAsync(group, PermissionTarget.Folder, _hr, FormBuilderPermissions.ViewEntries);
+        var granted = new ManagementApiCaller(Client, Services, _ => ["jfbHrEditors"]);
+
+        var editor = await CallAsync(Editor, HttpMethod.Get, Folders(_hr, _archive, _planned, gone, below, Guid.NewGuid(), _events, _archive));
+        var hrEditor = await granted.CallAsync("hrEditor", HttpMethod.Get, Folders(_hr, _events));
+        var admin = await CallAsync("admin", HttpMethod.Get, Folders(_hr, gone, _planned));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(editor.Status, Is.EqualTo(HttpStatusCode.OK), editor.Text);
+            Assert.That(Items(editor), Is.EqualTo(new[] { "folder Archive +", "folder Planned", "folder Events +" }), "in the order asked, each once; Planned without a published form, never HR (restricted), Gone or Below (in the trash) or a key of nothing");
+            Assert.That(Items(hrEditor), Is.EqualTo(new[] { "folder HR +", "folder Events +" }), "a grant of a group of theirs shows the restricted folder");
+            Assert.That(Items(admin), Is.EqualTo(new[] { "folder HR +", "folder Planned" }), "an administrator sees every folder, still none in the trash");
+            Assert.That(editor.Text, Does.Not.Contain("permissions").And.Not.Contain("isRestricted"), "names and keys only");
+        });
+    }
+
+    [Test]
     public async Task AUserWithNoneOfTheFourSections_IsRefused_AndOneWithTheSettingsSectionOnlyIsAnswered()
     {
         await GroupAsync("jfbSettingsOnly", Constants.Applications.Settings);
         var settings = new ManagementApiCaller(Client, Services, _ => ["jfbSettingsOnly"]);
-        string[] paths = ["picker/children", "picker/search?text=a", Keys(_contact), "picker/themes"];
+        string[] paths = ["picker/children", "picker/search?text=a", Keys(_contact), Folders(_events), "picker/themes"];
 
         var refused = new List<string>();
         var answered = new List<string>();
@@ -205,11 +230,14 @@ public sealed class PickerApiTests : ManagementApiTestBase
         var text = await CallAsync(Editor, HttpMethod.Get, "picker/search");
         var many = await CallAsync(Editor, HttpMethod.Get, Keys([.. Enumerable.Range(0, FormBuilderPickerService.MaxKeys + 1).Select(_ => Guid.NewGuid())]));
         var none = await CallAsync(Editor, HttpMethod.Get, "picker/forms");
+        var manyFolders = await CallAsync(Editor, HttpMethod.Get, Folders([.. Enumerable.Range(0, FormBuilderPickerService.MaxKeys + 1).Select(_ => Guid.NewGuid())]));
+        var noFolders = await CallAsync(Editor, HttpMethod.Get, "picker/folders");
 
         Assert.Multiple(() =>
         {
-            Assert.That((take.Outcome, text.Outcome, many.Outcome), Is.EqualTo(("400 invalid_request", "400 invalid_request", "400 invalid_request")));
+            Assert.That((take.Outcome, text.Outcome, many.Outcome, manyFolders.Outcome), Is.EqualTo(("400 invalid_request", "400 invalid_request", "400 invalid_request", "400 invalid_request")));
             Assert.That((none.Status, none.Text), Is.EqualTo((HttpStatusCode.OK, "[]")), "no keys, no forms");
+            Assert.That((noFolders.Status, noFolders.Text), Is.EqualTo((HttpStatusCode.OK, "[]")), "no keys, no folders");
         });
     }
 
@@ -263,6 +291,8 @@ public sealed class PickerApiTests : ManagementApiTestBase
     }
 
     private static string Keys(params Guid[] keys) => "picker/forms?" + string.Join("&", keys.Select(key => $"keys={key}"));
+
+    private static string Folders(params Guid[] keys) => "picker/folders?" + string.Join("&", keys.Select(key => $"keys={key}"));
 
     // Each item as "kind name", a folder that leads further marked " +".
     private static string[] Items(ApiAnswer answer)

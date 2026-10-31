@@ -884,7 +884,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 - **Library:** option lists (CRUD, preview, CSV/TXT upload), themes (CRUD, preview CSS), email layouts (CRUD, preview, test send), templates.
 - **Settings** per section and scope; **permissions**; **audit log**; **deliveries** (emails and webhook runs, retry); **insights** and **answer summaries**; the current user's own **user settings** (`jfbUserSetting`).
 - **Privacy:** find a person by email or member, export everything about them (ZIP of JSON and files), erase or anonymise, retention dry run.
-- **Content:** the form picker's folders and forms, search, the forms of given keys and the site's themes, authorised by content access (6.7e, ADR-0013).
+- **Content:** the form picker's folders and forms, search, the forms and the folders of given keys and the site's themes, authorised by content access (6.7e, 6.7g, ADR-0013).
 - **Setup and health:** checklist status and health results (any user of the section); "create a form block type for me", which creates an element type and a data type and so needs `manageSettings` and Umbraco's Settings section (6.7b).
 
 ### 4.8 Settings model

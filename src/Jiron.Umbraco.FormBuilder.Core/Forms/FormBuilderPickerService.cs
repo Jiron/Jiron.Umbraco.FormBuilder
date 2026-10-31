@@ -47,6 +47,12 @@ internal interface IFormBuilderPickerService
 
     /// <summary>The forms of these keys the picker may pick, in the order asked; a key it may not pick is left out.</summary>
     Task<IReadOnlyList<PickerItem>> ListFormsAsync(AccessUser user, PickerScope scope, IReadOnlyCollection<Guid> keys, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The folders of these keys the user may see outside the trash, in the order asked, whether or not they lead to a form
+    /// the picker may pick: the allowed folders a picker's settings name (ADR-0135). A key it may not show is left out.
+    /// </summary>
+    Task<IReadOnlyList<PickerItem>> ListFoldersAsync(AccessUser user, IReadOnlyCollection<Guid> keys, CancellationToken cancellationToken = default);
 }
 
 /// <inheritdoc />
@@ -111,6 +117,20 @@ internal sealed class FormBuilderPickerService(IFolderRepository folders, IFormR
         return [.. keys.Distinct().Where(byKey.ContainsKey).Select(key => FormItem(byKey[key]))];
     }
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<PickerItem>> ListFoldersAsync(AccessUser user, IReadOnlyCollection<Guid> keys, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(keys);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(keys.Count, MaxKeys);
+        if (keys.Count == 0)
+        {
+            return [];
+        }
+
+        var reach = await ReachAsync(user, PickerScope.Everything, cancellationToken);
+        return [.. keys.Distinct().Select(reach.Folder).OfType<StoredFolder>().Where(reach.Sees).Select(folder => new PickerItem(LibraryItemKind.Folder, folder.Key, folder.Name, null, reach.LeadsToForms(folder.Id)))];
+    }
+
     private static PickerItem FormItem(StoredForm form) => new(LibraryItemKind.Form, form.Key, form.Name, form.Alias, false);
 
     // The folders first (in the tree's order, in memory), then the forms the database pages.
@@ -170,7 +190,7 @@ internal sealed class FormBuilderPickerService(IFolderRepository folders, IFormR
             }
         }
 
-        return new Reach(scope, live, byId, outside, allowed, leads, filter);
+        return new Reach(scope, live, byId, outside, allowed, leads, visibility, filter);
     }
 
     // A folder and those above it, its own first, bounded by the tree's depth so a broken parent chain cannot loop.
@@ -191,6 +211,7 @@ internal sealed class FormBuilderPickerService(IFolderRepository folders, IFormR
         IReadOnlySet<int> Outside,
         IReadOnlySet<int> Allowed,
         IReadOnlySet<int> Leads,
+        FormVisibility Visibility,
         FormFilter Filter)
     {
         public StoredFolder? Folder(Guid key) => Live.FirstOrDefault(folder => folder.Key == key);
@@ -198,6 +219,9 @@ internal sealed class FormBuilderPickerService(IFolderRepository folders, IFormR
         public bool LeadsToForms(int folderId) => Leads.Contains(folderId);
 
         public bool InScope(int folderId) => Scope.LimitsNothing || Allowed.Contains(folderId);
+
+        // Whether the user may see a live folder: one below no restricted folder, or one a grant of theirs covers.
+        public bool Sees(StoredFolder folder) => Visibility.IsEverything || Visibility.FolderIds.Contains(folder.Id);
 
         // Whether an allowed folder lies below another allowed folder, which shows it already.
         public bool BelowAllowed(StoredFolder folder) => Chain(folder, ById).Skip(1).Any(above => Scope.Folders.Contains(above.Key));

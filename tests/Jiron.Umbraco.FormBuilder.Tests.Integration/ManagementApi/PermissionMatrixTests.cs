@@ -61,7 +61,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
     /// The reviewed exception list: the endpoints authorised by content access instead of Jiron Form Builder's permissions.
     /// Only the form picker's may be on it (6.7e).
     /// </summary>
-    private static readonly string[] Exceptions = ["GET picker/children", "GET picker/search", "GET picker/forms", "GET picker/themes"];
+    private static readonly string[] Exceptions = ["GET picker/children", "GET picker/search", "GET picker/forms", "GET picker/folders", "GET picker/themes"];
 
     // The personas who may stand for "sees it but lacks the permission", in the order the test tries them.
     private static readonly string[] Seers = ["viewer", "designer", "entryHandler", "privacyOfficer", "noAccess"];

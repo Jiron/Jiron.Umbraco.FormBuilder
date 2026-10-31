@@ -1249,6 +1249,41 @@ export type PickerChildrenResponses = {
 
 export type PickerChildrenResponse = PickerChildrenResponses[keyof PickerChildrenResponses];
 
+export type PickerFoldersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        keys?: Array<string>;
+    };
+    url: '/umbraco/jfb/management/api/v1/picker/folders';
+};
+
+export type PickerFoldersErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type PickerFoldersError = PickerFoldersErrors[keyof PickerFoldersErrors];
+
+export type PickerFoldersResponses = {
+    /**
+     * OK
+     */
+    200: Array<PickerItemResponseModel>;
+};
+
+export type PickerFoldersResponse = PickerFoldersResponses[keyof PickerFoldersResponses];
+
 export type PickerFormsData = {
     body?: never;
     path?: never;
