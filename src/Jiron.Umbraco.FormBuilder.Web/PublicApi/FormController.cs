@@ -7,6 +7,7 @@ using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
 using Jiron.Umbraco.FormBuilder.Web.ManagementApi;
 using Jiron.Umbraco.FormBuilder.Web.Rendering;
+using Jiron.Umbraco.FormBuilder.Web.Rendering.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
@@ -16,7 +17,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <summary>
 /// Forms, as headless sites render them and as a page's markup, their fields' options, the files visitors upload to
 /// them, the pages they check and the entries they submit, and the receipts of those (section 4.6, ADR-0084, ADR-0086,
-/// ADR-0087, ADR-0088, ADR-0089, ADR-0104).
+/// ADR-0087, ADR-0088, ADR-0089, ADR-0104, ADR-0128).
 /// </summary>
 /// <param name="requests">What the endpoints of forms read of a request and answer with.</param>
 /// <param name="pages">The culture and the page a request is for.</param>
@@ -25,6 +26,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.PublicApi;
 /// <param name="availability">Whether a form takes entries now.</param>
 /// <param name="forms">The published forms.</param>
 /// <param name="themes">The site's themes, which a page's markup is rendered in.</param>
+/// <param name="rendering">What a page renders for a form, which the element endpoint answers as JSON.</param>
+/// <param name="assets">The addresses of the stylesheets and the script a form's page loads.</param>
 [Route("forms")]
 internal sealed class FormController(
     FormRequests requests,
@@ -33,8 +36,13 @@ internal sealed class FormController(
     EntryRequests entries,
     FormAvailability availability,
     PublishedFormCache forms,
-    FormBuilderThemes themes) : FormBuilderPublicApiController
+    FormBuilderThemes themes,
+    FormRendering rendering,
+    PageAssets assets) : FormBuilderPublicApiController
 {
+    /// <summary>The start of a query name that gives a context value to the element endpoint, as <c>&lt;jfb-render&gt;</c>'s attributes do.</summary>
+    internal const string ContextQueryPrefix = "context-";
+
     /// <summary>
     /// A published form for headless rendering, when its settings allow it: its public projection with its texts in the
     /// culture, and what the endpoint adds. <c>Cache-Control: no-cache</c> with an <c>ETag</c> that is a hash of the
@@ -231,6 +239,99 @@ internal sealed class FormController(
             StatusCode = StatusCodes.Status200OK,
         };
         return new CultureResult(markup, CultureInfo.GetCultureInfo(await pages.CultureAsync(culture)));
+    }
+
+    /// <summary>
+    /// A published form's first render as the headless element writes it (ADR-0128): the view model the render endpoint
+    /// renders, for the same members, themes and availability, in the page's culture, with the instance id the element
+    /// gave the form and the definition endpoint's answer as the model data's text, as JSON with the stylesheets and the
+    /// script the page loads; without what only a post without JavaScript uses. A form that does not allow headless use
+    /// answers <c>404</c>, as the definition endpoint does. <c>Cache-Control: no-store</c>.
+    /// </summary>
+    /// <param name="key">The form's key.</param>
+    /// <param name="instance">The instance id the element gave the form, such as <c>jfb-1</c>.</param>
+    /// <param name="culture">The page's culture: one of the site's languages, otherwise the default language.</param>
+    /// <param name="contentKey">The page's content, whose site's settings apply.</param>
+    /// <param name="theme">The theme the placement names (ADR-0105), or none for the form's own; one the site lacks renders as <c>default</c>.</param>
+    /// <param name="cancellationToken">The request's cancellation, with its time limit.</param>
+    [HttpGet("{key}/element")]
+    [FormBuilderRateLimit(FormBuilderRateLimitPolicies.Read)]
+    [FormBuilderBodyLimit(0)]
+    [FormBuilderTimeLimit(20)]
+    [ProducesResponseType<FormElementResponseModel>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, FormBuilderProblemResult.MediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable, FormBuilderProblemResult.MediaType)]
+    public async Task<IActionResult> Element(
+        string key,
+        [FromQuery, Required] string? instance,
+        [FromQuery] string? culture,
+        [FromQuery] string? contentKey,
+        [FromQuery] string? theme,
+        CancellationToken cancellationToken)
+    {
+        if (instance is null || !FormInstances.IsId(instance))
+        {
+            return FormBuilderPublicProblems.InvalidRequest("instance");
+        }
+
+        Guid? content = null;
+        if (contentKey is not null)
+        {
+            if (!Guid.TryParse(contentKey, out var shown))
+            {
+                return FormBuilderPublicProblems.InvalidRequest("contentKey");
+            }
+
+            content = shown;
+        }
+
+        if (!FormPages.IsCulture(culture))
+        {
+            return FormBuilderPublicProblems.InvalidRequest("culture");
+        }
+
+        if (theme is not null && !FormBuilderThemes.IsAlias(theme))
+        {
+            return FormBuilderPublicProblems.InvalidRequest("theme");
+        }
+
+        var context = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, values) in Request.Query)
+        {
+            if (!name.StartsWith(ContextQueryPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (values.Count != 1 || name.Length == ContextQueryPrefix.Length || !context.TryAdd(name[ContextQueryPrefix.Length..], values[0]))
+            {
+                return FormBuilderPublicProblems.InvalidRequest(name);
+            }
+        }
+
+        if (!Guid.TryParseExact(key, "D", out var formKey)
+            || await forms.GetAsync(formKey, cancellationToken) is not { } form
+            || !form.Published.Definition.Settings.Developer.Headless)
+        {
+            return FormBuilderPublicProblems.FormNotFound();
+        }
+
+        // The page's culture for the models, as the render endpoint's views have it; a theme the site lacks renders as
+        // default (ADR-0105).
+        var shownCulture = CultureInfo.GetCultureInfo(await pages.CultureAsync(culture));
+        CultureInfo.CurrentCulture = shownCulture;
+        CultureInfo.CurrentUICulture = shownCulture;
+        var placed = theme is null ? null : themes.Find(theme)?.Name ?? BuiltInThemes.DefaultAlias;
+        FormRenderTargets.Set(HttpContext, new FormRenderTarget(instance, "/", content, culture, placed));
+        if (await rendering.RenderAsync(HttpContext, formKey, context, null, cancellationToken) is not { Model: FormViewModel model, Theme: { } formTheme })
+        {
+            return FormBuilderPublicProblems.FormNotFound();
+        }
+
+        Response.Headers.CacheControl = "no-store";
+        var answer = new ElementAnswer(ElementAnswer.Version, model, assets.Addresses(Request.PathBase, formTheme));
+        return File(ElementJson.Write(answer), "application/json; charset=utf-8");
     }
 
     /// <summary>
@@ -587,6 +688,37 @@ internal sealed record FormDefinitionResponseModel
 
     /// <summary>Each consent field's wording hash by its key, which a submission posts with the ticked consent (ADR-0009).</summary>
     public required IReadOnlyDictionary<Guid, string> Consents { get; init; }
+}
+
+/// <summary>
+/// The headless element's form (ADR-0128): the version of the answer's shape, the view model of the form's first
+/// render, and what the page loads.
+/// </summary>
+internal sealed record FormElementResponseModel
+{
+    /// <summary>The version of the answer's shape; the element of the same install reads version 1.</summary>
+    public required int Contract { get; init; }
+
+    /// <summary>
+    /// The form's view model, as the built-in views get it, in camel case: each page, group and field with its ids,
+    /// classes, texts, marks and state, a field's control as an object named by its <c>kind</c>, the definition
+    /// endpoint's answer as <c>modelData</c>'s text; without the form's action, encoding and post values and a button's
+    /// <c>formaction</c>, which only a post without JavaScript uses.
+    /// </summary>
+    public required JsonElement Form { get; init; }
+
+    /// <summary>The stylesheets (the base rules, then the theme's) and the runtime's module, below the site's path base.</summary>
+    public required FormElementAssetsResponseModel Assets { get; init; }
+}
+
+/// <summary>What the headless element's form loads (ADR-0128), below the site's path base, each under its fingerprint.</summary>
+internal sealed record FormElementAssetsResponseModel
+{
+    /// <summary>The stylesheets: the base rules, then the theme's when it has one.</summary>
+    public required IReadOnlyList<string> Styles { get; init; }
+
+    /// <summary>The website runtime's module.</summary>
+    public required string Script { get; init; }
 }
 
 /// <summary>What a browser decides a field by (ADR-0109): its kinds, whether it can be required and whose type it is.</summary>

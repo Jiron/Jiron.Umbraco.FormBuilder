@@ -39,9 +39,10 @@ classes, the marks or the navigation.
 
 ## Decision
 
-- **The element endpoint** `GET forms/{key}/element?instance=&culture=&contentKey=&theme=` (§4.6) answers the view
-  model of the published form's first render as the render endpoint renders it (the same `FormRendering`, for the
-  same members, migrations, themes and availability), as JSON with a `contract` number, `no-store`. The definition
+- **The element endpoint** `GET forms/{key}/element?instance=&culture=&contentKey=&theme=&context-<name>=` (§4.6)
+  answers the view model of the published form's first render as the render endpoint renders it (the same
+  `FormRendering`, for the same members, migrations, themes and availability) with the context values the form lists,
+  as JSON with a `contract` number, `no-store`; a form that does not allow headless use is not found. The definition
   endpoint's answer travels inside it as the exact text the runtime reads (`modelData`), so the element writes the
   same `<script data-jfb-model>`. What only a post without JavaScript uses (the action, the encoding, the route token
   and post values, a button's `formaction`) is left out; the element's form posts through the runtime.

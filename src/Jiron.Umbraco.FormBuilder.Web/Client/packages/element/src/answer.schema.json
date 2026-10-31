@@ -1,0 +1,1977 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:jiron:form-builder:schema:jfb-element-answer:v1",
+  "title": "Jiron Form Builder element answer, version 1",
+  "description": "What the element endpoint answers with (GET /jfb/api/v1/forms/{key}/element): the view model of a form\u0027s first render as the built-in views get it, without what only a post without JavaScript uses, for the headless element of the same install (ADR-0128). A property that may be null is left out instead. The element\u0027s TypeScript types in answer.d.ts are made from this schema.",
+  "$ref": "#/$defs/ElementAnswer",
+  "$defs": {
+    "AffixModel": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "CalculationControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "calculation"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "CaptchaControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "captcha"
+        },
+        "provider": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "provider"
+      ],
+      "additionalProperties": false
+    },
+    "ChoiceImageModel": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "ChoiceModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "hiddenText": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "descriptionId": {
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/$defs/ChoiceImageModel"
+        },
+        "isChecked": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "value",
+        "label",
+        "descriptionId",
+        "isChecked"
+      ],
+      "additionalProperties": false
+    },
+    "ChoicesControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "choices"
+        },
+        "inputType": {
+          "type": "string"
+        },
+        "cssClass": {
+          "type": "string"
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ChoiceModel"
+          }
+        },
+        "other": {
+          "$ref": "#/$defs/OtherChoiceModel"
+        },
+        "ends": {
+          "$ref": "#/$defs/ScaleEndsModel"
+        },
+        "empty": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "inputType",
+        "cssClass",
+        "choices"
+      ],
+      "additionalProperties": false
+    },
+    "ConfirmInputModel": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "id",
+        "name",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "CounterModel": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "text",
+        "id",
+        "limit"
+      ],
+      "additionalProperties": false
+    },
+    "CustomControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "custom"
+        },
+        "settings": {},
+        "parts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "parts"
+      ],
+      "additionalProperties": false
+    },
+    "DateControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "date"
+        },
+        "inputType": {
+          "type": "string"
+        },
+        "min": {
+          "type": "string"
+        },
+        "max": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "inputType"
+      ],
+      "additionalProperties": false
+    },
+    "ElementAnswer": {
+      "type": "object",
+      "properties": {
+        "contract": {
+          "type": "integer"
+        },
+        "form": {
+          "$ref": "#/$defs/FormViewModel"
+        },
+        "assets": {
+          "$ref": "#/$defs/ElementAssets"
+        }
+      },
+      "required": [
+        "contract",
+        "form",
+        "assets"
+      ],
+      "additionalProperties": false
+    },
+    "ElementAssets": {
+      "type": "object",
+      "properties": {
+        "styles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "script": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "styles",
+        "script"
+      ],
+      "additionalProperties": false
+    },
+    "ErrorLinkModel": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message",
+        "target"
+      ],
+      "additionalProperties": false
+    },
+    "ErrorSummaryViewModel": {
+      "type": "object",
+      "properties": {
+        "heading": {
+          "type": "string"
+        },
+        "headingId": {
+          "type": "string"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ErrorLinkModel"
+          }
+        }
+      },
+      "required": [
+        "heading",
+        "headingId",
+        "errors"
+      ],
+      "additionalProperties": false
+    },
+    "FieldViewModel": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": {
+          "type": "string"
+        },
+        "alias": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "cssClass": {
+          "type": "string"
+        },
+        "labelElement": {
+          "enum": [
+            "none",
+            "label",
+            "legend",
+            "choice"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "hideLabel": {
+          "type": "boolean"
+        },
+        "mark": {
+          "enum": [
+            "none",
+            "optional",
+            "required"
+          ]
+        },
+        "markText": {
+          "type": "string"
+        },
+        "isMarkShown": {
+          "type": "boolean"
+        },
+        "markShownWhile": {
+          "type": "string"
+        },
+        "hooks": {
+          "type": "boolean"
+        },
+        "help": {
+          "type": "string"
+        },
+        "helpId": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        },
+        "errorId": {
+          "type": "string"
+        },
+        "describedBy": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "isHidden": {
+          "type": "boolean"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "recalling": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "autocomplete": {
+          "type": "string"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fillsDefault": {
+          "type": "boolean"
+        },
+        "value": {
+          "type": "string"
+        },
+        "control": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/CalculationControl"
+            },
+            {
+              "$ref": "#/$defs/CaptchaControl"
+            },
+            {
+              "$ref": "#/$defs/ChoicesControl"
+            },
+            {
+              "$ref": "#/$defs/CustomControl"
+            },
+            {
+              "$ref": "#/$defs/DateControl"
+            },
+            {
+              "$ref": "#/$defs/FileControl"
+            },
+            {
+              "$ref": "#/$defs/GridControl"
+            },
+            {
+              "$ref": "#/$defs/HeadingControl"
+            },
+            {
+              "$ref": "#/$defs/ImageControl"
+            },
+            {
+              "$ref": "#/$defs/NumberControl"
+            },
+            {
+              "$ref": "#/$defs/PartsControl"
+            },
+            {
+              "$ref": "#/$defs/RankingControl"
+            },
+            {
+              "$ref": "#/$defs/RepeaterControl"
+            },
+            {
+              "$ref": "#/$defs/SelectControl"
+            },
+            {
+              "$ref": "#/$defs/SignatureControl"
+            },
+            {
+              "$ref": "#/$defs/SingleChoiceControl"
+            },
+            {
+              "$ref": "#/$defs/SliderControl"
+            },
+            {
+              "$ref": "#/$defs/TextControl"
+            },
+            {
+              "$ref": "#/$defs/TextAreaControl"
+            },
+            {
+              "$ref": "#/$defs/TextBlockControl"
+            }
+          ]
+        }
+      },
+      "required": [
+        "key",
+        "type",
+        "id",
+        "name",
+        "cssClass",
+        "labelElement",
+        "hideLabel",
+        "mark",
+        "markText",
+        "isMarkShown",
+        "hooks",
+        "helpId",
+        "errorId",
+        "isRequired",
+        "isHidden",
+        "isDisabled",
+        "recalling",
+        "values",
+        "fillsDefault",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "FileControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "file"
+        },
+        "accept": {
+          "type": "string"
+        },
+        "multiple": {
+          "type": "boolean"
+        },
+        "dropZone": {
+          "type": "boolean"
+        },
+        "kept": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/KeptFileModel"
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "accept",
+        "multiple",
+        "dropZone",
+        "kept"
+      ],
+      "additionalProperties": false
+    },
+    "FormViewModel": {
+      "type": "object",
+      "properties": {
+        "classes": {
+          "$ref": "#/$defs/ThemeClassesModel"
+        },
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "alias": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "culture": {
+          "type": "string"
+        },
+        "direction": {
+          "type": "string"
+        },
+        "cssClass": {
+          "type": "string"
+        },
+        "display": {
+          "enum": [
+            "form",
+            "notice",
+            "outcome"
+          ]
+        },
+        "apiBase": {
+          "type": "string"
+        },
+        "modelData": {
+          "type": "string"
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PageViewModel"
+          }
+        },
+        "progress": {
+          "$ref": "#/$defs/ProgressViewModel"
+        },
+        "errorSummary": {
+          "$ref": "#/$defs/ErrorSummaryViewModel"
+        },
+        "errorSummaryTemplate": {
+          "$ref": "#/$defs/ErrorSummaryViewModel"
+        },
+        "defaultButton": {
+          "$ref": "#/$defs/NavigationButtonModel"
+        },
+        "navigation": {
+          "$ref": "#/$defs/NavigationViewModel"
+        },
+        "requiredNote": {
+          "type": "string"
+        },
+        "isRequiredNoteHidden": {
+          "type": "boolean"
+        },
+        "hooks": {
+          "type": "boolean"
+        },
+        "notice": {
+          "$ref": "#/$defs/NoticeViewModel"
+        },
+        "outcome": {
+          "$ref": "#/$defs/OutcomeViewModel"
+        },
+        "contextValues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HiddenInputModel"
+          }
+        },
+        "honeypot": {
+          "$ref": "#/$defs/HoneypotModel"
+        }
+      },
+      "required": [
+        "classes",
+        "key",
+        "alias",
+        "revision",
+        "id",
+        "culture",
+        "direction",
+        "cssClass",
+        "display",
+        "apiBase",
+        "modelData",
+        "pages",
+        "isRequiredNoteHidden",
+        "hooks",
+        "contextValues"
+      ],
+      "additionalProperties": false
+    },
+    "GridControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "grid"
+        },
+        "inputType": {
+          "type": "string"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GridRowModel"
+          }
+        },
+        "empty": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "inputType",
+        "columns",
+        "rows"
+      ],
+      "additionalProperties": false
+    },
+    "GridRowModel": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "label": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "followsRequired": {
+          "type": "boolean"
+        },
+        "mark": {
+          "enum": [
+            "none",
+            "optional",
+            "required"
+          ]
+        },
+        "markText": {
+          "type": "string"
+        },
+        "isMarkShown": {
+          "type": "boolean"
+        },
+        "markShownWhile": {
+          "type": "string"
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ChoiceModel"
+          }
+        }
+      },
+      "required": [
+        "key",
+        "label",
+        "name",
+        "isRequired",
+        "followsRequired",
+        "mark",
+        "markText",
+        "isMarkShown",
+        "choices"
+      ],
+      "additionalProperties": false
+    },
+    "GroupViewModel": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "descriptionId": {
+          "type": "string"
+        },
+        "recalling": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cssClass": {
+          "type": "string"
+        },
+        "isHidden": {
+          "type": "boolean"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldViewModel"
+          }
+        }
+      },
+      "required": [
+        "key",
+        "descriptionId",
+        "recalling",
+        "cssClass",
+        "isHidden",
+        "fields"
+      ],
+      "additionalProperties": false
+    },
+    "HeadingControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "heading"
+        },
+        "text": {
+          "type": "string"
+        },
+        "level": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "text",
+        "level"
+      ],
+      "additionalProperties": false
+    },
+    "HiddenInputModel": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "HintModel": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "HoneypotModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "label"
+      ],
+      "additionalProperties": false
+    },
+    "ImageControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "image"
+        },
+        "url": {
+          "type": "string"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "alt",
+        "size"
+      ],
+      "additionalProperties": false
+    },
+    "KeptFileModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "token": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "token",
+        "label"
+      ],
+      "additionalProperties": false
+    },
+    "NavigationButtonModel": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "NavigationViewModel": {
+      "type": "object",
+      "properties": {
+        "back": {
+          "$ref": "#/$defs/NavigationButtonModel"
+        },
+        "next": {
+          "$ref": "#/$defs/NavigationButtonModel"
+        },
+        "submit": {
+          "$ref": "#/$defs/NavigationButtonModel"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "NoticeViewModel": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "notOpenYet",
+            "closed",
+            "full",
+            "message",
+            "signIn",
+            "memberGroups",
+            "migrationsPending"
+          ]
+        },
+        "heading": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "headingId": {
+          "type": "string"
+        },
+        "cssClass": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "text",
+        "cssClass"
+      ],
+      "additionalProperties": false
+    },
+    "NumberControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "number"
+        },
+        "inputType": {
+          "type": "string"
+        },
+        "inputMode": {
+          "type": "string"
+        },
+        "min": {
+          "type": "string"
+        },
+        "max": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        },
+        "prefix": {
+          "$ref": "#/$defs/AffixModel"
+        },
+        "suffix": {
+          "$ref": "#/$defs/AffixModel"
+        }
+      },
+      "required": [
+        "kind",
+        "inputType"
+      ],
+      "additionalProperties": false
+    },
+    "OtherChoiceModel": {
+      "type": "object",
+      "properties": {
+        "choice": {
+          "$ref": "#/$defs/ChoiceModel"
+        },
+        "textLabel": {
+          "type": "string"
+        },
+        "textId": {
+          "type": "string"
+        },
+        "textName": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "choice",
+        "textLabel",
+        "textId",
+        "textName",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "OutcomeCopyModel": {
+      "type": "object",
+      "properties": {
+        "answers": {
+          "$ref": "#/$defs/SummaryViewModel"
+        },
+        "printText": {
+          "type": "string"
+        },
+        "shownText": {
+          "type": "string"
+        },
+        "again": {
+          "$ref": "#/$defs/OutcomeLinkModel"
+        }
+      },
+      "required": [
+        "printText",
+        "shownText",
+        "again"
+      ],
+      "additionalProperties": false
+    },
+    "OutcomeLinkModel": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "OutcomeViewModel": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "isPending": {
+          "type": "boolean"
+        },
+        "continue": {
+          "$ref": "#/$defs/OutcomeLinkModel"
+        },
+        "copy": {
+          "$ref": "#/$defs/OutcomeCopyModel"
+        }
+      },
+      "required": [
+        "message",
+        "isPending"
+      ],
+      "additionalProperties": false
+    },
+    "PageViewModel": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "recalling": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isCurrent": {
+          "type": "boolean"
+        },
+        "isHidden": {
+          "type": "boolean"
+        },
+        "summary": {
+          "$ref": "#/$defs/SummaryViewModel"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GroupViewModel"
+          }
+        }
+      },
+      "required": [
+        "key",
+        "recalling",
+        "isCurrent",
+        "isHidden",
+        "groups"
+      ],
+      "additionalProperties": false
+    },
+    "PartModel": {
+      "type": "object",
+      "properties": {
+        "part": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "autocomplete": {
+          "type": "string"
+        },
+        "isWide": {
+          "type": "boolean"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "followsRequired": {
+          "type": "boolean"
+        },
+        "isInvalid": {
+          "type": "boolean"
+        },
+        "mark": {
+          "enum": [
+            "none",
+            "optional",
+            "required"
+          ]
+        },
+        "markText": {
+          "type": "string"
+        },
+        "isMarkShown": {
+          "type": "boolean"
+        },
+        "markShownWhile": {
+          "type": "string"
+        },
+        "countries": {
+          "$ref": "#/$defs/SelectControlModel"
+        }
+      },
+      "required": [
+        "part",
+        "label",
+        "id",
+        "name",
+        "value",
+        "autocomplete",
+        "isWide",
+        "isRequired",
+        "followsRequired",
+        "isInvalid",
+        "mark",
+        "markText",
+        "isMarkShown"
+      ],
+      "additionalProperties": false
+    },
+    "PartsControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "parts"
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PartModel"
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "parts"
+      ],
+      "additionalProperties": false
+    },
+    "ProgressStepModel": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "isCurrent": {
+          "type": "boolean"
+        },
+        "isDone": {
+          "type": "boolean"
+        },
+        "page": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "recallsTitle": {
+          "type": "boolean"
+        },
+        "fallback": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "isCurrent",
+        "isDone",
+        "page",
+        "recallsTitle",
+        "fallback"
+      ],
+      "additionalProperties": false
+    },
+    "ProgressViewModel": {
+      "type": "object",
+      "properties": {
+        "style": {
+          "enum": [
+            "steps",
+            "bar"
+          ]
+        },
+        "current": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "text": {
+          "type": "string"
+        },
+        "textId": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProgressStepModel"
+          }
+        }
+      },
+      "required": [
+        "style",
+        "current",
+        "total",
+        "text",
+        "textId",
+        "label",
+        "steps"
+      ],
+      "additionalProperties": false
+    },
+    "RankingControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "ranking"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RankingItemModel"
+          }
+        },
+        "empty": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "RankingItemModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "position": {
+          "type": "integer"
+        },
+        "input": {
+          "$ref": "#/$defs/HiddenInputModel"
+        },
+        "order": {
+          "$ref": "#/$defs/HiddenInputModel"
+        },
+        "up": {
+          "$ref": "#/$defs/RankingMoveModel"
+        },
+        "down": {
+          "$ref": "#/$defs/RankingMoveModel"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "order",
+        "up",
+        "down"
+      ],
+      "additionalProperties": false
+    },
+    "RankingMoveModel": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value",
+        "isDisabled"
+      ],
+      "additionalProperties": false
+    },
+    "RepeaterControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "repeater"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RepeaterRowModel"
+          }
+        },
+        "add": {
+          "$ref": "#/$defs/RowButtonModel"
+        },
+        "rowCount": {
+          "$ref": "#/$defs/HiddenInputModel"
+        },
+        "fieldsCssClass": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "rows",
+        "rowCount",
+        "fieldsCssClass"
+      ],
+      "additionalProperties": false
+    },
+    "RepeaterRowModel": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "legend": {
+          "type": "string"
+        },
+        "remove": {
+          "$ref": "#/$defs/RowButtonModel"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldViewModel"
+          }
+        }
+      },
+      "required": [
+        "index",
+        "id",
+        "legend",
+        "fields"
+      ],
+      "additionalProperties": false
+    },
+    "RowButtonModel": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "context": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "ScaleEndsModel": {
+      "type": "object",
+      "properties": {
+        "low": {
+          "type": "string"
+        },
+        "high": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "low",
+        "high"
+      ],
+      "additionalProperties": false
+    },
+    "SelectControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "select"
+        },
+        "multiple": {
+          "type": "boolean"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SelectOptionModel"
+          }
+        },
+        "hint": {
+          "$ref": "#/$defs/HintModel"
+        },
+        "empty": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "multiple",
+        "options"
+      ],
+      "additionalProperties": false
+    },
+    "SelectControlModel": {
+      "type": "object",
+      "properties": {
+        "multiple": {
+          "type": "boolean"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SelectOptionModel"
+          }
+        },
+        "hint": {
+          "$ref": "#/$defs/HintModel"
+        },
+        "empty": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "multiple",
+        "options"
+      ],
+      "additionalProperties": false
+    },
+    "SelectOptionModel": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "isSelected": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "label",
+        "isSelected"
+      ],
+      "additionalProperties": false
+    },
+    "SignatureControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "signature"
+        },
+        "label": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "maxLength": {
+          "type": "integer"
+        },
+        "help": {
+          "type": "string"
+        },
+        "helpId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "label",
+        "name",
+        "value",
+        "maxLength",
+        "help",
+        "helpId"
+      ],
+      "additionalProperties": false
+    },
+    "SingleChoiceControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "singleChoice"
+        },
+        "value": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "isChecked": {
+          "type": "boolean"
+        },
+        "wording": {
+          "$ref": "#/$defs/HiddenInputModel"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "label",
+        "isChecked"
+      ],
+      "additionalProperties": false
+    },
+    "SliderControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "slider"
+        },
+        "min": {
+          "type": "string"
+        },
+        "max": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "valueText": {
+          "type": "string"
+        },
+        "shown": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "min",
+        "max",
+        "step",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "SummaryAnswerModel": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "label": {
+          "type": "string"
+        },
+        "texts": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "isRows": {
+          "type": "boolean"
+        },
+        "isMasked": {
+          "type": "boolean"
+        },
+        "mask": {
+          "type": "string"
+        },
+        "emptyText": {
+          "type": "string"
+        },
+        "hiddenText": {
+          "type": "string"
+        },
+        "change": {
+          "$ref": "#/$defs/SummaryChangeModel"
+        },
+        "error": {
+          "type": "string"
+        },
+        "errorId": {
+          "type": "string"
+        },
+        "isAnswered": {
+          "type": "boolean"
+        },
+        "isEmpty": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "field",
+        "label",
+        "texts",
+        "isRows",
+        "isMasked",
+        "mask",
+        "emptyText",
+        "hiddenText",
+        "errorId",
+        "isAnswered",
+        "isEmpty"
+      ],
+      "additionalProperties": false
+    },
+    "SummaryChangeModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "value",
+        "text",
+        "label"
+      ],
+      "additionalProperties": false
+    },
+    "SummarySectionModel": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "headingId": {
+          "type": "string"
+        },
+        "answers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SummaryAnswerModel"
+          }
+        }
+      },
+      "required": [
+        "page",
+        "title",
+        "headingId",
+        "answers"
+      ],
+      "additionalProperties": false
+    },
+    "SummaryViewModel": {
+      "type": "object",
+      "properties": {
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SummarySectionModel"
+          }
+        }
+      },
+      "required": [
+        "sections"
+      ],
+      "additionalProperties": false
+    },
+    "TextAreaControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "textArea"
+        },
+        "rows": {
+          "type": "integer"
+        },
+        "autoGrow": {
+          "type": "boolean"
+        },
+        "counter": {
+          "$ref": "#/$defs/CounterModel"
+        }
+      },
+      "required": [
+        "kind",
+        "rows",
+        "autoGrow"
+      ],
+      "additionalProperties": false
+    },
+    "TextBlockControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "textBlock"
+        },
+        "html": {
+          "type": "string"
+        },
+        "isEmpty": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "html",
+        "isEmpty"
+      ],
+      "additionalProperties": false
+    },
+    "TextControl": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "text"
+        },
+        "inputType": {
+          "type": "string"
+        },
+        "spellcheck": {
+          "type": "boolean"
+        },
+        "prefix": {
+          "$ref": "#/$defs/AffixModel"
+        },
+        "suffix": {
+          "$ref": "#/$defs/AffixModel"
+        },
+        "counter": {
+          "$ref": "#/$defs/CounterModel"
+        },
+        "confirm": {
+          "$ref": "#/$defs/ConfirmInputModel"
+        }
+      },
+      "required": [
+        "kind",
+        "inputType"
+      ],
+      "additionalProperties": false
+    },
+    "ThemeClassesModel": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "partLabel": {
+          "type": "string"
+        },
+        "fileInput": {
+          "type": "string"
+        },
+        "help": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        },
+        "control": {
+          "type": "string"
+        },
+        "select": {
+          "type": "string"
+        },
+        "choices": {
+          "type": "string"
+        },
+        "choice": {
+          "type": "string"
+        },
+        "choiceInput": {
+          "type": "string"
+        },
+        "choiceLabel": {
+          "type": "string"
+        },
+        "switchChoice": {
+          "type": "string"
+        },
+        "switchInput": {
+          "type": "string"
+        },
+        "range": {
+          "type": "string"
+        },
+        "affix": {
+          "type": "string"
+        },
+        "affixText": {
+          "type": "string"
+        },
+        "counter": {
+          "type": "string"
+        },
+        "navigation": {
+          "type": "string"
+        },
+        "button": {
+          "type": "string"
+        },
+        "buttonPrimary": {
+          "type": "string"
+        },
+        "buttonLink": {
+          "type": "string"
+        },
+        "buttonIcon": {
+          "type": "string"
+        },
+        "progressBar": {
+          "type": "string"
+        },
+        "progressSteps": {
+          "type": "string"
+        },
+        "errorSummary": {
+          "type": "string"
+        },
+        "outcome": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "page",
+        "label",
+        "help",
+        "error",
+        "control",
+        "select",
+        "choices",
+        "choice",
+        "switchChoice",
+        "switchInput",
+        "affix",
+        "counter",
+        "navigation",
+        "button",
+        "buttonPrimary",
+        "buttonLink",
+        "buttonIcon",
+        "progressBar",
+        "progressSteps",
+        "errorSummary",
+        "outcome"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1
 /**
- * Makes the TypeScript types of the visitor form (schemas/jfb-public-form.v1.d.ts) from its JSON schema
- * (schemas/jfb-public-form.v1.schema.json), which a unit test writes from the projection's records (ADR-0125): a type
- * per definition of the schema, an object type for a record, a union for one of several kinds. It reads only what that
- * schema uses, and refuses anything else, so a schema it cannot say fails here instead of becoming a loose type.
+ * Makes the TypeScript types of the JSON the server writes from its schemas, which unit tests write from the models'
+ * own metadata: the visitor form (schemas/jfb-public-form.v1.d.ts from jfb-public-form.v1.schema.json, ADR-0125) and
+ * the headless element's answer (packages/element/src/answer.d.ts from answer.schema.json, ADR-0128). A type per
+ * definition of a schema, an object type for a record, a union for one of several kinds. It reads only what those
+ * schemas use, and refuses anything else, so a schema it cannot say fails here instead of becoming a loose type.
  *
  *   node scripts/generate-public-types.mjs
  *
- * scripts/tests/generate-public-types.test.mjs fails when the committed types are not the ones the committed schema
- * makes.
+ * scripts/tests/generate-public-types.test.mjs fails when the committed types are not the ones the committed schemas
+ * make.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -17,9 +18,26 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** The committed schema and the types made from it. */
+/** The committed schema of the visitor form and the types made from it. */
 export const schemaPath = join(root, 'schemas', 'jfb-public-form.v1.schema.json');
 export const typesPath = join(root, 'schemas', 'jfb-public-form.v1.d.ts');
+
+const element = join(root, 'src', 'Jiron.Umbraco.FormBuilder.Web', 'Client', 'packages', 'element', 'src');
+
+/**
+ * Each schema the types are made from: where it and its types are kept, the name of the root's type, and the decision
+ * the types follow.
+ * @type {{ schemaPath: string, typesPath: string, rootType: string, adr: string }[]}
+ */
+export const targets = [
+  { schemaPath, typesPath, rootType: 'JfbPublicForm', adr: 'ADR-0125' },
+  {
+    schemaPath: join(element, 'answer.schema.json'),
+    typesPath: join(element, 'answer.d.ts'),
+    rootType: 'JfbElementAnswer',
+    adr: 'ADR-0128',
+  },
+];
 
 const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 const DEFINITION = /^#\/\$defs\/([A-Za-z][A-Za-z0-9]*)$/;
@@ -27,17 +45,19 @@ const DEFINITION = /^#\/\$defs\/([A-Za-z][A-Za-z0-9]*)$/;
 /**
  * The TypeScript for a schema.
  * @param {Record<string, unknown>} schema
+ * @param {{ schemaPath: string, rootType: string, adr: string }} [target] Which schema it is; the visitor form's by default.
  * @returns {string}
  */
-export function typesOf(schema) {
+export function typesOf(schema, target = targets[0]) {
   const definitions = /** @type {Record<string, Record<string, unknown>>} */ (schema['$defs'] ?? {});
   const rootName = referenced(schema['$ref']);
+  const source = target.schemaPath.split(/[\\/]/).pop();
   const lines = [
     '// SPDX-License-Identifier: LicenseRef-PolyForm-Perimeter-1.0.1',
-    '// Made by scripts/generate-public-types.mjs from jfb-public-form.v1.schema.json; do not edit (ADR-0125).',
+    `// Made by scripts/generate-public-types.mjs from ${source}; do not edit (${target.adr}).`,
     '',
     ...comment(String(schema['description'] ?? '')),
-    `export type JfbPublicForm = ${rootName};`,
+    `export type ${target.rootType} = ${rootName};`,
   ];
   for (const name of Object.keys(definitions).sort()) {
     const definition = definitions[name];
@@ -80,12 +100,13 @@ function record(node, indent) {
 }
 
 /**
- * The type of a schema node.
+ * The type of a schema node; the empty schema, which any value fits, is unknown.
  * @param {Record<string, unknown>} node
  * @param {string} indent
  * @returns {string}
  */
 function type(node, indent) {
+  if (Object.keys(node).length === 0) return 'unknown';
   if ('$ref' in node) return referenced(node['$ref']);
   if ('const' in node) return JSON.stringify(node['const']);
   if (Array.isArray(node['enum'])) return node['enum'].map((value) => JSON.stringify(value)).join(' | ');
@@ -132,7 +153,9 @@ function comment(text) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const schema = JSON.parse(readFileSync(schemaPath, 'utf8'));
-  writeFileSync(typesPath, typesOf(schema));
-  console.log(`generate-public-types: wrote ${typesPath}`);
+  for (const target of targets) {
+    const schema = JSON.parse(readFileSync(target.schemaPath, 'utf8'));
+    writeFileSync(target.typesPath, typesOf(schema, target));
+    console.log(`generate-public-types: wrote ${target.typesPath}`);
+  }
 }

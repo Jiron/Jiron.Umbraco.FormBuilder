@@ -92,6 +92,24 @@ internal sealed class PageAssets(WebsiteAssets assets)
         return new AutomaticTags(this, httpContext, State(httpContext), theme);
     }
 
+    /// <summary>
+    /// The addresses the tags carry for one form's theme, for the headless element (ADR-0128): the base rules, the
+    /// theme's stylesheet when it has one, and the runtime, each below the request's path base.
+    /// </summary>
+    /// <param name="pathBase">The request's path base.</param>
+    /// <param name="theme">The form's theme.</param>
+    public ElementAssets Addresses(PathString pathBase, IFormBuilderTheme theme)
+    {
+        ArgumentNullException.ThrowIfNull(theme);
+        List<string> styles = [StylesheetUrl(pathBase, BaseStylesheet)];
+        if (theme.Stylesheet is { } stylesheet && stylesheet != BaseStylesheet)
+        {
+            styles.Add(StylesheetUrl(pathBase, stylesheet));
+        }
+
+        return new ElementAssets(styles, assets.Url(pathBase, WebsiteAssets.Runtime));
+    }
+
     // What the request's page uses and has written, made at first use.
     private static PageState State(HttpContext httpContext)
     {
@@ -143,9 +161,13 @@ internal sealed class PageAssets(WebsiteAssets assets)
 
         var tag = new TagBuilder("link") { TagRenderMode = TagRenderMode.StartTag };
         tag.Attributes["rel"] = "stylesheet";
-        tag.Attributes["href"] = AssetName(stylesheet) is { } name ? assets.Url(pathBase, name) : pathBase.Add(stylesheet).ToString();
+        tag.Attributes["href"] = StylesheetUrl(pathBase, stylesheet);
         Nonced(tag, nonce).WriteTo(writer, encoder);
     }
+
+    // A stylesheet's address: one of the package's under its fingerprint, the site's own below its path base.
+    private string StylesheetUrl(PathString pathBase, string stylesheet) =>
+        AssetName(stylesheet) is { } name ? assets.Url(pathBase, name) : pathBase.Add(stylesheet).ToString();
 
     private static TagBuilder Nonced(TagBuilder tag, string? nonce)
     {
