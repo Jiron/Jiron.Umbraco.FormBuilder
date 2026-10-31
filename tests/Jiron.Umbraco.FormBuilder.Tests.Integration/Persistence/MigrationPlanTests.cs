@@ -44,7 +44,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
                 Is.EqualTo(typeof(FormBuilderMigrationPlan)),
                 "the plan states IgnoreCurrentState itself (ADR-0003)");
             Assert.That(walked, Is.EqualTo(Steps), "the plan's transitions are its steps, in order");
-            Assert.That(Steps.Select(s => s.Step), Is.EqualTo(new[] { typeof(CreateSchemaV1), typeof(CreateDefaultSettingsV1), typeof(GrantFormsSectionV1) }));
+            Assert.That(Steps.Select(s => s.Step), Is.EqualTo(new[] { typeof(CreateSchemaV1), typeof(CreateDefaultSettingsV1), typeof(GrantFormsSectionV1), typeof(RequestReferenceRebuildV1) }));
             Assert.That(plan.FinalState, Is.EqualTo(FinalState));
             Assert.That(new TestPlan().FinalState, Is.EqualTo(plan.FinalState), "the tests' copy follows the plan");
             Assert.That(CreateSchemaV1.Tables.Select(t => t.Name), Is.EqualTo(FormBuilderTables.All), "the step creates every table in order");
@@ -154,6 +154,23 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
     }
 
     [Test]
+    public async Task FreshInstall_AsksForAReferenceRebuild_AndAReplayLeavesARequestUnderWayAsItIs()
+    {
+        await RunAsync(new FormBuilderMigrationPlan());
+        var asked = RebuildRequest();
+        Write(db => db.Execute($"UPDATE {T(FormBuilderTables.KeyValue)} SET {Q("value")} = @0 WHERE {Q("key")} = @1", "1234", RequestReferenceRebuildV1.RebuildKey));
+
+        var replay = await RunAsync(new TestPlan(ignoreCurrentState: true));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(asked, Is.EqualTo(RequestReferenceRebuildV1.FromStart), "a walk from the first document");
+            Assert.That(replay.Successful, Is.True, replay.Exception?.ToString());
+            Assert.That(RebuildRequest(), Is.EqualTo("1234"), "the walk under way goes on where it was");
+        });
+    }
+
+    [Test]
     public async Task FreshInstall_WithoutTheAdministratorsGroup_GrantsNothing_AndRecordsThatItDidNot()
     {
         Write(db => db.Execute(
@@ -226,7 +243,7 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
             Assert.That(replay.CompletedTransitions, Has.Count.EqualTo(Steps.Count), "every step ran again");
             Assert.That(Inspect(), Is.EqualTo(before).Using<SchemaReport>(SameSchema));
             Assert.That(Count(FormBuilderTables.Setting), Is.EqualTo(CreateDefaultSettingsV1.Sections.Count));
-            Assert.That(Count(FormBuilderTables.KeyValue), Is.EqualTo(1), "one grant flag");
+            Assert.That(Count(FormBuilderTables.KeyValue), Is.EqualTo(2), "one grant flag and one rebuild request");
             Assert.That(GroupsWithSection(), Is.EqualTo(Admins));
         });
     }
@@ -316,6 +333,9 @@ public sealed partial class MigrationPlanTests : FormBuilderMigrationTestBase
             Assert.That(sectionsAfter, Does.Contain(FormBuilderConstants.SectionAlias), "the cached group was refreshed");
         });
     }
+
+    private string? RebuildRequest() =>
+        Query(db => db.ExecuteScalar<string?>($"SELECT {Q("value")} FROM {T(FormBuilderTables.KeyValue)} WHERE {Q("key")} = @0", RequestReferenceRebuildV1.RebuildKey));
 
     private string? GrantFlag() =>
         Query(db => db.ExecuteScalar<string?>($"SELECT {Q("value")} FROM {T(FormBuilderTables.KeyValue)} WHERE {Q("key")} = @0", GrantFormsSectionV1.GrantedFlag));

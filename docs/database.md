@@ -50,6 +50,7 @@ idempotent, so a rerun changes nothing.
 | `jfb-001-create-schema` | `CreateSchemaV1` | Creates every table below that is missing, its keys, and the filtered indexes. |
 | `jfb-002-default-settings` | `CreateDefaultSettingsV1` | Adds the global row of each settings section (General, Email, Protection, Files, Privacy, Integrations) at version 1, holding no values: the defaults live in code. |
 | `jfb-003-grant-forms-section` | `GrantFormsSectionV1` | Gives Umbraco's administrators group the Forms section, once. A flag in `jfbKeyValue` records it, so an administrator who removes the section later is not overruled. |
+| `jfb-004-request-reference-rebuild` | `RequestReferenceRebuildV1` | Asks for a rebuild of the "used on" index: the row `references-rebuild` in `jfbKeyValue`, from the first document, where it is missing; a walk under way goes on where it was. The reference job does the walk (ADR-0131). |
 
 A step that has shipped is never edited; a change to the schema is a new step with snapshot classes of its own. Step 1
 is frozen since the end of Phase 4, the tag `baseline/schema-v1`: `SchemaV1FreezeTests` pins the SHA-256 of a
@@ -653,9 +654,12 @@ fields the site overrides, where `null` stands for the default (ADR-0043). A sit
 
 ### `jfbReference`
 
-Where forms are used: one row per form, content item, property and culture, refreshed when content is saved, because
-Umbraco's own relations link only its own nodes (ADR-0017). It names the form without a foreign key, so a content save
-never fails over a form that is gone. The primary key leads with the form, for the list of where a form is used.
+Where forms are used: one row per form, content item, property and culture, refreshed when content is saved,
+published, unpublished, moved, copied or deleted, because Umbraco's own relations link only its own nodes (ADR-0017).
+It names the form without a foreign key, so a content save never fails over a form that is gone: the write reads each
+form's row first with a locking read and writes nothing for a form the library no longer holds, and a form's delete
+takes its rows. The primary key leads with the form, for the list of where a form is used. The rebuild walks
+Umbraco's documents by node id and then deletes the rows of content that has gone (ADR-0131).
 
 - `IX_jfbReference_contentKey`: the rows of a content item, which every save, publish, move or delete of the item
   replaces.

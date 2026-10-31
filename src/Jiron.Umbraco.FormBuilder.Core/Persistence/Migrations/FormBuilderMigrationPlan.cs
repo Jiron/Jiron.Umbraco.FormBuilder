@@ -20,12 +20,16 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
     /// <summary>Step 3: the Forms section for Umbraco's administrators, once (ADR-0013).</summary>
     public const string StateGrantSection = "jfb-003-grant-forms-section";
 
+    /// <summary>Step 4: a rebuild of the "used on" index, asked for once (ADR-0131).</summary>
+    public const string StateRequestReferenceRebuild = "jfb-004-request-reference-rebuild";
+
     /// <summary>The steps in order, with the state each one leaves. The tests build their copies of the plan from it.</summary>
     internal static readonly IReadOnlyList<(string State, Type Step)> Steps =
     [
         (StateCreateSchema, typeof(CreateSchemaV1)),
         (StateDefaultSettings, typeof(CreateDefaultSettingsV1)),
         (StateGrantSection, typeof(GrantFormsSectionV1)),
+        (StateRequestReferenceRebuild, typeof(RequestReferenceRebuildV1)),
     ];
 
     /// <summary>Creates the plan with Jiron Form Builder's package id, name and plan name.</summary>

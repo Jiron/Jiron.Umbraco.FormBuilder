@@ -1,6 +1,7 @@
 # 0017. References
 
-- Status: accepted
+- Status: accepted; the rebuild runs as a job that the plan's step 4 asks for, and the endpoint's answer is set out, in
+  [ADR-0131](0131-keeping-used-on-current.md)
 - Date: 2026-10-22
 - Roadmap step: 1.2b (decided); built in 6.7 and used in 9.2
 
