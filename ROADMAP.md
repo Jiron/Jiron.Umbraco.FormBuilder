@@ -884,6 +884,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 - **Library:** option lists (CRUD, preview, CSV/TXT upload), themes (CRUD, preview CSS), email layouts (CRUD, preview, test send), templates.
 - **Settings** per section and scope; **permissions**; **audit log**; **deliveries** (emails and webhook runs, retry); **insights** and **answer summaries**; the current user's own **user settings** (`jfbUserSetting`).
 - **Privacy:** find a person by email or member, export everything about them (ZIP of JSON and files), erase or anonymise, retention dry run.
+- **Content:** the form picker's folders and forms, search, the forms of given keys and the site's themes, authorised by content access (6.7e, ADR-0013).
 - **Setup and health:** checklist status and health results (any user of the section); "create a form block type for me", which creates an element type and a data type and so needs `manageSettings` and Umbraco's Settings section (6.7b).
 
 ### 4.8 Settings model
@@ -2249,9 +2250,16 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **6.7d Eviction** (6.7 split in five, WORKLOG 2026-10-31) (2026-10-31, 2e081fc)
   - **Eviction:** an `IWebsiteOutputCacheTagProvider` tags the pages that use a form with `jfb-form-<key>` from the "used on" index, and publishing a form evicts that tag (ADR-0004).
   - Done when: integration tests pass, with output caching on, including "publishing the form re-renders a cached page that picks it at once", and a cached page that does not pick the form kept.
-- [ ] **6.7e The form picker in the backoffice** (6.7 split in five, WORKLOG 2026-10-31)
+- [ ] **6.7e The picker's endpoints** (6.7 split in five, WORKLOG 2026-10-31; then 6.7e in three, WORKLOG 2026-10-31)
+  - **The endpoints** the picker and its data type settings call (§4.7 "Content"): the library's folders and forms level by level, a search, the forms of given keys, and the site's themes. They are authorised by content access, not by Jiron Form Builder permissions (ADR-0013): any backoffice user with Umbraco's Content, Media, Members or Settings section may call them, the Forms section not needed. They answer names and keys only: published forms outside the trash that are not restricted, plus restricted ones a group of the user holds a grant on, and their folders; for a data type, only within its allowed folders (and below) and allowed forms. The permission matrix lists them as its reviewed exception, each with its own access test.
+  - Done when: integration tests pass: an editor with the Content section and without the Forms section lists, searches and looks up published forms that are not restricted and restricted ones their group holds a grant on, and never an unpublished, trashed or other restricted form; a data type's allowed folders (and below) and allowed forms limit every answer; the themes are those the data type's settings accept; a user with none of the four sections is refused with `403`; the permission matrix names exactly these endpoints as its exception; the OpenAPI snapshot and the regenerated client are updated.
+- [ ] **6.7f The picker and its settings in the backoffice** (6.7e split in three, WORKLOG 2026-10-31)
   - **The backoffice:** the picker's data type settings and the picker itself (the library's forms and folders, within the allowed ones) through the generated client, with the UFM block-label component; English and German.
-  - Done when: Vitest covers the picker, its settings and the block label; Playwright shows an editor picking a form in a block on the demo and the page rendering it, and the form sent with JavaScript going to the picker's redirect page; axe is clean on the picker.
+  - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before building it (ADR-0019, ADR-0020).
+  - Done when: Vitest covers the picker (one form and several, the folders level by level, the search, only the allowed ones, a picked form that is gone, read-only), its settings (one form or several, the allowed folders and forms, the theme, the page after a send) and the block label (the form's name, and a form that is gone); the English and German keys are held by the language test; the picker and its settings are looked at in Edge.
+- [ ] **6.7g The picker on the demo** (6.7e split in three, WORKLOG 2026-10-31)
+  - **The demo:** a page type with a block list that allows the form block (6.7b), a page with the block, and a thanks page for the picker's page after a send.
+  - Done when: Playwright shows an editor picking a form in a block on the demo and the page rendering it, and the form sent with JavaScript going to the picker's redirect page; axe is clean on the picker and on its settings.
 - [ ] **6.8 Phase review**
   - An accessibility pass over the themes (axe, keyboard, screen-reader names), and a security pass over the public API.
   - Write the handover note.
