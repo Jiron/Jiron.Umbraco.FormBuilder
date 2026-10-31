@@ -2246,7 +2246,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **6.7c "Used on"** (6.7 split in five, WORKLOG 2026-10-31) (2026-10-31, 6543134)
   - **"Used on":** reference tracking per ADR-0017, with the references endpoint of §4.7, so that trash and delete can name the pages that use a form (9.2). References name a form without a foreign key (ADR-0033), so a reference write skips a form that no longer exists (ADR-0047).
   - Done when: integration tests pass, including "a page that picks the form is listed as a reference, and stops being listed after the pick is removed", "saving a page that picks a form deleted meanwhile writes no reference to it", a form picked in a block listed, a page outside the user's start nodes counted but not named, and the rebuild finding every page that picks a form.
-- [ ] **6.7d Eviction** (6.7 split in five, WORKLOG 2026-10-31)
+- [x] **6.7d Eviction** (6.7 split in five, WORKLOG 2026-10-31) (2026-10-31, 2e081fc)
   - **Eviction:** an `IWebsiteOutputCacheTagProvider` tags the pages that use a form with `jfb-form-<key>` from the "used on" index, and publishing a form evicts that tag (ADR-0004).
   - Done when: integration tests pass, with output caching on, including "publishing the form re-renders a cached page that picks it at once", and a cached page that does not pick the form kept.
 - [ ] **6.7e The form picker in the backoffice** (6.7 split in five, WORKLOG 2026-10-31)
