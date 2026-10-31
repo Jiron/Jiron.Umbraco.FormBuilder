@@ -9,15 +9,15 @@ the three design skills stayed loaded from 6.8d, whose review holds their sectio
 
 | What | How it is held |
 | --- | --- |
-| A visible focus on 32 kinds of control, also in forced colours | a control's field changes its pixels when the control takes the focus from the keyboard (`keyboard-pass.spec.ts`) |
-| Tab through the form | each field reached in the page's order, every stop on the page, never the honeypot, and Shift+Tab goes back |
+| A visible focus on 32 kinds of control, a row's Remove, a summary's link and Back, also in forced colours | a ring's worth of pixels of a control's field changes when it takes the focus from the keyboard, while two shots without the focus are alike (`keyboard-pass.spec.ts`, stronger since 6.8h) |
+| Tab through the form | each field reached in the page's order, every stop on the page, past the main button never the honeypot, and Shift+Tab goes back, in both schemes |
 | The keyboard alone | Space and an arrow answer radio buttons, cards, yes or no, a rating and a scale; Space a box and the switch; an arrow the slider; Enter a ranking's move, a row's Add and Remove, a summary's link |
-| Enter in a text box | sends a form, with JavaScript and without; on a form with a ranking it asks for the next page and runs no move |
+| Enter in a text box | sends a form, and on a form with a ranking asks for the next page and runs no move, both with JavaScript and without |
 | Role, name, description | read from Edge's own accessibility tree for every kind of control and group (`names-pass.spec.ts`) |
-| Required and invalid | exactly the required controls carry `required`, nothing is marked invalid on a first render, and after a refused send each refused control is invalid and described by its error, with no group invalid itself |
+| Required and invalid | exactly the required controls carry `required`, nothing is marked invalid on a first render, and after a refused send each refused control carries the mark, is invalid in the tree and is described by its error, with no group invalid itself. The kinds that are optional on the specimen (a grid's cells, an address's parts, "Other", a signature's typed name) are held by `FormRenderingChoicesTests` and `FormRenderingInputsTests` |
 | `autocomplete` | present on the personal fields: the name and its parts, email and its repeat, phone, web address, the address's parts, country, a signature's typed name |
 | A summary's link | lands with the label clear of a sticky header in every theme, with JavaScript and without (`focus-and-landing.spec.ts`) |
-| Reduced motion | a recorder of every running animation finds no slide or rise, and without reduced motion it does find one |
+| Reduced motion | a recorder of every running animation, across a new row, the switch, a refused send, a press and a page, finds no slide or rise, and without reduced motion it finds the switch's and a press's |
 | Right to left | the stars stand and fill from the right, the switch's knob goes left, the Back arrow turns |
 
 ## What was looked at
@@ -39,6 +39,6 @@ the three design skills stayed loaded from 6.8d, whose review holds their sectio
   every required choice in the views and the element, and a runtime that restores it instead of clearing it, past what
   its budget has left. It is left to the browser, as on any page with a native `required`, and the spec holds the
   markup (ADR-0113).
-- **`bootstrap5`'s own radio buttons, boxes and text boxes keep Bootstrap's focus shadow.** It is visible, and it is
-  the site's Bootstrap; forced colours replace it with an outline (6.8d, ADR-0108).
+- **`bootstrap5`'s own controls no longer rest on Bootstrap's focus shadow.** This pass kept it as visible; the second
+  reading held it to 1.4.11, as about 1.4:1 does not pass, and 6.8h gives them the theme's outline (ADR-0108).
 - **The specimen's email asks for its repeat,** so the pass and every theme's axe runs cover that control as well.

@@ -154,17 +154,16 @@ export function removeSummary(form: HTMLFormElement): void {
 }
 
 /**
- * Moves the focus to the control an error's link names, or the first control inside it, with the field's label or
- * legend brought into view at once; false when the page has no such control.
+ * Moves the focus to the control an error's link names, or the first control inside it, brought into view at once,
+ * where a link lands without JavaScript: its scroll margin keeps its label in view, and it in the window whatever the
+ * picture above it (base.css). False when the page has no such control.
  */
 export function focusTarget(form: HTMLFormElement, id: string): boolean {
   const target = form.ownerDocument.getElementById(id);
   if (target === null || !form.contains(target)) return false;
   const control = target.matches(FOCUSABLE) ? target : target.querySelector<HTMLElement>(FOCUSABLE);
   if (control === null) return false;
-  const field = target.closest<HTMLElement>(FIELD);
-  const label = field?.querySelector(':scope > label, :scope > fieldset > legend') ?? control;
-  if (typeof label.scrollIntoView === 'function') label.scrollIntoView({ block: 'start', behavior: 'instant' });
+  if (typeof control.scrollIntoView === 'function') control.scrollIntoView({ block: 'start', behavior: 'instant' });
   control.focus({ preventScroll: true });
   return form.ownerDocument.activeElement === control;
 }

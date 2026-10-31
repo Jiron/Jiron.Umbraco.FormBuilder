@@ -444,7 +444,7 @@
     }
   }
 
-  & .jfb-choices-rating > .jfb-choice > [aria-invalid='true'] + label::before {
+  & .jfb-choices-rating:not(:has(:checked)) > .jfb-choice > [aria-invalid='true'] + label::before {
     background: var(--bs-form-invalid-color);
   }
 
@@ -810,13 +810,18 @@
     }
   }
 
-  /* Forced colours (Windows contrast themes): the stars take the system's colours, and Bootstrap's own controls, whose
-     focus is a shadow the system drops, an outline. */
+  /* Bootstrap's own controls show focus as a shadow of about 1.4:1, which forced colours drop: the same outline here. */
+  & :is(.form-control, .form-select, .form-check-input, .form-range, .btn):focus-visible {
+    outline: var(--_ring);
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+
+  /* Forced colours (Windows contrast themes): the stars take the system's colours, and the outline the system's. */
 
   @media (forced-colors: active) {
     & :is(.form-control, .form-select, .form-check-input, .form-range, .btn):focus-visible {
-      outline: 2px solid Highlight;
-      outline-offset: 2px;
+      outline-color: Highlight;
     }
 
     & .jfb-choices-cards > .jfb-choice > input:focus-visible {
@@ -824,7 +829,7 @@
     }
 
     & .jfb-choices-rating > .jfb-choice > label::before,
-    & .jfb-choices-rating > .jfb-choice > [aria-invalid='true'] + label::before {
+    & .jfb-choices-rating:not(:has(:checked)) > .jfb-choice > [aria-invalid='true'] + label::before {
       forced-color-adjust: none;
       background: CanvasText;
     }

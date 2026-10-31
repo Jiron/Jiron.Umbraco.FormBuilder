@@ -58,3 +58,5 @@ than the calls it replaced and was left out. The runtime is at 39.94 KB.
 brought it to 39.98 KB. Twenty bytes are left, so the next step that adds to the runtime makes its room first.
 
 6.8g's fixes came to 40.01 KB. A walk over the row state written twice is one (`rowOf`), a field hidden or shown is one call (`hide`), `showFieldError` clears first instead of calling itself, and the results waiting to be said are one `WeakSet`, whose `delete` also says whether a result is among them. A helper for the trimmed text of an element gzipped worse and was left out. The runtime is at 39.99 KB.
+
+6.8h lands a summary's link on the control itself instead of its label, as a link without JavaScript lands, which also took the label's look-up away: 39.96 KB.

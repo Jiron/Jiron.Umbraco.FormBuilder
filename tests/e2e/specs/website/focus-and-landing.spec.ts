@@ -50,10 +50,23 @@ function contrast(one: string, other: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-/** What the focus draws for a control, read while it has the focus: on a radio button's card or label, or itself. */
+/** Bootstrap's own controls, whose focus the theme also outlines (6.8h). */
+const BOOTSTRAPS_OWN = [
+  ['a text box', '[name="displayName"]'],
+  ['a dropdown', '[name="branch"]'],
+  ['a list box', '[name="topics"]'],
+  ['a radio button', '[name="format"]'],
+  ['a box', '[name="reminder"]'],
+  ['the switch', '[name="newsletter"]'],
+  ['the slider', '[name="hours"]'],
+  ['the main button', '.jfb-navigation .jfb-button-primary'],
+] as const;
+
+/** What the focus draws for a control, read while it has the focus: itself, or a drawn radio button's card or label. */
 const ringOf = (control: Locator) =>
   control.evaluate((element) => {
     const drawn =
+      (getComputedStyle(element).outlineStyle === 'solid' ? element : null) ??
       element.closest('.jfb-choices-cards > .jfb-choice') ??
       (element.matches('[type="radio"]') ? element.ownerDocument.querySelector(`label[for="${element.id}"]`) : null) ??
       element;
@@ -86,7 +99,7 @@ for (const theme of THEMES) {
       page,
     }) => {
       await page.goto(urlOf(theme, scheme));
-      for (const [what, selector] of DRAWN) {
+      for (const [what, selector] of [...DRAWN, ...(theme === 'bootstrap5' ? BOOTSTRAPS_OWN : [])]) {
         const control = formOn(page).locator(selector).first();
         await focusOn(page, control);
         const ring = await ringOf(control);
@@ -172,7 +185,75 @@ for (const theme of THEMES) {
   });
 }
 
+for (const theme of THEMES) {
+  test.describe(`${theme} without JavaScript`, () => {
+    test.use({ javaScriptEnabled: false, contextOptions: { reducedMotion: 'reduce' } });
+
+    test("a refused rating's stars leave the error's colour once one is chosen", async ({ page }) => {
+      await page.goto(urlOf(theme, ''));
+      const form = formOn(page);
+      await form.locator('[name="displayName"]').fill('Mira Okafor');
+      await send(page).click();
+      await expect(form.locator('.jfb-error-summary')).toBeVisible();
+      // The last star: the chosen ones and those before them take the chosen colour whatever the error says.
+      const star = form.locator('[data-jfb-alias="rating"] .jfb-choice > label').last();
+      const fill = () => star.evaluate((label) => getComputedStyle(label, '::before').backgroundColor);
+      await expect.poll(fill, 'refused').toBe(ERROR[theme]['']);
+
+      await form.locator('[data-jfb-alias="rating"] label').nth(2).click();
+      await page.mouse.move(0, 0);
+      await expect.poll(fill, 'one chosen, with the error still on the page').not.toBe(ERROR[theme]['']);
+    });
+  });
+}
+
 for (const theme of [...THEMES, 'unstyled'] as const) {
+  test.describe(`${theme} without JavaScript, landing`, () => {
+    test.use({ javaScriptEnabled: false, contextOptions: { reducedMotion: 'reduce' } });
+
+    test("a post's landing keeps the form's top clear of a sticky header", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 500 });
+      await page.goto(urlOf(theme, ''));
+      const form = formOn(page);
+      await form.locator('[name="displayName"]').fill('Mira Okafor');
+      await send(page).click();
+      await expect(form.locator('.jfb-error-summary')).toBeVisible();
+      expect(new URL(page.url()).hash, 'the post lands on the form').toBe('#jfb-1');
+      await expect
+        .poll(() => form.evaluate((element) => element.getBoundingClientRect().top), "the form's top, below 5rem")
+        .toBeGreaterThanOrEqual(80);
+    });
+  });
+
+  for (const [width, height] of [
+    [1920, 768],
+    [1280, 500],
+    [667, 375],
+  ] as const) {
+    for (const javaScriptEnabled of [true, false]) {
+      test.describe(`${theme} at ${width} by ${height} ${javaScriptEnabled ? 'with' : 'without'} JavaScript`, () => {
+        test.use({ javaScriptEnabled, viewport: { width, height }, contextOptions: { reducedMotion: 'reduce' } });
+
+        test("a link to a picture's choice leaves the control that takes the focus in the window", async ({ page }) => {
+          await page.goto(urlOf(theme, ''));
+          const form = formOn(page);
+          await form.locator('[name="displayName"]').fill('Mira Okafor');
+          await send(page).click();
+          await expect(form.locator('.jfb-error-summary')).toBeVisible();
+          await form.locator('.jfb-error-summary a[href="#jfb-1-room"]').focus();
+          await page.keyboard.press('Enter');
+          const control = form.locator('#jfb-1-room');
+          await expect
+            .poll(async () => {
+              const box = await control.evaluate((element) => element.getBoundingClientRect().toJSON() as DOMRect);
+              return box.top >= 0 && box.bottom <= height;
+            }, 'in the window')
+            .toBe(true);
+        });
+      });
+    }
+  }
+
   for (const [width, height] of [
     [1280, 800],
     [375, 667],

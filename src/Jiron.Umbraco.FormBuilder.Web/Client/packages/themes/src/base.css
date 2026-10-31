@@ -68,7 +68,9 @@
  * Where a press without JavaScript lands (ADR-0101) and where an error summary's link or the keyboard takes a visitor
  * (6.8d): each opens below the window's top, so the line above stays in view; a site with a sticky header sets a larger
  * margin. A control leaves room for its label and a line of help too, as a link without JavaScript lands on the control.
+ * The form itself is where every post without JavaScript lands.
  */
+.jfb-form,
 .jfb-form :is(.jfb-row, .jfb-repeater, .jfb-ranking > li, .jfb-field, label, legend, .jfb-error-summary, .jfb-notice) {
   scroll-margin-block-start: var(--jfb-scroll-margin, 6rem);
 }
@@ -77,9 +79,12 @@
   scroll-margin-block-start: calc(var(--jfb-scroll-margin, 6rem) + 4rem);
 }
 
-/* A picture's choice stands below its picture, at most a card as wide as the form at the themes' 3:2. */
+/*
+ * A picture's choice stands below its picture, at most a card as wide as the form at the themes' 3:2, which on a wide
+ * form or a short window is more than the window: the control that takes the focus always stays in it.
+ */
 .jfb-form .jfb-choice:has(> img) > input {
-  scroll-margin-block-start: calc(var(--jfb-scroll-margin, 6rem) + 4rem + 67cqi);
+  scroll-margin-block-start: min(var(--jfb-scroll-margin, 6rem) + 4rem + 67cqi, 100svh - 4rem);
 }
 
 /*

@@ -203,6 +203,7 @@ test('cards, buttons and stars choose as drawn, fields side by side line up, and
   const [email, name] = await form.evaluate((element) =>
     ['#jfb-1-email', '#jfb-1-displayName'].map((id) => element.querySelector(id)?.getBoundingClientRect().top),
   );
+  expect(email, 'the email is on the page').toEqual(expect.any(Number));
   expect(email, 'the email beside the name, which has help').toBe(name);
 
   // A grid's column heads over the lined-up columns, each answer's column for screen readers.

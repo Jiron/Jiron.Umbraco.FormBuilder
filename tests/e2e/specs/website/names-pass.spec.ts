@@ -10,7 +10,12 @@ import { pageOf, pathOf } from '../../support/demo-content.ts';
 // `required` is read from the control: DevTools' tree lists it for text boxes only, while Windows UI Automation shows
 // Edge passes it on for every control that carries it (docs/ux/review-6.8c.md). Edge also reports a required radio
 // button, box or select that is empty as invalid from the first render, by native validation, so the first render is
-// held to what the markup says: no `aria-invalid` anywhere.
+// held to what the markup says: no `aria-invalid` anywhere. After a refusal that same report would hold for the five
+// controls it covers whatever the markup wrote, so the markup's own mark is read beside the tree's.
+//
+// A grid's cells, an address's parts, the "Other" input and a signature's typed name are optional on the specimen, so
+// here they show role and name only; `FormRenderingChoicesTests` and `FormRenderingInputsTests` hold their required and
+// invalid marks on forms that refuse them.
 
 const SPECIMEN = pathOf(pageOf('demoSpecimen', 'en'), 'en');
 const THEMES = ['default', 'unstyled', 'bootstrap5'] as const;
@@ -90,6 +95,12 @@ const FIRST_RENDER: readonly Expected[] = [
 
 /** The refused controls after a send of the first page with only a message, and the error each is described by. */
 const REFUSED: readonly Expected[] = [
+  [
+    '[name="displayName"]',
+    'textbox',
+    'Name on your library card',
+    'As it should be printed. Up to 40 characters Enter an answer',
+  ],
   ['[name="email"]', 'textbox', 'Email address', 'Enter an email address'],
   ['[name="email.confirm"]', 'textbox', 'Repeat your email address', 'Enter an email address'],
   ['[name="branch"]', 'combobox', 'Branch', 'Choose an answer'],
@@ -186,7 +197,6 @@ for (const theme of THEMES) {
         required.filter((name) => !name.startsWith('guests')).sort(),
         'exactly the required controls say so',
       ).toEqual([...REQUIRED].sort());
-      expect(required).not.toContain('interests');
 
       for (const [name, token] of AUTOCOMPLETE) {
         await expect(formOn(page).locator(`[name="${name}"]`).first(), `${name}'s autocomplete`).toHaveAttribute(
@@ -220,6 +230,10 @@ for (const theme of THEMES) {
               description ?? '',
               true,
             ]);
+            await expect(form.locator(selector).first(), `${selector}: the markup's own mark`).toHaveAttribute(
+              'aria-invalid',
+              'true',
+            );
           }
           const name = await spokenOf(page, cdp, fieldset('contact'));
           expect([name.description, name.invalid], "a name's group names its error, and is not invalid").toEqual([
