@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using AngleSharp.Dom;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
@@ -49,6 +50,30 @@ public sealed class RenderEndpointTests : OutputCacheTestBase
             Assert.That(changed.Served.Document.QuerySelector("form#jfb-1")!.GetAttribute("data-jfb-revision"), Is.EqualTo("2"), "the form as published now");
             Assert.That(changed.Served.Document.QuerySelector("label[for='jfb-1-name']")!.TextContent, Does.Contain("Your full name"));
             Assert.That((stale.FromCache, stale.Document.QuerySelector("form#jfb-1")!.GetAttribute("data-jfb-revision")), Is.EqualTo((true, "1")), "the page the runtime swaps it into came from the cache");
+        });
+    }
+
+    [Test]
+    public async Task Render_OfALargeForm_WritesItsWholeMarkup()
+    {
+        var help = string.Concat(Enumerable.Repeat("A help text long enough to fill the response's writer. ", 12));
+        FormField[] fields = [.. Enumerable.Range(0, 60).Select(at => new FormField
+        {
+            Key = Guid.Parse($"30000000-0000-4000-8000-00000070{at:x4}"),
+            Type = "text",
+            Alias = "field" + at.ToString(CultureInfo.InvariantCulture),
+            Label = new LocalizedText("Field " + at.ToString(CultureInfo.InvariantCulture)),
+            Help = new LocalizedText(help),
+        })];
+        var key = await PublishFormAsync("renderingLarge", null, fields);
+        var content = (await PagesAsync(CachePage))[CachePage];
+
+        var rendered = await RenderAsync(key, "jfb-1", "/cache/", content, null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(rendered.Served.Html.Length, Is.GreaterThan(64 * 1024), "past the response writer's buffer");
+            Assert.That(rendered.Served.Document.QuerySelectorAll("form#jfb-1 [data-jfb-field]"), Has.Length.EqualTo(60), "every field, written without a synchronous write the server refuses");
         });
     }
 

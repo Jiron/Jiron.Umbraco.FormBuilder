@@ -606,7 +606,9 @@ internal sealed class FormController(
 /// <summary>
 /// An action's result rendered with a culture as the current culture and UI culture, as Umbraco sets them on a page in
 /// that culture, so a form's markup from the render endpoint is the page's (ADR-0104), a site's own views included. The
-/// culture is the async method's own: the request's comes back when it ends.
+/// culture is the async method's own: the request's comes back when it ends. The markup is written to memory first and
+/// then to the response asynchronously: a view component's result writes a rich text (the model data among them)
+/// synchronously, which overflows the response's writer on a large form, and Kestrel refuses a synchronous write.
 /// </summary>
 /// <param name="result">The result.</param>
 /// <param name="culture">The culture.</param>
@@ -615,9 +617,25 @@ internal sealed class CultureResult(IActionResult result, CultureInfo culture) :
     /// <inheritdoc />
     public async Task ExecuteResultAsync(ActionContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         CultureInfo.CurrentCulture = culture;
         CultureInfo.CurrentUICulture = culture;
-        await result.ExecuteResultAsync(context);
+        var response = context.HttpContext.Response;
+        var body = response.Body;
+        await using var buffer = new MemoryStream();
+        response.Body = buffer;
+        try
+        {
+            await result.ExecuteResultAsync(context);
+        }
+        finally
+        {
+            response.Body = body;
+        }
+
+        response.ContentLength = buffer.Length;
+        buffer.Position = 0;
+        await buffer.CopyToAsync(body, context.HttpContext.RequestAborted);
     }
 }
 
