@@ -9,6 +9,7 @@ import type {
   MergeValue,
   ProjectedField,
   ProjectedRule,
+  ProjectedValidationRule,
   RecallForm,
   TemplateContext,
 } from '@jfb/logic';
@@ -105,9 +106,7 @@ export interface FormModel {
   readonly form: {
     readonly key: string;
     readonly pages: readonly ModelPage[];
-    readonly validationRules?:
-      | readonly (ProjectedRule & { readonly key: string; readonly field: string; readonly message?: string | null })[]
-      | null;
+    readonly validationRules?: readonly (ProjectedValidationRule & { readonly message?: string | null })[] | null;
     /**
      * The query values the rules and hidden fields may read, by name (ADR-0088), and whether the error summary lists
      * the fields' errors (ADR-0113).

@@ -35,6 +35,14 @@ export interface ProjectedField {
   readonly fields?: readonly ProjectedField[] | null;
 }
 
+/** A form-level validation rule: its message shows on a field when its conditions match; it has no effect of its own. */
+export interface ProjectedValidationRule {
+  readonly key: string;
+  readonly field: string;
+  readonly match?: string | null;
+  readonly conditions?: readonly ProjectedItem[] | null;
+}
+
 export interface ProjectedForm {
   readonly pages: readonly {
     readonly key: string;
@@ -45,7 +53,7 @@ export interface ProjectedForm {
       readonly fields: readonly ProjectedField[];
     }[];
   }[];
-  readonly validationRules?: readonly (ProjectedRule & { readonly key: string; readonly field: string })[] | null;
+  readonly validationRules?: readonly ProjectedValidationRule[] | null;
 }
 
 /** What the browser decides a field by, from the form endpoint's answer (ADR-0109). */

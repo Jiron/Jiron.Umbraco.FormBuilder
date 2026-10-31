@@ -88,6 +88,7 @@ export {
   type ProjectedForm,
   type ProjectedItem,
   type ProjectedRule,
+  type ProjectedValidationRule,
 } from './projection.ts';
 export {
   holdQuery,
