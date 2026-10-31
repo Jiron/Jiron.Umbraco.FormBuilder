@@ -30,9 +30,11 @@ internal sealed record ServerKeyRequest(string Name)
 
 /// <summary>
 /// The server keys of the public API (ADR-0012, ADR-0126): <c>Authorization: Jfb-Key &lt;key&gt;</c>, the key's SHA-256
-/// compared in fixed time with every configured hash. Neither the key nor its hash is ever logged or answered.
+/// compared in fixed time with every configured hash. The hashes are read once, as every host option is, after the
+/// start-up checks passed them; a changed key takes effect when the site restarts. Neither the key nor its hash is ever
+/// logged or answered.
 /// </summary>
-internal sealed class ServerKeys(IOptionsMonitor<FormBuilderOptions> options)
+internal sealed class ServerKeys(IOptions<FormBuilderOptions> options)
 {
     /// <summary>The authorization scheme.</summary>
     public const string Scheme = "Jfb-Key";
@@ -43,15 +45,16 @@ internal sealed class ServerKeys(IOptionsMonitor<FormBuilderOptions> options)
     /// <summary>The longest key: 512 characters.</summary>
     public const int MaxKeyLength = 512;
 
+    private readonly (string Name, byte[] Hash)[] _configured = [.. options.Value.PublicApi.ServerKeys
+        .Select(key => (key.Name, Hash: PublicApiRules.ServerKeyHash(key.Sha256)))
+        .Where(key => key.Hash is not null)
+        .Select(key => (key.Name, key.Hash!))];
+
     /// <summary>What the request's header says, and the key's name when it is a configured one.</summary>
     public (ServerKeyStatus Status, string? Name) Check(HttpRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var configured = options.CurrentValue.PublicApi.ServerKeys
-            .Select(key => (key.Name, Hash: PublicApiRules.ServerKeyHash(key.Sha256)))
-            .Where(key => key.Hash is not null)
-            .Select(key => (key.Name, key.Hash!));
-        return Match(request.Headers.Authorization, configured, (a, b) => CryptographicOperations.FixedTimeEquals(a, b));
+        return Match(request.Headers.Authorization, _configured, (a, b) => CryptographicOperations.FixedTimeEquals(a, b));
     }
 
     /// <summary>

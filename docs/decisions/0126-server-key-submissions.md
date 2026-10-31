@@ -3,8 +3,8 @@
 - Status: accepted; builds the "Server keys" of [ADR-0012](0012-anonymous-endpoints-spam-protection-and-challenges.md),
   adds the error code `server_key_invalid` to the public API's codes (§4.6) and reserves the context names that start
   with `jfb`
-- Date: 2026-10-31
-- Roadmap step: 6.6b (decided and built); 7.1 and 7.2 make the challenge, the honeypot and the captcha skip a
+- Date: 2026-10-31; amended 2026-10-31 (6.8a: the keys read once; a receipt without a key)
+- Roadmap step: 6.6b (decided and built); 6.8a (the keys read once, a receipt without a key); 7.1 and 7.2 make the challenge, the honeypot and the captcha skip a
   request a server key signs
 
 ## Context
@@ -21,7 +21,10 @@ instead of its challenge. This step builds it. The challenge, the honeypot and t
 
 - **Configuration:** `JironFormBuilder:PublicApi:ServerKeys` is a list of `{ "Name": "shop", "Sha256": "<64 hex
   digits>" }`. A name has 1 to 64 letters, digits, hyphens and underscores, and no two keys share a name or a hash;
-  the host refuses to start otherwise (ADR-0042), naming the entry and never its hash. `scripts/server-key.mjs`
+  the host refuses to start otherwise (ADR-0042), naming the entry and never its hash. The keys are read once, as
+  every host option is (ADR-0042): a changed or revoked key takes effect when the site restarts, and so passes the
+  start-up checks first (6.8a; they were read on every request before, so a key changed while the site ran skipped
+  them). `scripts/server-key.mjs`
   makes a key of 256 random bits (base64url) and prints its hash for the configuration; the key goes only to the
   headless server's own secret store.
 - **The header:** the scheme `Jfb-Key` in any letter case, one space, then the key: 32 to 512 visible ASCII
@@ -39,7 +42,8 @@ instead of its challenge. This step builds it. The challenge, the honeypot and t
   submission.
 - **The entry:** a submission with a key stores the key's name in its context under `jfbServerKey`, beside the form's
   own context values, and the receipt endpoint answers for an entry made with that key's name when the same key
-  asks; any other request meets the same `404 not_found` as an unknown submission.
+  asks; any other request, another key or none at all, meets the same `404 not_found` as an unknown submission
+  (6.8a: a request without a key was answered before). An entry no key made answers only a request without one.
 - **Reserved names:** a context value whose name starts with `jfb` in any letter case is the package's
   (`FormDeveloperSettings.ReservedContextPrefix`); publishing refuses one in `developer.contextValues`
   (`name_invalid`), and a page or a post that gives one is ignored, as an unlisted name is.

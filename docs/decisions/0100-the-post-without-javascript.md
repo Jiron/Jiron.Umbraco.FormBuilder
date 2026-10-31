@@ -4,8 +4,8 @@
   the redirect, a message with a redirect) and [ADR-0093](0093-the-razor-rendering.md) (the form's hidden inputs, the
   page shown after a post); extended by [ADR-0101](0101-rows-and-moves-without-javascript.md) in 6.2i (the rows'
   and the rankings' buttons) and by [ADR-0102](0102-files-in-a-post-without-javascript.md) in 6.2j (the post's files)
-- Date: 2026-10-29
-- Roadmap step: 6.2h (decided and built); 6.2i gives a row's Add and Remove and a ranking's moves their effect
+- Date: 2026-10-29; amended 2026-10-31 (6.8a: another origin's post while a member is signed in)
+- Roadmap step: 6.2h (decided and built); 6.8a (another origin's post as a member); 6.2i gives a row's Add and Remove and a ranking's moves their effect
   (ADR-0101), 6.2j takes files (ADR-0102), 6.2k the typed signature, 6.2l adds the cache rules, 7.1 the honeypot, the challenge and
   the rate limits, 6.5 the summary page and the copy of the answers
 
@@ -134,9 +134,15 @@ Option 3, option 3, option 1 and option 2.
   form's render reads `jfb-sent` for its own instance and form only, and shows the outcome `ReceiptAsync` answers for
   that submission id; a token that is malformed, changed, expired or another form's or instance's shows the form, as a
   page without one does. A render that shows an outcome is `no-store` (6.2l adds the rest of the cache rules).
-- **Forms for members:** before anything else, a post whose `Origin` is not the site's own (as ADR-0012 counts it,
-  `http` and `https` alike for its host) answers `403` and renders nothing, so another site never sees the form again
-  with answers; a post without an `Origin` passes, since every browser sends one with a post.
+- **Forms for members, and any form while a member is signed in:** before anything else, a post whose `Origin` is
+  not the site's own (as ADR-0012 counts it, `http` and `https` alike for its host) answers `403` and renders nothing,
+  so another site never sees the form again with answers; a post without an `Origin` passes, since every browser sends
+  one with a post.
+
+  *Why any form (6.8a):* the member's cookie goes with another site's post too, and the entry would be stored as the
+  member's, with the values their prefill hides from the page (ADR-0124). The public API refuses another origin's post
+  for the same reason (ADR-0012). A visitor who is not signed in carries nothing another site could borrow, so their
+  post passes from anywhere, as a plain HTML form on another site may post to the page.
 
 ## Consequences
 

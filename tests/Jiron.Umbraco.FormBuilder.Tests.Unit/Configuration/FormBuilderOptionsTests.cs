@@ -39,6 +39,7 @@ public sealed class FormBuilderOptionsTests
             Assert.That(options.LockedSections, Is.Empty);
             Assert.That(options.Webhooks.AllowedHosts, Is.Empty, "no other host is called");
             Assert.That(options.Webhooks.AllowHttp, Is.False);
+            Assert.That(options.Rendering.IncludeAssetsAutomatically, Is.True, "a placed form loads its assets");
             Assert.That(HostOptions.Failures(options), Is.Empty);
         });
     }
@@ -97,6 +98,7 @@ public sealed class FormBuilderOptionsTests
             [$"{Root}:LockedSections:1"] = "Email",
             [$"{Root}:Webhooks:AllowedHosts:0"] = "events.example.com",
             [$"{Root}:Webhooks:AllowHttp"] = "true",
+            [$"{Root}:Rendering:IncludeAssetsAutomatically"] = "false",
         };
 
         var options = HostOptions.Bind(settings);
@@ -113,6 +115,7 @@ public sealed class FormBuilderOptionsTests
                 Is.EqualTo(new[] { ("action", "email", "from", "noreply@example.com", true), ("field", "text", "maxLength", (string?)null, false) }));
             Assert.That(options.LockedSections, Is.EqualTo(new[] { "privacy", "Email" }));
             Assert.That((options.Webhooks.AllowedHosts.Single(), options.Webhooks.AllowHttp), Is.EqualTo(("events.example.com", true)));
+            Assert.That(options.Rendering.IncludeAssetsAutomatically, Is.False);
             Assert.That(HostOptions.Failures(settings), Is.Empty);
         });
     }
@@ -423,10 +426,10 @@ public sealed class FormBuilderOptionsTests
         Assert.That(failures, Has.Count.EqualTo(4));
     }
 
-    [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Files, Limits, Designer, Access, Webhooks and LockedSections.")]
+    [TestCase("JironFormBuilder:Limit:Definitions:MaxFields", "JironFormBuilder:Limit is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Limits, Designer, Access, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Limits:Definitions:MaxField", "JironFormBuilder:Limits:Definitions:MaxField is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits:Definitions are MaxBytes, MaxPages, MaxGroups, MaxFields, MaxOptionsPerField, MaxActions, MaxOutcomes and MaxRules.")]
     [TestCase("JironFormBuilder:Limits:Definition:MaxFields", "JironFormBuilder:Limits:Definition is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Limits are Definitions.")]
-    [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Files, Limits, Designer, Access, Webhooks and LockedSections.")]
+    [TestCase("JironFormBuilder:LockedSection:0", "JironFormBuilder:LockedSection is not a setting of Jiron Form Builder; the settings in JironFormBuilder are PublicApi, Rendering, Files, Limits, Designer, Access, Webhooks and LockedSections.")]
     [TestCase("JironFormBuilder:Designer:SettingLocks:0:Typ", "JironFormBuilder:Designer:SettingLocks:0:Typ is not a setting of Jiron Form Builder; the settings in JironFormBuilder:Designer:SettingLocks:0 are Kind, Type, Setting, Value and Hidden.")]
     [TestCase("JironFormBuilder:Files:Root:Folder", "JironFormBuilder:Files:Root is a single value, not a section.")]
     [TestCase("JironFormBuilder:LockedSections:0:Name", "JironFormBuilder:LockedSections:0 is a single value, not a section.")]

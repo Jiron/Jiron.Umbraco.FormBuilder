@@ -7,7 +7,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 
 /// <summary>
 /// <c>&lt;jfb-render form="contact" /&gt;</c> renders a published form through <see cref="FormBuilderFormViewComponent"/>
-/// (ADR-0004, ADR-0093), with the tags that load the website runtime once per page unless <c>assets="false"</c>,
+/// (ADR-0004, ADR-0093), with the tags that load the website runtime once per page unless <c>assets="false"</c> (or the
+/// host's <c>Rendering:IncludeAssetsAutomatically</c> is off and the tag does not say <c>assets="true"</c>),
 /// <c>theme="..."</c> for a theme in place of the form's (ADR-0105), and <c>context-&lt;name&gt;="..."</c> for the
 /// context values the form lists. A form a picker picks is written <c>picked="..."</c>, which keeps what the picker's
 /// settings give it, its theme and its page after a send (ADR-0129). The element itself is not written. Add
@@ -37,9 +38,12 @@ public sealed class FormBuilderRenderTagHelper(IViewComponentHelper components) 
     [HtmlAttributeName("picked")]
     public FormBuilderFormReference? Picked { get; set; }
 
-    /// <summary>Whether the form includes the tags that load the website runtime (once per page); true by default.</summary>
+    /// <summary>
+    /// Whether the form includes the tags that load the website runtime (once per page); when the tag does not say, the
+    /// host's <c>Rendering:IncludeAssetsAutomatically</c> decides, which is true unless the site turns it off.
+    /// </summary>
     [HtmlAttributeName("assets")]
-    public bool Assets { get; set; } = true;
+    public bool? Assets { get; set; }
 
     /// <summary>The alias of the theme the form renders with here, in place of its own and the site's; none for those.</summary>
     [HtmlAttributeName("theme")]

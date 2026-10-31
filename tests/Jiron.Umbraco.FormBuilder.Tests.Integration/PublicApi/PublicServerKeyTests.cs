@@ -5,7 +5,11 @@ using System.Text.Json;
 using Jiron.Umbraco.FormBuilder.Core.Configuration;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using Umbraco.Cms.Tests.Common.Testing;
+using Umbraco.Cms.Tests.Integration.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.PublicApi;
 
@@ -13,7 +17,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.PublicApi;
 /// Server-key submissions on a real site (ROADMAP 6.6b, ADR-0126): a headless server's key submits, and the entry
 /// records the key's name as <c>jfbServerKey</c>, never a posted one; the receipt answers that key and no other; a key
 /// that matches none, or a malformed one, answers <c>401 server_key_invalid</c> on every endpoint and stores nothing;
-/// and neither the key nor its hash reaches a log or an answer.
+/// neither the key nor its hash reaches a log or an answer; and a changed key takes effect only when the site restarts,
+/// as every host option does (6.8a).
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -94,7 +99,7 @@ public sealed class PublicServerKeyTests : PublicApiTestBase
     }
 
     [Test]
-    public async Task AReceipt_AnswersTheKeyThatSubmitted_AndNoOther()
+    public async Task AReceipt_AnswersTheKeyThatSubmitted_AndNoOther_NorARequestWithoutAKey()
     {
         var key = await PublishAsync();
         var submission = Guid.NewGuid();
@@ -102,6 +107,12 @@ public sealed class PublicServerKeyTests : PublicApiTestBase
         var body = $$$"""{"submissionId":"{{{submission}}}"}""";
         using var same = await PostAsync($"{Root}/forms/{key}/receipt", body, "Jfb-Key " + ShopKey);
         using var other = await PostAsync($"{Root}/forms/{key}/receipt", body, "Jfb-Key " + AppKey);
+        using var none = await PostAsync($"{Root}/forms/{key}/receipt", body, null);
+        var plain = Guid.NewGuid();
+        var plainBody = $$$"""{"submissionId":"{{{plain}}}"}""";
+        using var plainSent = await PostAsync($"{Root}/forms/{key}/entries", $$$"""{"submissionId":"{{{plain}}}","revision":1,"values":{"name":"Ada"}}""", null);
+        using var plainReceipt = await PostAsync($"{Root}/forms/{key}/receipt", plainBody, null);
+        using var plainAskedByAKey = await PostAsync($"{Root}/forms/{key}/receipt", plainBody, "Jfb-Key " + ShopKey);
         using var retry = await PostAsync($"{Root}/forms/{key}/entries", $$$"""{"submissionId":"{{{submission}}}","revision":1,"values":{"name":"Ada"}}""", "Jfb-Key " + AppKey);
 
         Assert.Multiple(async () =>
@@ -109,7 +120,30 @@ public sealed class PublicServerKeyTests : PublicApiTestBase
             Assert.That(same.StatusCode, Is.EqualTo(HttpStatusCode.OK), await same.Content.ReadAsStringAsync());
             Assert.That(await same.Content.ReadAsStringAsync(), Is.EqualTo(await sent.Content.ReadAsStringAsync()), "the receipt and the outcome the submission got");
             Assert.That(await RefusalAsync(other), Is.EqualTo("404 not_found"), "another key meets the same miss as an unknown submission");
+            Assert.That(await RefusalAsync(none), Is.EqualTo("404 not_found"), "and so does a request without a key (6.8a)");
+            Assert.That(plainReceipt.StatusCode, Is.EqualTo(HttpStatusCode.OK), "an entry no key made answers a request without one");
+            Assert.That(await plainReceipt.Content.ReadAsStringAsync(), Is.EqualTo(await plainSent.Content.ReadAsStringAsync()));
+            Assert.That(await RefusalAsync(plainAskedByAKey), Is.EqualTo("404 not_found"), "and no key");
             Assert.That(await RefusalAsync(retry), Is.EqualTo("409 duplicate_submission"), "the same submission from another key is not its retry");
+        });
+    }
+
+    [Test]
+    public async Task AChangedServerKey_TakesEffectWhenTheSiteRestarts_AsEveryHostOptionDoes()
+    {
+        var key = await PublishAsync();
+        using var before = await PostAsync($"{Root}/forms/{key}/entries", """{"revision":1,"values":{"name":"Ada"}}""", "Jfb-Key " + ShopKey);
+        GetRequiredService<KeyChange>().Change(Hash(RevokedKey));
+
+        using var kept = await PostAsync($"{Root}/forms/{key}/entries", """{"revision":1,"values":{"name":"Grace"}}""", "Jfb-Key " + ShopKey);
+        using var changed = await PostAsync($"{Root}/forms/{key}/entries", """{"revision":1,"values":{"name":"Alan"}}""", "Jfb-Key " + RevokedKey);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(GetRequiredService<IOptionsMonitor<FormBuilderOptions>>().CurrentValue.PublicApi.ServerKeys[0].Sha256, Is.EqualTo(Hash(RevokedKey)), "the configuration did change");
+            Assert.That(before.StatusCode, Is.EqualTo(HttpStatusCode.OK), await before.Content.ReadAsStringAsync());
+            Assert.That(kept.StatusCode, Is.EqualTo(HttpStatusCode.OK), "the key the site started with still submits");
+            Assert.That(await RefusalAsync(changed), Is.EqualTo("401 server_key_invalid"), "the new one waits for a restart");
         });
     }
 
@@ -130,6 +164,9 @@ public sealed class PublicServerKeyTests : PublicApiTestBase
         ArgumentNullException.ThrowIfNull(builder);
         base.CustomTestSetup(builder);
         builder.Services.AddLogCapture();
+        builder.Services.AddSingleton<KeyChange>();
+        builder.Services.AddSingleton<IPostConfigureOptions<FormBuilderOptions>>(provider => provider.GetRequiredService<KeyChange>());
+        builder.Services.AddSingleton<IOptionsChangeTokenSource<FormBuilderOptions>>(provider => provider.GetRequiredService<KeyChange>());
     }
 
     private static string Hash(string key) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(key)));
@@ -144,6 +181,36 @@ public sealed class PublicServerKeyTests : PublicApiTestBase
             }
         });
 
+    // A change of the site's configuration while it runs, as a reload of appsettings.json makes one: the first server
+    // key's hash replaced, and the options told through their change token. It is this host's own: a value set on the
+    // site's configuration would reach the configuration the test harness shares between hosts.
+    private sealed class KeyChange : IPostConfigureOptions<FormBuilderOptions>, IOptionsChangeTokenSource<FormBuilderOptions>
+    {
+        private CancellationTokenSource _change = new();
+        private string? _hash;
+
+        public string Name => Options.DefaultName;
+
+        public IChangeToken GetChangeToken() => new CancellationChangeToken(_change.Token);
+
+        public void PostConfigure(string? name, FormBuilderOptions options)
+        {
+            if (_hash is not null)
+            {
+                options.PublicApi.ServerKeys[0].Sha256 = _hash;
+            }
+        }
+
+        public void Change(string hash)
+        {
+            _hash = hash;
+            var changed = _change;
+            _change = new CancellationTokenSource();
+            changed.Cancel();
+            changed.Dispose();
+        }
+    }
+
     // Each entry's stored context, oldest first, its names in order.
     private async Task<List<string>> ContextsAsync(Guid form)
     {
@@ -156,5 +223,46 @@ public sealed class PublicServerKeyTests : PublicApiTestBase
         }
 
         return contexts;
+    }
+}
+
+/// <summary>
+/// A real site whose server key is configured with the key in place of its hash (ADR-0126): the start-up checks the host
+/// runs as it starts refuse it, naming the setting and never the value, so the site serves nothing with a key it cannot
+/// take (6.8a). The site's own validator is wrapped so that the test keeps what it threw.
+/// </summary>
+[TestFixture]
+[UmbracoTest(Database = UmbracoTestOptions.Database.None)]
+public sealed class PublicServerKeyStartTests : UmbracoIntegrationTest
+{
+    // A fake key (JFB_FAKE) where its hash belongs.
+    private const string Key = "JFB_FAKE_pasted_server_key_0123456789abcdef";
+
+    /// <summary>The site's one server key holds the key itself.</summary>
+    public PublicServerKeyStartTests()
+    {
+        InMemoryConfiguration[FormBuilderOptions.SectionName + ":PublicApi:ServerKeys:0:Name"] = "shop";
+        InMemoryConfiguration[FormBuilderOptions.SectionName + ":PublicApi:ServerKeys:0:Sha256"] = Key;
+    }
+
+    [Test]
+    public void AServerKeyThatIsNoHash_StopsTheStart_NamingItsSetting()
+    {
+        var validator = (RecordingStartupValidator)GetRequiredService<IStartupValidator>();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(validator.Runs, Is.EqualTo(1), "the host ran it as it started");
+            Assert.That(validator.Refusal?.Message, Does.Contain(FormBuilderOptions.SectionName + ":PublicApi:ServerKeys:0:Sha256 must be the SHA-256 of the key"));
+            Assert.That(validator.Refusal?.Message, Does.Not.Contain(Key), "and never the value");
+        });
+    }
+
+    /// <inheritdoc />
+    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        builder.AddComposers();
+        RecordingStartupValidator.Wrap(builder.Services);
     }
 }

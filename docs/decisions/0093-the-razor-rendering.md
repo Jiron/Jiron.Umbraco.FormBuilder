@@ -11,7 +11,7 @@
   rows in 6.2f by [ADR-0098](0098-the-repeaters-rows.md); the hidden inputs a post carries, the page a post moves to
   and the page after a sent post in 6.2h by [ADR-0100](0100-the-post-without-javascript.md); the `theme` attribute, the
   views of a form's theme and the classes they write in 6.3a by [ADR-0105](0105-the-theme-registry-and-the-base-rules.md)
-- Date: 2026-10-28
+- Date: 2026-10-28; amended 2026-10-31 (6.8a: the host's default for a placement's assets)
 - Amended in 6.4g by [ADR-0115](0115-answer-recall-on-the-page.md): a visitor text that holds merge tags carries its
   hook, and one that renders empty keeps its element, hidden
 - Amended in 6.4h by [ADR-0118](0118-defaults-with-merge-tags-on-the-page.md): a field whose controls start from a
@@ -64,8 +64,10 @@ layout; and what a hidden field and the `context-…` values put into the page.
 - **Naming a form:** `<jfb-render form="…">` and `@await Component.InvokeAsync("FormBuilderForm", new { form = … })`
   take a key (a `Guid`, or its text with hyphens), an alias in any letter case, or a `FormBuilderFormReference`, the
   value the form picker gives (6.7), which reads as its key, so `form="@reference"` names the form too.
-  `assets="false"` (`assets: false`) leaves the assets out; `context-<name>="…"` (`context: dictionary`) passes
-  context values. The tag helper calls the view component, so the two are one path.
+  `assets="false"` (`assets: false`) leaves the assets out and `assets="true"` asks for them; a placement that says
+  neither follows the host's `Rendering:IncludeAssetsAutomatically` (§4.8, true unless the site turns it off, for a
+  site that loads the assets itself; 6.8a). `context-<name>="…"` (`context: dictionary`) passes context values. The
+  tag helper calls the view component, so the two are one path.
   The theme attribute comes with the themes (6.3) and the picker's placement (6.7).
 - **What renders:**
   - a published form: the Form view;

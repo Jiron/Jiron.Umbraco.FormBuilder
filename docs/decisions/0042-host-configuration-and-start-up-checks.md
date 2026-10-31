@@ -67,6 +67,10 @@ left the definition limits for 4.4 to bind. These questions are open:
 - `Designer:SettingLocks`;
 - `LockedSections`.
 
+Later steps added `PublicApi` (6.1a, its server keys in 6.6b), `Access` (4.6a), `Webhooks` (5.5c) and `Rendering:IncludeAssetsAutomatically`
+(6.8a, the default of a placement's assets, ADR-0093), each with its validator rules, schema entry and tests; the
+server keys, read on every request until 6.8a, are now read once as the rest are (ADR-0126).
+
 The other keys of section 4.8 come with the steps that build what they configure. Each such step adds its key to the
 tree, the validator, the schema and its tests. Services take `IOptions<FormBuilderOptions>`, so the host configuration
 is read once: a change takes effect when the site restarts. A reload would skip the start-up validation, and roots and

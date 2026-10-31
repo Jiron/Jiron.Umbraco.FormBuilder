@@ -30,7 +30,7 @@ internal enum FormPostAnswerKind
     /// <summary><c>400</c>: a post that reached the action without a page, or that names no form.</summary>
     BadRequest,
 
-    /// <summary><c>403</c>: a post to a form for members from another origin.</summary>
+    /// <summary><c>403</c>: a post from another origin to a form for members, or to any form while a member is signed in.</summary>
     Forbidden,
 }
 
@@ -66,6 +66,7 @@ internal sealed record FormPostAnswer(FormPostAnswerKind Kind, string? Url = nul
 /// <param name="uploads">The upload's rules, which the post's files are held to and stored by (ADR-0102).</param>
 /// <param name="tokens">The upload tokens, which a file field's answer holds.</param>
 /// <param name="entries">The entries' files, which a kept file's token names.</param>
+/// <param name="availability">The form's times and entry limit, checked before the post stores anything.</param>
 internal sealed class FormPostHandler(
     PublishedFormCache forms,
     FormRequests requests,
@@ -75,7 +76,8 @@ internal sealed class FormPostHandler(
     SentTokens sent,
     FileUploads uploads,
     UploadTokens tokens,
-    IEntryRepository entries)
+    IEntryRepository entries,
+    FormAvailability availability)
 {
     /// <summary>The notice's code after a post that met a form published again meanwhile.</summary>
     public const string FormChangedCode = "form_changed";
@@ -113,10 +115,21 @@ internal sealed class FormPostHandler(
             return FormPostAnswer.Page;
         }
 
+        // Another site may not post as the member signed in (ADR-0100): to a form for members, and to any form while a
+        // member is signed in, a post from another origin answers 403, as the public API refuses one. A visitor who is not
+        // signed in carries nothing another site could borrow.
         var definition = cached.Published.Definition;
-        if (definition.Settings.Availability.Access != MemberAccess.Anyone && !IsOwnOrigin(http.Request))
+        var member = await http.RequestServices.GetRequiredService<FormMembers>().KeyAsync();
+        if ((definition.Settings.Availability.Access != MemberAccess.Anyone || member is not null) && !IsOwnOrigin(http.Request))
         {
             return FormPostAnswer.Forbidden;
+        }
+
+        // A form that takes no entry now stores nothing of the post, its files and typed signatures among them, as the
+        // upload endpoint stores nothing for it (ADR-0087): the page shows the form's notice, as for any visitor now.
+        if (await availability.CheckAsync(definition.Settings.Availability, formKey, cancellationToken) is not null)
+        {
+            return FormPostAnswer.Page;
         }
 
         var culture = await pages.CultureAsync(FormPages.IsCulture(published.Culture) ? published.Culture : null);
@@ -145,7 +158,7 @@ internal sealed class FormPostHandler(
             Query = query,
             Context = reader.Context,
             Tokens = tokens,
-            Member = await http.RequestServices.GetRequiredService<FormMembers>().KeyAsync(),
+            Member = member,
         };
         var page = Guid.TryParseExact(One(posted, FormPostFields.Page), "D", out var pageKey) ? pageKey : (Guid?)null;
         var state = new Step(reader, definition, page, query);

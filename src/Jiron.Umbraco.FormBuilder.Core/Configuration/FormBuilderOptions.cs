@@ -19,6 +19,9 @@ public sealed class FormBuilderOptions
     /// <summary>The public API visitors' browsers and headless sites call: where it lives and who may call it.</summary>
     public FormBuilderPublicApiOptions PublicApi { get; } = new();
 
+    /// <summary>How the forms placed on the site's pages are written.</summary>
+    public FormBuilderRenderingOptions Rendering { get; } = new();
+
     /// <summary>Where uploaded files are kept, how large one may be, and which extensions no field takes.</summary>
     public FormBuilderFilesOptions Files { get; } = new();
 
@@ -39,6 +42,18 @@ public sealed class FormBuilderOptions
     /// <c>privacy</c>, <c>access</c> (every grant and restriction) or <c>integrations</c>, in any case.
     /// </summary>
     public IList<string> LockedSections { get; } = [];
+}
+
+/// <summary>How the forms placed on the site's pages are written (section 4.8).</summary>
+public sealed class FormBuilderRenderingOptions
+{
+    /// <summary>
+    /// Whether a form placed on a page writes the tags that load the website runtime, the base rules and its theme's
+    /// stylesheet, once per page, when its placement does not say: true by default. Turned off, a placement writes them
+    /// only when it asks (<c>assets="true"</c> on <c>&lt;jfb-render&gt;</c>, <c>assets = true</c> for the view component),
+    /// and the site loads them itself, with a <c>&lt;jfb-assets&gt;</c> in its layout for example.
+    /// </summary>
+    public bool IncludeAssetsAutomatically { get; set; } = true;
 }
 
 /// <summary>

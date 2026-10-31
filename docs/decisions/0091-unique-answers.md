@@ -4,8 +4,8 @@
   [ADR-0002](0002-form-definition-model-versions-and-public-projection.md) (which field types may have a
   `uniquePerForm` check); extends [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) and
   [ADR-0090](0090-places-on-options.md) (the transaction's last check holds unique answers beside places)
-- Date: 2026-10-28
-- Roadmap step: 6.1h (decided and built); 7.1 keeps spam out of it, 8.6 checks a resumed draft when it is submitted,
+- Date: 2026-10-28; amended 2026-10-31 (6.8a: a taken answer is told only to a post that would otherwise be stored)
+- Roadmap step: 6.1h (decided and built); 6.8a (when a taken answer is told); 7.1 keeps spam out of it, 8.6 checks a resumed draft when it is submitted,
   11.2 moves an entry back and edits its values asking before an answer appears twice, 11.3's "not spam" asks the same
   way, 13.2 anonymises entries
 
@@ -57,14 +57,21 @@ Server, whatever its isolation level; which field types may have the check; and 
 ### The submission
 
 1. **While the answers are read** (`entries`), the reader names each shown answer of a field with the check that
-   passed the field's other checks, with its row and values. The pipeline reads, without locks, which of the values
-   another entry holds, and fails each `uniquePerForm` check of such an answer with `check` and the check's index at
-   its field and row. These errors join the others in the order of the form, so a visitor sees every problem at once
-   and keeps every answer.
+   passed the field's other checks, with its row and values. Once nothing else refuses the post (no other error and
+   no choice past its places), the pipeline reads, without locks, which of the values another entry holds, and fails
+   each `uniquePerForm` check of such an answer with `check` and the check's index at its field and row, in the order
+   of the form. A visitor keeps every answer either way.
+
+   *Why only then (6.8a):* a post that stores nothing costs its sender nothing, so if it learned whether an answer is
+   taken, an empty required field would turn `entries` into the question ADR-0012 keeps out of `validate`: is this
+   address registered? Told only to a post that would otherwise be stored, the answer costs an entry each time it is
+   free, as any sign-up does. The price is a second round for a visitor whose post had other errors too: they fix those,
+   send, and then learn that the address is taken.
 2. **Inside the transaction**, once the entry is stored, for an entry that holds its answers: the pipeline locks the
    form's row (the entry counter holds it already), then reads with locking reads which of the values another entry
-   holds. Any such value rolls the transaction back: no entry, no number, no event, no count. The answer is
-   `422 validation_failed` with these errors and the choices past the places of ADR-0090, in the order of the form.
+   holds, unless a choice ran past its places meanwhile (ADR-0090), which alone is then told. Any such value rolls the
+   transaction back: no entry, no number, no event, no count. The answer is `422 validation_failed` with these errors,
+   or with the choices past the places, in the order of the form.
 3. **A retry** of a stored submission is answered from its entry before any of this (section 4.4, step 3), so the entry
    that holds the answer gets its receipt again.
 4. **`validate`** does not check uniqueness (ADR-0012): it passes an answer another entry holds, and every other check
@@ -84,6 +91,8 @@ Server, whatever its isolation level; which field types may have the check; and 
 ## Consequences
 
 - Two servers never store the same unique answer twice for a form; a test sends ten at once.
+- A post with any other error, through `entries` or without JavaScript, answers alike whether its unique answers are
+  taken or free; tests send a taken and a free address beside an empty required field.
 - Each check costs one statement per value, on the value index of its column; forms have few unique fields.
 - A submission and a write of entries to the same form already wait for each other (ADR-0090); the unique check adds
   no lock of its own.

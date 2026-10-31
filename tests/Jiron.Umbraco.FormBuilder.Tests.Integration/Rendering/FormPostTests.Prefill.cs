@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
@@ -8,7 +9,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 // Prefill (ROADMAP 6.5c, ADR-0124): the server writes the signed-in member's value and the placement's context value
 // into the controls' starts and marks a query prefill for the page to fill, the same for every visitor; a field hidden
 // behind the member's value is left out of the member's page, which is never stored, and the entry takes the member's
-// value whatever either transport posts for it, while any other visitor sees and answers the field.
+// value whatever either transport posts for it, while any other visitor sees and answers the field; and another site
+// cannot post as the member signed in (6.8a).
 public sealed partial class FormPostTests
 {
     private const string PrefillPage = "/post-prefill/";
@@ -73,6 +75,36 @@ public sealed partial class FormPostTests
             Assert.That(entries[1], Does.Contain(MemberEmail).And.Not.Contain(Forged), "the page's post takes the member's address, never the forged one");
             Assert.That(entries[2], Does.Contain(MemberEmail).And.Not.Contain(Forged), "and so does the JSON endpoint");
             Assert.That(entries[2], Does.Contain("Mira").And.Contain("sales"), "the fields the member sees take what was posted");
+        });
+    }
+
+    [Test]
+    public async Task APostFromAnotherOrigin_WhileAMemberIsSignedIn_Answers403AndStoresNothing_ButOneWithoutAnOriginAndAnAnonymousOnePass()
+    {
+        const string Elsewhere = "https://elsewhere.example";
+        var key = await PublishFormAsync("postPrefill", PrefillForm);
+        _ = await PagesAsync("post-prefill");
+        var visitor = FormOf(await DocumentAsync(PrefillPage), "jfb-1");
+        Fill(visitor, "email", "visitor@example.test");
+        var action = visitor.GetAttribute("action")!.Split('#')[0];
+        using var anonymous = await PostPairsAsync(action, Posted(visitor, FormPostFields.Submit), Elsewhere, PrefillPage);
+        await SignInMemberAsync(MemberEmail);
+        var form = FormOf(await DocumentAsync(PrefillPage), "jfb-1");
+        using var foreign = await PostPairsAsync(action, Posted(form, FormPostFields.Submit), Elsewhere, PrefillPage);
+        var afterForeign = await StoredAsync(key);
+        using var originless = await PostPairsAsync(action, Posted(form, FormPostFields.Submit), null, PrefillPage);
+        var entries = (await StoredAsync(key)).Select(entry => entry.Select(value => value.Text).ToList()).ToList();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(anonymous.Headers.Location?.OriginalString, Does.Contain("jfb-sent="), "a visitor who is not signed in carries nothing to borrow");
+            Assert.That(foreign.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden), "another site's post while the member is signed in");
+            Assert.That(Header(foreign, "Cache-Control"), Is.EqualTo("no-store"));
+            Assert.That(await foreign.Content.ReadAsStringAsync(), Does.Not.Contain("jfb-form"), "and renders nothing");
+            Assert.That(afterForeign, Has.Count.EqualTo(1), "nothing stored as the member");
+            Assert.That(originless.Headers.Location?.OriginalString, Does.Contain("jfb-sent="), "a post without an Origin passes");
+            Assert.That(entries, Has.Count.EqualTo(2));
+            Assert.That(entries[1], Does.Contain(MemberEmail), "as the member's own");
         });
     }
 

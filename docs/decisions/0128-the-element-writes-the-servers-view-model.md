@@ -2,7 +2,7 @@
 
 - Status: accepted; amends [ADR-0015](0015-themes-and-the-markup-contract.md)'s "renders the same markup from the
   projection": the element renders the same markup from the server's view model of the projection
-- Date: 2026-10-31
+- Date: 2026-10-31; amended 2026-10-31 (6.8a: a name the form does not list never reaches the rendering)
 - Roadmap step: 6.6d (decided; builds the endpoint), 6.6e (the element's markup), 6.6f (the element on a headless
   page), 6.6g (its pages and sending)
 
@@ -42,7 +42,8 @@ classes, the marks or the navigation.
 - **The element endpoint** `GET forms/{key}/element?instance=&culture=&contentKey=&theme=&context-<name>=` (§4.6)
   answers the view model of the published form's first render as the render endpoint renders it (the same
   `FormRendering`, for the same members, migrations, themes and availability) with the context values the form lists,
-  as JSON with a `contract` number, `no-store`; a form that does not allow headless use is not found. The definition
+  a `context-<name>` the form does not list dropped before the rendering, so a name a request makes up is neither
+  kept nor logged (6.8a), as JSON with a `contract` number, `no-store`; a form that does not allow headless use is not found. The definition
   endpoint's answer travels inside it as the exact text the runtime reads (`modelData`), so the element writes the
   same `<script data-jfb-model>`. What only a post without JavaScript uses (the action, the encoding, the route token
   and post values, a button's `formaction`) is left out; the element's form posts through the runtime.

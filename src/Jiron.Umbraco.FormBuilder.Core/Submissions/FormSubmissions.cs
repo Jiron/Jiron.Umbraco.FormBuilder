@@ -142,7 +142,8 @@ internal sealed class FormSubmissions(
 
     /// <summary>
     /// The receipt and the outcome of the form's entry that a submission id names (ADR-0012, ADR-0089), as a retry of its
-    /// answers gets them; <see cref="SubmissionRefusal.EntryNotFound"/> when the form has no such entry, or only a draft.
+    /// answers gets them; <see cref="SubmissionRefusal.EntryNotFound"/> when the form has no such entry, only a draft, or
+    /// an entry a server key made (ADR-0126).
     /// </summary>
     /// <param name="form">The form's key.</param>
     /// <param name="submissionId">The submission id the submission posted.</param>
@@ -152,7 +153,7 @@ internal sealed class FormSubmissions(
 
     /// <summary>
     /// The receipt of a submission for the server key that made it (ADR-0126): with a key, only an entry that key
-    /// submitted answers; any other is the same miss as an unknown submission.
+    /// submitted answers, and without one only an entry no key made; any other is the same miss as an unknown submission.
     /// </summary>
     /// <param name="form">The form's key.</param>
     /// <param name="submissionId">The submission's id.</param>
@@ -171,18 +172,19 @@ internal sealed class FormSubmissions(
         }
 
         return await entries.GetBySubmissionAsync(served.Row.Id, submissionId, cancellationToken) is { State: not EntryState.Draft } entry
-            && (serverKey is null || SubmittedWith(entry, serverKey))
+            && string.Equals(KeyThatSubmitted(entry), serverKey, StringComparison.Ordinal)
             ? await ReplayAsync(entry, served.Form, cancellationToken)
             : SubmissionResult.Refused(SubmissionRefusal.EntryNotFound);
     }
 
-    // Whether the entry records this server key's name as the one that submitted it (ADR-0126).
-    private static bool SubmittedWith(StoredEntry entry, string serverKey)
+    // The name of the server key the entry records as the one that submitted it, or null when no key did (ADR-0126): a
+    // receipt answers that key alone, and a request without a key only an entry no key made (6.8a).
+    private static string? KeyThatSubmitted(StoredEntry entry)
     {
         using var context = System.Text.Json.JsonDocument.Parse(entry.Context);
-        return context.RootElement.TryGetProperty(SubmissionRequest.ServerKeyContext, out var name)
-            && name.ValueKind == System.Text.Json.JsonValueKind.String
-            && string.Equals(name.GetString(), serverKey, StringComparison.Ordinal);
+        return context.RootElement.TryGetProperty(SubmissionRequest.ServerKeyContext, out var name) && name.ValueKind == System.Text.Json.JsonValueKind.String
+            ? name.GetString()
+            : null;
     }
 
     /// <summary>
@@ -298,7 +300,9 @@ internal sealed class FormSubmissions(
             cancellationToken);
         var paths = new FieldPaths(definition);
         var full = await places.CheckAsync(served.Row.Id, read.Places, cancellationToken);
-        var taken = pageKey is null ? await unique.CheckAsync(served.Row.Id, read.Unique, cancellationToken) : [];
+        // A unique answer is checked once nothing else refuses the post: an answer taken by another entry is then told to
+        // a post that would be stored, never to one that stores nothing, which could ask it of any address (ADR-0091).
+        var taken = pageKey is null && read.Errors.IsEmpty && full.IsEmpty ? await unique.CheckAsync(served.Row.Id, read.Unique, cancellationToken) : [];
         var all = full.IsEmpty && taken.IsEmpty ? read.Errors : [.. read.Errors.Concat(full).Concat(taken).OrderBy(paths.Rank)];
         ImmutableArray<SubmissionError> errors = onPage is null ? all : [.. all.Where(error => onPage.Contains(error.Field))];
         if (!errors.IsEmpty)

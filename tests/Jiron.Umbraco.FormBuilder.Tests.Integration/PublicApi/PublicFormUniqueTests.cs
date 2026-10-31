@@ -14,7 +14,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.PublicApi;
 /// and storing nothing; an answer that differs only in letter case or surrounding spaces is the same, failing each
 /// unique check of its field, and a number by its value; an entry that is deleted, rejected or marked as spam gives its answer back, while a retry still gets its
 /// receipt; a repeatable group's child fails at its row, the same answer twice in one entry is no clash, and the errors
-/// come in the order of the form, places among them; and validate passes an answer another entry holds.
+/// come in the order of the form; a unique answer is checked only once every other answer and place passes, so a post
+/// that stores nothing never learns whether an answer is taken (6.8a); and validate passes an answer another entry holds.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -52,7 +53,7 @@ public sealed class PublicFormUniqueTests : PublicApiTestBase
     }
 
     [Test]
-    public async Task TwoSubmissionsAtOnce_ThatAlsoTakeTheLastPlace_FailAtBothFields_InTheOrderOfTheForm()
+    public async Task TwoSubmissionsAtOnce_ThatAlsoTakeTheLastPlace_FailAtThePlace_AndLearnNothingOfTheAnswer()
     {
         var slot = Field("slot", "radio") with
         {
@@ -62,7 +63,7 @@ public sealed class PublicFormUniqueTests : PublicApiTestBase
 
         var answers = await AtOnceAsync(key, 2, i => $$$"""{"revision":1,"values":{"name":"Guest {{{i}}}","email":"ada@example.com","slot":"a"}}""");
 
-        Assert.That(answers.Order(StringComparer.Ordinal), Is.EqualTo(new[] { "200", "422 validation_failed check 1 at email; full at slot" }), "the unit's places and answers, in the order of the form");
+        Assert.That(answers.Order(StringComparer.Ordinal), Is.EqualTo(new[] { "200", "422 validation_failed full at slot" }), "the place first; the answer is checked once the rest passes");
     }
 
     [Test]
@@ -144,7 +145,7 @@ public sealed class PublicFormUniqueTests : PublicApiTestBase
     }
 
     [Test]
-    public async Task ARepeatableGroupsChild_FailsAtItsRow_AmongTheOtherErrorsInTheOrderOfTheForm_AndOneEntryMayRepeatAnAnswer()
+    public async Task ARepeatableGroupsChild_FailsAtItsRow_InTheOrderOfTheForm_OnceTheRestPasses_AndOneEntryMayRepeatAnAnswer()
     {
         var badge = Field("badge", "text") with { Validation = [new UniquePerFormCheck()] };
         var guests = Field("guests", "repeater") with { Fields = [badge] };
@@ -159,9 +160,28 @@ public sealed class PublicFormUniqueTests : PublicApiTestBase
         Assert.Multiple(async () =>
         {
             Assert.That(await AnswerAsync(first), Is.EqualTo("200"));
-            Assert.That(await AnswerAsync(many), Is.EqualTo("422 validation_failed required at name; check 0 at guests[1].badge; required at email"));
+            Assert.That(await AnswerAsync(many), Is.EqualTo("422 validation_failed required at name; required at email"), "the taken badge is not told while the rest fails");
             Assert.That(await AnswerAsync(twice), Is.EqualTo("200"), "each answer is held against the other entries");
             Assert.That(await AnswerAsync(taken), Is.EqualTo("422 validation_failed check 0 at guests[1].badge; check 1 at email"));
+        });
+    }
+
+    [Test]
+    public async Task AnAnswerAnotherEntryHolds_IsNotToldToAPostThatFailsOtherwise_WhichStoresNothing()
+    {
+        var key = await PublishAsync(fields: [NameField with { Required = true }, Email]);
+        var form = (await FormRows.GetAsync(key))!;
+        using var first = await PostAsync(key, Body(Guid.NewGuid(), "ada@example.com"));
+
+        using var probe = await PostAsync(key, """{"revision":1,"values":{"name":"","email":"ada@example.com"}}""");
+        using var free = await PostAsync(key, """{"revision":1,"values":{"name":"","email":"grace@example.com"}}""");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await AnswerAsync(first), Is.EqualTo("200"));
+            Assert.That(await AnswerAsync(probe), Is.EqualTo(await AnswerAsync(free)), "a taken address and a free one answer alike while the post fails");
+            Assert.That(await AnswerAsync(probe), Is.EqualTo("422 validation_failed required at name"));
+            Assert.That((await Entries.ListIdsAsync(form.Id, 100)).Count, Is.EqualTo(1), "and nothing is stored");
         });
     }
 

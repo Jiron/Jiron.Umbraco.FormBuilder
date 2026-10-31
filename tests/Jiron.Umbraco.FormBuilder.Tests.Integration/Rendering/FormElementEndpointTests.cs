@@ -3,7 +3,10 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Composing;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Testing;
+using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
+using Jiron.Umbraco.FormBuilder.Web.Rendering;
 using Json.Schema;
+using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
@@ -171,6 +174,29 @@ public sealed class FormElementEndpointTests : RenderingTestBase
         });
     }
 
+    [Test]
+    public async Task ContextNamesTheFormDoesNotList_AreDroppedBeforeTheRendering_SoNoneIsLoggedOrKept()
+    {
+        var key = await PublishFormAsync("elementContextNames", definition => Headless(definition) with { Settings = Headless(definition).Settings with { Developer = Headless(definition).Settings.Developer with { ContextValues = ["campaign"] } } });
+
+        // A thousand names made up by the requests: the rendering keeps a name it logs once per process, so a name it
+        // never logs is a name it never keeps (6.8a).
+        JsonNode? last = null;
+        for (var batch = 0; batch < 10; batch++)
+        {
+            var names = string.Join("&", Enumerable.Range(batch * 100, 100).Select(index => $"context-made{index}=x"));
+            (_, _, last) = await ElementAsync(key, $"instance=jfb-1&context-campaign=spring&{names}");
+        }
+
+        var warnings = GetRequiredService<LogCapture>().Entries.Where(entry => entry.Category == typeof(FormModels).FullName && entry.Level == LogLevel.Warning).ToList();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(warnings.Select(warning => warning.Message), Is.Empty, "no line for a name a request made up");
+            Assert.That(last!["form"]!["contextValues"]!.ToJsonString(), Is.EqualTo("""[{"name":"jfb-context-campaign","value":"spring"}]"""), "the name the form lists still reaches it");
+        });
+    }
+
     [TestCase("", "400 invalid_request instance")]
     [TestCase("instance=jfb-0", "400 invalid_request instance")]
     [TestCase("instance=form-1", "400 invalid_request instance")]
@@ -204,6 +230,7 @@ public sealed class FormElementEndpointTests : RenderingTestBase
         ArgumentNullException.ThrowIfNull(builder);
         base.CustomTestSetup(builder);
         builder.JironFormBuilder().FieldTypes().Append<MoodFieldType>();
+        builder.Services.AddLogCapture();
     }
 
     // The endpoint's status, Cache-Control and answer.

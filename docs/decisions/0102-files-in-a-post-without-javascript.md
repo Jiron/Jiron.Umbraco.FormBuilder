@@ -5,8 +5,8 @@
   [ADR-0100](0100-the-post-without-javascript.md) (the post's files, kept across a re-render) and
   [ADR-0087](0087-the-upload-endpoint.md) (its token, posted back as the field's answer); a signature typed without
   JavaScript stored as a file is, by [ADR-0103](0103-a-signature-typed-without-javascript.md) in 6.2k
-- Date: 2026-10-29
-- Roadmap step: 6.2j (decided and built); 6.4's runtime uploads before sending, 7.1 verifies the challenge, 7.3
+- Date: 2026-10-29; amended 2026-10-31 (6.8a: the form's availability before any file is stored)
+- Roadmap step: 6.2j (decided and built); 6.8a (availability first); 6.4's runtime uploads before sending, 7.1 verifies the challenge, 7.3
   hardens the rules over HTTP/2
 
 ## Context
@@ -74,6 +74,9 @@ Option 2 for each question.
   - **Past the allowance,** or a post that breaks these limits otherwise, nothing can be kept: the post goes on with
     no form, so Umbraco renders the page, and the form shows the notice "Your answers weren't sent" in the error
     summary's place, saying that the files were too large to send and that the answers could not be kept (`too_large`).
+- **The form's availability comes first** (6.8a): a form that is closed, or whose entry limit is reached, stores
+  nothing of the post, as the upload endpoint stores nothing for it (ADR-0087). Whatever the button, the page shows the
+  form's notice in its place, as for any visitor now, and no file or typed signature is stored.
 - **The surface action,** before any button's work: each buffered file goes through `FileUploads.StoreAsync`, the
   same rules as the upload endpoint, and a stored file's token joins its field's answer (for a field that takes one
   file it replaces a kept one). A refused file is noted with its kind (`fileType`, `fileSize`, `invalid`). The request

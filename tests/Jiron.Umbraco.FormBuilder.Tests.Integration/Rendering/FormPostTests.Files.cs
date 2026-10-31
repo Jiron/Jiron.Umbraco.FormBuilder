@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text;
 using AngleSharp.Dom;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
@@ -10,7 +11,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 // Files in a post without JavaScript (ROADMAP 6.2j, ADR-0006, ADR-0102): the form names itself in its action, its files
 // are read before routing up to their fields' limits and held to the upload's rules; a file that passed is kept as a
 // ticked box when another field fails and is sent with the entry, one that is too large or of a kind the field does
-// not take is an error at its field with every other answer kept, and a post past the drain allowance shows a notice.
+// not take is an error at its field with every other answer kept, a post past the drain allowance shows a notice, and
+// a form that takes no entry now stores none of the post's files.
 public sealed partial class FormPostTests
 {
     private const string FilesPage = "/post-files/";
@@ -109,6 +111,45 @@ public sealed partial class FormPostTests
             Assert.That(Kept(empty, "attachment"), Is.Empty, "no file chosen is no file");
             Assert.That(empty.QuerySelector(".jfb-error-summary"), Is.Null, "and no error");
             Assert.That(await StoredAsync(key), Is.Empty, "nothing sent");
+        });
+    }
+
+    [Test]
+    public async Task AFileForAFormThatFilledUpOrClosedMeanwhile_IsNotStored_AndThePageShowsTheFormsNotice()
+    {
+        var closes = new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero);
+        _clock.SetNow(closes.AddHours(-1));
+        var key = await PublishFormAsync("postFiles", definition => FilesForm(definition) with
+        {
+            Settings = definition.Settings with { Availability = definition.Settings.Availability with { ClosesAt = closes.UtcDateTime, MaxEntries = 1 } },
+        });
+        _ = await PagesAsync("post-files");
+        var form = FormOf(await DocumentAsync(FilesPage), "jfb-1");
+        Fill(form, "subject", "Room plan");
+        using var taken = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/entries", request =>
+            request.Content = new StringContent("""{"revision":1,"values":{"subject":"Garden plan","crew":[{}]}}""", Encoding.UTF8, "application/json"));
+        var store = GetRequiredService<MemoryFileStore>();
+
+        using var fullSend = await SubmitFilesAsync(form, FormPostFields.Submit, ("attachment", "plan.pdf", Bytes(Pdf, 500)));
+        using var fullAdd = await SubmitFilesAsync(form, "add:crew", ("crew[0].cv", "cv.pdf", Bytes(Pdf, 500)));
+        var whileFull = store.Ids.Count;
+        Assert.That(await Entries.DeleteAsync((await Entries.ListIdsAsync((await FormRows.GetAsync(key))!.Id, 10)).Single()), Is.True);
+        _clock.SetNow(closes);
+        using var closedSend = await SubmitFilesAsync(form, FormPostFields.Submit, ("attachment", "plan.pdf", Bytes(Pdf, 500)));
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(taken.StatusCode, Is.EqualTo(HttpStatusCode.OK), await taken.Content.ReadAsStringAsync());
+            foreach (var (name, response, heading) in new[] { ("full, on Send", fullSend, "This form is full"), ("full, on a row's button", fullAdd, "This form is full"), ("closed, on Send", closedSend, "This form is closed") })
+            {
+                var page = await ParseAsync(response);
+                Assert.That(page.QuerySelector("#jfb-1 .jfb-notice h2")?.TextContent, Is.EqualTo(heading), name);
+                Assert.That(page.QuerySelector("form#jfb-1"), Is.Null, $"{name}: the notice in the form's place, as for any visitor now");
+            }
+
+            Assert.That(whileFull, Is.Zero, "no file stored while the form is full");
+            Assert.That(store.Ids, Is.Empty, "nor once it closed");
+            Assert.That(await StoredAsync(key), Is.Empty, "and no entry");
         });
     }
 

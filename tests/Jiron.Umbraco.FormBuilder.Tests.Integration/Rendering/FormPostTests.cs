@@ -21,9 +21,10 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 /// The post without JavaScript on real pages (ROADMAP 6.2h, ADR-0004, ADR-0100), posted as a browser posts a form: a
 /// valid post stored as the runtime's post to <c>entries</c> stores the same answers (a name's parts, a long text's line
 /// breaks, a repeater's rows, a switch left off) and redirected to its outcome, an invalid one shown again with its
-/// answers and errors, a three-page form moved through with Next and Back beside another form, a consent whose wording
-/// changed unticked with a notice, each outcome, a sent token that names nothing, a form for members posted from another
-/// origin, and the surface action's auto-route, every answer of the action <c>no-store</c>.
+/// answers and errors, a taken unique answer told only to a post that would be stored, a three-page form moved through
+/// with Next and Back beside another form, a consent whose wording changed unticked with a notice, each outcome, a sent
+/// token that names nothing, a form for members posted from another origin, and the surface action's auto-route, every
+/// answer of the action <c>no-store</c>.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -164,6 +165,43 @@ public sealed partial class FormPostTests : RenderingTestBase
             Assert.That(FormOf(again, "jfb-2").QuerySelector("[data-jfb-summary]"), Is.Null, "the other form as a first render");
             Assert.That(buttonless.QuerySelectorAll(".jfb-error-summary a").Select(link => link.GetAttribute("href")), Is.EqualTo(new[] { "#jfb-1-terms" }), "a post without a button is sent as Send is");
             Assert.That(await StoredAsync(key), Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task AnAnswerAnotherEntryHolds_IsNotToldToAPostThatFailsOtherwise_WhichStoresNothing()
+    {
+        var address = Field(K(0x23), "address", "email") with { Validation = [new UniquePerFormCheck()] };
+        var key = await PublishFormAsync("postUnique", null, Topic, address);
+        _ = await PagesAsync("post-unique");
+        using var first = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/entries", request =>
+            request.Content = new StringContent("""{"revision":1,"values":{"topic":"Gardens","address":"ada@example.com"}}""", Encoding.UTF8, "application/json"));
+        async Task<IElement> SendFormAsync(string? topic, string email)
+        {
+            var form = FormOf(await DocumentAsync("/post-unique/"), "jfb-1");
+            if (topic is not null)
+            {
+                Fill(form, "topic", topic);
+            }
+
+            Fill(form, "address", email);
+            return await MoveAsync(form, FormPostFields.Submit, "jfb-1", "/post-unique/");
+        }
+
+        static string?[] Summary(IElement form) => [.. form.QuerySelectorAll(".jfb-error-summary a").Select(link => link.GetAttribute("href"))];
+
+        var probe = await SendFormAsync(null, "ada@example.com");
+        var free = await SendFormAsync(null, "grace@example.com");
+        var told = await SendFormAsync("Roses", "ada@example.com");
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.OK), await first.Content.ReadAsStringAsync());
+            Assert.That(Summary(probe), Is.EqualTo(new[] { "#jfb-1-topic" }), "the required topic alone");
+            Assert.That(probe.QuerySelector("#jfb-1-address-error"), Is.Null);
+            Assert.That(Summary(free), Is.EqualTo(Summary(probe)), "a taken address and a free one answer alike while the post fails");
+            Assert.That(Summary(told), Is.EqualTo(new[] { "#jfb-1-address" }), "a post that would be stored learns that the address is taken");
+            Assert.That(await StoredAsync(key), Has.Count.EqualTo(1), "and none of them is stored");
         });
     }
 

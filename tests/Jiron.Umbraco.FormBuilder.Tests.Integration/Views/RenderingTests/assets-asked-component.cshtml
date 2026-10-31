@@ -1,0 +1,5 @@
+@* A form that asks for its assets through the view component alone (6.8a). *@
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+}
+@await Component.InvokeAsync("FormBuilderForm", new { form = "renderingContact", assets = true })

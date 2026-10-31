@@ -1,0 +1,6 @@
+@* A form that asks for its assets, through the tag helper and the view component, which then write them once (6.8a). *@
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+}
+<jfb-render form="renderingContact" assets="true" />
+@await Component.InvokeAsync("FormBuilderForm", new { form = "renderingContact", assets = true })

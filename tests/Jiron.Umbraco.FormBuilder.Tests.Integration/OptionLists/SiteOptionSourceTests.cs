@@ -1,6 +1,6 @@
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
-using Microsoft.Extensions.DependencyInjection;
+using Jiron.Umbraco.FormBuilder.Tests.Integration.Support;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
@@ -88,30 +88,6 @@ public sealed class SiteOptionSourceTakenNameTests : UmbracoIntegrationTest
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
         builder.AddComposers();
-        var site = builder.Services.Last(service => service.ServiceType == typeof(IStartupValidator));
-        var type = site.ImplementationType ?? throw new InvalidOperationException("The site's start-up validator is not registered by its type.");
-        builder.Services.Remove(site);
-        builder.Services.AddSingleton<IStartupValidator>(provider => new RecordingStartupValidator((IStartupValidator)ActivatorUtilities.CreateInstance(provider, type)));
-    }
-
-    // The site's start-up validator, which keeps what it refused instead of throwing it.
-    private sealed class RecordingStartupValidator(IStartupValidator site) : IStartupValidator
-    {
-        public int Runs { get; private set; }
-
-        public OptionsValidationException? Refusal { get; private set; }
-
-        public void Validate()
-        {
-            Runs++;
-            try
-            {
-                site.Validate();
-            }
-            catch (OptionsValidationException exception)
-            {
-                Refusal = exception;
-            }
-        }
+        RecordingStartupValidator.Wrap(builder.Services);
     }
 }

@@ -131,11 +131,12 @@ internal sealed class SubmissionEntries(
             async created =>
             {
                 // Its values are counted now, and the unit holds the form's row: these counts and answers are the last
-                // word. An entry that does not count holds no place and no answer, and takes none from another.
+                // word. An entry that does not count holds no place and no answer, and takes none from another. As
+                // before the unit, a taken answer is told only to an entry the places let through (ADR-0091).
                 if (EntryLimits.Counts(created.State, created.IsTest))
                 {
                     var full = await places.CountAsync(created.FormId, submission.Answers.Places, cancellationToken);
-                    var taken = await unique.FindAsync(created.Id, submission.Answers.Unique, cancellationToken);
+                    var taken = full.IsEmpty ? await unique.FindAsync(created.Id, submission.Answers.Unique, cancellationToken) : [];
                     if (!full.IsEmpty || !taken.IsEmpty)
                     {
                         throw new SubmissionInvalidException([.. full, .. taken]);

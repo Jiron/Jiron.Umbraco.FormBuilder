@@ -317,6 +317,14 @@ internal sealed class FormController(
             return FormBuilderPublicProblems.FormNotFound();
         }
 
+        // Only the names the form lists reach the rendering, which logs a name it does not take once per process: a name a
+        // request makes up is neither kept nor logged, as a theme the site lacks is not (6.8a).
+        var listed = form.Published.Definition.Settings.Developer.ContextValues;
+        foreach (var name in context.Keys.Where(name => !listed.Contains(name, StringComparer.OrdinalIgnoreCase)).ToList())
+        {
+            context.Remove(name);
+        }
+
         // The page's culture for the models, as the render endpoint's views have it; a theme the site lacks renders as
         // default (ADR-0105).
         var shownCulture = CultureInfo.GetCultureInfo(await pages.CultureAsync(culture));
