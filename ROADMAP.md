@@ -2138,10 +2138,12 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a submission id that does not depend on `crypto.randomUUID()`, which exists only in secure contexts (ADR-0004);
     - the send states of ADR-0022's amendment: the busy primary button (`data-jfb-busy`, `aria-disabled`, "Sending your answers" in the live region), the error notice just above the buttons that takes the focus after a refused or failed send (`rate_limited`, `server_error`, `timeout`) with every answer kept, and the redirect notice with "Go now" and "Stay here";
     - the outcome in place of the form (the challenge, and `receipt` for a send whose answer never came, come with 7.1);
-    - `jfb:submitting`, `jfb:submitted` and `jfb:error` (§4.9).
+    - `jfb:submitting`, `jfb:submitted` and `jfb:error` (§4.9);
+    - the page after a send of the form's placement (the picker's `redirect`, ADR-0129): today it reaches the pipeline only in the post's encrypted route token, which the entries endpoint's body does not carry, so a send with JavaScript carries it too, protected as the token protects it, and goes there (found in 6.8's review).
   - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before building the send states (ADR-0019, ADR-0020).
   - Done when:
     - Vitest covers the runtime's part, the submission id included;
+    - an integration test and Playwright show a send with JavaScript from a picked form going to the picker's page after a send, and a value a visitor changed refused;
     - Playwright on the demo covers submission (the outcome, the error summary from a `422` with its focus, the server's errors in place), and the send states (a second press during a slow send sends nothing; a `429` and a `500` show the notice above the buttons, move the focus to it and keep every answer; a redirect outcome with "Go now" and "Stay here");
     - Playwright shows a submission from a plain-HTTP origin, where `crypto.randomUUID()` does not exist;
     - axe is clean in every send state; the size check passes with every chunk.
@@ -2264,9 +2266,49 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **6.7h The picker on the demo** (6.7e split in three, WORKLOG 2026-10-31; 6.7g until 6.7f split in two, WORKLOG 2026-10-31) (2026-10-31, d36fcb0)
   - **The demo:** a page type with a block list that allows the form block (6.7b), a page with the block, and a thanks page for the picker's page after a send.
   - Done when: Playwright shows an editor picking a form in a block on the demo and the page rendering it, and the form sent with JavaScript going to the picker's redirect page; axe is clean on the picker and on its settings.
-- [ ] **6.8 Phase review**
-  - An accessibility pass over the themes (axe, keyboard, screen-reader names), and a security pass over the public API.
-  - Write the handover note.
+- [ ] **6.8a The review's fixes to the public API and the post** (C# (6.8 split in five, WORKLOG 2026-10-31))
+  - **What the phase review found** (the security pass over the public API, and the reader of rendering and the post without JavaScript; amend the ADRs named):
+    - the element endpoint passes every `context-<name>` query name to the rendering, whose process-wide log-once set keeps each name it has not seen with a warning, so anyone grows the server's memory and log without bound: names the form does not list are dropped before rendering, and no set keeps a name a request chose;
+    - a receipt asked without a server key answers an entry a server key made, which ADR-0126 gives that key alone;
+    - the entries endpoint checks unique answers beside every other error, so a post that stores nothing tells whether an address is taken: the check runs once everything else passes (amends ADR-0091), on the post without JavaScript too;
+    - a post without JavaScript stores its files before the form's availability is checked, so a closed or full form keeps them: availability first, nothing stored when it refuses (ADR-0087's rule);
+    - a post from another origin to a form for anyone, with a signed-in member's cookie, is stored as that member's entry with their hidden prefilled values: while a member is signed in, a post whose `Origin` is present and foreign is refused, as the public API refuses it (amends ADR-0100);
+    - the server keys are read again on every request (`IOptionsMonitor`), while every other host option is read once and checked at start, as the schema says: read and checked at start;
+    - §4.8's host configuration names `Rendering:IncludeAssetsAutomatically`, which no option reads, so the site refuses it at start: the option is built, the default of `<jfb-render assets>` and the view component, with its schema entry and docs.
+  - Done when: integration tests pass for each: 1,000 distinct unlisted context names write at most one warning for the form and keep no name, and a listed one still renders; a receipt without a key for an entry a key made answers `404 not_found`; a post with an empty required field and a taken unique answer answers `422` with the required error only and stores nothing, on both ways of sending; a post with a file to a closed form and to a full one stores no file; a foreign-origin post with a signed-in member answers `403` and stores nothing, while one without an `Origin` and an anonymous one still pass; a changed server key needs a restart and an invalid one stops the start; with `IncludeAssetsAutomatically` off a placement writes no assets unless it asks for them, and §4.8's `Rendering` section starts a site.
+- [ ] **6.8b The review's fixes to the website runtime** (TypeScript (6.8 split in five, WORKLOG 2026-10-31))
+  - **What the phase review found** (the reader of the runtime and the element, and the accessibility pass):
+    - an error the server showed at a field the visitor has not changed refuses every later send, also when the runtime's own checks pass, against ADR-0113 (an optional upload the server refused, now empty, can never be sent): the kept errors join only a send the runtime already refuses;
+    - filling a default writes its text into every text control of the field, a choice's "Other" box, a name's or an address's parts and an email's repeat among them, which the server never does, so an entry can store an "Other" answer the visitor took back: only the control named as the field is filled;
+    - a text block that recalls an answer through `| html` stops following it once its line breaks change: line breaks are rebuilt, and no other element is taken;
+    - for a member whose own value stands in for a field the server left out (ADR-0124), the runtime refuses no send at all: errors at a field with no control in the form are dropped, the others still refuse;
+    - each calculation's `<output>` is a live region that speaks on every key: results speak once the visitor pauses, in one line;
+    - a choice group's error state sits on its fieldset, whose role does not support it: the runtime marks the group's own controls (`aria-invalid`, `aria-describedby`), as 6.8c's views do.
+  - Done when: Vitest covers each: a send with only a kept server error at an unchanged field posts, and a refused one still lists it; a default from the query leaves a choice's "Other" text and every part of a name empty; a recalled answer that gains and loses a line break follows it, and takes no other element; with a required field missing from the page and another empty, a send is refused and shows only the other's error; typing three characters into a calculation's input announces its result once; a refused choice group marks its controls and clears them when answered; Playwright's errors and calculations specs still pass, and the size check passes.
+- [ ] **6.8c The accessibility pass over the themes** (views, CSS and Playwright (6.8 split in five, WORKLOG 2026-10-31))
+  - **What the phase review found** (the accessibility pass):
+    - in `bootstrap5` the theme-drawn controls (rating, scale, yes or no, choice cards, the ranking's moves) show focus only as a faint shadow, about 1.4:1, which forced colours drop: an outline that holds 3:1 in both schemes and survives forced colours;
+    - with the asterisk style, a required checkbox group, checkbox grid row or ranking tells a screen reader nothing, as its controls cannot carry `required` and the mark is hidden: the mark's meaning is written as hidden text there;
+    - a choice group's error state sits on its fieldset only: the views give its controls `aria-invalid` and the error's id;
+    - a link of the error summary can leave the field and its label under a site's sticky header: the fields, labels, legends and controls keep `--jfb-scroll-margin`;
+    - a refused scale, and a refused rating in `default`, show no error border: the rules match their markup;
+    - `IFormBuilderTheme.DarkScheme` and `Tokens` are declared but nothing reads them: wired, or the step that reads them named in ADR-0105.
+  - **The keyboard and screen-reader-name pass** (Playwright, every theme, both schemes, forced colours where it applies): a visible focus indicator on every kind of control; the keyboard alone through rating, scale, yes or no, cards, the switch, the slider, the ranking, repeater rows and the summary's links, Enter sending; the accessible name, role, required and invalid state of every kind of control and group (grid cells, name and address parts, the "Other" input, the email repeat, the signature's typed name, help, affixes and counters); the summary's link landing with the field's label in view; `autocomplete` present on the personal fields; reduced motion stopping every slide and rise; right to left mirroring the arrows, the switch and the stars.
+  - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before changing the themes (ADR-0019, ADR-0020).
+  - Done when: the pass's Playwright specs pass in every theme and scheme, axe stays clean, each finding above has its test (the outline measured at 3:1 or more and present in forced colours; the hidden "required" text read for a checkbox group, grid row and ranking; `aria-invalid` on a refused group's controls; the label in view after a summary link under a sticky header; the scale's and rating's error border), and the themes are looked at in Edge.
+- [ ] **6.8d The review's fixes to the content integration** (C# and TypeScript (6.8 split in five, WORKLOG 2026-10-31))
+  - **What the phase review found** (the reader of the content integration):
+    - "Used on" goes stale when a document type, an element type or a data type changes: removing a picker property, or turning a text property into a picker, changes stored values without a content notification: such a change asks for a rebuild (amends ADR-0131);
+    - the rebuild writes each page of a batch from the copy it read before, so a save in between is overwritten with stale rows, and a rebuild asked for during a batch is lost: a page is written only when its rows are not newer, and the place moves on only from the value read;
+    - the allowed folders' settings show a folder a user reached through a grant on a form inside it as not available, though the sidebar offered it: the folders endpoint names the folders that lead to the user's forms too;
+    - a picker value whose keys are written in another format than the hyphenated one renders on the site but shows as not available in the backoffice and can be picked twice: the backoffice reads every format the server reads, and writes the hyphenated one;
+    - the settings take more allowed forms than the picker's queries can carry (1,000), after which every call of that picker fails: the settings refuse more, folders and forms alike.
+  - Done when: integration tests pass for each: a picker property removed from a document type, and a data type changed into the picker, leave "used on" right after the rebuild; a save between the rebuild's read and its write keeps the save's rows, and a rebuild asked for meanwhile still runs; a group with a grant on a form only gets that form's restricted folder from `picker/folders`; 1,001 allowed forms are refused; and Vitest shows a value in another key format named and marked chosen.
+- [ ] **6.8e Phase review** (6.8 split in five, WORKLOG 2026-10-31)
+  - A second reading of 6.8a to 6.8d's fixes, a reader per fix step, fixing what it finds.
+  - **The wiring sweep's doc work:** the docs list `jfb:rendered`, `<jfb-form>`'s `content`, `theme`, `context-*` and `render()`, and `<jfb-render picked>` and `assets` wherever they list the element and the tag helper; `docs/architecture.md` says the rate-limit middleware comes with 7.1, and marks `EntrySubmitting`, `EntrySubmitted` and `IFormBuilderRenderer` as 15.1's; the element's console message names no registration that does not exist yet.
+  - Write the handover note: the wiring sweep's inventory, and what waits for later steps (the general settings' screen in 12.4a, the references and setup endpoints' callers in 9.2 and 9.1, the public endpoints' callers in the blocked 6.4 steps, the rate limits in 7.1).
+  - Retry every `[`]` step, and re-check `.private/`.
   - Done when: pushed, with the phase-review gate.
 
 ### Phase 7: Spam protection and file security
