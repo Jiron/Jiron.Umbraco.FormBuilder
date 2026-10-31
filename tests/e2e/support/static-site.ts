@@ -1,0 +1,92 @@
+import { createServer } from 'node:http';
+import { E2E_BASE_URL, STATIC_PORT } from './paths.ts';
+
+// The static page of the headless tests (ROADMAP 4.11, 6.6f; ADR-0031): a site that does not run Umbraco, on an origin
+// of its own beside the host, whose page loads the element from the host and shows a form through it. It serves one
+// page, made from its query: the element's attributes. The server runs in the test's own process and stops with it.
+
+/** The static site while it runs: its address, and how to stop it. */
+export interface StaticSite {
+  /** The address the host's public API allows, `http://127.0.0.1:5521`. */
+  readonly url: string;
+  /** The same site under a name the host's public API does not allow, `http://localhost:5521`. */
+  readonly otherOrigin: string;
+  stop(): Promise<void>;
+}
+
+/** The page's own heading, in its language. */
+const HEADINGS: Readonly<Record<string, string>> = {
+  en: 'Volunteer with the library',
+  de: 'Engagieren Sie sich in der Bibliothek',
+};
+
+const escape = (text: string): string =>
+  text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+
+/**
+ * The page: the element's module from the host and a `<jfb-form>` for the host's public API with the attributes
+ * given, in a page of the culture's language, as a site would write it.
+ */
+export function headlessPage(host: string, attributes: Readonly<Record<string, string>>): string {
+  const all = { api: `${host}/jfb/api/v1`, ...attributes };
+  const written = Object.entries(all)
+    .map(([name, value]) => {
+      if (!/^[a-z][a-z0-9-]*$/.test(name)) throw new Error(`"${name}" is no attribute name.`);
+      return ` ${name}="${escape(value)}"`;
+    })
+    .join('');
+  const language = (attributes.culture ?? 'en').split('-')[0] ?? 'en';
+  const heading = HEADINGS[language] ?? HEADINGS.en ?? '';
+  return [
+    '<!doctype html>',
+    `<html lang="${escape(language)}">`,
+    '<head>',
+    '<meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    `<title>${escape(heading)}</title>`,
+    // No icon, so the browser asks the site for none.
+    '<link rel="icon" href="data:,">',
+    // The site's own look, as a site has one: the form takes its type and its width from it.
+    '<style>body { margin: 0; font: 100%/1.5 system-ui, sans-serif; color: #1f2328; } h1 { line-height: 1.2; } main { max-inline-size: 40rem; margin-inline: auto; padding: 2rem 1rem; }</style>',
+    `<script type="module" src="${escape(host)}/jfb/assets/element/jfb-element.js"></script>`,
+    '</head>',
+    '<body>',
+    '<main>',
+    `<h1>${escape(heading)}</h1>`,
+    `<jfb-form${written}></jfb-form>`,
+    '</main>',
+    '</body>',
+    '</html>',
+    '',
+  ].join('\n');
+}
+
+/** Starts the static site on 5521 for the host's address, the run's host by default. */
+export async function startStaticSite(host: string = E2E_BASE_URL): Promise<StaticSite> {
+  const server = createServer((request, response) => {
+    const url = new URL(request.url ?? '/', 'http://static.invalid');
+    if (request.method !== 'GET' || url.pathname !== '/') {
+      response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Not found');
+      return;
+    }
+    try {
+      const page = headlessPage(host, Object.fromEntries(url.searchParams));
+      response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }).end(page);
+    } catch (error) {
+      response.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }).end(String(error));
+    }
+  });
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(STATIC_PORT, '127.0.0.1', () => resolve());
+  });
+  return {
+    url: `http://127.0.0.1:${STATIC_PORT}`,
+    otherOrigin: `http://localhost:${STATIC_PORT}`,
+    stop: () =>
+      new Promise<void>((resolve, reject) => {
+        server.closeAllConnections();
+        server.close((error) => (error ? reject(error) : resolve()));
+      }),
+  };
+}

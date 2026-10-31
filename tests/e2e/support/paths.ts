@@ -44,6 +44,10 @@ export const PORT_RANGE = { first: 5500, last: 5599 } as const;
 export const E2E_PORT = 5520;
 export const E2E_BASE_URL = `http://127.0.0.1:${E2E_PORT}`;
 
+/** The static page of the headless tests (ROADMAP 6.6f): a site of its own that shows forms through the element. */
+export const STATIC_PORT = 5521;
+export const STATIC_ORIGIN = `http://127.0.0.1:${STATIC_PORT}`;
+
 /**
  * The hosts that must refuse to start (ROADMAP 4.4a); they never listen, but each gets a port of its own, clear of the
  * static page's 5521 and the privacy host's 5522 (ROADMAP 4.11).

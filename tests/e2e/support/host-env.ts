@@ -1,4 +1,4 @@
-import { STUB_PORT } from './paths.ts';
+import { STATIC_ORIGIN, STUB_PORT } from './paths.ts';
 import { PEOPLE, RESTRICTED_FOLDERS, ROLES, USER_GROUPS, type E2ESecrets } from './users.ts';
 
 /** Whether the run's host has the Content Delivery API on: `JFB_E2E_DELIVERY_API=on` or `off` (the default). */
@@ -27,6 +27,8 @@ export function hostEnvironment(secrets: E2ESecrets, options: { deliveryApi: boo
     JironFormBuilderTesting__Clock: 'true',
     JironFormBuilderTesting__StubPort: String(STUB_PORT),
     JironFormBuilderTesting__StartupMarker: 'true',
+    // The static page's origin may call the public API (ROADMAP 6.6f), as a headless site's would.
+    JironFormBuilder__PublicApi__AllowedOrigins__0: STATIC_ORIGIN,
   };
 
   USER_GROUPS.forEach((group, g) => {

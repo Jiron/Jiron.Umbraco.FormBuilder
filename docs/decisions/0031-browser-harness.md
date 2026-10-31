@@ -68,8 +68,12 @@ found but its services were missing, and every request failed with 500.
   alias and controls by name, and refuse a field that a rule hides. They wait for the outcome, or for the error
   summary after a post renders the page again or after the runtime moves focus to it (ADR-0004). Until 6.2 renders
   forms, a smoke spec runs them on a contract page served with `page.route`.
-- **What waits for its first spec:** the static site on 5521 comes with 6.6, and each Playwright project joins with
-  its first spec (ADR-0011). The stub on 5560 runs inside the host (ADR-0029), so the set-up starts no server of its
+- **What waits for its first spec:** each Playwright project joins with its first spec (ADR-0011).
+- **The static site on 5521** (added in 6.6f): `support/static-site.ts` serves one page from the test's own process,
+  made from its query, that loads `<jfb-form>` from the host with the attributes given, as a site that does not run
+  Umbraco would. The host's public API allows its origin, `http://127.0.0.1:5521` (`JironFormBuilder:PublicApi:
+  AllowedOrigins` in the harness's settings); `http://localhost:5521` is the same page on an origin it does not allow.
+  The spec that uses it starts it and stops it. The stub on 5560 runs inside the host (ADR-0029), so the set-up starts no server of its
   own for it.
 
 ## Consequences

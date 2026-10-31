@@ -1003,7 +1003,14 @@ summary's link naming the question as it reads now, the merge tags loaded once, 
 never loading them; and `e2e/specs/website/defaults-on-the-page.spec.ts` shows, in English and German, the events
 page's link opening the booking with its workshop chosen from the address before the visitor touches it, the help
 naming it at once, the server's markup leaving the choice empty, axe clean, and a value no option has, or none,
-choosing nothing; and `e2e/specs/website/strict-site.spec.ts` starts the demo as a second host on 5525, with the
+choosing nothing; and `e2e/specs/website/headless-element.spec.ts` (6.6f,
+[ADR-0128](../docs/decisions/0128-the-element-writes-the-servers-view-model.md)) shows the volunteer sign-up through
+`<jfb-form>` on the static page on 5521, an origin the host's public API allows, in English and German: the theme's
+stylesheets from the host, `jfb:ready` and `jfb:rendered`, the honeypot clipped to nothing and absent from the
+accessibility tree, a rule showing a field, Next refusing the empty page with its errors and the summary focused and
+the page where it was, no console error and axe clean; and the same page on an origin the API does not allow showing
+nothing, with `jfb:error` and the console saying why (`e2e/support/static-site.test.ts` holds the page it serves);
+and `e2e/specs/website/strict-site.spec.ts` starts the demo as a second host on 5525, with the
 output cache on and the Testing project's strict policy (ADR-0121), shows that an inline script the page did not
 bring is refused and counted, runs the room hire form (the calculation language) from a page the cache serves and the
 workshop booking (the merge tags) as a signed-in member, both with `script-src 'self'`, and both again from a page
