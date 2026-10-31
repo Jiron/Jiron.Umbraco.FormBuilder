@@ -88,7 +88,7 @@ internal sealed class FormBuilderDeliveryApiMiddleware : IMiddleware
                     var frame = frames.Pop();
                     if (frame.IsMarker)
                     {
-                        found.Add(new FoundMarker(frame.Start, (int)reader.BytesConsumed, frame.Form!.Value, frame.Expand!.Value, frames.FirstOrDefault(each => each.Route && each.Id is not null)?.Id));
+                        found.Add(new FoundMarker(frame.Start, (int)reader.BytesConsumed, frame.Form!.Value, frame.Expand!.Value, frames.FirstOrDefault(each => each.Route && each.Id is not null)?.Id, frame.Theme, frame.Redirect));
                     }
 
                     break;
@@ -120,13 +120,13 @@ internal sealed class FormBuilderDeliveryApiMiddleware : IMiddleware
         var pages = services.GetRequiredService<FormPages>();
         var cancellationToken = context.RequestAborted;
         var culture = await pages.CultureAsync(RequestedCulture(context.Request));
-        var values = new Dictionary<(Guid Form, bool Expand, Guid? Page), byte[]>();
+        var values = new Dictionary<(Guid Form, bool Expand, Guid? Page, string? Theme, Guid? Redirect), byte[]>();
         var output = new ArrayBufferWriter<byte>(answer.Length);
         var at = 0;
         foreach (var marker in markers)
         {
             output.Write(answer.AsSpan(at, marker.Start - at));
-            var known = (marker.Form, marker.Expand, marker.Page);
+            var known = (marker.Form, marker.Expand, marker.Page, marker.Theme, marker.Redirect);
             if (!values.TryGetValue(known, out var value))
             {
                 value = await ValueAsync(marker, forms, requests, pages, culture, cancellationToken);
@@ -141,7 +141,8 @@ internal sealed class FormBuilderDeliveryApiMiddleware : IMiddleware
         return output.WrittenSpan.ToArray();
     }
 
-    // What a marker stands for: the form's key, alias and name, and the definition endpoint's form when expanded.
+    // What a marker stands for: the form's key, alias and name, the theme and the page after a send the picker's settings
+    // give (ADR-0129), and the definition endpoint's form when expanded.
     private static async Task<byte[]> ValueAsync(FoundMarker marker, PublishedFormCache forms, FormRequests requests, FormPages pages, string culture, CancellationToken cancellationToken)
     {
         if (await forms.GetAsync(marker.Form, cancellationToken) is not { } form || !form.Published.Definition.Settings.Developer.Headless)
@@ -156,6 +157,16 @@ internal sealed class FormBuilderDeliveryApiMiddleware : IMiddleware
             writer.WriteString("key", marker.Form);
             writer.WriteString("alias", form.Published.Form.Alias);
             writer.WriteString("name", form.Published.Form.Name);
+            if (marker.Theme is { } theme)
+            {
+                writer.WriteString(FormPickerDeliveryMarker.ThemeName, theme);
+            }
+
+            if (marker.Redirect is { } redirect)
+            {
+                writer.WriteString(FormPickerDeliveryMarker.RedirectName, redirect);
+            }
+
             if (marker.Expand)
             {
                 var definition = await requests.DefinitionAsync(form, culture, await pages.PageAsync(marker.Page), cancellationToken);
@@ -183,12 +194,19 @@ internal sealed class FormBuilderDeliveryApiMiddleware : IMiddleware
     /// <param name="Form">The picked form's key.</param>
     /// <param name="Expand">Whether the property is expanded.</param>
     /// <param name="Page">The key of the page it is on, or null.</param>
-    internal sealed record FoundMarker(int Start, int End, Guid Form, bool Expand, Guid? Page);
+    /// <param name="Theme">The theme the picker's settings name, or null.</param>
+    /// <param name="Redirect">The page after a send the picker's settings name, or null.</param>
+    internal sealed record FoundMarker(int Start, int End, Guid Form, bool Expand, Guid? Page, string? Theme = null, Guid? Redirect = null);
 
     // An object or an array being read: an object's properties as far as they tell a marker or an item with a route.
     private sealed class Frame(int start, bool isObject)
     {
         private int _properties;
+
+        // Whether the marker's optional properties came, each in its place after the first two.
+        private bool _theme;
+
+        private bool _redirect;
 
         public int Start => start;
 
@@ -202,7 +220,11 @@ internal sealed class FormBuilderDeliveryApiMiddleware : IMiddleware
 
         public bool? Expand { get; private set; }
 
-        public bool IsMarker => isObject && _properties == 2 && Form is not null && Expand is not null;
+        public string? Theme { get; private set; }
+
+        public Guid? Redirect { get; private set; }
+
+        public bool IsMarker => isObject && Form is not null && Expand is not null && _properties == 2 + (_theme ? 1 : 0) + (_redirect ? 1 : 0);
 
         // An object or an array as the value of the property just named: a route, or any other property.
         public void TakeContainer()
@@ -229,6 +251,14 @@ internal sealed class FormBuilderDeliveryApiMiddleware : IMiddleware
                     break;
                 case FormPickerDeliveryMarker.ExpandName when _properties == 2 && reader.TokenType is JsonTokenType.True or JsonTokenType.False:
                     Expand = reader.TokenType == JsonTokenType.True;
+                    break;
+                case FormPickerDeliveryMarker.ThemeName when _properties == 3 && Expand is not null && reader.TokenType is JsonTokenType.String or JsonTokenType.Null:
+                    _theme = true;
+                    Theme = reader.TokenType == JsonTokenType.String ? reader.GetString() : null;
+                    break;
+                case FormPickerDeliveryMarker.RedirectName when _properties == (_theme ? 4 : 3) && Expand is not null && reader.TokenType is JsonTokenType.String or JsonTokenType.Null:
+                    _redirect = true;
+                    Redirect = reader.TokenType == JsonTokenType.String && reader.TryGetGuid(out var redirect) ? redirect : null;
                     break;
             }
         }

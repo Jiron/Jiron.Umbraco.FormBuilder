@@ -80,7 +80,7 @@ internal sealed class FormSubmissions(
 
         // One transaction (section 4.4, step 8).
         var (scope, page, read, wordings) = reading.Read;
-        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context);
+        var submission = new NewSubmission(served.Row.Id, version.Info.Id, served.Form, read, wordings, request.SubmissionId ?? Guid.NewGuid(), digest, scope.Culture, page, scope.Context, request.Redirect);
         try
         {
             return await recorder.CreateAsync(submission, scope, cancellationToken) is { } created

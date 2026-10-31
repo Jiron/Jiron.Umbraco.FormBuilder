@@ -3,5 +3,6 @@
 // keys, which lang.test.ts checks.
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
 import fieldTypes from './field-types.en';
+import picker from './picker.en';
 
-export default { ...fieldTypes } satisfies UmbLocalizationDictionary;
+export default { ...fieldTypes, ...picker } satisfies UmbLocalizationDictionary;

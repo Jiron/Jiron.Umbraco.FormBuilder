@@ -12,6 +12,9 @@ internal static class FormPostFields
     /// <summary>Umbraco's route token, which routes the post to the surface action.</summary>
     public const string RouteToken = "ufprt";
 
+    /// <summary>The route value in the token that names the placement's page after a send (ADR-0129).</summary>
+    public const string Redirect = "jfbRedirect";
+
     /// <summary>The form's key.</summary>
     public const string Form = "jfb-form";
 

@@ -23,6 +23,7 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 /// <param name="Culture">The culture, one of the site's languages.</param>
 /// <param name="Page">The page the form was on.</param>
 /// <param name="Context">The context values the form lists, as posted.</param>
+/// <param name="Redirect">The page the placement sends the visitor to after the send (ADR-0129), or null for the outcome.</param>
 internal sealed record NewSubmission(
     int FormId,
     int FormVersionId,
@@ -33,7 +34,8 @@ internal sealed record NewSubmission(
     string Digest,
     string Culture,
     RequestPage Page,
-    IReadOnlyDictionary<string, string> Context);
+    IReadOnlyDictionary<string, string> Context,
+    Guid? Redirect = null);
 
 /// <summary>An entry with its receipt and outcome (ADR-0088).</summary>
 /// <param name="Entry">The entry.</param>
@@ -155,7 +157,7 @@ internal sealed class SubmissionEntries(
         }
 
         var receipt = await ReceiptAsync(stored, definition, submission.Page.Site, cancellationToken);
-        var rendered = await outcomes.RenderAsync(outcome, scope with { Entry = EntryOf(stored), Answers = submission.Answers.ForMergeTags }, cancellationToken);
+        var rendered = await outcomes.RenderAsync(outcome, scope with { Entry = EntryOf(stored), Answers = submission.Answers.ForMergeTags }, submission.Redirect, cancellationToken);
         return new SubmittedEntry(stored, receipt, rendered);
     }
 
@@ -171,7 +173,7 @@ internal sealed class SubmissionEntries(
     {
         var (scope, timeline) = await ReadAsync(entry, form, cancellationToken);
         var receipt = await ReceiptAsync(entry, scope.Form, scope.Site, cancellationToken);
-        return new SubmittedEntry(entry, receipt, await outcomes.RenderAsync(Outcome(timeline), scope, cancellationToken));
+        return new SubmittedEntry(entry, receipt, await outcomes.RenderAsync(Outcome(timeline), scope, cancellationToken: cancellationToken));
     }
 
     /// <summary>

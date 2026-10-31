@@ -77,11 +77,12 @@ internal sealed partial class FormRendering(
     public async Task<RenderedForm?> RenderAsync(HttpContext httpContext, object? form, IReadOnlyDictionary<string, string?>? context, string? theme, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
+        var picked = form as FormBuilderFormReference;
         var reference = form switch
         {
             null => null,
             Guid key => key.ToString("D"),
-            FormBuilderFormReference picked => picked.Key.ToString("D"),
+            FormBuilderFormReference placed => placed.Key.ToString("D"),
             string text => text.Trim(),
             _ => Unsupported(form.GetType()),
         };
@@ -142,8 +143,9 @@ internal sealed partial class FormRendering(
             member = signedIn;
         }
 
-        var formTheme = themes.Resolve(target is null ? theme : target.Theme, shown.Form.Settings.Theme);
-        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), formTheme, gate, target?.Page, member), cancellationToken);
+        // The picker's theme and page after a send are the placement's (ADR-0129); the render endpoint names its own theme.
+        var formTheme = themes.Resolve(target is null ? theme ?? picked?.Theme : target.Theme, shown.Form.Settings.Theme);
+        var (view, model) = await models.BuildAsync(new FormRender(httpContext, cached, shown, culture, instance, context ?? new Dictionary<string, string?>(), formTheme, gate, target?.Page, member, target is null ? picked?.Redirect : null), cancellationToken);
         return new RenderedForm(view, model, formTheme);
     }
 

@@ -42,6 +42,7 @@ namespace Jiron.Umbraco.FormBuilder.Web.Rendering;
 /// request's own.
 /// </param>
 /// <param name="Member">The key of the member signed in, for a form that takes values from the member (ADR-0124); null otherwise.</param>
+/// <param name="Redirect">The placement's page after a send (ADR-0129), which the route token carries; null for the outcome.</param>
 internal sealed record FormRender(
     HttpContext HttpContext,
     CachedForm Form,
@@ -52,7 +53,8 @@ internal sealed record FormRender(
     IFormBuilderTheme Theme,
     MemberGate? Gate = null,
     string? Page = null,
-    Guid? Member = null)
+    Guid? Member = null,
+    Guid? Redirect = null)
 {
     /// <summary>What the server prefills (ADR-0124), worked out as the form's page is built.</summary>
     public FormPrefill Prefill { get; init; } = FormPrefill.None;
@@ -221,11 +223,13 @@ internal sealed partial class FormModels(
     // What a post without JavaScript carries besides the answers (ADR-0100): Umbraco's route token for the surface
     // action, the form, its instance, its revision and the page shown, and the query values a post carried; none is per
     // visitor on a first render.
-    private List<HiddenInputModel> PostValues(Root root, PublicPage? current, FormPostState? post)
+    private List<HiddenInputModel> PostValues(Root root, PublicPage? current, FormPostState? post, Guid? redirect)
     {
+        // The placement's page after a send rides in the token, which only the server can write and read (ADR-0129).
+        var routeValues = redirect is { } page ? new Dictionary<string, object> { [FormPostFields.Redirect] = page.ToString("D") } : null;
         var values = new List<HiddenInputModel>
         {
-            new(FormPostFields.RouteToken, EncryptionHelper.CreateEncryptedRouteString(protection, FormBuilderSurfaceController.ControllerName, FormBuilderSurfaceController.ActionName, string.Empty)),
+            new(FormPostFields.RouteToken, EncryptionHelper.CreateEncryptedRouteString(protection, FormBuilderSurfaceController.ControllerName, FormBuilderSurfaceController.ActionName, string.Empty, routeValues)),
             new(FormPostFields.Form, root.Key.ToString("D")),
             new(FormPostFields.Instance, root.Id),
             new(FormPostFields.Revision, root.Revision.ToString(CultureInfo.InvariantCulture)),
@@ -342,7 +346,7 @@ internal sealed partial class FormModels(
                 : null,
             honeypot: new HoneypotModel(root.Id + "-" + honeypot, honeypot, words.Honeypot),
             context: Context(render),
-            postValues: PostValues(root, current, post));
+            postValues: PostValues(root, current, post, render.Redirect));
     }
 
     // The visitor texts that hold tags, each rendered as the server renders it in its place for the answers the page

@@ -10,6 +10,7 @@ using Jiron.Umbraco.FormBuilder.Core.Signatures;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Web.PublicApi;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
@@ -138,6 +139,7 @@ internal sealed class FormPostHandler(
             Revision = revision,
             Culture = culture,
             ContentKey = content,
+            Redirect = Placement(http),
             Fields = fields,
             Rows = rows,
             Query = query,
@@ -196,6 +198,10 @@ internal sealed class FormPostHandler(
         FormPosts.Set(http, formKey, instance, state.State(await KeptAsync(reader, definition, formKey, cancellationToken)));
         return FormPostAnswer.Page;
     }
+
+    // The page after a send the form's placement names (ADR-0129), from the route token only the server writes.
+    private static Guid? Placement(HttpContext http) =>
+        http.GetRouteValue(FormPostFields.Redirect) is string text && Guid.TryParse(text, out var page) && page != Guid.Empty ? page : null;
 
     // A row's Add or Remove, or a ranking's move in the order the page showed (ADR-0101): the posted page again with the
     // change and every answer, without a check. An Add past the group's most, a Remove below its least, a move past an

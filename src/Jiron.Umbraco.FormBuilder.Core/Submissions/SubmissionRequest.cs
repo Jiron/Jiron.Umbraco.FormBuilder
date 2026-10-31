@@ -32,6 +32,12 @@ internal sealed record SubmissionRequest
     public Guid? ContentKey { get; init; }
 
     /// <summary>
+    /// The page a visitor goes to after the send in place of the outcome, which the form's placement names (ADR-0129):
+    /// set only from a post's encrypted route token, never from a request's body.
+    /// </summary>
+    public Guid? Redirect { get; init; }
+
+    /// <summary>
     /// Each answer by its field's alias, for the fields outside repeatable groups: its texts, and its parts' texts by name
     /// (a consent's wording hash as its <c>wording</c> part, ADR-0058).
     /// </summary>

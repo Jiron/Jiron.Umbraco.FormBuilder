@@ -32,10 +32,24 @@ internal sealed partial class SubmissionOutcomes(
     /// </summary>
     /// <param name="outcome">The key of the outcome the rules chose, as <see cref="FormState.Outcome"/> gives it, or null.</param>
     /// <param name="scope">The form (the version the entry was submitted with), the culture, the site, the page, the entry and its answers.</param>
+    /// <param name="placement">
+    /// The page the form's placement sends a visitor to after a send (ADR-0129), which comes in place of the outcome when
+    /// it has an address; null for the outcome.
+    /// </param>
     /// <param name="cancellationToken">Cancels the merge-tag sources' work.</param>
-    public async Task<SubmissionOutcome> RenderAsync(string? outcome, MergeTagScope scope, CancellationToken cancellationToken = default)
+    public async Task<SubmissionOutcome> RenderAsync(string? outcome, MergeTagScope scope, Guid? placement = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(scope);
+        if (placement is { } page)
+        {
+            if (await RedirectAsync(new OutcomeRedirect { Content = page }, scope, cancellationToken) is { } address)
+            {
+                return new SubmissionOutcome { Kind = OutcomeKind.Redirect, Url = address };
+            }
+
+            LogPlacementNotFollowed(logger, scope.FormAlias);
+        }
+
         if (outcome is null || !Guid.TryParseExact(outcome, "D", out var key) || scope.Form.Outcomes.FirstOrDefault(item => item.Key == key) is not { } chosen)
         {
             return SubmissionOutcome.Default;
@@ -105,6 +119,9 @@ internal sealed partial class SubmissionOutcomes(
         var rendered = (await mergeTags.RenderAsync(template, MergeTagPlace.Redirect, MergeTagContext.Url, scope, cancellationToken)).Text;
         return RedirectUrls.Problem(rendered) is null ? rendered : null;
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The page after a send that a placement of the form '{FormAlias}' names has no address; the form's outcome shows instead.")]
+    private static partial void LogPlacementNotFollowed(ILogger logger, string formAlias);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "An outcome's redirect of the form '{FormAlias}' cannot be followed and was left out (outcome {OutcomeKey}).")]
     private static partial void LogRedirectNotFollowed(ILogger logger, string formAlias, Guid outcomeKey);
