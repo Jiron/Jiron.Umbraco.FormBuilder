@@ -165,6 +165,28 @@ export type FormComparisonResponseModel = {
     changes: Array<DefinitionChangeResponseModel>;
 };
 
+export type FormDocumentReferenceResponseModel = {
+    readonly $type: string;
+    id: string;
+    name?: string | null;
+    published?: boolean | null;
+    documentType: FormDocumentTypeReferenceResponseModel;
+    variants: Array<FormDocumentVariantResponseModel>;
+};
+
+export type FormDocumentTypeReferenceResponseModel = {
+    id: string;
+    icon?: string | null;
+    alias?: string | null;
+    name?: string | null;
+};
+
+export type FormDocumentVariantResponseModel = {
+    name: string;
+    culture?: string | null;
+    state: string;
+};
+
 export type FormDraftResponseModel = {
     form: FormResponseModel;
     definition?: unknown;
@@ -172,6 +194,12 @@ export type FormDraftResponseModel = {
     draftVersion: number;
     publishedVersion?: number | null;
     hasUnpublishedChanges: boolean;
+};
+
+export type FormReferencesResponseModel = {
+    total: number;
+    items: Array<FormDocumentReferenceResponseModel>;
+    notShown: number;
 };
 
 export type FormResponseModel = {
@@ -315,6 +343,20 @@ export type SaveFormDraftRequestModel = {
 export type TrashEmptiedResponseModel = {
     deleted: LibraryDeletionResponseModel;
     left: number;
+};
+
+export type FormDocumentReferenceResponseModelWritable = {
+    id: string;
+    name?: string | null;
+    published?: boolean | null;
+    documentType: FormDocumentTypeReferenceResponseModel;
+    variants: Array<FormDocumentVariantResponseModel>;
+};
+
+export type FormReferencesResponseModelWritable = {
+    total: number;
+    items: Array<FormDocumentReferenceResponseModelWritable>;
+    notShown: number;
 };
 
 export type FieldTypeListData = {
@@ -950,6 +992,48 @@ export type FormPublishResponses = {
 };
 
 export type FormPublishResponse = FormPublishResponses[keyof FormPublishResponses];
+
+export type FormReferenceListData = {
+    body?: never;
+    path: {
+        key: string;
+    };
+    query?: {
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/form/{key}/referenced-by';
+};
+
+export type FormReferenceListErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type FormReferenceListError = FormReferenceListErrors[keyof FormReferenceListErrors];
+
+export type FormReferenceListResponses = {
+    /**
+     * OK
+     */
+    200: FormReferencesResponseModel;
+};
+
+export type FormReferenceListResponse = FormReferenceListResponses[keyof FormReferenceListResponses];
 
 export type FormRestoreData = {
     body?: RestoreFormRequestModel;
