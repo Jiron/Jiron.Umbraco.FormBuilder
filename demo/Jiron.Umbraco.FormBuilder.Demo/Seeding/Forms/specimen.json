@@ -36,7 +36,8 @@
               "alias": "email",
               "label": { "": "Email address", "de": "E-Mail-Adresse" },
               "required": true,
-              "autocomplete": "email"
+              "autocomplete": "email",
+              "settings": { "confirm": true }
             },
             {
               "key": "d0000000-0000-4000-8000-000000000703",

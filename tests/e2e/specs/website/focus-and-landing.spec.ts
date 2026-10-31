@@ -6,9 +6,9 @@ import { pageOf, pathOf } from '../../support/demo-content.ts';
 // specimen in the default and bootstrap5 themes, light and dark. A control the theme draws (a rating, a scale, yes or no
 // as buttons, a choice card, a ranking's move) shows focus as a solid outline of 3:1 or more against what it stands on,
 // which forced colours keep, as they do on Bootstrap's own controls. An error summary's link lands with the field's
-// label below a site's sticky header, with JavaScript and without, at a desktop's and a phone's width, and a summary
-// that takes the focus lands below it too. A refused scale and rating draw the error's colour, and lose it once
-// answered.
+// label below a site's sticky header, in every theme, with JavaScript and without, on a desktop and a phone, and a
+// summary that takes the focus lands below it too. A refused scale and rating draw the error's colour, and lose it
+// once answered.
 
 const SPECIMEN = pathOf(pageOf('demoSpecimen', 'en'), 'en');
 const THEMES = ['default', 'bootstrap5'] as const;
@@ -145,6 +145,34 @@ for (const theme of THEMES) {
     }
   });
 
+  test(`${theme}: a site's taller header sets its own margin, and a summary that takes the focus lands below it`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(urlOf(theme, ''));
+    await page.addStyleTag({
+      content: `:root { --jfb-scroll-margin: 10rem; } body::before { content: ""; position: fixed; inset: 0 0 auto; z-index: 10; block-size: 9rem; background: #777; }`,
+    });
+    const form = formOn(page);
+    await form.locator('[name="displayName"]').fill('Mira Okafor');
+    await send(page).click();
+    const summary = form.locator('.jfb-error-summary');
+    await expect(summary).toBeFocused();
+    await expect
+      .poll(() => summary.evaluate((element) => element.getBoundingClientRect().top), 'the summary, below the header')
+      .toBeGreaterThanOrEqual(144);
+
+    const label = form.locator('[data-jfb-alias="recommend"] > fieldset > legend');
+    await form.locator('.jfb-error-summary a[href="#jfb-1-recommend"]').focus();
+    await page.keyboard.press('Enter');
+    await expect(form.locator('#jfb-1-recommend')).toBeFocused();
+    await expect
+      .poll(() => label.evaluate((element) => element.getBoundingClientRect().top), 'the label, below the header')
+      .toBeGreaterThanOrEqual(144);
+  });
+}
+
+for (const theme of [...THEMES, 'unstyled'] as const) {
   for (const [width, height] of [
     [1280, 800],
     [375, 667],
@@ -179,30 +207,4 @@ for (const theme of THEMES) {
       });
     }
   }
-
-  test(`${theme}: a site's taller header sets its own margin, and a summary that takes the focus lands below it`, async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto(urlOf(theme, ''));
-    await page.addStyleTag({
-      content: `:root { --jfb-scroll-margin: 10rem; } body::before { content: ""; position: fixed; inset: 0 0 auto; z-index: 10; block-size: 9rem; background: #777; }`,
-    });
-    const form = formOn(page);
-    await form.locator('[name="displayName"]').fill('Mira Okafor');
-    await send(page).click();
-    const summary = form.locator('.jfb-error-summary');
-    await expect(summary).toBeFocused();
-    await expect
-      .poll(() => summary.evaluate((element) => element.getBoundingClientRect().top), 'the summary, below the header')
-      .toBeGreaterThanOrEqual(144);
-
-    const label = form.locator('[data-jfb-alias="recommend"] > fieldset > legend');
-    await form.locator('.jfb-error-summary a[href="#jfb-1-recommend"]').focus();
-    await page.keyboard.press('Enter');
-    await expect(form.locator('#jfb-1-recommend')).toBeFocused();
-    await expect
-      .poll(() => label.evaluate((element) => element.getBoundingClientRect().top), 'the label, below the header')
-      .toBeGreaterThanOrEqual(144);
-  });
 }

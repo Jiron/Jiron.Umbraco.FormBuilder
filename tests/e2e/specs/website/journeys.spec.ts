@@ -125,6 +125,7 @@ async function toSummary(page: Page): Promise<Locator> {
     copies: 2,
     privacy: true,
   });
+  await form.locator('[name="email.confirm"]').fill('mira.okafor@visitor.jfb.test');
   await choose(form, 'room', 'reading');
   await choose(form, 'rating', '4');
   await choose(form, 'recommend', '8');
@@ -177,6 +178,7 @@ for (const javaScriptEnabled of [false, true]) {
       await expect(form.locator('[data-jfb-summary]'), 'no check on the way back').toHaveCount(0);
       await expect(form.locator('[name="displayName"]')).toHaveValue('Mira Okafor');
       await fillForm(form, { email: 'mira@visitor.jfb.test' });
+      await form.locator('[name="email.confirm"]').fill('mira@visitor.jfb.test');
       await press(form, 'next');
       await expect(titleOf(form)).toHaveText('Check your answers');
       await expect(rowOf(form, 'Email address').answer).toHaveText('mira@visitor.jfb.test');

@@ -4,7 +4,7 @@
   [ADR-0022](0022-default-theme-and-tokens.md) (the error summary) and [ADR-0004](0004-rendering-and-submission-paths.md)
   (the runtime renders the server's summary and inline errors and moves the focus); amends
   [ADR-0015](0015-themes-and-the-markup-contract.md) (the runtime's templates)
-- Date: 2026-10-30; amended 2026-10-31 (6.8b: the server's errors join only a refused send; a field the page leaves out is the server's; 6.8c: a group's choices carry its error, not its fieldset)
+- Date: 2026-10-30; amended 2026-10-31 (6.8b: the server's errors join only a refused send; a field the page leaves out is the server's; 6.8c: a group's choices carry its error, not its fieldset; 6.8e: a browser's own invalid state on a first render)
 - Amended by [ADR-0114](0114-calculations-on-the-page.md): a passing send asks for the post in a task of its own,
   since a form ignores a submission asked for while its submit event still runs
 - Roadmap step: 6.4e (decided and built); 6.4i sends with `fetch` and shows the server's errors in place, 6.5 moves
@@ -144,3 +144,8 @@ runtime's marks to the server's page, whose form gained a required group of boxe
 on the choices' own mark (`default.css`, `bootstrap5.css`). In Edge the refused choices read as invalid, each
 described by the error; a signature's typed name keeps its own mark on the server, and the runtime's goes with the pad
 (6.4n).
+
+Edge reports a required radio button, box or select that is empty as invalid from the first render, by native
+validation; the markup writes no `aria-invalid` until a refusal, and the pass of 6.8e holds that. Writing
+`aria-invalid="false"` would hide it at the price of a mark on every required choice and a runtime that restores it
+instead of clearing it, so it stays with the browser (docs/ux/review-6.8e.md).

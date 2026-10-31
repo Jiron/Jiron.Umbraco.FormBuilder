@@ -1047,11 +1047,20 @@ stylesheets from the host, `jfb:ready` and `jfb:rendered`, the honeypot clipped 
 accessibility tree, a rule showing a field, Next refusing the empty page with its errors and the summary focused and
 the page where it was, no console error and axe clean; and the same page on an origin the API does not allow showing
 nothing, with `jfb:error` and the console saying why (`e2e/support/static-site.test.ts` holds the page it serves);
+`e2e/specs/website/keyboard-pass.spec.ts` (6.8e) shows, in every theme and scheme and in forced colours, every kind of
+control changing its pixels as it takes the focus, with axe clean; Tab reaching each field in the page's order and
+never the honeypot; the keyboard alone answering each choice, the switch and the slider, moving a ranking's option,
+adding and removing a row and following a summary's link; Enter sending a form with JavaScript and without, and asking
+for the next page on a form with a ranking; no slide or rise with reduced motion, which a recorder of the running
+animations does find without it; and right to left, the stars, the switch and the Back arrow mirrored;
+`e2e/specs/website/names-pass.spec.ts` (6.8e) reads Edge's accessibility tree for the role, name and description of
+every kind of control and group, the required controls and `autocomplete` on the personal fields, and, with JavaScript
+and without, each refused control invalid and described by its error and no group invalid;
 `e2e/specs/website/focus-and-landing.spec.ts` (6.8d) shows, in the default and `bootstrap5` themes, light and dark,
 each control a theme draws focused with a solid outline of 3:1 or more, every kind of control keeping an outline in
 forced colours, a refused scale and rating drawn in the error's colour until answered, and an error summary's link
-landing with the label below a sticky header, with JavaScript and without, on a desktop and a phone, a site's taller
-header with its own margin and a focused summary too;
+landing with the label below a sticky header in every theme, with JavaScript and without, on a desktop and a phone, a
+site's taller header with its own margin and a focused summary too;
 and `e2e/specs/website/strict-site.spec.ts` starts the demo as a second host on 5525, with the
 output cache on and the Testing project's strict policy (ADR-0121), shows that an inline script the page did not
 bring is refused and counted, runs the room hire form (the calculation language) from a page the cache serves and the
