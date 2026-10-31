@@ -199,8 +199,11 @@ test('cards, buttons and stars choose as drawn, fields side by side line up, and
   }
 
   // Fields side by side line up their controls, under labels with and without help.
-  const top = (selector: string) => form.locator(selector).evaluate((element) => element.getBoundingClientRect().top);
-  expect(await top('#jfb-1-email'), 'the email beside the name, which has help').toBe(await top('#jfb-1-displayName'));
+  // Both read in one frame, as Bootstrap's smooth scrolling may still be moving the page.
+  const [email, name] = await form.evaluate((element) =>
+    ['#jfb-1-email', '#jfb-1-displayName'].map((id) => element.querySelector(id)?.getBoundingClientRect().top),
+  );
+  expect(email, 'the email beside the name, which has help').toBe(name);
 
   // A grid's column heads over the lined-up columns, each answer's column for screen readers.
   await expect(form.locator('.jfb-matrix-head')).toBeVisible();
