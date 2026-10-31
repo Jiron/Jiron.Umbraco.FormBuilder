@@ -1,0 +1,10 @@
+@* A page that shows when it was rendered and the form its picker picks: what a form's publish evicts from Umbraco's output cache, and what it keeps (6.7d, ADR-0132). *@
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@using Umbraco.Extensions
+@inject Umbraco.Cms.Core.Web.IUmbracoContextAccessor Umbraco
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var current = Umbraco.GetRequiredUmbracoContext().PublishedRequest!.PublishedContent!;
+}
+<p id="rendered">@Guid.NewGuid().ToString("N")</p>
+<jfb-render picked='current.Value<FormBuilderFormReference>("form")' />
