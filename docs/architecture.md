@@ -481,8 +481,8 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
   compared in fixed time); a key that matches none answers `401 server_key_invalid`, a signed request counts in its
   key's partition, its entry records the key's name as `jfbServerKey`, and only that key gets its receipt; the keys
   are read once, so a changed key takes effect at the next start ([ADR-0126](decisions/0126-server-key-submissions.md)).
-- **Each action declares** its rate-limit policy, body limit and time limit (`x-jfb-*` in the document), applied
-  before the body is read: a body above the limit, or any for an action that takes none, answers `413`; the time
+- **Each action declares** its rate-limit policy, body limit and time limit (`x-jfb-*` in the document). The policy is
+  the document's word until the limiter comes with 7.1; the others are applied before the body is read: a body above the limit, or any for an action that takes none, answers `413`; the time
   limit `504 timeout`; pending migrations `503 migrations_pending` with `Retry-After: 10`. Anything unexpected answers
   `500 server_error`, logged with the endpoint's name.
 - **Members-only forms** bind the challenge to the signed-in member (`member_required` without one), with no cookie;
@@ -641,19 +641,21 @@ first of each pair cancelable, the second once the change committed, [ADR-0044](
 `FolderMoving`/`Moved`, `FolderTrashing`/`Trashed`, `FolderRestoring`/`Restored`, `FolderDeleting`/`Deleted` and
 `TrashEmptying`/`Emptied`, which name the folders and forms a change takes with it
 ([ADR-0047](decisions/0047-trash-delete-and-folders.md)); `EntrySubmitting`
-(cancelable, can add field errors), `EntrySubmitted`, `EntryStateChanged`, `EntryDeleting`;
+(cancelable, can add field errors) and `EntrySubmitted`, which come with 15.1; `EntryStateChanged`, `EntryDeleting`;
 `ActionRunning`/`ActionRunCompleted`/`ActionRunFailed`; `ExportCompleted`; `SettingsSaved`. Umbraco's webhook system
 receives entry events too.
 
 **Services:** `IFormBuilderFormService` with `IFormBuilderFormVersionService` and `IFormBuilderFormExchangeService`
-(ADR-0053), `IFormBuilderFolderService`, `IFormBuilderEntryService`, `IFormBuilderEntryReader`, `IFormBuilderRenderer`,
+(ADR-0053), `IFormBuilderFolderService`, `IFormBuilderEntryService`, `IFormBuilderEntryReader`, `IFormBuilderRenderer` (with 15.1),
 `IFormBuilderMergeTagService`, `IFormBuilderOptionService`.
 
-**The website:** the tag helpers and view component, the theme views and the markup contract (ADR-0015),
-`window.JironFormBuilder` (`init`, `get`, `consent`), the DOM events `jfb:ready`, `jfb:page`, `jfb:invalid`,
-`jfb:submitting`, `jfb:submitted`, `jfb:error`, and the `--jfb-*` custom properties.
+**The website:** `<jfb-assets nonce>`, `<jfb-render form picked assets theme context-*>` and the view component, the
+theme views and the markup contract (ADR-0015), `window.JironFormBuilder` (`init`, `get`, `consent`), the DOM events
+`jfb:ready`, `jfb:page`, `jfb:invalid`, `jfb:submitting`, `jfb:submitted`, `jfb:error`, and the `--jfb-*` custom
+properties.
 
-**Headless:** the projection's TypeScript types and JSON schema, and `<jfb-form api form culture>`.
+**Headless:** the projection's TypeScript types and JSON schema, and `<jfb-form api form culture content theme
+context-*>` with its `render()` and its `jfb:rendered` event.
 
 ## 9. Background work
 

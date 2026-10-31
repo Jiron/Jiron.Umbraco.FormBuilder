@@ -139,6 +139,17 @@ public sealed class FormRenderingViewTests : RenderingTestBase
     }
 
     [Test]
+    public async Task ASitesOwnNoticeView_CanTellWhyItShows()
+    {
+        var later = new DateTime(2099, 12, 1, 8, 0, 0, DateTimeKind.Utc);
+        _ = await PublishFormAsync("renderingKind", definition => Availability(definition, new FormAvailabilitySettings { OpensAt = later }));
+        _ = await PagesAsync("notice-kind");
+        var (_, document) = await PageAsync("notice-kind");
+
+        Assert.That(document.QuerySelector("[data-test-kind]")?.GetAttribute("data-test-kind"), Is.EqualTo("NotOpenYet"));
+    }
+
+    [Test]
     public async Task AFormRenderedAgainAfterAFailedPost_ShowsItsAnswersErrorsNoticeAndPage()
     {
         _ = await PublishFormAsync("renderingPosted", Posted);

@@ -28,14 +28,6 @@ internal sealed class PageAssets(WebsiteAssets assets)
     // The base rules' path, which every page with a form loads before any theme's stylesheet.
     private const string BaseStylesheet = WebsiteAssets.BasePath + "/" + WebsiteAssets.BaseRules;
 
-    /// <summary>Whether the request's module script was claimed: written, or taken by a <c>&lt;jfb-assets&gt;</c> that writes it.</summary>
-    /// <param name="httpContext">The request.</param>
-    public static bool AreWritten(HttpContext httpContext)
-    {
-        ArgumentNullException.ThrowIfNull(httpContext);
-        return httpContext.Items.TryGetValue(Key, out var state) && state is PageState { Script: true };
-    }
-
     /// <summary>
     /// The name below <c>/jfb/assets/</c> of a stylesheet that is one of the package's website assets, or null for a
     /// path of the site's own: the first segments match in any letter case, as the assets are served (ADR-0092).

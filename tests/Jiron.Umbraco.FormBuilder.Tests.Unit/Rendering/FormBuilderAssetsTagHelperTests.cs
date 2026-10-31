@@ -79,7 +79,6 @@ public sealed class FormBuilderAssetsTagHelperTests
             Assert.That(first, Is.EqualTo(BaseRules("first") + Link("themes/calm.css", "first") + Script("first")));
             Assert.That(second, Is.Empty);
             Assert.That(third, Is.Empty);
-            Assert.That(PageAssets.AreWritten(http), Is.True);
         });
     }
 
@@ -91,7 +90,7 @@ public sealed class FormBuilderAssetsTagHelperTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(PageAssets.AreWritten(http), Is.True, "the tag claims the script as it runs");
+            Assert.That(Run(http), Is.Empty, "the tag claims the script as it runs");
             Assert.That(Write(tags), Is.EqualTo(BaseRules() + Script()));
             Assert.That(Write(tags), Is.Empty);
         });
@@ -105,7 +104,6 @@ public sealed class FormBuilderAssetsTagHelperTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(PageAssets.AreWritten(one), Is.False);
             Assert.That(Run(one), Is.Not.Empty);
             Assert.That(Run(other), Is.Not.Empty);
         });

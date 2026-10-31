@@ -202,7 +202,7 @@ export class JfbFormElement extends HTMLElement {
             if (said.has(type)) return;
             said.add(type);
             console.warn(
-              `jfb-form: a field of type '${type}' has no control in the element; the site registers one (ADR-0128).`,
+              `jfb-form: a field of type '${type}' has no control in the element, so it shows no answer (ADR-0128).`,
             );
           },
         },

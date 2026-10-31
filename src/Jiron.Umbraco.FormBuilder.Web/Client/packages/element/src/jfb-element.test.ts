@@ -384,7 +384,7 @@ describe('<jfb-form>', () => {
       [true, null],
     ]);
     expect(warn.mock.calls.filter(([message]) => String(message).includes("'site-stars'"))).toEqual([
-      ["jfb-form: a field of type 'site-stars' has no control in the element; the site registers one (ADR-0128)."],
+      ["jfb-form: a field of type 'site-stars' has no control in the element, so it shows no answer (ADR-0128)."],
     ]);
   });
 
