@@ -195,7 +195,7 @@ describe('the form picker property', () => {
     chooseButton(element).click();
     await settle(element);
     expect(sidebar.open).toHaveBeenCalledWith(element, FORM_PICKER_MODAL, {
-      data: { multiple: true, limited: true, dataTypeKey: 'dt-1' },
+      data: { pick: 'forms', multiple: true, limited: true, dataTypeKey: 'dt-1' },
       value: { selection: ['a-contact'], items: [contact] },
     });
     expect(element.value).toBe('a-contact,c-spring');
@@ -211,7 +211,7 @@ describe('the form picker property', () => {
     chooseButton(element).click();
     await settle(element);
     expect(sidebar.open.mock.calls[0]?.[2]).toEqual({
-      data: { multiple: false, limited: false, dataTypeKey: 'dt-1' },
+      data: { pick: 'forms', multiple: false, limited: false, dataTypeKey: 'dt-1' },
       value: { selection: [], items: [] },
     });
     expect(element.value).toBeUndefined();

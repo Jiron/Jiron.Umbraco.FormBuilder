@@ -1,12 +1,24 @@
-// What the form picker reads (ADR-0133, ADR-0134): the library level by level, a search and the forms of given keys,
-// through the generated client, within a data type's limits when its key is known. Each call answers undefined when
-// the request fails, and shows no notification: the element that asked says so in place, once.
+// What the form picker and its settings read (ADR-0133, ADR-0134, ADR-0135): the library level by level, a search, the
+// forms and the folders of given keys and the site's themes, through the generated client, within a data type's limits
+// when its key is known. Each call answers undefined when the request fails, and shows no notification: the element
+// that asked says so in place, once.
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
-import { pickerChildren, pickerForms, pickerSearch, type PickerItemResponseModel } from '../api';
+import {
+  pickerChildren,
+  pickerFolders,
+  pickerForms,
+  pickerSearch,
+  pickerThemes,
+  type PickerItemResponseModel,
+  type PickerThemeResponseModel,
+} from '../api';
 
 /** A folder or a form as the picker shows it: its key, kind, name, a form's alias, a folder's children. */
 export type PickerItem = PickerItemResponseModel;
+
+/** A theme the picker's settings may name: its alias and label. */
+export type PickerTheme = PickerThemeResponseModel;
 
 /** One page of a level or of a search, with how many items there are in all. */
 export interface PickerPage {
@@ -28,6 +40,10 @@ export interface FormPickerData {
   search(text: string, skip: number): Promise<PickerPage | undefined>;
   /** The forms of these keys the picker may pick, in the order asked; the others are left out. */
   forms(keys: readonly string[]): Promise<PickerItem[] | undefined>;
+  /** The folders of these keys the user may see outside the trash, in the order asked; no data type limits them. */
+  folders(keys: readonly string[]): Promise<PickerItem[] | undefined>;
+  /** The site's themes, in the order the backoffice lists them. */
+  themes(): Promise<PickerTheme[] | undefined>;
 }
 
 const quiet = { disableNotifications: true };
@@ -39,6 +55,22 @@ const quiet = { disableNotifications: true };
  */
 export function formPickerData(host: UmbControllerHost, dataTypeKey: string | undefined): FormPickerData {
   const limits = dataTypeKey ? { dataTypeKey } : {};
+
+  /** Asks for the keys a hundred at a time, as the endpoints allow, and joins the answers in order. */
+  async function byKeys(
+    keys: readonly string[],
+    read: (keys: string[]) => Promise<{ data?: PickerItem[] | undefined; error?: unknown }>,
+  ): Promise<PickerItem[] | undefined> {
+    if (keys.length === 0) return [];
+    const found: PickerItem[] = [];
+    for (let start = 0; start < keys.length; start += MAX_KEYS) {
+      const { data, error } = await read(keys.slice(start, start + MAX_KEYS));
+      if (error || !data) return undefined;
+      found.push(...data);
+    }
+    return found;
+  }
+
   return {
     async children(parentKey, skip) {
       const query = { ...limits, ...(parentKey ? { parentKey } : {}), skip, take: PAGE_SIZE };
@@ -53,16 +85,15 @@ export function formPickerData(host: UmbControllerHost, dataTypeKey: string | un
       );
       return error || !data ? undefined : data;
     },
-    async forms(keys) {
-      if (keys.length === 0) return [];
-      const found: PickerItem[] = [];
-      for (let start = 0; start < keys.length; start += MAX_KEYS) {
-        const query = { ...limits, keys: keys.slice(start, start + MAX_KEYS) };
-        const { data, error } = await tryExecute(host, pickerForms({ query }), quiet);
-        if (error || !data) return undefined;
-        found.push(...data);
-      }
-      return found;
+    forms(keys) {
+      return byKeys(keys, (chunk) => tryExecute(host, pickerForms({ query: { ...limits, keys: chunk } }), quiet));
+    },
+    folders(keys) {
+      return byKeys(keys, (chunk) => tryExecute(host, pickerFolders({ query: { keys: chunk } }), quiet));
+    },
+    async themes() {
+      const { data, error } = await tryExecute(host, pickerThemes(), quiet);
+      return error || !data ? undefined : data;
     },
   };
 }

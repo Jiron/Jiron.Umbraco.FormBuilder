@@ -1,5 +1,6 @@
-// The form picker's screens in German (ADR-0134), in Umbraco's own German terms (docs/ux/copy.md). The type below holds
-// them to the keys of form-picker.en.ts, every one and no other, each a text or a function of the same arguments.
+// The form picker's screens in German (ADR-0134, ADR-0135), in Umbraco's own German terms (docs/ux/copy.md). The type
+// below holds them to the keys of form-picker.en.ts, every one and no other, each a text or a function of the same
+// arguments.
 import type formPickerEn from './form-picker.en';
 
 export default {
@@ -25,5 +26,29 @@ export default {
     found: (count: number) =>
       count === 1 ? '1 Formular gefunden' : `${new Intl.NumberFormat('de').format(count)} Formulare gefunden`,
     labelNotAvailable: '(nicht verfügbar)',
+    settingMultiple: 'Mehrere Formulare erlauben',
+    settingAllowedFolders: 'Erlaubte Ordner',
+    settingAllowedFoldersHelp: 'Die Formulare in diesen Ordnern und in den Ordnern darunter können gewählt werden.',
+    settingAllowedForms: 'Erlaubte Formulare',
+    settingAllowedFormsHelp:
+      'Auch diese Formulare können gewählt werden. Ohne erlaubte Ordner oder Formulare ist jedes Formular wählbar.',
+    settingTheme: 'Theme',
+    settingThemeHelp: 'Jedes hier platzierte Formular erscheint in diesem Theme.',
+    settingRedirect: 'Seite nach dem Absenden',
+    settingRedirectHelp:
+      'Nach dem Absenden eines hier platzierten Formulars kommen Besucher auf diese Seite. Leer lassen, um den Einstellungen des Formulars zu folgen.',
+    folderNotAvailable: 'Ordner nicht verfügbar',
+    folderNotAvailableDetail: 'Gelöscht, im Papierkorb oder für Sie nicht sichtbar',
+    removeFolderNotAvailable: 'Den nicht verfügbaren Ordner entfernen',
+    allowedFoldersFailed: 'Die erlaubten Ordner konnten nicht geladen werden.',
+    allowedFormsFailed: 'Die erlaubten Formulare konnten nicht geladen werden.',
+    headlineFolders: 'Ordner wählen',
+    showFolders: (name: string) => `Ordner in ${name} anzeigen`,
+    foldersFailed: 'Die Ordner konnten nicht geladen werden.',
+    noFolders: 'Ordner erscheinen hier, sobald sie ein veröffentlichtes Formular enthalten.',
+    noSubfolders: 'Kein Ordner hierin enthält schon ein veröffentlichtes Formular.',
+    themeOwn: 'Das eigene Theme des Formulars',
+    themeMissing: (alias: string) => `${alias} (nicht auf dieser Website)`,
+    themesFailed: 'Die Themes konnten nicht geladen werden.',
   },
 } satisfies typeof formPickerEn;

@@ -193,7 +193,11 @@ flowchart LR
   content editor's form picker (`src/picker`, ADR-0134): the property editor UI `jfb-form-picker` (the picked forms as
   Umbraco's reference rows with Remove, and Choose), its sidebar `jfb-form-picker-modal` (the library's levels, opened
   in place, and the search, within the data type's limits) and the block label's UFM component `jfbFormName`, each
-  reading through `picker-data.ts` over the generated client; the backoffice's own tokens are in `src/styles/tokens.ts`.
+  reading through `picker-data.ts` over the generated client. From 6.7g the schema declares the data type's settings
+  (ADR-0135): Umbraco's toggle for one form or several, `jfb-form-picker-allowed` for the allowed folders and forms
+  (the same rows, and the sidebar, for folders in its folder mode), `jfb-form-picker-theme` for the theme, and
+  Umbraco's document picker for the page after a send; the property and the allowed folders and forms share their rows
+  through `picked-rows.ts`. The backoffice's own tokens are in `src/styles/tokens.ts`.
 
 ## 2. The definition model
 

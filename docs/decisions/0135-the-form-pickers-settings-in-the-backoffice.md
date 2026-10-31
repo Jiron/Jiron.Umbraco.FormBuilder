@@ -62,3 +62,8 @@ endpoint names a folder by key.
   its forms exist publishes one form first or allows the folder later; the folder mode's empty state says so.
 - The folder names reach users with Umbraco's Content, Media, Members or Settings section, as form names already do
   (ADR-0133); a restricted folder stays hidden from anyone without a grant.
+- A folder below a chosen one may be chosen too; it allows nothing more, and refusing it would need the sidebar to know
+  every chosen folder's place. In the folder mode every folder has a chevron, as a level says whether a folder leads to
+  a form, not whether it holds folders; one that holds none says so when it is opened (review of 6.7g).
+- uui-select keeps the empty value for a hidden placeholder of its own, so "The form's own theme" is the option
+  `(own)`, which no theme's alias can be, and writes no value.

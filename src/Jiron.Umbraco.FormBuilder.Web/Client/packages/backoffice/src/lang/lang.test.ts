@@ -2,7 +2,8 @@
 // a function of the values that gives one); they hold every `#` key the management API serves for the built-in field
 // types, as docs/api/field-types.json (the snapshot an integration test holds the endpoint to) has them; they hold
 // every `#jfbPicker_` key the form picker's checks send (ADR-0129), and its area no other; the form picker's screens
-// (ADR-0134) hold the keys their elements use, and no other; and the field types' areas hold no key nothing uses.
+// (ADR-0134, ADR-0135) hold the keys their elements and manifests use, and no other; and the field types' areas hold no
+// key nothing uses.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,12 +50,17 @@ const pickerKeys = new Set(
   ].map((match) => match[1]),
 );
 
-/** The `jfbFormPicker_` keys the form picker's elements use, read from their sources. */
+/**
+ * The `jfbFormPicker_` keys the form picker's elements use, read from their sources: as a term (`'key'`), and in the
+ * manifests as a label (`'#key'`) or in a description's markdown (`'{#key}'`).
+ */
 const pickerFolder = join(dirname(fileURLToPath(import.meta.url)), '..', 'picker');
 const screenKeys = new Set(
   readdirSync(pickerFolder)
     .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
-    .flatMap((file) => [...readFileSync(join(pickerFolder, file), 'utf8').matchAll(/'(jfbFormPicker_[A-Za-z]+)'/g)])
+    .flatMap((file) => [
+      ...readFileSync(join(pickerFolder, file), 'utf8').matchAll(/'(?:\{?#)?(jfbFormPicker_[A-Za-z]+)\}?'/g),
+    ])
     .map((match) => match[1]),
 );
 

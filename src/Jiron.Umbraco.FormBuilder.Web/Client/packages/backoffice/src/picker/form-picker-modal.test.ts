@@ -69,7 +69,13 @@ async function open(
   context = modalContext(value);
   const element = document.createElement('jfb-form-picker-modal') as FormPickerModalElement;
   element.modalContext = context as never;
-  element.data = { multiple: false, limited: false, ...(withoutDataType ? {} : { dataTypeKey: 'dt-1' }), ...given };
+  element.data = {
+    pick: 'forms',
+    multiple: false,
+    limited: false,
+    ...(withoutDataType ? {} : { dataTypeKey: 'dt-1' }),
+    ...given,
+  };
   document.body.append(element);
   await settle(element);
   return element;
@@ -280,5 +286,104 @@ describe('the form picker sidebar', () => {
     await settle(element);
     expect(context.reject).toHaveBeenCalledOnce();
     expect(context.submit).not.toHaveBeenCalled();
+  });
+});
+
+describe("the form picker sidebar's folder mode", () => {
+  const archive = folder('f-archive', 'Archive');
+  const planned = folder('f-planned', 'Planned');
+  const toggles = (element: Element) => all<HTMLButtonElement>(element, 'button.toggle');
+  const toggle = (element: Element, name: string) =>
+    must(
+      toggles(element).find((candidate) => candidate.getAttribute('aria-label') === `Show the folders in ${name}`),
+      `the chevron of ${name}`,
+    );
+  const folders = (data: Partial<FormPickerModalData> = {}, value?: FormPickerModalValue) =>
+    open({ pick: 'folders', multiple: true, withoutDataType: true, ...data }, value);
+
+  it('lists folders only, without the search, each with a chevron that opens it and a row that chooses it', async () => {
+    reads.children
+      .mockResolvedValueOnce(page([events, archive, contact]))
+      .mockResolvedValueOnce(page([planned, spring]));
+    const element = await folders();
+
+    expect(reads.made).toEqual([undefined]);
+    expect(shadow(element).querySelector('umb-body-layout')?.getAttribute('headline')).toBe('Choose folders');
+    expect(shadow(element).querySelector('#search')).toBeNull();
+    expect(names(element)).toEqual(['Events', 'Archive']);
+    expect(toggle(element, 'Events').getAttribute('aria-expanded')).toBe('false');
+    expect(row(element, 'Events').getAttribute('aria-pressed')).toBe('false');
+    expect(row(element, 'Events').hasAttribute('aria-expanded')).toBe(false);
+
+    toggle(element, 'Events').click();
+    await settle(element);
+    expect(reads.children).toHaveBeenLastCalledWith('f-events', 0);
+    expect(toggle(element, 'Events').getAttribute('aria-expanded')).toBe('true');
+    expect(names(element)).toEqual(['Events', 'Planned', 'Archive']);
+    expect(row(element, 'Planned').closest<HTMLElement>('.split')?.style.getPropertyValue('--jfb-depth')).toBe('1');
+    expect(row(element, 'Events').getAttribute('aria-pressed')).toBe('false');
+
+    row(element, 'Events').click();
+    await settle(element);
+    row(element, 'Planned').click();
+    await settle(element);
+    expect(row(element, 'Events').getAttribute('aria-pressed')).toBe('true');
+    expect(row(element, 'Events').querySelector('.check')).not.toBeNull();
+    expect(toggle(element, 'Events').getAttribute('aria-expanded')).toBe('true');
+    expect(context.getValue()).toEqual({ selection: ['f-events', 'f-planned'], items: [events, planned] });
+    expect(choose(element).disabled).toBe(false);
+  });
+
+  it('keeps the chosen folders it was given and toggles them off again', async () => {
+    reads.children.mockResolvedValueOnce(page([events, archive]));
+    const element = await folders({}, { selection: ['f-archive', 'f-gone'], items: [archive] });
+
+    expect(row(element, 'Archive').getAttribute('aria-pressed')).toBe('true');
+    row(element, 'Archive').click();
+    await settle(element);
+    expect(context.getValue().selection).toEqual(['f-gone']);
+  });
+
+  it('says when no folder holds a published form yet, at the top and inside a folder', async () => {
+    reads.children.mockResolvedValueOnce(page([contact]));
+    const empty = await folders();
+    expect(text(shadow(empty).querySelector('uui-box .message'))).toBe(
+      'Folders show here once they hold a published form.',
+    );
+    empty.remove();
+
+    reads.children.mockResolvedValueOnce(page([events])).mockResolvedValueOnce(page([spring]));
+    const element = await folders();
+    toggle(element, 'Events').click();
+    await settle(element);
+    expect(text(shadow(element).querySelector('uui-box .message'))).toBe(
+      'No folder in here holds a published form yet.',
+    );
+  });
+
+  it('offers Show more only while the pages hold folders, as a level lists its folders first', async () => {
+    reads.children
+      .mockResolvedValueOnce(page([events, archive], 5))
+      .mockResolvedValueOnce(page([planned, contact, spring], 5));
+    const element = await folders();
+
+    button(element, 'Show more').click();
+    await settle(element);
+    expect(reads.children).toHaveBeenLastCalledWith(undefined, 2);
+    expect(names(element)).toEqual(['Events', 'Archive', 'Planned']);
+    expect(shadow(element).activeElement).toBe(row(element, 'Planned'));
+    element.remove();
+
+    reads.children.mockResolvedValueOnce(page([events, contact], 7));
+    const reached = await folders();
+    expect(names(reached)).toEqual(['Events']);
+    expect(findButton(reached, 'Show more')).toBeUndefined();
+  });
+
+  it('says when the folders cannot be loaded', async () => {
+    reads.children.mockResolvedValueOnce(undefined);
+    const element = await folders();
+
+    expect(text(shadow(element).querySelector('[role="alert"] span'))).toBe("The folders couldn't be loaded.");
   });
 });

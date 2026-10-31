@@ -1,7 +1,9 @@
-// The form picker's sidebar (ADR-0134): a search field, the library's levels within the data type's limits, and Close
-// and Choose. A folder is a button that opens its level in place and says whether it is open (aria-expanded); a form
-// is a toggle button that says whether it is chosen (aria-pressed) and shows a check mark, so the state never rests on
-// colour alone. Each level loads when it is first opened, a page at a time. Nothing animates (ADR-0020).
+// The form picker's sidebar (ADR-0134, ADR-0135): a search field, the library's levels within the data type's limits,
+// and Close and Choose. A folder is a button that opens its level in place and says whether it is open
+// (aria-expanded); a form is a toggle button that says whether it is chosen (aria-pressed) and shows a check mark, so
+// the state never rests on colour alone. Each level loads when it is first opened, a page at a time. In the folder
+// mode of the allowed folders it lists folders only, without the search, and a folder row holds two buttons: the
+// chevron opens it, the row chooses it. Nothing animates (ADR-0020).
 import {
   css,
   html,
@@ -52,7 +54,7 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
   declare private _searching: boolean;
   declare private _selection: readonly string[];
 
-  /** The forms this sidebar has seen or was given, by key, which the answer names. */
+  /** The forms and folders this sidebar has seen or was given, by key, which the answer names. */
   #known = new Map<string, PickerItem>();
   #source?: FormPickerData;
   #timer?: ReturnType<typeof setTimeout>;
@@ -89,7 +91,7 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
     super.firstUpdated(changed);
     void this.#load(ROOT);
     // Umbraco puts the focus on the dialog itself (research note section 8); typing should search at once.
-    this.#searchField()?.focus();
+    if (!this.#folders) this.#searchField()?.focus();
   }
 
   protected override updated(changed: PropertyValues) {
@@ -102,6 +104,11 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
       this.#focusKey = undefined;
       row.focus();
     }
+  }
+
+  /** Whether the sidebar chooses folders, as the allowed folders do. */
+  get #folders(): boolean {
+    return this.data?.pick === 'folders';
   }
 
   get #data(): FormPickerData {
@@ -129,8 +136,8 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
       );
       return;
     }
-    for (const item of page.items) if (item.kind === 'form') this.#known.set(item.key, item);
-    this.#focusKey = next ? page.items[0]?.key : undefined;
+    for (const item of page.items) this.#known.set(item.key, item);
+    this.#focusKey = next ? this.#shown(page.items)[0]?.key : undefined;
     this.#setLevel(key, {
       state: 'ready',
       items: next ? [...current.items, ...page.items] : page.items,
@@ -151,14 +158,19 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
     if (this._levels.get(folder.key)?.state !== 'ready') void this.#load(folder.key);
   }
 
-  #toggleForm(form: PickerItem) {
-    this.#known.set(form.key, form);
-    const chosen = this._selection.includes(form.key);
+  /** The items of a level this sidebar lists: in the folder mode, its folders only. */
+  #shown(items: readonly PickerItem[]): PickerItem[] {
+    return this.#folders ? items.filter((item) => item.kind === 'folder') : [...items];
+  }
+
+  #toggleChosen(item: PickerItem) {
+    this.#known.set(item.key, item);
+    const chosen = this._selection.includes(item.key);
     let selection: string[];
     if (this.data?.multiple) {
-      selection = chosen ? this._selection.filter((key) => key !== form.key) : [...this._selection, form.key];
+      selection = chosen ? this._selection.filter((key) => key !== item.key) : [...this._selection, item.key];
     } else {
-      selection = chosen ? [] : [form.key];
+      selection = chosen ? [] : [item.key];
     }
     this._selection = selection;
     this.updateValue({ selection, items: selection.flatMap((key) => this.#known.get(key) ?? []) });
@@ -212,10 +224,11 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
   }
 
   override render() {
-    const headline = this.data?.multiple ? 'jfbFormPicker_headlineMultiple' : 'jfbFormPicker_headline';
+    let headline = this.data?.multiple ? 'jfbFormPicker_headlineMultiple' : 'jfbFormPicker_headline';
+    if (this.#folders) headline = 'jfbFormPicker_headlineFolders';
     return html`
       <umb-body-layout headline=${this.localize.term(headline)}>
-        ${this.#renderSearch()}
+        ${this.#folders ? nothing : this.#renderSearch()}
         <div class="visually-hidden" role="status">${this.#searchStatus()}</div>
         <uui-box>${this._text.trim() ? this.#renderResults() : this.#renderLevel(ROOT, 0)}</uui-box>
         <div slot="actions">
@@ -276,20 +289,17 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
   #renderLevel(key: string, depth: number): TemplateResult {
     const level = this._levels.get(key);
     if (!level || level.state === 'loading') return this.#renderPlaceholders(key === ROOT ? 3 : 1, depth);
-    if (level.state === 'failed') return this.#renderFailure('jfbFormPicker_loadFailed', () => this.#load(key), depth);
-    if (level.items.length === 0) {
-      const empty =
-        key !== ROOT
-          ? 'jfbFormPicker_emptyFolder'
-          : this.data?.limited
-            ? 'jfbFormPicker_noAllowedForms'
-            : 'jfbFormPicker_noForms';
-      return html`<p class="message" style=${styleMap(this.#indent(depth))}>${this.localize.term(empty)}</p>`;
+    if (level.state === 'failed') return this.#renderFailure(this.#failedText(), () => this.#load(key), depth);
+    const items = this.#shown(level.items);
+    if (items.length === 0 && !this.#hasMore(level)) {
+      return html`<p class="message" style=${styleMap(this.#indent(depth))}>
+        ${this.localize.term(this.#emptyText(key))}
+      </p>`;
     }
     return html`
       <ul class="level">
         ${repeat(
-          level.items,
+          items,
           (item) => item.key,
           (item) =>
             html`<li>${item.kind === 'folder' ? this.#renderFolder(item, depth) : this.#renderForm(item, depth)}</li>`,
@@ -297,6 +307,22 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
       </ul>
       ${this.#renderMore(level, depth, () => this.#load(key, true))}
     `;
+  }
+
+  /** What an empty level says: that no form is published there yet, or, in the folder mode, no folder holds one. */
+  #emptyText(key: string): string {
+    if (this.#folders) return key === ROOT ? 'jfbFormPicker_noFolders' : 'jfbFormPicker_noSubfolders';
+    if (key !== ROOT) return 'jfbFormPicker_emptyFolder';
+    return this.data?.limited ? 'jfbFormPicker_noAllowedForms' : 'jfbFormPicker_noForms';
+  }
+
+  /**
+   * Whether a level has more to load. A level lists its folders before its forms, so in the folder mode a page that
+   * reached a form holds the last of the folders.
+   */
+  #hasMore(loaded: Loaded): boolean {
+    if (loaded.items.length >= loaded.total) return false;
+    return !this.#folders || loaded.items.every((item) => item.kind === 'folder');
   }
 
   #renderResults(): TemplateResult {
@@ -329,6 +355,7 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
   }
 
   #renderFolder(folder: PickerItem, depth: number) {
+    if (this.#folders) return this.#renderChoosableFolder(folder, depth);
     const open = this._open.has(folder.key);
     return html`
       <button
@@ -347,6 +374,37 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
     `;
   }
 
+  /** A folder of the folder mode: the chevron opens its level, the row chooses it. */
+  #renderChoosableFolder(folder: PickerItem, depth: number) {
+    const open = this._open.has(folder.key);
+    const chosen = this._selection.includes(folder.key);
+    return html`
+      <div class="split" style=${styleMap(this.#indent(depth))}>
+        <button
+          type="button"
+          class="toggle"
+          aria-expanded=${open ? 'true' : 'false'}
+          aria-label=${this.localize.term('jfbFormPicker_showFolders', folder.name)}
+          @click=${() => this.#toggleFolder(folder)}
+        >
+          <uui-symbol-expand ?open=${open}></uui-symbol-expand>
+        </button>
+        <button
+          type="button"
+          class="row"
+          aria-pressed=${chosen ? 'true' : 'false'}
+          data-key=${folder.key}
+          @click=${() => this.#toggleChosen(folder)}
+        >
+          <umb-icon class="icon" name="icon-folder"></umb-icon>
+          <span class="text"><span class="name">${folder.name}</span></span>
+          ${chosen ? html`<umb-icon class="check" name="icon-check"></umb-icon>` : nothing}
+        </button>
+      </div>
+      ${open ? this.#renderLevel(folder.key, depth + 1) : nothing}
+    `;
+  }
+
   #renderForm(form: PickerItem, depth: number) {
     const chosen = this._selection.includes(form.key);
     return html`
@@ -356,7 +414,7 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
         style=${styleMap(this.#indent(depth))}
         aria-pressed=${chosen ? 'true' : 'false'}
         data-key=${form.key}
-        @click=${() => this.#toggleForm(form)}
+        @click=${() => this.#toggleChosen(form)}
       >
         <span class="expand" aria-hidden="true"></span>
         <umb-icon class="icon" name="icon-document"></umb-icon>
@@ -370,8 +428,8 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
   }
 
   #renderMore(loaded: Loaded, depth: number, more: () => void) {
-    if (loaded.moreFailed) return this.#renderFailure('jfbFormPicker_loadFailed', more, depth);
-    if (loaded.items.length >= loaded.total) return nothing;
+    if (loaded.moreFailed) return this.#renderFailure(this.#failedText(), more, depth);
+    if (!this.#hasMore(loaded)) return nothing;
     return html`<div class="more" style=${styleMap(this.#indent(depth))}>
       <uui-button
         look="secondary"
@@ -381,6 +439,10 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
         @click=${more}
       ></uui-button>
     </div>`;
+  }
+
+  #failedText(): string {
+    return this.#folders ? 'jfbFormPicker_foldersFailed' : 'jfbFormPicker_loadFailed';
   }
 
   #renderFailure(message: string, retry: () => void, depth: number) {
@@ -453,11 +515,13 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
         cursor: pointer;
       }
 
-      .row:hover {
+      .row:hover,
+      .toggle:hover {
         background-color: var(--uui-color-surface-emphasis);
       }
 
-      .row:focus-visible {
+      .row:focus-visible,
+      .toggle:focus-visible {
         outline: 2px solid var(--uui-color-focus);
         outline-offset: -2px;
       }
@@ -467,6 +531,34 @@ export class FormPickerModalElement extends UmbModalBaseElement<FormPickerModalD
       .row[aria-pressed='true']:hover {
         background-color: var(--jfb-bo-color-selected);
         color: var(--uui-color-selected-contrast);
+      }
+
+      /* The folder mode's row: the chevron takes the place the expand symbol has in a row of the forms. */
+      .split {
+        display: flex;
+        align-items: stretch;
+        padding-inline-start: calc(var(--jfb-depth, 0) * var(--uui-size-space-5));
+      }
+
+      .split .row {
+        flex: 1;
+        min-width: 0;
+        padding-inline-start: var(--uui-size-space-2);
+      }
+
+      .toggle {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--uui-size-space-6);
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: var(--uui-border-radius);
+        background: none;
+        color: var(--uui-color-text);
+        cursor: pointer;
       }
 
       .expand {
