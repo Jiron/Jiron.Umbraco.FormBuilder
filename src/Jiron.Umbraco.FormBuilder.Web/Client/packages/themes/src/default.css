@@ -1056,6 +1056,11 @@
     }
   }
 
+  /* A refused rating's stars take the error's colour until one is chosen (6.8d). */
+  & .jfb-choices-rating > .jfb-choice > [aria-invalid='true'] + label::before {
+    background: var(--_error);
+  }
+
   & .jfb-ends {
     display: flex;
     justify-content: space-between;
@@ -2192,7 +2197,8 @@
     & .jfb-control::-webkit-calendar-picker-indicator,
     & input[type='checkbox']:not(.jfb-switch)::before,
     & .jfb-progress-steps > ol > li[data-jfb-done]::before,
-    & .jfb-choices-rating > .jfb-choice > label::before {
+    & .jfb-choices-rating > .jfb-choice > label::before,
+    & .jfb-choices-rating > .jfb-choice > [aria-invalid='true'] + label::before {
       forced-color-adjust: none;
       background: CanvasText;
     }

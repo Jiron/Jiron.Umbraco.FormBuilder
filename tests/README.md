@@ -1047,6 +1047,11 @@ stylesheets from the host, `jfb:ready` and `jfb:rendered`, the honeypot clipped 
 accessibility tree, a rule showing a field, Next refusing the empty page with its errors and the summary focused and
 the page where it was, no console error and axe clean; and the same page on an origin the API does not allow showing
 nothing, with `jfb:error` and the console saying why (`e2e/support/static-site.test.ts` holds the page it serves);
+`e2e/specs/website/focus-and-landing.spec.ts` (6.8d) shows, in the default and `bootstrap5` themes, light and dark,
+each control a theme draws focused with a solid outline of 3:1 or more, every kind of control keeping an outline in
+forced colours, a refused scale and rating drawn in the error's colour until answered, and an error summary's link
+landing with the label below a sticky header, with JavaScript and without, on a desktop and a phone, a site's taller
+header with its own margin and a focused summary too;
 and `e2e/specs/website/strict-site.spec.ts` starts the demo as a second host on 5525, with the
 output cache on and the Testing project's strict policy (ADR-0121), shows that an inline script the page did not
 bring is refused and counted, runs the room hire form (the calculation language) from a page the cache serves and the

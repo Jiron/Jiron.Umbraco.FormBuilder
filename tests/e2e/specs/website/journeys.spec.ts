@@ -126,6 +126,8 @@ async function toSummary(page: Page): Promise<Locator> {
     privacy: true,
   });
   await choose(form, 'room', 'reading');
+  await choose(form, 'rating', '4');
+  await choose(form, 'recommend', '8');
   await form.locator('[name="contact.first"]').fill('Mira');
   await form.locator('[name="contact.last"]').fill('Okafor');
   await press(form, 'next');

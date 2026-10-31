@@ -28,7 +28,9 @@
 .jfb-form:where(.jfb-theme-bootstrap5) {
   --_star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z'/%3E%3C/svg%3E");
   --_star-full: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z'/%3E%3C/svg%3E");
-  --_ring: 0 0 0 var(--bs-focus-ring-width, 0.25rem) var(--bs-focus-ring-color, rgb(13 110 253 / 0.25));
+  /* Bootstrap's focus shadow is about 1.4:1 and forced colours drop it; what this theme draws takes an outline in the
+     emphasis colour Bootstrap derives from the site's primary, for each colour mode (6.8d). */
+  --_ring: 2px solid var(--bs-primary-text-emphasis, currentcolor);
   --_cols: 1;
 
   container: jfb-form / inline-size;
@@ -275,13 +277,8 @@
   }
 
   & .jfb-choices-cards > .jfb-choice:has(> :focus-visible) {
-    box-shadow: var(--_ring);
-  }
-
-  & .jfb-choices-cards > .jfb-choice:has(> :checked:focus-visible) {
-    box-shadow:
-      inset 0 0 0 var(--bs-border-width) var(--bs-primary),
-      var(--_ring);
+    outline: var(--_ring);
+    outline-offset: 2px;
   }
 
   & .jfb-choices-cards > .jfb-choice:has(> :disabled) {
@@ -339,8 +336,7 @@
     border-radius: var(--bs-border-radius);
     transition:
       color 0.15s ease-in-out,
-      background-color 0.15s ease-in-out,
-      box-shadow 0.15s ease-in-out;
+      background-color 0.15s ease-in-out;
   }
 
   & .jfb-choices-scale > .jfb-choice > label {
@@ -390,7 +386,8 @@
   }
 
   & :is(.jfb-choices-buttons, .jfb-choices-scale, .jfb-choices-rating) > .jfb-choice > :focus-visible + label {
-    box-shadow: var(--_ring);
+    outline: var(--_ring);
+    outline-offset: 2px;
   }
 
   & :is(.jfb-choices-buttons, .jfb-choices-scale, .jfb-choices-rating) > .jfb-choice > :disabled + label {
@@ -592,12 +589,18 @@
     --bs-btn-disabled-color: var(--bs-secondary-color);
     --bs-btn-disabled-bg: transparent;
     --bs-btn-disabled-border-color: transparent;
+    --bs-btn-focus-box-shadow: none;
 
     display: inline-grid;
     place-items: center;
     min-inline-size: 2.75rem;
     min-block-size: 2.75rem;
     padding: 0;
+  }
+
+  & .jfb-button-icon:focus-visible {
+    outline: var(--_ring);
+    outline-offset: 2px;
   }
 
   & .jfb-button-icon[aria-disabled='true'] {
@@ -807,10 +810,21 @@
     }
   }
 
-  /* Forced colours (Windows contrast themes): the stars take the system's colours. */
+  /* Forced colours (Windows contrast themes): the stars take the system's colours, and Bootstrap's own controls, whose
+     focus is a shadow the system drops, an outline. */
 
   @media (forced-colors: active) {
-    & .jfb-choices-rating > .jfb-choice > label::before {
+    & :is(.form-control, .form-select, .form-check-input, .form-range, .btn):focus-visible {
+      outline: 2px solid Highlight;
+      outline-offset: 2px;
+    }
+
+    & .jfb-choices-cards > .jfb-choice > input:focus-visible {
+      outline: 0;
+    }
+
+    & .jfb-choices-rating > .jfb-choice > label::before,
+    & .jfb-choices-rating > .jfb-choice > [aria-invalid='true'] + label::before {
       forced-color-adjust: none;
       background: CanvasText;
     }

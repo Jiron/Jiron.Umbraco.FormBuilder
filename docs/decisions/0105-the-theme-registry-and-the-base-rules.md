@@ -10,7 +10,7 @@
   6.3b; the base rules extended by [ADR-0107](0107-markup-that-reads-without-a-theme.md) in 6.3c (a scale along a
   line, a grid's column heads, a ranking's arrows and places); `bootstrap5`'s class map changed and its stylesheet
   built by [ADR-0108](0108-the-bootstrap5-theme.md) in 6.3d
-- Date: 2026-10-29
+- Date: 2026-10-29; amended 2026-10-31 (6.8d: the scroll margin of fields, labels, legends and controls; the step that reads `Tokens` and `DarkScheme`)
 - Roadmap step: 6.3a (decided and built); 6.3b gives `default` its stylesheet and tokens, 6.3c `unstyled` its review
   and the markup that reads without a theme, 6.3d `bootstrap5` its stylesheet, 6.6 the headless element's base rules,
   6.7 the form picker's placement, 12.2 the library themes, 12.4a the General setting's screen
@@ -108,8 +108,11 @@ Option 2, option 2 and option 3.
 - **The functional base rules** (`/jfb/assets/themes/base.css`), every rule under `.jfb-form`, written for every form
   whatever its theme: `[hidden]` honoured; visually hidden text; the live region heard and not seen; the honeypot out
   of view (`aria-hidden` in the markup keeps it out of the accessibility tree, ADR-0012); a block-start scroll margin
-  on `.jfb-row`, `.jfb-repeater` and `.jfb-ranking > li`, where a press without JavaScript lands (ADR-0101), of
-  `--jfb-scroll-margin` (6rem unless a site with a taller sticky header sets more); and a form's fieldsets free to
+  of `--jfb-scroll-margin` (6rem unless a site with a taller sticky header sets more) on `.jfb-row`, `.jfb-repeater`
+  and `.jfb-ranking > li`, where a press without JavaScript lands (ADR-0101), and on fields, labels, legends, the error
+  summary and notices, where a link or the focus brings them into view (6.8d); controls keep 4rem more, for their label
+  and a line of help, and a picture's choice 67cqi more again for its picture, as a link without JavaScript lands on
+  the control; and a form's fieldsets free to
   shrink below their widest control, with every control, a select among them, held to its field's width, so no
   control widens a phone's page.
 - **Assets on a page** (each tag with the nonce, as ADR-0092 says):
@@ -155,5 +158,10 @@ Option 2, option 2 and option 3.
 - The themes package of the client (`packages/themes`) builds the stylesheets into `WebsiteAssets/themes/`, minified
   with Lightning CSS for the browsers the themes are written for, so logical properties stay as written; the size
   check holds each to the theme budget (10 KB gzip) and fails when they were not built.
+- **`Tokens` and `DarkScheme` wait for step 12.2's theme editor** (6.8d). The phase review found that no product code
+  reads them: only the registry's tests do, and the stylesheets carry the same defaults themselves. They describe what
+  a theme based on this one may set, so their reader is the editor of such themes: 12.2 lists a base theme's `Tokens`
+  with their defaults and offers dark colours only for a theme whose `DarkScheme` is true, and its step says so. They
+  stay on the public interface until then, since a site's own theme already has to declare them.
 - **Revisit** if a theme needs markup the class map cannot reach in more than a few views (ADR-0015), or if browsers
   make `@scope` reliable enough to scope the base rules without the `.jfb-form` prefix.

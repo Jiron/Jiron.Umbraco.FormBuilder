@@ -126,7 +126,7 @@ Three steps around the site's own size, so the scale follows the site. What the 
 | `--jfb-motion-fast` | `120ms` | a button sinking when pressed, colour changes on hover and choice |
 | `--jfb-motion-base` | `200ms` | an error, a new repeater row or a new page coming in |
 | `--jfb-motion-ease` | `cubic-bezier(.23, 1, .32, 1)` | every movement (colour changes use `ease`) |
-| `--jfb-scroll-margin` | `6rem` | the room above a row added, the group a row left and an option's new place, where a press without JavaScript lands; a site with a taller sticky header sets more. The base rules read it, so every theme has it, `unstyled` included (ADR-0105) |
+| `--jfb-scroll-margin` | `6rem` | the room above a row added, the group a row left, an option's new place, a field, label, legend or summary that a link or the focus brings into view; a control keeps 4rem more for its label and a line of help, and a picture's choice room for its picture too, as a link without JavaScript lands on the control; a site with a taller sticky header sets more. The base rules read it, so every theme has it, `unstyled` included (ADR-0105) |
 
 Targets are at least 44 by 44 px (§4.13): every button, choice label and standalone link. This is a floor, not a
 token. With `prefers-reduced-motion: reduce`, nothing travels: the theme's private distances (`--_rise` 4 px,

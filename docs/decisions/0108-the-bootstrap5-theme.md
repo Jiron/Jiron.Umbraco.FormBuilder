@@ -4,7 +4,7 @@
   [ADR-0105](0105-the-theme-registry-and-the-base-rules.md)'s registry, scoped as
   [ADR-0106](0106-the-default-theme-ships.md) scopes the default theme; changes its class map (a plain button, the
   outcome) and adds a theme-only class accessor for the file input
-- Date: 2026-10-30
+- Date: 2026-10-30; amended 2026-10-31 (6.8d: the focus of what the theme draws)
 - Roadmap step: 6.3d (decided and built); 6.4 enhances the controls with the runtime, 12.2 builds the library themes
 
 ## Context
@@ -64,8 +64,14 @@ And Bootstrap had to reach the demo and the tests without being shipped.
   as ADR-0107 asks); a grid's columns with their heads, stacked on a phone; a ranking as a bordered list whose move
   buttons are quiet through Bootstrap's own `--bs-btn-*` variables; a repeatable group's rows as bordered panels; the
   progress steps and bar; the error summary, notices and the outcome as Bootstrap's alerts with a form-sized heading,
-  a send that failed and a pending outcome through Bootstrap's alert variables. Transitions only colour and ring, and
-  stop when the visitor asks for less motion; in forced colours the stars and the chosen buttons take the system's.
+  a send that failed and a pending outcome through Bootstrap's alert variables. Transitions only colour, and stop when
+  the visitor asks for less motion; in forced colours the stars and the chosen buttons take the system's.
+- **The focus of what the theme draws** (6.8d): a rating, a scale, yes or no as buttons, a choice card and a ranking's
+  move show a 2 px outline in `--bs-primary-text-emphasis`, 2 px outside. Bootstrap's own focus shadow is about 1.4:1
+  and forced colours drop it; the emphasis colour is the one Bootstrap derives from the site's primary for each colour
+  mode, 13:1 on its light ground and 6:1 on its dark one with Bootstrap's defaults, so it follows the site where
+  `--bs-primary` itself might not hold 3:1. A focus never animates. Bootstrap's own controls keep their shadow, and in
+  forced colours take an outline in `Highlight`.
   It weighs 3.8 KB gzip of its 10 KB budget, Lucide's ISC notice included, and `Bootstrap5Theme.Stylesheet` names it.
 - **No tokens and no dark scheme of its own:** Bootstrap's colour modes (`data-bs-theme`) are the scheme.
 - **The class map:** a plain button is `btn btn-secondary`, which holds its contrast in both of Bootstrap's modes;
