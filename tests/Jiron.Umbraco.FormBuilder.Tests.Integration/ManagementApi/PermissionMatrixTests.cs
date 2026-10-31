@@ -51,6 +51,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["PUT form/{key}/versions/{number}/pin"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["PUT form/{key}/versions/{number}/comment"] = (FormBuilderPermissions.Design, FormBuilderAccessResourceKind.Form, "key"),
         ["GET field-type"] = (FormBuilderPermissions.None, FormBuilderAccessResourceKind.Global, null),
+        ["POST setup/form-block"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
     };
 
     /// <summary>The reviewed exception list: endpoints without a declaration. Only the form picker (6.7) may join it.</summary>

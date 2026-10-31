@@ -165,6 +165,23 @@ public sealed class FormBuilderAccessFilterTests
     }
 
     [Test]
+    public async Task AnUmbracoSection_IsCheckedAfterThePermissions_AndARefusalNamesIt()
+    {
+        FormBuilderAccessAttribute[] declaration = [new FormBuilderPermissionAttribute(FormBuilderPermissions.ManageSettings) { UmbracoSection = "settings" }];
+        var without = await RunAsync(declaration, [], user: User(Section));
+        var with = await RunAsync(declaration, [], user: User(Section, "Settings"));
+        Deny(FormBuilderPolicies.ManageSettings, FormBuilderDenialKind.MissingPermission, FormBuilderPermissions.ManageSettings);
+        var neither = await RunAsync(declaration, [], user: User(Section));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((without.Outcome, without.Section, without.NextRan), Is.EqualTo(("403 forbidden", "settings", false)));
+            Assert.That(with.NextRan, Is.True, "in any letter case");
+            Assert.That((neither.Outcome, neither.Permission, neither.Section), Is.EqualTo(("403 forbidden", "manageSettings", (string?)null)), "the permission first");
+        });
+    }
+
+    [Test]
     public async Task ASectionDeclaration_AsksWhatTheUserSees_OnlyWhenItNamesAFolderOrForm()
     {
         var global = await RunAsync([new FormBuilderSectionAttribute()]);
@@ -321,6 +338,8 @@ public sealed class FormBuilderAccessFilterTests
         public string Outcome => Result is FormBuilderProblemResult problem ? $"{problem.StatusCode} {problem.Problem.Extensions["code"]}" : NextRan ? "ran" : $"{Result}";
 
         public string? Permission => (Result as FormBuilderProblemResult)?.Problem.Extensions.TryGetValue("permission", out var name) == true ? (string?)name : null;
+
+        public string? Section => (Result as FormBuilderProblemResult)?.Problem.Extensions.TryGetValue("section", out var name) == true ? (string?)name : null;
     }
 
     private sealed class Migrations : IFormBuilderMigrationState
