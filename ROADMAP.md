@@ -2311,8 +2311,30 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a picker value whose keys are written in another format than the hyphenated one renders on the site but shows as not available in the backoffice and can be picked twice: the backoffice reads every format the server reads, and writes the hyphenated one;
     - the settings take more allowed forms than the picker's queries can carry (1,000), after which every call of that picker fails: the settings refuse more, folders and forms alike.
   - Done when: integration tests pass for each: a picker property removed from a document type, and a data type changed into the picker, leave "used on" right after the rebuild; a save between the rebuild's read and its write keeps the save's rows, and a rebuild asked for meanwhile still runs; a group with a grant on a form only gets that form's restricted folder from `picker/folders`; 1,001 allowed forms are refused; and Vitest shows a value in another key format named and marked chosen.
-- [ ] **6.8g Phase review** (6.8 split in five, WORKLOG 2026-10-31; 6.8e until 6.8c split in three, WORKLOG 2026-10-31)
-  - A second reading of 6.8a to 6.8f's fixes, a reader per fix step, fixing what it finds.
+- [ ] **6.8g The second reading's fixes to the post, the runtime and the rebuild** (C# and TypeScript (6.8g split in three, WORKLOG 2026-10-31))
+  - **What the second reading found:**
+    - a signed-in member's own post without JavaScript is refused on a page with `Referrer-Policy: no-referrer`, which posts with the origin "null": it counts as the site's own only when the browser also says `Sec-Fetch-Site: same-origin`;
+    - the live region stays silent for the first answer's result when the runtime's chunk comes after that answer, and it says results on pages the visitor cannot reach;
+    - a grid's marks stay on rows no longer in error when its error moves, and a kept server error of one row spreads to every row on a refused send;
+    - one document that cannot be read stops the rebuild for good: it is logged and passed by;
+    - in a cluster, a walk straight after a type's change can write from a server's old copies, which nothing repairs: the job holds a new request for one run;
+    - a deleted language takes its values without a notification for the content: it asks for a rebuild;
+    - the backoffice's key formats are narrower than .NET's: one fixture holds both sides to one list;
+    - the rebuild's locking read and a data type's editor changed through Umbraco's own endpoint have no test.
+  - The runtime stays within its budget, so these fixes make room for what they add (ADR-0119).
+  - Done when: Vitest and integration tests pass for each, a tamper of each fix fails its test, and the runtime's size check passes.
+- [ ] **6.8h The second reading's fixes to the themes and the pass** (CSS and Playwright (6.8g split in three, WORKLOG 2026-10-31))
+  - **What the second reading found in the themes:**
+    - a picture choice's scroll margin can put the focused control below the window: the margin never leaves less than the control's own room in view;
+    - the form itself has no scroll margin, so a post's landing puts its summary, title or outcome under a sticky header;
+    - a refused rating stays in the error's colour after a star is chosen without JavaScript;
+    - `bootstrap5`'s own controls show focus only as Bootstrap's shadow of about 1.4:1: they take the theme's outline too.
+  - **What it found in the pass, which claims more than it checks:** the invalid state of five refused controls is read from a tree that reports it anyway, so the markup is what is checked, and the refused name is checked too; the honeypot check cannot fail; one changed pixel counts as a focus, with no control that two unfocused shots match, and Back, a row's Remove and the summary's links are not walked; the reduced-motion recorder adds no row and toggles no switch; Enter on a form with a ranking runs with JavaScript only; a lined-up check can pass on two missing controls; and Tab, the keyboard, reduced motion and right to left run in the light scheme only, against 6.8e's "every theme and scheme". Where a kind of control is optional on the specimen, its required and invalid state is held in the rendering tests, and the review says which.
+  - **Design skills:** load `design-taste-frontend`, `impeccable` and `emil-design-eng` before changing the themes (ADR-0019, ADR-0020).
+  - Done when: the specs hold each of these in every theme and scheme, a tamper of each fails them, axe stays clean, and the themes are looked at in Edge.
+- [ ] **6.8i Phase review** (6.8g split in three, WORKLOG 2026-10-31; 6.8 split in five, WORKLOG 2026-10-31; 6.8e until 6.8c split in three, WORKLOG 2026-10-31)
+  - The second reading of 6.8a to 6.8f found what 6.8g and 6.8h fix; a reader of each of those two steps reads their fixes, and what it finds is fixed here.
+  - A second reading of 6.8a to 6.8f's fixes, a reader per fix step, fixing what it finds: done by 6.8g and 6.8h with the readers' reports in the WORKLOG.
   - **The wiring sweep's doc work:** the docs list `jfb:rendered`, `<jfb-form>`'s `content`, `theme`, `context-*` and `render()`, and `<jfb-render picked>` and `assets` wherever they list the element and the tag helper; `docs/architecture.md` says the rate-limit middleware comes with 7.1, and marks `EntrySubmitting`, `EntrySubmitted` and `IFormBuilderRenderer` as 15.1's; the element's console message names no registration that does not exist yet.
   - Write the handover note: the wiring sweep's inventory, and what waits for later steps (the general settings' screen in 12.4a, the references and setup endpoints' callers in 9.2 and 9.1, the public endpoints' callers in the blocked 6.4 steps, the rate limits in 7.1).
   - Retry every `[`]` step, and re-check `.private/`.
