@@ -46,21 +46,29 @@ internal sealed partial class FormReferenceRebuild(
 
     /// <summary>
     /// Holds a request just made back for one run of the job, so that a walk starts at least a run's period after it: long
-    /// enough for every server of a cluster to have heard of the type's change that asked. True when it held one.
+    /// enough for every server of a cluster to have heard of the type's change that asked. True when one stands, also if
+    /// another came as this one was held, which the next run holds in turn.
     /// </summary>
     /// <param name="cancellationToken">Cancels the write.</param>
-    public async Task<bool> HoldNewRequestAsync(CancellationToken cancellationToken = default) =>
-        await values.GetAsync(Key, cancellationToken) is { } value
-        && value.StartsWith($"{RequestReferenceRebuildV1.FromStart}-", StringComparison.Ordinal)
-        && await values.TryReplaceAsync(Key, value, RequestReferenceRebuildV1.FromStart, cancellationToken);
+    public async Task<bool> HoldNewRequestAsync(CancellationToken cancellationToken = default)
+    {
+        if (await values.GetAsync(Key, cancellationToken) is not { } value || !IsNewRequest(value))
+        {
+            return false;
+        }
+
+        await values.TryReplaceAsync(Key, value, RequestReferenceRebuildV1.FromStart, cancellationToken);
+        return true;
+    }
 
     /// <summary>Whether a rebuild was asked for and has not finished.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     public async Task<bool> IsDueAsync(CancellationToken cancellationToken = default) => await values.GetAsync(Key, cancellationToken) is not null;
 
     /// <summary>
-    /// Goes on with a requested rebuild, one batch after another, until it is done or <paramref name="deadline"/> has
-    /// passed. True when no rebuild is left to do.
+    /// Goes on with a requested rebuild, one batch after another, until it is done, <paramref name="deadline"/> has passed,
+    /// or a new request came during a batch, which <see cref="HoldNewRequestAsync"/> holds before its walk. True when no
+    /// rebuild is left to do.
     /// </summary>
     /// <param name="deadline">When to stop after the current batch.</param>
     /// <param name="cancellationToken">Cancels the walk between writes.</param>
@@ -73,7 +81,7 @@ internal sealed partial class FormReferenceRebuild(
                 var removed = await references.DeleteOrphansAsync(cancellationToken);
                 if (!await values.TryDeleteAsync(Key, next, cancellationToken))
                 {
-                    continue;
+                    return false;
                 }
 
                 LogDone(logger, removed);
@@ -92,12 +100,19 @@ internal sealed partial class FormReferenceRebuild(
                 cancellationToken.ThrowIfCancellationRequested();
                 if (versions.TryGetValue(content.Id, out var version) && version.Id == content.VersionId)
                 {
-                    await IndexAsync(content, version, cancellationToken);
+                    if (Read(content) is { } rows)
+                    {
+                        await references.ReplaceUnchangedContentAsync(content.Id, version, content.Key, rows, cancellationToken);
+                    }
                 }
             }
 
-            // A request made during the batch stands, and the next round starts from it.
-            await values.TryReplaceAsync(Key, next, batch.Count == 0 ? OrphansNext : batch[^1].ToString(CultureInfo.InvariantCulture), cancellationToken);
+            // A request made during the batch stands, and is held before its walk starts.
+            if (!await values.TryReplaceAsync(Key, next, batch.Count == 0 ? OrphansNext : batch[^1].ToString(CultureInfo.InvariantCulture), cancellationToken))
+            {
+                return false;
+            }
+
             if (timeProvider.GetUtcNow() >= deadline)
             {
                 return false;
@@ -107,20 +122,20 @@ internal sealed partial class FormReferenceRebuild(
         return true;
     }
 
-    // A document that cannot be read keeps its rows and the walk goes on: stopping here would stop every document after it.
-    private async Task IndexAsync(IContent content, DocumentVersion version, CancellationToken cancellationToken)
+    private static bool IsNewRequest(string value) => value.StartsWith($"{RequestReferenceRebuildV1.FromStart}-", StringComparison.Ordinal);
+
+    // A document whose rows cannot be worked out keeps those it has and the walk goes on: stopping here would stop every
+    // document after it. A write that fails is another thing, and the whole batch runs again next time.
+    private IReadOnlyList<ContentFormReference>? Read(IContent content)
     {
         try
         {
-            await index.IndexUnchangedAsync(content, version, cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
+            return index.Of(content);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             LogDocumentFailed(logger, content.Key, exception);
+            return null;
         }
     }
 

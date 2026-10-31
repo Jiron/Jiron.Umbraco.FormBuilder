@@ -228,7 +228,7 @@ public sealed class FormReferencesTests
         Walk((0, [3, 7]), (7, []));
         var bad = Content(3);
         var broken = new InvalidOperationException("JFB_TEST: a value its editor cannot read");
-        _references.ReplaceUnchangedContentAsync(3, Arg.Any<DocumentVersion>(), Arg.Any<Guid>(), Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>()).ThrowsAsync(broken);
+        bad.Properties.Returns(_ => throw broken);
         var next = Content(7);
         _contents.GetByIds(Arg.Any<IEnumerable<int>>()).Returns([bad, next]);
         await _values.SetAsync(RequestReferenceRebuildV1.RebuildKey, "0");
@@ -239,6 +239,77 @@ public sealed class FormReferencesTests
         Assert.That(done, Is.True);
         await _references.Received(1).ReplaceUnchangedContentAsync(7, Version(7), next.Key, Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>());
         Assert.That(logger.Entries.Where(entry => entry.Level >= LogLevel.Warning).Select(entry => (entry.Level, entry.Exception)), Is.EqualTo(new[] { (LogLevel.Warning, (Exception?)broken) }));
+    }
+
+    [Test]
+    public async Task AWriteThatFails_StopsTheWalk_AndTheBatchRunsAgainNextTime()
+    {
+        Walk((0, [3]), (3, []));
+        var page = Content(3);
+        _contents.GetByIds(Arg.Any<IEnumerable<int>>()).Returns([page]);
+        await _values.SetAsync(RequestReferenceRebuildV1.RebuildKey, "0");
+        var broken = new InvalidOperationException("JFB_TEST: the database is gone");
+        _references.ReplaceUnchangedContentAsync(Arg.Any<int>(), Arg.Any<DocumentVersion>(), Arg.Any<Guid>(), Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>()).ThrowsAsync(broken);
+
+        Assert.ThrowsAsync<InvalidOperationException>(() => Rebuild().ContinueAsync(DateTimeOffset.MaxValue));
+        Assert.That(await _values.GetAsync(RequestReferenceRebuildV1.RebuildKey), Is.EqualTo("0"), "the place did not move on");
+    }
+
+    [Test]
+    public async Task ARequestMadeDuringABatch_EndsTheRun_AndTheNextRunHoldsItBeforeItsWalk()
+    {
+        Walk((0, []));
+        var rebuild = Rebuild();
+        await _values.SetAsync(RequestReferenceRebuildV1.RebuildKey, "0");
+
+        // One request only: a run that goes on anyway then fails here, where one on every read would never end.
+        var asked = false;
+        _references.VersionsOfAsync(Arg.Any<IReadOnlyCollection<int>>(), Arg.Any<CancellationToken>())
+            .Returns(async _ =>
+            {
+                if (!asked)
+                {
+                    asked = true;
+                    await rebuild.RequestAsync();
+                }
+
+                return (IReadOnlyDictionary<int, DocumentVersion>)new Dictionary<int, DocumentVersion>();
+            });
+        var job = Job(RuntimeLevel.Run, pending: false, new RecordingLogger<FormReferenceRebuildJob>());
+
+        await job.ExecuteAsync(CancellationToken.None);
+
+        await _references.Received(1).DocumentsAfterAsync(0, FormReferenceRebuild.BatchSize, Arg.Any<CancellationToken>());
+        Assert.That(await _values.GetAsync(RequestReferenceRebuildV1.RebuildKey), Does.StartWith("0-"), "no walk from the old copies in this run");
+        Assert.That(await rebuild.HoldNewRequestAsync(), Is.True);
+        Assert.That(await _values.GetAsync(RequestReferenceRebuildV1.RebuildKey), Is.EqualTo("0"));
+    }
+
+    [Test]
+    public async Task ARequestMadeWhileTheOrphansGo_EndsTheRun_AndTheNextRunHoldsItBeforeItsWalk()
+    {
+        Walk((0, []));
+        var rebuild = Rebuild();
+        await _values.SetAsync(RequestReferenceRebuildV1.RebuildKey, FormReferenceRebuild.OrphansNext);
+        var asked = false;
+        _references.DeleteOrphansAsync(Arg.Any<CancellationToken>())
+            .Returns(async _ =>
+            {
+                if (!asked)
+                {
+                    asked = true;
+                    await rebuild.RequestAsync();
+                }
+
+                return 0;
+            });
+        var job = Job(RuntimeLevel.Run, pending: false, new RecordingLogger<FormReferenceRebuildJob>());
+
+        await job.ExecuteAsync(CancellationToken.None);
+
+        await _references.DidNotReceive().DocumentsAfterAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+        Assert.That(await _values.GetAsync(RequestReferenceRebuildV1.RebuildKey), Does.StartWith("0-"), "the request stands, and no walk starts in this run");
+        Assert.That(await rebuild.HoldNewRequestAsync(), Is.True);
     }
 
     [Test]
@@ -256,6 +327,21 @@ public sealed class FormReferencesTests
         Assert.That(held, Is.EqualTo(RequestReferenceRebuildV1.FromStart));
         await _references.Received(1).DocumentsAfterAsync(0, FormReferenceRebuild.BatchSize, Arg.Any<CancellationToken>());
         Assert.That(await _values.GetAsync(RequestReferenceRebuildV1.RebuildKey), Is.Null, "walked, and done");
+    }
+
+    [Test]
+    public async Task ARequestThatComesAsAnotherIsHeld_StandsAndTheRunStaysAway()
+    {
+        Walk((0, []));
+        await Rebuild().RequestAsync();
+        var job = Job(RuntimeLevel.Run, pending: false, new RecordingLogger<FormReferenceRebuildJob>());
+        var other = $"{RequestReferenceRebuildV1.FromStart}-other";
+        _values.ArrivesBeforeTheNextReplace = other;
+
+        await job.ExecuteAsync(CancellationToken.None);
+
+        await _references.DidNotReceive().DocumentsAfterAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+        Assert.That(await _values.GetAsync(RequestReferenceRebuildV1.RebuildKey), Is.EqualTo(other));
     }
 
     [TestCase(RuntimeLevel.Install, false)]
@@ -343,6 +429,8 @@ public sealed class FormReferencesTests
 
         public List<string?> Written { get; } = [];
 
+        public string? ArrivesBeforeTheNextReplace { get; set; }
+
         public Task<string?> GetAsync(string key, CancellationToken cancellationToken = default) => Task.FromResult(_stored.GetValueOrDefault(key));
 
         public Task<IReadOnlyList<KeyValuePair<string, string?>>> ListAsync(string prefix, CancellationToken cancellationToken = default) =>
@@ -363,6 +451,12 @@ public sealed class FormReferencesTests
 
         public async Task<bool> TryReplaceAsync(string key, string expected, string? value, CancellationToken cancellationToken = default)
         {
+            if (ArrivesBeforeTheNextReplace is { } arrives)
+            {
+                ArrivesBeforeTheNextReplace = null;
+                _stored[key] = arrives;
+            }
+
             if (_stored.GetValueOrDefault(key) != expected)
             {
                 return false;

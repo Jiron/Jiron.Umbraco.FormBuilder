@@ -96,6 +96,26 @@
     "key": "000c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
   },
   {
+    "text": "+0xc2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": "000c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "7b0c2f4e-+0x2-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": "7b0c2f4e-0002-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "7b0c2f4e-1a2b-4c3d-8e9f-+0xb2c3d4e5f",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-000b2c3d4e5f"
+  },
+  {
+    "text": "+0x2f4e0-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": "0002f4e0-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "(+0xc2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f)",
+    "key": "000c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
     "text": "{7b0c2f4e1a2b4c3d8e9f0a1b2c3d4e5f}",
     "key": null
   },
@@ -137,6 +157,22 @@
   },
   {
     "text": "not a key",
+    "key": null
+  },
+  {
+    "text": "++b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": null
+  },
+  {
+    "text": "+0x+2f4e0-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": null
+  },
+  {
+    "text": "0x0xc2f40-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": null
+  },
+  {
+    "text": "+0x-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
     "key": null
   }
 ]

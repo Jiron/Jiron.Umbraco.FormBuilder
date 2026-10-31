@@ -78,16 +78,6 @@ internal sealed class FormReferenceIndex(DataValueReferenceFactoryCollection fac
     public Task<int> IndexAsync(IContentBase content, CancellationToken cancellationToken = default) =>
         references.ReplaceContentAsync(content.Key, Of(content), cancellationToken);
 
-    /// <summary>
-    /// Writes a document's rows anew from a copy, only while its current version is still the one read before the copy
-    /// was: the rebuild's write (ADR-0131). Null when the document has changed or gone, and nothing was written.
-    /// </summary>
-    /// <param name="content">The copy of the document.</param>
-    /// <param name="read">The version read before the copy.</param>
-    /// <param name="cancellationToken">Cancels the write.</param>
-    public Task<int?> IndexUnchangedAsync(IContentBase content, DocumentVersion read, CancellationToken cancellationToken = default) =>
-        references.ReplaceUnchangedContentAsync(content.Id, read, content.Key, Of(content), cancellationToken);
-
     /// <summary>Removes a deleted content item's rows.</summary>
     /// <param name="contentKey">The content item's key.</param>
     /// <param name="cancellationToken">Cancels the write.</param>

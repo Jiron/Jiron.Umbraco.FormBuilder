@@ -60,14 +60,16 @@ questions ADR-0017 left open:
   read takes, for one item's few statements; should it ever meet a save in a deadlock it is the unit that runs again.
   Rows alone could not tell, since a save that removes the last pick leaves none.
 - **One document cannot stop the walk** (6.8g): a document whose rows cannot be worked out, as after a data type got an
-  editor its values do not suit, is logged as a warning, keeps its rows and is passed by. A batch that cannot be read
-  at all is an error the next run meets again, as the whole site is then in trouble.
+  editor its values do not suit, is logged as a warning, keeps its rows and is passed by. A write that fails, or a batch
+  that cannot be read at all, stops the walk with an error and runs again next time (6.8i), as the rows would stay
+  stale with nothing left to repair them.
 - **The job holds a request just made for one run** (6.8g), turning its value into `0`, so a walk starts at least a
-  minute after a type's change. On another server of a cluster the copies still hold the old type's properties until
-  that server has heard of the change, with the same version, and no save would repair what the walk wrote from them.
+  minute after a type's change, however the request and the run fall. On another server of a cluster the copies still
+  hold the old type's properties until that server has heard of the change, with the same version, and no save would
+  repair what the walk wrote from them.
 - **The place moves on only from the value read** (6.8f): after a batch the value is replaced only if it is still the
   one read, and the request is removed only if it is still `orphans`; a value it cannot read starts the walk again. A
-  request made meanwhile stands, and the next round starts from it.
+  request made meanwhile stands and ends the run (6.8i), as its walk has to wait its turn below.
 - **The job** (`FormReferenceRebuildJob`, `Jiron.FormBuilder.References`): a distributed job every minute, so one
   server of a cluster walks at a time, within 8 seconds a run, only while Umbraco runs and no migration is pending.
   With nothing requested a run reads one row. A failure is logged as an error and the next run goes on.

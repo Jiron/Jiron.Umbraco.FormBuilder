@@ -541,11 +541,12 @@ public sealed class FormReferenceApiTests : ManagementApiTestBase
         };
 
         await rebuild.RequestAsync();
+        var firstRun = await rebuild.ContinueAsync(DateTimeOffset.MaxValue);
         var done = await rebuild.ContinueAsync(DateTimeOffset.MaxValue);
 
         Assert.Multiple(async () =>
         {
-            Assert.That((done, between.Writes), Is.EqualTo((true, 2)), "the page written twice: the walk ran again");
+            Assert.That((firstRun, done, between.Writes), Is.EqualTo((false, true, 2)), "the page written twice: the walk ran again");
             Assert.That(await References(form), Is.EqualTo(new[] { page.Key }));
             Assert.That(await rebuild.IsDueAsync(), Is.False);
         });
