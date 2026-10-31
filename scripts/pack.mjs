@@ -84,6 +84,39 @@ export function packProblems(files, version) {
   return problems;
 }
 
+/** What the main package must hold besides its marker: the schemas and the visitor form's types (ADR-0125). */
+export const SHIPPED_SCHEMAS = [
+  'schemas/jfb-form.v1.schema.json',
+  'schemas/jfb-form-export.v1.schema.json',
+  'schemas/jfb-public-form.v1.schema.json',
+  'schemas/jfb-public-form.v1.d.ts',
+];
+
+/**
+ * The names of the entries of a zip file, a package among them, from its central directory: the end record found
+ * from the end, then each entry's header in turn (no ZIP64, which no package of ours needs).
+ * @param {Buffer} zip
+ */
+export function zipEntries(zip) {
+  const end = zip.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+  if (end < 0) throw new Error('not a zip file: no end of central directory');
+  const count = zip.readUInt16LE(end + 10);
+  let at = zip.readUInt32LE(end + 16);
+  const names = [];
+  for (let i = 0; i < count; i++) {
+    if (zip.readUInt32LE(at) !== 0x02014b50) throw new Error('not a zip file: a broken central directory');
+    const nameLength = zip.readUInt16LE(at + 28);
+    names.push(zip.toString('utf8', at + 46, at + 46 + nameLength));
+    at += 46 + nameLength + zip.readUInt16LE(at + 30) + zip.readUInt16LE(at + 32);
+  }
+  return names;
+}
+
+/** What the main package lacks of the files it ships (ADR-0125). */
+export function contentProblems(entries) {
+  return SHIPPED_SCHEMAS.filter((name) => !entries.includes(name)).map((name) => `the main package lacks ${name}`);
+}
+
 function option(args, name) {
   const at = args.indexOf(name);
   return at >= 0 ? args[at + 1] : undefined;
@@ -125,6 +158,8 @@ function main() {
   run('dotnet', packArguments({ output: folder, version, build }), { cwd: root });
 
   const problems = packProblems(packageFiles(folder), version);
+  const main = join(folder, `${PACKAGE_IDS[0]}.${version}.nupkg`);
+  if (existsSync(main)) problems.push(...contentProblems(zipEntries(readFileSync(main))));
   for (const problem of problems) console.error(`pack: ${problem}`);
   if (problems.length > 0) process.exit(1);
   console.log(`pack: ${PACKAGE_IDS.length} packages of ${version} in ${output}`);

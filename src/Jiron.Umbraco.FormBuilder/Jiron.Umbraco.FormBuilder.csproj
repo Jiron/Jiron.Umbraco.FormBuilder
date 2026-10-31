@@ -25,6 +25,8 @@
   <ItemGroup>
     <!-- An empty lib folder marker, so NuGet knows the package targets net10.0 although it has no assembly. -->
     <None Include="_._" Pack="true" PackagePath="lib\$(TargetFramework)\" />
+    <!-- The definition's schemas and the visitor form's schema and TypeScript types, for headless sites (ADR-0125). -->
+    <None Include="..\..\schemas\*.json;..\..\schemas\*.d.ts" Pack="true" PackagePath="schemas\" Visible="false" />
   </ItemGroup>
 
 </Project>

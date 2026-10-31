@@ -5,7 +5,19 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { builtVersion, devVersion, PACKAGE_IDS, packageFiles, packArguments, packProblems, packVersion, SOLUTION_FILTER } from '../pack.mjs';
+import {
+  builtVersion,
+  contentProblems,
+  devVersion,
+  PACKAGE_IDS,
+  packageFiles,
+  packArguments,
+  packProblems,
+  packVersion,
+  SHIPPED_SCHEMAS,
+  SOLUTION_FILTER,
+  zipEntries,
+} from '../pack.mjs';
 
 const VERSION = '17.0.0-dev.202610231200';
 
@@ -74,5 +86,51 @@ describe('the packed files', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+/** A zip of empty entries with these names, as a package's central directory lists them. */
+function zipOf(names) {
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  for (const name of names) {
+    const bytes = Buffer.from(name, 'utf8');
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(bytes.length, 26);
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(bytes.length, 28);
+    central.writeUInt32LE(offset, 42);
+    locals.push(local, bytes);
+    centrals.push(central, bytes);
+    offset += local.length + bytes.length;
+  }
+  const directory = Buffer.concat(centrals);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(names.length, 8);
+  end.writeUInt16LE(names.length, 10);
+  end.writeUInt32LE(directory.length, 12);
+  end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, directory, end]);
+}
+
+describe("the main package's contents (ADR-0125)", () => {
+  test('lists the entries of a zip by its central directory', () => {
+    assert.deepEqual(zipEntries(zipOf(['lib/net10.0/_._', 'schemas/jfb-public-form.v1.d.ts'])), [
+      'lib/net10.0/_._',
+      'schemas/jfb-public-form.v1.d.ts',
+    ]);
+    assert.throws(() => zipEntries(Buffer.from('not a zip')), /no end of central directory/);
+  });
+
+  test("ships the schemas and the visitor form's types, and names what is missing", () => {
+    assert.deepEqual(contentProblems(['lib/net10.0/_._', ...SHIPPED_SCHEMAS]), []);
+    assert.deepEqual(contentProblems(['lib/net10.0/_._', ...SHIPPED_SCHEMAS.filter((name) => !name.endsWith('.d.ts'))]), [
+      'the main package lacks schemas/jfb-public-form.v1.d.ts',
+    ]);
+    assert.ok(SHIPPED_SCHEMAS.includes('schemas/jfb-public-form.v1.schema.json'));
   });
 });
