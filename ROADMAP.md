@@ -2170,8 +2170,9 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [~] **6.4m Uploads** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; one letter on again as 6.4k split in two, WORKLOG 2026-10-30)
   - **Blocked (2026-10-30):** uploads add to the website runtime past section 4.12's budget, which only the owner can change, and an upload is sent with the entry that 6.4i sends, which waits with it (ADR-0120, `docs/OWNER-TODO.md`).
   - **Uploads with progress,** loaded on demand: against `uploads`, the challenge part first; size and type are checked in the browser before sending, with signature test vectors shared with the server; a reset during an upload is a failed upload the visitor can retry (ADR-0006). The upload's own controls follow 2.4's design (`data-jfb-enhanced`, "Choose files", "Take a photo" on touch screens, a file dragged over, each file's progress and state).
+  - **The file field's `thumbnails` and `camera` settings** (added in 6.8i by the Phase 6 wiring sweep): nothing reads them yet. `FileControlModel` and the markup carry both; an image shows its thumbnail only with `thumbnails` on, and "Take a photo" shows only with `camera` on.
   - **Design skills:** load the three skills before building the upload's controls (ADR-0019, ADR-0020).
-  - Done when: Vitest passes the signature vectors, which NUnit passes against the server's checks too; Playwright shows an oversize file and a renamed `.exe` refused before any upload request is sent, an upload cut off by the server reported as a failed upload with a retry, and a file uploaded with its progress and sent with the entry; axe is clean; the size check passes with every chunk.
+  - Done when: Vitest passes the signature vectors, which NUnit passes against the server's checks too; Playwright shows an oversize file and a renamed `.exe` refused before any upload request is sent, an upload cut off by the server reported as a failed upload with a retry, a file uploaded with its progress and sent with the entry, and each of `thumbnails` and `camera` changing what shows when turned off; axe is clean; the size check passes with every chunk.
 - [~] **6.4n The signature pad** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; one letter on again as 6.4k split in two, WORKLOG 2026-10-30)
   - **Blocked (2026-10-30):** the pad adds to the website runtime past section 4.12's budget, which only the owner can change, and each signature is sent through 6.4i's sending, which waits with it (ADR-0120, `docs/OWNER-TODO.md`).
   - **The signature pad,** loaded on demand, with the typed alternative, whose PNG carries the name typed in its `jfb:typed-name` text chunk as the server's does (ADR-0103, added in 6.2k); drawn by pointer, touch and pen, cleared and drawn again.
@@ -2183,8 +2184,9 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Loaded on demand:** the repeater (rows added and removed in place, their names and ids as the server's, the focus kept), character counters, choice cards and the "Other" input.
   - **A cascading field's options** (ADR-0085, ADR-0086): asked of the `options` endpoint when its parent's answer changes, with the page's content key, which the markup then carries; an answer no longer offered is cleared (added in the split of 6.4a).
   - The ranking field's move buttons with live announcements, and the grid's stacked layout on phones.
+  - **A text area's `autoGrow` setting** (added in 6.8i by the Phase 6 wiring sweep): `TextAreaControlModel` carries it and nothing reads it. A text area with it on grows with its text, and one with it off keeps its rows.
   - **Design skills:** load the three skills before building these behaviours (ADR-0019, ADR-0020).
-  - Done when: Playwright on the demo covers every field type's interaction that 6.4b to 6.4n did not (the repeater's rows at their limits, a counter past its limit, a card chosen, "Other" with its text, a ranking moved by its buttons with the announcement, the grid answered on a phone, a cascading field's options following its parent), each sent and stored as the server reads it; axe is clean; the size check passes with every chunk.
+  - Done when: Playwright on the demo covers every field type's interaction that 6.4b to 6.4n did not (the repeater's rows at their limits, a counter past its limit, a card chosen, "Other" with its text, a text area growing with `autoGrow` on and keeping its rows with it off, a ranking moved by its buttons with the announcement, the grid answered on a phone, a cascading field's options following its parent), each sent and stored as the server reads it; axe is clean; the size check passes with every chunk.
 - [~] **6.4p The kitchen sink by keyboard, and the runtime's review** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30; one letter on again as 6.4k split in two, WORKLOG 2026-10-30)
   - **Blocked (2026-10-30):** it reviews the states that 6.4i, 6.4j and 6.4l to 6.4o add, all waiting for section 4.12's budget, which only the owner can change (ADR-0120, `docs/OWNER-TODO.md`).
   - **The review:** the three skills review the runtime's states on the demo (errors, busy, the notices, the redirect, `form_changed`, uploads, the signature, rows and moves) at 375 and 1440 px, light, dark and right to left, in `docs/ux/review-6.4.md` with a section per skill (ADR-0019, ADR-0020).
@@ -2396,6 +2398,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Imported actions** (added in 4.5c, ADR-0046): a type says which site configuration it needs (such as a Slack address); an import switches off an action whose configuration this site lacks and adds a note with its path.
   - **The pause switch** (§4.4): while `JironFormBuilder:Actions:Paused` is on, the processor claims nothing, and the kick does nothing.
   - **Values kept only until the actions have run** (§4.4): deleted, with the entry event, once no trigger can still fire for the entry and every run is final.
+  - **A form that stores no entries** (added in 6.8i by the Phase 6 wiring sweep): `settings.submission.store: never` (§4.3, ADR-0002) has only its save check so far, and `SubmissionEntries` stores every entry. The whole entry goes the same way as those values, its files too, and at once for a form with no action that can fire.
   - **The retry API,** which refuses to retry an `Uncertain` run without an explicit confirmation (§4.4).
   - **Test runs:**
     - email goes to the current user only;
@@ -2497,6 +2500,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - Playwright shows that each role sees exactly its menus, including that the privacy officer sees Privacy's People and Retention without Data collection;
     - a confirm that names a form called `<img src=x onerror=alert(1)>` shows that text literally (Playwright);
     - each checklist detector has unit tests (the full green run on the demo is checked in 12.6, once every linked screen exists);
+    - Playwright presses the checklist's button for the form block, which calls `setup/form-block`, and its item turns green (added in 6.8i by the Phase 6 wiring sweep);
     - an integration test shows the pending-migrations health check failing while the plan is behind and passing once it has run (ADR-0033);
     - an integration test runs the "used on" health check's action and finds a rebuild requested from the first document, which the reference job then finishes (added in 6.7c, ADR-0131);
     - a test reads the section's manifest and finds the pathname `BackofficeLinks.SectionPathname`, and unit tests show the base-URL health check warning for a site with no setting, no `https` domain and no application URL, naming the site, and passing for a site with any of them (added in 5.3e);
@@ -2508,9 +2512,9 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - rename, move;
     - duplicate (with or without actions; for a restricted form the dialog says that the copy takes its folder's access instead, ADR-0046), copy actions to another form (the result lists the references it could not map, each with a link to fix it);
     - import as a new copy (the result shows the import's notes: a theme or option list the site lacks), export JSON (12.5 adds "replace" and the mirror).
-  - **Trash:** trash, restore, empty trash. The delete confirmation names the pages that use the form (6.7c).
+  - **Trash:** trash, restore, empty trash. The confirmations of trash and of delete name the pages that use the form, from `referenced-by` (6.7c, added in 6.8i by the Phase 6 wiring sweep).
   - **Search:** forms by name and alias, and fields across all forms by label or alias (from the field catalogue, §4.5).
-  - Done when: Playwright journeys for each action pass, including finding a form by one of its field labels, the Duplicate dialog of a restricted form saying what the copy's access will be, and an import whose notes are shown, and the client stores have unit tests.
+  - Done when: Playwright journeys for each action pass, including finding a form by one of its field labels, a form used on a page named by both confirmations, the Duplicate dialog of a restricted form saying what the copy's access will be, and an import whose notes are shown, and the client stores have unit tests.
 - [ ] **9.3a The designer: workspace and editor model**
   - **The workspace:** the form workspace with the views Design, Settings, Actions, Entries, Insights and History (views without content yet show a short "coming with …" empty state, replaced by their steps). The name and status are in the header; Save draft and Publish in the footer.
   - **The editor model** is pure TypeScript with unit tests (the Ligata.Forms lesson, §3.1):
@@ -2751,11 +2755,12 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
 
 - [ ] **13.1 Retention**
   - **Rules:** days per state per form, with global defaults. `PurgeAfterUtc` is computed on every state change.
+  - **A form that keeps entries for a number of days** (added in 6.8i by the Phase 6 wiring sweep): `settings.submission.store: days` with `storeDays` (§4.3, ADR-0002) has only its save check so far. It caps what the rules above give an entry of that form, in every state.
   - **A legal hold:** an entry can be kept with a reason and an end date.
   - **The job** deletes in batches, files and emails included, and offers a dry-run preview (counts per form). Everything is audited.
     - **What a dead process leaves in the file store** (ADR-0041): the job also deletes `.partial` files, `.deleted-` files and stored files that no `jfbEntryFile` row names, once they are a day old.
   - **The screens:** the retention settings (global and per form) with the dry run, now that the engine exists.
-  - Done when: tests with fake time pass, including holds, and Playwright changes a retention setting and sees the dry run follow it. A test leaves a partial file, a deleted file's bytes and a stored file without a row, each older than a day, next to younger ones, and the job deletes exactly the three old ones.
+  - Done when: tests with fake time pass, including holds and a form's `storeDays` shorter and longer than its states' days, and Playwright changes a retention setting and sees the dry run follow it. A test leaves a partial file, a deleted file's bytes and a stored file without a row, each older than a day, next to younger ones, and the job deletes exactly the three old ones.
 - [ ] **13.2 Data subject tools**
   - **Find:** by email (email-type fields and member email) or by member, across all forms.
   - **Export:** everything as a ZIP (JSON per entry, files, consent texts).
