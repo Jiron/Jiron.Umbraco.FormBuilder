@@ -132,12 +132,19 @@ async function holdsFocusShown(page: Page, what: string, selector: string): Prom
   await page.keyboard.press('Shift+Tab');
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await control.scrollIntoViewIfNeeded();
-  const before = await shot(region);
-  // A picture's edge can differ by a pixel or two between shots, far below a ring.
-  expect(
-    await changedPixels(page, before, await shot(region)),
-    `${what}: two shots without the focus are alike`,
-  ).toBeLessThan(RING / 10);
+  // Under load two repaints can differ by one colour level on a rounded edge, a few pixels at a time, so the shot the
+  // focus is measured against is one that has settled. All of that is far below a ring; what keeps changing still fails.
+  let before = await shot(region);
+  await expect
+    .poll(
+      async () => {
+        const earlier = before;
+        before = await shot(region);
+        return changedPixels(page, earlier, before);
+      },
+      { message: `${what}: two shots without the focus are alike` },
+    )
+    .toBeLessThan(RING / 10);
   await control.focus();
   expect(await control.evaluate((element) => element.matches(':focus-visible')), `${what}: the focus shows`).toBe(true);
   const after = await shot(region);
