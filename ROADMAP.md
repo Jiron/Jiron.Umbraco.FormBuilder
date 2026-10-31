@@ -2213,7 +2213,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Moving through pages in the browser:** each page checked on the server (`validate`) before the runtime moves on, the JS API's `next()` and `back()` and the `jfb:page` event (§4.9), moved from 6.4 in its split.
   - **The copy of the answers after a JS submission,** in the outcome that 6.4i shows in the form's place.
   - Done when: Playwright shows the copy of the answers after a JS submission; Playwright moves through a three-page form with `next()` and `back()` and sees `jfb:page` on each move (added in the split of 6.4); axe is clean; the size check passes with every chunk.
-- [ ] **6.6a The definition's types** (6.6 split in four, WORKLOG 2026-10-31)
+- [x] **6.6a The definition's types** (6.6 split in four, WORKLOG 2026-10-31) (2026-10-31, acbea4d)
   - **The definition:** the endpoint with `ETag` (built in 6.1b; its `304` tests stay), and TypeScript types for the public projection, generated from the public OpenAPI document (or C#, or a JSON schema) and tested for drift, shipped in the package and in `schemas/`; the runtime's and the logic's hand-written projection types are checked against them, so a change to the projection fails the build until they follow.
   - **Port 5521** is the static page's (§4.11): the e2e refusal hosts move off it.
   - Done when: the drift test fails on a changed projection and passes on the committed types; a pack test finds the types in the package and `schemas/` holds them; the runtime and logic type-check against them; the definition endpoint's `ETag` and `304` tests pass; nothing in the e2e support uses 5521 but the static page.
