@@ -35,6 +35,7 @@ public sealed class FormBlockApiTests : ManagementApiTestBase
         var updated = type.UpdateDate;
         var second = await CallAsync("admin", HttpMethod.Post, Path);
         var pickers = (await GetRequiredService<IDataTypeService>().GetAllAsync()).Count(dataType => dataType.EditorAlias == FormPickerPropertyEditor.EditorAlias);
+        var dataType = await GetRequiredService<IDataTypeService>().GetAsync(FormBlockTypes.DataTypeKey);
 
         Assert.Multiple(() =>
         {
@@ -49,6 +50,7 @@ public sealed class FormBlockApiTests : ManagementApiTestBase
             Assert.That(Part(second, "dataType"), Is.EqualTo((FormBlockTypes.DataTypeKey.ToString(), FormBlockTypes.DataTypeName, false)));
             Assert.That(GetRequiredService<IContentTypeService>().Get(FormBlockTypes.ElementTypeAlias)!.UpdateDate, Is.EqualTo(updated), "the element type untouched");
             Assert.That(pickers, Is.EqualTo(1), "one data type");
+            Assert.That(dataType?.EditorUiAlias, Is.EqualTo(FormPickerPropertyEditor.EditorUiAlias), "the backoffice shows it with the picker (ADR-0134)");
         });
     }
 

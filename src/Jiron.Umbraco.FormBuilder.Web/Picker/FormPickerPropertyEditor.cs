@@ -20,6 +20,12 @@ public sealed class FormPickerPropertyEditor(IDataValueEditorFactory dataValueEd
     /// <summary>The property editor's alias.</summary>
     public const string EditorAlias = "Jiron.FormBuilder.FormPicker";
 
+    /// <summary>
+    /// The alias of its editor UI in the backoffice (ADR-0134), which a data type made on the server must name: Umbraco
+    /// shows a property whose data type names no UI as one it cannot edit.
+    /// </summary>
+    public const string EditorUiAlias = "Jiron.FormBuilder.PropertyEditorUi.FormPicker";
+
     /// <inheritdoc />
     protected override IConfigurationEditor CreateConfigurationEditor() => ActivatorUtilities.CreateInstance<FormPickerConfigurationEditor>(services);
 

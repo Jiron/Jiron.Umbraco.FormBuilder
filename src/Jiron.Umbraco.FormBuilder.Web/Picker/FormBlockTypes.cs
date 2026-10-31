@@ -65,6 +65,7 @@ internal sealed class FormBlockTypes(
                 {
                     Key = DataTypeKey,
                     Name = DataTypeName,
+                    EditorUiAlias = FormPickerPropertyEditor.EditorUiAlias,
                     DatabaseType = ValueStorageType.Nvarchar,
                     ConfigurationData = new Dictionary<string, object> { ["multiple"] = false },
                 },

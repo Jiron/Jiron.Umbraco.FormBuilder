@@ -59,15 +59,15 @@ describe('the bundle', () => {
   });
 });
 
-/** The server's form picker alias, read from its property editor. */
-function serverPickerAlias(): string | undefined {
+/** A constant of the server's form picker, read from its property editor. */
+function serverPicker(constant: 'EditorAlias' | 'EditorUiAlias'): string | undefined {
   let folder = dirname(fileURLToPath(import.meta.url));
   while (!existsSync(join(folder, 'Jiron.Umbraco.FormBuilder.slnx'))) folder = dirname(folder);
   const source = readFileSync(
     join(folder, 'src', 'Jiron.Umbraco.FormBuilder.Web', 'Picker', 'FormPickerPropertyEditor.cs'),
     'utf8',
   );
-  return /EditorAlias = "([^"]+)"/.exec(source)?.[1];
+  return new RegExp(`const string ${constant} = "([^"]+)"`).exec(source)?.[1];
 }
 
 interface Loadable {
@@ -81,12 +81,13 @@ interface Loadable {
 const byType = (type: string) => (manifests as unknown as Loadable[]).filter((manifest) => manifest.type === type);
 
 describe('the form picker (ADR-0134)', () => {
-  it("names its schema after the server's property editor, with the picker's own UI as the default", () => {
+  it("names its schema and UI as the server's property editor does, with the picker's own UI as the default", () => {
     const [schema] = byType('propertyEditorSchema');
     const [ui] = byType('propertyEditorUi');
 
-    expect(serverPickerAlias()).toBe('Jiron.FormBuilder.FormPicker');
-    expect(schema?.alias).toBe(serverPickerAlias());
+    expect(serverPicker('EditorAlias')).toBe('Jiron.FormBuilder.FormPicker');
+    expect(schema?.alias).toBe(serverPicker('EditorAlias'));
+    expect(ui?.alias, 'the UI the server names for the data types it makes').toBe(serverPicker('EditorUiAlias'));
     expect(schema?.meta?.['defaultPropertyEditorUiAlias']).toBe(ui?.alias);
     expect(ui?.meta).toMatchObject({
       propertyEditorSchemaAlias: schema?.alias,
