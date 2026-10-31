@@ -49,6 +49,7 @@ Every run generates new passwords into `.local/credentials.json` under `e2e`; th
 | `noAccess`       | `jfbNoAccess`                          | Forms          | none                                                            |
 | `hr`             | `jfbHrTeam`                            | Forms          | `viewEntries`, `editEntries` in the restricted folder `HR`      |
 | `outsider`       | Umbraco's `writer`                     | Content        | none, without the Forms section                                 |
+| `editor`         | Umbraco's `editor`                     | Content, Media | none, without the Forms section; places forms on pages (6.7h)   |
 
 The host seeds the grants and the restricted folder `HR` at the root on every start (`support/users.ts`, ADR-0049);
 `specs/smoke/access.spec.ts` reads every persona's effective permissions from `/jfb-testing/access`. Two members, in

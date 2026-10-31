@@ -7,7 +7,8 @@ import { credentialsFile } from './paths.ts';
  * The backoffice personas the tests sign in as (ADR-0013), each with its Jiron Form Builder permissions (ADR-0049); `hr`
  * is the separate group that alone may open the restricted folder.
  */
-export type Role = 'admin' | 'designer' | 'entryHandler' | 'viewer' | 'privacyOfficer' | 'noAccess' | 'hr' | 'outsider';
+export type Role =
+  'admin' | 'designer' | 'entryHandler' | 'viewer' | 'privacyOfficer' | 'noAccess' | 'hr' | 'outsider' | 'editor';
 
 export const ROLES: readonly Role[] = [
   'admin',
@@ -18,7 +19,11 @@ export const ROLES: readonly Role[] = [
   'noAccess',
   'hr',
   'outsider',
+  'editor',
 ];
+
+/** The personas without the Forms section: Umbraco's own groups only. */
+export const WITHOUT_FORMS: ReadonlySet<Role> = new Set<Role>(['outsider', 'editor']);
 
 /** The Forms section's alias (D12). */
 export const FORMS_SECTION = 'Jiron.FormBuilder.Section';
@@ -78,6 +83,8 @@ export const PEOPLE: Record<Role, { name: string; email: string; groups: readonl
   hr: { name: 'Hana Hiring', email: 'e2e-hr@jfb.test', groups: ['jfbHrTeam'] },
   // A backoffice user without the Forms section: Umbraco's writers have Content only.
   outsider: { name: 'Otto Outsider', email: 'e2e-outsider@jfb.test', groups: ['writer'] },
+  // Umbraco's editors: Content and Media, publishing, no Forms section; they place forms on pages (6.7h, ADR-0136).
+  editor: { name: 'Edda Editor', email: 'e2e-editor@jfb.test', groups: ['editor'] },
 };
 
 /** The two members, in the demo's member group, who may open the members area. */

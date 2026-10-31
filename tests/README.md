@@ -1068,6 +1068,13 @@ its field, no email field, the contact page's topic chosen from its context valu
 from the allowed `?source=`, the server's markup holding neither the query value nor the member's address; the form
 sends without the email field and the entry holds the member's address; a visitor who is not signed in answers the
 email address, and a value under a name the form does not allow is left out; axe is clean.
+`e2e/specs/website/form-picker-on-the-page.spec.ts` (6.7h, [ADR-0136](../docs/decisions/0136-the-form-picker-on-the-demo.md))
+sends the volunteer sign-up from the form block of the demo's volunteer page with JavaScript, through both its pages,
+and lands on the thanks page the block's picker names as its page after a send; signs in as the `editor` persona
+(Umbraco's Editors group, no Forms section), who adds a form block to a page of their own, picks the newsletter in the
+picker's sidebar, sees the block labelled with its name and publishes, after which a visitor's send goes to the same
+thanks page; and, as the administrator, finds the thanks page in the picker's settings; axe is clean on the pages and
+finds nothing inside the picker, its sidebar (both modes) and its settings.
 `Rendering/FormPostTests.Prefill.cs` (`post-prefill.cshtml`) renders the same form for a visitor (cacheable, the
 context value written in, the query prefill marked and empty) and a signed-in member (`no-store`, the name written in,
 the email field left out), and proves the tamper case: a forged address posted for the hidden field is ignored on the

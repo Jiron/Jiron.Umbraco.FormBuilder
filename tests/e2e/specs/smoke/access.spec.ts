@@ -1,5 +1,5 @@
 import { expect, test } from '../../fixtures.ts';
-import { PEOPLE, RESTRICTED_FOLDERS, ROLES, USER_GROUPS, type Role } from '../../support/users.ts';
+import { PEOPLE, RESTRICTED_FOLDERS, ROLES, USER_GROUPS, WITHOUT_FORMS, type Role } from '../../support/users.ts';
 
 /** What `/jfb-testing/access` says about one backoffice user (ADR-0049). */
 interface UserAccess {
@@ -48,7 +48,7 @@ test('every persona holds its grants, globally, at the root and in the restricte
     const global = globalOf(role);
     const folder = user.folders.find((candidate) => candidate.name === restricted.name);
 
-    expect(user.section, role).toBe(role !== 'outsider');
+    expect(user.section, role).toBe(!WITHOUT_FORMS.has(role));
     expect(user.global, role).toEqual(global);
     expect(user.root, role).toEqual(global.filter((permission) => FOLDER_LEVEL.includes(permission)));
     expect(folder?.restricted, role).toBe(true);

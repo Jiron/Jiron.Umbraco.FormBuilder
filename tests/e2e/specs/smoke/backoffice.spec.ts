@@ -1,5 +1,5 @@
 import { expect, test } from '../../fixtures.ts';
-import { FORMS_SECTION, PEOPLE, ROLES, USER_GROUPS } from '../../support/users.ts';
+import { FORMS_SECTION, PEOPLE, ROLES, USER_GROUPS, WITHOUT_FORMS } from '../../support/users.ts';
 
 const MANAGEMENT_API = '/umbraco/management/api/v1';
 
@@ -29,7 +29,7 @@ for (const role of ROLES) {
     // Only the admin group opens Settings in a fresh install; Content shows for the personas whose groups open it.
     expect(labels.includes('Settings'), 'Settings').toBe(role === 'admin');
     if (role !== 'admin')
-      expect(labels.includes('Content'), 'Content').toBe(role === 'outsider' || sectionsOf(role).has('content'));
+      expect(labels.includes('Content'), 'Content').toBe(WITHOUT_FORMS.has(role) || sectionsOf(role).has('content'));
   });
 }
 
@@ -50,8 +50,9 @@ test('every persona signs in through the Management API with exactly its groups 
     expect(user.userGroupIds.map((group) => aliasById.get(group.id)).sort(), role).toEqual(
       [...PEOPLE[role].groups].sort(),
     );
-    // Every persona but the outsider has the Forms section; access.spec.ts checks what each may do there.
-    if (role !== 'admin') expect(user.allowedSections.includes(FORMS_SECTION), role).toBe(role !== 'outsider');
+    // Every persona but those in Umbraco's own groups only has the Forms section; access.spec.ts checks what each may
+    // do there.
+    if (role !== 'admin') expect(user.allowedSections.includes(FORMS_SECTION), role).toBe(!WITHOUT_FORMS.has(role));
   }
 });
 
