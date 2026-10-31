@@ -410,8 +410,9 @@ describe('a field the page leaves out', () => {
     expect(invalid[0]?.errors).toEqual([{ field: 'name', kind: 'required' }]);
     type('jfb-1-name', 'Ada');
     press(form, 'send');
-    await settle();
-    expect(sent, 'and the send goes on once the others pass').toEqual(['submit']);
+    await vi.waitFor(() => {
+      expect(sent, 'and the send goes on once the others pass').toEqual(['submit']);
+    });
   });
 });
 

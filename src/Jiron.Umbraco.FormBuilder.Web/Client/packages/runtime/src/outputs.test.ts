@@ -234,6 +234,7 @@ describe("a calculation's result", () => {
     attach(formOf(FORM));
     const form = asServed(formOf(FORM), firstPass());
     form.insertAdjacentHTML('beforeend', '<div data-jfb-live aria-live="polite"></div>');
+    byId('price').focus();
     attach(form);
     const live = form.querySelector(':scope > [data-jfb-live]');
     const said: string[] = [];
@@ -280,7 +281,23 @@ describe("a calculation's result", () => {
     answered.insertAdjacentHTML('beforeend', live);
     (byId('price') as HTMLInputElement).value = '5';
     (byId('quantity') as HTMLInputElement).value = '2';
+    byId('quantity').focus();
     expect(await lineOf(answered), 'an answer given before the runtime came').toBe('Result: EUR 10.00; Result: 2.50');
+
+    const filled = asServed(formOf(FORM), written);
+    filled.insertAdjacentHTML('beforeend', live);
+    (byId('price') as HTMLInputElement).value = '5';
+    (byId('quantity') as HTMLInputElement).value = '2';
+    expect(await lineOf(filled), 'a default filled in on load, with no visitor in the form').toBe('');
+    expect(textOf('total'), 'still shown').toBe('EUR 10.00');
+
+    // Only what the act changes: the other result still reads 2.50, and what the load wrote is not said with it.
+    (byId('price') as HTMLInputElement).value = '10';
+    byId('quantity').focus();
+    await type('quantity', '4');
+    vi.advanceTimersByTime(1000);
+    await Promise.resolve();
+    expect(filled.querySelector(':scope > [data-jfb-live]')?.textContent).toBe('Result: EUR 40.00');
   });
 
   it('says nothing of a result on a page the visitor cannot reach yet', async () => {
@@ -293,6 +310,7 @@ describe("a calculation's result", () => {
     );
     const share = byId('share').closest('[data-jfb-field]');
     if (share !== null) form.querySelector('[data-jfb-page="p2"]')?.append(share);
+    byId('price').focus();
     attach(form);
     await type('price', '5');
     await type('quantity', '2');

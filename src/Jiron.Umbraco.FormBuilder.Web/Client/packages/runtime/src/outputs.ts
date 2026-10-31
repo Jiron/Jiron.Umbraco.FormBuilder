@@ -4,7 +4,8 @@
  * thumb and in its `aria-valuetext` as it moves. A text is written only when it changes. A result's `<output>` keeps
  * quiet (`aria-live="off"`, as the views write it), a status that would speak on every key: once the visitor pauses,
  * the form's live region says the results on the current page that changed, in one line, each after its label (6.8b).
- * The runtime loads on the visitor's first act, so its first pass can already hold that act's result, which is said too.
+ * The runtime loads on the visitor's first act, so its first pass can already hold that act's result, which is said if
+ * the focus is in the form; a default filled in on load, with no act, is not.
  */
 import { calculationText, sliderText, type FormState } from '@jfb/logic';
 import type { FormModel, ModelField } from './model';
@@ -30,13 +31,15 @@ const PAUSE = 1000;
 const changed = new WeakSet<Element>();
 
 /** The pause that says each form's changed results. */
-const pauses = new WeakMap<HTMLFormElement, ReturnType<typeof setTimeout>>();
+const pauses = new WeakMap<HTMLFormElement, ReturnType<typeof setTimeout> | undefined>();
 
 /** Shows each calculation's result as the state has it, a row's in its row; one hidden or without a value, nothing. */
 export function showCalculations(form: HTMLFormElement, model: FormModel, state: FormState): void {
   const calculations = ofType(model, 'calculation');
   if (calculations.size === 0) return;
   let wrote = false;
+  const speaks = pauses.has(form) || form.contains(form.ownerDocument.activeElement);
+  pauses.set(form, pauses.get(form));
   for (const element of form.querySelectorAll<HTMLElement>('[data-jfb-field]')) {
     const key = element.dataset['jfbField'] ?? '';
     const field = calculations.get(key);
@@ -45,7 +48,7 @@ export function showCalculations(form: HTMLFormElement, model: FormModel, state:
     const row = rowOf(element, state);
     const results = row === null ? state.calculations : row.state?.calculations;
     const value = results !== undefined && Object.hasOwn(results, key) ? results[key] : null;
-    if (write(output, value == null ? '' : calculationText(field.settings, value, model.formats))) {
+    if (write(output, value == null ? '' : calculationText(field.settings, value, model.formats)) && speaks) {
       changed.add(output);
       wrote = true;
     }
