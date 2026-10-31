@@ -91,3 +91,6 @@ Reading Umbraco's code (the 17.5 package) showed three things that bear on the c
   pair of Move up and Move down buttons with an announcement is the way, as in the designer.
 - 6.7g adds the settings' own pickers for allowed folders and forms on the same sidebar, which then picks folders
   too, and the endpoint that names folders by key.
+- Where UUI's own colours fall short of AA in Umbraco's dark theme, the picker's own parts use tokens mixed from them
+  (docs/ux/tokens.md: the danger text and the selected background); Umbraco's own components, such as the positive
+  button at the sidebar's foot, keep Umbraco's look and are reported to Umbraco HQ (docs/OWNER-TODO.md).

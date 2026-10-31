@@ -119,6 +119,10 @@ what to do and why. Items for blocked roadmap steps name the step as "step X.Y",
   dark mode).
 - [ ] **The AI add-on:** try it with a real Umbraco.AI provider and profile.
 - [ ] **Blob storage:** try the file-store sample against a real storage account if you use one.
+- [ ] **Report to Umbraco HQ** (added 2026-10-31, ROADMAP 6.7f): in Umbraco 17.7.1's dark theme UUI's positive
+  primary button (`#347d39` under `#eeeeef`) is 4.37:1, below WCAG AA's 4.5:1, on every dialog's main button. Jiron
+  Form Builder keeps Umbraco's buttons as Umbraco draws them; its own parts use tokens that pass (docs/ux/tokens.md).
+  UUI's danger (2.5:1 on the surface) and selected (4.3:1) colours fall short there too.
 - [ ] **Screen readers:** test a few forms and the designer with NVDA and VoiceOver. The build checks
   accessibility names and keyboard paths automatically, but no real screen reader runs here.
 - [ ] **GitHub rendering:** once the repository is public, check that the README, docs and issue forms
