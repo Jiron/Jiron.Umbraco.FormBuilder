@@ -16,7 +16,7 @@ things kept the next step from starting beside them:
 
 - the gate builds and tests the working folder, so the next step's edits would have changed what it checked, and a
   failure could have come from either step;
-- the browser projects listen on fixed ports (5520 to 5522 and 5560, `tests/e2e/support/paths.ts`), so two browser
+- the browser projects listen on fixed ports (5520, 5525 to 5527 and 5560, `tests/e2e/support/paths.ts`), so two browser
   runs at once collide;
 - the hand mutants rewrite source files while they run.
 

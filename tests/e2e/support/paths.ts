@@ -44,8 +44,11 @@ export const PORT_RANGE = { first: 5500, last: 5599 } as const;
 export const E2E_PORT = 5520;
 export const E2E_BASE_URL = `http://127.0.0.1:${E2E_PORT}`;
 
-/** The hosts that must refuse to start (ROADMAP 4.4a); they never listen, but each gets a port of its own. */
-export const REFUSAL_PORTS = { configuration: 5521, globalization: 5522 } as const;
+/**
+ * The hosts that must refuse to start (ROADMAP 4.4a); they never listen, but each gets a port of its own, clear of the
+ * static page's 5521 and the privacy host's 5522 (ROADMAP 4.11).
+ */
+export const REFUSAL_PORTS = { configuration: 5526, globalization: 5527 } as const;
 
 /**
  * The host of the strict-site spec (ROADMAP 6.4k): its pages come from Umbraco's output cache, behind the Testing

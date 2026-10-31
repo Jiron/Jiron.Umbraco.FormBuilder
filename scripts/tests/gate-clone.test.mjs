@@ -55,11 +55,11 @@ describe('browserPorts', () => {
       'export const PORT_RANGE = { first: 5500, last: 5599 } as const;',
       'export const E2E_PORT = 5520;',
       'export const E2E_BASE_URL = `http://127.0.0.1:${E2E_PORT}`;',
-      'export const REFUSAL_PORTS = { configuration: 5521, globalization: 5522 } as const;',
+      'export const REFUSAL_PORTS = { configuration: 5526, globalization: 5527 } as const;',
       'export const STUB_PORT = 5560;',
       'export const CACHED_PORT = 5525;',
     ].join('\n');
-    assert.deepEqual(browserPorts(source), [5520, 5521, 5522, 5560, 5525]);
+    assert.deepEqual(browserPorts(source), [5520, 5526, 5527, 5560, 5525]);
   });
 
   test('fails when the harness names no port', () => {
