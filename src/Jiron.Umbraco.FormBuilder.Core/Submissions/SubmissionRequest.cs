@@ -53,6 +53,15 @@ internal sealed record SubmissionRequest
     public Guid? Member { get; init; }
 
     /// <summary>
+    /// The name of the server key the request carried, as the transport checked it (ADR-0126), or null: the entry records
+    /// it as its context value <see cref="ServerKeyContext"/>, and only that key may ask for its receipt.
+    /// </summary>
+    public string? ServerKey { get; init; }
+
+    /// <summary>The context name an entry a server key submitted records the key's name under (ADR-0126).</summary>
+    public const string ServerKeyContext = "jfbServerKey";
+
+    /// <summary>
     /// Reads the upload tokens that the values of fields storing files post (ADR-0087): the transport's own, since only
     /// it knows how its tokens are protected; null for a transport that posts none, so every such value is invalid.
     /// </summary>

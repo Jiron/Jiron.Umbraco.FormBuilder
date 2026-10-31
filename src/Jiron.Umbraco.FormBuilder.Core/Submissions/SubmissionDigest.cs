@@ -59,7 +59,15 @@ internal static class SubmissionDigest
             CanonicalJson.WriteString(text, value);
         }
 
-        text.Append("}}");
+        text.Append('}');
+        if (request.ServerKey is { } key)
+        {
+            // A retry with the same key matches; the same submission from anyone else does not (ADR-0126).
+            text.Append(",\"serverKey\":");
+            CanonicalJson.WriteString(text, key);
+        }
+
+        text.Append('}');
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())));
     }
 

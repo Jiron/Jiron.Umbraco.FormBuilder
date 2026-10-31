@@ -299,11 +299,12 @@ internal sealed partial class DefinitionStructureChecks
         }
 
         var developerPath = P(path, "developer");
-        Names(settings.Developer.QueryValues, P(developerPath, "queryValues"));
-        Names(settings.Developer.ContextValues, P(developerPath, "contextValues"));
+        Names(settings.Developer.QueryValues, P(developerPath, "queryValues"), reserved: null);
+        Names(settings.Developer.ContextValues, P(developerPath, "contextValues"), FormDeveloperSettings.ReservedContextPrefix);
     }
 
-    private void Names(IReadOnlyList<string> names, string path)
+    // A list of names, each once; with a reserved prefix, none starting with it, which the package keeps (ADR-0126).
+    private void Names(IReadOnlyList<string> names, string path, string? reserved)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < names.Count; i++)
@@ -311,6 +312,10 @@ internal sealed partial class DefinitionStructureChecks
             if (!IsName(names[i]))
             {
                 Fail(DefinitionErrors.NameInvalid, I(path, i), "A name has 1 to 64 letters, digits, hyphens and underscores, as merge tags write it.");
+            }
+            else if (reserved is not null && names[i].StartsWith(reserved, StringComparison.OrdinalIgnoreCase))
+            {
+                Fail(DefinitionErrors.NameInvalid, I(path, i), $"A name that starts with '{reserved}' is Jiron Form Builder's own, such as the server key's name an entry records; choose another.");
             }
             else if (!seen.Add(names[i]))
             {

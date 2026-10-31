@@ -195,6 +195,12 @@ public sealed record FormAppearanceSettings
 /// <summary>Settings for developers.</summary>
 public sealed record FormDeveloperSettings
 {
+    /// <summary>
+    /// The prefix of the context names Jiron Form Builder keeps for itself, such as the server key's name an entry
+    /// records (ADR-0126): <see cref="ContextValues"/> lists none that starts with it, in any letter case.
+    /// </summary>
+    public const string ReservedContextPrefix = "jfb";
+
     /// <summary>Whether the public definition endpoint serves this form (headless sites).</summary>
     public bool Headless { get; init; }
 

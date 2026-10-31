@@ -321,6 +321,7 @@ public sealed class StructureTests
             d["settings"]!["submission"]!["verification"]!["emailField"] = K(0xb);
         }, DefinitionErrors.InvalidReference, "$.settings.submission.verification.emailField");
         yield return Case("a prefill from a query value the form does not allow", d => Field(d, 0)["prefill"]!["query"] = "utm", DefinitionErrors.InvalidReference, $"{F(0)}.prefill.query");
+        yield return Case("a context value the package keeps", d => d["settings"]!["developer"]!["contextValues"] = new JsonArray("JfbServerKey"), DefinitionErrors.NameInvalid, "$.settings.developer.contextValues[0]");
         yield return Case("a prefill from a context value the form does not list", d => Field(d, 0)["prefill"]!["context"] = "topic", DefinitionErrors.InvalidReference, $"{F(0)}.prefill.context");
         yield return Case("a prefill from a member property no merge tag can name", d => Field(d, 0)["prefill"]!["member"] = "display name", DefinitionErrors.NameInvalid, $"{F(0)}.prefill.member");
         yield return Case("a member's value hidden in a repeatable group's rows", d => Field2(d, 1)["fields"]![0]!["prefill"] = FromMember("name"), DefinitionErrors.PropertyNotSupported, $"{F2(1)}.fields[0].prefill.memberMode");

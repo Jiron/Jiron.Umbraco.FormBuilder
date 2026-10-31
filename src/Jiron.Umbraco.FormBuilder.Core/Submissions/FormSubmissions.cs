@@ -147,7 +147,18 @@ internal sealed class FormSubmissions(
     /// <param name="form">The form's key.</param>
     /// <param name="submissionId">The submission id the submission posted.</param>
     /// <param name="cancellationToken">Cancelled when the request is, or when its time limit runs out.</param>
-    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, CancellationToken cancellationToken = default)
+    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, CancellationToken cancellationToken = default) =>
+        await ReceiptAsync(form, submissionId, serverKey: null, cancellationToken);
+
+    /// <summary>
+    /// The receipt of a submission for the server key that made it (ADR-0126): with a key, only an entry that key
+    /// submitted answers; any other is the same miss as an unknown submission.
+    /// </summary>
+    /// <param name="form">The form's key.</param>
+    /// <param name="submissionId">The submission's id.</param>
+    /// <param name="serverKey">The name of the server key the request carried, or null.</param>
+    /// <param name="cancellationToken">Cancelled when the request is.</param>
+    public async Task<SubmissionResult> ReceiptAsync(Guid form, Guid submissionId, string? serverKey, CancellationToken cancellationToken = default)
     {
         if (await ServedAsync(form, cancellationToken) is not { } served)
         {
@@ -160,8 +171,18 @@ internal sealed class FormSubmissions(
         }
 
         return await entries.GetBySubmissionAsync(served.Row.Id, submissionId, cancellationToken) is { State: not EntryState.Draft } entry
+            && (serverKey is null || SubmittedWith(entry, serverKey))
             ? await ReplayAsync(entry, served.Form, cancellationToken)
             : SubmissionResult.Refused(SubmissionRefusal.EntryNotFound);
+    }
+
+    // Whether the entry records this server key's name as the one that submitted it (ADR-0126).
+    private static bool SubmittedWith(StoredEntry entry, string serverKey)
+    {
+        using var context = System.Text.Json.JsonDocument.Parse(entry.Context);
+        return context.RootElement.TryGetProperty(SubmissionRequest.ServerKeyContext, out var name)
+            && name.ValueKind == System.Text.Json.JsonValueKind.String
+            && string.Equals(name.GetString(), serverKey, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -218,6 +239,11 @@ internal sealed class FormSubmissions(
 
         var query = Query(request, definition, unreadable);
         var context = Context(request, definition, unreadable);
+        if (request.ServerKey is { } serverKey)
+        {
+            context[SubmissionRequest.ServerKeyContext] = serverKey;
+        }
+
         if (unreadable.Count > 0)
         {
             return Reading.Refused(SubmissionResult.Unreadable(unreadable));
