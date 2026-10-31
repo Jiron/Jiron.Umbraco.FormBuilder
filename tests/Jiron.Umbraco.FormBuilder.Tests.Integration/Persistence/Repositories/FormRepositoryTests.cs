@@ -121,6 +121,54 @@ public sealed class FormRepositoryTests : RepositoryTestBase
     }
 
     [Test]
+    public async Task Lists_KeepThePublishedForms_TheKeysAsked_AndThoseAPickersScopeAllows()
+    {
+        var folder = await CreateFolderAsync("Events");
+        var other = await CreateFolderAsync("News");
+        var alpha = await PublishedAsync(await CreateFormAsync("alpha", name: "Alpha"));
+        var beta = await CreateFormAsync("beta", name: "Beta");
+        var gamma = await PublishedAsync(await CreateFormAsync("gamma", folder.Id, "Gamma"));
+        var delta = await PublishedAsync(await CreateFormAsync("delta", other.Id, "Delta"));
+
+        async Task<IReadOnlyList<int>> IdsAsync(FormFilter filter) => (await Forms.ListAsync(filter, PageRequest.First(50))).Items.Select(form => form.Id).ToList();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await IdsAsync(FormFilter.Live with { PublishedOnly = true }), Is.EqualTo(new[] { alpha.Id, delta.Id, gamma.Id }), "Beta has only a draft");
+            Assert.That(await IdsAsync(FormFilter.Live with { Keys = [gamma.Key, beta.Key, Guid.NewGuid()] }), Is.EqualTo(new[] { beta.Id, gamma.Id }));
+            Assert.That(await IdsAsync(FormFilter.Live with { Keys = [] }), Is.Empty, "no keys, no forms");
+            Assert.That(await IdsAsync(FormFilter.Live with { Within = new FormScope([folder.Id], [alpha.Key]) }), Is.EqualTo(new[] { alpha.Id, gamma.Id }), "a folder's forms and a form wherever it is");
+            Assert.That(await IdsAsync(FormFilter.Live with { Within = new FormScope([], []) }), Is.Empty);
+            Assert.That(await IdsAsync(FormFilter.Live with { Within = new FormScope([folder.Id, other.Id], []), Keys = [delta.Key], PublishedOnly = true }), Is.EqualTo(new[] { delta.Id }), "every part holds");
+            Assert.ThrowsAsync<ArgumentException>(() => Forms.ListAsync(FormFilter.Live with { Keys = [.. Enumerable.Range(0, SqlArgs.MaxListLength + 1).Select(_ => Guid.NewGuid())] }, PageRequest.First(1)));
+        });
+    }
+
+    [Test]
+    public async Task TheFoldersWithPublishedForms_AreThoseThatDirectlyHoldOneOutsideTheTrash_ThatTheVisibilityHolds()
+    {
+        var events = await CreateFolderAsync("Events");
+        var news = await CreateFolderAsync("News");
+        var drafts = await CreateFolderAsync("Drafts");
+        var trash = await CreateFolderAsync("Trash");
+        await PublishedAsync(await CreateFormAsync("spring", events.Id, "Spring"));
+        await PublishedAsync(await CreateFormAsync("weekly", news.Id, "Weekly"));
+        await PublishedAsync(await CreateFormAsync("atRoot", name: "At the root"));
+        await CreateFormAsync("draft", drafts.Id, "Draft");
+        var old = await PublishedAsync(await CreateFormAsync("old", trash.Id, "Old"));
+        await Forms.TrashAsync(old.Id, old.ConcurrencyVersion, Editor);
+
+        var every = await Forms.ListFolderIdsWithPublishedFormsAsync(null);
+        var some = await Forms.ListFolderIdsWithPublishedFormsAsync(new FormVisibility { FolderIds = [news.Id] });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(every, Is.EquivalentTo(new[] { events.Id, news.Id }), "neither the root, a draft nor a form in the trash");
+            Assert.That(some, Is.EquivalentTo(new[] { news.Id }));
+        });
+    }
+
+    [Test]
     public async Task TheFoldersWithForms_AreThoseWithAFormInTheTrashStateAsked_ThatTheScopeHolds()
     {
         var events = await CreateFolderAsync("Events");
@@ -429,6 +477,10 @@ public sealed class FormRepositoryTests : RepositoryTestBase
             Assert.That(await Forms.ListAliasesAsync(string.Empty), Has.Count.EqualTo(5));
         });
     }
+
+    // Publishes a form's draft as it is.
+    private async Task<StoredForm> PublishedAsync(StoredForm form) =>
+        (await Forms.PublishAsync(form.Id, form.ConcurrencyVersion, Document(), null, null, Editor))!.Form;
 
     internal static CatalogueFieldValues Field(string alias, int sortOrder = 0) =>
         new(Guid.NewGuid(), alias, alias.ToUpperInvariant(), "text", FieldStorageKind.Text, false, sortOrder, null, null, null);

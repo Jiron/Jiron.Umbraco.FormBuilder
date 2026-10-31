@@ -29,6 +29,7 @@ internal static class FormBuilderFormServices
         builder.Services.TryAddSingleton<IFormBuilderFormExchangeService, FormBuilderFormExchangeService>();
         builder.Services.TryAddSingleton<IFormBuilderFolderService, FormBuilderFolderService>();
         builder.Services.TryAddSingleton<IFormBuilderLibraryService, FormBuilderLibraryService>();
+        builder.Services.TryAddSingleton<IFormBuilderPickerService, FormBuilderPickerService>();
         builder.Services.TryAddSingleton<FormCacheInvalidator>();
         builder.Services.TryAddSingleton<PublishedFormCache>();
         builder.Services.TryAddSingleton<EditorHtml>();

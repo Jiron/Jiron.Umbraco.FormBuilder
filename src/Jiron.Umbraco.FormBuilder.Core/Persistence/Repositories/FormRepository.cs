@@ -144,6 +144,32 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
                     where.Add($"({n.C("name")} LIKE {pattern} {SqlNames.EscapeClause} OR {n.C("alias")} LIKE {pattern} {SqlNames.EscapeClause})");
                 }
 
+                if (filter.PublishedOnly)
+                {
+                    where.Add($"{n.C("publishedVersionId")} IS NOT NULL");
+                }
+
+                if (filter.Keys is { } keys)
+                {
+                    where.Add(keys.Count == 0 ? "1 = 0" : $"{n.C("key")} IN ({KeyList(keys, args)})");
+                }
+
+                if (filter.Within is { } scope)
+                {
+                    var places = new List<string>();
+                    if (scope.FolderIds.Count > 0)
+                    {
+                        places.Add($"{n.C("folderId")} IN ({Literals(scope.FolderIds)})");
+                    }
+
+                    if (scope.FormKeys.Count > 0)
+                    {
+                        places.Add($"{n.C("key")} IN ({KeyList(scope.FormKeys, args)})");
+                    }
+
+                    where.Add(places.Count == 0 ? "1 = 0" : $"({string.Join(" OR ", places)})");
+                }
+
                 var table = n.T(FormBuilderTables.Form);
                 var clause = where.Count == 0 ? string.Empty : " WHERE " + string.Join(" AND ", where);
                 var total = await db.ScalarAsync<long>($"SELECT COUNT(*) FROM {table}{clause}", args.Values);
@@ -189,6 +215,29 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
             },
             cancellationToken);
     }
+
+    /// <inheritdoc />
+    public Task<IReadOnlySet<int>> ListFolderIdsWithPublishedFormsAsync(FormVisibility? visibility, CancellationToken cancellationToken = default) =>
+        database.ReadAsync<IReadOnlySet<int>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var args = new SqlArgs();
+                var where = new List<string>
+                {
+                    $"{n.C("folderId")} IS NOT NULL",
+                    $"{n.C("trashedUtc")} IS NULL",
+                    $"{n.C("publishedVersionId")} IS NOT NULL",
+                };
+                if (AccessSql.FormClause(visibility, n, string.Empty, args.Add) is { } clause)
+                {
+                    where.Add(clause);
+                }
+
+                var ids = await db.FetchListAsync<int>($"SELECT DISTINCT {n.C("folderId")} FROM {n.T(FormBuilderTables.Form)} WHERE {string.Join(" AND ", where)}", args.Values);
+                return ids.ToHashSet();
+            },
+            cancellationToken);
 
     /// <inheritdoc />
     /// <remarks>The alias column compares without regard to case on both databases, so <c>LIKE</c> does too (ADR-0033).</remarks>
@@ -293,6 +342,17 @@ internal sealed partial class FormRepository(FormBuilderDatabase database) : IFo
 
     // Ids read from the database, as the statement's integer literals.
     private static string Literals(IEnumerable<int> ids) => string.Join(", ", ids.Select(id => id.ToString(CultureInfo.InvariantCulture)));
+
+    // Keys a caller names, as parameters: at most SqlArgs.MaxListLength of them.
+    private static string KeyList(IReadOnlyCollection<Guid> keys, SqlArgs args)
+    {
+        if (keys.Count > SqlArgs.MaxListLength)
+        {
+            throw new ArgumentException($"A list of forms names at most {SqlArgs.MaxListLength} keys.", nameof(keys));
+        }
+
+        return args.List(keys.Distinct().Select(key => (object?)key));
+    }
 
     private static async Task<StoredForm?> FindAsync(IUmbracoDatabase db, string column, object value)
     {

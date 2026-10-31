@@ -163,7 +163,24 @@ internal sealed record FormFilter
     /// Form Builder's own work asks for.
     /// </summary>
     public FormVisibility? Visibility { get; init; }
+
+    /// <summary>True for the forms that have a published version only; false (the default) for every form.</summary>
+    public bool PublishedOnly { get; init; }
+
+    /// <summary>The forms with these keys only, at most <see cref="SqlArgs.MaxListLength"/>; null for any form.</summary>
+    public IReadOnlyCollection<Guid>? Keys { get; init; }
+
+    /// <summary>The forms a picker's settings allow only (ADR-0129); null for any form.</summary>
+    public FormScope? Within { get; init; }
 }
+
+/// <summary>
+/// The forms a form picker's settings allow (ADR-0129): those directly in one of <paramref name="FolderIds"/> (the allowed
+/// folders and every folder below them) and those of <paramref name="FormKeys"/>.
+/// </summary>
+/// <param name="FolderIds">The folders whose forms count.</param>
+/// <param name="FormKeys">The forms that count wherever they are, at most <see cref="SqlArgs.MaxListLength"/>.</param>
+internal sealed record FormScope(IReadOnlyCollection<int> FolderIds, IReadOnlyCollection<Guid> FormKeys);
 
 /// <summary>A field of the catalogue, by which entry values refer to it (ADR-0003).</summary>
 /// <param name="FieldKey">The field's key in the definition.</param>
@@ -228,6 +245,12 @@ internal interface IFormRepository
     /// <paramref name="visibility"/> holds (null: any form): whether a folder of the library tree has forms to show (ADR-0050).
     /// </summary>
     Task<IReadOnlySet<int>> ListFolderIdsWithFormsAsync(IReadOnlyCollection<int> folderIds, bool trashed, FormVisibility? visibility, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The folders that directly hold a published form outside the trash that <paramref name="visibility"/> holds: where a
+    /// form picker has something to pick (ADR-0013).
+    /// </summary>
+    Task<IReadOnlySet<int>> ListFolderIdsWithPublishedFormsAsync(FormVisibility? visibility, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The aliases of every form, trashed ones included, that start with <paramref name="prefix"/> in any letter case
