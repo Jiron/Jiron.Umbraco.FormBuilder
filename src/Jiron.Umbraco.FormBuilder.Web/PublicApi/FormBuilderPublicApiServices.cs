@@ -42,6 +42,7 @@ internal static class FormBuilderPublicApiServices
         builder.Services.TryAddScoped<FormBuilderPublicApiFilter>();
         builder.Services.TryAddSingleton<ServerKeys>();
         builder.Services.TryAddSingleton<FormBuilderPublicApiMiddleware>();
+        builder.Services.TryAddSingleton<Picker.FormBuilderDeliveryApiMiddleware>();
         builder.Services.TryAddSingleton<FormRequests>();
         builder.Services.TryAddSingleton<UploadTokens>();
         builder.Services.TryAddSingleton<UploadRequests>();
@@ -52,7 +53,11 @@ internal static class FormBuilderPublicApiServices
         {
             if (!options.PipelineFilters.Any(filter => filter.Name == PipelineFilterName))
             {
-                options.AddFilter(new UmbracoPipelineFilter(PipelineFilterName) { PrePipeline = app => app.UseMiddleware<FormBuilderPublicApiMiddleware>() });
+                // The form picker's markers in the Content Delivery API's answers are resolved on the way out (ADR-0127).
+                options.AddFilter(new UmbracoPipelineFilter(PipelineFilterName)
+                {
+                    PrePipeline = app => app.UseMiddleware<Picker.FormBuilderDeliveryApiMiddleware>().UseMiddleware<FormBuilderPublicApiMiddleware>(),
+                });
             }
         });
         return builder;
