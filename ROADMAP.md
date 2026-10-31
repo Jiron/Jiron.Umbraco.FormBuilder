@@ -2201,7 +2201,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - never cached (`no-store`), sensitive values masked, print styles only.
   - **Design skills:** load the three skills before building the copy and its print styles (ADR-0019, ADR-0020).
   - Done when: Playwright shows the copy of the answers after a no-JS submission and in print media (`emulateMedia`), and a reused or expired token shows nothing; axe is clean on the copy.
-- [ ] **6.5c Prefill** (6.5 split in four, WORKLOG 2026-10-30)
+- [x] **6.5c Prefill** (6.5 split in four, WORKLOG 2026-10-30) (2026-10-31, a36ab8f)
   - **Prefill:**
     - from members, with "show" and the tamper-proof "hide" mode;
     - from allowed query values;
