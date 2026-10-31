@@ -2239,7 +2239,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when: a static page on 5521 (cross-origin, allowlisted) renders and submits a multi-page form through the element, each page checked with `validate` before the next; axe is clean.
 - [ ] **6.7a The form picker's settings** (6.7 split in five, WORKLOG 2026-10-31)
   - **The data type "Jiron Form Builder form picker":** single or multiple, allowed folders or forms, optional theme override and redirect override. Plus the value converters (Razor and the Content Delivery API, one form or several, with the overrides) for each setting; a value the settings do not allow is refused when the page is saved.
-  - Done when: integration tests cover each setting: one form and several in Razor and in the Delivery API; a form in an allowed folder (or below it) accepted and one outside refused; an allowed form accepted and another refused; several forms refused by a single picker; the theme override rendering the form in that theme; the redirect override taking the visitor to its page after a send, with and without JavaScript.
+  - Done when: integration tests cover each setting: one form and several in Razor and in the Delivery API; a form in an allowed folder (or below it) accepted and one outside refused; an allowed form accepted and another refused; several forms refused by a single picker; the theme override rendering the form in that theme; the redirect override taking the visitor to its page after a send without JavaScript (with JavaScript in 6.7e, which has a demo page with the picker).
 - [ ] **6.7b "Create a form block for me"** (6.7 split in five, WORKLOG 2026-10-31)
   - **"Create a form block for me":** an idempotent service that creates a "Form" element type and data type, and never changes existing types; its endpoint is "Setup and health" in §4.7.
   - Done when: integration tests pass: the element type and the data type created on the first call, a second call changing nothing, an existing type or data type with the same alias left as it is, and "creating a form block type is refused with `403` for a user who has `manageSettings` and the Forms section but not Umbraco's Settings section", a user seeded in that test.
@@ -2251,7 +2251,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when: integration tests pass, with output caching on, including "publishing the form re-renders a cached page that picks it at once", and a cached page that does not pick the form kept.
 - [ ] **6.7e The form picker in the backoffice** (6.7 split in five, WORKLOG 2026-10-31)
   - **The backoffice:** the picker's data type settings and the picker itself (the library's forms and folders, within the allowed ones) through the generated client, with the UFM block-label component; English and German.
-  - Done when: Vitest covers the picker, its settings and the block label; Playwright shows an editor picking a form in a block on the demo and the page rendering it; axe is clean on the picker.
+  - Done when: Vitest covers the picker, its settings and the block label; Playwright shows an editor picking a form in a block on the demo and the page rendering it, and the form sent with JavaScript going to the picker's redirect page; axe is clean on the picker.
 - [ ] **6.8 Phase review**
   - An accessibility pass over the themes (axe, keyboard, screen-reader names), and a security pass over the public API.
   - Write the handover note.
