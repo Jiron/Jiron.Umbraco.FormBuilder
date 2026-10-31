@@ -2266,7 +2266,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **6.7h The picker on the demo** (6.7e split in three, WORKLOG 2026-10-31; 6.7g until 6.7f split in two, WORKLOG 2026-10-31) (2026-10-31, d36fcb0)
   - **The demo:** a page type with a block list that allows the form block (6.7b), a page with the block, and a thanks page for the picker's page after a send.
   - Done when: Playwright shows an editor picking a form in a block on the demo and the page rendering it, and the form sent with JavaScript going to the picker's redirect page; axe is clean on the picker and on its settings.
-- [ ] **6.8a The review's fixes to the public API and the post** (C# (6.8 split in five, WORKLOG 2026-10-31))
+- [x] **6.8a The review's fixes to the public API and the post** (C# (6.8 split in five, WORKLOG 2026-10-31)) (2026-10-31, f2114d3)
   - **What the phase review found** (the security pass over the public API, and the reader of rendering and the post without JavaScript; amend the ADRs named):
     - the element endpoint passes every `context-<name>` query name to the rendering, whose process-wide log-once set keeps each name it has not seen with a warning, so anyone grows the server's memory and log without bound: names the form does not list are dropped before rendering, and no set keeps a name a request chose;
     - a receipt asked without a server key answers an entry a server key made, which ADR-0126 gives that key alone;
