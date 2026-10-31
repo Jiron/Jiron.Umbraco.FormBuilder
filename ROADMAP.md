@@ -2213,12 +2213,19 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Moving through pages in the browser:** each page checked on the server (`validate`) before the runtime moves on, the JS API's `next()` and `back()` and the `jfb:page` event (§4.9), moved from 6.4 in its split.
   - **The copy of the answers after a JS submission,** in the outcome that 6.4i shows in the form's place.
   - Done when: Playwright shows the copy of the answers after a JS submission; Playwright moves through a three-page form with `next()` and `back()` and sees `jfb:page` on each move (added in the split of 6.4); axe is clean; the size check passes with every chunk.
-- [ ] **6.6 Headless**
-  - **The definition:** the endpoint with `ETag`, and TypeScript types for the public projection (generated from C# or the JSON schema and tested for drift), shipped in the package and in `schemas/`.
-  - **The renderer:** `<jfb-form>` (packages/element) renders the default theme's markup from JSON with the same runtime.
-  - **The Content Delivery API:** the form picker returns `{key, alias, name}`, and with expansion, the projection.
-  - **Server-key submissions.**
-  - Done when: a static page on 5521 (cross-origin, allowlisted) renders and submits a multi-page form through the element, with the honeypot out of view and out of the accessibility tree; the Delivery API test passes; server-key tests pass.
+- [ ] **6.6a The definition's types** (6.6 split in four, WORKLOG 2026-10-31)
+  - **The definition:** the endpoint with `ETag` (built in 6.1b; its `304` tests stay), and TypeScript types for the public projection, generated from the public OpenAPI document (or C#, or a JSON schema) and tested for drift, shipped in the package and in `schemas/`; the runtime's and the logic's hand-written projection types are checked against them, so a change to the projection fails the build until they follow.
+  - **Port 5521** is the static page's (§4.11): the e2e refusal hosts move off it.
+  - Done when: the drift test fails on a changed projection and passes on the committed types; a pack test finds the types in the package and `schemas/` holds them; the runtime and logic type-check against them; the definition endpoint's `ETag` and `304` tests pass; nothing in the e2e support uses 5521 but the static page.
+- [ ] **6.6b Server-key submissions** (6.6 split in four, WORKLOG 2026-10-31)
+  - **Server-key submissions** (§4.6, ADR-0012): `Authorization: Jfb-Key <key>` against the configured names and SHA-256 hashes, compared in fixed time; such a submission skips the browser challenge, the captcha and the honeypot (each as it arrives in 7.1 and 7.2), never validation, the content rules or the domain limits; it is limited per key, records the key's name as `jfbServerKey`, which `developer.contextValues` cannot list, and the receipt endpoint accepts the key that submitted.
+  - Done when: server-key tests pass (a right key, a wrong one, a key for a hash of another length, the fixed-time comparison, the per-key limit, the recorded name, the receipt, a key never logged).
+- [ ] **6.6c The Content Delivery API** (6.6 split in four, WORKLOG 2026-10-31)
+  - **The Content Delivery API:** the form picker returns `{key, alias, name}`, and with expansion, the projection. This step builds the picker's property editor on the server, its value converters and its Delivery API output; 6.7 builds its data type's settings, its backoffice picker, blocks and "used on".
+  - Done when: the Delivery API test passes (a page that picks a form answers `{key, alias, name}`, with expansion the projection in the request's culture, a form not published or not headless answers none).
+- [ ] **6.6d The renderer** (6.6 split in four, WORKLOG 2026-10-31)
+  - **The renderer:** `<jfb-form>` (packages/element) renders the default theme's markup from JSON with the same runtime: the same markup as the server's views for the same form (a fixture of whole forms that the integration tests write and the element's tests read), its pages moved through in the browser with each page checked on the server (`validate`) before the next.
+  - Done when: a static page on 5521 (cross-origin, allowlisted) renders and submits a multi-page form through the element, with the honeypot out of view and out of the accessibility tree; the element's markup matches the server's for every form of the fixture; axe is clean.
 - [ ] **6.7 The form picker, blocks and "used on"**
   - **The data type "Jiron Form Builder form picker":** single or multiple, allowed folders or forms, optional theme override and redirect override. Plus the value converters and the UFM block-label component.
   - **"Create a form block for me":** an idempotent service that creates a "Form" element type and data type, and never changes existing types.
