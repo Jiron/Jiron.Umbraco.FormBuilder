@@ -34,6 +34,7 @@ internal sealed class DemoFormSeeder(
         ("newsletter", "Newsletter"),
         ("application", "Job application"),
         ("specimen", "Specimen"),
+        ("volunteer", "Volunteer sign-up"),
     ];
 
     /// <summary>Creates and publishes each missing form; true when one was created.</summary>

@@ -4773,6 +4773,364 @@
       "validationRules": []
     }
   },
+  "volunteer": {
+    "form": {
+      "key": "d0000000-0000-4000-8000-000000000008",
+      "settings": {
+        "submitLabel": "Sign me up",
+        "summaryPage": false,
+        "progress": "steps",
+        "resume": false,
+        "membersOnly": false,
+        "protection": "inherit",
+        "requiredMarker": "optional",
+        "validationSummary": true,
+        "choiceLayout": "vertical",
+        "queryValues": []
+      },
+      "pages": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000080",
+          "title": "About you",
+          "rules": [],
+          "groups": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000081",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000801",
+                  "type": "text",
+                  "alias": "name",
+                  "span": 1,
+                  "label": "Your name",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "autocomplete": "name",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "counter": false,
+                    "maxLength": 255,
+                    "minLength": 0
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000802",
+                  "type": "email",
+                  "alias": "email",
+                  "span": 1,
+                  "label": "Email address",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "autocomplete": "email",
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "confirm": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000803",
+                  "type": "radio",
+                  "alias": "role",
+                  "span": 1,
+                  "label": "How would you like to help?",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "events",
+                        "label": "At our events",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "reading",
+                        "label": "Reading with children",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "other",
+                        "label": "Something else",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "inherit",
+                    "other": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000804",
+                  "type": "text",
+                  "alias": "otherRole",
+                  "span": 1,
+                  "label": "What would you like to do?",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [
+                    {
+                      "key": "d0000000-0000-4000-8000-0000000008a4",
+                      "effect": "show",
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "d0000000-0000-4000-8000-000000000803",
+                          "op": "equals",
+                          "value": "other"
+                        }
+                      ]
+                    }
+                  ],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "counter": false,
+                    "maxLength": 255,
+                    "minLength": 0
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "key": "d0000000-0000-4000-8000-000000000082",
+          "title": "When you can help",
+          "rules": [],
+          "groups": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000083",
+              "columns": 1,
+              "style": "plain",
+              "rules": [],
+              "fields": [
+                {
+                  "key": "d0000000-0000-4000-8000-000000000805",
+                  "type": "checkboxes",
+                  "alias": "days",
+                  "span": 1,
+                  "label": "Which days suit you?",
+                  "hideLabel": false,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "options": {
+                    "items": [
+                      {
+                        "value": "mon",
+                        "label": "Monday",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "wed",
+                        "label": "Wednesday",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "fri",
+                        "label": "Friday",
+                        "parentValues": []
+                      },
+                      {
+                        "value": "sat",
+                        "label": "Saturday",
+                        "parentValues": []
+                      }
+                    ],
+                    "fromSource": false
+                  },
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "layout": "inherit",
+                    "other": false
+                  }
+                },
+                {
+                  "key": "d0000000-0000-4000-8000-000000000806",
+                  "type": "consent",
+                  "alias": "privacy",
+                  "span": 1,
+                  "label": "Consent",
+                  "hideLabel": true,
+                  "required": true,
+                  "messages": {},
+                  "validation": [],
+                  "rules": [],
+                  "rows": [],
+                  "fields": [],
+                  "settings": {
+                    "text": "I agree that the library keeps my details while I volunteer and for three months after."
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    },
+    "fields": {
+      "d0000000-0000-4000-8000-000000000801": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000802": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000803": {
+        "kind": "choice",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000804": {
+        "kind": "text",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000805": {
+        "kind": "choices",
+        "canBeRequired": true,
+        "builtIn": true
+      },
+      "d0000000-0000-4000-8000-000000000806": {
+        "kind": "checkbox",
+        "canBeRequired": true,
+        "builtIn": true
+      }
+    },
+    "logic": {
+      "pages": [
+        {
+          "id": "d0000000-0000-4000-8000-000000000080",
+          "rules": [],
+          "groups": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000081",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000801",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "name",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000802",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "email",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000803",
+                  "kind": "choice",
+                  "canBeRequired": true,
+                  "alias": "role",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000804",
+                  "kind": "text",
+                  "canBeRequired": true,
+                  "alias": "otherRole",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [
+                    {
+                      "effect": "show",
+                      "enabled": true,
+                      "match": "all",
+                      "conditions": [
+                        {
+                          "field": "d0000000-0000-4000-8000-000000000803",
+                          "op": "equals",
+                          "value": "other"
+                        }
+                      ]
+                    }
+                  ],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d0000000-0000-4000-8000-000000000082",
+          "rules": [],
+          "groups": [
+            {
+              "id": "d0000000-0000-4000-8000-000000000083",
+              "rules": [],
+              "fields": [
+                {
+                  "id": "d0000000-0000-4000-8000-000000000805",
+                  "kind": "choices",
+                  "canBeRequired": true,
+                  "alias": "days",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                },
+                {
+                  "id": "d0000000-0000-4000-8000-000000000806",
+                  "kind": "checkbox",
+                  "canBeRequired": true,
+                  "alias": "privacy",
+                  "calculation": null,
+                  "required": true,
+                  "rules": [],
+                  "fields": [],
+                  "rows": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "validationRules": []
+    }
+  },
   "workshop": {
     "form": {
       "key": "d0000000-0000-4000-8000-000000000002",

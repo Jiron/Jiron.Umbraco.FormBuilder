@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "key": "d0000000-0000-4000-8000-000000000008",
+  "settings": {
+    "submission": { "submitLabel": { "": "Sign me up", "de": "Anmelden" } },
+    "developer": { "headless": true }
+  },
+  "pages": [
+    {
+      "key": "d0000000-0000-4000-8000-000000000080",
+      "title": { "": "About you", "de": "Über Sie" },
+      "groups": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000081",
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000801",
+              "type": "text",
+              "alias": "name",
+              "label": { "": "Your name", "de": "Ihr Name" },
+              "required": true,
+              "autocomplete": "name"
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000802",
+              "type": "email",
+              "alias": "email",
+              "label": { "": "Email address", "de": "E-Mail-Adresse" },
+              "required": true,
+              "autocomplete": "email"
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000803",
+              "type": "radio",
+              "alias": "role",
+              "label": { "": "How would you like to help?", "de": "Wie möchten Sie helfen?" },
+              "required": true,
+              "options": {
+                "items": [
+                  { "value": "events", "label": { "": "At our events", "de": "Bei unseren Veranstaltungen" } },
+                  { "value": "reading", "label": { "": "Reading with children", "de": "Vorlesen mit Kindern" } },
+                  { "value": "other", "label": { "": "Something else", "de": "Etwas anderes" } }
+                ]
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000804",
+              "type": "text",
+              "alias": "otherRole",
+              "label": { "": "What would you like to do?", "de": "Was möchten Sie tun?" },
+              "required": true,
+              "rules": [
+                {
+                  "key": "d0000000-0000-4000-8000-0000000008a4",
+                  "effect": "show",
+                  "enabled": true,
+                  "match": "all",
+                  "conditions": [{ "field": "d0000000-0000-4000-8000-000000000803", "op": "equals", "value": "other" }]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "d0000000-0000-4000-8000-000000000082",
+      "title": { "": "When you can help", "de": "Wann Sie helfen können" },
+      "groups": [
+        {
+          "key": "d0000000-0000-4000-8000-000000000083",
+          "fields": [
+            {
+              "key": "d0000000-0000-4000-8000-000000000805",
+              "type": "checkboxes",
+              "alias": "days",
+              "label": { "": "Which days suit you?", "de": "Welche Tage passen Ihnen?" },
+              "required": true,
+              "options": {
+                "items": [
+                  { "value": "mon", "label": { "": "Monday", "de": "Montag" } },
+                  { "value": "wed", "label": { "": "Wednesday", "de": "Mittwoch" } },
+                  { "value": "fri", "label": { "": "Friday", "de": "Freitag" } },
+                  { "value": "sat", "label": { "": "Saturday", "de": "Samstag" } }
+                ]
+              }
+            },
+            {
+              "key": "d0000000-0000-4000-8000-000000000806",
+              "type": "consent",
+              "alias": "privacy",
+              "label": { "": "Consent", "de": "Einwilligung" },
+              "hideLabel": true,
+              "required": true,
+              "settings": {
+                "text": {
+                  "": "I agree that the library keeps my details while I volunteer and for three months after.",
+                  "de": "Ich bin einverstanden, dass die Bibliothek meine Angaben speichert, solange ich mich engagiere, und drei Monate darüber hinaus."
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

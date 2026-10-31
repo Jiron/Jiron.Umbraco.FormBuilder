@@ -114,9 +114,14 @@ type, on two pages, to look at a theme with: `http://127.0.0.1:5500/en/specimen/
 image field and picture choices show the demo's one picture (`Seeding/Media/picture.svg`, drawn for the demo), which
 the seeder adds to the media library.
 
+The volunteer sign-up is the demo's form for headless sites: two pages, a rule that shows a field, and its settings
+allow headless use. No page of the demo shows it; a site that does not run Umbraco shows it through `<jfb-form>`, as
+the browser tests' static page on 5521 does (`tests/e2e/support/static-site.ts`, ROADMAP 6.6f,
+[ADR-0128](../docs/decisions/0128-the-element-writes-the-servers-view-model.md)).
+
 To add a page, add it to `DemoContent.json` with a new fixed key. Texts the views show belong in its `dictionary`.
 To add a form, add its definition to `Seeding/Forms/` and its alias to `DemoFormSeeder`, and name it in a page's
-`form`. The seeder never changes a page, a type or a form that exists, so after changing texts or types, run `reset`.
+`form`, unless only headless sites show it. The seeder never changes a page, a type or a form that exists, so after changing texts or types, run `reset`.
 
 Umbraco writes each new template's view back with a byte-order mark; the seeder removes it at once, so the
 committed views stay as they are.

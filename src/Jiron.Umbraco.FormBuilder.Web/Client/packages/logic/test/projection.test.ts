@@ -27,6 +27,7 @@ describe("the form engine's model of the endpoint's answer", () => {
       'newsletter',
       'roomHire',
       'specimen',
+      'volunteer',
       'workshop',
     ]);
   });
