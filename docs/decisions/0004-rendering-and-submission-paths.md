@@ -6,7 +6,9 @@
   (ADR-0100); the output cache rules and `render` built in 6.2l, with the output cache's own switch beside `no-store`
   ([ADR-0104](0104-the-output-cache-rules-and-the-render-endpoint.md)); the runtime's frame, and its error display
   on demand as one chunk with the logic loaded on a form's first interaction, decided and built in 6.4b
-  ([ADR-0110](0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md))
+  ([ADR-0110](0110-the-runtimes-frame-its-chunk-and-the-reading-of-the-page.md)); the eviction of a form's pages after
+  every change visitors see, on every server, decided and built in 6.7d
+  ([ADR-0132](0132-evicting-the-pages-that-use-a-form.md))
 - Date: 2026-10-23
 - Roadmap step: 1.4a (decided); built in 6.1 (the public API), 6.2 (Razor rendering, the no-JS post, the cache
   rules, `render`), 6.4 (the runtime) and 6.6 (headless); reviewed in 6.8 and 16.x

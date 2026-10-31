@@ -1,5 +1,7 @@
+using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Infrastructure.BackgroundJobs;
@@ -8,8 +10,9 @@ namespace Jiron.Umbraco.FormBuilder.Web.Picker;
 
 /// <summary>
 /// The registrations of "used on" (ADR-0017, ADR-0131), which the web composer makes: the form's UDI type, the picker's
-/// reference factory, the index with its content handlers, the reader, and the rebuild with its job. The picker's data
-/// editor and value converter are found by Umbraco itself.
+/// reference factory, the index with its content handlers, the reader, the rebuild with its job, and the output cache's
+/// tags of the pages that use a form with their eviction (ADR-0132). The picker's data editor and value converter are
+/// found by Umbraco itself.
 /// </summary>
 internal static class FormBuilderPickerServices
 {
@@ -34,6 +37,9 @@ internal static class FormBuilderPickerServices
         builder.AddNotificationAsyncHandler<ContentMovedNotification, FormReferenceHandler>();
         builder.AddNotificationAsyncHandler<ContentCopiedNotification, FormReferenceHandler>();
         builder.AddNotificationAsyncHandler<ContentDeletedNotification, FormReferenceHandler>();
+        builder.Services.TryAddSingleton<PageForms>();
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IWebsiteOutputCacheTagProvider, FormCacheTags>());
+        builder.AddNotificationAsyncHandler<FormBuilderFormCacheRefresherNotification, FormCacheEviction>();
         return builder;
     }
 }
