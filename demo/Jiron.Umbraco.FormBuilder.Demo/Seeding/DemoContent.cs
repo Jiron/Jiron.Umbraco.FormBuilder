@@ -18,6 +18,7 @@ internal sealed record DemoContent(
     public const string LoginType = "demoLogin";
     public const string LegalType = "demoLegalPage";
     public const string SpecimenType = "demoSpecimen";
+    public const string ThanksType = "demoThanks";
     public const string TextBlockType = "demoTextBlock";
     public const string HighlightBlockType = "demoHighlightBlock";
 
@@ -47,6 +48,9 @@ internal sealed record DemoTranslation(string En, string De);
 internal sealed record DemoPage(Guid Key, string Type, DemoPageTexts En, DemoPageTexts De, IReadOnlyList<DemoBlock> Blocks, string? Form = null, string? FormTopic = null)
 {
     public DemoPageTexts Texts(bool german) => german ? De : En;
+
+    /// <summary>Whether a block picks a form, so the page waits for the forms (ADR-0136).</summary>
+    public bool HoldsFormBlocks => Blocks.Any(block => block.Form is not null);
 }
 
 /// <summary>A page's texts in one language; the newsletter texts belong to the home page only.</summary>
@@ -58,10 +62,14 @@ internal sealed record DemoPageTexts(
     string? NewsletterHeading = null,
     string? NewsletterText = null);
 
-/// <summary>A block of the page's block list: its element type and its texts per language.</summary>
-internal sealed record DemoBlock(string Type, DemoBlockTexts En, DemoBlockTexts De)
+/// <summary>
+/// A block of the page's block list: its element type and its texts per language, or, for the form block of
+/// "Create a form block for me", the alias of the form it picks (ADR-0136).
+/// </summary>
+internal sealed record DemoBlock(string Type, DemoBlockTexts? En = null, DemoBlockTexts? De = null, string? Form = null)
 {
-    public DemoBlockTexts Texts(bool german) => german ? De : En;
+    public DemoBlockTexts Texts(bool german) => (german ? De : En)
+        ?? throw new InvalidOperationException($"The demo's {Type} block has no texts.");
 }
 
 /// <summary>A block's heading and text (markup for a text block, plain text for a highlight).</summary>

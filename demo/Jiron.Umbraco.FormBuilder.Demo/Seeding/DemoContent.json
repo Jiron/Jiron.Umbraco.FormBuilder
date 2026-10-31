@@ -319,6 +319,56 @@
       },
       "blocks": [],
       "form": "specimen"
+    },
+    {
+      "key": "b7d3e0a1-5c94-4f2e-8a6b-0d1c3f9e2a47",
+      "type": "demoPage",
+      "en": {
+        "name": "Volunteer",
+        "heading": "Volunteer with us",
+        "lede": "Read to children, help at our events or keep the shelves in order: a few hours a month make a difference.",
+        "body": "<p>Tell us how you would like to help and which days suit you. We get back to you within a week.</p>"
+      },
+      "de": {
+        "name": "Ehrenamt",
+        "heading": "Helfen Sie mit",
+        "lede": "Kindern vorlesen, bei Veranstaltungen helfen oder die Regale in Ordnung halten: Schon ein paar Stunden im Monat machen einen Unterschied.",
+        "body": "<p>Sagen Sie uns, wie Sie helfen möchten und welche Tage Ihnen passen. Wir melden uns innerhalb einer Woche.</p>"
+      },
+      "blocks": [
+        {
+          "type": "demoHighlightBlock",
+          "en": {
+            "heading": "No experience needed",
+            "text": "We show you everything on your first day, and you choose how often you come."
+          },
+          "de": {
+            "heading": "Keine Vorkenntnisse nötig",
+            "text": "Wir zeigen Ihnen alles an Ihrem ersten Tag, und Sie bestimmen, wie oft Sie kommen."
+          }
+        },
+        {
+          "type": "jfbFormBlock",
+          "form": "volunteer"
+        }
+      ]
+    },
+    {
+      "key": "4c8a2f6e-1b3d-4e7a-9f05-6d2b8c1a3e90",
+      "type": "demoThanks",
+      "en": {
+        "name": "Thank you",
+        "heading": "Thank you",
+        "lede": "We have your answers and will be in touch soon.",
+        "body": ""
+      },
+      "de": {
+        "name": "Danke",
+        "heading": "Vielen Dank",
+        "lede": "Wir haben Ihre Antworten erhalten und melden uns bald bei Ihnen.",
+        "body": ""
+      },
+      "blocks": []
     }
   ]
 }

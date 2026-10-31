@@ -53,11 +53,16 @@ When the site has started, `Seeding/DemoSeeder.cs` creates whatever is missing a
 
 - the German language, next to English as the default;
 - the dictionary items of the views (`Demo.*`), in English and German;
-- the document types `demoHome`, `demoPage`, `demoLegalPage`, `demoMembers` and `demoLogin`, with their templates
-  (the legal pages use `demoPage`'s), whose views are committed in `Views/`;
-- a block list ("Demo blocks") with a text block and a highlight;
-- the pages, from `Seeding/DemoContent.json`: home, events, careers, feedback, contact, members, sign-in, privacy
-  and imprint, with English under `/en` and German under `/de`;
+- the document types `demoHome`, `demoPage`, `demoLegalPage`, `demoMembers`, `demoLogin`, `demoSpecimen` and
+  `demoThanks`, with their templates (the legal pages, the specimen and the thanks page use `demoPage`'s), whose views
+  are committed in `Views/`, with a view for each block (`Views/Partials/blocklist/Components/`, the form block's
+  `jfbFormBlock.cshtml` among them);
+- the form block of "Create a form block for me" (ROADMAP 6.7b), whose picker's page after a send is the thanks page,
+  as a site builder sets it next ([ADR-0136](../docs/decisions/0136-the-form-picker-on-the-demo.md));
+- a block list ("Demo blocks") with a text block, a highlight and the form block, labelled with the picked form's name;
+- the pages, from `Seeding/DemoContent.json`: home, events, careers, feedback, contact, members, sign-in, privacy,
+  imprint, the specimen, volunteer and the thanks page, with English under `/en` and German under `/de`; the volunteer
+  page's form block picks the volunteer sign-up, so that page is made once the forms exist;
 - the newsletter slot in the footer, with its texts and the newsletter form on every page, so a page with a form of
   its own holds two;
 - the member group "Library members", the two members, and public access on the members page;
@@ -115,11 +120,13 @@ image field and picture choices show the demo's one picture (`Seeding/Media/pict
 the seeder adds to the media library.
 
 The volunteer sign-up is the demo's form for headless sites: two pages, a rule that shows a field, and its settings
-allow headless use. No page of the demo shows it; a site that does not run Umbraco shows it through `<jfb-form>`, as
+allow headless use. The volunteer page shows it through its form block (6.7h), and a send goes to the thanks page the
+block's picker names; a site that does not run Umbraco shows it through `<jfb-form>`, as
 the browser tests' static page on 5521 does (`tests/e2e/support/static-site.ts`, ROADMAP 6.6f,
 [ADR-0128](../docs/decisions/0128-the-element-writes-the-servers-view-model.md)).
 
-To add a page, add it to `DemoContent.json` with a new fixed key. Texts the views show belong in its `dictionary`.
+To add a page, add it to `DemoContent.json` with a new fixed key. Texts the views show belong in its `dictionary`. A
+block with `form` (a form's alias) is a form block.
 To add a form, add its definition to `Seeding/Forms/` and its alias to `DemoFormSeeder`, and name it in a page's
 `form`, unless only headless sites show it. The seeder never changes a page, a type or a form that exists, so after changing texts or types, run `reset`.
 

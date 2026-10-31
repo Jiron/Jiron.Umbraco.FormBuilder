@@ -1,0 +1,9 @@
+@inherits UmbracoViewPage<Umbraco.Cms.Core.Models.Blocks.BlockListItem>
+@* The form block of "Create a form block for me" (ROADMAP 6.7h, ADR-0136): the picked form with its picker's settings,
+   in the theme the demo's visitor chose, if any. A site writes this view for its blocks as it writes the others. *@
+@if (Model.Content.Value<Jiron.Umbraco.FormBuilder.Web.Rendering.FormBuilderFormReference>("form") is { } reference)
+{
+    <section class="site-block">
+        <jfb-render picked="reference" theme="@Jiron.Umbraco.FormBuilder.Demo.DemoThemes.Of(Context)" />
+    </section>
+}

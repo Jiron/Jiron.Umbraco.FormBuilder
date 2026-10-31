@@ -9,8 +9,8 @@ namespace Jiron.Umbraco.FormBuilder.Demo.Seeding;
 /// Creates the demo's forms when they are missing (ADR-0094): each from its definition in <c>Seeding/Forms/</c>, in the
 /// package's definition format, found again by its alias, then created, saved and published through the form service
 /// as an editor's would be. A form that exists is never changed, so what an editor does on the demo stays until a
-/// reset. The pages name their forms in <c>DemoContent.json</c>. Umbraco runs the package's migrations in the
-/// background after an install or an upgrade, so the forms wait for them.
+/// reset. The pages name their forms in <c>DemoContent.json</c>, by alias, in their text property or a form block.
+/// Umbraco runs the package's migrations in the background after an install or an upgrade, so the forms wait for them.
 /// </summary>
 internal sealed class DemoFormSeeder(
     IFormBuilderFormService forms,
@@ -63,6 +63,13 @@ internal sealed class DemoFormSeeder(
 
         return created;
     }
+
+    /// <summary>The key of a demo form, which the pages' form blocks pick (ADR-0136).</summary>
+    /// <param name="alias">The form's alias.</param>
+    /// <param name="cancellationToken">Cancels the seeding.</param>
+    public async Task<Guid> KeyOfAsync(string alias, CancellationToken cancellationToken) =>
+        (await forms.GetByAliasAsync(alias, cancellationToken))?.Key
+        ?? throw new InvalidOperationException($"Demo seeding: a page's form block picks the form {alias}, which is missing.");
 
     private async Task MigratedAsync(CancellationToken cancellationToken)
     {

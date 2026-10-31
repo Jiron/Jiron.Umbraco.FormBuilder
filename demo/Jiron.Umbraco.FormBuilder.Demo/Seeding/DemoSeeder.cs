@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Web.Picker;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
@@ -14,9 +15,10 @@ namespace Jiron.Umbraco.FormBuilder.Demo.Seeding;
 
 /// <summary>
 /// Seeds the demo site once it has started (ROADMAP 3.3): the German language, the dictionary items of the views, the
-/// templates, a block list with two element types, the document types, the English and German pages with their
-/// domains, the members area (<see cref="DemoMemberSeeder"/>), the picture the specimen form shows
-/// (<see cref="DemoMediaSeeder"/>) and the demo forms (<see cref="DemoFormSeeder"/>).
+/// templates, a block list with two element types and the form block of "Create a form block for me" (ADR-0136), the
+/// document types, the English and German pages with their domains, the members area (<see cref="DemoMemberSeeder"/>),
+/// the picture the specimen form shows (<see cref="DemoMediaSeeder"/>), the demo forms (<see cref="DemoFormSeeder"/>)
+/// and then the pages whose blocks pick a form, which need the forms' keys.
 /// Idempotent: every item is created only when it is missing, so a restart changes nothing, and a later step adds a
 /// page by adding it to <c>DemoContent.json</c>. The feature steps add their demo forms as the features arrive.
 /// </summary>
@@ -36,6 +38,7 @@ internal sealed partial class DemoSeeder(
     DemoMemberSeeder members,
     DemoMediaSeeder media,
     DemoFormSeeder demoForms,
+    FormBlockTypes formBlocks,
     ILogger<DemoSeeder> logger) : INotificationAsyncHandler<UmbracoApplicationStartedNotification>
 {
     public const string English = "en-US";
@@ -45,16 +48,20 @@ internal sealed partial class DemoSeeder(
     /// <summary>The block list's data type, found again by this key.</summary>
     private static readonly Guid BlocksDataTypeKey = new("5c0f3a27-9d3e-4c6b-8a1e-2f7b6d4e9a10");
 
+    /// <summary>No form keys, for the pages without form blocks.</summary>
+    private static readonly IReadOnlyDictionary<string, Guid> NoForms = new Dictionary<string, Guid>();
+
     /// <inheritdoc />
     public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
     {
         try
         {
             var content = DemoContent.Load();
-            var created = await SeedAsync(content);
+            var (created, pageTypes) = await SeedAsync(content);
             created |= await members.SeedAsync(content);
             created |= media.Seed();
             created |= await demoForms.SeedAsync(cancellationToken);
+            created |= await SeedPagesWithFormBlocksAsync(content, pageTypes, cancellationToken);
             LogSeeded(logger, created);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -63,7 +70,7 @@ internal sealed partial class DemoSeeder(
         }
     }
 
-    private async Task<bool> SeedAsync(DemoContent content)
+    private async Task<(bool Created, PageTypes Types)> SeedAsync(DemoContent content)
     {
         var english = await languages.GetAsync(English)
             ?? throw new InvalidOperationException($"Demo seeding: the default language {English} is missing.");
@@ -87,16 +94,18 @@ internal sealed partial class DemoSeeder(
 
         var textBlock = await EnsureElementTypeAsync(DemoContent.TextBlockType, "Demo text block", "icon-text", textBox, richText);
         var highlightBlock = await EnsureElementTypeAsync(DemoContent.HighlightBlockType, "Demo highlight block", "icon-lightbulb", textBox, textArea);
-        var blocks = await EnsureBlockListAsync(textBlock, highlightBlock);
+        var formBlock = await EnsureFormBlockAsync(content.PageOfType(DemoContent.ThanksType).Key);
+        var blocks = await EnsureBlockListAsync(textBlock, highlightBlock, formBlock);
         var properties = new PageProperties(textBox, textArea, richText, blocks);
 
         var page = await EnsureDocumentTypeAsync(DemoContent.PageType, "Demo page", "icon-document", [pageTemplate], properties);
         var legal = await EnsureDocumentTypeAsync(DemoContent.LegalType, "Demo legal page", "icon-script", [pageTemplate], properties);
         var specimen = await EnsureDocumentTypeAsync(DemoContent.SpecimenType, "Demo specimen", "icon-layout", [pageTemplate], properties);
+        var thanks = await EnsureDocumentTypeAsync(DemoContent.ThanksType, "Demo thank-you page", "icon-message", [pageTemplate], properties);
         var membersArea = await EnsureDocumentTypeAsync(DemoContent.MembersType, "Demo members area", "icon-lock", [membersTemplate], properties);
         var login = await EnsureDocumentTypeAsync(DemoContent.LoginType, "Demo sign-in page", "icon-key", [loginTemplate], properties);
         var home = await EnsureDocumentTypeAsync(DemoContent.HomeType, "Demo home", "icon-home", [homeTemplate], properties, isRoot: true);
-        await EnsureAllowedChildrenAsync(home, [page, membersArea, login, legal, specimen]);
+        await EnsureAllowedChildrenAsync(home, [page, membersArea, login, legal, specimen, thanks]);
 
         var types = new Dictionary<string, (IContentType Type, ITemplate Template)>
         {
@@ -104,6 +113,7 @@ internal sealed partial class DemoSeeder(
             [DemoContent.PageType] = (page, pageTemplate),
             [DemoContent.LegalType] = (legal, pageTemplate),
             [DemoContent.SpecimenType] = (specimen, pageTemplate),
+            [DemoContent.ThanksType] = (thanks, pageTemplate),
             [DemoContent.MembersType] = (membersArea, membersTemplate),
             [DemoContent.LoginType] = (login, loginTemplate),
         };
@@ -111,19 +121,21 @@ internal sealed partial class DemoSeeder(
         {
             [DemoContent.TextBlockType] = textBlock,
             [DemoContent.HighlightBlockType] = highlightBlock,
+            [FormBlockTypes.ElementTypeAlias] = formBlock,
         };
+        var pageTypes = new PageTypes(types, elementTypes);
 
         // Every missing page first, then the domains, then publishing (home first), so no page is published in two
-        // cultures while its root has no domains.
+        // cultures while its root has no domains. A page whose blocks pick a form waits for the forms.
         var created = new List<DemoPage>();
-        if (await CreatePageAsync(content.Home, types, elementTypes, parentKey: null))
+        if (await CreatePageAsync(content.Home, pageTypes, NoForms, parentKey: null))
         {
             created.Add(content.Home);
         }
 
-        foreach (var child in content.Pages)
+        foreach (var child in content.Pages.Where(child => !child.HoldsFormBlocks))
         {
-            if (await CreatePageAsync(child, types, elementTypes, content.Home.Key))
+            if (await CreatePageAsync(child, pageTypes, NoForms, content.Home.Key))
             {
                 created.Add(child);
             }
@@ -135,7 +147,52 @@ internal sealed partial class DemoSeeder(
             await PublishAsync(newPage);
         }
 
+        return (created.Count > 0, pageTypes);
+    }
+
+    /// <summary>Creates and publishes the missing pages whose blocks pick a form, once the forms exist.</summary>
+    private async Task<bool> SeedPagesWithFormBlocksAsync(DemoContent content, PageTypes pageTypes, CancellationToken cancellationToken)
+    {
+        var created = new List<DemoPage>();
+        foreach (var page in content.Pages.Where(page => page.HoldsFormBlocks))
+        {
+            var formKeys = new Dictionary<string, Guid>(StringComparer.Ordinal);
+            foreach (var alias in page.Blocks.Select(block => block.Form).OfType<string>().Distinct(StringComparer.Ordinal))
+            {
+                formKeys[alias] = await demoForms.KeyOfAsync(alias, cancellationToken);
+            }
+
+            if (await CreatePageAsync(page, pageTypes, formKeys, content.Home.Key))
+            {
+                created.Add(page);
+            }
+        }
+
+        foreach (var page in created)
+        {
+            await PublishAsync(page);
+        }
+
         return created.Count > 0;
+    }
+
+    /// <summary>
+    /// "Create a form block for me", as a site builder presses it (ADR-0136); when that made the picker's data type, the
+    /// page after a send is set to the thanks page, as the site builder sets it next in the data type's settings.
+    /// </summary>
+    private async Task<IContentType> EnsureFormBlockAsync(Guid thanksPage)
+    {
+        var made = await formBlocks.CreateAsync(User);
+        if (made.DataType.Created)
+        {
+            var dataType = await dataTypes.GetAsync(made.DataType.Key)
+                ?? throw new InvalidOperationException("Demo seeding: the form picker's data type is missing.");
+            dataType.ConfigurationData = new Dictionary<string, object>(dataType.ConfigurationData) { ["redirect"] = thanksPage.ToString() };
+            Check(await dataTypes.UpdateAsync(dataType, User), "the form picker's page after a send");
+        }
+
+        return await contentTypes.GetAsync(made.ElementType.Key)
+            ?? throw new InvalidOperationException("Demo seeding: the form block's element type is missing.");
     }
 
     private async Task EnsureDictionaryAsync(DemoContent content, ILanguage english, ILanguage german)
@@ -209,7 +266,7 @@ internal sealed partial class DemoSeeder(
         return type;
     }
 
-    private async Task<IDataType> EnsureBlockListAsync(IContentType textBlock, IContentType highlightBlock)
+    private async Task<IDataType> EnsureBlockListAsync(IContentType textBlock, IContentType highlightBlock, IContentType formBlock)
     {
         var existing = await dataTypes.GetAsync(BlocksDataTypeKey);
         if (existing is not null)
@@ -222,21 +279,23 @@ internal sealed partial class DemoSeeder(
             throw new InvalidOperationException("Demo seeding: Umbraco's block list editor is missing.");
         }
 
-        var configuration = new BlockListConfiguration
-        {
-            Blocks =
-            [
-                new BlockListConfiguration.BlockConfiguration { ContentElementTypeKey = textBlock.Key },
-                new BlockListConfiguration.BlockConfiguration { ContentElementTypeKey = highlightBlock.Key },
-            ],
-        };
+        // The blocks as the backoffice writes them: Umbraco's server-side model of a block has no label, which the
+        // form block takes so that its row names the picked form (the picker's block label component, ADR-0134).
         var dataType = new DataType(editor, configurationSerializer)
         {
             Key = BlocksDataTypeKey,
             Name = "Demo blocks",
             EditorUiAlias = "Umb.PropertyEditorUi.BlockList",
             DatabaseType = ValueStorageType.Ntext,
-            ConfigurationData = editor.GetConfigurationEditor().FromConfigurationObject(configuration, configurationSerializer),
+            ConfigurationData = new Dictionary<string, object>
+            {
+                ["blocks"] = new object[]
+                {
+                    new { contentElementTypeKey = textBlock.Key },
+                    new { contentElementTypeKey = highlightBlock.Key },
+                    new { contentElementTypeKey = formBlock.Key, label = "{jfbFormName: form}" },
+                },
+            },
         };
         Check(await dataTypes.CreateAsync(dataType, User), "the block list data type");
         return dataType;
@@ -269,7 +328,8 @@ internal sealed partial class DemoSeeder(
         AddProperty(type, properties.RichText, "bodyText", "Body text", "content", "Content");
         AddProperty(type, properties.Blocks, "blocks", "Blocks", "content", "Content");
 
-        // The form below the content, by its alias, the same in both languages (the form picker replaces it with 6.7).
+        // The form below the content, by its alias, the same in both languages: a developer naming a form in a view; the
+        // form block shows an editor picking one (ADR-0136).
         type.AddPropertyType(new PropertyType(shortStrings, properties.TextBox, "form") { Name = "Form", Description = "The alias of a form to show below the content." }, "content", "Content");
 
         // What the page is about, which its form may take as the context value topic (ADR-0124).
@@ -308,8 +368,8 @@ internal sealed partial class DemoSeeder(
     /// <summary>Creates the page, unpublished, when it is missing; true when it was created.</summary>
     private async Task<bool> CreatePageAsync(
         DemoPage page,
-        Dictionary<string, (IContentType Type, ITemplate Template)> types,
-        Dictionary<string, IContentType> elementTypes,
+        PageTypes pageTypes,
+        IReadOnlyDictionary<string, Guid> formKeys,
         Guid? parentKey)
     {
         if (await contentEditing.GetAsync(page.Key) is not null)
@@ -317,7 +377,7 @@ internal sealed partial class DemoSeeder(
             return false;
         }
 
-        var (type, template) = types[page.Type];
+        var (type, template) = pageTypes.Types[page.Type];
         var properties = new List<PropertyValueModel>();
         if (page.Form is not null)
         {
@@ -335,7 +395,7 @@ internal sealed partial class DemoSeeder(
             properties.Add(new PropertyValueModel { Alias = "heading", Value = texts.Heading, Culture = culture });
             properties.Add(new PropertyValueModel { Alias = "lede", Value = texts.Lede, Culture = culture });
             properties.Add(new PropertyValueModel { Alias = "bodyText", Value = texts.Body, Culture = culture });
-            properties.Add(new PropertyValueModel { Alias = "blocks", Value = BlockListValue(page.Blocks, german, elementTypes), Culture = culture });
+            properties.Add(new PropertyValueModel { Alias = "blocks", Value = BlockListValue(page.Blocks, german, pageTypes.ElementTypes, formKeys), Culture = culture });
             if (texts.NewsletterHeading is not null)
             {
                 properties.Add(new PropertyValueModel { Alias = "newsletterHeading", Value = texts.NewsletterHeading, Culture = culture });
@@ -382,14 +442,18 @@ internal sealed partial class DemoSeeder(
     /// A block list value in Umbraco 17's format: the layout, the blocks' data and their exposure. The element types
     /// are invariant, so each block is exposed without a culture inside the culture's own value.
     /// </summary>
-    private static string? BlockListValue(IReadOnlyList<DemoBlock> blocks, bool german, Dictionary<string, IContentType> elementTypes)
+    private static string? BlockListValue(
+        IReadOnlyList<DemoBlock> blocks,
+        bool german,
+        IReadOnlyDictionary<string, IContentType> elementTypes,
+        IReadOnlyDictionary<string, Guid> formKeys)
     {
         if (blocks.Count == 0)
         {
             return null;
         }
 
-        var items = blocks.Select(block => (Key: Guid.NewGuid(), Block: block, Texts: block.Texts(german))).ToList();
+        var items = blocks.Select(block => (Key: Guid.NewGuid(), Block: block)).ToList();
         var value = new
         {
             layout = new Dictionary<string, object>
@@ -400,22 +464,32 @@ internal sealed partial class DemoSeeder(
             {
                 key = item.Key,
                 contentTypeKey = elementTypes[item.Block.Type].Key,
-                values = new object[]
-                {
-                    new { alias = "heading", value = (object)item.Texts.Heading },
-                    new
-                    {
-                        alias = "text",
-                        value = item.Block.Type == DemoContent.TextBlockType
-                            ? new { markup = item.Texts.Text, blocks = (object?)null }
-                            : (object)item.Texts.Text,
-                    },
-                },
+                values = BlockValues(item.Block, german, formKeys),
             }).ToArray(),
             settingsData = Array.Empty<object>(),
             expose = items.Select(item => new { contentKey = item.Key, culture = (string?)null, segment = (string?)null }).ToArray(),
         };
         return JsonSerializer.Serialize(value);
+    }
+
+    /// <summary>A block's values: the form's key for a form block, else its heading and text.</summary>
+    private static object[] BlockValues(DemoBlock block, bool german, IReadOnlyDictionary<string, Guid> formKeys)
+    {
+        if (block.Form is { } form)
+        {
+            return [new { alias = FormBlockTypes.PropertyAlias, value = formKeys[form].ToString() }];
+        }
+
+        var texts = block.Texts(german);
+        return
+        [
+            new { alias = "heading", value = (object)texts.Heading },
+            new
+            {
+                alias = "text",
+                value = block.Type == DemoContent.TextBlockType ? new { markup = texts.Text, blocks = (object?)null } : (object)texts.Text,
+            },
+        ];
     }
 
     /// <summary>The home page's domains: English under <c>/en</c> and German under <c>/de</c>, on any host.</summary>
@@ -465,4 +539,9 @@ internal sealed partial class DemoSeeder(
 
     /// <summary>The data types of the pages' properties.</summary>
     private sealed record PageProperties(IDataType TextBox, IDataType TextArea, IDataType RichText, IDataType Blocks);
+
+    /// <summary>The pages' document types with their templates, and the blocks' element types, by alias.</summary>
+    private sealed record PageTypes(
+        IReadOnlyDictionary<string, (IContentType Type, ITemplate Template)> Types,
+        IReadOnlyDictionary<string, IContentType> ElementTypes);
 }
