@@ -3,7 +3,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { FieldTypeListData, FieldTypeListErrors, FieldTypeListResponses, FolderCreateData, FolderCreateErrors, FolderCreateResponses, FolderDeleteData, FolderDeleteErrors, FolderDeleteResponses, FolderGetData, FolderGetErrors, FolderGetResponses, FolderMoveData, FolderMoveErrors, FolderMoveResponses, FolderRenameData, FolderRenameErrors, FolderRenameResponses, FolderRestoreData, FolderRestoreErrors, FolderRestoreResponses, FolderTrashData, FolderTrashErrors, FolderTrashResponses, FormCreateData, FormCreateErrors, FormCreateResponses, FormDeleteData, FormDeleteErrors, FormDeleteResponses, FormDraftData, FormDraftErrors, FormDraftResponses, FormGetData, FormGetErrors, FormGetResponses, FormMoveData, FormMoveErrors, FormMoveResponses, FormPublishData, FormPublishErrors, FormPublishResponses, FormReferenceListData, FormReferenceListErrors, FormReferenceListResponses, FormRenameData, FormRenameErrors, FormRenameResponses, FormRestoreData, FormRestoreErrors, FormRestoreResponses, FormSaveDraftData, FormSaveDraftErrors, FormSaveDraftResponses, FormSearchData, FormSearchErrors, FormSearchResponses, FormTrashData, FormTrashErrors, FormTrashResponses, FormUnpublishData, FormUnpublishErrors, FormUnpublishResponses, SetupCreateFormBlockData, SetupCreateFormBlockErrors, SetupCreateFormBlockResponses, TrashEmptyData, TrashEmptyErrors, TrashEmptyResponses, TrashListData, TrashListErrors, TrashListResponses, TreeChildrenData, TreeChildrenErrors, TreeChildrenResponses, TreeRootData, TreeRootErrors, TreeRootResponses, VersionCommentData, VersionCommentErrors, VersionCommentResponses, VersionCompareData, VersionCompareErrors, VersionCompareResponses, VersionGetData, VersionGetErrors, VersionGetResponses, VersionListData, VersionListErrors, VersionListResponses, VersionPinData, VersionPinErrors, VersionPinResponses, VersionRestoreData, VersionRestoreErrors, VersionRestoreResponses } from './types.gen';
+import type { FieldTypeListData, FieldTypeListErrors, FieldTypeListResponses, FolderCreateData, FolderCreateErrors, FolderCreateResponses, FolderDeleteData, FolderDeleteErrors, FolderDeleteResponses, FolderGetData, FolderGetErrors, FolderGetResponses, FolderMoveData, FolderMoveErrors, FolderMoveResponses, FolderRenameData, FolderRenameErrors, FolderRenameResponses, FolderRestoreData, FolderRestoreErrors, FolderRestoreResponses, FolderTrashData, FolderTrashErrors, FolderTrashResponses, FormCreateData, FormCreateErrors, FormCreateResponses, FormDeleteData, FormDeleteErrors, FormDeleteResponses, FormDraftData, FormDraftErrors, FormDraftResponses, FormGetData, FormGetErrors, FormGetResponses, FormMoveData, FormMoveErrors, FormMoveResponses, FormPublishData, FormPublishErrors, FormPublishResponses, FormReferenceListData, FormReferenceListErrors, FormReferenceListResponses, FormRenameData, FormRenameErrors, FormRenameResponses, FormRestoreData, FormRestoreErrors, FormRestoreResponses, FormSaveDraftData, FormSaveDraftErrors, FormSaveDraftResponses, FormSearchData, FormSearchErrors, FormSearchResponses, FormTrashData, FormTrashErrors, FormTrashResponses, FormUnpublishData, FormUnpublishErrors, FormUnpublishResponses, PickerChildrenData, PickerChildrenErrors, PickerChildrenResponses, PickerFormsData, PickerFormsErrors, PickerFormsResponses, PickerSearchData, PickerSearchErrors, PickerSearchResponses, PickerThemesData, PickerThemesErrors, PickerThemesResponses, SetupCreateFormBlockData, SetupCreateFormBlockErrors, SetupCreateFormBlockResponses, TrashEmptyData, TrashEmptyErrors, TrashEmptyResponses, TrashListData, TrashListErrors, TrashListResponses, TreeChildrenData, TreeChildrenErrors, TreeChildrenResponses, TreeRootData, TreeRootErrors, TreeRootResponses, VersionCommentData, VersionCommentErrors, VersionCommentResponses, VersionCompareData, VersionCompareErrors, VersionCompareResponses, VersionGetData, VersionGetErrors, VersionGetResponses, VersionListData, VersionListErrors, VersionListResponses, VersionPinData, VersionPinErrors, VersionPinResponses, VersionRestoreData, VersionRestoreErrors, VersionRestoreResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -190,6 +190,30 @@ export const formUnpublish = <ThrowOnError extends boolean = false>(options: Opt
 export const formSearch = <ThrowOnError extends boolean = false>(options: Options<FormSearchData, ThrowOnError>): RequestResult<FormSearchResponses, FormSearchErrors, ThrowOnError> => (options.client ?? client).get<FormSearchResponses, FormSearchErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/jfb/management/api/v1/form/search',
+    ...options
+});
+
+export const pickerChildren = <ThrowOnError extends boolean = false>(options?: Options<PickerChildrenData, ThrowOnError>): RequestResult<PickerChildrenResponses, PickerChildrenErrors, ThrowOnError> => (options?.client ?? client).get<PickerChildrenResponses, PickerChildrenErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/picker/children',
+    ...options
+});
+
+export const pickerForms = <ThrowOnError extends boolean = false>(options?: Options<PickerFormsData, ThrowOnError>): RequestResult<PickerFormsResponses, PickerFormsErrors, ThrowOnError> => (options?.client ?? client).get<PickerFormsResponses, PickerFormsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/picker/forms',
+    ...options
+});
+
+export const pickerSearch = <ThrowOnError extends boolean = false>(options: Options<PickerSearchData, ThrowOnError>): RequestResult<PickerSearchResponses, PickerSearchErrors, ThrowOnError> => (options.client ?? client).get<PickerSearchResponses, PickerSearchErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/picker/search',
+    ...options
+});
+
+export const pickerThemes = <ThrowOnError extends boolean = false>(options?: Options<PickerThemesData, ThrowOnError>): RequestResult<PickerThemesResponses, PickerThemesErrors, ThrowOnError> => (options?.client ?? client).get<PickerThemesResponses, PickerThemesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/jfb/management/api/v1/picker/themes',
     ...options
 });
 

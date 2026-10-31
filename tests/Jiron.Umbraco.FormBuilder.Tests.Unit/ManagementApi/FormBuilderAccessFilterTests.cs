@@ -164,6 +164,44 @@ public sealed class FormBuilderAccessFilterTests
         });
     }
 
+    [TestCase("content")]
+    [TestCase("media")]
+    [TestCase("member")]
+    [TestCase("Settings")]
+    public async Task ContentAccess_NeedsOneOfUmbracosSectionsWhereAPickerIsUsed_NotTheFormsSection(string section)
+    {
+        _authorization.AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), FormBuilderPolicies.Section).Returns(AuthorizationResult.Failed());
+        var answered = await RunAsync([new FormBuilderContentAccessAttribute()], [], user: User(section));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(answered.NextRan, Is.True, "in any letter case, without the Forms section");
+            Assert.That(answered.Http.Features.Get<FormBuilderRequestAccess>()?.User.HasSection, Is.False, "the action learns that the user lacks the section");
+            Assert.That(_asked, Is.Empty, "no policy of Jiron Form Builder is asked");
+        });
+    }
+
+    [Test]
+    public async Task ContentAccess_RefusesAUserWithNoneOfThoseSections_ThenWaitsForTheMigrations_ThenReadsTheValues()
+    {
+        FormBuilderAccessAttribute[] declaration = [new FormBuilderContentAccessAttribute()];
+        var formsOnly = await RunAsync(declaration, [], user: User(Section, "users", "translation"));
+        var askedWhileRefused = _migrations.Asked;
+        var invalid = await RunAsync(declaration, [], invalid: true, user: User("content"));
+        _migrations.Pending = true;
+        var pending = await RunAsync(declaration, [], invalid: true, user: User("content"));
+        var anonymous = await RunAsync(declaration, [], known: false);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That((formsOnly.Outcome, formsOnly.Section), Is.EqualTo(("403 forbidden", "content")));
+            Assert.That(askedWhileRefused, Is.Zero, "the migration state is not asked for a refused user");
+            Assert.That(invalid.Outcome, Is.EqualTo("400 invalid_request"));
+            Assert.That(pending.Outcome, Is.EqualTo("503 migrations_pending"), "before the values");
+            Assert.That(anonymous.Result, Is.TypeOf<ChallengeResult>());
+        });
+    }
+
     [Test]
     public async Task AnUmbracoSection_IsCheckedAfterThePermissions_AndARefusalNamesIt()
     {

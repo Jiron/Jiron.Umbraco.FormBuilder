@@ -12,7 +12,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.ManagementApi;
 /// The permission matrix (ADR-0013, ADR-0050): it finds every endpoint of the management API through the API explorer,
 /// checks its declaration against <see cref="Declared"/>, written out by hand from ADR-0050's table, and calls each as
 /// every persona that must be refused: without the Forms section, seeing the folder but lacking the permission, and
-/// holding nothing on the folder or form. A new endpoint is called by itself, and fails until the table names it.
+/// holding nothing on the folder or form. A new endpoint is called by itself, and fails until the table names it. The
+/// form picker's endpoints are the one reviewed exception: authorised by content access (ADR-0013, ADR-0133), each
+/// carries that declaration and has its own access tests (<c>PickerApiTests</c>).
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -55,8 +57,11 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         ["POST setup/form-block"] = (FormBuilderPermissions.ManageSettings, FormBuilderAccessResourceKind.Global, null),
     };
 
-    /// <summary>The reviewed exception list: endpoints without a declaration. Only the form picker (6.7) may join it.</summary>
-    private static readonly string[] Exceptions = [];
+    /// <summary>
+    /// The reviewed exception list: the endpoints authorised by content access instead of Jiron Form Builder's permissions.
+    /// Only the form picker's may be on it (6.7e).
+    /// </summary>
+    private static readonly string[] Exceptions = ["GET picker/children", "GET picker/search", "GET picker/forms", "GET picker/themes"];
 
     // The personas who may stand for "sees it but lacks the permission", in the order the test tries them.
     private static readonly string[] Seers = ["viewer", "designer", "entryHandler", "privacyOfficer", "noAccess"];
@@ -89,7 +94,12 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
         {
             Assert.That(endpoints, Is.Not.Empty, "the API explorer lists the management API");
             Assert.That(endpoints.Select(endpoint => endpoint.Name), Is.EquivalentTo(Declared.Keys.Concat(Exceptions)), "every endpoint is in the table, and the table names no endpoint that is gone");
-            Assert.That(Exceptions, Is.Empty, "the reviewed exception list grew");
+            Assert.That(Exceptions, Has.All.StartsWith("GET picker/"), "the reviewed exception list holds the form picker's endpoints only");
+            foreach (var endpoint in endpoints.Where(endpoint => Exceptions.Contains(endpoint.Name)))
+            {
+                Assert.That(endpoint.Declarations.Select(declaration => declaration.GetType()), Is.EqualTo(new[] { typeof(FormBuilderContentAccessAttribute) }), $"{endpoint.Name} declares content access");
+            }
+
             foreach (var endpoint in endpoints.Where(endpoint => !Exceptions.Contains(endpoint.Name)))
             {
                 Assert.That(endpoint.Declarations, Has.Count.EqualTo(1), $"{endpoint.Name} carries exactly one declaration");
@@ -111,7 +121,7 @@ public sealed class PermissionMatrixTests : ManagementApiTestBase
     public async Task EachEndpoint_RefusesAUserWithoutTheFormsSection()
     {
         var answers = new List<string>();
-        foreach (var endpoint in Endpoints())
+        foreach (var endpoint in Endpoints().Where(endpoint => !Exceptions.Contains(endpoint.Name)))
         {
             answers.Add($"{endpoint.Name}: {(await CallAsync("outsider", endpoint, Visible(endpoint))).Outcome}");
         }

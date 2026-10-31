@@ -39,6 +39,9 @@ internal static class FormBuilderProblems
     /// <summary>A form's version that does not exist.</summary>
     public const string VersionNotFoundCode = "version_not_found";
 
+    /// <summary>The code of a data type that does not exist or is no form picker's.</summary>
+    public const string DataTypeNotFoundCode = "data_type_not_found";
+
     /// <summary>How long a client waits before asking again while the plan has not run.</summary>
     public static readonly TimeSpan RetryAfter = TimeSpan.FromSeconds(10);
 
@@ -64,6 +67,10 @@ internal static class FormBuilderProblems
     /// <summary>A version of a form the user sees that does not exist (ADR-0052).</summary>
     public static FormBuilderProblemResult VersionNotFound() =>
         Problem(StatusCodes.Status404NotFound, VersionNotFoundCode, "The version does not exist.");
+
+    /// <summary>A data type that does not exist, or one that is no form picker's (ADR-0133).</summary>
+    public static FormBuilderProblemResult DataTypeNotFound() =>
+        Problem(StatusCodes.Status404NotFound, DataTypeNotFoundCode, "The form picker's data type does not exist.");
 
     /// <summary>The user sees the item but lacks <paramref name="permission"/>, which the answer names.</summary>
     public static FormBuilderProblemResult Missing(FormBuilderPermissions permission, IDictionary<string, object?>? extensions = null)

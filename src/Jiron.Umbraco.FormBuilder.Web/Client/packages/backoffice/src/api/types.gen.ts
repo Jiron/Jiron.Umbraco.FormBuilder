@@ -293,6 +293,24 @@ export type PagedLibraryItemResponseModel = {
     items: Array<LibraryItemResponseModel>;
 };
 
+export type PagedPickerItemResponseModel = {
+    total: number;
+    items: Array<PickerItemResponseModel>;
+};
+
+export type PickerItemResponseModel = {
+    key: string;
+    kind: string;
+    name: string;
+    alias?: string | null;
+    hasChildren: boolean;
+};
+
+export type PickerThemeResponseModel = {
+    alias: string;
+    label: string;
+};
+
 export type PinVersionRequestModel = {
     isPinned: boolean;
 };
@@ -1188,6 +1206,157 @@ export type FormSearchResponses = {
 };
 
 export type FormSearchResponse = FormSearchResponses[keyof FormSearchResponses];
+
+export type PickerChildrenData = {
+    body?: never;
+    path?: never;
+    query?: {
+        parentKey?: string;
+        dataTypeKey?: string;
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/picker/children';
+};
+
+export type PickerChildrenErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type PickerChildrenError = PickerChildrenErrors[keyof PickerChildrenErrors];
+
+export type PickerChildrenResponses = {
+    /**
+     * OK
+     */
+    200: PagedPickerItemResponseModel;
+};
+
+export type PickerChildrenResponse = PickerChildrenResponses[keyof PickerChildrenResponses];
+
+export type PickerFormsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        keys?: Array<string>;
+        dataTypeKey?: string;
+    };
+    url: '/umbraco/jfb/management/api/v1/picker/forms';
+};
+
+export type PickerFormsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type PickerFormsError = PickerFormsErrors[keyof PickerFormsErrors];
+
+export type PickerFormsResponses = {
+    /**
+     * OK
+     */
+    200: Array<PickerItemResponseModel>;
+};
+
+export type PickerFormsResponse = PickerFormsResponses[keyof PickerFormsResponses];
+
+export type PickerSearchData = {
+    body?: never;
+    path?: never;
+    query: {
+        text: string;
+        dataTypeKey?: string;
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/jfb/management/api/v1/picker/search';
+};
+
+export type PickerSearchErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type PickerSearchError = PickerSearchErrors[keyof PickerSearchErrors];
+
+export type PickerSearchResponses = {
+    /**
+     * OK
+     */
+    200: PagedPickerItemResponseModel;
+};
+
+export type PickerSearchResponse = PickerSearchResponses[keyof PickerSearchResponses];
+
+export type PickerThemesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/jfb/management/api/v1/picker/themes';
+};
+
+export type PickerThemesErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type PickerThemesResponses = {
+    /**
+     * OK
+     */
+    200: Array<PickerThemeResponseModel>;
+};
+
+export type PickerThemesResponse = PickerThemesResponses[keyof PickerThemesResponses];
 
 export type SetupCreateFormBlockData = {
     body?: never;

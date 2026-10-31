@@ -6,8 +6,8 @@ namespace Jiron.Umbraco.FormBuilder.Web.ManagementApi.Access;
 
 /// <summary>
 /// What an action of the management API needs (ADR-0050). Every action carries exactly one of
-/// <see cref="FormBuilderPermissionAttribute"/> and <see cref="FormBuilderSectionAttribute"/>; the access filter reads it,
-/// and so does the permission matrix.
+/// <see cref="FormBuilderPermissionAttribute"/>, <see cref="FormBuilderSectionAttribute"/> and, for the form picker only,
+/// <see cref="FormBuilderContentAccessAttribute"/>; the access filter reads it, and so does the permission matrix.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
 internal abstract class FormBuilderAccessAttribute : Attribute
@@ -54,6 +54,29 @@ internal sealed class FormBuilderSectionAttribute : FormBuilderAccessAttribute
 {
     /// <summary>Creates the declaration.</summary>
     public FormBuilderSectionAttribute()
+        : base(FormBuilderPermissions.None)
+    {
+    }
+}
+
+/// <summary>
+/// Content access instead of Jiron Form Builder's permissions (ADR-0013, ADR-0133): any backoffice user with one of
+/// Umbraco's <see cref="Sections"/> may call the action, the Forms section not needed. Only the form picker's endpoints
+/// carry it, and the permission matrix names them as its reviewed exception.
+/// </summary>
+internal sealed class FormBuilderContentAccessAttribute : FormBuilderAccessAttribute
+{
+    /// <summary>The sections where a user edits properties that may hold a form picker: Content, Media, Members, and Settings for the data type's own settings.</summary>
+    public static readonly IReadOnlyList<string> Sections =
+    [
+        global::Umbraco.Cms.Core.Constants.Applications.Content,
+        global::Umbraco.Cms.Core.Constants.Applications.Media,
+        global::Umbraco.Cms.Core.Constants.Applications.Members,
+        global::Umbraco.Cms.Core.Constants.Applications.Settings,
+    ];
+
+    /// <summary>Creates the declaration.</summary>
+    public FormBuilderContentAccessAttribute()
         : base(FormBuilderPermissions.None)
     {
     }

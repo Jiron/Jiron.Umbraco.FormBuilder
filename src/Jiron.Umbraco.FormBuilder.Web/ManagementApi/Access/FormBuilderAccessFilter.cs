@@ -99,6 +99,11 @@ internal sealed partial class FormBuilderAccessFilter(
             return new ChallengeResult();
         }
 
+        if (declaration is FormBuilderContentAccessAttribute)
+        {
+            return await ContentRefusalAsync(context, umbracoUser);
+        }
+
         if (!(await authorization.AuthorizeAsync(http.User, FormBuilderPolicies.Section)).Succeeded)
         {
             return FormBuilderProblems.NoSection();
@@ -172,6 +177,30 @@ internal sealed partial class FormBuilderAccessFilter(
         }
 
         http.Features.Set(access);
+        return null;
+    }
+
+    // Content access (ADR-0133): one of Umbraco's sections where a picker is used, the tables ready, the request's values
+    // read; what the user may pick is the picker service's to filter.
+    private async Task<IActionResult?> ContentRefusalAsync(ActionExecutingContext context, global::Umbraco.Cms.Core.Models.Membership.IUser umbracoUser)
+    {
+        var http = context.HttpContext;
+        if (!FormBuilderContentAccessAttribute.Sections.Any(section => umbracoUser.AllowedSections.Contains(section, StringComparer.OrdinalIgnoreCase)))
+        {
+            return FormBuilderProblems.MissingSection(FormBuilderContentAccessAttribute.Sections[0]);
+        }
+
+        if (await migrations.IsPendingAsync(http.RequestAborted))
+        {
+            return FormBuilderProblems.MigrationsPending(http);
+        }
+
+        if (!context.ModelState.IsValid)
+        {
+            return FormBuilderProblems.InvalidRequest(context.ModelState);
+        }
+
+        http.Features.Set(new FormBuilderRequestAccess(AccessUser.Of(umbracoUser)));
         return null;
     }
 
