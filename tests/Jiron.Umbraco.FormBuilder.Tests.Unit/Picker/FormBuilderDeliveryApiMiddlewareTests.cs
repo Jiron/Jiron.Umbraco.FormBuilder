@@ -7,7 +7,8 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Picker;
 /// <summary>
 /// The form picker's markers in the Content Delivery API's answers (ADR-0127): found by their exact bytes in the item,
 /// items and query answers, each with the page it is on (the nearest item with a route, never a block's element), and
-/// nothing that only looks like one; an answer without a marker, and any other path, pass byte for byte.
+/// nothing that only looks like one; a marker's theme and page after a send from the picker's settings (ADR-0129), in
+/// their places after the first two; an answer without a marker, and any other path, pass byte for byte.
 /// </summary>
 public sealed class FormBuilderDeliveryApiMiddlewareTests
 {
@@ -47,6 +48,9 @@ public sealed class FormBuilderDeliveryApiMiddlewareTests
     }
 
     [TestCase($$$"""{"jfbForm":"{{{Form}}}","expand":true,"more":1}""")]
+    [TestCase($$$"""{"jfbForm":"{{{Form}}}","expand":true,"theme":"bootstrap5","redirect":null,"more":1}""")]
+    [TestCase($$$"""{"jfbForm":"{{{Form}}}","expand":true,"redirect":null,"theme":"bootstrap5"}""")]
+    [TestCase($$$"""{"jfbForm":"{{{Form}}}","expand":true,"theme":1}""")]
     [TestCase($$$"""{"expand":true,"jfbForm":"{{{Form}}}"}""")]
     [TestCase("""{"jfbForm":"not a key","expand":true}""")]
     [TestCase($$$"""{"jfbForm":"{{{Form}}}","expand":"true"}""")]
@@ -55,6 +59,29 @@ public sealed class FormBuilderDeliveryApiMiddlewareTests
     [TestCase($$$"""["jfbForm","{{{Form}}}","expand",true]""")]
     public void WhatOnlyLooksLikeAMarker_IsNone(string json) =>
         Assert.That(FormBuilderDeliveryApiMiddleware.Find(Encoding.UTF8.GetBytes(json)), Is.Empty);
+
+    [TestCase($$$"""{"jfbForm":"{{{Form}}}","expand":false,"theme":"bootstrap5","redirect":"{{{Other}}}"}""", "bootstrap5", Other)]
+    [TestCase($$$"""{"jfbForm":"{{{Form}}}","expand":false,"theme":null,"redirect":null}""", null, null)]
+    [TestCase($$$"""{"jfbForm":"{{{Form}}}","expand":false,"theme":"unstyled"}""", "unstyled", null)]
+    [TestCase($$$"""{"jfbForm":"{{{Form}}}","expand":false,"redirect":"{{{Other}}}"}""", null, Other)]
+    public void AMarkersThemeAndPage_AreFoundWithIt(string marker, string? theme, string? redirect)
+    {
+        var found = FormBuilderDeliveryApiMiddleware.Find(Encoding.UTF8.GetBytes(Item(Page, marker)));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(found, Has.Count.EqualTo(2));
+            Assert.That(found.Select(each => (each.Theme, each.Redirect)), Is.All.EqualTo((theme, redirect is null ? (Guid?)null : Guid.Parse(redirect))));
+        });
+    }
+
+    [Test]
+    public void AMultiplePickersMarkers_AreEachFound_InOrder()
+    {
+        var json = $$$"""{"route":{"path":"/p/"},"id":"{{{Page}}}","properties":{"forms":[{"jfbForm":"{{{Other}}}","expand":false,"theme":null,"redirect":null},{"jfbForm":"{{{Form}}}","expand":false,"theme":null,"redirect":null}]}}""";
+
+        Assert.That(FormBuilderDeliveryApiMiddleware.Find(Encoding.UTF8.GetBytes(json)).Select(each => each.Form), Is.EqualTo(new[] { Guid.Parse(Other), Guid.Parse(Form) }));
+    }
 
     [TestCase("/umbraco/delivery/api/v2/content/item/x", "application/json; charset=utf-8", """{"name":"No marker","properties":{"form":null}}""")]
     [TestCase("/umbraco/delivery/api/v2/content", "text/plain", "jfbForm in plain text")]

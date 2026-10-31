@@ -17,7 +17,9 @@ namespace Jiron.Umbraco.FormBuilder.Tests.Integration.Rendering;
 /// <c>{ key, alias, name }</c>, and with the property expanded also the form exactly as the definition endpoint answers
 /// it in the request's culture; a form that is not headless, unpublished or gone answers <c>null</c>; and no marker leaves the site
 /// on the item and items routes (the query route answers from the search index, which the test host leaves empty, in
-/// the items route's shape, which <c>FormBuilderDeliveryApiMiddlewareTests</c> reads).
+/// the items route's shape, which <c>FormBuilderDeliveryApiMiddlewareTests</c> reads). The picker's settings (6.7a,
+/// ADR-0129): a single picker answers its theme and its page after a send beside the form, and a multiple one an array
+/// in the editor's order, a form that is not headless <c>null</c> in its place.
 /// </summary>
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest, Boot = true)]
@@ -55,8 +57,11 @@ public sealed class FormPickerDeliveryApiTests : RenderingTestBase
         var withdrawn = await PublishFormAsync("withdrawnForm", definition => Headless(definition), NameField);
         var stored = (await GetRequiredService<Core.Persistence.Repositories.IFormRepository>().GetAsync(withdrawn))!;
         Assert.That(await Forms.UnpublishAsync(withdrawn, stored.ConcurrencyVersion, null), Is.Not.Null);
-        var gone = Guid.NewGuid();
+        // A page picks a form of the library, as the picker's check requires (ADR-0129); then the form is deleted.
+        var gone = await PublishFormAsync("goneForm", definition => Headless(definition), NameField);
         var pages = new[] { await PickerPageAsync("closed", closed), await PickerPageAsync("withdrawn", withdrawn), await PickerPageAsync("gone", gone) };
+        var trashed = (await Forms.TrashAsync(gone, (await GetRequiredService<Core.Persistence.Repositories.IFormRepository>().GetAsync(gone))!.ConcurrencyVersion, null))!;
+        Assert.That(await Forms.DeleteAsync(gone, trashed.ConcurrencyVersion, null), Is.Not.Null);
 
         Assert.Multiple(async () =>
         {
@@ -97,7 +102,64 @@ public sealed class FormPickerDeliveryApiTests : RenderingTestBase
         });
     }
 
+    [Test]
+    public async Task ThePickersSettings_GiveTheThemeAndThePageBesideTheForm_AndAMultiplePickerAnArrayInOrder()
+    {
+        var first = await PublishFormAsync("firstForm", definition => Headless(definition), NameField);
+        var second = await PublishFormAsync("secondForm", definition => Headless(definition), NameField);
+        var closed = await PublishFormAsync("innerForm", definition => Headless(definition, headless: false), NameField);
+        var thanks = Guid.NewGuid();
+        var page = await SettingsPageAsync(first, $"{second:D},{closed:D},{first:D}", thanks);
+        using var response = await GetAsync($"{Delivery}/item/{page}");
+        var properties = JsonNode.Parse(await response.Content.ReadAsStringAsync())!["properties"]!;
+        using var expandedResponse = await GetAsync($"{Delivery}/item/{page}?expand=properties[forms,form]");
+        var expanded = JsonNode.Parse(await expandedResponse.Content.ReadAsStringAsync())!["properties"]!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(properties["form"]?.ToJsonString(), Is.EqualTo($$"""{"key":"{{first}}","alias":"firstForm","name":"firstForm","theme":"bootstrap5","redirect":"{{thanks}}"}"""));
+            Assert.That(properties["forms"]?.ToJsonString(), Is.EqualTo($$"""[{"key":"{{second}}","alias":"secondForm","name":"secondForm"},null,{"key":"{{first}}","alias":"firstForm","name":"firstForm"}]"""), "in order, the form that is not headless null");
+            Assert.That(expanded["form"]!["theme"]?.GetValue<string>(), Is.EqualTo("bootstrap5"));
+            Assert.That(expanded["form"]!["form"]!["key"]?.GetValue<string>(), Is.EqualTo(first.ToString()), "expanded, the form beside them");
+            Assert.That(expanded["forms"]!.AsArray().Select(item => item?["form"]?["key"]?.GetValue<string>()), Is.EqualTo(new[] { second.ToString(), null, first.ToString() }));
+        });
+    }
+
     private const string PickerType = "jfbPickerPage";
+
+    // A published page of a page type with two configured pickers: "form", with a theme and a page after a send, and
+    // "forms", which takes several.
+    private async Task<Guid> SettingsPageAsync(Guid form, string forms, Guid thanks)
+    {
+        var shortStrings = GetRequiredService<IShortStringHelper>();
+        var editor = GetRequiredService<PropertyEditorCollection>()[FormPickerPropertyEditor.EditorAlias]!;
+        var serializer = GetRequiredService<IConfigurationEditorJsonSerializer>();
+        var dataTypes = GetRequiredService<IDataTypeService>();
+        var single = new DataType(editor, serializer)
+        {
+            Name = "Themed picker",
+            DatabaseType = ValueStorageType.Nvarchar,
+            ConfigurationData = new Dictionary<string, object> { ["theme"] = "bootstrap5", ["redirect"] = thanks.ToString("D") },
+        };
+        var many = new DataType(editor, serializer) { Name = "Multiple picker", DatabaseType = ValueStorageType.Nvarchar, ConfigurationData = new Dictionary<string, object> { ["multiple"] = true } };
+        Assert.That((await dataTypes.CreateAsync(single, Constants.Security.SuperUserKey)).Success, Is.True);
+        Assert.That((await dataTypes.CreateAsync(many, Constants.Security.SuperUserKey)).Success, Is.True);
+        var type = new ContentType(shortStrings, -1) { Alias = "jfbPickerSettingsPage", Name = "Picker settings page", AllowedAsRoot = true };
+        type.AddPropertyType(new PropertyType(shortStrings, single, "form") { Name = "Form" });
+        type.AddPropertyType(new PropertyType(shortStrings, many, "forms") { Name = "Forms" });
+        Assert.That((await GetRequiredService<IContentTypeService>().CreateAsync(type, Constants.Security.SuperUserKey)).Success, Is.True);
+
+        var contents = GetRequiredService<IContentService>();
+        var page = new Content("settings", -1, type);
+        page.SetValue("form", form.ToString("D"));
+        page.SetValue("forms", forms);
+        contents.Save(page);
+        contents.Publish(page, ["*"]);
+        await GetRequiredService<IDocumentNavigationManagementService>().RebuildAsync();
+        await GetRequiredService<IPublishStatusManagementService>().InitializeAsync(CancellationToken.None);
+        await GetRequiredService<IDocumentUrlService>().InitAsync(forceEmpty: false, CancellationToken.None);
+        return page.Key;
+    }
 
     /// <inheritdoc />
     protected override void ConfigureHost(IDictionary<string, string> configuration)

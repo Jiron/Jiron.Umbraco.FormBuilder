@@ -1,0 +1,12 @@
+@* The forms a multiple form picker picks, each placed in the editor's order (6.7a, ADR-0129). *@
+@using Jiron.Umbraco.FormBuilder.Web.Rendering
+@using Umbraco.Extensions
+@inject Umbraco.Cms.Core.Web.IUmbracoContextAccessor Umbraco
+@{
+    Layout = "~/Views/RenderingTests/_Layout.cshtml";
+    var current = Umbraco.GetRequiredUmbracoContext().PublishedRequest!.PublishedContent!;
+}
+@foreach (var picked in current.Value<IReadOnlyList<FormBuilderFormReference>>("forms") ?? [])
+{
+    <jfb-render picked="picked" />
+}

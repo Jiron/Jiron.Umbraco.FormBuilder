@@ -1,6 +1,7 @@
 // The backoffice's dictionaries (ADR-0057): English and German hold the same keys, each a text that is not blank; they
 // hold every `#` key the management API serves for the built-in field types, as docs/api/field-types.json (the
-// snapshot an integration test holds the endpoint to) has them; and the field types' areas hold no key nothing uses.
+// snapshot an integration test holds the endpoint to) has them; they hold every `#jfbPicker_` key the form picker's
+// checks send (ADR-0129), and its area no other; and the field types' areas hold no key nothing uses.
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -37,6 +38,16 @@ function keysIn(value: unknown, found = new Set<string>()): Set<string> {
 
 const served = keysIn(JSON.parse(readFileSync(join(repositoryRoot(), 'docs', 'api', 'field-types.json'), 'utf8')));
 
+/** The `#jfbPicker_` keys the form picker's checks send, read from their source. */
+const pickerKeys = new Set(
+  [
+    ...readFileSync(
+      join(repositoryRoot(), 'src', 'Jiron.Umbraco.FormBuilder.Web', 'Picker', 'FormPickerEditors.cs'),
+      'utf8',
+    ).matchAll(/"#(jfbPicker_[A-Za-z]+)"/g),
+  ].map((match) => match[1]),
+);
+
 /** The areas of the field types' texts. */
 const fieldTypeAreas = [
   'jfbFieldTypes',
@@ -65,6 +76,11 @@ describe('the dictionaries', () => {
   it('hold every key the built-in field types are served with', () => {
     expect(served.size).toBeGreaterThan(150);
     expect([...served].filter((key) => !termsOf(en).includes(key))).toEqual([]);
+  });
+
+  it("hold every key the form picker's checks send, and no other in its area", () => {
+    expect(pickerKeys.size).toBeGreaterThanOrEqual(5);
+    expect(termsOf(en).filter((term) => term.startsWith('jfbPicker_'))).toEqual([...pickerKeys].sort());
   });
 
   it('hold no key of the field types that nothing serves', () => {
