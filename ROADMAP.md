@@ -884,7 +884,7 @@ Each type declares: alias, icon, group in the palette, storage kind (`text`, `lo
 - **Library:** option lists (CRUD, preview, CSV/TXT upload), themes (CRUD, preview CSS), email layouts (CRUD, preview, test send), templates.
 - **Settings** per section and scope; **permissions**; **audit log**; **deliveries** (emails and webhook runs, retry); **insights** and **answer summaries**; the current user's own **user settings** (`jfbUserSetting`).
 - **Privacy:** find a person by email or member, export everything about them (ZIP of JSON and files), erase or anonymise, retention dry run.
-- **Setup and health:** checklist status and health results (any user of the section); "create a form block type for me", which creates an element type and a data type and so needs `manageSettings` and Umbraco's Settings section (6.7).
+- **Setup and health:** checklist status and health results (any user of the section); "create a form block type for me", which creates an element type and a data type and so needs `manageSettings` and Umbraco's Settings section (6.7b).
 
 ### 4.8 Settings model
 
@@ -2237,12 +2237,21 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - **Blocked (2026-10-31):** the element's form moves through its pages and is sent by the runtime's paging (6.5d) and sending (6.4i), which wait for section 4.12's budget, which only the owner can change (ADR-0120, ADR-0128, `docs/OWNER-TODO.md`).
   - **Through the runtime:** the element's form is moved through its pages in the browser, each page checked on the server (`validate`) before the next, and sent, by the runtime's paging (6.5d) and sending (6.4i).
   - Done when: a static page on 5521 (cross-origin, allowlisted) renders and submits a multi-page form through the element, each page checked with `validate` before the next; axe is clean.
-- [ ] **6.7 The form picker, blocks and "used on"**
-  - **The data type "Jiron Form Builder form picker":** single or multiple, allowed folders or forms, optional theme override and redirect override. Plus the value converters and the UFM block-label component.
-  - **"Create a form block for me":** an idempotent service that creates a "Form" element type and data type, and never changes existing types.
+- [ ] **6.7a The form picker's settings** (6.7 split in five, WORKLOG 2026-10-31)
+  - **The data type "Jiron Form Builder form picker":** single or multiple, allowed folders or forms, optional theme override and redirect override. Plus the value converters (Razor and the Content Delivery API, one form or several, with the overrides) for each setting; a value the settings do not allow is refused when the page is saved.
+  - Done when: integration tests cover each setting: one form and several in Razor and in the Delivery API; a form in an allowed folder (or below it) accepted and one outside refused; an allowed form accepted and another refused; several forms refused by a single picker; the theme override rendering the form in that theme; the redirect override taking the visitor to its page after a send, with and without JavaScript.
+- [ ] **6.7b "Create a form block for me"** (6.7 split in five, WORKLOG 2026-10-31)
+  - **"Create a form block for me":** an idempotent service that creates a "Form" element type and data type, and never changes existing types; its endpoint is "Setup and health" in §4.7.
+  - Done when: integration tests pass: the element type and the data type created on the first call, a second call changing nothing, an existing type or data type with the same alias left as it is, and "creating a form block type is refused with `403` for a user who has `manageSettings` and the Forms section but not Umbraco's Settings section", a user seeded in that test.
+- [ ] **6.7c "Used on"** (6.7 split in five, WORKLOG 2026-10-31)
   - **"Used on":** reference tracking per ADR-0017, with the references endpoint of §4.7, so that trash and delete can name the pages that use a form (9.2). References name a form without a foreign key (ADR-0033), so a reference write skips a form that no longer exists (ADR-0047).
+  - Done when: integration tests pass, including "a page that picks the form is listed as a reference, and stops being listed after the pick is removed", "saving a page that picks a form deleted meanwhile writes no reference to it", a form picked in a block listed, a page outside the user's start nodes counted but not named, and the rebuild finding every page that picks a form.
+- [ ] **6.7d Eviction** (6.7 split in five, WORKLOG 2026-10-31)
   - **Eviction:** an `IWebsiteOutputCacheTagProvider` tags the pages that use a form with `jfb-form-<key>` from the "used on" index, and publishing a form evicts that tag (ADR-0004).
-  - Done when: integration tests pass (including "a page that picks the form is listed as a reference, and stops being listed after the pick is removed", "saving a page that picks a form deleted meanwhile writes no reference to it", and, with output caching on, "publishing the form re-renders a cached page that picks it at once", and "creating a form block type is refused with `403` for a user who has `manageSettings` and the Forms section but not Umbraco's Settings section", a user seeded in that test), and Playwright shows an editor picking a form in a block on the demo and the page rendering it.
+  - Done when: integration tests pass, with output caching on, including "publishing the form re-renders a cached page that picks it at once", and a cached page that does not pick the form kept.
+- [ ] **6.7e The form picker in the backoffice** (6.7 split in five, WORKLOG 2026-10-31)
+  - **The backoffice:** the picker's data type settings and the picker itself (the library's forms and folders, within the allowed ones) through the generated client, with the UFM block-label component; English and German.
+  - Done when: Vitest covers the picker, its settings and the block label; Playwright shows an editor picking a form in a block on the demo and the page rendering it; axe is clean on the picker.
 - [ ] **6.8 Phase review**
   - An accessibility pass over the themes (axe, keyboard, screen-reader names), and a security pass over the public API.
   - Write the handover note.
@@ -2415,7 +2424,7 @@ Build from the Phase 2 designs. Every screen in this phase and the next must pas
     - rename, move;
     - duplicate (with or without actions; for a restricted form the dialog says that the copy takes its folder's access instead, ADR-0046), copy actions to another form (the result lists the references it could not map, each with a link to fix it);
     - import as a new copy (the result shows the import's notes: a theme or option list the site lacks), export JSON (12.5 adds "replace" and the mirror).
-  - **Trash:** trash, restore, empty trash. The delete confirmation names the pages that use the form (6.7).
+  - **Trash:** trash, restore, empty trash. The delete confirmation names the pages that use the form (6.7c).
   - **Search:** forms by name and alias, and fields across all forms by label or alias (from the field catalogue, §4.5).
   - Done when: Playwright journeys for each action pass, including finding a form by one of its field labels, the Duplicate dialog of a restricted form saying what the copy's access will be, and an import whose notes are shown, and the client stores have unit tests.
 - [ ] **9.3a The designer: workspace and editor model**
