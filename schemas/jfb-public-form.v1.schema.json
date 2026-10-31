@@ -1,0 +1,734 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:jiron:form-builder:schema:jfb-public-form:v1",
+  "title": "Jiron Form Builder visitor form, version 1",
+  "description": "The form the definition endpoint answers with (GET /jfb/api/v1/forms/{keyOrAlias}, its form property): the public projection with each text in the page\u0027s culture (ADR-0002, ADR-0035, ADR-0125). A property that may be null is left out instead. The TypeScript types in jfb-public-form.v1.d.ts are made from this schema.",
+  "$ref": "#/$defs/PublicForm",
+  "$defs": {
+    "ConditionOperand": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "field"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "today": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "today"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "field"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "today": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "today"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "minItems": 1
+        }
+      ]
+    },
+    "FieldCheck": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/PatternCheck"
+        },
+        {
+          "$ref": "#/$defs/MatchesFieldCheck"
+        },
+        {
+          "$ref": "#/$defs/UniquePerFormCheck"
+        }
+      ]
+    },
+    "FieldMessages": {
+      "type": "object",
+      "properties": {
+        "required": {
+          "type": "string"
+        },
+        "invalid": {
+          "type": "string"
+        },
+        "minLength": {
+          "type": "string"
+        },
+        "maxLength": {
+          "type": "string"
+        },
+        "minWords": {
+          "type": "string"
+        },
+        "maxWords": {
+          "type": "string"
+        },
+        "min": {
+          "type": "string"
+        },
+        "max": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string"
+        },
+        "dateWindow": {
+          "type": "string"
+        },
+        "selections": {
+          "type": "string"
+        },
+        "fileType": {
+          "type": "string"
+        },
+        "fileSize": {
+          "type": "string"
+        },
+        "fileCount": {
+          "type": "string"
+        },
+        "full": {
+          "type": "string"
+        },
+        "confirmation": {
+          "type": "string"
+        },
+        "digits": {
+          "type": "string"
+        },
+        "rowCount": {
+          "type": "string"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "MatchesFieldCheck": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "matchesField"
+        },
+        "field": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "field"
+      ],
+      "additionalProperties": false
+    },
+    "PatternCheck": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "pattern"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "pattern"
+      ],
+      "additionalProperties": false
+    },
+    "PublicField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": {
+          "type": "string"
+        },
+        "alias": {
+          "type": "string"
+        },
+        "span": {
+          "type": "integer"
+        },
+        "label": {
+          "type": "string"
+        },
+        "hideLabel": {
+          "type": "boolean"
+        },
+        "help": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "messages": {
+          "$ref": "#/$defs/FieldMessages"
+        },
+        "defaultValue": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "prefill": {
+          "$ref": "#/$defs/PublicPrefill"
+        },
+        "autocomplete": {
+          "type": "string"
+        },
+        "cssClass": {
+          "type": "string"
+        },
+        "validation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldCheck"
+          }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PublicRule"
+          }
+        },
+        "options": {
+          "$ref": "#/$defs/PublicOptions"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PublicGridRow"
+          }
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PublicField"
+          }
+        },
+        "settings": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "key",
+        "type",
+        "span",
+        "hideLabel",
+        "required",
+        "messages",
+        "validation",
+        "rules",
+        "rows",
+        "fields"
+      ],
+      "additionalProperties": false
+    },
+    "PublicForm": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "settings": {
+          "$ref": "#/$defs/PublicFormSettings"
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PublicPage"
+          }
+        },
+        "validationRules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PublicValidationRule"
+          }
+        }
+      },
+      "required": [
+        "key",
+        "settings",
+        "pages",
+        "validationRules"
+      ],
+      "additionalProperties": false
+    },
+    "PublicFormSettings": {
+      "type": "object",
+      "properties": {
+        "submitLabel": {
+          "type": "string"
+        },
+        "nextLabel": {
+          "type": "string"
+        },
+        "backLabel": {
+          "type": "string"
+        },
+        "summaryPage": {
+          "type": "boolean"
+        },
+        "progress": {
+          "enum": [
+            "steps",
+            "bar",
+            "none"
+          ]
+        },
+        "resume": {
+          "type": "boolean"
+        },
+        "closedMessage": {
+          "type": "string"
+        },
+        "membersOnly": {
+          "type": "boolean"
+        },
+        "protection": {
+          "enum": [
+            "inherit",
+            "standard",
+            "proofOfWork",
+            "captcha"
+          ]
+        },
+        "captchaProvider": {
+          "type": "string"
+        },
+        "theme": {
+          "type": "string"
+        },
+        "requiredMarker": {
+          "enum": [
+            "inherit",
+            "required",
+            "optional",
+            "none"
+          ]
+        },
+        "validationSummary": {
+          "type": "boolean"
+        },
+        "choiceLayout": {
+          "enum": [
+            "vertical",
+            "horizontal",
+            "cards"
+          ]
+        },
+        "cssClass": {
+          "type": "string"
+        },
+        "queryValues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "summaryPage",
+        "progress",
+        "resume",
+        "membersOnly",
+        "protection",
+        "requiredMarker",
+        "validationSummary",
+        "choiceLayout",
+        "queryValues"
+      ],
+      "additionalProperties": false
+    },
+    "PublicGridRow": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "label": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "key",
+        "required"
+      ],
+      "additionalProperties": false
+    },
+    "PublicGroup": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "columns": {
+          "type": "integer"
+        },
+        "style": {
+          "enum": [
+            "plain",
+            "card"
+          ]
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PublicRule"
+          }
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PublicField"
+          }
+        }
+      },
+      "required": [
+        "key",
+        "columns",
+        "style",
+        "rules",
+        "fields"
+      ],
+      "additionalProperties": false
+    },
+    "PublicOption": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "image": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "parentValues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "value",
+        "parentValues"
+      ],
+      "additionalProperties": false
+    },
+    "PublicOptions": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PublicOption"
+          }
+        },
+        "fromSource": {
+          "type": "boolean"
+        },
+        "parent": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "items",
+        "fromSource"
+      ],
+      "additionalProperties": false
+    },
+    "PublicPage": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PublicRule"
+          }
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PublicGroup"
+          }
+        }
+      },
+      "required": [
+        "key",
+        "rules",
+        "groups"
+      ],
+      "additionalProperties": false
+    },
+    "PublicPrefill": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "context": {
+          "type": "string"
+        },
+        "fromMember": {
+          "type": "boolean"
+        },
+        "memberMode": {
+          "enum": [
+            "show",
+            "hide"
+          ]
+        }
+      },
+      "required": [
+        "fromMember",
+        "memberMode"
+      ],
+      "additionalProperties": false
+    },
+    "PublicRule": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "effect": {
+          "enum": [
+            "show",
+            "hide",
+            "require",
+            "run",
+            "use"
+          ]
+        },
+        "match": {
+          "enum": [
+            "all",
+            "any"
+          ]
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/RuleCondition"
+              },
+              {
+                "$ref": "#/$defs/RuleGroup"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "key",
+        "effect",
+        "match",
+        "conditions"
+      ],
+      "additionalProperties": false
+    },
+    "PublicValidationRule": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "field": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "message": {
+          "type": "string"
+        },
+        "match": {
+          "enum": [
+            "all",
+            "any"
+          ]
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/RuleCondition"
+              },
+              {
+                "$ref": "#/$defs/RuleGroup"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "key",
+        "field",
+        "match",
+        "conditions"
+      ],
+      "additionalProperties": false
+    },
+    "RuleCondition": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "context": {
+          "type": "string"
+        },
+        "op": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/ConditionOperand"
+        }
+      },
+      "required": [
+        "op"
+      ],
+      "additionalProperties": false
+    },
+    "RuleGroup": {
+      "type": "object",
+      "properties": {
+        "match": {
+          "enum": [
+            "all",
+            "any"
+          ]
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/RuleCondition"
+              },
+              {
+                "$ref": "#/$defs/RuleGroup"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "match",
+        "conditions"
+      ],
+      "additionalProperties": false
+    },
+    "UniquePerFormCheck": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "uniquePerForm"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

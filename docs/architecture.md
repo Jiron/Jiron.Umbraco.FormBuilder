@@ -337,7 +337,11 @@ Text        LocalizedText: culture → text, "" is the default; "#key" reads the
   items, as a manual list does.
 - **The public projection** is built from an allowlist of public types (`Core.Definitions.Projection`) and carries no
   actions, outcomes, recipients, option-source configuration, privacy settings or switched-off rules; its SHA-256 is
-  `PublicHash`. Its TypeScript types and schema ship in `schemas/` (6.6).
+  `PublicHash`. The visitor form (each text in the page's culture, as the definition endpoint answers) has its JSON
+  schema and TypeScript types in `schemas/` (`jfb-public-form.v1.schema.json`, `jfb-public-form.v1.d.ts`), shipped in
+  the main package's `schemas/` folder: a unit test writes the schema from the records, `scripts/generate-public-types.mjs`
+  makes the types from it, and the runtime's type check holds its own narrower types to them
+  ([ADR-0125](decisions/0125-the-projections-published-types.md)).
 - **Reading and writing** ([ADR-0034](decisions/0034-definition-model-reading-and-writing.md)): the records are
   public in `Jiron.Umbraco.FormBuilder.Core.Definitions`, immutable, with lists that no cast changes, and compare by
   value; Core's internal serializer reads strictly, reporting every
