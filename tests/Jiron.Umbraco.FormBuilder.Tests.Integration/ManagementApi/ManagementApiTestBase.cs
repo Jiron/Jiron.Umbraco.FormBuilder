@@ -82,10 +82,13 @@ internal sealed class ManagementApiCaller(HttpClient client, IServiceProvider se
 
     private readonly Dictionary<string, string> _tokens = [];
 
-    /// <summary>Calls as <paramref name="role"/> (null: without a token), with a JSON body when one is given.</summary>
+    /// <summary>
+    /// Calls as <paramref name="role"/> (null: without a token), with a JSON body when one is given. A path that starts with
+    /// a slash is a whole path, for one of Umbraco's own endpoints; another is below <see cref="BasePath"/>.
+    /// </summary>
     public async Task<ApiAnswer> CallAsync(string? role, HttpMethod method, string path, object? body = null)
     {
-        using var request = new HttpRequestMessage(method, new Uri(BasePath + path, UriKind.Relative));
+        using var request = new HttpRequestMessage(method, new Uri(path.StartsWith('/') ? path : BasePath + path, UriKind.Relative));
         if (role is not null)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await TokenAsync(role));

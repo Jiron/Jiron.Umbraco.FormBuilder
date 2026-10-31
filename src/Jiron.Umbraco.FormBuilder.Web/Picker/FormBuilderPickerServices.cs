@@ -41,6 +41,7 @@ internal static class FormBuilderPickerServices
         builder.AddNotificationAsyncHandler<ContentTypeChangedNotification, FormReferenceTypeHandler>();
         builder.AddNotificationAsyncHandler<DataTypeSavedNotification, FormReferenceTypeHandler>();
         builder.AddNotificationAsyncHandler<DataTypeDeletedNotification, FormReferenceTypeHandler>();
+        builder.AddNotificationAsyncHandler<LanguageDeletedNotification, FormReferenceTypeHandler>();
         builder.Services.TryAddSingleton<PageForms>();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IWebsiteOutputCacheTagProvider, FormCacheTags>());
         builder.AddNotificationAsyncHandler<FormBuilderFormCacheRefresherNotification, FormCacheEviction>();

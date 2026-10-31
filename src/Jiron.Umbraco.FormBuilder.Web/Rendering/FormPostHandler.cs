@@ -436,6 +436,13 @@ internal sealed class FormPostHandler(
             return true;
         }
 
+        // A page that sends no referrer posts to itself with the origin "null", as a sandboxed frame on another site does.
+        // The browser's own word tells them apart, and without that word the post counts as another site's.
+        if (values.Count == 1 && values[0] == "null")
+        {
+            return request.Headers["Sec-Fetch-Site"] == "same-origin";
+        }
+
         if (values.Count != 1 || PublicApiRules.Origin(values[0]) is not { } origin)
         {
             return false;

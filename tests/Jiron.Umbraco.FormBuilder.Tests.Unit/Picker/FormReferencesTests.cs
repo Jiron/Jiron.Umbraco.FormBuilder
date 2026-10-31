@@ -222,6 +222,42 @@ public sealed class FormReferencesTests
         Assert.That(logger.Entries.Select(entry => (entry.Level, entry.Exception)), Is.EqualTo(new[] { (LogLevel.Warning, (Exception?)broken) }));
     }
 
+    [Test]
+    public async Task ADocumentThatCannotBeRead_IsLogged_AndTheWalkGoesOnToTheNext()
+    {
+        Walk((0, [3, 7]), (7, []));
+        var bad = Content(3);
+        var broken = new InvalidOperationException("JFB_TEST: a value its editor cannot read");
+        _references.ReplaceUnchangedContentAsync(3, Arg.Any<DocumentVersion>(), Arg.Any<Guid>(), Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>()).ThrowsAsync(broken);
+        var next = Content(7);
+        _contents.GetByIds(Arg.Any<IEnumerable<int>>()).Returns([bad, next]);
+        await _values.SetAsync(RequestReferenceRebuildV1.RebuildKey, "0");
+        var logger = new RecordingLogger<FormReferenceRebuild>();
+
+        var done = await new FormReferenceRebuild(_references, _values, _contents, Index(), _clock, logger).ContinueAsync(DateTimeOffset.MaxValue);
+
+        Assert.That(done, Is.True);
+        await _references.Received(1).ReplaceUnchangedContentAsync(7, Version(7), next.Key, Arg.Any<IReadOnlyCollection<ContentFormReference>>(), Arg.Any<CancellationToken>());
+        Assert.That(logger.Entries.Where(entry => entry.Level >= LogLevel.Warning).Select(entry => (entry.Level, entry.Exception)), Is.EqualTo(new[] { (LogLevel.Warning, (Exception?)broken) }));
+    }
+
+    [Test]
+    public async Task TheJob_HoldsARequestJustMadeForOneRun_ThenWalks()
+    {
+        Walk((0, []));
+        await Rebuild().RequestAsync();
+        var job = Job(RuntimeLevel.Run, pending: false, new RecordingLogger<FormReferenceRebuildJob>());
+
+        await job.ExecuteAsync(CancellationToken.None);
+        var held = await _values.GetAsync(RequestReferenceRebuildV1.RebuildKey);
+        await _references.DidNotReceive().DocumentsAfterAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await job.ExecuteAsync(CancellationToken.None);
+
+        Assert.That(held, Is.EqualTo(RequestReferenceRebuildV1.FromStart));
+        await _references.Received(1).DocumentsAfterAsync(0, FormReferenceRebuild.BatchSize, Arg.Any<CancellationToken>());
+        Assert.That(await _values.GetAsync(RequestReferenceRebuildV1.RebuildKey), Is.Null, "walked, and done");
+    }
+
     [TestCase(RuntimeLevel.Install, false)]
     [TestCase(RuntimeLevel.Upgrade, false)]
     [TestCase(RuntimeLevel.Run, true)]

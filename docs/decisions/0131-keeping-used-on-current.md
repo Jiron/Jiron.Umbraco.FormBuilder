@@ -43,7 +43,7 @@ questions ADR-0017 left open:
 - **What asks for one** (`FormReferenceTypeHandler`, 6.8f): stored values can change, or come to name a form, with no
   content notification. So a document or element type changed or deleted asks, as removing a picker property or giving
   a property the picker's data type does; a data type deleted, which takes its properties away; and a data type given
-  another editor. A type's change is any but a new type's: Umbraco counts a property's data type as a change of the
+  another editor; and a language deleted, which takes its values away. A type's change is any but a new type's: Umbraco counts a property's data type as a change of the
   type's "other" details, so narrowing it to structural changes would miss it. A new type or data type has no content,
   and a data type's other settings leave what its values name as it was, so neither asks. Many changes in a row cost
   one walk, as each only sets the row. A request that fails is logged as a warning and never fails the change; the
@@ -56,8 +56,15 @@ questions ADR-0017 left open:
   it reads their copies. A save moves a version's date and a publish starts a new version, so a page whose copy is not
   of the version read, or whose version has changed by the time its rows are written, is skipped: a save's handler
   writes those rows. The write unit reads the version's row with a locking read first, so a save either shows there
-  or waits for the unit and writes its own rows after it. The unit holds that row for one item's few statements and
-  waits for nothing Umbraco holds. Rows alone could not tell, since a save that removes the last pick leaves none.
+  or waits for the unit and writes its own rows after it. The unit holds that row, and on SQL Server the key range its
+  read takes, for one item's few statements; should it ever meet a save in a deadlock it is the unit that runs again.
+  Rows alone could not tell, since a save that removes the last pick leaves none.
+- **One document cannot stop the walk** (6.8g): a document whose rows cannot be worked out, as after a data type got an
+  editor its values do not suit, is logged as a warning, keeps its rows and is passed by. A batch that cannot be read
+  at all is an error the next run meets again, as the whole site is then in trouble.
+- **The job holds a request just made for one run** (6.8g), turning its value into `0`, so a walk starts at least a
+  minute after a type's change. On another server of a cluster the copies still hold the old type's properties until
+  that server has heard of the change, with the same version, and no save would repair what the walk wrote from them.
 - **The place moves on only from the value read** (6.8f): after a batch the value is replaced only if it is still the
   one read, and the request is removed only if it is still `orphans`; a value it cannot read starts the walk again. A
   request made meanwhile stands, and the next round starts from it.

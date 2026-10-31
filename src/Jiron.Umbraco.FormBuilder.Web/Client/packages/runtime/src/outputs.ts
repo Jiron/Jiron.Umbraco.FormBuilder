@@ -3,11 +3,12 @@
  * calculation field's result in its `<output>`, from the state the rules decide (6.4c), and a slider's value beside its
  * thumb and in its `aria-valuetext` as it moves. A text is written only when it changes. A result's `<output>` keeps
  * quiet (`aria-live="off"`, as the views write it), a status that would speak on every key: once the visitor pauses,
- * the form's live region says the results that changed, in one line, each after its label (6.8b).
+ * the form's live region says the results on the current page that changed, in one line, each after its label (6.8b).
+ * The runtime loads on the visitor's first act, so its first pass can already hold that act's result, which is said too.
  */
 import { calculationText, sliderText, type FormState } from '@jfb/logic';
 import type { FormModel, ModelField } from './model';
-import { allFieldsOf, builtIn } from './page';
+import { allFieldsOf, builtIn, rowOf } from './page';
 
 /** The fields of a built-in type by key, a repeatable group's child fields too. */
 const ofType = (model: FormModel, type: string): Map<string, ModelField> =>
@@ -25,45 +26,41 @@ const write = (element: Element, text: string): boolean =>
 /** How long the visitor pauses before the results they changed are said. */
 const PAUSE = 1000;
 
-/** The results each form changed since it last said them, and the pause that says them; none before its first pass. */
-const pending = new WeakMap<
-  HTMLFormElement,
-  { readonly changed: Set<Element>; pause?: ReturnType<typeof setTimeout> }
->();
+/** The results changed since they were last said. */
+const changed = new WeakSet<Element>();
+
+/** The pause that says each form's changed results. */
+const pauses = new WeakMap<HTMLFormElement, ReturnType<typeof setTimeout>>();
 
 /** Shows each calculation's result as the state has it, a row's in its row; one hidden or without a value, nothing. */
 export function showCalculations(form: HTMLFormElement, model: FormModel, state: FormState): void {
   const calculations = ofType(model, 'calculation');
   if (calculations.size === 0) return;
-  // The first pass follows what the server wrote, which nobody changed.
-  const said = pending.get(form);
-  const changed = said?.changed ?? new Set<Element>();
-  if (said === undefined) pending.set(form, { changed: new Set() });
+  let wrote = false;
   for (const element of form.querySelectorAll<HTMLElement>('[data-jfb-field]')) {
     const key = element.dataset['jfbField'] ?? '';
     const field = calculations.get(key);
     const output = field === undefined ? null : outputOf(element);
     if (field === undefined || output === null) continue;
-    let results: Readonly<Record<string, string | null>> | undefined = state.calculations;
-    const row = element.parentElement?.closest<HTMLElement>('[data-jfb-row]');
-    if (row != null) {
-      const group = row.closest<HTMLElement>('[data-jfb-field]')?.dataset['jfbField'] ?? '';
-      results = state.rows[group]?.[Number(row.dataset['jfbRow'])]?.calculations;
-    }
+    const row = rowOf(element, state);
+    const results = row === null ? state.calculations : row.state?.calculations;
     const value = results !== undefined && Object.hasOwn(results, key) ? results[key] : null;
-    if (write(output, value == null ? '' : calculationText(field.settings, value, model.formats))) changed.add(output);
+    if (write(output, value == null ? '' : calculationText(field.settings, value, model.formats))) {
+      changed.add(output);
+      wrote = true;
+    }
   }
-  if (said === undefined || changed.size === 0) return;
-  clearTimeout(said.pause);
-  said.pause = setTimeout(() => {
+  if (!wrote) return;
+  clearTimeout(pauses.get(form));
+  const pause = setTimeout(() => {
     const line = [...form.querySelectorAll('output')]
-      .filter((output) => changed.has(output) && output.textContent !== '')
+      .filter((output) => changed.delete(output) && output.textContent && !output.closest('[hidden]'))
       .map((output) => [(output.labels[0]?.textContent ?? '').trim(), output.textContent].filter(Boolean).join(': '))
       .join('; ');
-    changed.clear();
     const live = form.querySelector(':scope > [data-jfb-live]');
     if (live !== null && line !== '') live.textContent = line;
   }, PAUSE);
+  pauses.set(form, pause);
 }
 
 /**

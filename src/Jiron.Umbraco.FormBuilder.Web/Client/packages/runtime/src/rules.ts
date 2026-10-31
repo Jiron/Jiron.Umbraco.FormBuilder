@@ -12,7 +12,7 @@ import { holdQuery, LogicError, type Context, type FormState, type LogicField, t
 import type { PageEngine } from './engine';
 import type { FormModel } from './model';
 import { showCalculations } from './outputs';
-import { readPage, type PageReading } from './page';
+import { readPage, rowOf, type PageReading } from './page';
 import { showTexts } from './texts';
 
 /** The rules, calculations and texts that recall answers of an enhanced form. */
@@ -138,25 +138,21 @@ function show(form: HTMLFormElement, state: FormState, current: Element | null):
   }
   for (const group of form.querySelectorAll<HTMLElement>('[data-jfb-group]')) {
     const ruled = hidden.has(group.dataset['jfbGroup'] ?? '');
-    flag(group, 'hidden', ruled);
-    flag(group, 'data-jfb-hidden', ruled);
+    hide(group, ruled);
   }
   let shown = false;
   for (const field of form.querySelectorAll<HTMLElement>('[data-jfb-field]')) {
     const key = field.dataset['jfbField'] ?? '';
-    const row = field.parentElement?.closest<HTMLElement>('[data-jfb-row]');
+    const row = rowOf(field, state);
     let isHidden = hidden.has(key);
     let isRequired: boolean | null = required.has(key);
-    if (row != null) {
+    if (row !== null) {
       // A repeatable group's child field takes its row's state; a row the reading could not count, the group's.
-      const group = row.closest<HTMLElement>('[data-jfb-field]')?.dataset['jfbField'] ?? '';
-      const rowState = state.rows[group]?.[Number(row.dataset['jfbRow'])];
-      isHidden = rowState === undefined ? hidden.has(group) : rowState.hidden.includes(key);
-      isRequired = rowState === undefined ? null : rowState.required.includes(key);
+      isHidden = row.state === undefined ? hidden.has(row.group) : row.state.hidden.includes(key);
+      isRequired = row.state === undefined ? null : row.state.required.includes(key);
     }
     if (field.hasAttribute('hidden') && !isHidden) shown = true;
-    flag(field, 'hidden', isHidden);
-    flag(field, 'data-jfb-hidden', isHidden);
+    hide(field, isHidden);
     for (const control of own(field, CONTROLS))
       flag(control, 'disabled', isHidden || control.hasAttribute('data-jfb-disabled'));
     if (isRequired === null) continue;
@@ -181,4 +177,10 @@ const own = (field: HTMLElement, selector: string): HTMLElement[] =>
 /** Sets or removes an attribute only when it changes, so the page's own observers see only real changes. */
 function flag(element: Element, name: string, on: boolean): void {
   if (element.hasAttribute(name) !== on) element.toggleAttribute(name, on);
+}
+
+/** Hides or shows an element as a rule decides. */
+function hide(element: Element, on: boolean): void {
+  flag(element, 'hidden', on);
+  flag(element, 'data-jfb-hidden', on);
 }

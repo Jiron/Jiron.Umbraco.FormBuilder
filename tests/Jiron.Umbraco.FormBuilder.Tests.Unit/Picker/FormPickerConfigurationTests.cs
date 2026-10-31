@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Jiron.Umbraco.FormBuilder.Testing;
 using Jiron.Umbraco.FormBuilder.Web.Picker;
 
 namespace Jiron.Umbraco.FormBuilder.Tests.Unit.Picker;
@@ -42,6 +44,25 @@ public sealed class FormPickerConfigurationTests
             Assert.That(settings.Allows(Form, []), Is.True, "a listed form, at the root");
             Assert.That(settings.Allows(Guid.NewGuid(), [Folder]), Is.True, "a form in a listed folder");
             Assert.That(settings.Allows(Guid.NewGuid(), [Above]), Is.False);
+        });
+    }
+
+    [Test]
+    public void TheKeyFormatsTheBackofficeReads_AreThoseTheServerReads()
+    {
+        // tests/fixtures/picker/key-formats.json holds both sides to one list; picked-keys.test.ts reads it too.
+        var path = RepositoryRoot.Path(typeof(FormPickerConfigurationTests).Assembly, "tests", "fixtures", "picker", "key-formats.json");
+        using var formats = JsonDocument.Parse(File.ReadAllText(path));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(formats.RootElement.GetArrayLength(), Is.GreaterThan(30));
+            foreach (var format in formats.RootElement.EnumerateArray())
+            {
+                var text = format.GetProperty("text").GetString();
+                var read = Guid.TryParse(text, out var key) ? key.ToString("D") : null;
+                Assert.That(read, Is.EqualTo(format.GetProperty("key").GetString()), text);
+            }
         });
     }
 

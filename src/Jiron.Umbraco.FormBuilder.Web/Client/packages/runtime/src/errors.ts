@@ -184,7 +184,8 @@ export function pageErrorsOf(
       const field = paragraph.closest<HTMLElement>(FIELD);
       if (field !== null && !shown.has(field)) clearFieldError(field);
     }
-    for (const [field, error] of shown) showFieldError(form, field, error);
+    // The server's own stay as it marked them, as only it knows a grid's row.
+    for (const [field, error] of shown) if (error.code !== SERVER) showFieldError(form, field, error);
     const listed =
       model.form.settings?.validationSummary === false ? errors.filter((error) => error.code === 'empty') : errors;
     if (listed.length > 0) showSummary(form, listed, words).focus();

@@ -44,6 +44,16 @@ internal sealed partial class FormReferenceRebuild(
     public Task RequestAsync(CancellationToken cancellationToken = default) =>
         values.SetAsync(Key, $"{RequestReferenceRebuildV1.FromStart}-{Guid.NewGuid():N}", cancellationToken);
 
+    /// <summary>
+    /// Holds a request just made back for one run of the job, so that a walk starts at least a run's period after it: long
+    /// enough for every server of a cluster to have heard of the type's change that asked. True when it held one.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    public async Task<bool> HoldNewRequestAsync(CancellationToken cancellationToken = default) =>
+        await values.GetAsync(Key, cancellationToken) is { } value
+        && value.StartsWith($"{RequestReferenceRebuildV1.FromStart}-", StringComparison.Ordinal)
+        && await values.TryReplaceAsync(Key, value, RequestReferenceRebuildV1.FromStart, cancellationToken);
+
     /// <summary>Whether a rebuild was asked for and has not finished.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     public async Task<bool> IsDueAsync(CancellationToken cancellationToken = default) => await values.GetAsync(Key, cancellationToken) is not null;
@@ -82,7 +92,7 @@ internal sealed partial class FormReferenceRebuild(
                 cancellationToken.ThrowIfCancellationRequested();
                 if (versions.TryGetValue(content.Id, out var version) && version.Id == content.VersionId)
                 {
-                    await index.IndexUnchangedAsync(content, version, cancellationToken);
+                    await IndexAsync(content, version, cancellationToken);
                 }
             }
 
@@ -97,6 +107,26 @@ internal sealed partial class FormReferenceRebuild(
         return true;
     }
 
+    // A document that cannot be read keeps its rows and the walk goes on: stopping here would stop every document after it.
+    private async Task IndexAsync(IContent content, DocumentVersion version, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await index.IndexUnchangedAsync(content, version, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            LogDocumentFailed(logger, content.Key, exception);
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Jiron Form Builder's rebuild could not read the forms used by content {ContentKey}, and went on without it")]
+    private static partial void LogDocumentFailed(ILogger logger, Guid contentKey, Exception exception);
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Jiron Form Builder rebuilt the forms used by content; removed {Removed} references of deleted content")]
     private static partial void LogDone(ILogger logger, int removed);
 }
@@ -104,14 +134,15 @@ internal sealed partial class FormReferenceRebuild(
 /// <summary>
 /// Asks for a rebuild when stored values change without a notification for the content that holds them (ADR-0131): a
 /// document or element type changed or deleted, as removing a picker property or turning a text property into a picker
-/// does; a data type deleted, which takes its properties away; and a data type given another editor. A type that is new
-/// has no content yet, and another setting of a data type leaves what its values name as it was. The request is a row
+/// does; a data type deleted, which takes its properties away; a data type given another editor; and a language deleted,
+/// which takes its values away. A type that is new has no content yet, and another setting of a data type leaves what its values name as it was. The request is a row
 /// the job reads, so many changes in a row cost one walk. A request that fails is logged and never fails the change.
 /// </summary>
 internal sealed partial class FormReferenceTypeHandler(FormReferenceRebuild rebuild, ILogger<FormReferenceTypeHandler> logger)
     : INotificationAsyncHandler<ContentTypeChangedNotification>,
         INotificationAsyncHandler<DataTypeSavedNotification>,
-        INotificationAsyncHandler<DataTypeDeletedNotification>
+        INotificationAsyncHandler<DataTypeDeletedNotification>,
+        INotificationAsyncHandler<LanguageDeletedNotification>
 {
     /// <inheritdoc />
     public Task HandleAsync(ContentTypeChangedNotification notification, CancellationToken cancellationToken) =>
@@ -125,6 +156,9 @@ internal sealed partial class FormReferenceTypeHandler(FormReferenceRebuild rebu
 
     /// <inheritdoc />
     public Task HandleAsync(DataTypeDeletedNotification notification, CancellationToken cancellationToken) => RequestAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public Task HandleAsync(LanguageDeletedNotification notification, CancellationToken cancellationToken) => RequestAsync(cancellationToken);
 
     private async Task RequestAsync(CancellationToken cancellationToken)
     {
@@ -184,7 +218,10 @@ internal sealed partial class FormReferenceRebuildJob(
 
         try
         {
-            await rebuild.ContinueAsync(timeProvider.GetUtcNow() + Budget, cancellationToken);
+            if (!await rebuild.HoldNewRequestAsync(cancellationToken))
+            {
+                await rebuild.ContinueAsync(timeProvider.GetUtcNow() + Budget, cancellationToken);
+            }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

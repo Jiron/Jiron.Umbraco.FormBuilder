@@ -54,15 +54,13 @@ function removeId(element: Element, name: string, id: string): void {
 export function showFieldError(form: HTMLFormElement, field: HTMLElement, error: ShownError): void {
   const id = `${error.target}-error`;
   const fieldset = field.querySelector<HTMLElement>(':scope > fieldset');
+  // A grid's rows share one paragraph's id: an error that names a row takes the other rows' marks away.
+  if (errorIn(field)?.id !== id || error.gridRow !== undefined) clearFieldError(field);
   let paragraph = errorIn(field);
   if (paragraph === null) {
     const template = templateOf(form, '[data-jfb-error]');
     paragraph = template === null ? fallbackError(form) : copyOf(form, template);
     (fieldset ?? field).append(paragraph);
-  } else if (paragraph.id !== id) {
-    clearFieldError(field);
-    showFieldError(form, field, error);
-    return;
   }
   paragraph.id = id;
   if (paragraph.textContent !== error.message) paragraph.textContent = error.message;

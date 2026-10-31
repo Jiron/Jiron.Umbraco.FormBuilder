@@ -145,8 +145,17 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/** Writes into each `<output>` of the page what the views write for the form's first answers. */
+const asServed = (form: HTMLFormElement, written: ReadonlyMap<string, string>): HTMLFormElement => {
+  for (const output of form.querySelectorAll('output')) output.textContent = written.get(output.id) ?? '';
+  return form;
+};
+
 describe("a calculation's result", () => {
   const booking = modelOf(BOOKING);
+  /** What the first pass wrote in each `<output>` of the page, which is what the server writes for those answers. */
+  const firstPass = () =>
+    new Map([...document.querySelectorAll('output')].map((one) => [one.id, one.textContent ?? '']));
   const attach = (form: HTMLFormElement) => rulesOf(form, booking, engineOf(booking, FORMULAS), () => NOW);
 
   it("follows its answers as the visitor types, in its field's format, none counting as 0", async () => {
@@ -222,7 +231,8 @@ describe("a calculation's result", () => {
 
   it('is said once the visitor pauses, in one line, in place of its own quiet <output> (6.8b)', async () => {
     vi.useFakeTimers();
-    const form = formOf(FORM);
+    attach(formOf(FORM));
+    const form = asServed(formOf(FORM), firstPass());
     form.insertAdjacentHTML('beforeend', '<div data-jfb-live aria-live="polite"></div>');
     attach(form);
     const live = form.querySelector(':scope > [data-jfb-live]');
@@ -237,17 +247,59 @@ describe("a calculation's result", () => {
       await Promise.resolve();
     }
     await Promise.resolve();
-    expect(said, 'nothing while the visitor types, nor for the first pass').toEqual([]);
+    expect(said, 'nothing while the visitor types').toEqual([]);
     vi.advanceTimersByTime(1000);
     await Promise.resolve();
     expect(said, 'the results that changed, once, in the order of the page').toEqual([
-      'Result: EUR 1,537.50; Result: 0.10',
+      'Result: EUR 1,537.50; Result: 0.10; Result: 0.00 VAT',
     ]);
     await type('from', '2026-11-02');
     vi.advanceTimersByTime(2000);
     await Promise.resolve();
     expect(said, 'an answer that changes no result says nothing').toHaveLength(1);
     observer.disconnect();
+  });
+
+  it("says nothing for what the server wrote, and says the visitor's first act, which the runtime loads on", async () => {
+    vi.useFakeTimers();
+    const live = '<div data-jfb-live aria-live="polite"></div>';
+    const lineOf = async (form: HTMLFormElement) => {
+      attach(form);
+      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+      return form.querySelector(':scope > [data-jfb-live]')?.textContent;
+    };
+
+    attach(formOf(FORM));
+    const written = firstPass();
+    const again = asServed(formOf(FORM), written);
+    again.insertAdjacentHTML('beforeend', live);
+    expect(await lineOf(again), 'the same results as the server wrote').toBe('');
+
+    const answered = asServed(formOf(FORM), written);
+    answered.insertAdjacentHTML('beforeend', live);
+    (byId('price') as HTMLInputElement).value = '5';
+    (byId('quantity') as HTMLInputElement).value = '2';
+    expect(await lineOf(answered), 'an answer given before the runtime came').toBe('Result: EUR 10.00; Result: 2.50');
+  });
+
+  it('says nothing of a result on a page the visitor cannot reach yet', async () => {
+    vi.useFakeTimers();
+    attach(formOf(FORM));
+    const form = asServed(formOf(FORM), firstPass());
+    form.insertAdjacentHTML(
+      'beforeend',
+      '<section data-jfb-page="p2" hidden></section><div data-jfb-live aria-live="polite"></div>',
+    );
+    const share = byId('share').closest('[data-jfb-field]');
+    if (share !== null) form.querySelector('[data-jfb-page="p2"]')?.append(share);
+    attach(form);
+    await type('price', '5');
+    await type('quantity', '2');
+    vi.advanceTimersByTime(1000);
+    await Promise.resolve();
+    expect(textOf('share'), 'still worked out').toBe('2.50');
+    expect(form.querySelector(':scope > [data-jfb-live]')?.textContent).toBe('Result: EUR 10.00; Result: 0.00 VAT');
   });
 
   it("follows its answers on a form without rules, whose controls keep the server's state", async () => {

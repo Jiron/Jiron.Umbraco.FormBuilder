@@ -4,7 +4,7 @@
   the redirect, a message with a redirect) and [ADR-0093](0093-the-razor-rendering.md) (the form's hidden inputs, the
   page shown after a post); extended by [ADR-0101](0101-rows-and-moves-without-javascript.md) in 6.2i (the rows'
   and the rankings' buttons) and by [ADR-0102](0102-files-in-a-post-without-javascript.md) in 6.2j (the post's files)
-- Date: 2026-10-29; amended 2026-10-31 (6.8a: another origin's post while a member is signed in)
+- Date: 2026-10-29; amended 2026-10-31 (6.8a: another origin's post while a member is signed in; 6.8g: the origin "null")
 - Roadmap step: 6.2h (decided and built); 6.8a (another origin's post as a member); 6.2i gives a row's Add and Remove and a ranking's moves their effect
   (ADR-0101), 6.2j takes files (ADR-0102), 6.2k the typed signature, 6.2l adds the cache rules, 7.1 the honeypot, the challenge and
   the rate limits, 6.5 the summary page and the copy of the answers
@@ -156,4 +156,7 @@ Option 3, option 3, option 1 and option 2.
   and files, 6.2k the typed signature; 7.1 adds the honeypot, the fill time and the rate limits, whose refusal keeps
   every answer and says when to send again (ADR-0012); 6.5 adds the summary page and the copy of the answers, whose
   token is single-use.
+- **The origin "null"** (6.8g): a page with `Referrer-Policy: no-referrer` posts to itself with `Origin: null`, as a
+  sandboxed frame on another site does. Such a post counts as the site's own only when the browser also says
+  `Sec-Fetch-Site: same-origin`, a header a page cannot set; a browser that does not say is refused, as before.
 - **Revisit** if Umbraco routes internal surface controllers, or if browsers stop sending `Origin` with posts.

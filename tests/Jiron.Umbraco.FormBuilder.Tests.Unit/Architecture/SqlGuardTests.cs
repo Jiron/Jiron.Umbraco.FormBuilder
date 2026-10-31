@@ -44,6 +44,15 @@ public sealed partial class SqlGuardTests
     }
 
     [Test]
+    public void TheRebuildsWrite_ReadsTheDocumentsVersionWithALock_OnSqlServer()
+    {
+        // Without it a save can commit, and its handler write, between this read and the rebuild's own write (ADR-0131).
+        var source = Sources().Single(source => source.File == "ReferenceRepository.cs").Text;
+
+        Assert.That(source, Does.Contain("FROM {n.T(ContentVersionTable)}{n.LockingRead} WHERE"));
+    }
+
+    [Test]
     public void EveryExistsCheck_IsOneTheScanReads()
     {
         var unread = Matches(Exists())

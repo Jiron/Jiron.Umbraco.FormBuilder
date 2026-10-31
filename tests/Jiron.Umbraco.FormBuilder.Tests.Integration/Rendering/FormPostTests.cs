@@ -413,6 +413,46 @@ public sealed partial class FormPostTests : RenderingTestBase
     }
 
     [Test]
+    public async Task AMembersPostWithTheOriginNull_IsTheirsWhenTheBrowserSaysSameOrigin_AndAnotherSitesOtherwise()
+    {
+        var key = await PublishFormAsync("postMain", MainForm);
+        _ = await PublishFormAsync("postPaged", Paged);
+        _ = await PagesAsync("post");
+        var carrier = FormOf(await DocumentAsync("/post/"), "jfb-2");
+        await SignInMemberAsync("member@example.com");
+        Task<HttpResponseMessage> PostAsync(string? site) => SendAsync(HttpMethod.Post, "/post/", request =>
+        {
+            request.Content = new FormUrlEncodedContent(
+            [
+                new(FormPostFields.RouteToken, carrier.QuerySelector("input[name='ufprt']")!.GetAttribute("value")!),
+                new(FormPostFields.Form, key.ToString("D")),
+                new(FormPostFields.Instance, "jfb-1"),
+                new(FormPostFields.Revision, "1"),
+                new("fullName.first", "Ada"),
+                new(FormPostFields.Nav, FormPostFields.Submit),
+            ]);
+            request.Headers.TryAddWithoutValidation("Origin", "null");
+            if (site is not null)
+            {
+                request.Headers.TryAddWithoutValidation("Sec-Fetch-Site", site);
+            }
+        });
+
+        using var own = await PostAsync("same-origin");
+        using var sameSite = await PostAsync("same-site");
+        using var crossSite = await PostAsync("cross-site");
+        using var unnamed = await PostAsync(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(own.StatusCode, Is.EqualTo(HttpStatusCode.OK), "a page of the site's that sends no referrer");
+            Assert.That(sameSite.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden), "another origin of the same site");
+            Assert.That(crossSite.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden), "a sandboxed frame on another site");
+            Assert.That(unnamed.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden), "a browser that does not say");
+        });
+    }
+
+    [Test]
     public async Task TheQueryValuesTheFormLists_ComeFromTheSitesOwnReferrer_AreCarriedOnInThePage_AndReadByItsRules()
     {
         _ = await PublishFormAsync(

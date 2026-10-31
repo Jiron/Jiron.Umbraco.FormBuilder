@@ -12,6 +12,7 @@ import {
   readPost,
   type FieldReading,
   type FormAnswers,
+  type FormState,
   type PostAnswer,
   type PostField,
   type ReadField,
@@ -104,6 +105,14 @@ export function readPage(form: HTMLFormElement, model: FormModel): PageReading {
     if (isUnreadable(one)) unreadable.push(field.key);
   }
   return { post, fields: read, groups, answers: { values, rows, unreadable, unreadableRows } };
+}
+
+/** The repeatable group a field's row belongs to and that row's state, if the reading counted it; null outside a row. */
+export function rowOf(field: HTMLElement, state: FormState) {
+  const row = field.parentElement?.closest<HTMLElement>('[data-jfb-row]');
+  if (row == null) return null;
+  const group = row.closest<HTMLElement>('[data-jfb-field]')?.dataset['jfbField'] ?? '';
+  return { group, state: state.rows[group]?.[Number(row.dataset['jfbRow'])] };
 }
 
 /** Every field outside repeatable groups, in the order of the form's pages and groups. */

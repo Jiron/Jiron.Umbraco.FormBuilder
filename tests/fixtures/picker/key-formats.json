@@ -1,0 +1,142 @@
+[
+  {
+    "text": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "7B0C2F4E-1A2B-4C3D-8E9F-0A1B2C3D4E5F",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": " 7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f ",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "7b0c2f4e1a2b4c3d8e9f0a1b2c3d4e5f",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "7B0C2F4E1A2B4C3D8E9F0A1B2C3D4E5F",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "{7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f}",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "(7B0C2F4E-1A2B-4C3D-8E9F-0A1B2C3D4E5F)",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "{0x7b0c2f4e,0x1a2b,0x4c3d,{0x8e,0x9f,0x0a,0x1b,0x2c,0x3d,0x4e,0x5f}}",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "{0x7B0C2F4E,0x1A2B,0x4C3D,{0x8E,0x9F,0x0A,0x1B,0x2C,0x3D,0x4E,0x5F}}",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "{0X1,0X2,0X3,{0X4,0X5,0X6,0X7,0X8,0X9,0XA,0XB}}",
+    "key": "00000001-0002-0003-0405-060708090a0b"
+  },
+  {
+    "text": "{ 0x1 , 0x2 , 0x3 , { 0x4 , 0x5 , 0x6 , 0x7 , 0x8 , 0x9 , 0xa , 0xb } }",
+    "key": "00000001-0002-0003-0405-060708090a0b"
+  },
+  {
+    "text": "{0x0000000007b0c2f4e,0x1a2b,0x4c3d,{0x8e,0x9f,0x0a,0x1b,0x2c,0x3d,0x4e,0x5f}}",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "{0x7b0c2f4e,0x1a2b,0x4c3d,{0x0000008e,0x9f,0xa,0x1b,0x2c,0x3d,0x4e,0x5f}}",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "0x0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": "000c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "0X0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": "000c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "+b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": "0b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "7b0c2f4e-0x2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": "7b0c2f4e-002b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "7b0c2f4e-+a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": "7b0c2f4e-0a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "7b0c2f4e-1a2b-0x3d-8e9f-0a1b2c3d4e5f",
+    "key": "7b0c2f4e-1a2b-003d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "7b0c2f4e-1a2b-4c3d-0x9f-0a1b2c3d4e5f",
+    "key": "7b0c2f4e-1a2b-4c3d-009f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "7b0c2f4e-1a2b-4c3d-8e9f-0x1b2c3d4e5f",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-001b2c3d4e5f"
+  },
+  {
+    "text": "7b0c2f4e-1a2b-4c3d-8e9f-+a1b2c3d4e5f",
+    "key": "7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "(+b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f)",
+    "key": "0b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "{0x0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f}",
+    "key": "000c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+  },
+  {
+    "text": "{7b0c2f4e1a2b4c3d8e9f0a1b2c3d4e5f}",
+    "key": null
+  },
+  {
+    "text": "{7b0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f)",
+    "key": null
+  },
+  {
+    "text": "0x7b0c2f4e1a2b4c3d8e9f0a1b2c3d4e5f",
+    "key": null
+  },
+  {
+    "text": "b0c2f4e1a2b4c3d8e9f0a1b2c3d4e5f",
+    "key": null
+  },
+  {
+    "text": "+x0c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": null
+  },
+  {
+    "text": "0x+c2f4e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    "key": null
+  },
+  {
+    "text": "{0x,0x2,0x3,{0x4,0x5,0x6,0x7,0x8,0x9,0xa,0xb}}",
+    "key": null
+  },
+  {
+    "text": "{1,0x2,0x3,{0x4,0x5,0x6,0x7,0x8,0x9,0xa,0xb}}",
+    "key": null
+  },
+  {
+    "text": "{+0x1,0x2,0x3,{0x4,0x5,0x6,0x7,0x8,0x9,0xa,0xb}}",
+    "key": null
+  },
+  {
+    "text": "{0x17b0c2f4e,0x1a2b,0x4c3d,{0x8e,0x9f,0x0a,0x1b,0x2c,0x3d,0x4e,0x5f}}",
+    "key": null
+  },
+  {
+    "text": "not a key",
+    "key": null
+  }
+]

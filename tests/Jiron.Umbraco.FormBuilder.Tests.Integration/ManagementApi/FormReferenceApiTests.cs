@@ -238,6 +238,8 @@ public sealed class FormReferenceApiTests : ManagementApiTestBase
         var requested = await GetRequiredService<IKeyValueRepository>().GetAsync(Core.Persistence.Migrations.RequestReferenceRebuildV1.RebuildKey);
         var job = GetRequiredService<IEnumerable<IDistributedBackgroundJob>>().OfType<FormReferenceRebuildJob>().Single();
 
+        // Saving the page type asked again, and the job holds a request just made for one run.
+        await job.ExecuteAsync(CancellationToken.None);
         await job.ExecuteAsync(CancellationToken.None);
 
         Assert.Multiple(async () =>
@@ -326,6 +328,41 @@ public sealed class FormReferenceApiTests : ManagementApiTestBase
             Assert.That(due, Is.True, "another editor asked for a rebuild");
             Assert.That(await References(form), Is.EqualTo(new[] { page.Key }));
         });
+    }
+
+    [Test]
+    public async Task ADataTypeGivenThePickerThroughUmbracosOwnEndpoint_AsksForARebuild()
+    {
+        var dataTypes = GetRequiredService<IDataTypeService>();
+        var created = await dataTypes.CreateAsync(new DataType(GetRequiredService<PropertyEditorCollection>()[Constants.PropertyEditors.Aliases.TextBox]!, GetRequiredService<IConfigurationEditorJsonSerializer>()) { Name = "Plain text", DatabaseType = ValueStorageType.Nvarchar }, Constants.Security.SuperUserKey);
+        Assert.That(created.Success, Is.True, created.Status.ToString());
+        ApiAnswer? answer = null;
+
+        var due = await AfterAsync(async () => answer = await CallAsync("admin", HttpMethod.Put, $"/umbraco/management/api/v1/data-type/{created.Result!.Key}", new
+        {
+            name = "Plain text",
+            editorAlias = FormPickerPropertyEditor.EditorAlias,
+            editorUiAlias = "Jiron.FormBuilder.PropertyEditorUi.FormPicker",
+            values = Array.Empty<object>(),
+        }));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(answer!.Status, Is.EqualTo(HttpStatusCode.OK), answer.Text);
+            Assert.That(due, Is.True);
+        });
+    }
+
+    [Test]
+    public async Task ADeletedLanguage_AsksForARebuild()
+    {
+        var languages = GetRequiredService<ILanguageService>();
+        var created = await languages.CreateAsync(new Language("fr-FR", "French"), Constants.Security.SuperUserKey);
+        Assert.That(created.Success, Is.True, created.Status.ToString());
+
+        var due = await AfterAsync(async () => Assert.That((await languages.DeleteAsync("fr-FR", Constants.Security.SuperUserKey)).Success, Is.True));
+
+        Assert.That(due, Is.True);
     }
 
     [Test]

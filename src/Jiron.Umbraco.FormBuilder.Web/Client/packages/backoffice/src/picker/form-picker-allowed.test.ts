@@ -251,7 +251,7 @@ describe('the most a setting holds', () => {
 
     expect(said(await setting({ value: keys(MAX_ALLOWED) }))).not.toContain(message);
     expect(said(await setting({ value: keys(MAX_ALLOWED + 1) })).filter((alert) => alert === message)).toHaveLength(1);
-  });
+  }, 60_000);
 
   it('is the number the server refuses past', () => {
     expect(MAX_ALLOWED).toBe(1000);

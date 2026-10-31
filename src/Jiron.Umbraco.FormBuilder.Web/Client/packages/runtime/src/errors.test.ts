@@ -4,6 +4,7 @@
 // server's errors stay while their field is unchanged and join only a refused send; a field the page leaves out is the
 // server's to check; and a send whose errors are on another page goes to the server.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { showFieldError } from './display';
 import { engineOf } from './engine';
 import { pageErrorsOf, type InvalidDetail } from './errors';
 import type { FormModel, ModelField, ModelPage } from './model';
@@ -425,6 +426,72 @@ describe('the summary', () => {
     link?.dispatchEvent(click);
     expect(click.defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(control('jfb-1-email'));
+  });
+});
+
+describe("a grid's error", () => {
+  const rows =
+    '<div class="jfb-field" data-jfb-field="k-grid" data-jfb-alias="grid" data-jfb-type="grid"><fieldset>' +
+    '<legend class="jfb-label">Grid</legend>' +
+    '<input type="radio" id="jfb-1-grid" name="grid.a" value="1"><input type="radio" id="jfb-1-grid-b" name="grid.b" value="1">' +
+    '</fieldset></div>';
+  const marks = () =>
+    ['jfb-1-grid', 'jfb-1-grid-b'].map((id) => [
+      control(id).getAttribute('aria-invalid'),
+      control(id).getAttribute('aria-describedby'),
+    ]);
+  const error = (gridRow?: string) => ({
+    field: 'k-grid',
+    row: null,
+    code: 'rule',
+    target: 'jfb-1-grid',
+    message: 'Choose an answer',
+    link: 'Grid: Choose an answer',
+    gridRow,
+  });
+  const MARKED = ['true', 'jfb-1-grid-error'];
+
+  it('marks only the row it names, also when it moves to another row or from every row to one', () => {
+    const { form } = contact(ONE_PAGE, rows);
+    const grid = form.querySelector<HTMLElement>('[data-jfb-field="k-grid"]');
+    if (grid === null) throw new Error('no grid');
+
+    showFieldError(form, grid, error());
+    expect(marks(), 'an error of the whole grid, every row').toEqual([MARKED, MARKED]);
+    showFieldError(form, grid, error('b'));
+    expect(marks(), 'then one row').toEqual([[null, null], MARKED]);
+    showFieldError(form, grid, error('a'));
+    expect(marks(), 'then another').toEqual([MARKED, [null, null]]);
+    expect(shownOf(form).inline, 'one paragraph').toEqual(['jfb-1-grid-error: Choose an answer']);
+  });
+
+  it("keeps the server's marks on the row it named when another field refuses the send", async () => {
+    const served = rows
+      .replace(
+        'name="grid.b" value="1">',
+        'name="grid.b" value="1" aria-invalid="true" aria-describedby="jfb-1-grid-error">',
+      )
+      .replace('</fieldset>', '<p class="jfb-error" id="jfb-1-grid-error" data-jfb-error>Not this one</p></fieldset>');
+    const grid = field('k-grid', 'grid', 'grid', {
+      label: 'Grid',
+      rows: [{ key: 'a' }, { key: 'b' }],
+      options: { items: [{ value: '1' }] },
+    });
+    const model = modelOf([{ key: 'p1', groups: [{ key: 'g1', fields: [NAME, EMAIL, grid] }] }]);
+    const { form } = contact(
+      model,
+      text('k-name', 'name', 'Name') + text('k-email', 'email', 'Email address') + served,
+    );
+    type('jfb-1-name', 'Ada');
+
+    press(form, 'send');
+    await settle();
+
+    expect(shownOf(form).inline).toEqual([
+      'jfb-1-email-error: Enter an email address',
+      'jfb-1-grid-error: Not this one',
+    ]);
+    expect(marks()).toEqual([[null, null], MARKED]);
   });
 });
 
