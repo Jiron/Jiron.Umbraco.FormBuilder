@@ -2323,7 +2323,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - the rebuild's locking read and a data type's editor changed through Umbraco's own endpoint have no test.
   - The runtime stays within its budget, so these fixes make room for what they add (ADR-0119).
   - Done when: Vitest and integration tests pass for each, a tamper of each fix fails its test, and the runtime's size check passes.
-- [ ] **6.8h The second reading's fixes to the themes and the pass** (CSS and Playwright (6.8g split in three, WORKLOG 2026-10-31))
+- [x] **6.8h The second reading's fixes to the themes and the pass** (CSS and Playwright (6.8g split in three, WORKLOG 2026-10-31)) (2026-10-31, 5e2ff2a)
   - **What the second reading found in the themes:**
     - a picture choice's scroll margin can put the focused control below the window: the margin never leaves less than the control's own room in view;
     - the form itself has no scroll margin, so a post's landing puts its summary, title or outcome under a sticky header;
