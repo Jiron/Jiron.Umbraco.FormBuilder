@@ -2385,13 +2385,22 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - a `429` keeps the visitor's answers and says when to send again, in the runtime (Playwright);
     - a runtime test shows a retry after a lost answer, whose challenge has expired, asking `receipt` and showing the original outcome, and, past the grace, the fresh post's `409` shown as already sent;
     - Playwright shows the places left changing on a cached page after another visitor's submission, and a member condition applied for a signed-in member.
-- [ ] **7.2 Proof of work and captcha providers**
-  - **Proof of work:** a SHA-256 puzzle with difficulty per level, a signed and expiring nonce, solved in a Web Worker with a progress hint for slow devices.
-  - **Third-party providers:** reCAPTCHA v2 and v3 (ported from Ligata.Forms) and hCaptcha. Providers are greyed out without keys. The consent modes of §4.10 apply, with the JS API's `consent.grant('captcha')` and `withdraw()` for the `cmp` mode (§4.9, moved from 6.4 in its split). Publishing refuses a provider the site lacks (`unknown_type` at `settings.protection.captcha.provider`, ADR-0035).
+- [ ] **7.2a Proof of work on the server** (7.2 split in three, WORKLOG 2026-11-01)
+  - **Proof of work:** a SHA-256 puzzle with difficulty per level, a signed and expiring nonce: the challenge carries the nonce and the difficulty, and the server checks the answer once, with the challenge. A post without JavaScript on a form whose protection needs JavaScript scores into Spam with `no_script`, and a server key skips the puzzle (ADR-0012).
+  - Done when:
+    - integration tests cover a form at the proof-of-work level, directly and through the site's default: its challenge carries the puzzle, a right answer passes, and a wrong or missing one is refused;
+    - tests cover the no-JS post's `no_script`, and a server key that skips the puzzle.
+- [ ] **7.2b Captcha providers on the server** (7.2 split in three, WORKLOG 2026-11-01)
+  - **Third-party providers:** reCAPTCHA v2 and v3 (ported from Ligata.Forms) and hCaptcha, with their verification, their keys in host configuration only and the outcomes of ADR-0012. Providers are greyed out without keys. Publishing refuses a provider the site lacks (`unknown_type` at `settings.protection.captcha.provider`, ADR-0035).
   - **The captcha placement** (added in 5.1b): the `captcha` field type is not configured (5.1c's availability, "not configured: …") while no captcha provider has its keys, since it marks where a provider's captcha renders.
   - Done when:
     - the field types the designer reads give the captcha placement as not configured, with its reason, on a site where no provider has keys, and as available once one has;
-    - unit tests pass against the HTTP stub;
+    - unit tests pass against the HTTP stub.
+- [~] **7.2c Proof of work and the captchas in the runtime** (7.2 split in three, WORKLOG 2026-11-01)
+  - **Blocked (2026-11-01):** the runtime stands 2 bytes below the 40 KB of §4.12, a budget only the owner can change, and this part adds to it and builds on the sending of 6.4i (ADR-0120, `docs/OWNER-TODO.md`). The server's parts are 7.2a and 7.2b.
+  - **Proof of work:** solved in a Web Worker with a progress hint for slow devices.
+  - **Third-party providers:** the consent modes of §4.10 apply, with the JS API's `consent.grant('captcha')` and `withdraw()` for the `cmp` mode (§4.9, moved from 6.4 in its split).
+  - Done when:
     - Playwright, with the provider hosts routed to a local stub (`page.route`, so no real third-party request ever happens, D22), shows **zero requests to them before consent** and the script loading after;
     - proof of work completes in under 2 s at the default level on the demo machine;
     - Playwright shows `consent.grant('captcha')` loading the provider's script on a form in the `cmp` mode, and none on the next page after `withdraw()` (added in the split of 6.4).
