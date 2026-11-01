@@ -2130,7 +2130,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
 - [x] **6.4h Defaults with merge tags** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c and 6.4d split in two, WORKLOG 2026-10-30; then 6.4f in two, WORKLOG 2026-10-30; then 6.4g in two, WORKLOG 2026-10-30) (2026-10-30, cf95911)
   - **A default value with merge tags** is filled in the browser from what the page knows, as ADR-0093 leaves it (added in the split of 6.4a): the form endpoint's answer gives each such default's template and the values of the tags the server knows, and the page fills in the rest (its query values) as the form is shown, before the visitor touches it (added in the split of 6.4g).
   - Done when: Vitest covers the runtime's part; an integration test covers the form endpoint's answer for defaults with merge tags (added in the split of 6.4g); Playwright on the demo covers a default with merge tags filled in; axe is clean; the size check passes with every chunk.
-- [ ] **6.4i Submitting** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30)
+- [x] **6.4i Submitting** (6.4 split in nine, WORKLOG 2026-10-30; one letter on as 6.4a, 6.4b, 6.4c, 6.4d, 6.4f and 6.4g split in two, WORKLOG 2026-10-30) (2026-11-01, bc24d70)
   - **Resumes (2026-11-01):** the owner raised the budget to 60 KB (ADR-0146); this step resumes at 7.4i, with every check below.
   - **Blocked (2026-10-30):** built on the branch `wip/6.4i-sending`, sending takes the website runtime with every feature to 41.38 KB gzip, past the 40 KB of section 4.12, a budget only the owner can change; the work so far and its design wait there (ADR-0120, `docs/OWNER-TODO.md`).
   - **Submitting:**
