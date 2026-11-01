@@ -2433,7 +2433,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - A named page's site applies only when that page holds the form, by the reference index. Otherwise, a request with no such page gets the strictest of the shared settings and every site's: the highest level, and every range, word and domain.
   - A puzzle's answer counts only for a challenge asking at least the bits the site asks now.
   - Done when: tests cover a post with no page and one naming another site's page, on a form placed on a strict site, each held to that site's puzzle, captcha, ranges and words, directly and without JavaScript; a page that holds the form keeps its own site's settings; a challenge of fewer bits is refused; 14.4 says it keeps this.
-- [ ] **7.4b What the content rules read and the verdict's answer** (7.4 split in nine, WORKLOG 2026-11-01)
+- [x] **7.4b What the content rules read and the verdict's answer** (7.4 split in nine, WORKLOG 2026-11-01) (2026-11-01, c4b752f)
   - **What the review found:** the content rules skip a name's and an address's parts and a choice's own "other" text, so blocked words and links pass there.
   - **The verdict's answer:** a post with a taken or full answer is told so unless the protection marks it Spam, which tells a bot its verdict. The review of this finding keeps 7.1c's check, as hiding those answers from Spam is what stops silent probing of who has registered: an ADR says why, and what bounds the probing.
   - A `previous` challenge carries its issue time only for a limited age, so one old token cannot switch the time signal off for good.
