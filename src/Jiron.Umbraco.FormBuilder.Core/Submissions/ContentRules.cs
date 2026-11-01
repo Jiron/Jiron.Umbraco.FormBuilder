@@ -10,9 +10,9 @@ namespace Jiron.Umbraco.FormBuilder.Core.Submissions;
 
 /// <summary>
 /// The content rules of a submission (ADR-0012, ADR-0140): a blocked email domain in an email field, each blocked word in
-/// the texts, and more links than the site allows. They read only what a visitor typed: the answers of text fields, so
-/// never an option's value, a file or a value the server resolves. <c>strict</c> doubles the weights, and where no link is
-/// allowed, it also counts the answer of a web address field.
+/// the texts, and more links than the site allows. They read only what a visitor typed: the answers of text fields, the
+/// parts of a name or an address and an "Other" text, so never an option's value, a file or a value the server resolves.
+/// <c>strict</c> doubles the weights, and where no link is allowed, it also counts the answer of a web address field.
 /// </summary>
 internal static class ContentRules
 {
@@ -45,10 +45,27 @@ internal static class ContentRules
         var addresses = new List<string>();
         foreach (var answer in answers)
         {
-            if (fields.TryGetValue(answer.Field, out var field) && types.FindType(field.Type) is { Declaration: { RuleKind: FieldKind.Text, ServerOnlyDefault: false } })
+            if (!fields.TryGetValue(answer.Field, out var field) || types.FindType(field.Type) is not { Declaration: { ServerOnlyDefault: false } declaration })
             {
-                var values = answer.Values.Select(value => value.Text);
-                (field.Type switch { EmailType => emails, AddressType => addresses, _ => texts }).AddRange(values);
+                continue;
+            }
+
+            if (declaration.RuleKind == FieldKind.Text)
+            {
+                (field.Type switch { EmailType => emails, AddressType => addresses, _ => texts }).AddRange(answer.Values.Select(value => value.Text));
+                continue;
+            }
+
+            foreach (var value in answer.Values)
+            {
+                if (value.IsOwnText)
+                {
+                    texts.Add(value.Text);
+                }
+                else if (declaration.Storage == FieldStorageKind.Json && FieldPartsJson.Read(value.Text) is { } parts)
+                {
+                    texts.AddRange(parts.Select(part => part.Value));
+                }
             }
         }
 

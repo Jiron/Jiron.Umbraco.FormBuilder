@@ -113,6 +113,39 @@ public sealed class PublicFormContentRulesTests : PublicApiTestBase
     }
 
     [Test]
+    public async Task WhatAVisitorTypedInAFieldOfParts_OrAsAnOtherText_IsJudged()
+    {
+        await SiteAsync(new ProtectionSettings { BlockedWords = ["casino"], MaxLinks = 1 });
+        var fullName = Field("fullName", "name");
+        var home = Field("home", "address");
+        var topic = Field("topic", "radio") with
+        {
+            Settings = SettingsObject.Parse("""{"other":true}"""),
+            Options = new FieldOptions { Items = [new FieldOption { Value = "casino", Label = new LocalizedText("Casino") }, new FieldOption { Value = "books", Label = new LocalizedText("Books") }] },
+        };
+        var key = await PublishAsync(fields: [fullName, home, topic]);
+
+        var inAName = await SentAsync(key, new JsonObject { ["fullName.first"] = "A casino" });
+        var inAnAddress = await SentAsync(key, new JsonObject { ["home.city"] = "A casino" });
+        var inAnOther = await SentAsync(key, new JsonObject { ["topic.other"] = "A casino" });
+        var anOption = await SentAsync(key, new JsonObject { ["topic"] = "casino" });
+        var linksInAName = await SentAsync(key, new JsonObject { ["fullName.first"] = "https://a.test https://b.test" });
+        var linksInAnOther = await SentAsync(key, new JsonObject { ["topic.other"] = "https://a.test https://b.test" });
+        var plain = await SentAsync(key, new JsonObject { ["fullName.first"] = "Ada", ["home.city"] = "Bath", ["topic"] = "books" });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(inAName.SpamScore, Is.EqualTo(40));
+            Assert.That(inAnAddress.SpamScore, Is.EqualTo(40));
+            Assert.That(inAnOther.SpamScore, Is.EqualTo(40));
+            Assert.That(anOption.SpamScore, Is.Zero, "no visitor typed an option's value, on a field that also offers Other");
+            Assert.That(linksInAName.SpamReasons, Does.Contain("too_many_links"));
+            Assert.That(linksInAnOther.SpamReasons, Does.Contain("too_many_links"));
+            Assert.That(plain.SpamScore, Is.Zero);
+        });
+    }
+
+    [Test]
     public async Task ABlockedWord_CountsInEveryKindOfTextAnswer_AndARow_ButNotInAnOptionsValue()
     {
         await SiteAsync(new ProtectionSettings { BlockedWords = ["casino"] });

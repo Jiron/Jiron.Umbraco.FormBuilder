@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Repositories;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
+using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -123,6 +124,29 @@ public sealed class PublicFormProtectionTests : PublicApiTestBase
             Assert.That(entries[0].State, Is.EqualTo(EntryState.Submitted), "60 alone is no spam");
             Assert.That(entries[1].SpamScore, Is.Zero);
             Assert.That(entries[1].SpamReasons, Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task AnOldChallenge_CarriesItsTime_ForADayPastItsExpiry_AndNoLonger()
+    {
+        var key = await PublishAsync();
+        var first = await ChallengeAsync(key);
+        var previous = new JsonObject { ["previous"] = first }.ToJsonString();
+        _clock.Advance(FormChallenges.Lifetime + FormChallenges.ReceiptGrace - TimeSpan.FromSeconds(1));
+        using var inTime = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/challenge", request => request.Content = Json(previous));
+        var carried = (await JsonAsync(inTime))["challenge"]!.GetValue<string>();
+        using var keeps = await SendEntryAsync(key, Clean, carried);
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        using var tooLate = await SendAsync(HttpMethod.Post, $"{Root}/forms/{key}/challenge", request => request.Content = Json(previous));
+        var fresh = (await JsonAsync(tooLate))["challenge"]!.GetValue<string>();
+        using var counts = await SendEntryAsync(key, Clean, fresh);
+
+        var entries = await StoredAsync(key);
+        Assert.Multiple(() =>
+        {
+            Assert.That(entries[0].SpamScore, Is.Zero);
+            Assert.That(entries[1].SpamReasons, Does.Contain("too_fast"));
         });
     }
 

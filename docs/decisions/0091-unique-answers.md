@@ -81,6 +81,13 @@ Server, whatever its isolation level; which field types may have the check; and 
 
 - **Spam** (7.1): a submission the protection puts into Spam holds no unique answer, and neither check runs for it, so
   a bot learns nothing about which answers are taken.
+- **What that answer shows** (the review in 7.4b, 2026-11-01): a post with a taken answer is told so unless the protection marks
+  it Spam, so on such a form a bot can tell its verdict from the answer, and try a site's blocked words one at a time. This
+  stays, and 7.1c's check with it. Answering Spam the same way would let any post that fills the honeypot ask who has registered:
+  it would be told, and, holding nothing, leave the address free to ask again, while a clean probe at least takes the address.
+  Who has registered is a person's data, and a blocked word is a setting. The trial is bounded too: it needs an answer already
+  taken or an option already full, it runs at the five posts a minute one address may send to a form, and each try lands in the
+  Spam folder, where an editor sees it.
 - **Moving an entry back, editing an answer** (11.2, and "not spam" in 11.3): the backoffice asks before an answer
   that must be unique appears twice; the repository refuses nothing, as for places.
 - **A resumed draft** (8.6) holds no unique answer until it is submitted, and the submit checks its answers as a

@@ -144,7 +144,7 @@ public sealed class ChallengeTokensTests
     {
         var first = _tokens.Issue(Form, null);
         var issued = _clock.GetUtcNow();
-        _clock.Advance(TimeSpan.FromDays(30));
+        _clock.Advance(FormChallenges.Lifetime + FormChallenges.ReceiptGrace - TimeSpan.FromSeconds(1));
 
         var renewed = _tokens.Issue(Form, null, first);
         var read = _tokens.Read(renewed, Form, TimeSpan.Zero);
@@ -155,6 +155,17 @@ public sealed class ChallengeTokensTests
             Assert.That(read!.IssuedUtc, Is.EqualTo(issued));
             Assert.That(read.Id, Is.Not.EqualTo(_tokens.Read(first, Form, TimeSpan.MaxValue)!.Id));
         });
+    }
+
+    [Test]
+    public void ARenewal_CarriesNoIssueTime_FromAChallengeLongExpired()
+    {
+        var first = _tokens.Issue(Form, null);
+        _clock.Advance(FormChallenges.Lifetime + FormChallenges.ReceiptGrace);
+
+        var renewed = _tokens.Issue(Form, null, first);
+
+        Assert.That(_tokens.Read(renewed, Form, TimeSpan.Zero)!.IssuedUtc, Is.EqualTo(_clock.GetUtcNow()));
     }
 
     [Test]

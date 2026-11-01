@@ -32,7 +32,7 @@ sender write.
   visitor may check a page again after a send that lost its answer.
 - **An upload's token names its challenge,** so only the submission with the same one claims the file (ADR-0006). A
   post without JavaScript and a server key have none, and their tokens claim only with none.
-- **A renewal gets a new id and expiry and keeps the first issue time.** An earlier challenge counts at any age for this,
+- **A renewal gets a new id and expiry and keeps the first issue time.** An earlier challenge counts for this up to 24 hours past its expiry (7.4b: at any age, one old challenge would have switched the time signal off for good),
   since the time it carries is signed. Uploads made under the earlier id are not carried over; their tokens expire within
   the same day anyway.
 - **On a form for members** the challenge names the signed-in member, and the endpoint gives one only to a member the form

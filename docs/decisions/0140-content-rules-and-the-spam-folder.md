@@ -47,6 +47,10 @@ comes before the entries screen.
 - **Its screen and endpoint come with the entries screens,** where the undo toast and the question about a full option live
   (11.x). This step gives them the service they call.
 
+## What a visitor typed (7.4b, 2026-11-01)
+
+A phase review found that the rules read only fields whose rule kind is text, so a blocked word or a link in a name's part, an address's part or an "Other" text passed. The rules now read those too: the parts by their stored JSON, and an "Other" text by a mark the type sets when it reads one, as a list from another source cannot say which values are options. An option's value still counts for nothing.
+
 ## Consequences
 
 - The default settings block no word and no domain, so a site that sets nothing gets only the links rule, whose 40 points put

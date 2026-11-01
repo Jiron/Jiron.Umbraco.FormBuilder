@@ -29,7 +29,7 @@ internal static class BuiltInAnswers
 
         if (others is [var text] && (several || chosen.IsEmpty) && !chosen.Contains(text, StringComparer.Ordinal))
         {
-            reading.Add(text);
+            reading.Add(new FieldValue(text) { IsOwnText = true });
         }
     }
 

@@ -37,6 +37,9 @@ public sealed record FieldValue
     /// <summary>The key of the grid row it answers; null for the field itself.</summary>
     public Guid? Row { get; }
 
+    /// <summary>Whether the visitor wrote this value themselves in a field of choices, as an "Other" text, so it is no option's value.</summary>
+    public bool IsOwnText { get; init; }
+
     /// <summary>
     /// The text the entry stores instead of <see cref="Text"/>, or null to store the value: a ticked consent is
     /// <c>true</c> to rules and stores the hash of the wording the visitor agreed to (ADR-0009).
