@@ -300,6 +300,10 @@ describe('what goes the way without JavaScript instead', () => {
       () => new Response(markup({ revision: 2 }).replace(/data-jfb-model>[^<]*</, 'data-jfb-model>nope<')),
     ],
     ["a theme's view that writes no notice", () => new Response(markup({ revision: 2, changed: false }))],
+    [
+      'a render of another markup contract',
+      () => new Response(markup({ revision: 2 }).replace('data-jfb-contract="1"', 'data-jfb-contract="2"')),
+    ],
   ])('%s, keeping the old form until then', async (_name, render) => {
     serve(render());
     const { form, press, posted } = wake();

@@ -7,7 +7,7 @@
  * goes the way without JavaScript, whose answer does the same.
  */
 import { parseSanitised } from './html';
-import { parseModel, type FormModel } from './model';
+import type { FormModel } from './model';
 
 /** How long the page waits for the form as it is now: the endpoint's own limit, and a little. */
 const WAIT = 25_000;
@@ -76,6 +76,21 @@ export function copyAnswers(from: HTMLFormElement, to: HTMLFormElement): number 
   return unticked;
 }
 
+/**
+ * The model data of the form as it is now. The frame reads a page's with its own check, which a value import would bring
+ * the logic into the core with it; this one comes from the server of the same markup contract, so it only has to parse.
+ */
+function modelIn(next: HTMLFormElement, form: HTMLFormElement): FormModel | null {
+  if (next.dataset['jfbContract'] !== form.dataset['jfbContract']) return null;
+  try {
+    return JSON.parse(
+      next.querySelector('script[type="application/json"][data-jfb-model]')?.textContent ?? '',
+    ) as FormModel;
+  } catch {
+    return null;
+  }
+}
+
 /** The form as it is now, with its model, or null for what the page cannot put in the old one's place. */
 async function renderOf(form: HTMLFormElement, model: FormModel, api: string): Promise<HTMLFormElement | null> {
   const query = new URLSearchParams({
@@ -109,8 +124,7 @@ export async function swapForm(
   if (form.querySelectorAll('[data-jfb-page]').length > 1 || form.querySelector('.jfb-repeater, .jfb-ranking') !== null)
     return null;
   const next = await renderOf(form, model, api);
-  const data = next?.querySelector('script[type="application/json"][data-jfb-model]');
-  const nextModel = data ? parseModel(data.textContent ?? '') : null;
+  const nextModel = next ? modelIn(next, form) : null;
   const template = next
     ?.querySelector<HTMLTemplateElement>(':scope > template[data-jfb-templates]')
     ?.content.querySelector('[data-jfb-notice="form_changed"]');
