@@ -2350,7 +2350,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
   - Done when:
     - integration tests cover each policy, and a flood from 20,000 distinct IPs neither bypasses the site-wide limit nor grows memory without bound;
     - a `429` keeps the visitor's answers and says when to send again on the no-JS page (Playwright); the runtime's part is 7.1e.
-- [ ] **7.1b The challenge** (7.1 split in five, WORKLOG 2026-11-01)
+- [x] **7.1b The challenge** (7.1 split in five, WORKLOG 2026-11-01) (2026-11-01, 21e2297)
   - **Signals:**
     - a minimum fill time from the signed challenge (its token and issue time here; its score in 7.1c);
     - the `challenge` endpoint (§4.6), and as the first part of every upload, verified before the file is read (ADR-0006); its use by the runtime for JS posts is 7.1e;

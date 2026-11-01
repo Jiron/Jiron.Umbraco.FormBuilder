@@ -453,7 +453,8 @@ codes, `no-store` except the form and the options, the OpenAPI document `jfb-pub
 [ADR-0086](decisions/0086-the-options-endpoint.md),
 [ADR-0087](decisions/0087-the-upload-endpoint.md),
 [ADR-0088](decisions/0088-the-submission-pipeline-and-the-entries-endpoint.md),
-[ADR-0089](decisions/0089-the-validate-and-receipt-endpoints.md)).
+[ADR-0089](decisions/0089-the-validate-and-receipt-endpoints.md),
+[ADR-0138](decisions/0138-the-challenge.md)).
 
 | Route | Purpose | Rate-limit policy | Needs |
 | --- | --- | --- | --- |
