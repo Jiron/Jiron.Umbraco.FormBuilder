@@ -2372,7 +2372,7 @@ The owner's top UX requirement is calm, uncluttered screens (D18, §4.13). This 
     - integration tests cover each signal;
     - tests cover a blocked IPv4 and IPv6 range;
     - a submission the protection puts into `Spam` is answered as accepted though its option is full and its unique answer is taken, and holds neither (ADR-0090, ADR-0091).
-- [ ] **7.1d Content rules and the spam folder** (7.1 split in five, WORKLOG 2026-11-01)
+- [x] **7.1d Content rules and the spam folder** (7.1 split in five, WORKLOG 2026-11-01) (2026-11-01, 97d5d82)
   - **Content rules and the spam folder:**
     - Blocked words, blocked email domains, maximum links, per-form strictness, and `IFormBuilderSpamCheck`.
     - The `Spam` state. "Not spam" runs the submitted actions then; on a form with email verification, 8.5 sends an unverified entry to `Unverified` instead.
