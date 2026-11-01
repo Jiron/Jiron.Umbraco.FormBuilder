@@ -469,8 +469,8 @@ public sealed class FileUploadsTests
     private static StoredEntryFile Recorded(NewEntryFile file) => new(
         1, file.Key, null, file.FormId, file.FieldKey, file.OriginalName, file.StoredName, file.ContentType, file.SizeBytes, file.FileHash, file.ScanState, DateTimeOffset.UnixEpoch);
 
-    private FileUploads Uploads(FieldHostLimits? host = null, IEntryRepository? entries = null) =>
-        new(TestFieldTypes.Registry, host ?? FieldHostLimits.Default, _store, _forms, entries ?? _entries, _logger);
+    private FileUploads Uploads(FieldHostLimits? host = null, IEntryRepository? entries = null, params IFormBuilderFileScanner[] scanners) =>
+        new(TestFieldTypes.Registry, host ?? FieldHostLimits.Default, _store, _forms, entries ?? _entries, new FormBuilderFileScannerCollection(() => scanners), _logger);
 
     private async Task<FileUploadResult> StoreAsync(FormField field, string? name, byte[] bytes, Func<CancellationToken, Task<bool>>? endsAfter = null, IEntryRepository? entries = null)
     {

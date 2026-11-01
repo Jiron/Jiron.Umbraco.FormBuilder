@@ -17,10 +17,12 @@ using Jiron.Umbraco.FormBuilder.Core.Retention;
 using Jiron.Umbraco.FormBuilder.Core.Settings;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
 using Jiron.Umbraco.FormBuilder.Core.Themes;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Infrastructure.BackgroundJobs;
 using Umbraco.Cms.Infrastructure.Migrations.Notifications;
 using Umbraco.Extensions;
 
@@ -131,6 +133,9 @@ public sealed class FormBuilderCoreComposer : IComposer
         builder.Services.TryAddSingleton<EntrySpamFolder>();
         _ = builder.JironFormBuilder().SpamChecks();
         _ = builder.JironFormBuilder().CaptchaProviders();
+        _ = builder.JironFormBuilder().FileScanners();
+        builder.Services.TryAddSingleton<FileScans>();
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IRecurringBackgroundJob, FileScanJob>());
         builder.Services.TryAddSingleton<CaptchaHosts>();
         builder.Services.TryAddSingleton<UniqueAnswers>();
         builder.Services.TryAddSingleton<SubmissionEntries>();

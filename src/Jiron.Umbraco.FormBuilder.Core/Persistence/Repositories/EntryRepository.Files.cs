@@ -1,3 +1,4 @@
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Persistence.Dtos;
 using Umbraco.Cms.Infrastructure.Persistence;
 
@@ -108,6 +109,24 @@ internal sealed partial class EntryRepository
     }
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<StoredEntryFile>> ListFilesToScanAsync(int afterId, int take, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(take);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(take, MaxOrphansPerList);
+        return database.ReadAsync<IReadOnlyList<StoredEntryFile>>(
+            async db =>
+            {
+                var n = new SqlNames(db);
+                var rows = await db.FetchListAsync<EntryFileDto>(
+                    $"SELECT * FROM {n.T(FormBuilderTables.EntryFile)} WHERE {n.C("scanState")} = @0 AND {n.C("id")} > @1 ORDER BY {n.C("id")} {n.Page(0, take)}",
+                    FileScanStates.Pending,
+                    afterId);
+                return rows.Select(FileFromDto).ToList();
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<StoredEntryFile?> ChangeScanStateAsync(int fileId, string expected, string scanState, CancellationToken cancellationToken = default)
     {
         CheckScanState(expected, nameof(expected));
@@ -197,7 +216,7 @@ internal sealed partial class EntryRepository
     }
 
     /// <summary>
-    /// Gives the new entry its files: only uploads of its form that no entry took yet. Refused with
+    /// Gives the new entry its files: only uploads of its form that no entry took yet and that are not quarantined. Refused with
     /// <see cref="FormBuilderConflict.MissingFile"/> when any of them is not one.
     /// </summary>
     private static async Task TakeFilesAsync(IUmbracoDatabase db, SqlNames n, long entryId, int formId, IReadOnlyList<int> fileIds)
@@ -206,8 +225,8 @@ internal sealed partial class EntryRepository
         foreach (var chunk in fileIds.Chunk(SqlArgs.MaxListLength))
         {
             taken += await db.ExecAsync(
-                $"UPDATE {n.T(FormBuilderTables.EntryFile)} SET {n.C("entryId")} = @0 WHERE {n.C("formId")} = @1 AND {n.C("entryId")} IS NULL AND {n.C("id")} IN ({SqlArgs.Placeholders(2, chunk.Length)})",
-                [entryId, formId, .. chunk.Cast<object?>()]);
+                $"UPDATE {n.T(FormBuilderTables.EntryFile)} SET {n.C("entryId")} = @0 WHERE {n.C("formId")} = @1 AND {n.C("entryId")} IS NULL AND {n.C("scanState")} <> @2 AND {n.C("id")} IN ({SqlArgs.Placeholders(3, chunk.Length)})",
+                [entryId, formId, FileScanStates.Quarantined, .. chunk.Cast<object?>()]);
         }
 
         if (taken != fileIds.Count)

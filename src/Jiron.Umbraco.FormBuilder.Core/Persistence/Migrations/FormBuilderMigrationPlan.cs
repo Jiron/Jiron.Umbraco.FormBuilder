@@ -23,6 +23,9 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
     /// <summary>Step 4: a rebuild of the "used on" index, asked for once (ADR-0131).</summary>
     public const string StateRequestReferenceRebuild = "jfb-004-request-reference-rebuild";
 
+    /// <summary>The state after the index of the files that wait for a scan (ADR-0144).</summary>
+    public const string StateFileScanIndex = "jfb-005-file-scan-index";
+
     /// <summary>The steps in order, with the state each one leaves. The tests build their copies of the plan from it.</summary>
     internal static readonly IReadOnlyList<(string State, Type Step)> Steps =
     [
@@ -30,6 +33,7 @@ internal sealed class FormBuilderMigrationPlan : PackageMigrationPlan
         (StateDefaultSettings, typeof(CreateDefaultSettingsV1)),
         (StateGrantSection, typeof(GrantFormsSectionV1)),
         (StateRequestReferenceRebuild, typeof(RequestReferenceRebuildV1)),
+        (StateFileScanIndex, typeof(AddFileScanIndexV1)),
     ];
 
     /// <summary>Creates the plan with Jiron Form Builder's package id, name and plan name.</summary>

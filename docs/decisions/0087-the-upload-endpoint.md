@@ -6,7 +6,8 @@
   availability checked before the file, with the submission's codes, extended by
   [ADR-0088](0088-the-submission-pipeline-and-the-entries-endpoint.md) in 6.1e; the same checks and token applied to a
   post without JavaScript by [ADR-0102](0102-files-in-a-post-without-javascript.md) in 6.2j; what a name and a file's bytes may
-  hide, and the default blocked extensions, extended by [ADR-0143](0143-what-an-uploads-bytes-and-name-may-hide.md) in 7.3a
+  hide, and the default blocked extensions, extended by [ADR-0143](0143-what-an-uploads-bytes-and-name-may-hide.md) in 7.3a;
+  an upload's scan state and its cleanup by [ADR-0144](0144-cleanup-and-the-scanner.md) in 7.3b
 - Date: 2026-10-28
 - Roadmap step: 6.1d (decided and built); 6.1e checks the form's availability for uploads too, 6.2j applies the same
   checks to posts without JavaScript (ADR-0102), 6.4 sends uploads and shares the table of kinds, 7.1 verifies the challenge, 7.3

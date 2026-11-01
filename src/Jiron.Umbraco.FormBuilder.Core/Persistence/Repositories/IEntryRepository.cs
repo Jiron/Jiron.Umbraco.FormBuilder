@@ -518,6 +518,12 @@ internal interface IEntryRepository
     /// <summary>The files of an entry, in the order they were uploaded.</summary>
     Task<IReadOnlyList<StoredEntryFile>> ListFilesAsync(long entryId, CancellationToken cancellationToken = default);
 
+    /// <summary>The files that wait for a scan after the file <paramref name="afterId"/>, in the order they came (ADR-0144).</summary>
+    /// <param name="afterId">The id to go on after; 0 from the first.</param>
+    /// <param name="take">How many, 1 to <see cref="EntryRepository.MaxOrphansPerList"/>.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<IReadOnlyList<StoredEntryFile>> ListFilesToScanAsync(int afterId, int take, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Files that no entry took and that were uploaded before <paramref name="createdBefore"/>, oldest first: what the
     /// cleanup removes (ADR-0006).

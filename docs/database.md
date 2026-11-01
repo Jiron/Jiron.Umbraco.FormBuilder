@@ -52,6 +52,8 @@ idempotent, so a rerun changes nothing.
 | `jfb-003-grant-forms-section` | `GrantFormsSectionV1` | Gives Umbraco's administrators group the Forms section, once. A flag in `jfbKeyValue` records it, so an administrator who removes the section later is not overruled. |
 | `jfb-004-request-reference-rebuild` | `RequestReferenceRebuildV1` | Asks for a rebuild of the "used on" index: the row `references-rebuild` in `jfbKeyValue`, from the first document, where it is missing; a walk under way goes on where it was. The reference job does the walk (ADR-0131). |
 
+| `jfb-005-file-scan-index` | `AddFileScanIndexV1` | Adds `IX_jfbEntryFile_scanState_id`, for the files that wait for a scan ([ADR-0144](decisions/0144-cleanup-and-the-scanner.md)), where it is missing. |
+
 A step that has shipped is never edited; a change to the schema is a new step with snapshot classes of its own. Step 1
 is frozen since the end of Phase 4, the tag `baseline/schema-v1`: `SchemaV1FreezeTests` pins the SHA-256 of a
 description of its snapshots and has no switch that rewrites it (ADR-0054). Until the stored state is the plan's last
@@ -525,6 +527,8 @@ cleaned up (ADR-0006). `fileHash` is the SHA-256 of the bytes.
   their cleanup.
 - `IX_jfbEntryFile_formId_entryId`: one form's uploads that wait for an entry, for the form's delete, without reading
   those of other forms.
+- `IX_jfbEntryFile_scanState_id`: the files that wait for a scan, in the order they came, without reading every file
+  (step 5, ADR-0144).
 
 ### `jfbEntryValue`
 

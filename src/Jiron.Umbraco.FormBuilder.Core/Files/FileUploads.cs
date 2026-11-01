@@ -20,6 +20,7 @@ internal sealed partial class FileUploads(
     IFormBuilderFileStore store,
     IFormRepository forms,
     IEntryRepository entries,
+    FormBuilderFileScannerCollection scanners,
     ILogger<FileUploads> logger)
 {
     /// <summary>What a request may carry besides its file: the multipart boundaries, the part headers and the challenge.</summary>
@@ -196,7 +197,7 @@ internal sealed partial class FileUploads(
                     FileKinds.ContentType(FileFieldType.ExtensionOf(cleaned)),
                     upload.BytesRead,
                     upload.Sha256,
-                    FileScanStates.Unscanned),
+                    scanners.Count > 0 ? FileScanStates.Pending : FileScanStates.Unscanned),
                 cancellationToken);
             if (file is null)
             {
@@ -338,9 +339,3 @@ internal enum FileUploadStatus
 /// <param name="Error">The kind of error when it was refused or too large.</param>
 internal sealed record FileUploadResult(FileUploadStatus Status, StoredEntryFile? File = null, FieldMessageKinds? Error = null);
 
-/// <summary>The scan states of an uploaded file (<c>jfbEntryFile.scanState</c>).</summary>
-internal static class FileScanStates
-{
-    /// <summary>Not scanned yet: what every upload starts with until the scanner of 7.3 replaces it.</summary>
-    public const string Unscanned = "unscanned";
-}

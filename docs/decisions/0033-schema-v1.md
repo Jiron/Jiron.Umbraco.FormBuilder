@@ -2,7 +2,8 @@
 
 - Status: accepted; the trash key of folders and forms added by [ADR-0047](0047-trash-delete-and-folders.md) in 4.5d;
   amended in 4.8a (the review before the freeze, below) and in 4.8g (one more index, camelCase free words); step 1
-  frozen in 4.8i by [ADR-0054](0054-schema-freeze.md); the stored names share one table with the definition's words
+  frozen in 4.8i by [ADR-0054](0054-schema-freeze.md); the scan states kept as checked words and a new index in step 5 by
+  [ADR-0144](0144-cleanup-and-the-scanner.md); the stored names share one table with the definition's words
   since 4.8i; what a capacity row counts extended in 6.1g by [ADR-0090](0090-places-on-options.md); how a website
   page knows the backoffice user who sees the note decided in 6.2c by [ADR-0095](0095-visitor-texts-members-only-forms-and-the-pending-note.md)
 - Date: 2026-10-23

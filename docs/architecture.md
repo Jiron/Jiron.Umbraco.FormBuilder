@@ -633,7 +633,7 @@ names and traits are read once, at start-up
 | `IFormBuilderCaptchaProvider` | a captcha a form can choose, through `CaptchaProviders()`; the last of a name wins, so a site can replace a built-in one; one that fails or lost its keys sends the entry to Spam | ADR-0012, ADR-0142 |
 | `IFormBuilderSpamCheck` | a spam signal with a score and a reason, through `SpamChecks()`; one that fails or takes over 5 seconds counts for nothing | ADR-0012, ADR-0140 |
 | `IFormBuilderMergeTagSource`, `IFormBuilderMergeTagFilter` | merge-tag sources and filters of a site's own, in the places their traits allow | ADR-0014, ADR-0065 |
-| `IFormBuilderFileScanner` | scanning and quarantine | ADR-0006 |
+| `IFormBuilderFileScanner` | scanning and quarantine, through `FileScanners()`: asked in the background; any scanner's quarantine decides, and one that fails or takes over 5 minutes leaves the file waiting | ADR-0006, ADR-0144 |
 | `IFormBuilderFileStore` | other file storage, asynchronous: all of a file or nothing, never replacing one | ADR-0006, ADR-0041 |
 | `IFormBuilderTheme` | a theme, added, replaced or removed in a composer through `Themes()`: its alias and label, a local stylesheet, a class map onto the slots of `FormBuilderThemeSlots`, tokens, a dark scheme and a view folder; start-up refuses one with a problem, naming it | ADR-0015, ADR-0105 |
 | `IFormBuilderCspNonceProvider` | the request's CSP nonce, for the tags `<jfb-assets>` writes without a `nonce` attribute | ADR-0004, ADR-0092 |

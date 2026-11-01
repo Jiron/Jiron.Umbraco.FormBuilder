@@ -5,6 +5,7 @@ using Jiron.Umbraco.FormBuilder.Core.Definitions;
 using Jiron.Umbraco.FormBuilder.Core.Entries;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes.BuiltIn;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.Forms;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.Persistence;
@@ -653,7 +654,7 @@ internal sealed class FormSubmissions(
 
             foreach (var token in answer.Values.OfType<string>().Select(TextSemantics.Clean).Where(token => token.Length > 0 && !uploads.ContainsKey(token)))
             {
-                if (tokens.FileOf(token, request.Form, field, request.Ticket?.Id) is { } key && await entries.GetFileAsync(key, cancellationToken) is { } file && file.FormId == formId)
+                if (tokens.FileOf(token, request.Form, field, request.Ticket?.Id) is { } key && await entries.GetFileAsync(key, cancellationToken) is { } file && file.FormId == formId && file.ScanState != FileScanStates.Quarantined)
                 {
                     uploads[token] = file;
                 }

@@ -1,4 +1,5 @@
 using Jiron.Umbraco.FormBuilder.Core.FieldTypes;
+using Jiron.Umbraco.FormBuilder.Core.Files;
 using Jiron.Umbraco.FormBuilder.Core.MergeTags;
 using Jiron.Umbraco.FormBuilder.Core.OptionLists;
 using Jiron.Umbraco.FormBuilder.Core.Submissions;
@@ -32,6 +33,9 @@ public sealed class FormBuilderComposition
 
     /// <summary>The captcha providers, the built-in ones among them (ADR-0142).</summary>
     public FormBuilderCaptchaProviderCollectionBuilder CaptchaProviders() => Builder.WithCollectionBuilder<FormBuilderCaptchaProviderCollectionBuilder>();
+
+    /// <summary>The site's file scanners (ADR-0144).</summary>
+    public FormBuilderFileScannerCollectionBuilder FileScanners() => Builder.WithCollectionBuilder<FormBuilderFileScannerCollectionBuilder>();
 
     /// <summary>The site's own spam checks (ADR-0140).</summary>
     public FormBuilderSpamCheckCollectionBuilder SpamChecks() => Builder.WithCollectionBuilder<FormBuilderSpamCheckCollectionBuilder>();

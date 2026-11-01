@@ -129,6 +129,8 @@ public sealed partial class DatabaseDocsTests
             indexes[filtered.Table].Add(filtered.Name);
         }
 
+        indexes[FormBuilderTables.EntryFile].Add(AddFileScanIndexV1.IndexName);
+
         return indexes;
     }
 
